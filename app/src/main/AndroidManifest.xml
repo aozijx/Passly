@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <queries>
+        <package android:name="${WECHAT_PACKAGE}" /> <!-- 微信包名 -->
+        <package android:name="${QQ_PACKAGE}" /> <!-- QQ包名 -->
+        <package android:name="${DOUYIN_PACKAGE}" /> <!-- 抖音包名 -->
+
+        <!-- 添加相机相关的查询 -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent>
+        <intent>
+            <action android:name="android.media.action.VIDEO_CAPTURE" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent>
+    </queries>
+
+    <!-- 添加相机使用权限（Android 13+ 必需） -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <!-- Android 14+ 精选照片权限（无需用户授权，默认授予） -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+
+    <!-- 全相册权限（需用户授权） -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-feature
+        android:name="android.permission.READ_MEDIA_IMAGES"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Poop">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Poop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
