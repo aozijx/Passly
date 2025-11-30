@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.example.poop.ui.screens.HomeScreen
+import com.example.poop.model.navItems
+import com.example.poop.ui.component.SimpleBottomBar
+import com.example.poop.ui.screens.home.HomeScreen
 import com.example.poop.ui.theme.PoopTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,18 +27,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppContent() {
+fun AppContent() {
     Scaffold(
-        modifier = Modifier.fillMaxSize()
-    ) { paddingValues ->
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            // 传入MainActivity::class.java，让“首页”导航项选中
+            SimpleBottomBar(navItems, currentActivityClass = MainActivity::class.java)
+        }
+    ) { innerPadding ->
         HomeScreen(
             modifier = Modifier
-                .padding(paddingValues)
+                .fillMaxSize()
+                .padding(innerPadding)
         )
-//        DetailScreen(
-//            modifier = Modifier
-//                .padding(paddingValues)
-//        )
     }
 }
 

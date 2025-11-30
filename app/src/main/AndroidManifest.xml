@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- 网络权限 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <queries>
         <package android:name="${WECHAT_PACKAGE}" /> <!-- 微信包名 -->
         <package android:name="${QQ_PACKAGE}" /> <!-- QQ包名 -->
@@ -44,6 +48,15 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Poop">
+
+        <!-- 声明核心使用场景 -->
+        <meta-data
+            android:name="com.android.appcompat.media_access"
+            android:value="photo_management" /> <!-- 示例：照片管理功能 -->
+        <meta-data
+            android:name="com.android.appcompat.package_visibility"
+            android:value="launcher" /> <!-- 示例：启动器功能 -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -53,6 +66,14 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name=".ui.screens.detail.DetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Poop" >
+        </activity>
+        <activity android:name=".ui.screens.profile.ProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Poop" >
         </activity>
     </application>
 

@@ -7,7 +7,7 @@
 
 android {
     namespace = "com.example.poop"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.poop"
@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)  // 如果需要 GIF 支持
     implementation(libs.coil.svg)  // 如果需要 SVG 支持
+//    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.compose.jvmstubs)
     implementation(libs.androidx.foundation.layout.android)
     testImplementation(libs.junit)
