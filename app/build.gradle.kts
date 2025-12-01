@@ -7,6 +7,7 @@
 
 android {
     namespace = "com.example.poop"
+    //noinspection OldTargetApi
     compileSdk = 34
 
     defaultConfig {
@@ -30,18 +31,18 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = false // 发布版不混淆，方便用户查看代码
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_11 // 设置 Java 11 兼容性
         targetCompatibility = JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "11" // 设置 Kotlin JVM 目标为 11
     }
     buildFeatures {
         compose = true
@@ -58,13 +59,9 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    // 添加 Coil
-    implementation(libs.coil.compose)
-    implementation(libs.coil.gif)  // 如果需要 GIF 支持
-    implementation(libs.coil.svg)  // 如果需要 SVG 支持
-//    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.navigation.compose.jvmstubs)
-    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.coil.compose)  // 添加 Coil
+    implementation(libs.coil.gif)  // GIF 支持
+    implementation(libs.coil.svg)  // SVG 支持
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

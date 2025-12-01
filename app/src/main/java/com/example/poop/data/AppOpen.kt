@@ -1,4 +1,4 @@
-package com.example.poop.model
+package com.example.poop.data
 
 import android.content.Context
 import android.content.Intent

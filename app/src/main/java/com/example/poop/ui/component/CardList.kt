@@ -14,19 +14,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.poop.R
-import com.example.poop.model.AppConfigs
-import com.example.poop.model.AppOpenConfig
+import com.example.poop.data.AppConfigs
+import com.example.poop.data.AppOpenConfig
 import com.example.poop.util.rememberAppIconPainter
 
 @Composable
@@ -40,7 +41,7 @@ fun CardList() {
             .padding(24.dp)
     ) {
         items(items = AppConfigs.appList, key = { it.app }) { config ->
-            AppCard(config = config, onAppOpen = rememberAppOpenHandler(config))
+            AppCard(config, rememberAppOpenHandler(config))
         }
     }
 }
@@ -50,15 +51,17 @@ fun AppCard(config: AppOpenConfig, onAppOpen: () -> Unit) {
     Card(
         modifier = Modifier
             .height(80.dp)
+            .clip(RoundedCornerShape(12.dp))
             .clickable(
                 enabled = true,
+                onClick = onAppOpen,
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                onClick = onAppOpen
+                indication = rememberRipple(bounded = true),
             )
     ) {
         Box(
-            contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             Row {
                 Image(

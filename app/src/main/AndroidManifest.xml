@@ -22,7 +22,7 @@
     </queries>
 
     <!-- 添加相机使用权限（Android 13+ 必需） -->
-    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.CAMERAX" />
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -69,12 +69,13 @@
         </activity>
         <activity android:name=".ui.screens.detail.DetailActivity"
             android:exported="false"
-            android:theme="@style/Theme.Poop" >
-        </activity>
+            android:theme="@style/Theme.Poop" />
         <activity android:name=".ui.screens.profile.ProfileActivity"
             android:exported="false"
-            android:theme="@style/Theme.Poop" >
-        </activity>
+            android:theme="@style/Theme.Poop" />
+        <activity android:name=".ui.screens.animation.AnimationActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Poop" />
     </application>
 
 </manifest>

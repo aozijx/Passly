@@ -1,6 +1,5 @@
 package com.example.poop.ui.component
 
-import android.app.Activity
 import android.content.Intent
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -12,13 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.poop.model.BottomNavItem
+import com.example.poop.ui.component.navigation.BottomNavItem
 
 // 底部导航栏组件
 @Composable
 fun SimpleBottomBar(
     items: List<BottomNavItem>,
-    currentActivityClass: Class<*>,
+    activityClass: Class<*>,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -29,7 +28,7 @@ fun SimpleBottomBar(
     ) {
         items.forEach { item ->
             // 判断是否选中：当前Activity类 == 导航项的currentActivityClass
-            val isSelected = item.currentActivityClass == currentActivityClass
+            val isSelected = item.activityClass == activityClass
 
             NavigationBarItem(
                 icon = {

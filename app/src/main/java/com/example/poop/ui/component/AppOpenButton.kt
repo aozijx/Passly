@@ -14,8 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.example.poop.model.AppConfigs
-import com.example.poop.model.AppOpenConfig
+import com.example.poop.data.AppConfigs
+import com.example.poop.data.AppOpenConfig
 
 @Composable
 fun rememberAppOpenHandler(config: AppOpenConfig): () -> Unit {
@@ -91,11 +91,12 @@ private fun openTarget(config: AppOpenConfig, context: Context) {
     }
 }
 
-@Composable
-fun OpenAPP(modifier: Modifier = Modifier) {
-    Column(modifier) {
-        AppConfigs.appList.forEach { config ->
-            AppOpenButton(config = config)
-        }
+// 检查应用是否已安装（可选工具方法）
+fun isAppInstalled(packageName: String, context: Context): Boolean {
+    return try {
+        context.packageManager.getPackageInfo(packageName, 0)
+        true
+    } catch (e: Exception) {
+        false
     }
 }
