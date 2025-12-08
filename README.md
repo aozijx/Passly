@@ -1,3 +1,10 @@
+- 2025-12-09 00:48:34
+设备信息页：获取设备信息的变量
+BottomSheet
+动画语法
+许多过时，废弃，不受支持的语法让人没脾气
+各种不兼容问题惹人厌烦
+
 - 2025-12-01 16:49:08  
 Scaffold 控件： topBar CenterAlignedTopAppBar 顶部居中标题
 解决点击 Card 的阴影（波纹）溢出问题，在 bounded = true 的基础上加 clip

@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.provider.MediaStore
 import android.provider.Settings
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.poop.BuildConfig
 
 /**
@@ -16,6 +19,7 @@ import com.example.poop.BuildConfig
  */
 data class AppOpenConfig(
     val app: String,
+    val appIcon: ImageVector? = null,
     val packageName: String? = null,
     val requiredPermission: String? = null,
     val intentBuilder: ((Context) -> Intent?)? = null,
@@ -68,6 +72,11 @@ object AppConfigs {
             app = "设置",
             intentBuilder = { Intent(Settings.ACTION_SETTINGS) },
             errorTip = "无法打开设置"
+        ),
+        AppOpenConfig(
+            app = "更多",
+            appIcon = Icons.Filled.Add,
+            errorTip = "添加启动项"
         )
         // 可以继续添加更多应用...
     )

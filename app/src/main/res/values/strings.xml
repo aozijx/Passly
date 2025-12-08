@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">poop</string>
+    <string name="widget_loading">加载中...</string>
+    <string name="widget_description">每日美句欣赏</string>
 </resources>

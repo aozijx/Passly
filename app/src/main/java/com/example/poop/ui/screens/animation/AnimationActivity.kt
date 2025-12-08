@@ -81,7 +81,7 @@ fun AnimationScreen() {
         bottomBar = { SimpleBottomBar(navItems, AnimationActivity::class.java) }) { innerPadding ->
         val modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
+            .height(270.dp)
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)

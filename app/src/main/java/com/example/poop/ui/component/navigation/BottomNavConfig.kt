@@ -8,6 +8,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.poop.MainActivity
 import com.example.poop.ui.screens.animation.AnimationActivity
+import com.example.poop.ui.screens.article.ArticleActivity
 import com.example.poop.ui.screens.detail.DetailActivity
 import com.example.poop.ui.screens.profile.ProfileActivity
 
@@ -26,9 +27,9 @@ val navItems = listOf(
         activityClass = MainActivity::class.java,       // 点击跳转到首页
     ),
     BottomNavItem(
-        title = "详情",
-        icon = Icons.Rounded.Info,
-        activityClass = DetailActivity::class.java,     // 点击跳转到详情页
+        title = "文章",
+        icon = Icons.Rounded.PlayArrow,
+        activityClass = ArticleActivity::class.java, // 跳转到动画页
     ),
     BottomNavItem(
         title = "我的",
@@ -39,5 +40,10 @@ val navItems = listOf(
         title = "动画",
         icon = Icons.Rounded.PlayArrow,
         activityClass = AnimationActivity::class.java, // 跳转到动画页
-    )
+    ),
+            BottomNavItem(
+            title = "详情",
+    icon = Icons.Rounded.Info,
+    activityClass = DetailActivity::class.java,     // 点击跳转到详情页
+),
 )

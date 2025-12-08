@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.poop.R
@@ -64,11 +65,19 @@ fun AppCard(config: AppOpenConfig, onAppOpen: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Row {
-                Image(
-                    painter = rememberAppIconPainter(
+                // 1. 先计算 painter 的值（核心修正：将 if-else 提取到参数外）
+                val iconPainter = if (config.appIcon != null) {
+                    // 配置有矢量图标，使用矢量图标
+                    rememberVectorPainter(image = config.appIcon)
+                } else {
+                    // 配置无矢量图标，加载应用图标（使用默认图标兜底）
+                    rememberAppIconPainter(
                         packageName = "${config.packageName}",
                         defaultIconResId = R.drawable.ic_launcher_foreground
-                    ),
+                    )
+                }
+                Image(
+                    painter = iconPainter,
                     contentDescription = "${config.packageName} 图标",
                     modifier = Modifier.size(40.dp)
                 )

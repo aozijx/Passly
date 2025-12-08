@@ -4,13 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -26,8 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.poop.ui.component.navigation.navItems
 import com.example.poop.ui.component.SimpleBottomBar
+import com.example.poop.ui.component.navigation.navItems
 import com.example.poop.ui.theme.PoopTheme
 
 class ProfileActivity : ComponentActivity() {
@@ -47,39 +47,30 @@ class ProfileActivity : ComponentActivity() {
 fun ProfileScreen() {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        { CenterAlignedTopAppBar({ Text(text = "个人页") }) },
+        topBar = { CenterAlignedTopAppBar({ Text(text = "个人页") }) },
         bottomBar = {
             SimpleBottomBar(navItems, ProfileActivity::class.java)
         }) { innerPadding ->
-        var imageKey by remember { mutableIntStateOf(0) }
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AsyncImage(
-                model = "https://picsum.photos/1920/1080?random=$imageKey", // 网络图片URL
-                contentDescription = "网络图片",
-                modifier = Modifier
-                    .size(400.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                // 可选：占位图/错误图
-//                key = imageKey,
-                placeholder = painterResource(id = android.R.drawable.ic_menu_upload), // 加载中显示
-                error = painterResource(id = android.R.drawable.btn_star_big_on) // 加载失败显示
-            )
-            Button(onClick = {
-                imageKey++ // 改变key触发重新请求
-            }) {
-                Text("换一张图片")
+            items(3) { index ->
+                var imageKey by remember { mutableIntStateOf(0) }
+                AsyncImage(
+                    model = "https://picsum.photos/1920/1080?random=$imageKey", // 网络图片URL
+                    contentDescription = "网络图片${index}",
+                    modifier = Modifier
+                        .size(400.dp, 300.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = { imageKey++ }),
+                    placeholder = painterResource(id = android.R.drawable.ic_menu_upload), // 加载中显示
+                    error = painterResource(id = android.R.drawable.btn_star_big_on) // 加载失败显示
+                )
             }
-//            Image(
-//                bitmap = ImageBitmap.imageResource(id = R.drawable.btn_star_big_on), // 图片资源ID
-//                contentDescription = "应用logo", // 无障碍描述
-//                modifier = Modifier.size(80.dp) // 设置大小
-//            )
         }
     }
 }

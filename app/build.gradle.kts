@@ -61,7 +61,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.coil.compose)  // 添加 Coil
     implementation(libs.coil.gif)  // GIF 支持
-    implementation(libs.coil.svg)  // SVG 支持
+    implementation(libs.coil.svg)
+    implementation(libs.androidx.glance.appwidget)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

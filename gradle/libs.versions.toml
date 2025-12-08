@@ -7,8 +7,9 @@ junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 lifecycleRuntimeKtx = "2.7.0"
 activityCompose = "1.8.0"
-composeBom = "2023.10.01"
+composeBom = "2024.06.00"
 coil = "2.6.0"
+glanceAppwidget = "1.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -27,7 +28,8 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }  # Coil 库
 coil-gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }  # GIF 支持
-coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }  # SVG 支持
+coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
+androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glanceAppwidget" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
