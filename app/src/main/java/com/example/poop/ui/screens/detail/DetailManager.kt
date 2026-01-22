@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
-import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.os.BatteryManager
 import android.os.Build
@@ -14,149 +13,153 @@ import android.os.Environment
 import android.os.StatFs
 import android.view.WindowManager
 import java.util.Locale
+import kotlin.math.pow
 import kotlin.math.sqrt
 
-class SystemInfoManager(private val context: Context) {
-    // 统一的信息项定义
-    data class InfoItem(
-        val key: String,
-        val title: String,
-        val category: String,
-        val valueProvider: (SystemInfoManager) -> String
-    )
+// 数据模型提取到顶级
+data class InfoItem(
+    val key: String,
+    val title: String,
+    val category: String,
+    val valueProvider: (SystemInfoManager) -> String
+)
 
-    // 键名
+class SystemInfoManager(private val context: Context) {
+
     companion object {
+        @SuppressLint("DefaultLocale")
         val INFO_ITEMS = listOf(
-            // 系统与设备信息
+            // --- 系统与设备信息 ---
             InfoItem("deviceManufacturer", "设备制造商", "系统与设备信息") { Build.MANUFACTURER },
             InfoItem("deviceBrand", "设备品牌", "系统与设备信息") { Build.BRAND },
             InfoItem("deviceModel", "设备型号", "系统与设备信息") { Build.MODEL },
             InfoItem("deviceProduct", "产品名称", "系统与设备信息") { Build.PRODUCT },
-            InfoItem("systemName", "系统", "系统与设备信息") { it.getCustomOSName() },
-            InfoItem("systemName", "系统", "系统与设备信息") { Build.VERSION.BASE_OS },
+            InfoItem("systemName", "系统", "系统与设备信息") { it.customOSName },
+            InfoItem("androidVersion", "Android 版本", "系统与设备信息") { Build.VERSION.RELEASE },
+            InfoItem("sdkVersion", "SDK 版本", "系统与设备信息") { Build.VERSION.SDK_INT.toString() },
             InfoItem("cpu", "CPU", "系统与设备信息") { Build.HARDWARE },
             InfoItem("deviceBoard", "主板", "系统与设备信息") { Build.BOARD },
-            InfoItem("", "设备代号", "系统与设备信息") { Build.DEVICE },
-            InfoItem("", "系统显示版本", "系统与设备信息") { Build.DISPLAY },
-            InfoItem(
-                "androidVersion", "Android 版本", "系统与设备信息"
-            ) { Build.VERSION.RELEASE },
-            InfoItem(
-                "sdkVersion", "SDK 版本", "系统与设备信息"
-            ) { Build.VERSION.SDK_INT.toString() },
+            InfoItem("deviceDevice", "设备代号", "系统与设备信息") { Build.DEVICE },
+            InfoItem("systemDisplay", "系统显示版本", "系统与设备信息") { Build.DISPLAY },
 
-
-            // 屏幕信息
+            // --- 屏幕信息 ---
             InfoItem("screenWidth", "屏幕宽度", "屏幕信息") { "${it.screenWidth} px" },
             InfoItem("screenHeight", "屏幕高度", "屏幕信息") { "${it.screenHeight} px" },
-            InfoItem("screenDensity", "屏幕密度", "屏幕信息") { it.screenDensity.toString() },
-            InfoItem(
-                "screenDensityDpi",
-                "屏幕密度(dpi)",
-                "屏幕信息"
-            ) { "${it.screenDensityDpi} dpi" },
+            InfoItem("screenDensity", "屏幕密度", "屏幕信息") { String.format("%.2f", it.screenDensity) },
+            InfoItem("screenDensityDpi", "屏幕密度(dpi)", "屏幕信息") { "${it.screenDensityDpi} dpi" },
             InfoItem("screenSizeInch", "屏幕尺寸", "屏幕信息") { it.screenSizeInch },
-            InfoItem(
-                "screenOrientation",
-                "屏幕方向",
-                "屏幕信息"
-            ) { it.screenOrientation },
+            InfoItem("screenOrientation", "屏幕方向", "屏幕信息") { it.screenOrientation },
             InfoItem("screenResolution", "屏幕分辨率", "屏幕信息") { it.screenResolution },
             InfoItem("refreshRate", "屏幕刷新率", "屏幕信息") { it.refreshRate },
             InfoItem("screenAspectRatio", "屏幕宽高比", "屏幕信息") { it.aspectRatio },
             InfoItem("screenCutout", "屏幕刘海", "屏幕信息") { it.cutout },
             InfoItem("statusBarHeight", "状态栏高度", "屏幕信息") { "${it.statusBarHeight} px" },
-            InfoItem(
-                "navigationBarHeight",
-                "导航栏高度",
-                "屏幕信息"
-            ) { "${it.navigationBarHeight} px" },
+            InfoItem("navigationBarHeight", "导航栏高度", "屏幕信息") { "${it.navigationBarHeight} px" },
+
+            // --- 硬件状态信息 ---
             InfoItem("batteryLevel", "电池电量", "硬件状态信息") { it.batteryLevel },
             InfoItem("batteryState", "电池状态", "硬件状态信息") { it.batteryState },
-            InfoItem("batteryV", "电池电压", "硬件状态信息") { it.batteryState },
+            InfoItem("batteryVoltage", "电池电压", "硬件状态信息") { it.batteryVoltage },
             InfoItem("chargeMode", "充电方式", "硬件状态信息") { it.chargeMode },
-            InfoItem("batteryTemp", "充电温度", "硬件状态信息") { it.batteryTemplate },
+            InfoItem("batteryTemp", "电池温度", "硬件状态信息") { it.batteryTemperature },
+
+            // --- 存储与内存信息 ---
+            InfoItem("memoryOverview", "内存概览", "存储信息") { it.memoryOverview },
             InfoItem("storageTotal", "内部存储总容量", "存储信息") { it.storageTotal },
             InfoItem("storageAvailable", "内部存储可用容量", "存储信息") { it.storageAvailable },
-            InfoItem("totalCaptureResult", "总内存", "存储信息") { it.totalCaptureResult },
         )
     }
 
+    // Lazy Services
     private val windowManager by lazy { context.getSystemService(Context.WINDOW_SERVICE) as WindowManager }
     private val displayManager by lazy { context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager }
-    private val batteryManager by lazy { context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager }
     private val activityManager by lazy { context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager }
 
+    // Helpers: 获取 Sticky Intent 
+    private val batteryIntent: Intent?
+        get() = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
 
+    // Properties implementation
     val screenWidth: Int get() = windowManager.currentWindowMetrics.bounds.width()
     val screenHeight: Int get() = windowManager.currentWindowMetrics.bounds.height()
     val screenDensity: Float get() = context.resources.displayMetrics.density
     val screenDensityDpi: Int get() = context.resources.displayMetrics.densityDpi
+
     val screenSizeInch: String
-        get() = String.format(
-            Locale.getDefault(), "%.2f 英寸", calculateScreenSizeInch()
-        )
+        get() {
+            val metrics = context.resources.displayMetrics
+            // 使用 xdpi 和 ydpi 获取更精确的物理尺寸
+            // 如果获取失败（0），则降级使用 densityDpi
+            val xdpi = if (metrics.xdpi > 0) metrics.xdpi else metrics.densityDpi.toFloat()
+            val ydpi = if (metrics.ydpi > 0) metrics.ydpi else metrics.densityDpi.toFloat()
+
+            // 计算物理宽度和高度（英寸）
+            val widthInches = screenWidth / xdpi
+            val heightInches = screenHeight / ydpi
+
+            // 计算对角线英寸数
+            val diagonal = sqrt(widthInches.pow(2) + heightInches.pow(2))
+            
+            return String.format(Locale.getDefault(), "%.2f 英寸", diagonal)
+        }
+
     val screenOrientation: String
         get() = when (context.resources.configuration.orientation) {
             Configuration.ORIENTATION_PORTRAIT -> "纵向"
             Configuration.ORIENTATION_LANDSCAPE -> "横向"
-            else -> "未知方向"
+            else -> "未知"
         }
+
     val screenResolution: String
-        get() {
-            val (screenWidth, screenHeight) = run {
-                val windowMetrics = windowManager.currentWindowMetrics
-                val bounds: Rect = windowMetrics.bounds
-                Pair(bounds.width(), bounds.height())
-            }
-            return "$screenWidth × $screenHeight"
-        }
+        get() = "$screenWidth × $screenHeight"
+
     val refreshRate: String
-        get() = String.format(
-            Locale.getDefault(),
-            "%.2f Hz",
-            getRefreshRate()
-        )
+        get() {
+            val rate = displayManager.displays.firstOrNull()?.mode?.refreshRate ?: 0f
+            return String.format(Locale.getDefault(), "%.2f Hz", rate)
+        }
+
     val aspectRatio: String
-        get() = "${
-            screenWidth / gcd(
-                screenWidth,
-                screenHeight
-            )
-        }:${screenHeight / gcd(screenWidth, screenHeight)}"
+        get() {
+            val w = screenWidth
+            val h = screenHeight
+            val g = gcd(w, h)
+            return "${w / g}:${h / g}"
+        }
+
     val cutout: String
-        get() {
-            val windowInsets = windowManager.currentWindowMetrics.windowInsets
-            val displayCutout = windowInsets.displayCutout
-            return if (displayCutout != null) {
-                "存在刘海"
-            } else {
-                "无刘海"
-            }
-        }
+        get() = if (windowManager.currentWindowMetrics.windowInsets.displayCutout != null) "存在刘海" else "无刘海"
+
     val statusBarHeight: Int
-        @SuppressLint("InternalInsetResource")
+        @SuppressLint("InternalInsetResource", "DiscouragedApi")
         get() {
-            val resourceId =
-                context.resources.getIdentifier("status_bar_height", "dimen", "android")
-            return if (resourceId > 0) context.resources.getDimensionPixelSize(resourceId) else 0
+            val resId = context.resources.getIdentifier("status_bar_height", "dimen", "android")
+            return if (resId > 0) context.resources.getDimensionPixelSize(resId) else 0
         }
+
     val navigationBarHeight: Int
-        @SuppressLint("InternalInsetResource")
+        @SuppressLint("InternalInsetResource", "DiscouragedApi")
         get() {
-            val resourceId =
-                context.resources.getIdentifier("navigation_bar_height", "dimen", "android")
-            return if (resourceId > 0) context.resources.getDimensionPixelSize(resourceId) else 0
+            val resId = context.resources.getIdentifier("navigation_bar_height", "dimen", "android")
+            return if (resId > 0) context.resources.getDimensionPixelSize(resId) else 0
         }
+
+    // Battery Info
     val batteryLevel: String
         get() {
-            return "${batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)}%"
+            val intent = batteryIntent ?: return "未知"
+            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            return if (level >= 0 && scale > 0) {
+                "${(level * 100 / scale.toFloat()).toInt()}%"
+            } else {
+                "未知"
+            }
         }
+
     val batteryState: String
         get() {
-            val status =
-                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS)
+            val status = batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
             return when (status) {
                 BatteryManager.BATTERY_STATUS_CHARGING -> "充电中"
                 BatteryManager.BATTERY_STATUS_DISCHARGING -> "放电中"
@@ -165,157 +168,68 @@ class SystemInfoManager(private val context: Context) {
                 else -> "未知状态"
             }
         }
-    val chargeMode: String
-        @SuppressLint("ServiceCast")
+
+    val batteryVoltage: String
         get() {
-            // 方式 1：通过电池广播获取充电类型（官方推荐，API 1+ 兼容）
-            val batteryIntent = context.registerReceiver(
-                null,
-                IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-            ) ?: return "未知充电状态"
+            val voltage = batteryIntent?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) ?: 0
+            return "$voltage mV"
+        }
 
-            // 获取充电类型（EXTRA_PLUGGED 是官方正确字段）
-            val chargePlug = batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0)
+    val batteryTemperature: String
+        get() {
+            val temp = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
+            return String.format(Locale.getDefault(), "%.1f ℃", temp / 10.0f)
+        }
 
-            // 判断充电模式
-            return when (chargePlug) {
-                BatteryManager.BATTERY_PLUGGED_AC -> "有线充电"
-                BatteryManager.BATTERY_PLUGGED_USB -> "USB 充电（电脑/充电宝）"
+    val chargeMode: String
+        get() {
+            val plugged = batteryIntent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+            return when (plugged) {
+                BatteryManager.BATTERY_PLUGGED_AC -> "AC 充电"
+                BatteryManager.BATTERY_PLUGGED_USB -> "USB 充电"
                 BatteryManager.BATTERY_PLUGGED_WIRELESS -> "无线充电"
-                // 处理混合充电（部分设备支持）
-                BatteryManager.BATTERY_PLUGGED_AC or BatteryManager.BATTERY_PLUGGED_WIRELESS -> "有线+无线充电"
-                BatteryManager.BATTERY_PLUGGED_USB or BatteryManager.BATTERY_PLUGGED_WIRELESS -> "USB+无线充电"
-                // 未充电场景
-                else -> "未充电"
+                else -> if (batteryState == "充电中") "未知充电方式" else "未充电"
             }
         }
-    val batteryTemplate: String
-        get() {
-            // 获取电池温度（原始值单位：0.1℃，除以 10 转为摄氏度）
-            val batteryTempRaw =
-                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-            // 处理无效值（如返回 -1 表示获取失败）
 
-            // 格式化保留 1 位小数，适配用户本地格式
-            return String.format(
-                Locale.getDefault(),
-                "%.1f ℃",
-                batteryTempRaw / 10.0
-            )
-
-        }
+    // Storage & Memory
     val storageTotal: String
-        get() {
-            val internalStorage = Environment.getDataDirectory()
-            val statFs = StatFs(internalStorage.path)
+        get() = formatSize(StatFs(Environment.getDataDirectory().path).totalBytes)
 
-            // 适配 API 18+ 的长整型方法，避免溢出
-            val blockSize =
-                statFs.blockSizeLong
-            val totalBlocks =
-                statFs.blockCountLong
-
-            // 总容量（字节）→ 转换为 GB
-            val totalSpaceGB = (totalBlocks * blockSize).toDouble() / (1024.0 * 1024.0 * 1024.0)
-
-            // 正确的 String.format 写法：格式字符串在前，参数在后
-            return String.format(Locale.getDefault(), "%.2f GB", totalSpaceGB)
-        }
     val storageAvailable: String
+        get() = formatSize(StatFs(Environment.getDataDirectory().path).availableBytes)
+
+    val memoryOverview: String
         get() {
-            val internalStorage = Environment.getDataDirectory()
-            val statFs = StatFs(internalStorage.path)
-
-            val blockSize =
-                statFs.blockSizeLong
-            val availableBlocks =
-                statFs.availableBlocksLong
-
-            val availableSpaceGB =
-                (availableBlocks * blockSize).toDouble() / (1024.0 * 1024.0 * 1024.0)
-            return String.format(Locale.getDefault(), "%.2f GB", availableSpaceGB)
+            val memInfo = ActivityManager.MemoryInfo()
+            activityManager.getMemoryInfo(memInfo)
+            val total = formatSize(memInfo.totalMem)
+            val avail = formatSize(memInfo.availMem)
+            val lowMem = if (memInfo.lowMemory) "(低内存)" else ""
+            return "可用: $avail / 总计: $total $lowMem"
         }
 
-    val totalCaptureResult: String
+    val customOSName: String
         get() {
-            val memoryInfo = ActivityManager.MemoryInfo()
-            activityManager.getMemoryInfo(memoryInfo)
-
-            // 1. 转换内存单位（字节 → GB/MB，保留 2 位小数）
-            val totalRamGB = memoryInfo.totalMem / (1024.0 * 1024.0 * 1024.0)
-            val availableRamGB = memoryInfo.availMem / (1024.0 * 1024.0 * 1024.0)
-            val usedRamGB = totalRamGB - availableRamGB
-
-            // 2. 低内存状态描述
-            val lowMemoryStatus = if (memoryInfo.lowMemory) "是" else "否"
-
-            // 3. 格式化最终字符串
-            return String.format(
-                Locale.getDefault(),
-                "总内存：%.2f GB\n可用内存：%.2f GB\n已用内存：%.2f GB\n低内存状态：%s",
-                totalRamGB,
-                availableRamGB,
-                usedRamGB,
-                lowMemoryStatus
-            )
+            val display = Build.DISPLAY.lowercase()
+            return when {
+                display.contains("miui") -> "MIUI"
+                display.contains("emui") -> "EMUI"
+                display.contains("coloros") -> "ColorOS"
+                display.contains("funtouchos") -> "Funtouch OS"
+                display.contains("hydrogenos") -> "HydrogenOS"
+                display.contains("oxygenos") -> "OxygenOS"
+                display.contains("oneui") -> "One UI"
+                display.contains("flyme") -> "Flyme OS"
+                else -> "Android 原生/其他"
+            }
         }
 
-    fun getCustomOSName(): String {
-        val display = Build.DISPLAY.lowercase()
-        return when {
-            display.contains("miui") -> "MIUI"
-            display.contains("emui") -> "EMUI"
-            display.contains("coloros") -> "ColorOS"
-            display.contains("funtouchos") -> "Funtouch OS"
-            display.contains("hydrogenos") -> "HydrogenOS"
-            display.contains("oxygenos") -> "OxygenOS"
-            display.contains("oneui") -> "One UI" // 三星定制系统
-            display.contains("flyme") -> "Flyme OS" // 魅族
-            else -> "Android（原生/未知定制系统）"
-        }
-    }
+    // Utilities
+    private fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 
-    private fun calculateScreenSizeInch(): Double {
-        // 屏幕物理宽高（px）
-        val screenWidthPx = screenWidth
-        val screenHeightPx = screenHeight
-
-        // 计算对角线像素长度
-        val diagonalPx =
-            sqrt((screenWidthPx * screenWidthPx + screenHeightPx * screenHeightPx).toDouble())
-
-        // 屏幕英寸 = 对角线像素 / DPI
-        return diagonalPx / screenDensityDpi
-    }
-
-    /**
-     * 获取屏幕刷新率（完全移除 defaultDisplay，适配 API 31+）
-     * @return 屏幕刷新率（Hz），异常/无效时返回 0.0f
-     */
-    private fun getRefreshRate(): Float {
-        // 直接使用 DisplayManager 获取的主屏幕 Display 实例
-        val refreshRate = displayManager.displays.firstOrNull()?.mode?.refreshRate
-        // 兜底：确保返回有效值（排除 0 或负数）
-        return refreshRate.takeIf { it!! > 0 } ?: 0.0f
-    }
-
-    /** 计算最大公约数（用于计算宽高比） */
-    private fun gcd(a: Int, b: Int): Int {
-        return if (b == 0) a else gcd(b, a % b)
+    private fun formatSize(bytes: Long): String {
+        val gb = bytes.toDouble() / (1024 * 1024 * 1024)
+        return String.format(Locale.getDefault(), "%.2f GB", gb)
     }
 }
-
-//// 传感器数据
-//// 安卓提供多种内置传感器（加速度计、陀螺仪、光线传感器、重力传感器等），通过 SensorManager 获取，需申请权限 android.permission.ACCESS_FINE_LOCATION（部分传感器如气压计无需权限，位置相关传感器需要）。
-//
-//// 网络 / 连接信息
-//// 网络状态
-//// 通过 ConnectivityManager 获取网络类型（WiFi / 移动数据），需权限 android.permission.ACCESS_NETWORK_STATE：
-//
-//// WiFi 信息
-//// 需权限 android.permission.ACCESS_WIFI_STATE、android.permission.CHANGE_WIFI_STATE：
-//val wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
-//val isWifiEnabled = wifiManager.isWifiEnabled // WiFi是否开启
-//val connectedWifiInfo = wifiManager.connectionInfo
-//val ssid = connectedWifiInfo.ssid // 连接的WiFi名称（需注意：Android 10+ 需定位权限才能获取SSID）
-//val ipAddress = Formatter.formatIpAddress(connectedWifiInfo.ipAddress) // IP地址

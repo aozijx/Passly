@@ -1,21 +1,18 @@
 package com.example.poop.ui.screens.article
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,20 +22,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults.cardColors
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -50,8 +50,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,27 +59,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.poop.R
+import com.example.poop.ui.component.IconTitleCard
 import com.example.poop.ui.component.SimpleBottomBar
-import com.example.poop.ui.component.navigation.navItems
 import com.example.poop.ui.theme.PoopTheme
+import com.example.poop.util.NotificationHelper
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 class ArticleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,7 +90,7 @@ class ArticleActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleScreen() {
-    Scaffold(modifier = Modifier.fillMaxSize(), {
+    Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
         CenterAlignedTopAppBar(title = {
             Text("列表页")
         }, navigationIcon = {
@@ -115,37 +109,31 @@ fun ArticleScreen() {
             }
         })
     }, bottomBar = {
-        SimpleBottomBar(navItems, ArticleActivity::class.java)
+        SimpleBottomBar(activityClass = ArticleActivity::class.java)
     }) { innerPadding ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .padding(innerPadding),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyColumn(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(horizontal = 12.dp)
             ) {
-                item {
-                    ImageTextCard(
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    ArticleCard(
                         "https://picsum.photos/1920/1080",
-                        "标题",
-                        "null",
-                        "描述"
-                    )
-                }
-                item {
-                    ImageTextCard(
-                        "https://aozijx.github.io/hiner/img/default.avif",
                         "Hello Android",
                         "null",
                         "欢迎使用 Jetpack Compose 创建美丽的应用界面"
                     )
                 }
-                item {
-                    ImageTextCard(
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    ArticleCard(
                         "https://aozijx.github.io/hiner/img/default.avif",
                         "Hello Hexo, Solitude, APlayer",
                         "https://aozijx.github.io/hiner/music/",
@@ -153,104 +141,62 @@ fun ArticleScreen() {
                     )
                 }
                 item {
-                    BottomSheetDemo()
-//                    CollapsibleBottomSheetDemo()
-                }
-                items(10) { index ->
-                    Card(
-                        modifier = Modifier
-                            .height(80.dp)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable(
-                                onClick = { /* 点击事件处理 */ },
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = rememberRipple(bounded = true),
+                    IconTitleCard(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
                             )
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(), // 填满Card的大小
-                            contentAlignment = Alignment.Center // 内容居中
-                        ) {
-                            Text(
-                                text = "Item $index",
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(8.dp)
+                        },
+                        title = "Fancy Border",
+                        description = "圆角生成器",
+                        link = "https://9elements.github.io/fancy-border-radius/"
+                    )
+                }
+                item {
+                    IconTitleCard(
+                        icon = {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data("https://cssgradient.io/icon.svg").crossfade(true)
+                                    .build(),
+                                contentDescription = "文章图片",
+                                modifier = Modifier
+                                    .size(40.dp) // 匹配 IconTitleCard 内部尺寸
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
                             )
-                        }
-                    }
+                        },
+                        title = "CSS Gradient",
+                        description = "CSS 渐变色",
+                        link = "https://cssgradient.io/"
+                    )
                 }
-                item { // 初始化偏移量状态
-                    var offsetX by remember {
-                        mutableFloatStateOf(0f)
-                    }
-                    val boxSideLengthDp = 50.dp
-                    val boxSideLengthPx = with(LocalDensity.current) {
-                        boxSideLengthDp.toPx()
-                    }
-                    val draggableState = rememberDraggableState {
-                        offsetX = (offsetX + it).coerceIn(0f, 3 * boxSideLengthPx)
-                    }
-
-                    // 可拖拽的盒子
-                    Box(
-                        Modifier
-                            .width(boxSideLengthDp * 4)
-                            .height(boxSideLengthDp)
-                            .background(Color.LightGray)
-                    ) {
-                        Box(
-                            Modifier
-                                .size(boxSideLengthDp)
-                                .offset {
-                                    IntOffset(offsetX.roundToInt(), 0)
-                                }
-                                .draggable(
-                                    orientation = Orientation.Horizontal, state = draggableState
-                                )
-                                .background(Color.DarkGray)
-
-                        )
-                    }
+                item {
+                    IconTitleCard(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        title = "用户信息",
+                        description = "查看和编辑您的个人资料",
+                        // link = null // 不传 link 则不可点击跳转
+                    )
                 }
-                item { TransformerDemo() }
+                item(span = { GridItemSpan(maxLineSpan) }) { BottomSheetDemo() }
+                item(span = { GridItemSpan(maxLineSpan) }) { StatusBarPopupDemo() }
             }
         }
     }
 }
 
-@Composable
-fun TransformerDemo() {
-    val boxSize = 100.dp
-    var offset by remember { mutableStateOf(Offset.Zero) }
-    var rotationAngle by remember { mutableFloatStateOf(0f) }
-    var scale by remember { mutableFloatStateOf(1f) }
-
-    val transformableState =
-        rememberTransformableState { zoomChange: Float, panChange: Offset, rotationChange: Float ->
-            scale *= zoomChange
-            offset += panChange
-            rotationAngle += rotationChange
-        }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Box(
-            Modifier
-                .size(boxSize)
-                .rotate(rotationAngle) // 需要注意 offset 与 rotate 的调用先后顺序
-                .offset {
-                    IntOffset(offset.x.roundToInt(), offset.y.roundToInt())
-                }
-                .scale(scale)
-                .background(Color.Green)
-                .transformable(
-                    state = transformableState, lockRotationOnZoomPan = false
-                ))
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImageTextCard(
+fun ArticleCard(
     cover: String,
     title: String,
     link: String,
@@ -260,10 +206,9 @@ fun ImageTextCard(
     val context = LocalContext.current
     Card(
         modifier = Modifier,
-        shape = MaterialTheme.shapes.medium,
-        colors = cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        shape = MaterialTheme.shapes.large, // 圆润的圆角
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), // 统一边框风格
+        elevation = CardDefaults.cardElevation(0.dp),
         onClick = { // 点击事件
             if (onItemClick != null) {
                 onItemClick(link)
@@ -274,16 +219,15 @@ fun ImageTextCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp), // 增加内边距
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 图片
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(cover).crossfade(true)
-                    .build(),
+                model = ImageRequest.Builder(context).data(cover).crossfade(true).build(),
                 contentDescription = "文章图片",
                 modifier = Modifier
-                    .size(98.dp, 72.dp)
+                    .size(80.dp, 60.dp) // 稍微调整比例
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
@@ -293,11 +237,10 @@ fun ImageTextCard(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 8.dp)
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -314,11 +257,13 @@ fun ImageTextCard(
                 )
             }
 
+            Spacer(modifier = Modifier.width(8.dp))
+
             Icon(
-                painter = painterResource(id = R.drawable.baseline_arrow_forward_ios_24),
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, // 统一使用箭头
                 contentDescription = "更多",
-                tint = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.size(20.dp)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -345,30 +290,39 @@ private fun openUrlInBrowser(context: Context, url: String) {
 @Composable
 fun BottomSheetDemo() {
     var showBottomSheet by remember { mutableStateOf(false) }
-    // 使用 rememberCoroutineScope 处理状态变更的协程操作
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
     val context = LocalContext.current
 
-    Button(onClick = { showBottomSheet = true }) {
-        Text("打开 BottomSheet")
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Button(onClick = { showBottomSheet = true }) {
+            Text("打开 BottomSheet")
+        }
     }
 
+    // 监听 sheetState 变化，同步到 showBottomSheet
+    LaunchedEffect(sheetState.isVisible) {
+        // 当 sheetState 变为不可见且动画结束时，更新 showBottomSheet
+        if (!sheetState.isVisible) {
+            showBottomSheet = false
+        }
+    }
+
+    // 始终声明 ModalBottomSheet，但用 showBottomSheet 控制其显示
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = {
-                // 异步关闭，避免状态冲突
+                // 触发关闭动画
                 scope.launch {
-                    if (sheetState.isVisible) {
-                        sheetState.hide()
-                    }
+                    sheetState.hide()
                 }
-                showBottomSheet = false
             },
             sheetState = sheetState,
-            // 添加拖拽手柄，提升用户体验
             dragHandle = {
                 Box(
                     modifier = Modifier
@@ -385,27 +339,27 @@ fun BottomSheetDemo() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp) // 为安全区域留出空间
-                    .navigationBarsPadding() // 考虑导航栏高度
+                    .padding(bottom = 16.dp)
+                    .navigationBarsPadding()
             ) {
-                // 使用更语义化的组件
                 Text(
                     text = "底部弹窗标题",
                     style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    textAlign = TextAlign.Center
                 )
 
-                // 使用可点击的选项
                 listOf("选项 1", "选项 2", "选项 3").forEach { option ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                // 处理选项点击
-                                Toast.makeText(context, "选择了: $option", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "选择了: $option", Toast.LENGTH_SHORT)
+                                    .show()
                                 scope.launch {
                                     sheetState.hide()
-                                    showBottomSheet = false
                                 }
                             }
                             .padding(vertical = 12.dp),
@@ -417,19 +371,17 @@ fun BottomSheetDemo() {
                             modifier = Modifier.weight(1f)
                         )
                         Icon(
-                            painter = painterResource(id = R.drawable.baseline_arrow_forward_ios_24),
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.outline
                         )
                     }
                 }
 
-                // 使用 OutlinedButton 作为次要操作
                 OutlinedButton(
                     onClick = {
                         scope.launch {
                             sheetState.hide()
-                            showBottomSheet = false
                         }
                     },
                     modifier = Modifier
@@ -443,3 +395,41 @@ fun BottomSheetDemo() {
     }
 }
 
+@Composable
+fun StatusBarPopupDemo() {
+    val context = LocalContext.current
+    val notificationHelper = NotificationHelper(context)
+
+    // 直接使用 Column 作为主容器
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // 触发弹窗按钮
+        Button(
+            onClick = {
+                // 这里仅做检查，如果用户之前拒绝了，则提示用户
+                if (ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    notificationHelper.sendCustomNotification(
+                        "状态栏弹窗标题", "这是Compose触发的状态栏弹窗内容"
+                    )
+                } else {
+                    Toast.makeText(context, "请在系统设置中开启通知权限", Toast.LENGTH_SHORT).show()
+                }
+            }) {
+            Text(text = "触发状态栏弹窗")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp)) // 间距
+
+        // 取消弹窗按钮
+        Button(
+            onClick = { notificationHelper.cancelNotification() }) {
+            Text(text = "取消弹窗")
+        }
+    }
+}

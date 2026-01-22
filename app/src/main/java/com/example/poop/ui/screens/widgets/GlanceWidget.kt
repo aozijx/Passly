@@ -3,7 +3,6 @@ package com.example.poop.ui.screens.widgets
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
@@ -11,6 +10,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.ImageProvider
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -23,38 +23,37 @@ import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
+import androidx.glance.layout.Column
+import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
+import com.example.poop.R
+
+// 数据类，包含句子和出处
+data class Quote(val text: String, val source: String)
 
 // 美句列表
 val beautySentences = listOf(
-    "有花堪折直须折，莫待无花空折枝。",
-    "愿岁月可回首，且以深情共白头。",
-    "岁月不饶人，我亦未曾饶过岁月。",
-    "凌晨四点醒来，发现海棠花未眠。",
-    "一生温暖纯良，不舍爱与自由。",
-    "我有一瓢酒，可以慰风尘。",
-    "人生如逆旅，我亦是行人。",
-    "世界微尘里，吾宁爱与憎。",
-    "心有猛虎，细嗅蔷薇。",
-    "人间有味是清欢。",
-    "此心安处是吾乡。"
+    Quote("有花堪折直须折，莫待无花空折枝。", "《金缕衣》"),
+    Quote("愿岁月可回首，且以深情共白头。", "冯唐"),
+    Quote("心有猛虎，细嗅蔷薇。", "西格夫里·萨松"),
+    Quote("人间有味是清欢。", "苏轼《浣溪沙·细雨斜风作晓寒》"),
+    Quote("此心安处是吾乡。", "苏轼《定风波·南海归赠王定国侍人寓娘》")
 )
 
 class BeautySentenceWidget : GlanceAppWidget() {
-
     companion object {
-        const val INDEX_KEY = "index"
-        val indexKey = intPreferencesKey(INDEX_KEY)
+        val indexKey = intPreferencesKey("index")
     }
 
-    // 指定状态定义
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -68,25 +67,58 @@ class BeautySentenceWidget : GlanceAppWidget() {
     fun Content() {
         val prefs = currentState<Preferences>()
         val currentIndex = prefs[indexKey] ?: 0
-        val sentence = beautySentences[currentIndex % beautySentences.size]
+        val quote = beautySentences[currentIndex % beautySentences.size]
 
         GlanceTheme {
-            Box(
+            Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(Color(0xFFF5F5F5))
-                    .padding(16.dp)
-                    .clickable(actionRunCallback<UpdateSentenceAction>()),
-                contentAlignment = Alignment.Center
+                    .background(
+                        ImageProvider(R.drawable.img) // 使用一个占位图
+                    )
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = sentence,
+                    text = "每日一言",
                     style = TextStyle(
-                        color = ColorProvider(Color(0xFF333333)),
-                        fontSize = 16.sp,
-                        textAlign = TextAlign.Center
-                    )
+                        color = GlanceTheme.colors.onPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier = GlanceModifier.fillMaxWidth()
                 )
+
+                // Use Spacer with weight to push content to center
+                Spacer(modifier = GlanceModifier.defaultWeight())
+
+                Text(
+                    text = quote.text,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onPrimary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = GlanceModifier.fillMaxWidth()
+                )
+
+                // Use Spacer with weight to push footer to bottom
+                Spacer(modifier = GlanceModifier.defaultWeight())
+
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "—— ${quote.source}",
+                        style = TextStyle(color = GlanceTheme.colors.onPrimary, fontSize = 12.sp),
+                        modifier = GlanceModifier.defaultWeight()
+                    )
+                    Box(modifier = GlanceModifier.clickable(actionRunCallback<UpdateSentenceAction>())) {
+                         Text("↻", style = TextStyle(color = GlanceTheme.colors.onPrimary, fontSize = 20.sp))
+                    }
+                }
             }
         }
     }
@@ -99,14 +131,10 @@ class UpdateSentenceAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        // 更新状态
         updateAppWidgetState(context, glanceId) { prefs ->
             val currentIndex = prefs[BeautySentenceWidget.indexKey] ?: 0
-            val newIndex = (currentIndex + 1) % beautySentences.size
-            prefs.toMutablePreferences()[BeautySentenceWidget.indexKey] = newIndex
+            prefs[BeautySentenceWidget.indexKey] = (currentIndex + 1) % beautySentences.size
         }
-
-        // 更新小部件
         BeautySentenceWidget().update(context, glanceId)
     }
 }

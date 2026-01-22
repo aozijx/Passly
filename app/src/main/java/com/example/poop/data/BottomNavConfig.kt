@@ -1,4 +1,4 @@
-package com.example.poop.ui.component.navigation
+package com.example.poop.data
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home

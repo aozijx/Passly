@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 定义应用图标别名：统一指向自定义图标 -->
+    <mipmap name="app_icon_main">@mipmap/launcher_logo</mipmap>
+    <!-- 圆形图标别名 -->
+    <mipmap name="app_icon_round">@mipmap/launcher_logo_round</mipmap>
+</resources>
