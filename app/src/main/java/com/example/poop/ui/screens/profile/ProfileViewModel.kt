@@ -1,5 +1,6 @@
 package com.example.poop.ui.screens.profile
 
+import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
@@ -31,7 +32,7 @@ data class UserProfile(
 
 data class ProfileUiState(
     val user: UserProfile = UserProfile(name = "", bio = ""),
-    val imageKey: Int = 0,
+    val selectedImageUri: Uri? = null, // 新增：选中的本地图片 Uri
     val isLoading: Boolean = false
 )
 
@@ -63,7 +64,7 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun refreshGalleryImage() {
-        _uiState.update { it.copy(imageKey = it.imageKey + 1) }
+    fun updateSelectedImage(uri: Uri?) {
+        _uiState.update { it.copy(selectedImageUri = uri) }
     }
 }
