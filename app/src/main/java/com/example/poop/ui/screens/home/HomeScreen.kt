@@ -40,13 +40,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.poop.MainActivity
-import com.example.poop.ui.component.SimpleBottomBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavController? = null) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -60,11 +59,8 @@ fun HomeScreen() {
                         Icon(Icons.Default.Notifications, contentDescription = "通知")
                     }
                 },
-                windowInsets = WindowInsets(top = 16.dp) // 顶部空隙
+                windowInsets = WindowInsets(top = 16.dp)
             )
-        },
-        bottomBar = {
-            SimpleBottomBar(activityClass = MainActivity::class.java)
         }
     ) { innerPadding ->
         LazyColumn(
@@ -73,18 +69,15 @@ fun HomeScreen() {
                 .padding(innerPadding),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            // 欢迎标语
             item {
                 GreetingSection()
             }
 
-            // 热门推荐 (横向滚动)
             item {
                 SectionTitle("热门推荐")
                 FeaturedCarousel()
             }
 
-            // 最新动态 (列表)
             item {
                 SectionTitle("最新动态")
             }
@@ -145,8 +138,8 @@ fun FeaturedCard(index: Int) {
         modifier = Modifier
             .width(280.dp)
             .height(180.dp)
-            .clip(RoundedCornerShape(16.dp)) // 先裁剪
-            .clickable { }, // 再应用点击效果
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
@@ -157,7 +150,6 @@ fun FeaturedCard(index: Int) {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            // 渐变遮罩
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -168,7 +160,6 @@ fun FeaturedCard(index: Int) {
                         )
                     )
             )
-            // 文字内容
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)

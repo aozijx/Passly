@@ -67,8 +67,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.poop.data.BottomNavItem
 import com.example.poop.ui.component.IconTitleCard
 import com.example.poop.ui.component.SimpleBottomBar
 import com.example.poop.ui.theme.PoopTheme
@@ -89,7 +91,7 @@ class ArticleActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArticleScreen() {
+fun ArticleScreen(navController: NavHostController? = null) {
     Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
         CenterAlignedTopAppBar(title = {
             Text("列表页")
@@ -130,6 +132,7 @@ fun ArticleScreen() {
                         "Hello Android",
                         "null",
                         "欢迎使用 Jetpack Compose 创建美丽的应用界面"
+
                     )
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
