@@ -9,10 +9,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <queries>
-        <package android:name="${WECHAT_PACKAGE}" /> <!-- 微信包名 -->
-        <package android:name="${QQ_PACKAGE}" /> <!-- QQ包名 -->
-        <package android:name="${DOUYIN_PACKAGE}" /> <!-- 抖音包名 -->
-
         <!-- 添加相机相关的查询 -->
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
@@ -24,22 +20,18 @@
         </intent>
     </queries>
 
-    <!-- 添加相机使用权限（Android 13+ 必需） -->
-    <uses-permission android:name="android.permission.CAMERAX" />
+    <!-- 相机权限 -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
 
-    <!-- Android 14+ 精选照片权限（无需用户授权，默认授予） -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <!-- 针对 Android 12 及以下的存储读取权限 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
-    <!-- 全相册权限（需用户授权） -->
-    <uses-permission
-        android:name="android.permission.READ_MEDIA_IMAGES"
-        tools:ignore="PhotoAndVideoPolicy" />
-    <uses-feature
-        android:name="android.permission.READ_MEDIA_IMAGES"
-        android:required="false" />
+    <!-- Android 13+ 图片权限 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
 
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
@@ -47,26 +39,20 @@
 
     <!-- 悬浮窗权限-->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!-- 读取设备状态（Android 10+ 限制，仅获取基础设备信息） -->
+    <!-- 读取设备状态 -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
+        android:enableOnBackInvokedCallback="true"
         android:label="@string/app_name"
         android:icon="@mipmap/app_icon_main"
         android:roundIcon="@mipmap/app_icon_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Poop">
-
-        <!-- 声明核心使用场景 -->
-        <meta-data
-            android:name="com.android.appcompat.media_access"
-            android:value="photo_management" /> <!-- 示例：照片管理功能 -->
-        <meta-data
-            android:name="com.android.appcompat.package_visibility"
-            android:value="launcher" /> <!-- 示例：启动器功能 -->
+        android:theme="@style/Theme.Poop"
+        tools:targetApi="33">
 
         <activity
             android:name=".MainActivity"
@@ -80,22 +66,10 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.screens.article.ArticleActivity"
+            android:name=".ui.screens.login.LoginActivity"
             android:exported="false"
-            android:theme="@style/Theme.Poop" />
-        <activity
-            android:name=".ui.screens.profile.ProfileActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Poop" />
-        <activity
-            android:name=".ui.screens.detail.DetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Poop" />
-        <activity
-            android:name=".ui.screens.animation.AnimationActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Poop" />
-
+            android:theme="@style/Theme.Poop"
+            android:windowSoftInputMode="adjustResize" />
         <receiver
             android:name=".ui.screens.widgets.BeautySentenceWidgetReceiver"
             android:exported="true">
