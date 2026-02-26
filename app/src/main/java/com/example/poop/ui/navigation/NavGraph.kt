@@ -3,7 +3,9 @@ package com.example.poop.ui.navigation
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -106,7 +108,18 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 }) {
                 ScannerScreen(navController)
             }
-            composable(Screen.Setting.route) {
+            composable(Screen.Setting.route,enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(400)
+                ) + fadeIn()
+            },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(400)
+                    ) + fadeOut()
+                }) {
                 SettingsScreen(navController)
             }
         }

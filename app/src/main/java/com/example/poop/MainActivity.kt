@@ -8,7 +8,6 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,13 +33,9 @@ class MainActivity : ComponentActivity() {
             // 1. 实例化你的 Preference 类
             val preference = remember { Preference(applicationContext) }
             // initialValue 建议使用系统默认值，这样启动时不会有闪烁
-            val isDarkModePref by preference.isDarkMode.collectAsState(initial = false)
-            // 2. 核心逻辑：如果开关开启，强制深色；如果开关关闭，跟随系统
-            // 这样当系统为深色时，即时开关关闭，实际值也会是 true
-            val actualDarkMode = isDarkModePref || isSystemInDarkTheme()
+            val isDarkModePref by preference.isDarkMode.collectAsState(initial = null)
 
-
-            PoopTheme(darkTheme = actualDarkMode) {
+            PoopTheme(darkTheme = if (isDarkModePref == true) true else null) {
                 // 直接调用 NavGraph，并指定起始页
                 NavGraph(startDestination = Screen.Home.route)
             }
