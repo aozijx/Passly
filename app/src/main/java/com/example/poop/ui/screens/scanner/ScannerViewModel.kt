@@ -33,7 +33,7 @@ class ScannerViewModel : ViewModel() {
         }
     }
 
-    @OptIn(ExperimentalGetImage::class)
+    @ExperimentalGetImage
     fun getAnalyzer(): ImageAnalysis.Analyzer = ImageAnalysis.Analyzer { imageProxy ->
         val mediaImage = imageProxy.image
         if (mediaImage != null) {

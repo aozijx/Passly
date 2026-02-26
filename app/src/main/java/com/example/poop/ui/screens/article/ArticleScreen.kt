@@ -74,11 +74,7 @@ fun ArticleScreen(
     navController: NavHostController? = null,
     viewModel: ArticleViewModel = viewModel()
 ) {
-    if (navController == null) {
-        ArticleStandaloneScreen(viewModel)
-    } else {
-        ArticleContent(viewModel)
-    }
+    ArticleStandaloneScreen(viewModel)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
