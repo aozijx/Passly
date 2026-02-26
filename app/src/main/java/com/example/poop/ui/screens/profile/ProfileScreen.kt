@@ -1,13 +1,7 @@
 package com.example.poop.ui.screens.profile
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,53 +46,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.poop.R
 import com.example.poop.ui.navigation.Screen
 import com.example.poop.ui.screens.login.LoginActivity
+import com.example.poop.util.rememberImagePicker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    navController: NavController? = null,
-    viewModel: ProfileViewModel = viewModel()
+    navController: NavController? = null, viewModel: ProfileViewModel = viewModel()
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-
-    // 1. Android 13+ 专用：照片选择器 (PickVisualMedia)
-    val pickMediaLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> viewModel.updateSelectedImage(uri) }
-    )
-
-    // 2. Android 12 及以下专用：传统内容选择器 (GetContent)
-    val getContentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri -> viewModel.updateSelectedImage(uri) }
-    )
-
-    // 3. 权限请求 Launcher (仅针对 Android 12 及以下)
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (isGranted) {
-                getContentLauncher.launch("image/*")
-            } else {
-                Toast.makeText(context, "请授予存储权限以选择图片", Toast.LENGTH_SHORT).show()
-            }
-        }
-    )
+    val pickPhoto = rememberImagePicker { uri, type ->
+        viewModel.updateSelectedImage(uri, type)
+    }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
+        modifier = Modifier.fillMaxSize(), topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = "个人中心", fontWeight = FontWeight.Bold) },
-                actions = {
+                title = {
+                    Text(
+                        text = "个人中心", fontWeight = FontWeight.Bold
+                    )
+                }, actions = {
                     IconButton(onClick = {
                         navController?.navigate(Screen.Scanner.route)
                     }) {
@@ -108,39 +81,21 @@ fun ProfileScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                },
-                windowInsets = WindowInsets(top = 0.dp)
+                }, windowInsets = WindowInsets(top = 0.dp)
             )
-        }
-    ) { innerPadding ->
+        }) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             ProfileContent(
                 uiState = uiState,
-                onPickImage = {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        // Android 13+ 使用 PickVisualMedia，无需权限申请
-                        pickMediaLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
-                    } else {
-                        // Android 12 及以下使用 GetContent，需检查权限
-                        val permission = Manifest.permission.READ_EXTERNAL_STORAGE
-                        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-                            getContentLauncher.launch("image/*")
-                        } else {
-                            permissionLauncher.launch(permission)
-                        }
-                    }
-                }
-            )
+                onPickAvatar = { pickPhoto(ImageType.AVATAR) },
+                onPickCover = { pickPhoto(ImageType.COVER) })
         }
     }
 }
 
 @Composable
 private fun ProfileContent(
-    uiState: ProfileUiState,
-    onPickImage: () -> Unit
+    uiState: ProfileUiState, onPickAvatar: () -> Unit, onPickCover: () -> Unit
 ) {
     val context = LocalContext.current
     val user = uiState.user
@@ -153,11 +108,9 @@ private fun ProfileContent(
         // 头部个人信息卡片
         item {
             ProfileHeader(
-                name = user.name,
-                bio = user.bio,
-                onLoginClick = {
+                name = user.name, bio = user.bio, avatarUri = uiState.avatarUri, onLoginClick = {
                     context.startActivity(Intent(context, LoginActivity::class.java))
-                }
+                }, onPickAvatar = onPickAvatar
             )
         }
 
@@ -169,10 +122,7 @@ private fun ProfileContent(
         // 功能列表项
         items(user.menuItems) { menuItem ->
             ProfileMenuItem(
-                icon = menuItem.icon,
-                title = menuItem.title,
-                onClick = { /* 根据需要处理点击 */ }
-            )
+                icon = menuItem.icon, title = menuItem.title, onClick = { /* 根据需要处理点击 */ })
         }
 
         // 图片展示 (相册)
@@ -192,12 +142,12 @@ private fun ProfileContent(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 AsyncImage(
-                    model = uiState.selectedImageUri ?: "https://picsum.photos/1920/1080",
+                    model = uiState.coverUri ?: "https://picsum.photos/1920/1080",
                     contentDescription = "相册图片",
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
-                        .clickable { onPickImage() },
+                        .clickable { onPickCover() },
                     contentScale = ContentScale.Crop,
                     placeholder = painterResource(id = android.R.drawable.ic_menu_upload),
                     error = painterResource(id = android.R.drawable.btn_star_big_on)
@@ -208,13 +158,14 @@ private fun ProfileContent(
 }
 
 @Composable
-fun ProfileHeader(name: String, bio: String, onLoginClick: () -> Unit) {
+fun ProfileHeader(
+    name: String, bio: String, avatarUri: Uri?, onLoginClick: () -> Unit, onPickAvatar: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onLoginClick() }
-            .padding(16.dp)
-    ) {
+            .padding(16.dp)) {
         Column(
             modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -227,34 +178,57 @@ fun ProfileHeader(name: String, bio: String, onLoginClick: () -> Unit) {
                         .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "头像",
-                        modifier = Modifier.size(60.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    if (avatarUri != null) {
+                        AsyncImage(
+                            model = avatarUri,
+                            contentDescription = "头像",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "头像",
+                            modifier = Modifier.size(60.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .offset(x = 4.dp, y = 4.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
-                    contentAlignment = Alignment.Center
+                IconButton(
+                    onClick = { onPickAvatar() }, modifier = Modifier.size(30.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "编辑头像",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .offset(x = 4.dp, y = 4.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "编辑头像",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = bio, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = bio,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -276,8 +250,14 @@ fun ProfileStats(stats: List<ProfileStat>) {
 @Composable
 fun StatItem(count: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = count, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = count, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -290,12 +270,22 @@ fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
         Spacer(modifier = Modifier.width(16.dp))
-        Text(text = title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(
+            text = title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f)
+        )
         Icon(
             painter = painterResource(id = android.R.drawable.arrow_down_float),
-            contentDescription = "进入", modifier = Modifier.size(16.dp).offset(y = 1.dp),
+            contentDescription = "进入",
+            modifier = Modifier
+                .size(16.dp)
+                .offset(y = 1.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

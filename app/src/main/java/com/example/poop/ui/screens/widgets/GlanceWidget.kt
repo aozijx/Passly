@@ -21,11 +21,9 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
 import androidx.glance.currentState
-import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
-import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
@@ -67,17 +65,18 @@ class BeautySentenceWidget : GlanceAppWidget() {
     fun Content() {
         val prefs = currentState<Preferences>()
         val currentIndex = prefs[indexKey] ?: 0
-        val quote = beautySentences[currentIndex % beautySentences.size]
+        val quotes = BeautySentenceManager.getQuotes()
+        val quote = quotes[currentIndex % quotes.size]
 
         GlanceTheme {
             Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
+                    .clickable(actionRunCallback<UpdateSentenceAction>())
                     .background(
                         ImageProvider(R.drawable.img) // 使用一个占位图
                     )
                     .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "每日一言",
@@ -88,9 +87,6 @@ class BeautySentenceWidget : GlanceAppWidget() {
                     ),
                     modifier = GlanceModifier.fillMaxWidth()
                 )
-
-                // Use Spacer with weight to push content to center
-                Spacer(modifier = GlanceModifier.defaultWeight())
 
                 Text(
                     text = quote.text,
@@ -103,22 +99,20 @@ class BeautySentenceWidget : GlanceAppWidget() {
                     modifier = GlanceModifier.fillMaxWidth()
                 )
 
-                // Use Spacer with weight to push footer to bottom
-                Spacer(modifier = GlanceModifier.defaultWeight())
-
                 Row(
-                    modifier = GlanceModifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = GlanceModifier.fillMaxWidth()
                 ) {
+                    // 左边的空白占据所有剩余空间
+                    Box(modifier = GlanceModifier.defaultWeight()) { }
                     Text(
                         text = "—— ${quote.source}",
-                        style = TextStyle(color = GlanceTheme.colors.onPrimary, fontSize = 12.sp),
-                        modifier = GlanceModifier.defaultWeight()
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onPrimary,
+                            fontSize = 12.sp
+                        )
                     )
-                    Box(modifier = GlanceModifier.clickable(actionRunCallback<UpdateSentenceAction>())) {
-                         Text("↻", style = TextStyle(color = GlanceTheme.colors.onPrimary, fontSize = 20.sp))
-                    }
                 }
+
             }
         }
     }
@@ -131,14 +125,27 @@ class UpdateSentenceAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        updateAppWidgetState(context, glanceId) { prefs ->
-            val currentIndex = prefs[BeautySentenceWidget.indexKey] ?: 0
-            prefs[BeautySentenceWidget.indexKey] = (currentIndex + 1) % beautySentences.size
-        }
-        BeautySentenceWidget().update(context, glanceId)
+        //像调用 ViewModel 一样调用管理器
+        BeautySentenceManager.updateToNextQuote(context, glanceId)
     }
 }
 
 class BeautySentenceWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = BeautySentenceWidget()
+}
+
+object BeautySentenceManager {
+    // 模拟从后端或本地数据库获取数据
+    fun getQuotes(): List<Quote> = beautySentences
+
+    // 封装更新逻辑
+    suspend fun updateToNextQuote(context: Context, glanceId: GlanceId) {
+        updateAppWidgetState(context, glanceId) { prefs ->
+            val currentIndex = prefs[BeautySentenceWidget.indexKey] ?: 0
+            val nextIndex = (currentIndex + 1) % beautySentences.size
+            prefs[BeautySentenceWidget.indexKey] = nextIndex
+        }
+        // 触发界面刷新
+        BeautySentenceWidget().update(context, glanceId)
+    }
 }

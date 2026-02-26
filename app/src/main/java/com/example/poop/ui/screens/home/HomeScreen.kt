@@ -17,14 +17,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +35,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,64 +45,75 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController? = null) {
+fun HomeScreen(
+    navController: NavController? = null, viewModel: HomeViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
+        modifier = Modifier.fillMaxSize(), topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = "探索", fontWeight = FontWeight.Bold) },
+                title = { Text(text = "首页", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = { /* TODO: viewModel.onSearchClick() */ }) {
                         Icon(Icons.Default.Search, contentDescription = "搜索")
                     }
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = { /* TODO: viewModel.onNotificationClick() */ }) {
                         Icon(Icons.Default.Notifications, contentDescription = "通知")
                     }
                 },
-                windowInsets = WindowInsets(top = 16.dp)
+                windowInsets = WindowInsets(top = 0.dp)
             )
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 16.dp)
-        ) {
-            item {
-                GreetingSection()
+        }) { innerPadding ->
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                item {
+                    GreetingSection(uiState.userName)
+                }
 
-            item {
-                SectionTitle("热门推荐")
-                FeaturedCarousel()
-            }
+                item {
+                    SectionTitle("热门推荐")
+                    FeaturedCarousel(uiState.featuredItems)
+                }
 
-            item {
-                SectionTitle("最新动态")
-            }
+                item {
+                    SectionTitle("最新动态")
+                }
 
-            items(10) { index ->
-                NewsFeedItem(index)
+                items(uiState.newsFeed, key = { it.id }) { newsItem ->
+                    NewsFeedItem(
+                        item = newsItem,
+                        onFavoriteClick = { viewModel.toggleFavorite(newsItem.id) })
+                }
             }
         }
     }
 }
 
 @Composable
-fun GreetingSection() {
+fun GreetingSection(userName: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
         Text(
-            text = "早上好, 开发者!",
+            text = "早上好, $userName!",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.primary
@@ -121,19 +137,19 @@ fun SectionTitle(title: String) {
 }
 
 @Composable
-fun FeaturedCarousel() {
+fun FeaturedCarousel(items: List<FeaturedItem>) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(5) { index ->
-            FeaturedCard(index)
+        items(items, key = { it.id }) { item ->
+            FeaturedCard(item)
         }
     }
 }
 
 @Composable
-fun FeaturedCard(index: Int) {
+fun FeaturedCard(item: FeaturedItem) {
     Card(
         modifier = Modifier
             .width(280.dp)
@@ -145,7 +161,7 @@ fun FeaturedCard(index: Int) {
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = "https://picsum.photos/400/300?random=$index",
+                model = item.imageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -166,13 +182,13 @@ fun FeaturedCard(index: Int) {
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "精选内容 #${index + 1}",
+                    text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "点击查看更多详情...",
+                    text = item.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.8f)
                 )
@@ -182,7 +198,7 @@ fun FeaturedCard(index: Int) {
 }
 
 @Composable
-fun NewsFeedItem(index: Int) {
+fun NewsFeedItem(item: NewsItem, onFavoriteClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,7 +206,11 @@ fun NewsFeedItem(index: Int) {
             .clip(RoundedCornerShape(12.dp))
             .clickable { },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.5f
+            )
+        )
     ) {
         Row(
             modifier = Modifier
@@ -199,7 +219,7 @@ fun NewsFeedItem(index: Int) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = "https://picsum.photos/100/100?random=${index + 100}",
+                model = item.imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .size(64.dp)
@@ -211,25 +231,25 @@ fun NewsFeedItem(index: Int) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Jetpack Compose 更新日志 v1.$index",
+                    text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "探索最新的 UI 构建工具包特性，提升开发效率...",
+                    text = item.summary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2
                 )
             }
 
-            IconButton(onClick = { }) {
+            IconButton(onClick = onFavoriteClick) {
                 Icon(
-                    imageVector = Icons.Outlined.FavoriteBorder,
+                    imageVector = if (item.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = "收藏",
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = if (item.isFavorite) Color.Red else MaterialTheme.colorScheme.primary
                 )
             }
         }

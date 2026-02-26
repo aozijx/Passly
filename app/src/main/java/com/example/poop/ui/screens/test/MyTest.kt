@@ -1,6 +1,5 @@
 package com.example.poop.ui.screens.test
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,8 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.poop.ui.component.CardList
-
 
 @Composable
 fun MyTest() {
@@ -32,19 +29,6 @@ fun MyTest() {
             name = "Android",
             modifier = Modifier.fillMaxWidth()
         )
-
-        // 中间的测试组件
-        TestComposable()
-
-        // 使用 weight(1f) 让 CardList 占据剩余的所有垂直空间
-        // 这样 LazyVerticalGrid 就能得到一个确定的高度，不再崩溃
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            CardList()
-        }
     }
 }
 

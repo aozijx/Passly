@@ -88,8 +88,7 @@ class SystemInfoManager(private val context: Context) {
     val screenSizeInch: String
         get() {
             val metrics = context.resources.displayMetrics
-            // 使用 xdpi 和 ydpi 获取更精确的物理尺寸
-            // 如果获取失败（0），则降级使用 densityDpi
+            // 使用 xdpi 和 ydpi 获取更精确的物理尺寸, 如果获取失败（0），则降级使用 densityDpi
             val xdpi = if (metrics.xdpi > 0) metrics.xdpi else metrics.densityDpi.toFloat()
             val ydpi = if (metrics.ydpi > 0) metrics.ydpi else metrics.densityDpi.toFloat()
 
@@ -99,7 +98,7 @@ class SystemInfoManager(private val context: Context) {
 
             // 计算对角线英寸数
             val diagonal = sqrt(widthInches.pow(2) + heightInches.pow(2))
-            
+
             return String.format(Locale.getDefault(), "%.2f 英寸", diagonal)
         }
 
@@ -211,17 +210,28 @@ class SystemInfoManager(private val context: Context) {
 
     val customOSName: String
         get() {
+            // 1. 先获取制造商和品牌
+            val manufacturer = Build.MANUFACTURER.lowercase()
+            val brand = Build.BRAND.lowercase()
             val display = Build.DISPLAY.lowercase()
+
             return when {
-                display.contains("miui") -> "MIUI"
-                display.contains("emui") -> "EMUI"
-                display.contains("coloros") -> "ColorOS"
-                display.contains("funtouchos") -> "Funtouch OS"
-                display.contains("hydrogenos") -> "HydrogenOS"
-                display.contains("oxygenos") -> "OxygenOS"
-                display.contains("oneui") -> "One UI"
-                display.contains("flyme") -> "Flyme OS"
-                else -> "Android 原生/其他"
+                // 小米/红米
+                manufacturer.contains("xiaomi") || brand.contains("xiaomi") || display.contains("miui") -> "MIUI"
+                // 华为
+                manufacturer.contains("huawei") || brand.contains("huawei") || display.contains("emui") -> "EMUI"
+                // OPPO
+                manufacturer.contains("oppo") || brand.contains("oppo") || display.contains("coloros") -> "ColorOS"
+                // vivo/iQOO
+                manufacturer.contains("vivo") || brand.contains("vivo") || display.contains("funtouch") -> "Funtouch OS"
+                // 一加
+                manufacturer.contains("oneplus") || brand.contains("oneplus") -> "OxygenOS"
+                // 三星
+                manufacturer.contains("samsung") || brand.contains("samsung") || display.contains("oneui") -> "One UI"
+                // 魅族
+                manufacturer.contains("meizu") || brand.contains("meizu") || display.contains("flyme") -> "Flyme OS"
+                // 其他情况...
+                else -> display // 兜底
             }
         }
 

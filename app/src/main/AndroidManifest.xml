@@ -26,11 +26,9 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
-    <!-- 针对 Android 12 及以下的存储读取权限 -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-
     <!-- Android 13+ 图片权限 -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:ignore="PhotoAndVideoPolicy" />
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
 
     <uses-permission

@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+enum class ImageType {
+    AVATAR, COVER, SCREEN
+}
+
 data class ProfileStat(
     val count: String,
     val label: String
@@ -32,7 +36,9 @@ data class UserProfile(
 
 data class ProfileUiState(
     val user: UserProfile = UserProfile(name = "", bio = ""),
-    val selectedImageUri: Uri? = null, // 新增：选中的本地图片 Uri
+    val avatarUri: Uri? = null, // 头像 Uri
+    val coverUri: Uri? = null,  // 封面 Uri
+    val screenUri: Uri? = null,
     val isLoading: Boolean = false
 )
 
@@ -45,7 +51,7 @@ class ProfileViewModel : ViewModel() {
     }
 
     private fun loadUserProfile() {
-        _uiState.update { 
+        _uiState.update {
             it.copy(
                 user = UserProfile(
                     name = "Android 开发者",
@@ -64,7 +70,13 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun updateSelectedImage(uri: Uri?) {
-        _uiState.update { it.copy(selectedImageUri = uri) }
+    fun updateSelectedImage(uri: Uri?, type: ImageType) {
+        _uiState.update {
+            when (type) {
+                ImageType.AVATAR -> it.copy(avatarUri = uri)
+                ImageType.COVER -> it.copy(coverUri = uri)
+                ImageType.SCREEN -> it.copy(screenUri = uri)
+            }
+        }
     }
 }

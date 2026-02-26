@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -63,20 +64,25 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import com.example.poop.ui.component.SimpleBottomBar
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimationScreen() {
+fun AnimationScreen(navController: NavController? = null) {
     Scaffold(
         modifier = Modifier,
-        topBar = { CenterAlignedTopAppBar({ Text("Compose 动画精选") }) },
-        bottomBar = {
-            SimpleBottomBar(activityClass = AnimationActivity::class.java) 
-        }
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Compose 动画精选") },
+                windowInsets = WindowInsets(top = 0.dp)
+            )
+        },
     ) { innerPadding ->
         val modifier = Modifier
             .fillMaxWidth()
@@ -97,7 +103,7 @@ fun AnimationScreen() {
             }
             item { FadeSlideAnimationCard(modifier) }
             item { ScaleAnimationCard(modifier) }
-            
+
             item {
                 Text(
                     "高级交互",
@@ -108,7 +114,7 @@ fun AnimationScreen() {
             item { AnimatedHeartCard(modifier) }
             item { FlipCardAnimation(modifier) }
             item { ShimmerEffectCard(modifier) }
-            
+
             item {
                 Text(
                     "布局变化",
@@ -121,7 +127,7 @@ fun AnimationScreen() {
     }
 }
 
-// 1. 淡入淡出+垂直滑动 (优化版)
+// 1. 淡入淡出+垂直滑动
 @Composable
 fun FadeSlideAnimationCard(modifier: Modifier) {
     val shape = RoundedCornerShape(16.dp)
@@ -150,9 +156,9 @@ fun FadeSlideAnimationCard(modifier: Modifier) {
                     Text(if (isVisible) "隐藏" else "显示")
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Box(modifier = Modifier.height(100.dp), contentAlignment = Alignment.Center) {
                 androidx.compose.animation.AnimatedVisibility(
                     visible = isVisible,
@@ -212,11 +218,15 @@ fun ScaleAnimationCard(modifier: Modifier) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = CenterHorizontally
         ) {
-            Text("弹性缩放与颜色渐变", style = MaterialTheme.typography.titleSmall, modifier = Modifier.align(Alignment.Start))
+            Text(
+                "弹性缩放与颜色渐变",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.align(Alignment.Start)
+            )
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Surface(
-                color = if(isSelected) MaterialTheme.colorScheme.secondary else color,
+                color = if (isSelected) MaterialTheme.colorScheme.secondary else color,
                 modifier = Modifier
                     .size(100.dp)
                     .scale(scale)
@@ -225,7 +235,7 @@ fun ScaleAnimationCard(modifier: Modifier) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = if(isSelected) Icons.Default.Star else Icons.Default.Refresh,
+                        imageVector = if (isSelected) Icons.Default.Star else Icons.Default.Refresh,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(40.dp)
@@ -233,7 +243,11 @@ fun ScaleAnimationCard(modifier: Modifier) {
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            Text("点击方块体验弹性动画", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(
+                "点击方块体验弹性动画",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
         }
     }
 }
@@ -262,9 +276,13 @@ fun AnimatedHeartCard(modifier: Modifier) {
         )
 
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = CenterHorizontally) {
-            Text("关键帧动画 (Keyframes)", style = MaterialTheme.typography.titleSmall, modifier = Modifier.fillMaxWidth())
+            Text(
+                "关键帧动画 (Keyframes)",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             Icon(
                 imageVector = Icons.Default.Favorite,
                 contentDescription = null,
@@ -273,9 +291,9 @@ fun AnimatedHeartCard(modifier: Modifier) {
                     .size(size)
                     .clickable { liked = !liked }
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            Text(if(liked) "已点赞!" else "点击点赞", style = MaterialTheme.typography.bodyMedium)
+            Text(if (liked) "已点赞!" else "点击点赞", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -298,9 +316,13 @@ fun FlipCardAnimation(modifier: Modifier) {
         )
 
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = CenterHorizontally) {
-            Text("3D 翻转效果", style = MaterialTheme.typography.titleSmall, modifier = Modifier.fillMaxWidth())
+            Text(
+                "3D 翻转效果",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -318,17 +340,27 @@ fun FlipCardAnimation(modifier: Modifier) {
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("正面", color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                            Text(
+                                "正面",
+                                color = Color.White,
+                                style = MaterialTheme.typography.headlineMedium
+                            )
                         }
                     }
                 } else {
                     Surface(
                         color = MaterialTheme.colorScheme.error,
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { rotationY = 180f }
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("背面", color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                            Text(
+                                "背面",
+                                color = Color.White,
+                                style = MaterialTheme.typography.headlineMedium
+                            )
                         }
                     }
                 }
@@ -340,6 +372,36 @@ fun FlipCardAnimation(modifier: Modifier) {
 }
 
 // 5. 骨架屏闪光效果
+// 1. 首先创建一个可重用的ShimmerBrush
+@Composable
+fun shimmerBrush(): Brush {
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.6f),
+        Color.LightGray.copy(alpha = 0.2f),
+        Color.LightGray.copy(alpha = 0.6f),
+    )
+
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 2000,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerTranslation"
+    )
+
+    return Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset(translateAnim.value - 500, translateAnim.value - 500),
+        end = Offset(translateAnim.value, translateAnim.value),
+        tileMode = TileMode.Mirror
+    )
+}
 @Composable
 fun ShimmerEffectCard(modifier: Modifier) {
     val shape = RoundedCornerShape(16.dp)
@@ -350,44 +412,44 @@ fun ShimmerEffectCard(modifier: Modifier) {
         shape = shape,
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        val transition = rememberInfiniteTransition(label = "shimmer")
-        val translateAnim by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1000f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1200, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ), label = "shimmer_trans"
-        )
-
         Column(modifier = Modifier.padding(16.dp)) {
             Text("骨架屏加载动画", style = MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray.copy(alpha = 0.4f)))
-                
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(shimmerBrush())
+                )
+
                 Spacer(modifier = Modifier.width(16.dp))
-                
+
                 Column {
-                    Box(modifier = Modifier
-                        .height(16.dp)
-                        .width(120.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color.LightGray.copy(alpha = 0.4f)))
+                    Box(
+                        modifier = Modifier
+                            .height(16.dp)
+                            .width(120.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(shimmerBrush())
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Box(modifier = Modifier
-                        .height(12.dp)
-                        .width(80.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color.LightGray.copy(alpha = 0.4f)))
+                    Box(
+                        modifier = Modifier
+                            .height(12.dp)
+                            .width(80.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(shimmerBrush())
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text("注：完整Shimmer需配合Brush.linearGradient与偏移量使用", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text(
+                "注：完整Shimmer需配合Brush.linearGradient与偏移量使用",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
         }
     }
 }
@@ -406,7 +468,9 @@ fun HeightExpandAnimationCard(modifier: Modifier) {
     ) {
         var expanded by remember { mutableStateOf(false) }
         Column(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             horizontalAlignment = CenterHorizontally
         ) {
             Row(
@@ -419,12 +483,14 @@ fun HeightExpandAnimationCard(modifier: Modifier) {
                     Text(if (expanded) "收起" else "展开")
                 }
             }
-            
+
             AnimatedContent(
                 targetState = expanded,
                 transitionSpec = {
-                    fadeIn(tween(300)) + slideInVertically { -it / 3 } togetherWith 
-                    fadeOut(tween(300)) + slideOutVertically { -it / 3 } using SizeTransform(clip = true)
+                    fadeIn(tween(300)) + slideInVertically { -it / 3 } togetherWith
+                            fadeOut(tween(300)) + slideOutVertically { -it / 3 } using SizeTransform(
+                        clip = true
+                    )
                 },
                 label = "expand"
             ) { targetExpanded ->
@@ -432,14 +498,18 @@ fun HeightExpandAnimationCard(modifier: Modifier) {
                     Text(
                         text = "Jetpack Compose 的动画系统非常强大！\n它可以轻松处理布局变化、颜色渐变和复杂的过渡效果。\n\nAnimatedContent 专门用于在不同内容之间进行动画切换。",
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .fillMaxWidth()
                     )
                 } else {
                     Text(
                         text = "点击展开查看更多详情...",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray,
-                        modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .fillMaxWidth()
                     )
                 }
             }
