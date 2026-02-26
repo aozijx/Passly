@@ -8,11 +8,16 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.poop.ui.navigation.NavGraph
 import com.example.poop.ui.navigation.Screen
 import com.example.poop.ui.theme.PoopTheme
+import com.example.poop.util.Preference
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,9 +30,17 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enableEdgeToEdge()
         checkAndRequestPermissions()
-
         setContent {
-            PoopTheme {
+            // 1. 实例化你的 Preference 类
+            val preference = remember { Preference(applicationContext) }
+            // initialValue 建议使用系统默认值，这样启动时不会有闪烁
+            val isDarkModePref by preference.isDarkMode.collectAsState(initial = false)
+            // 2. 核心逻辑：如果开关开启，强制深色；如果开关关闭，跟随系统
+            // 这样当系统为深色时，即时开关关闭，实际值也会是 true
+            val actualDarkMode = isDarkModePref || isSystemInDarkTheme()
+
+
+            PoopTheme(darkTheme = actualDarkMode) {
                 // 直接调用 NavGraph，并指定起始页
                 NavGraph(startDestination = Screen.Home.route)
             }

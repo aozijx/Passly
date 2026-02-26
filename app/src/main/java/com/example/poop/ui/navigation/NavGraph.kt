@@ -25,6 +25,7 @@ import com.example.poop.ui.screens.detail.DetailScreen
 import com.example.poop.ui.screens.home.HomeScreen
 import com.example.poop.ui.screens.profile.ProfileScreen
 import com.example.poop.ui.screens.scanner.ScannerScreen
+import com.example.poop.ui.screens.settings.SettingsScreen
 
 @Composable
 fun NavGraph(startDestination: String = Screen.Home.route) {
@@ -83,20 +84,30 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
             composable(Screen.Profile.route) {
                 ProfileScreen(navController)
             }
-            composable(Screen.Scanner.route,
-                enterTransition = {
-                    slideInVertically(initialOffsetY = {it}, animationSpec = tween(400)) + fadeIn()
-                },
-                exitTransition = {
-                    slideOutVertically(targetOffsetY = { it }, animationSpec = tween(400)) + fadeOut()
-                }) {
-                ScannerScreen(navController)
-            }
             composable(Screen.Animation.route) {
                 AnimationScreen(navController)
             }
             composable(Screen.Detail.route) {
                 DetailScreen(navController)
+            }
+            composable(
+                Screen.Scanner.route,
+                enterTransition = {
+                    slideInVertically(
+                        initialOffsetY = { it },
+                        animationSpec = tween(400)
+                    ) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = tween(400)
+                    ) + fadeOut()
+                }) {
+                ScannerScreen(navController)
+            }
+            composable(Screen.Setting.route) {
+                SettingsScreen(navController)
             }
         }
     }

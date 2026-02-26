@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -78,6 +79,13 @@ fun ProfileScreen(
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_qr_code_scanner_24),
                             contentDescription = "扫码",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = { navController?.navigate(Screen.Setting.route) }) {
+                        Icon(
+                            Icons.Rounded.Settings,
+                            contentDescription = "设置",
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }

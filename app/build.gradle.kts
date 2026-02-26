@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.navigation.compose)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // CameraX
     implementation(libs.androidx.camera.core)
