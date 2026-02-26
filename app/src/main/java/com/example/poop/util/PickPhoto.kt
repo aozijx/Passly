@@ -9,10 +9,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.poop.ui.screens.profile.ImageType
 
@@ -27,11 +25,11 @@ fun rememberImagePicker(
     val context = LocalContext.current
 
     // 使用 rememberSaveable 确保配置更改（如旋转屏幕）后 pendingImageType 不会丢失
-    var pendingImageType by rememberSaveable { mutableStateOf<ImageType?>(null) }
+    val pendingImageType = rememberSaveable { mutableStateOf<ImageType?>(null) }
 
     // 内部统一结果处理函数
     fun handleUriResult(uri: Uri?) {
-        val type = pendingImageType ?: return
+        val type = pendingImageType.value ?: return
         if (uri != null) {
             try {
                 // 尝试持久化权限（SAF 模式下有效，Android 10+ 建议）
@@ -44,7 +42,7 @@ fun rememberImagePicker(
             }
             onImagePicked(uri, type)
         }
-        pendingImageType = null
+        pendingImageType.value = null
     }
 
     // Android 13+ 现代照片选择器
@@ -60,13 +58,13 @@ fun rememberImagePicker(
         if (result.resultCode == Activity.RESULT_OK) {
             handleUriResult(result.data?.data)
         } else {
-            pendingImageType = null
+            pendingImageType.value = null
         }
     }
 
     // 返回一个可调用的闭包
     return { imageType: ImageType ->
-        pendingImageType = imageType
+        pendingImageType.value = imageType
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pickMediaLauncher.launch(

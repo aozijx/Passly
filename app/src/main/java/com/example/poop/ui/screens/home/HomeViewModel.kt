@@ -21,10 +21,19 @@ data class NewsItem(
     val isFavorite: Boolean = false
 )
 
+data class Article(
+    val id: Int,
+    val cover: String,
+    val title: String,
+    val link: String,
+    val description: String
+)
+
 data class HomeUiState(
     val userName: String = "开发者",
     val featuredItems: List<FeaturedItem> = emptyList(),
     val newsFeed: List<NewsItem> = emptyList(),
+    val articles: List<Article> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -34,6 +43,7 @@ class HomeViewModel : ViewModel() {
 
     init {
         loadHomeData()
+        fetchArticles()
     }
 
     private fun loadHomeData() {
@@ -70,6 +80,28 @@ class HomeViewModel : ViewModel() {
                 if (it.id == newsId) it.copy(isFavorite = !it.isFavorite) else it
             }
             state.copy(newsFeed = updatedFeed)
+        }
+    }
+
+    private fun fetchArticles() {
+        val articles = listOf(
+            Article(
+                1,
+                "https://picsum.photos/1920/1080",
+                "Hello Android",
+                "https://developer.android.com",
+                "欢迎使用 Jetpack Compose 创建美丽的应用界面"
+            ),
+            Article(
+                2,
+                "https://aozijx.github.io/hiner/img/default.avif",
+                "Hello Hexo",
+                "https://aozijx.github.io/hiner/music/",
+                "音乐是生活的调味品，愿你我都能在音乐中找到属于自己的那份宁静与快乐～"
+            )
+        )
+        _uiState.update { 
+            it.copy(articles = articles)
         }
     }
 }

@@ -21,7 +21,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.poop.ui.screens.animation.AnimationScreen
-import com.example.poop.ui.screens.article.ArticleScreen
 import com.example.poop.ui.screens.detail.DetailScreen
 import com.example.poop.ui.screens.home.HomeScreen
 import com.example.poop.ui.screens.profile.ProfileScreen
@@ -34,7 +33,6 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
     // 定义底部导航栏要显示的条目
     val bottomNavItems = listOf(
         Screen.Home,
-        Screen.Article,
         Screen.Profile,
         Screen.Animation,
         Screen.Detail
@@ -81,9 +79,6 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(navController)
-            }
-            composable(Screen.Article.route) {
-                ArticleScreen(navController)
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(navController)
