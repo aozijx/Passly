@@ -56,7 +56,7 @@ class HomeViewModel : ViewModel() {
             FeaturedItem(3, "精选内容 #3", "点击查看更多详情...", "https://picsum.photos/400/300?random=3")
         )
 
-        val news = List(10) { index ->
+        val news = List(5) { index ->
             NewsItem(
                 id = index,
                 title = "Jetpack Compose 更新日志 v1.$index",

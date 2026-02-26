@@ -26,9 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Favorite
@@ -64,7 +62,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -110,34 +107,34 @@ fun HomeScreen(
                     .padding(innerPadding),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
-                item {
+                item(key = "greeting") {
                     GreetingSection(uiState.userName)
                 }
 
-                item {
+                item(key = "featured_section") {
                     SectionTitle("热门推荐")
                     FeaturedCarousel(uiState.featuredItems)
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                item {
+                item(key = "news_title") {
                     SectionTitle("最新动态")
                 }
 
-                items(uiState.newsFeed, key = { it.id }) { newsItem ->
+                items(uiState.newsFeed, key = { "news_${it.id}" }) { newsItem ->
                     NewsFeedItem(
                         item = newsItem,
                         onFavoriteClick = { viewModel.toggleFavorite(newsId = newsItem.id) })
                 }
 
-                item {
+                item(key = "article_title") {
                     SectionTitle("精选文章")
                 }
 
                 // 动态渲染 ViewModel 中的文章列表
                 items(
                     items = uiState.articles,
-                    key = { it.id },
+                    key = { "article_${it.id}" },
                 ) { article ->
                     ArticleCard(
                         cover = article.cover,
@@ -379,9 +376,7 @@ fun openUrlInBrowser(context: Context, url: String) {
 fun BottomSheetDemo() {
     val showBottomSheet = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = false,
-    )
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Box(
         modifier = Modifier
@@ -397,32 +392,30 @@ fun BottomSheetDemo() {
     if (showBottomSheet.value) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet.value = false },
-            sheetState = sheetState
+            sheetState = sheetState,
+            windowInsets = WindowInsets(0)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
-                    .fillMaxHeight(0.9f)
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxHeight(0.8f)
+                    .padding(horizontal = 16.dp)
                     .navigationBarsPadding()
             ) {
                 Text(
-                    "分段式弹窗",
+                    "分段式操作演示",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+
+                StatusBarPopupDemo()
+
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                StatusBarPopupDemo()
-                // 演示如何代码控制切换状态
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .padding(vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
                         onClick = {
@@ -434,19 +427,22 @@ fun BottomSheetDemo() {
                                 }
                             }
                         },
-                        modifier = Modifier
+                        modifier = Modifier.weight(1f)
                     ) {
                         val btnText =
                             if (sheetState.currentValue == SheetValue.PartiallyExpanded) "切换全开" else "切换半开"
                         Text(btnText)
                     }
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-                OutlinedButton(onClick = {
-                    scope.launch { sheetState.hide() }
-                        .invokeOnCompletion { showBottomSheet.value = false }
-                }, modifier = Modifier.fillMaxWidth()) {
-                    Text("关闭")
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                showBottomSheet.value = false
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("关闭")
+                    }
                 }
             }
         }
@@ -458,10 +454,10 @@ fun StatusBarPopupDemo() {
     val context = LocalContext.current
     val notificationHelper = NotificationHelper(context)
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Button(
             onClick = {
