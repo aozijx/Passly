@@ -7,7 +7,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,6 +24,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.poop.ui.screens.animation.AnimationScreen
 import com.example.poop.ui.screens.detail.DetailScreen
+import com.example.poop.ui.screens.detail.component.AppSdkClassifier
 import com.example.poop.ui.screens.home.HomeScreen
 import com.example.poop.ui.screens.profile.ProfileScreen
 import com.example.poop.ui.screens.scanner.ScannerScreen
@@ -32,32 +33,19 @@ import com.example.poop.ui.screens.settings.SettingsScreen
 @Composable
 fun NavGraph(startDestination: String = Screen.Home.route) {
     val navController = rememberNavController()
-
-    // 定义底部导航栏要显示的条目
-    val bottomNavItems = listOf(
-        Screen.Home,
-        Screen.Profile,
-        Screen.Animation,
-        Screen.Detail
-    )
+    val bottomNavItems = listOf(Screen.Home, Screen.Profile, Screen.Animation, Screen.Detail)
 
     Scaffold(
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
-
-            // 获取当前路由，判断是否应该显示底部栏
             val shouldShowBottomBar = bottomNavItems.any { it.route == currentDestination?.route }
 
             if (shouldShowBottomBar) {
                 NavigationBar {
                     bottomNavItems.forEach { screen ->
                         NavigationBarItem(
-                            icon = {
-                                screen.icon?.let {
-                                    Icon(it, contentDescription = screen.title)
-                                }
-                            },
+                            icon = { screen.icon?.let { Icon(it, screen.title) } },
                             label = { Text(screen.title) },
                             selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = {
@@ -74,11 +62,11 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 }
             }
         }
-    ) { innerPadding ->
+    ) { _ ->
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(navController)
@@ -108,12 +96,13 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 }) {
                 ScannerScreen(navController)
             }
-            composable(Screen.Setting.route,enterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { it },
-                    animationSpec = tween(400)
-                ) + fadeIn()
-            },
+            composable(
+                Screen.Setting.route, enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(400)
+                    ) + fadeIn()
+                },
                 exitTransition = {
                     slideOutHorizontally(
                         targetOffsetX = { it },
@@ -121,6 +110,24 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                     ) + fadeOut()
                 }) {
                 SettingsScreen(navController)
+            }
+            // 应用 SDK 分析路由
+            composable(
+                Screen.AppAnalysis.route,
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(400)
+                    ) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(400)
+                    ) + fadeOut()
+                }
+            ) {
+                AppSdkClassifier(onBack = { navController.popBackStack() })
             }
         }
     }

@@ -45,6 +45,7 @@
         tools:ignore="ProtectedPermissions" />
 
     <application
+        android:name=".AppContext"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/app_icon_main"
         android:roundIcon="@mipmap/app_icon_round"

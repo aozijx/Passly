@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -58,6 +57,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.poop.ui.screens.home.component.BottomSheetDemo
+import com.example.poop.util.Logcat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,8 +78,7 @@ fun HomeScreen(
                     IconButton(onClick = { /* TODO: viewModel.onNotificationClick() */ }) {
                         Icon(Icons.Default.Notifications, contentDescription = "通知")
                     }
-                },
-                windowInsets = WindowInsets(top = 0.dp)
+                }
             )
         }) { innerPadding ->
         if (uiState.isLoading) {
@@ -353,6 +352,7 @@ fun openUrlInBrowser(context: Context, url: String) {
         }
         context.startActivity(intent)
     } catch (e: Exception) {
+        Logcat.e("SystemInfo", "无法打开链接", e)
         Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT).show()
     }
 }

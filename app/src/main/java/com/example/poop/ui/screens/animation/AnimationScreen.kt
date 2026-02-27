@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -69,6 +68,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
@@ -79,8 +79,7 @@ fun AnimationScreen(navController: NavController? = null) {
         modifier = Modifier,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Compose 动画精选") },
-                windowInsets = WindowInsets(top = 0.dp)
+                title = { Text("Compose 动画精选", fontWeight = FontWeight.Bold) }
             )
         },
     ) { innerPadding ->
