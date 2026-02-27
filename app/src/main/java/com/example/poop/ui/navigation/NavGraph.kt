@@ -7,7 +7,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -30,6 +33,7 @@ import com.example.poop.ui.screens.profile.ProfileScreen
 import com.example.poop.ui.screens.scanner.ScannerScreen
 import com.example.poop.ui.screens.settings.SettingsScreen
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NavGraph(startDestination: String = Screen.Home.route) {
     val navController = rememberNavController()
@@ -62,11 +66,16 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 }
             }
         }
-    ) { _ ->
+    ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                // 1. 只在底部应用物理间距，解决内容被导航栏遮挡
+                .padding(innerPadding)
+                // 2. 核心：消耗掉 Insets，通知子页面内部的 Scaffold 不要再重复计算顶部和底部的 Padding
+                .consumeWindowInsets(innerPadding)
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(navController)
