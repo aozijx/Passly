@@ -1,7 +1,7 @@
 package com.example.poop.ui.screens.detail.component
 
-import android.content.Context
-import android.content.pm.ApplicationInfo
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -29,46 +30,30 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.ui.navigation.TopBarConfig
-import com.example.poop.util.Logcat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
-data class AppWithSdk(
-    val packageName: String,
-    val appName: String,
-    val targetSdk: Int,
-    val versionName: String,
-    val architecture: String
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppSdkClassifier() {
+fun AppSdkClassifier(viewModel: AppSdkClassifierViewModel = viewModel()) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var sdkAppMap by remember { mutableStateOf<Map<Int, List<AppWithSdk>>>(emptyMap()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var loadStatus by remember { mutableStateOf("扫描已安装应用的架构与 SDK") }
+    val uiState by viewModel.uiState.collectAsState()
 
-    // 1. 配置顶栏
+    // 1. Configure top bar
     TopBarConfig(
         title = "应用分析",
         centerTitle = true
     )
 
-    // 2. 页面内容
+    // 2. Page content
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -95,24 +80,10 @@ fun AppSdkClassifier() {
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(loadStatus, style = MaterialTheme.typography.bodySmall)
+                        Text(uiState.loadStatus, style = MaterialTheme.typography.bodySmall)
                     }
-                    if (!isLoading) {
-                        Button(
-                            onClick = {
-                                isLoading = true
-                                loadStatus = "正在深度扫描架构信息..."
-                                scope.launch {
-                                    val result = getAllAppsWithSdk(context)
-                                    withContext(Dispatchers.Main) {
-                                        sdkAppMap = result.groupBy { it.targetSdk }
-                                            .toSortedMap(compareByDescending { it })
-                                        isLoading = false
-                                        loadStatus = "扫描完成: 共 ${result.size} 个应用"
-                                    }
-                                }
-                            }
-                        ) { Text("开始") }
+                    if (!uiState.isLoading) {
+                        Button(onClick = { viewModel.startScan(context) }) { Text("开始") }
                     } else {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
@@ -123,16 +94,24 @@ fun AppSdkClassifier() {
             }
         }
 
-        if (sdkAppMap.isNotEmpty()) {
-            sdkAppMap.forEach { (sdkVersion, appList) ->
+        if (uiState.sdkAppMap.isNotEmpty()) {
+            uiState.sdkAppMap.forEach { (sdkVersion, appList) ->
+                val isExpanded = sdkVersion in uiState.expandedSdks
                 item(key = "header_$sdkVersion") {
-                    SdkGroupHeader(sdkVersion, appList.size)
+                    SdkGroupHeader(
+                        sdkVersion = sdkVersion,
+                        count = appList.size,
+                        isExpanded = isExpanded,
+                        onClick = { viewModel.toggleSdkExpansion(sdkVersion) }
+                    )
                 }
-                items(appList, key = { "${it.packageName}_$sdkVersion" }) { app ->
-                    AppInfoItem(app)
+                if (isExpanded) {
+                    items(appList, key = { "${it.packageName}_$sdkVersion" }) { app ->
+                        AppInfoItem(app)
+                    }
                 }
             }
-        } else if (!isLoading) {
+        } else if (!uiState.isLoading) {
             item {
                 Box(
                     modifier = Modifier
@@ -151,25 +130,39 @@ fun AppSdkClassifier() {
 }
 
 @Composable
-fun SdkGroupHeader(sdkVersion: Int, count: Int) {
+fun SdkGroupHeader(
+    sdkVersion: Int,
+    count: Int,
+    isExpanded: Boolean,
+    onClick: () -> Unit
+) {
+    val rotation by animateFloatAsState(targetValue = if (isExpanded) 180f else 0f, label = "rotation")
+
     Surface(
         color = MaterialTheme.colorScheme.secondaryContainer,
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp)
+            .clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 "Android ${getAndroidVersionName(sdkVersion)} (API $sdkVersion)",
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.weight(1f)
             )
             Badge { Text("$count") }
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                modifier = Modifier.rotate(rotation)
+            )
         }
     }
 }
@@ -230,51 +223,6 @@ fun AppInfoItem(app: AppWithSdk) {
         }
     }
 }
-
-private suspend fun getAllAppsWithSdk(context: Context): List<AppWithSdk> =
-    withContext(Dispatchers.IO) {
-        val pm = context.packageManager
-        val packages = pm.getInstalledPackages(0)
-
-        packages.mapNotNull { pkg ->
-            val appInfo = pkg.applicationInfo
-            if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0) {
-
-                // ABI 识别逻辑
-                val arch = try {
-                    val primaryCpuAbi = ApplicationInfo::class.java.getField("primaryCpuAbi")
-                        .get(appInfo) as? String
-
-                    when {
-                        primaryCpuAbi != null -> {
-                            when {
-                                primaryCpuAbi.contains("arm64-v8a") -> "arm64-v8a"
-                                primaryCpuAbi.contains("armeabi-v7a") -> "armeabi-v7a"
-                                primaryCpuAbi.contains("x86_64") -> "x86_64"
-                                primaryCpuAbi.contains("x86") -> "x86"
-                                primaryCpuAbi.contains("64") -> "64-bit"
-                                else -> primaryCpuAbi
-                            }
-                        }
-                        appInfo.nativeLibraryDir.contains("arm64") -> "arm64-v8a"
-                        appInfo.nativeLibraryDir.contains("arm") -> "armeabi-v7a"
-                        else -> "32-bit"
-                    }
-                } catch (e: Exception) {
-                    Logcat.e("AppSdkClassifier", "识别 ABI 失败: ${pkg.packageName}", e)
-                    "Unknown"
-                }
-
-                AppWithSdk(
-                    packageName = pkg.packageName,
-                    appName = appInfo.loadLabel(pm).toString(),
-                    targetSdk = appInfo.targetSdkVersion,
-                    versionName = pkg.versionName ?: "N/A",
-                    architecture = arch
-                )
-            } else null
-        }
-    }
 
 private fun getAndroidVersionName(sdkVersion: Int): String {
     return when (sdkVersion) {
