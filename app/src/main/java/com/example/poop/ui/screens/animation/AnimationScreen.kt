@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColor
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -46,18 +47,14 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
@@ -68,77 +65,107 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.poop.ui.navigation.TopBarConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimationScreen(navController: NavController? = null) {
-    Scaffold(
-        modifier = Modifier,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Compose 动画精选", fontWeight = FontWeight.Bold) }
+fun AnimationScreen(
+    viewModel: AnimationViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    TopBarConfig(
+        title = "动画精选",
+        centerTitle = true
+    )
+
+    val modifier = Modifier.fillMaxWidth()
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        item {
+            Text(
+                "基础动画",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 8.dp)
             )
-        },
-    ) { innerPadding ->
-        val modifier = Modifier
-            .fillMaxWidth()
+        }
+        item {
+            FadeSlideAnimationCard(
+                modifier = modifier,
+                isVisible = uiState.isFadeVisible,
+                onToggle = { viewModel.toggleFadeVisibility() }
+            )
+        }
+        item {
+            ScaleAnimationCard(
+                modifier = modifier,
+                isSelected = uiState.isScaleSelected,
+                onToggle = { viewModel.toggleScaleSelection() }
+            )
+        }
 
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            item {
-                Text(
-                    "基础动画",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-            item { FadeSlideAnimationCard(modifier) }
-            item { ScaleAnimationCard(modifier) }
+        item {
+            Text(
+                "高级交互",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+            )
+        }
+        item {
+            AnimatedHeartCard(
+                modifier = modifier,
+                liked = uiState.isHeartLiked,
+                onToggle = { viewModel.toggleHeartLike() }
+            )
+        }
+        item {
+            FlipCardAnimation(
+                modifier = modifier,
+                rotated = uiState.isCardRotated,
+                onToggle = { viewModel.toggleCardRotation() }
+            )
+        }
+        item { ShimmerEffectCard(modifier) }
 
-            item {
-                Text(
-                    "高级交互",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 8.dp, top = 8.dp)
-                )
-            }
-            item { AnimatedHeartCard(modifier) }
-            item { FlipCardAnimation(modifier) }
-            item { ShimmerEffectCard(modifier) }
-
-            item {
-                Text(
-                    "布局变化",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 8.dp, top = 8.dp)
-                )
-            }
-            item { HeightExpandAnimationCard(modifier) }
+        item {
+            Text(
+                "布局变化",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+            )
+        }
+        item {
+            HeightExpandAnimationCard(
+                modifier = modifier,
+                expanded = uiState.isHeightExpanded,
+                onToggle = { viewModel.toggleHeightExpansion() }
+            )
         }
     }
 }
 
 // 1. 淡入淡出+垂直滑动
 @Composable
-fun FadeSlideAnimationCard(modifier: Modifier) {
+fun FadeSlideAnimationCard(
+    modifier: Modifier,
+    isVisible: Boolean,
+    onToggle: () -> Unit
+) {
     val shape = RoundedCornerShape(16.dp)
     Card(
         modifier = modifier
-            .clip(shape) // 应用 README 方案：在 clickable 前 clip
+            .clip(shape)
             .clickable { },
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        var isVisible by remember { mutableStateOf(false) }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -151,7 +178,7 @@ fun FadeSlideAnimationCard(modifier: Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("可见性动画", style = MaterialTheme.typography.titleSmall)
-                Button(onClick = { isVisible = !isVisible }) {
+                Button(onClick = onToggle) {
                     Text(if (isVisible) "隐藏" else "显示")
                 }
             }
@@ -188,7 +215,11 @@ fun FadeSlideAnimationCard(modifier: Modifier) {
 
 // 2. 缩放与颜色动画
 @Composable
-fun ScaleAnimationCard(modifier: Modifier) {
+fun ScaleAnimationCard(
+    modifier: Modifier,
+    isSelected: Boolean,
+    onToggle: () -> Unit
+) {
     val shape = RoundedCornerShape(16.dp)
     Card(
         modifier = modifier
@@ -197,7 +228,6 @@ fun ScaleAnimationCard(modifier: Modifier) {
         shape = shape,
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        var isSelected by remember { mutableStateOf(false) }
         val scale by animateFloatAsState(
             targetValue = if (isSelected) 1.2f else 1f,
             animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
@@ -230,7 +260,7 @@ fun ScaleAnimationCard(modifier: Modifier) {
                     .size(100.dp)
                     .scale(scale)
                     .clip(RoundedCornerShape(20.dp))
-                    .clickable { isSelected = !isSelected },
+                    .clickable { onToggle() },
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -253,7 +283,11 @@ fun ScaleAnimationCard(modifier: Modifier) {
 
 // 3. 点赞红心动画
 @Composable
-fun AnimatedHeartCard(modifier: Modifier) {
+fun AnimatedHeartCard(
+    modifier: Modifier,
+    liked: Boolean,
+    onToggle: () -> Unit
+) {
     val shape = RoundedCornerShape(16.dp)
     Card(
         modifier = modifier
@@ -262,16 +296,25 @@ fun AnimatedHeartCard(modifier: Modifier) {
         shape = shape,
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        var liked by remember { mutableStateOf(false) }
         val size by animateDpAsState(
             targetValue = if (liked) 64.dp else 48.dp,
-            animationSpec = keyframes {
-                durationMillis = 500
-                48.dp at 0
-                56.dp at 150
-                72.dp at 300
-                64.dp at 500
+            animationSpec = if (liked) {
+                keyframes {
+                    durationMillis = 500
+                    48.dp at 0
+                    72.dp at 250
+                    64.dp at 500
+                }
+            } else {
+                spring(dampingRatio = Spring.DampingRatioMediumBouncy)
             }, label = "heart"
+        )
+
+        // 增加颜色平滑动画
+        val heartColor by animateColorAsState(
+            targetValue = if (liked) Color(0xFFE91E63) else Color.Gray,
+            animationSpec = tween(300),
+            label = "heartColor"
         )
 
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = CenterHorizontally) {
@@ -285,10 +328,10 @@ fun AnimatedHeartCard(modifier: Modifier) {
             Icon(
                 imageVector = Icons.Default.Favorite,
                 contentDescription = null,
-                tint = if (liked) Color(0xFFE91E63) else Color.Gray,
+                tint = heartColor,
                 modifier = Modifier
                     .size(size)
-                    .clickable { liked = !liked }
+                    .clickable { onToggle() }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -299,7 +342,11 @@ fun AnimatedHeartCard(modifier: Modifier) {
 
 // 4. 3D翻转卡片
 @Composable
-fun FlipCardAnimation(modifier: Modifier) {
+fun FlipCardAnimation(
+    modifier: Modifier,
+    rotated: Boolean,
+    onToggle: () -> Unit
+) {
     val shape = RoundedCornerShape(16.dp)
     Card(
         modifier = modifier
@@ -308,7 +355,6 @@ fun FlipCardAnimation(modifier: Modifier) {
         shape = shape,
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        var rotated by remember { mutableStateOf(false) }
         val rotation by animateFloatAsState(
             targetValue = if (rotated) 180f else 0f,
             animationSpec = tween(600, easing = FastOutSlowInEasing), label = "flip"
@@ -330,7 +376,7 @@ fun FlipCardAnimation(modifier: Modifier) {
                         rotationY = rotation
                         cameraDistance = 12f * density
                     }
-                    .clickable { rotated = !rotated }
+                    .clickable { onToggle() }
             ) {
                 if (rotation <= 90f) {
                     Surface(
@@ -371,7 +417,6 @@ fun FlipCardAnimation(modifier: Modifier) {
 }
 
 // 5. 骨架屏闪光效果
-// 1. 首先创建一个可重用的ShimmerBrush
 @Composable
 fun shimmerBrush(): Brush {
     val shimmerColors = listOf(
@@ -401,6 +446,7 @@ fun shimmerBrush(): Brush {
         tileMode = TileMode.Mirror
     )
 }
+
 @Composable
 fun ShimmerEffectCard(modifier: Modifier) {
     val shape = RoundedCornerShape(16.dp)
@@ -456,7 +502,11 @@ fun ShimmerEffectCard(modifier: Modifier) {
 // 6. 高度展开/折叠
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun HeightExpandAnimationCard(modifier: Modifier) {
+fun HeightExpandAnimationCard(
+    modifier: Modifier,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
     val shape = RoundedCornerShape(16.dp)
     Card(
         modifier = modifier
@@ -465,7 +515,6 @@ fun HeightExpandAnimationCard(modifier: Modifier) {
         shape = shape,
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        var expanded by remember { mutableStateOf(false) }
         Column(
             modifier = Modifier
                 .padding(16.dp)
@@ -478,7 +527,7 @@ fun HeightExpandAnimationCard(modifier: Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("内容折叠", style = MaterialTheme.typography.titleSmall)
-                Button(onClick = { expanded = !expanded }) {
+                Button(onClick = onToggle) {
                     Text(if (expanded) "收起" else "展开")
                 }
             }
@@ -495,7 +544,7 @@ fun HeightExpandAnimationCard(modifier: Modifier) {
             ) { targetExpanded ->
                 if (targetExpanded) {
                     Text(
-                        text = "Jetpack Compose 的动画系统非常强大！\n它可以轻松处理布局变化、颜色渐变和复杂的过渡效果。\n\nAnimatedContent 专门用于在不同内容之间进行动画切换。",
+                        text = "Jetpack Compose 的动画 system 非常强大！\n它可以轻松处理布局变化、颜色渐变和复杂的过渡效果。\n\nAnimatedContent 专门用于在不同内容之间进行动画切换。",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
                             .padding(vertical = 12.dp)

@@ -30,13 +30,11 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -53,85 +51,77 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.ui.screens.home.component.BottomSheetDemo
 import com.example.poop.util.Logcat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController? = null, viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(), topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(text = "首页", fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(onClick = { /* TODO: viewModel.onSearchClick() */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "搜索")
-                    }
-                    IconButton(onClick = { /* TODO: viewModel.onNotificationClick() */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "通知")
-                    }
-                }
-            )
-        }) { innerPadding ->
-        if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    // 1. 配置当前页面的顶栏信息
+    TopBarConfig(
+        title = "首页", centerTitle = true, actions = {
+            IconButton(onClick = { /* TODO: viewModel.onSearchClick() */ }) {
+                Icon(Icons.Default.Search, contentDescription = "搜索")
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                item(key = "greeting") {
-                    GreetingSection(uiState.userName)
-                }
-
-                item(key = "featured_section") {
-                    SectionTitle("热门推荐")
-                    FeaturedCarousel(uiState.featuredItems)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                item(key = "news_title") {
-                    SectionTitle("最新动态")
-                }
-
-                items(uiState.newsFeed, key = { "news_${it.id}" }) { newsItem ->
-                    NewsFeedItem(
-                        item = newsItem,
-                        onFavoriteClick = { viewModel.toggleFavorite(newsId = newsItem.id) })
-                }
-
-                item(key = "article_title") {
-                    SectionTitle("精选文章")
-                }
-
-                // 动态渲染 ViewModel 中的文章列表
-                items(
-                    items = uiState.articles,
-                    key = { "article_${it.id}" },
-                ) { article ->
-                    ArticleCard(
-                        cover = article.cover,
-                        title = article.title,
-                        link = article.link,
-                        description = article.description,
-                        onItemClick = { openUrlInBrowser(context, it) }
-                    )
-                }
-
-                item { BottomSheetDemo() }
+            IconButton(onClick = { /* TODO: viewModel.onNotificationClick() */ }) {
+                Icon(Icons.Default.Notifications, contentDescription = "通知")
             }
+        })
+
+    // 2. 直接展示内容，由于 NavHost 已经处理了 Padding，这里不需要 Scaffold
+    if (uiState.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
+            item(key = "greeting") {
+                GreetingSection(uiState.userName)
+            }
+
+            item(key = "featured_section") {
+                SectionTitle("热门推荐")
+                FeaturedCarousel(uiState.featuredItems)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            item(key = "news_title") {
+                SectionTitle("最新动态")
+            }
+
+            items(uiState.newsFeed, key = { "news_${it.id}" }) { newsItem ->
+                NewsFeedItem(
+                    item = newsItem,
+                    onFavoriteClick = { viewModel.toggleFavorite(newsId = newsItem.id) })
+            }
+
+            item(key = "article_title") {
+                SectionTitle("精选文章")
+            }
+
+            items(
+                items = uiState.articles,
+                key = { "article_${it.id}" },
+            ) { article ->
+                ArticleCard(
+                    cover = article.cover,
+                    title = article.title,
+                    link = article.link,
+                    description = article.description,
+                    onItemClick = { openUrlInBrowser(context, it) })
+            }
+
+            item { BottomSheetDemo() }
         }
     }
 }
@@ -290,11 +280,7 @@ fun NewsFeedItem(item: NewsItem, onFavoriteClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleCard(
-    cover: Any,
-    title: String,
-    link: String,
-    description: String,
-    onItemClick: (String) -> Unit
+    cover: Any, title: String, link: String, description: String, onItemClick: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -303,11 +289,9 @@ fun ArticleCard(
         shape = MaterialTheme.shapes.large,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(0.dp),
-        onClick = { onItemClick(link) }
-    ) {
+        onClick = { onItemClick(link) }) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current).data(cover).crossfade(true)

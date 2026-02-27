@@ -16,15 +16,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,21 +34,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.poop.R
+import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.ui.screens.profile.ImageType
+import com.example.poop.util.Logcat
 import com.example.poop.util.rememberImagePicker
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScannerScreen(
-    navController: NavController,
     viewModel: ScannerViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -72,13 +67,25 @@ fun ScannerScreen(
         viewModel.onPermissionResult(granted)
     }
 
+    TopBarConfig(
+        title = "扫一扫",
+        actions = {
+            IconButton(onClick = { pickPhoto(ImageType.SCREEN) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_photo_24),
+                    contentDescription = "选择图片",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    )
+
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) {
             launcher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    // 简洁的相机绑定逻辑
     LaunchedEffect(hasCameraPermission) {
         if (!hasCameraPermission) return@LaunchedEffect
         
@@ -106,44 +113,24 @@ fun ScannerScreen(
                     imageAnalysis
                 )
             } catch (e: Exception) {
-                e.printStackTrace()
+                // 3. 将 catch e 写入日志
+                Logcat.e("ScannerScreen", "相机生命周期绑定失败", e)
             }
         }, ContextCompat.getMainExecutor(context))
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("扫一扫", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { pickPhoto(ImageType.SCREEN) }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_photo_24),
-                            contentDescription = "选择图片",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+    // 移除 Scaffold，直接使用 Box 容器。NavHost 的全局 Padding 已生效
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        if (hasCameraPermission) {
+            AndroidView(
+                factory = { previewView },
+                modifier = Modifier.fillMaxSize()
             )
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            if (hasCameraPermission) {
-                AndroidView(
-                    factory = { previewView },
-                    modifier = Modifier.fillMaxSize()
-                )
 
-                // 结果展示浮层
+            // 结果展示浮层
+            if (scanResult.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -161,12 +148,12 @@ fun ScannerScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-            } else {
-                Text(
-                    text = "请授予相机权限以使用扫码功能",
-                    modifier = Modifier.align(Alignment.Center)
-                )
             }
+        } else {
+            Text(
+                text = "请授予相机权限以使用扫码功能",
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
     }
 }

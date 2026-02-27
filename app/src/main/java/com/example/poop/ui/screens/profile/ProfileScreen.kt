@@ -27,12 +27,10 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -51,6 +49,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.poop.R
 import com.example.poop.ui.navigation.Screen
+import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.ui.screens.login.LoginActivity
 import com.example.poop.util.rememberImagePicker
 
@@ -64,40 +63,35 @@ fun ProfileScreen(
         viewModel.updateSelectedImage(uri, type)
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(), topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "个人中心", fontWeight = FontWeight.Bold
-                    )
-                }, actions = {
-                    IconButton(onClick = {
-                        navController?.navigate(Screen.Scanner.route)
-                    }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_qr_code_scanner_24),
-                            contentDescription = "扫码",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    IconButton(onClick = { navController?.navigate(Screen.Setting.route) }) {
-                        Icon(
-                            Icons.Rounded.Settings,
-                            contentDescription = "设置",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            )
-        }) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            ProfileContent(
-                uiState = uiState,
-                onPickAvatar = { pickPhoto(ImageType.AVATAR) },
-                onPickCover = { pickPhoto(ImageType.COVER) })
+    // 1. 配置当前页面的顶栏信息
+    TopBarConfig(
+        title = "个人中心", centerTitle = true,
+        actions = {
+            IconButton(onClick = {
+                navController?.navigate(Screen.Scanner.route)
+            }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_qr_code_scanner_24),
+                    contentDescription = "扫码",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(onClick = { navController?.navigate(Screen.Setting.route) }) {
+                Icon(
+                    Icons.Rounded.Settings,
+                    contentDescription = "设置",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
-    }
+    )
+
+    // 2. 直接展示内容
+    ProfileContent(
+        uiState = uiState,
+        onPickAvatar = { pickPhoto(ImageType.AVATAR) },
+        onPickCover = { pickPhoto(ImageType.COVER) }
+    )
 }
 
 @Composable

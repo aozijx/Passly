@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -26,12 +25,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.util.Logcat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -58,102 +55,95 @@ data class AppWithSdk(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppSdkClassifier(onBack: () -> Unit) {
+fun AppSdkClassifier() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var sdkAppMap by remember { mutableStateOf<Map<Int, List<AppWithSdk>>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(false) }
     var loadStatus by remember { mutableStateOf("扫描已安装应用的架构与 SDK") }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("应用分析") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = innerPadding.calculateTopPadding() + 16.dp,
-                bottom = 16.dp,
-                start = 16.dp,
-                end = 16.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    // 1. 配置顶栏
+    TopBarConfig(
+        title = "应用分析",
+        centerTitle = true
+    )
+
+    // 2. 页面内容
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "扫描控制台",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(loadStatus, style = MaterialTheme.typography.bodySmall)
-                        }
-                        if (!isLoading) {
-                            Button(
-                                onClick = {
-                                    isLoading = true
-                                    loadStatus = "正在深度扫描架构信息..."
-                                    scope.launch {
-                                        val result = getAllAppsWithSdk(context)
-                                        withContext(Dispatchers.Main) {
-                                            sdkAppMap = result.groupBy { it.targetSdk }
-                                                .toSortedMap(compareByDescending { it })
-                                            isLoading = false
-                                            loadStatus = "扫描完成: 共 ${result.size} 个应用"
-                                        }
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "扫描控制台",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(loadStatus, style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (!isLoading) {
+                        Button(
+                            onClick = {
+                                isLoading = true
+                                loadStatus = "正在深度扫描架构信息..."
+                                scope.launch {
+                                    val result = getAllAppsWithSdk(context)
+                                    withContext(Dispatchers.Main) {
+                                        sdkAppMap = result.groupBy { it.targetSdk }
+                                            .toSortedMap(compareByDescending { it })
+                                        isLoading = false
+                                        loadStatus = "扫描完成: 共 ${result.size} 个应用"
                                     }
                                 }
-                            ) { Text("开始") }
-                        } else {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                        }
+                            }
+                        ) { Text("开始") }
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
                     }
                 }
             }
+        }
 
-            if (sdkAppMap.isNotEmpty()) {
-                sdkAppMap.forEach { (sdkVersion, appList) ->
-                    item(key = "header_$sdkVersion") {
-                        SdkGroupHeader(sdkVersion, appList.size)
-                    }
-                    items(appList, key = { "${it.packageName}_$sdkVersion" }) { app ->
-                        AppInfoItem(app)
-                    }
+        if (sdkAppMap.isNotEmpty()) {
+            sdkAppMap.forEach { (sdkVersion, appList) ->
+                item(key = "header_$sdkVersion") {
+                    SdkGroupHeader(sdkVersion, appList.size)
                 }
-            } else if (!isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "请点击上方开始扫描",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                items(appList, key = { "${it.packageName}_$sdkVersion" }) { app ->
+                    AppInfoItem(app)
+                }
+            }
+        } else if (!isLoading) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "请点击上方开始扫描",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -221,13 +211,21 @@ fun AppInfoItem(app: AppWithSdk) {
                 )
 
                 val archLabel = app.architecture
+                val is64 = archLabel.contains("64") || archLabel.contains("v8")
+                
+                val badgeColor = when {
+                    is64 -> MaterialTheme.colorScheme.primaryContainer
+                    archLabel == "32-bit" || archLabel.contains("v7") -> MaterialTheme.colorScheme.secondaryContainer
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }
 
-                Text(
-                    text = archLabel,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelSmall
-                )
-
+                Badge(containerColor = badgeColor) {
+                    Text(
+                        text = archLabel,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
             }
         }
     }
@@ -242,9 +240,8 @@ private suspend fun getAllAppsWithSdk(context: Context): List<AppWithSdk> =
             val appInfo = pkg.applicationInfo
             if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0) {
 
-                // 改进的 ABI 识别逻辑
+                // ABI 识别逻辑
                 val arch = try {
-                    // 1. 尝试通过反射获取 primaryCpuAbi (兼容旧版本和隐藏 API)
                     val primaryCpuAbi = ApplicationInfo::class.java.getField("primaryCpuAbi")
                         .get(appInfo) as? String
 
@@ -259,14 +256,12 @@ private suspend fun getAllAppsWithSdk(context: Context): List<AppWithSdk> =
                                 else -> primaryCpuAbi
                             }
                         }
-                        // 2. 如果 ABI 为空，检查 nativeLibraryDir 路径特征
                         appInfo.nativeLibraryDir.contains("arm64") -> "arm64-v8a"
                         appInfo.nativeLibraryDir.contains("arm") -> "armeabi-v7a"
-                        // 3. 兜底策略：如果是纯 Java 应用，通常随系统架构
                         else -> "32-bit"
                     }
                 } catch (e: Exception) {
-                    Logcat.e("AppSdkClassifier", "获取 ABI 信息失败", e)
+                    Logcat.e("AppSdkClassifier", "识别 ABI 失败: ${pkg.packageName}", e)
                     "Unknown"
                 }
 

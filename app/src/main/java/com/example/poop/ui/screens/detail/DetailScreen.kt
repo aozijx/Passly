@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.poop.ui.navigation.Screen
+import com.example.poop.ui.navigation.TopBarConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,40 +33,36 @@ fun DetailScreen(navController: NavHostController) {
             .toList()
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("设备详情", fontWeight = FontWeight.Bold) }
-            )
+    TopBarConfig(
+        title = "设备详情",
+        centerTitle = true
+    )
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(
+            start = 8.dp, 
+            end = 8.dp, 
+            top = 8.dp,
+            bottom = 16.dp 
+        ),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            AnalysisEntryCard(onClick = { navController.navigate(Screen.AppAnalysis.route) })
         }
-    ) { innerPadding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            // 使用 contentPadding 来提供列表底部的留白，而不是使用 Spacer 或全局 Padding
-            contentPadding = PaddingValues(
-                start = 8.dp, 
-                end = 8.dp, 
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                bottom = 16.dp 
-            ),
-            modifier = Modifier.fillMaxSize()
-        ) {
+
+        categoryGroups.forEach { (category, items) ->
             item(span = { GridItemSpan(maxLineSpan) }) {
-                AnalysisEntryCard(onClick = { navController.navigate(Screen.AppAnalysis.route) })
+                CategoryTitle(category)
             }
 
-            categoryGroups.forEach { (category, items) ->
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    CategoryTitle(category)
-                }
-
-                items(items) { infoItem ->
-                    DetailItem(
-                        title = infoItem.title,
-                        value = infoItem.valueProvider(systemInfoManager)
-                    )
-                }
+            items(items) { infoItem ->
+                DetailItem(
+                    title = infoItem.title,
+                    value = infoItem.valueProvider(systemInfoManager)
+                )
             }
         }
     }
@@ -93,8 +90,8 @@ fun AnalysisEntryCard(onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("应用 SDK 版本分析", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("查看 API 级别分布", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(0.7f))
+                Text("应用架构与 SDK 分析", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("查看 API 级别与 64 位支持", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(0.7f))
             }
             Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
         }
