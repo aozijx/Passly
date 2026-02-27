@@ -4,8 +4,8 @@
     <item android:drawable="@color/WindowBackground" />
 
     <item
-        android:width="256dp"
-        android:height="256dp"
+        android:width="128dp"
+        android:height="128dp"
         android:drawable="@mipmap/launcher_logo"
         android:gravity="center">
         <!-- 圆形蒙版容器 -->

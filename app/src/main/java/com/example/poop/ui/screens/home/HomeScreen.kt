@@ -1,11 +1,7 @@
 package com.example.poop.ui.screens.home
 
-import android.Manifest
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -17,11 +13,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,7 +29,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -44,19 +37,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,14 +52,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.poop.util.NotificationHelper
-import kotlinx.coroutines.launch
+import com.example.poop.ui.screens.home.component.BottomSheetDemo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -308,7 +291,7 @@ fun NewsFeedItem(item: NewsItem, onFavoriteClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleCard(
-    cover: String,
+    cover: Any,
     title: String,
     link: String,
     description: String,
@@ -372,164 +355,4 @@ fun openUrlInBrowser(context: Context, url: String) {
     } catch (e: Exception) {
         Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT).show()
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BottomSheetDemo() {
-    val showBottomSheet = remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        OutlinedButton(onClick = { showBottomSheet.value = true }) {
-            Text("更多演示选项")
-        }
-    }
-
-    if (showBottomSheet.value) {
-        ModalBottomSheet(
-            onDismissRequest = { showBottomSheet.value = false },
-            sheetState = sheetState,
-            windowInsets = WindowInsets(0)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.8f)
-                    .padding(horizontal = 16.dp)
-                    .navigationBarsPadding()
-            ) {
-                Text(
-                    "分段式操作演示",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-
-                StatusBarPopupDemo()
-                ReadClipboardButton()
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                if (sheetState.currentValue == SheetValue.PartiallyExpanded) {
-                                    sheetState.expand()
-                                } else {
-                                    sheetState.partialExpand()
-                                }
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        val btnText =
-                            if (sheetState.currentValue == SheetValue.PartiallyExpanded) "切换全开" else "切换半开"
-                        Text(btnText)
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                showBottomSheet.value = false
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("关闭")
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun StatusBarPopupDemo() {
-    val context = LocalContext.current
-    val notificationHelper = NotificationHelper(context)
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Button(
-            onClick = {
-                if (ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.POST_NOTIFICATIONS
-                    ) == PackageManager.PERMISSION_GRANTED
-                ) {
-                    notificationHelper.sendCustomNotification(
-                        "状态栏弹窗标题", "这是Compose触发的状态栏弹窗内容"
-                    )
-                } else {
-                    Toast.makeText(context, "请在系统设置中开启通知权限", Toast.LENGTH_SHORT).show()
-                }
-            }) {
-            Text(text = "触发状态栏弹窗")
-        }
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Button(
-            onClick = { notificationHelper.cancelNotification() }) {
-            Text(text = "取消弹窗")
-        }
-    }
-}
-
-@Composable
-fun ReadClipboardButton() {
-    // 1. 获取上下文和剪贴板管理器
-    val context = LocalContext.current
-    val clipboardManager = ContextCompat.getSystemService(
-        context, ClipboardManager::class.java
-    ) as ClipboardManager
-
-    // 2. 状态管理：存储剪贴板内容和提示信息
-    var clipboardContent by remember { mutableStateOf("") }
-    var tipText by remember { mutableStateOf("点击按钮读取剪贴板") }
-
-    // 3. 核心：OutlinedButton点击读取剪贴板
-    OutlinedButton(
-        onClick = {
-            try {
-                // 读取剪贴板主内容
-                val clipData: ClipData? = clipboardManager.primaryClip
-                if (clipData != null && clipData.itemCount > 0) {
-                    // 获取第一个剪贴项的文本
-                    val text = clipData.getItemAt(0).text?.toString() ?: "剪贴板为空"
-                    clipboardContent = text
-                    tipText = "读取成功！"
-                } else {
-                    clipboardContent = ""
-                    tipText = "剪贴板无内容"
-                }
-            } catch (e: Exception) {
-                // 捕获权限/异常（Android 13+ 无权限时会抛异常）
-                clipboardContent = ""
-                tipText = "读取失败：${e.message}"
-                e.printStackTrace()
-            }
-        },
-        modifier = Modifier.padding(20.dp)
-    ) {
-        Text(text = "读取剪贴板")
-    }
-
-    // 4. 显示读取结果
-    Text(
-        text = "提示：$tipText\n剪贴板内容：$clipboardContent",
-        modifier = Modifier.padding(20.dp)
-    )
 }
