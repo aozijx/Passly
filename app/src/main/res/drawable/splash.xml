@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 1. 底层：纯色背景 -->
+    <item android:drawable="@color/WindowBackground" />
+
+    <item
+        android:width="256dp"
+        android:height="256dp"
+        android:drawable="@mipmap/launcher_logo"
+        android:gravity="center">
+        <!-- 圆形蒙版容器 -->
+        <shape android:shape="oval">
+            <!-- 图标内容（放在圆形shape内，自动裁剪为圆形） -->
+            <solid android:drawable="@mipmap/launcher_logo" />
+        </shape>
+    </item>
+</layer-list>

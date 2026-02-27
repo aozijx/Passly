@@ -1,5 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 开屏页专属主题配置 -->
+    <!-- 基于Material Light浅色主题，移除默认ActionBar -->
+    <style name="Theme.Poop.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 设置开屏窗口背景为自定义layer-list布局，保证图标居中且不拉伸 -->
+        <item name="android:windowBackground">@drawable/splash</item>
+        <!-- 全屏显示开屏页，避免状态栏/导航栏遮挡开屏图标 -->
+        <item name="android:windowFullscreen">true</item>
+        <!-- 禁用标题栏（兜底） -->
+        <item name="android:windowNoTitle">true</item>
+    </style>
 
-    <style name="Theme.Poop" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- 主界面主题配置 -->
+    <!-- 基于Material Light浅色主题，移除默认ActionBar -->
+    <style name="Theme.Poop" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 设置主界面窗口背景为自定义drawable，保持视觉一致性 -->
+        <item name="android:windowBackground">@drawable/splash</item>
+        <!-- 允许系统绘制状态栏背景，适配沉浸式状态栏（国内ROM） -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- 启用硬件加速，提升主界面UI渲染性能 -->
+        <item name="android:hardwareAccelerated">true</item>
+        <!-- 设置状态栏文字为浅色，适配国内ROM的状态栏显示逻辑 -->
+        <item name="android:windowLightStatusBar">true</item>
+        <!-- 新增：设置状态栏颜色，适配国内机型沉浸式状态栏 -->
+        <item name="android:statusBarColor">@color/WindowBackground</item>
+        <!-- 新增：设置导航栏颜色，统一国内机型底部导航栏显示 -->
+        <item name="android:navigationBarColor">@color/WindowBackground</item>
+        <!-- 新增：禁用Activity切换动画，提升页面跳转流畅度 -->
+        <item name="android:windowActivityTransitions">false</item>
+        <!-- 新增：设置窗口软输入模式，避免键盘弹出挤压布局 -->
+        <item name="android:windowSoftInputMode">adjustPan</item>
+        <!-- 新增：禁用系统默认的边缘阴影效果，适配国内ROM样式 -->
+        <item name="android:windowContentTransitions">false</item>
+    </style>
 </resources>

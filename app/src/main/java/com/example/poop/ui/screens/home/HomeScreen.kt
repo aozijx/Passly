@@ -1,6 +1,8 @@
 package com.example.poop.ui.screens.home
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -54,6 +56,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -410,6 +413,7 @@ fun BottomSheetDemo() {
                 )
 
                 StatusBarPopupDemo()
+                ReadClipboardButton()
 
                 Row(
                     modifier = Modifier
@@ -482,4 +486,50 @@ fun StatusBarPopupDemo() {
             Text(text = "取消弹窗")
         }
     }
+}
+
+@Composable
+fun ReadClipboardButton() {
+    // 1. 获取上下文和剪贴板管理器
+    val context = LocalContext.current
+    val clipboardManager = ContextCompat.getSystemService(
+        context, ClipboardManager::class.java
+    ) as ClipboardManager
+
+    // 2. 状态管理：存储剪贴板内容和提示信息
+    var clipboardContent by remember { mutableStateOf("") }
+    var tipText by remember { mutableStateOf("点击按钮读取剪贴板") }
+
+    // 3. 核心：OutlinedButton点击读取剪贴板
+    OutlinedButton(
+        onClick = {
+            try {
+                // 读取剪贴板主内容
+                val clipData: ClipData? = clipboardManager.primaryClip
+                if (clipData != null && clipData.itemCount > 0) {
+                    // 获取第一个剪贴项的文本
+                    val text = clipData.getItemAt(0).text?.toString() ?: "剪贴板为空"
+                    clipboardContent = text
+                    tipText = "读取成功！"
+                } else {
+                    clipboardContent = ""
+                    tipText = "剪贴板无内容"
+                }
+            } catch (e: Exception) {
+                // 捕获权限/异常（Android 13+ 无权限时会抛异常）
+                clipboardContent = ""
+                tipText = "读取失败：${e.message}"
+                e.printStackTrace()
+            }
+        },
+        modifier = Modifier.padding(20.dp)
+    ) {
+        Text(text = "读取剪贴板")
+    }
+
+    // 4. 显示读取结果
+    Text(
+        text = "提示：$tipText\n剪贴板内容：$clipboardContent",
+        modifier = Modifier.padding(20.dp)
+    )
 }

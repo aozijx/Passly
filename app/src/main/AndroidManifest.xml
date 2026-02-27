@@ -27,7 +27,8 @@
         android:required="false" />
 
     <!-- Android 13+ 图片权限 -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_IMAGES"
         tools:ignore="PhotoAndVideoPolicy" />
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
 
@@ -39,15 +40,15 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- 读取设备状态 -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission
+        android:name="android.permission.READ_CLIPBOARD_IN_BACKGROUND"
+        tools:ignore="ProtectedPermissions" />
 
     <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:enableOnBackInvokedCallback="true"
-        android:label="@string/app_name"
         android:icon="@mipmap/app_icon_main"
         android:roundIcon="@mipmap/app_icon_round"
+        android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Poop"
         tools:targetApi="33">
@@ -68,6 +69,7 @@
             android:exported="false"
             android:theme="@style/Theme.Poop"
             android:windowSoftInputMode="adjustResize" />
+
         <receiver
             android:name=".ui.screens.widgets.BeautySentenceWidgetReceiver"
             android:exported="true">
