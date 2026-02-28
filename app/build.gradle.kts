@@ -43,13 +43,16 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
-            // 只有当签名配置完整时才应用
             if (signingConfigs.getByName("release").storeFile != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
+            // 确保 debug 版开启调试，方便看日志
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
     }
     compileOptions {
@@ -80,7 +83,6 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     
-    // Icons
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
 
@@ -95,6 +97,10 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // Biometric & Security
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.security.crypto)
 
     // CameraX
     implementation(libs.androidx.camera.core)

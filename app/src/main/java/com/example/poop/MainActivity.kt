@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
@@ -13,22 +12,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import com.example.poop.ui.navigation.NavGraph
 import com.example.poop.ui.navigation.Screen
 import com.example.poop.ui.theme.PoopTheme
-import com.example.poop.util.Preference
+import com.example.poop.data.Preference
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 直接在这里开启，永不关闭
+        
+        // 开启 FLAG_SECURE 保护，防止该页面及后续页面被截屏
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE,
         )
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        
         enableEdgeToEdge()
         checkAndRequestPermissions()
+
         setContent {
             // 1. 实例化你的 Preference 类
             val preference = remember { Preference(applicationContext) }
