@@ -6,7 +6,9 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -35,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.poop.util.NotificationHelper
@@ -47,9 +51,17 @@ fun BottomSheetDemo() {
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    // 动态间距逻辑：根据 BottomSheet 的展开状态调整内部间距
-    val spacingTarget = if (sheetState.targetValue == SheetValue.Expanded) 64.dp else 12.dp
-    val dynamicSpacing by animateDpAsState(targetValue = spacingTarget, label = "spacingAnimation")
+    // 监听实际状态，并使用稍微快一点的动画避开冲突期
+    val isExpanded = sheetState.targetValue == SheetValue.Expanded
+    val dynamicSpacing by animateDpAsState(
+        targetValue = if (isExpanded) 32.dp else 24.dp,
+        animationSpec = spring(
+            // 使用弹簧动画来匹配系统的抽屉感，这比 tween 更自然
+            dampingRatio = Spring.DampingRatioNoBouncy, // 无回弹
+            stiffness = Spring.StiffnessLow             // 较低的刚度，产生顺滑的慢速感
+        ),
+        label = "spacingAnimation"
+    )
 
     Box(
         modifier = Modifier
@@ -67,55 +79,76 @@ fun BottomSheetDemo() {
             onDismissRequest = { showBottomSheet.value = false },
             sheetState = sheetState
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.9f)
-                    .padding(horizontal = 16.dp)
-                    .navigationBarsPadding(),
-                verticalArrangement = Arrangement.spacedBy(dynamicSpacing)
-            ) {
-                Text(
-                    "分段式操作演示",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-
-                StatusBarPopupDemo()
-                ReadClipboardButton()
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                if (sheetState.currentValue == SheetValue.PartiallyExpanded) {
-                                    sheetState.expand()
-                                } else {
-                                    sheetState.partialExpand()
-                                }
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(if (sheetState.currentValue == SheetValue.PartiallyExpanded) "切换全开" else "切换半开")
+            BottomSheetContent(
+                sheetState = sheetState,
+                dynamicSpacing = dynamicSpacing,
+                onToggleState = {
+                    scope.launch {
+                        if (sheetState.targetValue == SheetValue.PartiallyExpanded) {
+                            sheetState.expand()
+                        } else {
+                            sheetState.partialExpand()
+                        }
                     }
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                showBottomSheet.value = false
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("关闭")
+                },
+                onClose = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            showBottomSheet.value = false
+                        }
                     }
                 }
+            )
+        }
+    }
+}
+
+/**
+ * 抽离出的 BottomSheet 内部布局
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BottomSheetContent(
+    sheetState: SheetState,
+    dynamicSpacing: Dp,
+    onToggleState: () -> Unit,
+    onClose: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxHeight(0.9f)
+            .padding(horizontal = 16.dp)
+            .navigationBarsPadding(),
+        // 关键点 2：使用 dynamicSpacing，但配合稳定的容器高度
+        verticalArrangement = Arrangement.spacedBy(dynamicSpacing)
+    ) {
+        Text(
+            "分段式操作演示",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+
+        StatusBarPopupDemo()
+        ReadClipboardButton()
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onToggleState,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(if (sheetState.currentValue == SheetValue.PartiallyExpanded) "切换全开" else "切换半开")
+            }
+            OutlinedButton(
+                onClick = onClose,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("关闭")
             }
         }
     }
@@ -196,7 +229,6 @@ fun ReadClipboardButton() {
             Text(text = buttonText)
         }
 
-        // 仅在有内容时显示，且不显示“提示”字样
         if (clipboardContent.isNotEmpty()) {
             Text(
                 text = "剪贴板内容：$clipboardContent",
