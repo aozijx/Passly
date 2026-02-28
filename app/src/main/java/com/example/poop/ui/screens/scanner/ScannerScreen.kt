@@ -1,6 +1,7 @@
 package com.example.poop.ui.screens.scanner
 
 import android.Manifest
+import android.content.ClipData
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,14 +27,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -43,6 +44,7 @@ import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.ui.screens.profile.ImageType
 import com.example.poop.util.Logcat
 import com.example.poop.util.rememberImagePicker
+import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,15 +53,16 @@ fun ScannerScreen(
     viewModel: ScannerViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val hasCameraPermission by viewModel.hasCameraPermission.collectAsState()
     val scanResult by viewModel.scanResult.collectAsState()
     val previewView = remember { PreviewView(context) }
+    val scope = rememberCoroutineScope()
     
     val pickPhoto = rememberImagePicker { uri, _ ->
         viewModel.decodeImage(context, uri)
     }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -113,13 +116,11 @@ fun ScannerScreen(
                     imageAnalysis
                 )
             } catch (e: Exception) {
-                // 3. 将 catch e 写入日志
                 Logcat.e("ScannerScreen", "相机生命周期绑定失败", e)
             }
         }, ContextCompat.getMainExecutor(context))
     }
 
-    // 移除 Scaffold，直接使用 Box 容器。NavHost 的全局 Padding 已生效
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -129,13 +130,15 @@ fun ScannerScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // 结果展示浮层
             if (scanResult.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .clickable {
-                            clipboardManager.setText(AnnotatedString(scanResult))
+                            // 在协程中调用 setClipEntry
+                            scope.launch {
+                                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("scan_result", scanResult)))
+                            }
                             Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
                         }
                         .padding(bottom = 64.dp)

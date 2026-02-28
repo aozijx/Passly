@@ -15,12 +15,12 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.example.poop"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.poop"
         minSdk = 31
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -52,11 +52,13 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
     buildFeatures {
         compose = true
@@ -66,6 +68,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -75,12 +78,17 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    
+    // Icons
+    implementation(libs.androidx.material.icons.core)
+    implementation(libs.androidx.material.icons.extended)
+
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.navigation.compose)
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation(libs.androidx.datastore.preferences)
 
     // CameraX
     implementation(libs.androidx.camera.core)
@@ -89,10 +97,10 @@ dependencies {
     implementation(libs.androidx.camera.view)
 
     // Google ML Kit Barcode Scanning
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation(libs.barcode.scanning)
 
     // Permission handling (Guava for CameraX)
-    implementation("com.google.guava:guava:33.0.0-android")
+    implementation(libs.guava)
     implementation(libs.androidx.compose.foundation)
 
     testImplementation(libs.junit)

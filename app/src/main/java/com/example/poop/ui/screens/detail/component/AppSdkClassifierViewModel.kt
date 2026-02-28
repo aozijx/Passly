@@ -74,7 +74,7 @@ class AppSdkClassifierViewModel : ViewModel() {
 
             packages.mapNotNull { pkg ->
                 val appInfo = pkg.applicationInfo
-                if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0) {
+                if ((appInfo?.flags?.and(ApplicationInfo.FLAG_SYSTEM)) == 0) {
                     val arch = try {
                         val primaryCpuAbi = ApplicationInfo::class.java.getField("primaryCpuAbi")
                             .get(appInfo) as? String
