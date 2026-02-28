@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.ui.navigation.TopBarConfig
+import com.example.poop.util.AppWithSdk
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

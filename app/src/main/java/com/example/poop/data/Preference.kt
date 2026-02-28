@@ -1,4 +1,4 @@
-package com.example.poop.util
+package com.example.poop.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey

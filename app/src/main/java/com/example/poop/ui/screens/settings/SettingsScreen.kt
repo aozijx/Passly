@@ -121,7 +121,7 @@ fun SettingsScreen(
                                     context.startActivity(Intent(context, VaultActivity::class.java))
                                     versionTapCount = 0
                                 },
-                                onError = { error ->
+                                onError = { _ ->
                                     authFailureCount++ // 增加失败计数
                                     val remaining = maxFailures - authFailureCount
                                     if (remaining > 0) {
