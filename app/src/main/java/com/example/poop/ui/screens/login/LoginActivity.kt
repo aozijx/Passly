@@ -25,7 +25,7 @@ class LoginActivity : ComponentActivity() {
             val isDynamicColorPref by preference.isDynamicColor.collectAsState(initial = true)
 
             PoopTheme(
-                darkTheme = isDarkModePref,
+                darkTheme = if (isDarkModePref == true) true else null,
                 dynamicColor = isDynamicColorPref
             ) {
                 LoginScreen(onBack = { finish() })

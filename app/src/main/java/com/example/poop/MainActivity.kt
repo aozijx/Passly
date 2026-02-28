@@ -31,7 +31,7 @@ class MainActivity : FragmentActivity() {
             val isDynamicColorPref by preference.isDynamicColor.collectAsState(initial = true)
 
             PoopTheme(
-                darkTheme = isDarkModePref,
+                darkTheme = if (isDarkModePref == true) true else null,
                 dynamicColor = isDynamicColorPref
             ) {
                 // 直接调用 NavGraph，并指定起始页
