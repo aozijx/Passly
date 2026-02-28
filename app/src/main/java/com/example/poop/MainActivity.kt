@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
@@ -13,21 +12,14 @@ import androidx.compose.runtime.remember
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.data.Preference
 import com.example.poop.ui.navigation.NavGraph
 import com.example.poop.ui.navigation.Screen
 import com.example.poop.ui.theme.PoopTheme
-import com.example.poop.data.Preference
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // 开启 FLAG_SECURE 保护，防止该页面及后续页面被截屏
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE,
-        )
-        
         enableEdgeToEdge()
         checkAndRequestPermissions()
 
@@ -36,8 +28,12 @@ class MainActivity : FragmentActivity() {
             val preference = remember { Preference(applicationContext) }
             // initialValue 建议使用系统默认值，这样启动时不会有闪烁
             val isDarkModePref by preference.isDarkMode.collectAsState(initial = null)
+            val isDynamicColorPref by preference.isDynamicColor.collectAsState(initial = true)
 
-            PoopTheme(darkTheme = if (isDarkModePref == true) true else null) {
+            PoopTheme(
+                darkTheme = isDarkModePref,
+                dynamicColor = isDynamicColorPref
+            ) {
                 // 直接调用 NavGraph，并指定起始页
                 NavGraph(startDestination = Screen.Home.route)
             }

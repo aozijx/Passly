@@ -14,6 +14,7 @@ class Preference(context: Context) {
 
     companion object {
         val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
+        val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
     }
 
     // 读取深色模式设置
@@ -25,6 +26,18 @@ class Preference(context: Context) {
     suspend fun setDarkMode(isDark: Boolean) {
         appContext.dataStore.edit { preferences ->
             preferences[DARK_MODE_KEY] = isDark
+        }
+    }
+
+    // 读取动态颜色设置
+    val isDynamicColor: Flow<Boolean> = appContext.dataStore.data.map { preferences ->
+        preferences[DYNAMIC_COLOR_KEY] ?: true // 默认开启
+    }
+
+    // 保存动态颜色设置
+    suspend fun setDynamicColor(enabled: Boolean) {
+        appContext.dataStore.edit { preferences ->
+            preferences[DYNAMIC_COLOR_KEY] = enabled
         }
     }
 }

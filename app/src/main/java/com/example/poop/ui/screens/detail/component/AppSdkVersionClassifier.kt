@@ -55,75 +55,77 @@ fun AppSdkClassifier(viewModel: AppSdkClassifierViewModel = viewModel()) {
     )
 
     // 2. Page content
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "扫描控制台",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(uiState.loadStatus, style = MaterialTheme.typography.bodySmall)
-                    }
-                    if (!uiState.isLoading) {
-                        Button(onClick = { viewModel.startScan(context) }) { Text("开始") }
-                    } else {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    }
-                }
-            }
-        }
-
-        if (uiState.sdkAppMap.isNotEmpty()) {
-            uiState.sdkAppMap.forEach { (sdkVersion, appList) ->
-                val isExpanded = sdkVersion in uiState.expandedSdks
-                item(key = "header_$sdkVersion") {
-                    SdkGroupHeader(
-                        sdkVersion = sdkVersion,
-                        count = appList.size,
-                        isExpanded = isExpanded,
-                        onClick = { viewModel.toggleSdkExpansion(sdkVersion) }
-                    )
-                }
-                if (isExpanded) {
-                    items(appList, key = { "${it.packageName}_$sdkVersion" }) { app ->
-                        AppInfoItem(app)
-                    }
-                }
-            }
-        } else if (!uiState.isLoading) {
+    Surface(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 100.dp),
-                    contentAlignment = Alignment.Center
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
-                    Text(
-                        "请点击上方开始扫描",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "扫描控制台",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(uiState.loadStatus, style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (!uiState.isLoading) {
+                            Button(onClick = { viewModel.startScan(context) }) { Text("开始") }
+                        } else {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (uiState.sdkAppMap.isNotEmpty()) {
+                uiState.sdkAppMap.forEach { (sdkVersion, appList) ->
+                    val isExpanded = sdkVersion in uiState.expandedSdks
+                    item(key = "header_$sdkVersion") {
+                        SdkGroupHeader(
+                            sdkVersion = sdkVersion,
+                            count = appList.size,
+                            isExpanded = isExpanded,
+                            onClick = { viewModel.toggleSdkExpansion(sdkVersion) }
+                        )
+                    }
+                    if (isExpanded) {
+                        items(appList, key = { "${it.packageName}_$sdkVersion" }) { app ->
+                            AppInfoItem(app)
+                        }
+                    }
+                }
+            } else if (!uiState.isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "请点击上方开始扫描",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -137,7 +139,10 @@ fun SdkGroupHeader(
     isExpanded: Boolean,
     onClick: () -> Unit
 ) {
-    val rotation by animateFloatAsState(targetValue = if (isExpanded) 180f else 0f, label = "rotation")
+    val rotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        label = "rotation"
+    )
 
     Surface(
         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -206,7 +211,7 @@ fun AppInfoItem(app: AppWithSdk) {
 
                 val archLabel = app.architecture
                 val is64 = archLabel.contains("64") || archLabel.contains("v8")
-                
+
                 val badgeColor = when {
                     is64 -> MaterialTheme.colorScheme.primaryContainer
                     archLabel == "32-bit" || archLabel.contains("v7") -> MaterialTheme.colorScheme.secondaryContainer

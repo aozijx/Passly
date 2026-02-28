@@ -20,6 +20,7 @@ import kotlin.math.pow
 data class SettingsUiState(
     val isNotificationsEnabled: Boolean = true,
     val isDarkMode: Boolean = false,
+    val isDynamicColor: Boolean = true,
     val cacheSize: String = "0.00 KB"
 )
 
@@ -31,11 +32,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     val uiState: StateFlow<SettingsUiState> = combine(
         preference.isDarkMode,
+        preference.isDynamicColor,
         _isNotificationsEnabled,
         _cacheSize
-    ) { dark, notify, cache ->
+    ) { dark, dynamic, notify, cache ->
         SettingsUiState(
             isDarkMode = dark,
+            isDynamicColor = dynamic,
             isNotificationsEnabled = notify,
             cacheSize = cache
         )
@@ -84,6 +87,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleDarkMode(isDarkMode: Boolean) {
         viewModelScope.launch {
             preference.setDarkMode(isDarkMode)
+        }
+    }
+
+    fun toggleDynamicColor(enabled: Boolean) {
+        viewModelScope.launch {
+            preference.setDynamicColor(enabled)
         }
     }
 

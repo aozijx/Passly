@@ -66,6 +66,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.data.Preference
 import com.example.poop.data.VaultCategory
 import com.example.poop.data.VaultItem
 import com.example.poop.ui.theme.PoopTheme
@@ -83,7 +84,14 @@ class VaultActivity : FragmentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enableEdgeToEdge()
         setContent {
-            PoopTheme {
+            val preference = remember { Preference(applicationContext) }
+            val isDarkModePref by preference.isDarkMode.collectAsState(initial = null)
+            val isDynamicColorPref by preference.isDynamicColor.collectAsState(initial = true)
+
+            PoopTheme(
+                darkTheme = isDarkModePref,
+                dynamicColor = isDynamicColorPref
+            ) {
                 VaultContent(viewModel)
             }
         }

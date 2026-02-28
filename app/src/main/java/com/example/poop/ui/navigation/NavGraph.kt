@@ -1,5 +1,7 @@
 package com.example.poop.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,11 +22,13 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -46,12 +50,16 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
     val bottomNavItems = listOf(Screen.Home, Screen.Profile, Screen.Animation, Screen.Detail)
     
     val topBarState = remember { TopBarState() }
+    
+    // 配置 enterAlways 效果的滚动行为
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     CompositionLocalProvider(LocalTopBarState provides topBarState) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
 
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 if (topBarState.isVisible) {
                     val navigationIcon: @Composable () -> Unit = {
@@ -77,13 +85,15 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                         CenterAlignedTopAppBar(
                             title = { Text(topBarState.title) },
                             navigationIcon = navigationIcon,
-                            actions = topBarState.actions
+                            actions = topBarState.actions,
+                            scrollBehavior = scrollBehavior
                         )
                     } else {
                         TopAppBar(
                             title = { Text(topBarState.title) },
                             navigationIcon = navigationIcon,
-                            actions = topBarState.actions
+                            actions = topBarState.actions,
+                            scrollBehavior = scrollBehavior
                         )
                     }
                 }
@@ -117,7 +127,11 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 startDestination = startDestination,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+                popEnterTransition = { EnterTransition.None },
+                popExitTransition = { ExitTransition.None }
             ) {
                 composable(Screen.Home.route) {
                     HomeScreen()

@@ -83,69 +83,71 @@ fun AnimationScreen(
 
     val modifier = Modifier.fillMaxWidth()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        item {
-            Text(
-                "基础动画",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-        item {
-            FadeSlideAnimationCard(
-                modifier = modifier,
-                isVisible = uiState.isFadeVisible,
-                onToggle = { viewModel.toggleFadeVisibility() }
-            )
-        }
-        item {
-            ScaleAnimationCard(
-                modifier = modifier,
-                isSelected = uiState.isScaleSelected,
-                onToggle = { viewModel.toggleScaleSelection() }
-            )
-        }
+    Surface(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            item {
+                Text(
+                    "基础动画",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+            item {
+                FadeSlideAnimationCard(
+                    modifier = modifier,
+                    isVisible = uiState.isFadeVisible,
+                    onToggle = { viewModel.toggleFadeVisibility() }
+                )
+            }
+            item {
+                ScaleAnimationCard(
+                    modifier = modifier,
+                    isSelected = uiState.isScaleSelected,
+                    onToggle = { viewModel.toggleScaleSelection() }
+                )
+            }
 
-        item {
-            Text(
-                "高级交互",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 8.dp, top = 8.dp)
-            )
-        }
-        item {
-            AnimatedHeartCard(
-                modifier = modifier,
-                liked = uiState.isHeartLiked,
-                onToggle = { viewModel.toggleHeartLike() }
-            )
-        }
-        item {
-            FlipCardAnimation(
-                modifier = modifier,
-                rotated = uiState.isCardRotated,
-                onToggle = { viewModel.toggleCardRotation() }
-            )
-        }
-        item { ShimmerEffectCard(modifier) }
+            item {
+                Text(
+                    "高级交互",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                )
+            }
+            item {
+                AnimatedHeartCard(
+                    modifier = modifier,
+                    liked = uiState.isHeartLiked,
+                    onToggle = { viewModel.toggleHeartLike() }
+                )
+            }
+            item {
+                FlipCardAnimation(
+                    modifier = modifier,
+                    rotated = uiState.isCardRotated,
+                    onToggle = { viewModel.toggleCardRotation() }
+                )
+            }
+            item { ShimmerEffectCard(modifier) }
 
-        item {
-            Text(
-                "布局变化",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 8.dp, top = 8.dp)
-            )
-        }
-        item {
-            HeightExpandAnimationCard(
-                modifier = modifier,
-                expanded = uiState.isHeightExpanded,
-                onToggle = { viewModel.toggleHeightExpansion() }
-            )
+            item {
+                Text(
+                    "布局变化",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                )
+            }
+            item {
+                HeightExpandAnimationCard(
+                    modifier = modifier,
+                    expanded = uiState.isHeightExpanded,
+                    onToggle = { viewModel.toggleHeightExpansion() }
+                )
+            }
         }
     }
 }
@@ -163,7 +165,6 @@ fun FadeSlideAnimationCard(
             .clip(shape)
             .clickable { },
         shape = shape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(

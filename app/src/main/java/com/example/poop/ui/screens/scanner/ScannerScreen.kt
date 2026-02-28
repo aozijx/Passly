@@ -21,6 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,12 +59,12 @@ fun ScannerScreen(
     val scanResult by viewModel.scanResult.collectAsState()
     val previewView = remember { PreviewView(context) }
     val scope = rememberCoroutineScope()
-    
+
     val pickPhoto = rememberImagePicker { uri, _ ->
         viewModel.decodeImage(context, uri)
     }
     val clipboard = LocalClipboard.current
-    
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -91,13 +92,13 @@ fun ScannerScreen(
 
     LaunchedEffect(hasCameraPermission) {
         if (!hasCameraPermission) return@LaunchedEffect
-        
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             val provider = cameraProviderFuture.get()
 
             val preview = Preview.Builder().build().apply {
-                setSurfaceProvider(previewView.surfaceProvider)
+                surfaceProvider = previewView.surfaceProvider
             }
 
             val imageAnalysis = ImageAnalysis.Builder()
@@ -121,42 +122,51 @@ fun ScannerScreen(
         }, ContextCompat.getMainExecutor(context))
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        if (hasCameraPermission) {
-            AndroidView(
-                factory = { previewView },
-                modifier = Modifier.fillMaxSize()
-            )
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (hasCameraPermission) {
+                AndroidView(
+                    factory = { previewView },
+                    modifier = Modifier.fillMaxSize()
+                )
 
-            if (scanResult.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .clickable {
-                            // 在协程中调用 setClipEntry
-                            scope.launch {
-                                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("scan_result", scanResult)))
+                if (scanResult.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .clickable {
+                                // 在协程中调用 setClipEntry
+                                scope.launch {
+                                    clipboard.setClipEntry(
+                                        ClipEntry(
+                                            ClipData.newPlainText(
+                                                "scan_result",
+                                                scanResult
+                                            )
+                                        )
+                                    )
+                                }
+                                Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
                             }
-                            Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
-                        }
-                        .padding(bottom = 64.dp)
-                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
-                ) {
-                    Text(
-                        text = scanResult,
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                            .padding(bottom = 64.dp)
+                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
+                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = scanResult,
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
+            } else {
+                Text(
+                    text = "请授予相机权限以使用扫码功能",
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
-        } else {
-            Text(
-                text = "请授予相机权限以使用扫码功能",
-                modifier = Modifier.align(Alignment.Center)
-            )
         }
     }
 }

@@ -38,31 +38,33 @@ fun DetailScreen(navController: NavHostController) {
         centerTitle = true
     )
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(
-            start = 8.dp, 
-            end = 8.dp, 
-            top = 8.dp,
-            bottom = 16.dp 
-        ),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            AnalysisEntryCard(onClick = { navController.navigate(Screen.AppAnalysis.route) })
-        }
-
-        categoryGroups.forEach { (category, items) ->
+    Surface(modifier = Modifier.fillMaxSize()){
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(
+                start = 8.dp,
+                end = 8.dp,
+                top = 8.dp,
+                bottom = 16.dp
+            ),
+            modifier = Modifier.fillMaxSize()
+        ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                CategoryTitle(category)
+                AnalysisEntryCard(onClick = { navController.navigate(Screen.AppAnalysis.route) })
             }
 
-            items(items) { infoItem ->
-                DetailItem(
-                    title = infoItem.title,
-                    value = infoItem.valueProvider(systemInfoManager)
-                )
+            categoryGroups.forEach { (category, items) ->
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    CategoryTitle(category)
+                }
+
+                items(items) { infoItem ->
+                    DetailItem(
+                        title = infoItem.title,
+                        value = infoItem.valueProvider(systemInfoManager)
+                    )
+                }
             }
         }
     }
@@ -104,7 +106,9 @@ fun CategoryTitle(title: String) {
         text = title,
         fontSize = 18.sp,
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp).fillMaxWidth(),
+        modifier = Modifier
+            .padding(vertical = 12.dp, horizontal = 4.dp)
+            .fillMaxWidth(),
         textAlign = TextAlign.Start
     )
 }

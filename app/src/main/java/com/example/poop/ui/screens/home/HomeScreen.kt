@@ -35,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -76,52 +77,53 @@ fun HomeScreen(
             }
         })
 
-    // 2. 直接展示内容，由于 NavHost 已经处理了 Padding，这里不需要 Scaffold
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
     } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 16.dp)
-        ) {
-            item(key = "greeting") {
-                GreetingSection(uiState.userName)
-            }
+        Surface(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                item(key = "greeting") {
+                    GreetingSection(uiState.userName)
+                }
 
-            item(key = "featured_section") {
-                SectionTitle("热门推荐")
-                FeaturedCarousel(uiState.featuredItems)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                item(key = "featured_section") {
+                    SectionTitle("热门推荐")
+                    FeaturedCarousel(uiState.featuredItems)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-            item(key = "news_title") {
-                SectionTitle("最新动态")
-            }
+                item(key = "news_title") {
+                    SectionTitle("最新动态")
+                }
 
-            items(uiState.newsFeed, key = { "news_${it.id}" }) { newsItem ->
-                NewsFeedItem(
-                    item = newsItem,
-                    onFavoriteClick = { viewModel.toggleFavorite(newsId = newsItem.id) })
-            }
+                items(uiState.newsFeed, key = { "news_${it.id}" }) { newsItem ->
+                    NewsFeedItem(
+                        item = newsItem,
+                        onFavoriteClick = { viewModel.toggleFavorite(newsId = newsItem.id) })
+                }
 
-            item(key = "article_title") {
-                SectionTitle("精选文章")
-            }
+                item(key = "article_title") {
+                    SectionTitle("精选文章")
+                }
 
-            items(
-                items = uiState.articles,
-                key = { "article_${it.id}" },
-            ) { article ->
-                ArticleCard(
-                    cover = article.cover,
-                    title = article.title,
-                    link = article.link,
-                    description = article.description,
-                    onItemClick = { openUrlInBrowser(context, it) })
-            }
+                items(
+                    items = uiState.articles,
+                    key = { "article_${it.id}" },
+                ) { article ->
+                    ArticleCard(
+                        cover = article.cover,
+                        title = article.title,
+                        link = article.link,
+                        description = article.description,
+                        onItemClick = { openUrlInBrowser(context, it) })
+                }
 
-            item { BottomSheetDemo() }
+                item { BottomSheetDemo() }
+            }
         }
     }
 }

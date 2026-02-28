@@ -22,7 +22,7 @@ private val PoopShapes = Shapes(
 @Composable
 fun PoopTheme(
     darkTheme: Boolean? = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // 默认关闭动态色彩以应用自定义品牌色
+    dynamicColor: Boolean = true, // 动态颜色
     content: @Composable () -> Unit
 ) {
     val isDark = darkTheme ?: isSystemInDarkTheme()

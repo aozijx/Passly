@@ -31,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -87,11 +88,13 @@ fun ProfileScreen(
     )
 
     // 2. 直接展示内容
-    ProfileContent(
-        uiState = uiState,
-        onPickAvatar = { pickPhoto(ImageType.AVATAR) },
-        onPickCover = { pickPhoto(ImageType.COVER) }
-    )
+    Surface(modifier = Modifier.fillMaxSize()) {
+        ProfileContent(
+            uiState = uiState,
+            onPickAvatar = { pickPhoto(ImageType.AVATAR) },
+            onPickCover = { pickPhoto(ImageType.COVER) }
+        )
+    }
 }
 
 @Composable
