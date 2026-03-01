@@ -1,11 +1,15 @@
 package com.example.poop.ui.screens.vault
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,10 +26,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,17 +49,21 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.ui.screens.vault.components.AddVaultItemDialog
+import com.example.poop.ui.screens.vault.components.BackupPasswordDialog
 import com.example.poop.ui.screens.vault.components.EmptyVaultPlaceholder
 import com.example.poop.ui.screens.vault.components.VaultDetailDialog
 import com.example.poop.ui.screens.vault.components.VaultItemRow
@@ -64,9 +76,32 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val availableCategories by viewModel.availableCategories.collectAsState()
+    val context = LocalContext.current
 
     val focusManager = LocalFocusManager.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    // 文件导出器
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        uri?.let { viewModel.startExport(it) }
+    }
+
+    // 文件导入器
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.startImport(it) }
+    }
+
+    // 监听备份消息提示
+    LaunchedEffect(viewModel.backupMessage) {
+        viewModel.backupMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.clearBackupMessage()
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -101,14 +136,16 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                         }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                         }
+                    } else {
+                        // 将搜索按钮放到左侧
+                        IconButton(onClick = { viewModel.toggleSearch(true) }) {
+                            Icon(Icons.Default.Search, contentDescription = "搜索")
+                        }
                     }
                 },
                 actions = {
                     if (!viewModel.isSearchActive) {
-                        IconButton(onClick = { viewModel.toggleSearch(true) }) {
-                            Icon(Icons.Default.Search, contentDescription = "搜索")
-                        }
-                        
+                        // 过滤菜单
                         Box {
                             IconButton(onClick = { viewModel.toggleFilterMenu(true) }) {
                                 Icon(
@@ -123,9 +160,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                             ) {
                                 DropdownMenuItem(
                                     text = { Text("全部") },
-                                    onClick = { 
-                                        viewModel.onCategorySelect(null)
-                                    },
+                                    onClick = { viewModel.onCategorySelect(null) },
                                     leadingIcon = {
                                         if (selectedCategory == null) {
                                             Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -135,9 +170,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                                 availableCategories.forEach { category ->
                                     DropdownMenuItem(
                                         text = { Text(category) },
-                                        onClick = { 
-                                            viewModel.onCategorySelect(category)
-                                        },
+                                        onClick = { viewModel.onCategorySelect(category) },
                                         leadingIcon = {
                                             if (selectedCategory == category) {
                                                 Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -145,6 +178,34 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                                         }
                                     )
                                 }
+                            }
+                        }
+
+                        // 更多菜单（备份与恢复）
+                        Box {
+                            IconButton(onClick = { viewModel.toggleMoreMenu(true) }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                            }
+                            DropdownMenu(
+                                expanded = viewModel.isMoreMenuExpanded,
+                                onDismissRequest = { viewModel.toggleMoreMenu(false) }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("导出备份") },
+                                    onClick = {
+                                        viewModel.toggleMoreMenu(false)
+                                        exportLauncher.launch("vault_backup_${System.currentTimeMillis()}.poop")
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.FileUpload, contentDescription = null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("导入恢复") },
+                                    onClick = {
+                                        viewModel.toggleMoreMenu(false)
+                                        importLauncher.launch(arrayOf("application/octet-stream", "*/*"))
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.FileDownload, contentDescription = null) }
+                                )
                             }
                         }
                     } else {
@@ -162,7 +223,6 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
             )
         },
         floatingActionButton = {
-            // 根据滚动状态自动显示/隐藏悬浮按钮
             AnimatedVisibility(
                 visible = scrollBehavior.state.collapsedFraction < 0.5f,
                 enter = scaleIn(),
@@ -192,10 +252,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(items, key = { it.id }) { item ->
-                        VaultItemRow(
-                            item = item,
-                            viewModel = viewModel
-                        )
+                        VaultItemRow(item = item, viewModel = viewModel)
                     }
                     item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
@@ -203,11 +260,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
 
             // 详情弹窗
             viewModel.detailItem?.let { item ->
-                VaultDetailDialog(
-                    activity = activity,
-                    item = item,
-                    viewModel = viewModel
-                )
+                VaultDetailDialog(activity = activity, item = item, viewModel = viewModel)
             }
 
             // 删除确认
@@ -235,13 +288,33 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                     }
                 )
             }
+
+            // 备份密码输入对话框
+            if (viewModel.showBackupPasswordDialog) {
+                BackupPasswordDialog(activity = activity, viewModel = viewModel)
+            }
+
+            // 全局加载遮罩
+            if (viewModel.isBackupLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            if (viewModel.isExporting) "正在导出备份..." else "正在导入恢复...",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
         }
 
         if (viewModel.showAddDialog) {
-            AddVaultItemDialog(
-                activity = activity,
-                viewModel = viewModel
-            )
+            AddVaultItemDialog(activity = activity, viewModel = viewModel)
         }
     }
 }

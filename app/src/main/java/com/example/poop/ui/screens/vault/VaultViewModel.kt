@@ -1,6 +1,8 @@
 package com.example.poop.ui.screens.vault
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -9,6 +11,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.poop.data.AppDatabase
 import com.example.poop.data.VaultItem
+import com.example.poop.util.BackupManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +32,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     var isSearchActive by mutableStateOf(false)
     var isFilterMenuExpanded by mutableStateOf(false)
+    var isMoreMenuExpanded by mutableStateOf(false)
 
     val availableCategories: StateFlow<List<String>> = dao.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -50,6 +54,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         initialValue = emptyList()
     )
 
+    // 新增对话框状态
     var showAddDialog by mutableStateOf(false)
         private set
     
@@ -59,12 +64,23 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var addDialogCategory by mutableStateOf("")
     var addDialogPasswordVisible by mutableStateOf(false)
 
+    // 详情对话框状态
     var detailItem by mutableStateOf<VaultItem?>(null)
         private set
     var detailPasswordVisible by mutableStateOf(false)
 
+    // 删除确认状态
     var itemToDelete by mutableStateOf<VaultItem?>(null)
         private set
+
+    // 备份/导入状态
+    var isBackupLoading by mutableStateOf(false)
+    var backupMessage by mutableStateOf<String?>(null)
+    var showBackupPasswordDialog by mutableStateOf(false)
+    var isExporting by mutableStateOf(true) // true 为导出, false 为导入
+    var pendingUri by mutableStateOf<Uri?>(null)
+    var backupPassword by mutableStateOf("")
+    var importMode by mutableStateOf(BackupManager.ImportMode.OVERWRITE)
 
     val revealedItems = mutableStateMapOf<Int, Pair<String, String>>()
 
@@ -96,7 +112,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun requestDelete(item: VaultItem) {
-        // 先关闭详情页，腾出空间给确认对话框
         dismissDetail()
         itemToDelete = item
     }
@@ -116,6 +131,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleFilterMenu(expanded: Boolean) {
         isFilterMenuExpanded = expanded
+    }
+
+    fun toggleMoreMenu(expanded: Boolean) {
+        isMoreMenuExpanded = expanded
     }
 
     fun onCategorySelect(category: String?) {
@@ -157,4 +176,50 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun isItemRevealed(itemId: Int): Boolean = revealedItems.containsKey(itemId)
 
     fun getDecryptedData(itemId: Int): Pair<String, String>? = revealedItems[itemId]
+
+    // 备份相关操作
+    fun startExport(uri: Uri) {
+        pendingUri = uri
+        isExporting = true
+        backupPassword = ""
+        showBackupPasswordDialog = true
+    }
+
+    fun startImport(uri: Uri) {
+        pendingUri = uri
+        isExporting = false
+        backupPassword = ""
+        importMode = BackupManager.ImportMode.OVERWRITE // 默认覆盖
+        showBackupPasswordDialog = true
+    }
+
+    fun dismissBackupPasswordDialog() {
+        showBackupPasswordDialog = false
+        pendingUri = null
+    }
+
+    fun processBackupAction(context: Context) {
+        val uri = pendingUri ?: return
+        val password = backupPassword.toCharArray()
+        showBackupPasswordDialog = false
+        viewModelScope.launch {
+            isBackupLoading = true
+            val result = if (isExporting) {
+                BackupManager.exportBackup(context, uri, password)
+            } else {
+                BackupManager.importBackup(context, uri, password, importMode)
+            }
+            isBackupLoading = false
+            backupMessage = if (result.isSuccess) {
+                if (isExporting) "数据备份导出成功" else "数据导入成功"
+            } else {
+                "${if (isExporting) "导出" else "导入"}失败: ${result.exceptionOrNull()?.message}"
+            }
+            pendingUri = null
+        }
+    }
+
+    fun clearBackupMessage() {
+        backupMessage = null
+    }
 }

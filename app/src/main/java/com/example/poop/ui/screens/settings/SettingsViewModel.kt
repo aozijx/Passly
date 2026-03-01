@@ -23,7 +23,7 @@ data class SettingsUiState(
     val isDarkMode: Boolean = false,
     val isDynamicColor: Boolean = true,
     val cacheSize: String = "0.00 KB",
-    val showPermissionGuide: Boolean = false // 新增：是否显示前往设置的引导
+    val showPermissionGuide: Boolean = false
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -32,19 +32,34 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _cacheSize = MutableStateFlow("0.00 KB")
     private val _showPermissionGuide = MutableStateFlow(false)
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    // 将偏好设置类的 Flow 组合在一起
+    private val preferenceFlow = combine(
         preference.isDarkMode,
         preference.isDynamicColor,
-        preference.isNotificationsEnabled,
+        preference.isNotificationsEnabled
+    ) { dark, dynamic, notify ->
+        Triple(dark, dynamic, notify)
+    }
+
+    // 将状态类的 Flow 组合在一起
+    private val statusFlow = combine(
         _cacheSize,
         _showPermissionGuide
-    ) { dark, dynamic, notify, cache, guide ->
+    ) { cache, guide ->
+        Pair(cache, guide)
+    }
+
+    // 最终组合两个分组 Flow，解决类型推断问题并提高可读性
+    val uiState: StateFlow<SettingsUiState> = combine(
+        preferenceFlow,
+        statusFlow
+    ) { pref, status ->
         SettingsUiState(
-            isDarkMode = dark,
-            isDynamicColor = dynamic,
-            isNotificationsEnabled = notify,
-            cacheSize = cache,
-            showPermissionGuide = guide
+            isDarkMode = pref.first,
+            isDynamicColor = pref.second,
+            isNotificationsEnabled = pref.third,
+            cacheSize = status.first,
+            showPermissionGuide = status.second
         )
     }.stateIn(
         scope = viewModelScope,
@@ -95,7 +110,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             viewModelScope.launch { preference.setNotificationsEnabled(true) }
                         }
                         PermissionManager.PermissionResult.PermanentlyDenied -> {
-                            // 彻底拒绝，触发引导
                             _showPermissionGuide.value = true
                         }
                         else -> {
