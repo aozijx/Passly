@@ -51,10 +51,9 @@ fun BottomSheetDemo() {
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    // 监听实际状态，并使用稍微快一点的动画避开冲突期
     val isExpanded = sheetState.targetValue == SheetValue.Expanded
     val dynamicSpacing by animateDpAsState(
-        targetValue = if (isExpanded) 32.dp else 24.dp,
+        targetValue = if (isExpanded) 64.dp else 24.dp,
         animationSpec = spring(
             // 使用弹簧动画来匹配系统的抽屉感，这比 tween 更自然
             dampingRatio = Spring.DampingRatioNoBouncy, // 无回弹
@@ -116,10 +115,10 @@ private fun BottomSheetContent(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxHeight(0.9f)
+            .fillMaxHeight(0.7f)
             .padding(horizontal = 16.dp)
             .navigationBarsPadding(),
-        // 关键点 2：使用 dynamicSpacing，但配合稳定的容器高度
+        // 使用 dynamicSpacing，但配合稳定的容器高度
         verticalArrangement = Arrangement.spacedBy(dynamicSpacing)
     ) {
         Text(

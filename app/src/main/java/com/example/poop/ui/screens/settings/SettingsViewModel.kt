@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.poop.data.Preference
+import com.example.poop.util.PermissionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,29 +19,32 @@ import kotlin.math.log10
 import kotlin.math.pow
 
 data class SettingsUiState(
-    val isNotificationsEnabled: Boolean = true,
+    val isNotificationsEnabled: Boolean = false,
     val isDarkMode: Boolean = false,
     val isDynamicColor: Boolean = true,
-    val cacheSize: String = "0.00 KB"
+    val cacheSize: String = "0.00 KB",
+    val showPermissionGuide: Boolean = false // 新增：是否显示前往设置的引导
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val preference = Preference(application)
-    
-    private val _isNotificationsEnabled = MutableStateFlow(true)
+    private val permissionManager = PermissionManager.getInstance()
     private val _cacheSize = MutableStateFlow("0.00 KB")
+    private val _showPermissionGuide = MutableStateFlow(false)
 
     val uiState: StateFlow<SettingsUiState> = combine(
         preference.isDarkMode,
         preference.isDynamicColor,
-        _isNotificationsEnabled,
-        _cacheSize
-    ) { dark, dynamic, notify, cache ->
+        preference.isNotificationsEnabled,
+        _cacheSize,
+        _showPermissionGuide
+    ) { dark, dynamic, notify, cache, guide ->
         SettingsUiState(
             isDarkMode = dark,
             isDynamicColor = dynamic,
             isNotificationsEnabled = notify,
-            cacheSize = cache
+            cacheSize = cache,
+            showPermissionGuide = guide
         )
     }.stateIn(
         scope = viewModelScope,
@@ -81,7 +85,32 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun toggleNotifications(isEnabled: Boolean) {
-        _isNotificationsEnabled.value = isEnabled
+        if (isEnabled) {
+            if (permissionManager.hasNotificationPermission(getApplication())) {
+                viewModelScope.launch { preference.setNotificationsEnabled(true) }
+            } else {
+                permissionManager.requestNotificationPermission { result ->
+                    when (result) {
+                        PermissionManager.PermissionResult.Granted -> {
+                            viewModelScope.launch { preference.setNotificationsEnabled(true) }
+                        }
+                        PermissionManager.PermissionResult.PermanentlyDenied -> {
+                            // 彻底拒绝，触发引导
+                            _showPermissionGuide.value = true
+                        }
+                        else -> {
+                            viewModelScope.launch { preference.setNotificationsEnabled(false) }
+                        }
+                    }
+                }
+            }
+        } else {
+            viewModelScope.launch { preference.setNotificationsEnabled(false) }
+        }
+    }
+    
+    fun dismissPermissionGuide() {
+        _showPermissionGuide.value = false
     }
 
     fun toggleDarkMode(isDarkMode: Boolean) {

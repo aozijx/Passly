@@ -13,6 +13,7 @@ class Preference(context: Context) {
     private val appContext = context.applicationContext
 
     companion object {
+        val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
         val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
     }
@@ -38,6 +39,18 @@ class Preference(context: Context) {
     suspend fun setDynamicColor(enabled: Boolean) {
         appContext.dataStore.edit { preferences ->
             preferences[DYNAMIC_COLOR_KEY] = enabled
+        }
+    }
+
+    // 读取通知启用状态
+    val isNotificationsEnabled: Flow<Boolean> = appContext.dataStore.data.map { preferences ->
+        preferences[NOTIFICATIONS_ENABLED_KEY] ?: false
+    }
+
+    // 保存通知启用状态
+    suspend fun setNotificationsEnabled(enabled: Boolean) {
+        appContext.dataStore.edit { preferences ->
+            preferences[NOTIFICATIONS_ENABLED_KEY] = enabled
         }
     }
 }

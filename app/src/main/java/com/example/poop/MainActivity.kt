@@ -1,59 +1,50 @@
 package com.example.poop
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.poop.data.Preference
 import com.example.poop.ui.navigation.NavGraph
 import com.example.poop.ui.navigation.Screen
 import com.example.poop.ui.theme.PoopTheme
+import com.example.poop.util.PermissionManager
+import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
+    private val preference by lazy { Preference(applicationContext) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        checkAndRequestPermissions()
+
+        // 初始化权限管理器，它现在是生命周期感知的，会自动处理清理工作
+        PermissionManager.getInstance().init(this) { isGranted ->
+            updateNotificationPref(isGranted)
+        }
+
+        // 首次进入检查并请求权限
+        val isGranted = PermissionManager.getInstance().hasNotificationPermission(this)
+        updateNotificationPref(isGranted)
+        
+        if (!isGranted) {
+            PermissionManager.getInstance().requestNotificationPermission()
+        }
 
         setContent {
-            // 1. 实例化你的 Preference 类
-            val preference = remember { Preference(applicationContext) }
-            // initialValue 建议使用系统默认值，这样启动时不会有闪烁
-            val isDarkModePref by preference.isDarkMode.collectAsState(initial = null)
-            val isDynamicColorPref by preference.isDynamicColor.collectAsState(initial = true)
+            val isDark by preference.isDarkMode.collectAsState(initial = null)
+            val isDynamic by preference.isDynamicColor.collectAsState(initial = true)
 
-            PoopTheme(
-                darkTheme = if (isDarkModePref == true) true else null,
-                dynamicColor = isDynamicColorPref
-            ) {
-                // 直接调用 NavGraph，并指定起始页
+            PoopTheme(darkTheme = if (isDark == true) true else null, dynamicColor = isDynamic) {
                 NavGraph(startDestination = Screen.Home.route)
             }
         }
     }
 
-    private fun checkAndRequestPermissions() {
-        val permissionsToRequest = mutableListOf<String>()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-
-        if (permissionsToRequest.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), 1001)
-        }
+    private fun updateNotificationPref(enabled: Boolean) {
+        lifecycleScope.launch { preference.setNotificationsEnabled(enabled) }
     }
 }

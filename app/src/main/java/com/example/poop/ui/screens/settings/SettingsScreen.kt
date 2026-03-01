@@ -1,6 +1,8 @@
 package com.example.poop.ui.screens.settings
 
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,6 +51,31 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    // 权限引导对话框
+    if (uiState.showPermissionGuide) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissPermissionGuide() },
+            title = { Text("需要通知权限") },
+            text = { Text("你之前拒绝了通知权限，请前往系统设置手动开启，以便接收重要提醒。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.dismissPermissionGuide()
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.fromParts("package", context.packageName, null)
+                    }
+                    context.startActivity(intent)
+                }) {
+                    Text("去设置")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissPermissionGuide() }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
 
     // 点击计次
     var versionTapCount by remember { mutableIntStateOf(0) }
@@ -74,6 +103,18 @@ fun SettingsScreen(
                     title = "开启消息通知",
                     checked = uiState.isNotificationsEnabled,
                     onCheckedChange = viewModel::toggleNotifications
+                )
+            }
+            item {
+                SettingsClickableItem(
+                    title = "权限管理",
+                    value = "前往系统设置",
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                        }
+                        context.startActivity(intent)
+                    }
                 )
             }
             item {
