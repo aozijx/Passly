@@ -1,6 +1,7 @@
 package com.example.poop.ui.screens.detail.component
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,40 +19,75 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.poop.R
 import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.util.AppWithSdk
+import com.example.poop.util.rememberAppIconPainter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSdkClassifier(viewModel: AppSdkClassifierViewModel = viewModel()) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    var showMenu by remember { mutableStateOf(false) }
 
     // 1. Configure top bar
     TopBarConfig(
         title = "应用分析",
-        centerTitle = true
+        centerTitle = true,
+        actions = {
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.Settings, "设置")
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(if (uiState.includeSystemApps) "隐藏系统应用" else "显示系统应用") },
+                        onClick = {
+                            viewModel.toggleSystemApps(context)
+                            showMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                if (uiState.includeSystemApps) Icons.Default.Check else Icons.Default.FilterList,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                }
+            }
+        }
     )
 
     // 2. Page content
@@ -176,6 +212,11 @@ fun SdkGroupHeader(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppInfoItem(app: AppWithSdk) {
+    val iconPainter = rememberAppIconPainter(
+        packageName = app.packageName,
+        defaultIconResId = R.mipmap.app_icon_main
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -184,46 +225,63 @@ fun AppInfoItem(app: AppWithSdk) {
             MaterialTheme.colorScheme.outlineVariant
         )
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        Row(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = app.appName,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold
+            Image(
+                painter = iconPainter,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(8.dp))
             )
-            Text(
-                text = app.packageName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "版本: ${app.versionName}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
+                    text = app.appName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
                 )
-
-                val archLabel = app.architecture
-                val is64 = archLabel.contains("64") || archLabel.contains("v8")
-
-                val badgeColor = when {
-                    is64 -> MaterialTheme.colorScheme.primaryContainer
-                    archLabel == "32-bit" || archLabel.contains("v7") -> MaterialTheme.colorScheme.secondaryContainer
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                }
-
-                Badge(containerColor = badgeColor) {
+                Text(
+                    text = app.packageName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = archLabel,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall
+                        text = "版本: ${app.versionName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
                     )
+
+                    val archLabel = app.architecture
+                    val is64 = archLabel.contains("64") || archLabel.contains("v8")
+
+                    val badgeColor = when {
+                        is64 -> MaterialTheme.colorScheme.primaryContainer
+                        archLabel == "32-bit" || archLabel.contains("v7") -> MaterialTheme.colorScheme.secondaryContainer
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+
+                    Badge(containerColor = badgeColor) {
+                        Text(
+                            text = archLabel,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
                 }
             }
         }
@@ -232,9 +290,17 @@ fun AppInfoItem(app: AppWithSdk) {
 
 private fun getAndroidVersionName(sdkVersion: Int): String {
     return when (sdkVersion) {
-        in 1..18 -> "Older"
-        19 -> "4.4"; 21 -> "5.0"; 22 -> "5.1"; 23 -> "6.0"; 24 -> "7.0"; 25 -> "7.1"; 26 -> "8.0"; 27 -> "8.1"
-        28 -> "9"; 29 -> "10"; 30 -> "11"; 31 -> "12"; 32 -> "12L"; 33 -> "13"; 34 -> "14"; 35 -> "15"
+        16 -> "4.1"; 17 -> "4.2"; 18 -> "4.3"
+        19 -> "4.4"
+        21 -> "5.0"; 22 -> "5.1"
+        23 -> "6.0"
+        24 -> "7.0"; 25 -> "7.1"
+        26 -> "8.0"; 27 -> "8.1"
+        28 -> "9"; 29 -> "10"; 30 -> "11"
+        31 -> "12"; 32 -> "12L"; 33 -> "13"
+        34 -> "14"; 35 -> "15"
+        1000 -> "Preview"
+        in 1..15 -> "Older"
         else -> "API $sdkVersion"
     }
 }

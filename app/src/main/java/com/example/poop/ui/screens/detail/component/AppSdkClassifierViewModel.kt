@@ -19,7 +19,8 @@ data class AppSdkClassifierUiState(
     val isLoading: Boolean = false,
     val loadStatus: String = "等待扫描...",
     val expandedSdks: Set<Int> = emptySet(),
-    val hasPermission: Boolean = true
+    val hasPermission: Boolean = true,
+    val includeSystemApps: Boolean = false
 )
 
 class AppSdkClassifierViewModel : ViewModel() {
@@ -29,11 +30,12 @@ class AppSdkClassifierViewModel : ViewModel() {
     fun startScan(context: Context) {
         if (_uiState.value.isLoading) return
 
+        val includeSystem = _uiState.value.includeSystemApps
         _uiState.update { it.copy(isLoading = true, loadStatus = "正在深度扫描架构信息...") }
 
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
-                PackageUtils.getAllInstalledApps(context)
+                PackageUtils.getAllInstalledApps(context, includeSystem)
             }
 
             val newMap = withContext(Dispatchers.Default) {
@@ -60,5 +62,10 @@ class AppSdkClassifierViewModel : ViewModel() {
             }
             state.copy(expandedSdks = newExpanded)
         }
+    }
+
+    fun toggleSystemApps(context: Context) {
+        _uiState.update { it.copy(includeSystemApps = !it.includeSystemApps) }
+        startScan(context) // 切换后自动重新扫描
     }
 }
