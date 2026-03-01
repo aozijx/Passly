@@ -100,6 +100,10 @@ dependencies {
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.security.crypto)
 
+    // SQLCipher
+    implementation(libs.sqlcipher)
+    implementation(libs.androidx.sqlite)
+
     // CameraX
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)

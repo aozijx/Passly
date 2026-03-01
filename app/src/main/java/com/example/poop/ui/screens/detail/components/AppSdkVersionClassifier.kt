@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.detail.component
+package com.example.poop.ui.screens.detail.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image

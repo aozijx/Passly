@@ -3,7 +3,6 @@ package com.example.poop.ui.screens.settings
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,11 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.ui.screens.vault.VaultActivity
-import com.example.poop.util.BiometricHelper
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,9 +76,6 @@ fun SettingsScreen(
 
     // 点击计次
     var versionTapCount by remember { mutableIntStateOf(0) }
-    // 失败计次
-    var authFailureCount by remember { mutableIntStateOf(0) }
-    val maxFailures = 3
 
     LaunchedEffect(versionTapCount) {
         if (versionTapCount > 0) {
@@ -153,54 +147,11 @@ fun SettingsScreen(
                     title = "版本号",
                     value = "v1.0.0",
                     onClick = {
-                        // 如果失败次数过多，直接拦截，不再弹出验证器
-                        if (authFailureCount >= maxFailures) {
-                            Toast.makeText(
-                                context,
-                                "为了安全，尝试次数过多，请稍后再试",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            return@SettingsClickableItem
-                        }
-
                         versionTapCount++
                         if (versionTapCount >= 3) {
-                            val activity = context as? FragmentActivity
-                            if (activity != null) {
-                                BiometricHelper.showBiometricPrompt(
-                                    activity = activity,
-                                    onSuccess = {
-                                        authFailureCount = 0 // 验证成功，重置失败计数
-                                        context.startActivity(
-                                            Intent(
-                                                context,
-                                                VaultActivity::class.java
-                                            )
-                                        )
-                                        versionTapCount = 0
-                                    },
-                                    onError = { _ ->
-                                        authFailureCount++ // 增加失败计数
-                                        val remaining = maxFailures - authFailureCount
-                                        if (remaining > 0) {
-                                            Toast.makeText(
-                                                context,
-                                                "验证失败，还剩 $remaining 次机会",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else {
-                                            Toast.makeText(
-                                                context,
-                                                "验证已锁定，请稍后重新进入",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                    }
-                                )
-                            } else {
-                                context.startActivity(Intent(context, VaultActivity::class.java))
-                                versionTapCount = 0
-                            }
+                            // 点击三次后直接跳
+                            context.startActivity(Intent(context, VaultActivity::class.java))
+                            versionTapCount = 0
                         }
                     }
                 )

@@ -37,7 +37,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.poop.ui.screens.animation.AnimationScreen
 import com.example.poop.ui.screens.detail.DetailScreen
-import com.example.poop.ui.screens.detail.component.AppSdkClassifier
+import com.example.poop.ui.screens.detail.components.AppSdkClassifier
 import com.example.poop.ui.screens.home.HomeScreen
 import com.example.poop.ui.screens.profile.ProfileScreen
 import com.example.poop.ui.screens.scanner.ScannerScreen

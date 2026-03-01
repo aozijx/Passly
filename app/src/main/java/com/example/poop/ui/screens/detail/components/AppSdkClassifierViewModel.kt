@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.detail.component
+package com.example.poop.ui.screens.detail.components
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

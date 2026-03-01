@@ -54,7 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.poop.ui.navigation.TopBarConfig
-import com.example.poop.ui.screens.home.component.BottomSheetDemo
+import com.example.poop.ui.screens.home.components.BottomSheetDemo
 import com.example.poop.util.Logcat
 
 @OptIn(ExperimentalMaterial3Api::class)

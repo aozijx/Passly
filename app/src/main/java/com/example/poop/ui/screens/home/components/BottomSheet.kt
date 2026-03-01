@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.home.component
+package com.example.poop.ui.screens.home.components
 
 import android.Manifest
 import android.content.ClipData
