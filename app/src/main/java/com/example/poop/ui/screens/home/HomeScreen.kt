@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -69,9 +68,6 @@ fun HomeScreen(
     // 1. 配置当前页面的顶栏信息
     TopBarConfig(
         title = "首页", centerTitle = true, actions = {
-            IconButton(onClick = { /* TODO: viewModel.onSearchClick() */ }) {
-                Icon(Icons.Default.Search, contentDescription = "搜索")
-            }
             IconButton(onClick = { /* TODO: viewModel.onNotificationClick() */ }) {
                 Icon(Icons.Default.Notifications, contentDescription = "通知")
             }

@@ -1,51 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="launcher_logo_background">#F5F5F5</color>
-    <color name="WindowBackground">#FFFFFF</color>
 
-    <!-- 浅色主题配色 (优雅蓝/青色系) -->
-    <color name="primary_light">#006780</color>
+    <!-- 浅色主题：清爽科技蓝 -->
+    <color name="primary_light">#006495</color>
     <color name="on_primary_light">#FFFFFF</color>
-    <color name="primary_container_light">#B8EAFF</color>
-    <color name="on_primary_container_light">#001F28</color>
-    <color name="secondary_light">#4C626B</color>
-    <color name="on_secondary_light">#FFFFFF</color>
-    <color name="secondary_container_light">#CFE6F1</color>
-    <color name="on_secondary_container_light">#071E26</color>
-    <color name="tertiary_light">#5A5B7E</color>
-    <color name="on_tertiary_light">#FFFFFF</color>
-    <color name="tertiary_container_light">#E0E0FF</color>
-    <color name="on_tertiary_container_light">#161937</color>
+    <color name="primary_container_light">#CBE6FF</color>
+    <color name="on_primary_container_light">#001E30</color>
+    <color name="secondary_light">#50606E</color>
+    <color name="secondary_container_light">#D3E5F5</color>
+    <color name="on_secondary_container_light">#0C1D29</color>
+    <color name="tertiary_light">#006A6A</color>
     <color name="error_light">#BA1A1A</color>
-    <color name="on_error_light">#FFFFFF</color>
-    <color name="background_light">#FBFCFE</color>
-    <color name="on_background_light">#191C1E</color>
-    <color name="surface_light">#FBFCFE</color>
-    <color name="on_surface_light">#191C1E</color>
-    <color name="surface_variant_light">#DCE4E9</color>
-    <color name="on_surface_variant_light">#40484C</color>
-    <color name="outline_light">#70787D</color>
+    <color name="background_light">#F8F9FF</color>
+    <color name="surface_variant_light">#DEE3EB</color>
+    <color name="outline_light">#71787E</color>
 
-    <!-- 深色主题配色 (深邃夜空蓝) -->
-    <color name="primary_dark">#5DD5FC</color>
-    <color name="on_primary_dark">#003544</color>
-    <color name="primary_container_dark">#004D61</color>
-    <color name="on_primary_container_dark">#B8EAFF</color>
-    <color name="secondary_dark">#B3CAD5</color>
-    <color name="on_secondary_dark">#1E333C</color>
-    <color name="secondary_container_dark">#354A53</color>
-    <color name="on_secondary_container_dark">#CFE6F1</color>
-    <color name="tertiary_dark">#C3C3EB</color>
-    <color name="on_tertiary_dark">#2C2D4D</color>
-    <color name="tertiary_container_dark">#424465</color>
-    <color name="on_tertiary_container_dark">#E0E0FF</color>
-    <color name="error_dark">#FFFFB4AB</color>
-    <color name="on_error_dark">#690005</color>
-    <color name="background_dark">#191C1E</color>
-    <color name="on_background_dark">#E1E2E4</color>
-    <color name="surface_dark">#191C1E</color>
-    <color name="on_surface_dark">#E1E2E4</color>
-    <color name="surface_variant_dark">#40484C</color>
-    <color name="on_surface_variant_dark">#DCE4E9</color>
-    <color name="outline_dark">#8A9297</color>
+    <!-- 深色主题：冷调工业蓝 -->
+    <color name="primary_dark">#8FCDFF</color>
+    <color name="on_primary_dark">#003450</color>
+    <color name="primary_container_dark">#004C71</color>
+    <color name="on_primary_container_dark">#CBE6FF</color>
+    <color name="secondary_dark">#B8C8D9</color>
+    <color name="secondary_container_dark">#384956</color>
+    <color name="on_secondary_container_dark">#D3E5F5</color>
+    <color name="tertiary_dark">#81D5D5</color>
+    <color name="error_dark">#FFB4AB</color>
+    <color name="background_dark">#1A1C1E</color>
+    <color name="surface_variant_dark">#42474E</color>
+    <color name="outline_dark">#8C9199</color>
 </resources>

@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,18 +36,22 @@ fun DetailScreen(navController: NavHostController) {
 
     TopBarConfig(
         title = "设备详情",
-        centerTitle = true
+        centerTitle = true, actions = {
+            IconButton(onClick = { /* TODO: viewModel.onSearchClick() */ }) {
+                Icon(Icons.Default.Search, contentDescription = "搜索")
+            }
+        }
     )
 
-    Surface(modifier = Modifier.fillMaxSize()){
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(
-                start = 8.dp,
-                end = 8.dp,
+                start = 12.dp,
+                end = 12.dp,
                 top = 8.dp,
-                bottom = 16.dp
+                bottom = 24.dp
             ),
             modifier = Modifier.fillMaxSize()
         ) {
@@ -75,27 +80,49 @@ fun AnalysisEntryCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 8.dp)
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        // 使用 primaryContainer 让入口在视觉上比其他普通项更突出
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                shape = MaterialTheme.shapes.small,
+                shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(44.dp)
             ) {
-                Icon(Icons.Default.Settings, null, modifier = Modifier.padding(8.dp), tint = MaterialTheme.colorScheme.onPrimary)
+                Icon(
+                    Icons.Default.Settings,
+                    null,
+                    modifier = Modifier.padding(10.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("应用架构与 SDK 分析", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("查看 API 级别与 64 位支持", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(0.7f))
+                Text(
+                    "应用架构与 SDK 分析",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "查看 API 级别与 64 位支持",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
             }
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
+            )
         }
     }
 }
@@ -104,10 +131,11 @@ fun AnalysisEntryCard(onClick: () -> Unit) {
 fun CategoryTitle(title: String) {
     Text(
         text = title,
-        fontSize = 18.sp,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary, // 分组标题使用主色调
         fontWeight = FontWeight.Bold,
         modifier = Modifier
-            .padding(vertical = 12.dp, horizontal = 4.dp)
+            .padding(top = 20.dp, bottom = 8.dp, start = 4.dp)
             .fillMaxWidth(),
         textAlign = TextAlign.Start
     )
@@ -117,11 +145,31 @@ fun CategoryTitle(title: String) {
 fun DetailItem(title: String, value: String) {
     Card(
         modifier = Modifier.padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        // 普通项使用 surfaceVariant，既能区分背景，又不会过于显眼
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
-            Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 2.dp), maxLines = 1)
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary, // 标签使用次级色
+                fontSize = 11.sp
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface, // 数值使用强调色
+                modifier = Modifier.padding(top = 4.dp),
+                maxLines = 1
+            )
         }
     }
 }
