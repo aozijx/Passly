@@ -1,9 +1,13 @@
 package com.example.poop.ui.screens.settings
 
 import android.app.Application
+import android.content.Intent
+import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.poop.R
 import com.example.poop.data.Preference
+import com.example.poop.util.Logcat
 import com.example.poop.util.PermissionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +18,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlin.math.log10
 import kotlin.math.pow
 
@@ -23,43 +33,61 @@ data class SettingsUiState(
     val isDarkMode: Boolean = false,
     val isDynamicColor: Boolean = true,
     val cacheSize: String = "0.00 KB",
-    val showPermissionGuide: Boolean = false
+    val showPermissionGuide: Boolean = false,
+    val logContent: String? = null,
+    val isLogLoading: Boolean = false,
+    val logError: String? = null,
+    val exportStatus: ExportStatus? = null
 )
+
+sealed class ExportStatus {
+    object Loading : ExportStatus()
+    data class Success(val intent: Intent) : ExportStatus()
+    data class Error(val message: String) : ExportStatus()
+}
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val preference = Preference(application)
     private val permissionManager = PermissionManager.getInstance()
     private val _cacheSize = MutableStateFlow("0.00 KB")
     private val _showPermissionGuide = MutableStateFlow(false)
+    private val _logContent = MutableStateFlow<String?>(null)
+    private val _isLogLoading = MutableStateFlow(false)
+    private val _logError = MutableStateFlow<String?>(null)
+    private val _exportStatus = MutableStateFlow<ExportStatus?>(null)
 
-    // 将偏好设置类的 Flow 组合在一起
-    private val preferenceFlow = combine(
+    // 修复：手动将多个 Flow 组合成单一的 uiState，避免嵌套导致 Kotlin 编译器类型推断失败
+    val uiState: StateFlow<SettingsUiState> = combine(
         preference.isDarkMode,
         preference.isDynamicColor,
-        preference.isNotificationsEnabled
-    ) { dark, dynamic, notify ->
-        Triple(dark, dynamic, notify)
-    }
-
-    // 将状态类的 Flow 组合在一起
-    private val statusFlow = combine(
+        preference.isNotificationsEnabled,
         _cacheSize,
-        _showPermissionGuide
-    ) { cache, guide ->
-        Pair(cache, guide)
-    }
+        _showPermissionGuide,
+        _logContent,
+        _isLogLoading,
+        _logError,
+        _exportStatus
+    ) { args ->
+        val dark = args[0] as Boolean
+        val dynamic = args[1] as Boolean
+        val notify = args[2] as Boolean
+        val cache = args[3] as String
+        val guide = args[4] as Boolean
+        val log = args[5] as String?
+        val loading = args[6] as Boolean
+        val error = args[7] as String?
+        val export = args[8] as ExportStatus?
 
-    // 最终组合两个分组 Flow，解决类型推断问题并提高可读性
-    val uiState: StateFlow<SettingsUiState> = combine(
-        preferenceFlow,
-        statusFlow
-    ) { pref, status ->
         SettingsUiState(
-            isDarkMode = pref.first,
-            isDynamicColor = pref.second,
-            isNotificationsEnabled = pref.third,
-            cacheSize = status.first,
-            showPermissionGuide = status.second
+            isDarkMode = dark,
+            isDynamicColor = dynamic,
+            isNotificationsEnabled = notify,
+            cacheSize = cache,
+            showPermissionGuide = guide,
+            logContent = log,
+            isLogLoading = loading,
+            logError = error,
+            exportStatus = export
         )
     }.stateIn(
         scope = viewModelScope,
@@ -159,5 +187,89 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             return dir.delete()
         }
         return false
+    }
+
+    fun fetchLog(urlStr: String) {
+        if (urlStr.isBlank() || !urlStr.startsWith("http")) {
+            Logcat.e("SettingsViewModel", "Invalid URL: $urlStr. Showing fallback log.")
+            _logContent.value = getApplication<Application>().getString(R.string.changelog_last)
+            return
+        }
+
+        viewModelScope.launch {
+            _isLogLoading.value = true
+            _logError.value = null
+            try {
+                val content = withContext(Dispatchers.IO) {
+                    val url = URL(urlStr)
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.connectTimeout = 8000
+                    connection.readTimeout = 8000
+                    connection.requestMethod = "GET"
+                    
+                    if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                        connection.inputStream.bufferedReader().use { it.readText() }
+                    } else {
+                        throw Exception("Server error: ${connection.responseCode}")
+                    }
+                }
+                _logContent.value = content
+            } catch (e: Exception) {
+                Logcat.e("SettingsViewModel", "Log fetching failed, showing local fallback. Detail: ${e.message}", e)
+                _logContent.value = getApplication<Application>().getString(R.string.changelog_last)
+            } finally {
+                _isLogLoading.value = false
+            }
+        }
+    }
+
+    fun clearLogContent() {
+        _logContent.value = null
+        _logError.value = null
+    }
+
+    fun exportLogs() {
+        viewModelScope.launch {
+            _exportStatus.value = ExportStatus.Loading
+            try {
+                val intent = withContext(Dispatchers.IO) {
+                    val logFolder = Logcat.getLogFolder() ?: throw Exception("日志目录不存在")
+                    val logFiles = logFolder.listFiles { file -> file.extension == "log" }
+                    if (logFiles.isNullOrEmpty()) throw Exception("没有可导出的日志文件")
+
+                    val zipFile = File(getApplication<Application>().cacheDir, "app_logs.zip")
+                    ZipOutputStream(FileOutputStream(zipFile)).use { zipOut ->
+                        logFiles.forEach { file ->
+                            FileInputStream(file).use { input ->
+                                val entry = ZipEntry(file.name)
+                                zipOut.putNextEntry(entry)
+                                input.copyTo(zipOut)
+                                zipOut.closeEntry()
+                            }
+                        }
+                    }
+
+                    val uri = FileProvider.getUriForFile(
+                        getApplication(),
+                        "${getApplication<Application>().packageName}.fileprovider",
+                        zipFile
+                    )
+
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "application/zip"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                }
+                _exportStatus.value = ExportStatus.Success(intent)
+            } catch (e: Exception) {
+                Logcat.e("SettingsViewModel", "Export logs failed", e)
+                _exportStatus.value = ExportStatus.Error(e.message ?: "导出失败")
+            }
+        }
+    }
+
+    fun clearExportStatus() {
+        _exportStatus.value = null
     }
 }

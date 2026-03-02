@@ -29,7 +29,7 @@ class MainActivity : FragmentActivity() {
         // 首次进入检查并请求权限
         val isGranted = PermissionManager.getInstance().hasNotificationPermission(this)
         updateNotificationPref(isGranted)
-        
+
         if (!isGranted) {
             PermissionManager.getInstance().requestNotificationPermission()
         }
