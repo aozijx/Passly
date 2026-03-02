@@ -8,8 +8,10 @@ plugins {
 }
 
 // 读取 local.properties
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
+// 显式指定类型以消除 "Platform Type" 警告
+val localProperties: Properties = Properties()
+val localPropertiesFile: File = rootProject.file("local.properties")
+
 if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
@@ -22,14 +24,31 @@ android {
         applicationId = "com.example.poop"
         minSdk = 31
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 4
+        versionName = "0.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 配置支持的 CPU 架构
+        ndk {
+            // 限制打包进 APK 的本地库架构
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+        }
+    }
+
+    // 1. 启用 APK 拆分配置
+    splits {
+        abi {
+            isEnable = true // 开启拆分
+            reset() // 重置默认包含的所有架构
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64") // 指定要拆分的架构
+            isUniversalApk = true // 是否额外生成一个包含所有架构的通用 APK
+        }
     }
 
     signingConfigs {
         create("release") {
+            // 这里使用 Safe Call 和 Explicit Type 处理从 Properties 读取的平台类型字符串
             storeFile = localProperties.getProperty("signing.store.file")?.let { file(it) }
             storePassword = localProperties.getProperty("signing.store.password")
             keyAlias = localProperties.getProperty("signing.key.alias")
@@ -43,18 +62,32 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
-            if (signingConfigs.getByName("release").storeFile != null) {
-                signingConfig = signingConfigs.getByName("release")
+            // 获取 SigningConfig 时也显式处理
+            val releaseSigning = signingConfigs.findByName("release")
+            if (releaseSigning?.storeFile != null) {
+                signingConfig = releaseSigning
             }
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
-            // 确保 debug 版开启调试，方便看日志
             isDebuggable = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
     }
+
+    // 2. 自定义生成的 APK 文件名
+    applicationVariants.all {
+        val variant = this
+        outputs.forEach { output ->
+            val apkOutput = output as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            // 获取当前 APK 对应的架构名，如果是 universal APK 则返回 null
+            val abi = apkOutput.getFilter("ABI") ?: "universal"
+            // 设置新的文件名：应用名_版本号_架构.apk
+            apkOutput.outputFileName = "poop_v${variant.versionName}_${abi}.apk"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

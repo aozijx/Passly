@@ -3,26 +3,22 @@ package com.example.poop.ui.screens.settings
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,10 +31,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.BuildConfig
+import com.example.poop.R
 import com.example.poop.ui.navigation.TopBarConfig
+import com.example.poop.ui.screens.settings.components.LogDetailDialog
+import com.example.poop.ui.screens.settings.components.SectionTitle
+import com.example.poop.ui.screens.settings.components.SettingsClickableItem
+import com.example.poop.ui.screens.settings.components.SettingsSwitchItem
 import com.example.poop.ui.screens.vault.VaultActivity
 import kotlinx.coroutines.delay
 
@@ -49,6 +51,44 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val changelogUrl = stringResource(R.string.changelog)
+
+    // 导出处理
+    val shareLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { viewModel.clearExportStatus() }
+
+    LaunchedEffect(uiState.exportStatus) {
+        when (val status = uiState.exportStatus) {
+            is ExportStatus.Success -> {
+                shareLauncher.launch(Intent.createChooser(status.intent, "导出日志"))
+            }
+            is ExportStatus.Error -> {
+                Toast.makeText(context, status.message, Toast.LENGTH_SHORT).show()
+                viewModel.clearExportStatus()
+            }
+            else -> {}
+        }
+    }
+
+    // 导出中加载弹窗
+    if (uiState.exportStatus == ExportStatus.Loading) {
+        AlertDialog(
+            onDismissRequest = { /* 禁止点击外部取消以保证打包完整 */ },
+            confirmButton = {},
+            title = { Text("正在处理") },
+            text = {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("正在准备日志文件...")
+                }
+            }
+        )
+    }
 
     // 权限引导对话框
     if (uiState.showPermissionGuide) {
@@ -74,6 +114,15 @@ fun SettingsScreen(
             }
         )
     }
+
+    // 日志显示弹窗
+    LogDetailDialog(
+        isVisible = uiState.logContent != null || uiState.isLogLoading || uiState.logError != null,
+        isLoading = uiState.isLogLoading,
+        content = uiState.logContent,
+        error = uiState.logError,
+        onDismiss = { viewModel.clearLogContent() }
+    )
 
     // 点击计次
     var versionTapCount by remember { mutableIntStateOf(0) }
@@ -139,8 +188,18 @@ fun SettingsScreen(
             }
             item {
                 SettingsClickableItem(
-                    title = "关于我们",
-                    onClick = { /* TODO: 跳转到关于页 */ }
+                    title = "导出本地日志",
+                    subtitle = "将最近的运行日志打包导出",
+                    onClick = { viewModel.exportLogs() }
+                )
+            }
+            item {
+                SettingsClickableItem(
+                    title = "查看更新日志",
+                    subtitle = "获取最新版本动态",
+                    onClick = {
+                        viewModel.fetchLog(changelogUrl)
+                    }
                 )
             }
             item {
@@ -160,90 +219,7 @@ fun SettingsScreen(
 
             item {
                 Spacer(modifier = Modifier.height(32.dp))
-                Button(
-                    onClick = { /* TODO: 执行退出登录 */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("退出登录")
-                }
             }
         }
-    }
-}
-
-@Composable
-private fun SectionTitle(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-    )
-}
-
-@Composable
-fun SettingsSwitchItem(
-    title: String,
-    subtitle: String? = null,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            if (subtitle != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = null
-        )
-    }
-}
-
-@Composable
-fun SettingsClickableItem(
-    title: String,
-    value: String? = null,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        if (value != null) {
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            "详情",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
