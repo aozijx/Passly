@@ -26,7 +26,6 @@ import kotlinx.coroutines.launch
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).vaultDao()
     
-    // 自动隐藏逻辑需要的组件
     private val handler = Handler(Looper.getMainLooper())
     private val autoHideTasks = mutableMapOf<Int, Runnable>()
 
@@ -76,6 +75,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var detailPasswordVisible by mutableStateOf(false)
     var isEditingCategory by mutableStateOf(false)
     var editedCategory by mutableStateOf("")
+    
+    // 修改账号和密码的独立状态
+    var isEditingUsername by mutableStateOf(false)
+    var isEditingPassword by mutableStateOf(false)
+    var editedUsername by mutableStateOf("")
+    var editedPassword by mutableStateOf("")
 
     // 删除确认状态
     var itemToDelete by mutableStateOf<VaultItem?>(null)
@@ -85,7 +90,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var isBackupLoading by mutableStateOf(false)
     var backupMessage by mutableStateOf<String?>(null)
     var showBackupPasswordDialog by mutableStateOf(false)
-    var isExporting by mutableStateOf(true) // true 为导出, false 为导入
+    var isExporting by mutableStateOf(true)
     var pendingUri by mutableStateOf<Uri?>(null)
     var backupPassword by mutableStateOf("")
     var importMode by mutableStateOf(BackupManager.ImportMode.OVERWRITE)
@@ -113,6 +118,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         detailItem = item
         detailPasswordVisible = false
         isEditingCategory = false
+        isEditingUsername = false
+        isEditingPassword = false
         editedCategory = item.category
     }
 
@@ -120,6 +127,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         detailItem?.let { clearRevealedData(it.id) }
         detailItem = null
         isEditingCategory = false
+        isEditingUsername = false
+        isEditingPassword = false
     }
 
     fun startEditingCategory() {
@@ -139,6 +148,50 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             }
         } else {
             isEditingCategory = false
+        }
+    }
+    
+    fun startEditingUsername(currentUsername: String) {
+        editedUsername = currentUsername
+        isEditingUsername = true
+    }
+    
+    fun startEditingPassword(currentPassword: String) {
+        editedPassword = currentPassword
+        isEditingPassword = true
+    }
+    
+    fun cancelEditingUsername() {
+        isEditingUsername = false
+    }
+    
+    fun cancelEditingPassword() {
+        isEditingPassword = false
+    }
+
+    fun saveUsernameEdit(encryptedUsername: String) {
+        val item = detailItem ?: return
+        viewModelScope.launch {
+            val updatedItem = item.copy(username = encryptedUsername)
+            dao.update(updatedItem)
+            detailItem = updatedItem
+            // 更新缓存
+            val currentData = revealedItems[item.id]
+            revealedItems[item.id] = editedUsername to (currentData?.second ?: "")
+            isEditingUsername = false
+        }
+    }
+
+    fun savePasswordEdit(encryptedPassword: String) {
+        val item = detailItem ?: return
+        viewModelScope.launch {
+            val updatedItem = item.copy(password = encryptedPassword)
+            dao.update(updatedItem)
+            detailItem = updatedItem
+            // 更新缓存
+            val currentData = revealedItems[item.id]
+            revealedItems[item.id] = (currentData?.first ?: "") to editedPassword
+            isEditingPassword = false
         }
     }
 
@@ -196,19 +249,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * 设置解密后的数据，并启动 60 秒自动隐藏逻辑
-     */
     fun setRevealedData(itemId: Int, username: String, password: String) {
         revealedItems[itemId] = username to password
-        
-        // 如果该项已有计时器，先取消它
         autoHideTasks[itemId]?.let { handler.removeCallbacks(it) }
-        
-        // 创建 60 秒后自动隐藏的任务
-        val hideTask = Runnable {
-            clearRevealedData(itemId)
-        }
+        val hideTask = Runnable { clearRevealedData(itemId) }
         autoHideTasks[itemId] = hideTask
         handler.postDelayed(hideTask, 60000L)
     }
@@ -225,7 +269,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getDecryptedData(itemId: Int): Pair<String, String>? = revealedItems[itemId]
 
-    // 备份相关逻辑
     fun startExport(uri: Uri) {
         pendingUri = uri
         isExporting = true
@@ -274,7 +317,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        // 销毁时取消所有待执行的自动隐藏任务，防止内存泄露
         autoHideTasks.values.forEach { handler.removeCallbacks(it) }
         autoHideTasks.clear()
     }

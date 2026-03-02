@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -46,6 +47,7 @@ import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.util.BiometricHelper
 import com.example.poop.util.ClipboardUtils
 import com.example.poop.util.CryptoManager
+import com.example.poop.util.Logcat
 
 @Composable
 fun VaultDetailDialog(
@@ -83,32 +85,83 @@ fun VaultDetailDialog(
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 
-                // 分类项：横向布局且支持编辑
                 CategoryItem(viewModel, item)
 
-                DetailItem(
-                    label = "账号",
-                    value = if (isRevealed) decryptedData?.first ?: "" else "••••••••",
-                    isRevealed = isRevealed,
-                    onCopy = {
-                        val username = decryptedData?.first ?: ""
-                        ClipboardUtils.copy(context, username)
-                        Toast.makeText(context, "账号已复制", Toast.LENGTH_SHORT).show()
-                    }
-                )
+                // 账号项
+                if (viewModel.isEditingUsername) {
+                    EditTextField(
+                        value = viewModel.editedUsername,
+                        onValueChange = { viewModel.editedUsername = it },
+                        label = "修改账号",
+                        onSave = {
+                            val currentUsername = decryptedData?.first ?: ""
+                            if (viewModel.editedUsername == currentUsername) {
+                                viewModel.cancelEditingUsername()
+                            } else {
+                                BiometricHelper.authenticate(activity, "保存修改", "验证身份以保存新账号") {
+                                    try {
+                                        val cipher = CryptoManager.getEncryptCipher() ?: throw Exception("无法初始化加密引擎")
+                                        viewModel.saveUsernameEdit(CryptoManager.encrypt(viewModel.editedUsername, cipher))
+                                    } catch (e: Exception) {
+                                        Logcat.e("VaultDetail", "Save username failed", e)
+                                        Toast.makeText(activity, "保存失败", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        }
+                    )
+                } else {
+                    DetailItem(
+                        label = "账号",
+                        value = if (isRevealed) decryptedData?.first ?: "" else "••••••••",
+                        isRevealed = isRevealed,
+                        onCopy = {
+                            val username = decryptedData?.first ?: ""
+                            ClipboardUtils.copy(context, username)
+                            Toast.makeText(context, "账号已复制", Toast.LENGTH_SHORT).show()
+                        },
+                        onEdit = { viewModel.startEditingUsername(decryptedData?.first ?: "") }
+                    )
+                }
 
-                DetailItem(
-                    label = "密码",
-                    value = if (isRevealed) decryptedData?.second ?: "" else "••••••••",
-                    isRevealed = isRevealed,
-                    onCopy = {
-                        val password = decryptedData?.second ?: ""
-                        ClipboardUtils.copy(context, password)
-                        Toast.makeText(context, "密码已复制", Toast.LENGTH_SHORT).show()
-                    }
-                )
+                // 密码项
+                if (viewModel.isEditingPassword) {
+                    EditTextField(
+                        value = viewModel.editedPassword,
+                        onValueChange = { viewModel.editedPassword = it },
+                        label = "修改密码",
+                        onSave = {
+                            val currentPassword = decryptedData?.second ?: ""
+                            if (viewModel.editedPassword == currentPassword) {
+                                viewModel.cancelEditingPassword()
+                            } else {
+                                BiometricHelper.authenticate(activity, "保存修改", "验证身份以保存新密码") {
+                                    try {
+                                        val cipher = CryptoManager.getEncryptCipher() ?: throw Exception("无法初始化加密引擎")
+                                        viewModel.savePasswordEdit(CryptoManager.encrypt(viewModel.editedPassword, cipher))
+                                    } catch (e: Exception) {
+                                        Logcat.e("VaultDetail", "Save password failed", e)
+                                        Toast.makeText(activity, "保存失败", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        }
+                    )
+                } else {
+                    DetailItem(
+                        label = "密码",
+                        value = if (isRevealed) decryptedData?.second ?: "" else "••••••••",
+                        isRevealed = isRevealed,
+                        onCopy = {
+                            val password = decryptedData?.second ?: ""
+                            ClipboardUtils.copy(context, password)
+                            Toast.makeText(context, "密码已复制", Toast.LENGTH_SHORT).show()
+                        },
+                        onEdit = { viewModel.startEditingPassword(decryptedData?.second ?: "") }
+                    )
+                }
 
-                if (!isRevealed) {
+                if (!isRevealed && !viewModel.isEditingUsername && !viewModel.isEditingPassword) {
                     Button(
                         onClick = {
                             decryptMultiple(activity, listOf(item.username, item.password)) { results ->
@@ -124,7 +177,7 @@ fun VaultDetailDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("点击验证并显示")
                     }
-                } else {
+                } else if (isRevealed && !viewModel.isEditingUsername && !viewModel.isEditingPassword) {
                     TextButton(
                         onClick = { viewModel.clearRevealedData(item.id) },
                         modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -163,6 +216,35 @@ fun VaultDetailDialog(
 }
 
 @Composable
+private fun EditTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    onSave: () -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        trailingIcon = {
+            IconButton(onClick = onSave) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = "保存",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent
+        )
+    )
+}
+
+@Composable
 private fun CategoryItem(viewModel: VaultViewModel, item: VaultItem) {
     if (viewModel.isEditingCategory) {
         OutlinedTextField(
@@ -173,7 +255,11 @@ private fun CategoryItem(viewModel: VaultViewModel, item: VaultItem) {
             singleLine = true,
             trailingIcon = {
                 IconButton(onClick = { viewModel.saveCategoryEdit() }) {
-                    Icon(Icons.Default.Check, contentDescription = "保存", tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = "保存",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
@@ -209,7 +295,8 @@ private fun DetailItem(
     label: String,
     value: String,
     isRevealed: Boolean = true,
-    onCopy: (() -> Unit)? = null
+    onCopy: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null
 ) {
     Column {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
@@ -226,9 +313,18 @@ private fun DetailItem(
                 ),
                 modifier = Modifier.weight(1f)
             )
-            if (isRevealed && onCopy != null) {
-                IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+            if (isRevealed) {
+                Row {
+                    if (onEdit != null) {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                    if (onCopy != null) {
+                        IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "复制", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 }
             }
         }
