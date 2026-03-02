@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.InputStream
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
@@ -27,7 +28,6 @@ import javax.crypto.spec.SecretKeySpec
 object BackupManager {
     // 备份文件格式版本号
     private const val BACKUP_VERSION = 1
-    
     // 增加迭代次数以增强抗暴力破解能力，符合现代安全标准
     private const val PBKDF2_ITERATIONS = 200000
     private const val KEY_LENGTH = 256
@@ -50,13 +50,13 @@ object BackupManager {
         try {
             val db = AppDatabase.getDatabase(context)
             val items = db.vaultDao().getAllItems().first()
-            
+
             // 1. 将数据转换为 JSON
             val jsonArray = JSONArray()
             items.forEach { item ->
                 val ivUser = CryptoManager.getIvFromCipherText(item.username)
                 val ivPass = CryptoManager.getIvFromCipherText(item.password)
-                
+
                 // 每一个字段解密都需要在密钥解锁的 10 秒窗口内完成
                 val username = try {
                     ivUser?.let { CryptoManager.getDecryptCipher(it) }
@@ -65,7 +65,7 @@ object BackupManager {
                     Logcat.e("BackupManager", "Export timeout on username", e)
                     throw Exception("导出超时：生物识别授权已过期，请重试并保持操作连贯。")
                 } ?: throw Exception("无法导出: 条目 \"${item.title}\" 的账号解密失败。")
-                
+
                 val passwordText = try {
                     ivPass?.let { CryptoManager.getDecryptCipher(it) }
                         ?.let { CryptoManager.decrypt(item.password, it) }
@@ -119,24 +119,26 @@ object BackupManager {
         mode: ImportMode = ImportMode.OVERWRITE
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            // 0. 预热数据库
             val db = AppDatabase.getDatabase(context)
             val dao = db.vaultDao()
 
             // 1. 获取解密后的明文数据
             val backupDataResult = getBackupData(context, uri, password)
             if (backupDataResult.isFailure) return@withContext Result.failure(backupDataResult.exceptionOrNull()!!)
-            val itemsToImport = backupDataResult.getOrNull() ?: return@withContext Result.failure(Exception("备份为空"))
+            val itemsToImport = backupDataResult.getOrNull() ?: return@withContext Result.failure(
+                Exception("备份为空")
+            )
 
             // 2. 重新加密
+            // 核心修复：彻底解决 Cipher 复用问题。
+            // 每一个字段的加密必须使用 fresh 初始化的 Cipher 实例。
+            // 依靠 CryptoManager 的 10s 授权窗口，这些调用不会导致重复弹窗。
             val encryptedItems = try {
                 itemsToImport.map { item ->
-                    val cipherUser = CryptoManager.getEncryptCipher() 
-                        ?: throw Exception("无法初始化加密引擎。")
+                    val cipherUser = CryptoManager.getEncryptCipher() ?: throw Exception("无法初始化加密引擎。")
                     val encUser = CryptoManager.encrypt(item.username, cipherUser)
                     
-                    val cipherPass = CryptoManager.getEncryptCipher() 
-                        ?: throw Exception("无法初始化加密引擎。")
+                    val cipherPass = CryptoManager.getEncryptCipher() ?: throw Exception("无法初始化加密引擎。")
                     val encPass = CryptoManager.encrypt(item.password, cipherPass)
                     
                     item.copy(username = encUser, password = encPass)
@@ -149,8 +151,8 @@ object BackupManager {
             // 3. 执行写入
             db.withTransaction {
                 if (mode == ImportMode.OVERWRITE) {
-                    val currentItems = dao.getAllItems().first()
-                    currentItems.forEach { dao.delete(it) }
+                    // 优化：使用 deleteAll 替代循环删除，大幅提升大批量数据导入时的性能
+                    dao.deleteAll()
                 }
                 encryptedItems.forEach { dao.insert(it) }
             }
@@ -158,7 +160,7 @@ object BackupManager {
             Result.success(Unit)
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Logcat.e("BackupManager", "Import failed", e)
-            
+
             val refinedMessage = when {
                 e.message?.contains("超时") == true -> e.message!!
                 e is android.database.sqlite.SQLiteException -> "导入失败: 数据库访问出错。请尝试清除应用数据后重试。"
@@ -167,7 +169,7 @@ object BackupManager {
             Result.failure(Exception(refinedMessage))
         }
     }
-    
+
     /**
      * 读取备份并解密
      */
@@ -178,43 +180,49 @@ object BackupManager {
     ): Result<List<VaultItem>> = withContext(Dispatchers.IO) {
         try {
             context.contentResolver.openInputStream(uri)?.use { input ->
-                val version = input.read()
+                // 修复：处理 Version 读取的健壮性
+                val versionBuf = ByteArray(1)
+                if (readExactly(input, versionBuf) != 1) throw Exception("备份文件已损坏 (Version)")
+                val version = versionBuf[0].toInt() and 0xFF
                 if (version != BACKUP_VERSION) throw Exception("不支持的备份版本 ($version)")
 
+                // 修复：严谨读取 Salt (16字节) 和 IV (12字节)
                 val salt = ByteArray(SALT_LENGTH)
-                if (readAll(input, salt) != SALT_LENGTH) throw Exception("备份文件 Salt 损坏")
-                
+                if (readExactly(input, salt) != SALT_LENGTH) throw Exception("备份文件已损坏 (Salt)")
+
                 val iv = ByteArray(IV_LENGTH)
-                if (readAll(input, iv) != IV_LENGTH) throw Exception("备份文件 IV 损坏")
-                
+                if (readExactly(input, iv) != IV_LENGTH) throw Exception("备份文件已损坏 (IV)")
+
                 val encryptedData = input.readBytes()
 
                 val secretKey = deriveKey(password, salt)
                 val cipher = Cipher.getInstance("AES/GCM/NoPadding")
                 cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
-                
+
                 val rawData = cipher.doFinal(encryptedData)
                 val jsonArray = JSONArray(String(rawData))
 
                 val items = mutableListOf<VaultItem>()
                 for (i in 0 until jsonArray.length()) {
                     val obj = jsonArray.getJSONObject(i)
-                    items.add(VaultItem(
-                        title = obj.getString("title"),
-                        username = obj.getString("username"),
-                        password = obj.getString("password"),
-                        category = obj.getString("category"),
-                        notes = obj.optString("notes", ""),
-                        timestamp = System.currentTimeMillis()
-                    ))
+                    items.add(
+                        VaultItem(
+                            title = obj.getString("title"),
+                            username = obj.getString("username"),
+                            password = obj.getString("password"),
+                            category = obj.getString("category"),
+                            notes = obj.optString("notes", ""),
+                            timestamp = System.currentTimeMillis()
+                        )
+                    )
                 }
                 Result.success(items)
             } ?: Result.failure(Exception("无法读取文件"))
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Logcat.e("BackupManager", "Get backup data failed", e)
-            
+
             val message = when (e) {
-                is AEADBadTagException -> "备份密码错误，请重试"
+                is AEADBadTagException -> "备份密码错误或文件已损坏"
                 else -> e.message ?: "读取备份失败"
             }
             Result.failure(Exception(message))
@@ -228,13 +236,16 @@ object BackupManager {
         return SecretKeySpec(keyBytes, "AES")
     }
 
-    private fun readAll(input: java.io.InputStream, buffer: ByteArray): Int {
-        var totalRead = 0
-        while (totalRead < buffer.size) {
-            val read = input.read(buffer, totalRead, buffer.size - totalRead)
-            if (read == -1) break
-            totalRead += read
+    /**
+     * 辅助方法：确保读取指定长度的字节，彻底解决 ContentResolver 流的短读（Short Read）问题。
+     */
+    private fun readExactly(input: InputStream, buffer: ByteArray): Int {
+        var bytesReadTotal = 0
+        while (bytesReadTotal < buffer.size) {
+            val bytesReadNow = input.read(buffer, bytesReadTotal, buffer.size - bytesReadTotal)
+            if (bytesReadNow == -1) break
+            bytesReadTotal += bytesReadNow
         }
-        return totalRead
+        return bytesReadTotal
     }
 }

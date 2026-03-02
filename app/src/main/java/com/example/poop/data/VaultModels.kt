@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
@@ -34,12 +35,18 @@ interface VaultDao {
     @Query("SELECT * FROM vault_items WHERE title LIKE '%' || :query || '%' OR category LIKE '%' || :query || '%'")
     fun searchItems(query: String): Flow<List<VaultItem>>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: VaultItem)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<VaultItem>)
 
     @Update
     suspend fun update(item: VaultItem)
 
     @Delete
     suspend fun delete(item: VaultItem)
+
+    @Query("DELETE FROM vault_items")
+    suspend fun deleteAll()
 }
