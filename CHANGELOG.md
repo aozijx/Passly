@@ -2,6 +2,11 @@
 
 所有对本项目的显著修改都将记录在此文件中。
 
+## [0.1.2] - 2026-03-02
+- 在 `VaultViewModel` 中增加分类编辑状态管理及保存逻辑
+- 在 `VaultDetailDialog` 中实现分类项的可编辑 UI，支持点击切换至输入框并保存
+- 更新 `VaultWidgets` 中的分类图标映射，扩充支持的关键词并调整默认图标
+
 ## [0.1.1] - 2026-03-02
 
 - **安全性增强**：在 `BackupManager` 中显式处理 `UserNotAuthenticatedException`，捕获生物识别授权超时情况并提供用户友好的提示。

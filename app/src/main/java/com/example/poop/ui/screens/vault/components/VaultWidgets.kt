@@ -7,20 +7,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.AlternateEmail
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Flight
-import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.MedicalInformation
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -53,18 +55,19 @@ fun EmptyVaultPlaceholder() {
 }
 
 fun getCategoryIcon(category: String): ImageVector = when (category.lowercase()) {
-    "社交", "social" -> Icons.Default.Public
-    "银行", "bank", "金融" -> Icons.Default.CreditCard
-    "工作", "work" -> Icons.Default.Work
-    "个人", "隐私" -> Icons.Default.Lock
-    "购物", "shopping" -> Icons.Default.ShoppingCart
-    "游戏", "game" -> Icons.Default.Gamepad
-    "音乐", "music" -> Icons.Default.MusicNote
-    "电影", "movie" -> Icons.Default.Movie
-    "阅读", "book" -> Icons.AutoMirrored.Filled.MenuBook
-    "健身", "fitness" -> Icons.Default.FitnessCenter
-    "旅行", "travel" -> Icons.Default.Flight
-    "美食", "food" -> Icons.Default.Restaurant
-    "学习", "study" -> Icons.Default.School
-    else -> Icons.Default.Description  // 默认图标
+    "个人", "private" -> Icons.Default.Fingerprint
+    "银行卡", "bank card", "金融", "finance" -> Icons.Default.CreditCard
+    "支付", "payment", "充值", "recharge" -> Icons.Default.AccountBalanceWallet
+    "账号", "account", "登录", "login" -> Icons.Default.AlternateEmail
+    "应用", "APP", "app", "application" -> Icons.Default.Apps
+    "邮箱", "email", "邮件", "mail" -> Icons.Default.Email
+    "安全", "security", "权限", "permission" -> Icons.Default.Security
+    "提现", "withdraw", "理财", "financial management" -> Icons.Default.Savings
+    "社保", "social security", "医保", "medical insurance" -> Icons.Default.MedicalInformation
+    "身份证", "ID card", "证件", "certificate" -> Icons.Default.Badge
+    "WiFi", "网络", "无线" -> Icons.Default.Wifi
+    "游戏", "game" -> Icons.Default.SportsEsports
+    "网盘", "cloud", "云盘", "drive" -> Icons.Default.Cloud
+    "日记", "note", "记事", "diary" -> Icons.Default.EditNote
+    else -> Icons.Default.Key  // 默认图标
 }

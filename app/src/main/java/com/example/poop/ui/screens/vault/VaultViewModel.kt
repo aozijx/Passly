@@ -68,6 +68,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var detailItem by mutableStateOf<VaultItem?>(null)
         private set
     var detailPasswordVisible by mutableStateOf(false)
+    var isEditingCategory by mutableStateOf(false)
+    var editedCategory by mutableStateOf("")
 
     // 删除确认状态
     var itemToDelete by mutableStateOf<VaultItem?>(null)
@@ -104,11 +106,34 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun showDetail(item: VaultItem) {
         detailItem = item
         detailPasswordVisible = false
+        isEditingCategory = false
+        editedCategory = item.category
     }
 
     fun dismissDetail() {
         detailItem?.let { clearRevealedData(it.id) }
         detailItem = null
+        isEditingCategory = false
+    }
+
+    fun startEditingCategory() {
+        isEditingCategory = true
+        editedCategory = detailItem?.category ?: ""
+    }
+
+    fun saveCategoryEdit() {
+        val item = detailItem ?: return
+        val newCategory = editedCategory.trim()
+        if (newCategory.isNotEmpty() && newCategory != item.category) {
+            viewModelScope.launch {
+                val updatedItem = item.copy(category = newCategory)
+                dao.update(updatedItem)
+                detailItem = updatedItem
+                isEditingCategory = false
+            }
+        } else {
+            isEditingCategory = false
+        }
     }
 
     fun requestDelete(item: VaultItem) {
