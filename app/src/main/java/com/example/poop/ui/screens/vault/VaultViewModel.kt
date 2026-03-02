@@ -3,6 +3,8 @@ package com.example.poop.ui.screens.vault
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +25,10 @@ import kotlinx.coroutines.launch
 
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).vaultDao()
+    
+    // 自动隐藏逻辑需要的组件
+    private val handler = Handler(Looper.getMainLooper())
+    private val autoHideTasks = mutableMapOf<Int, Runnable>()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -191,20 +197,35 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * 设置解密后的数据
+     * 设置解密后的数据，并启动 60 秒自动隐藏逻辑
      */
     fun setRevealedData(itemId: Int, username: String, password: String) {
         revealedItems[itemId] = username to password
+        
+        // 如果该项已有计时器，先取消它
+        autoHideTasks[itemId]?.let { handler.removeCallbacks(it) }
+        
+        // 创建 60 秒后自动隐藏的任务
+        val hideTask = Runnable {
+            clearRevealedData(itemId)
+        }
+        autoHideTasks[itemId] = hideTask
+        handler.postDelayed(hideTask, 60000L)
     }
 
     fun clearRevealedData(itemId: Int) {
         revealedItems.remove(itemId)
+        autoHideTasks[itemId]?.let {
+            handler.removeCallbacks(it)
+            autoHideTasks.remove(itemId)
+        }
     }
 
     fun isItemRevealed(itemId: Int): Boolean = revealedItems.containsKey(itemId)
 
     fun getDecryptedData(itemId: Int): Pair<String, String>? = revealedItems[itemId]
 
+    // 备份相关逻辑
     fun startExport(uri: Uri) {
         pendingUri = uri
         isExporting = true
@@ -249,5 +270,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearBackupMessage() {
         backupMessage = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // 销毁时取消所有待执行的自动隐藏任务，防止内存泄露
+        autoHideTasks.values.forEach { handler.removeCallbacks(it) }
+        autoHideTasks.clear()
     }
 }

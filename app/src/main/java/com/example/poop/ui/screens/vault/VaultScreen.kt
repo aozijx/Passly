@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,6 +63,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.ui.screens.vault.components.AddVaultItemDialog
 import com.example.poop.ui.screens.vault.components.BackupPasswordDialog
@@ -80,6 +84,18 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
 
     val focusManager = LocalFocusManager.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    // 联动隐藏系统状态栏
+    LaunchedEffect(scrollBehavior.state.collapsedFraction) {
+        val window = activity.window
+        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+        // 当标题栏开始折叠时，同步触发状态栏隐藏，实现无缝沉浸
+        if (scrollBehavior.state.collapsedFraction > 0.5f) {
+            insetsController.hide(WindowInsetsCompat.Type.statusBars())
+        } else {
+            insetsController.show(WindowInsetsCompat.Type.statusBars())
+        }
+    }
 
     // 文件导出器
     val exportLauncher = rememberLauncherForActivityResult(
@@ -105,9 +121,14 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        // 关键 1：保持为 0，让列表内容可以扩展到状态栏位置
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             CenterAlignedTopAppBar(
                 scrollBehavior = scrollBehavior,
+                // 关键 2：使用动态状态栏 Insets。当状态栏 hide 时，它会自动变为 0，
+                // 实现标题栏向上平滑“顶”掉状态栏空隙的效果。
+                windowInsets = WindowInsets.statusBars,
                 title = {
                     if (viewModel.isSearchActive) {
                         TextField(
@@ -137,7 +158,6 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                         }
                     } else {
-                        // 将搜索按钮放到左侧
                         IconButton(onClick = { viewModel.toggleSearch(true) }) {
                             Icon(Icons.Default.Search, contentDescription = "搜索")
                         }
@@ -181,7 +201,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                             }
                         }
 
-                        // 更多菜单（备份与恢复）
+                        // 更多菜单
                         Box {
                             IconButton(onClick = { viewModel.toggleMoreMenu(true) }) {
                                 Icon(Icons.Default.MoreVert, contentDescription = "更多")
