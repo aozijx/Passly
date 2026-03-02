@@ -1,21 +1,27 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Room 基础规则
+-keepclassmembers class * extends androidx.room.RoomDatabase {
+    public <init>(...);
+}
+-keep class * extends androidx.room.RoomDatabase
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# SQLCipher / SQLite 相关规则
+-keep class net.sqlcipher.** { *; }
+-keep class net.sqlcipher.database.** { *; }
+-keep class androidx.sqlite.db.SupportSQLite* { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# 核心数据模型 (VaultItem) 防止被混淆导致 Room 无法映射
+-keepclassmembers class com.example.poop.data.VaultItem { *; }
+-keep class com.example.poop.data.VaultItem { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# DAO 接口防止被优化
+-keep interface com.example.poop.data.VaultDao { *; }
+
+# 处理反射相关的异常堆栈保留
+-keepattributes Signature
+-keepattributes *Annotation*
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+-keepattributes SourceFile,LineNumberTable
+
+# 记录日志相关的类
+-keep class com.example.poop.util.Logcat { *; }

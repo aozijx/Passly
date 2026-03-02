@@ -90,7 +90,7 @@ fun VaultDetailDialog(
                     onCopy = {
                         val username = decryptedData?.first ?: ""
                         ClipboardUtils.copy(context, username)
-                        Toast.makeText(context, "账号已复制，60秒后自动清除", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "账号已复制", Toast.LENGTH_SHORT).show()
                     }
                 )
 
@@ -101,7 +101,7 @@ fun VaultDetailDialog(
                     onCopy = {
                         val password = decryptedData?.second ?: ""
                         ClipboardUtils.copy(context, password)
-                        Toast.makeText(context, "密码已复制，60秒后自动清除", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "密码已复制", Toast.LENGTH_SHORT).show()
                     }
                 )
 
@@ -134,7 +134,6 @@ fun VaultDetailDialog(
             }
         },
         confirmButton = {
-            // 将按钮分散排列：删除在左，关闭在右，避免误触
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -156,7 +155,7 @@ fun VaultDetailDialog(
                 }
             }
         },
-        dismissButton = null // 使用 confirmButton 里的 Row 自定义布局
+        dismissButton = null
     )
 }
 

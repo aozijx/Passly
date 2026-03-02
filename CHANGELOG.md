@@ -2,7 +2,14 @@
 
 所有对本项目的显著修改都将记录在此文件中。
 
-## [1.1.0] - 2026-03-01
+## [0.1.1] - 2026-03-02
+
+- **安全性增强**：在 `BackupManager` 中显式处理 `UserNotAuthenticatedException`，捕获生物识别授权超时情况并提供用户友好的提示。
+- **健壮性优化**：改进 `BackupManager` 的文件读取逻辑，确保完整读取 Salt 和 IV；细化错误分类，针对密码错误（AEADBadTagException）和数据库异常提供更精确的反馈。
+- **混淆配置**：更新 `proguard-rules.pro`，添加 Room、SQLCipher、核心数据模型及 DAO 接口的混淆保留规则，防止由于代码优化导致的运行时异常。
+- **UI/UX 改进**：优化 `VaultViewModel` 中的错误消息处理逻辑；统一导入模式的默认设置。
+
+## [0.1.0] - 2026-03-01
 
 ### 数据备份与恢复
 - **加密备份引擎**：新增 `BackupManager` 工具类，采用 PBKDF2 (200,000 次迭代) 派生密钥与 AES-GCM 算法，实现不依赖硬件 Keystore 的安全数据导出与导入。

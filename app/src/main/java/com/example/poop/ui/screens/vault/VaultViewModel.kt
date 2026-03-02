@@ -165,6 +165,9 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * 设置解密后的数据
+     */
     fun setRevealedData(itemId: Int, username: String, password: String) {
         revealedItems[itemId] = username to password
     }
@@ -177,7 +180,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getDecryptedData(itemId: Int): Pair<String, String>? = revealedItems[itemId]
 
-    // 备份相关操作
     fun startExport(uri: Uri) {
         pendingUri = uri
         isExporting = true
@@ -189,7 +191,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         pendingUri = uri
         isExporting = false
         backupPassword = ""
-        importMode = BackupManager.ImportMode.OVERWRITE // 默认覆盖
+        importMode = BackupManager.ImportMode.OVERWRITE
         showBackupPasswordDialog = true
     }
 
@@ -213,7 +215,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             backupMessage = if (result.isSuccess) {
                 if (isExporting) "数据备份导出成功" else "数据导入成功"
             } else {
-                "${if (isExporting) "导出" else "导入"}失败: ${result.exceptionOrNull()?.message}"
+                val error = result.exceptionOrNull()?.message ?: "操作失败"
+                "${if (isExporting) "导出" else "导入"}失败: $error"
             }
             pendingUri = null
         }

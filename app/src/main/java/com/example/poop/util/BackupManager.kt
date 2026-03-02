@@ -2,6 +2,7 @@ package com.example.poop.util
 
 import android.content.Context
 import android.net.Uri
+import android.security.keystore.UserNotAuthenticatedException
 import androidx.room.withTransaction
 import com.example.poop.BuildConfig
 import com.example.poop.data.AppDatabase
@@ -12,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.SecureRandom
+import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
@@ -33,8 +35,8 @@ object BackupManager {
     private const val IV_LENGTH = 12
 
     enum class ImportMode {
-        APPEND,    // 追加模式：将备份数据添加到现有数据之后
-        OVERWRITE  // 覆盖模式：清空当前数据库并导入备份数据
+        APPEND,    // 追加模式
+        OVERWRITE  // 覆盖模式
     }
 
     /**
@@ -52,17 +54,25 @@ object BackupManager {
             // 1. 将数据转换为 JSON
             val jsonArray = JSONArray()
             items.forEach { item ->
-                // 关键改进：在导出前显式解密原有数据。如果 Keystore 已失效或授权过期，则抛出异常中断导出。
                 val ivUser = CryptoManager.getIvFromCipherText(item.username)
                 val ivPass = CryptoManager.getIvFromCipherText(item.password)
                 
-                val username = ivUser?.let { CryptoManager.getDecryptCipher(it) }
-                    ?.let { CryptoManager.decrypt(item.username, it) }
-                    ?: throw Exception("无法导出: 条目 \"${item.title}\" 的账号解密失败。请确保已通过生物识别授权。")
+                // 每一个字段解密都需要在密钥解锁的 10 秒窗口内完成
+                val username = try {
+                    ivUser?.let { CryptoManager.getDecryptCipher(it) }
+                        ?.let { CryptoManager.decrypt(item.username, it) }
+                } catch (e: UserNotAuthenticatedException) {
+                    Logcat.e("BackupManager", "Export timeout on username", e)
+                    throw Exception("导出超时：生物识别授权已过期，请重试并保持操作连贯。")
+                } ?: throw Exception("无法导出: 条目 \"${item.title}\" 的账号解密失败。")
                 
-                val passwordText = ivPass?.let { CryptoManager.getDecryptCipher(it) }
-                    ?.let { CryptoManager.decrypt(item.password, it) }
-                    ?: throw Exception("无法导出: 条目 \"${item.title}\" 的密码解密失败。请确保已通过生物识别授权。")
+                val passwordText = try {
+                    ivPass?.let { CryptoManager.getDecryptCipher(it) }
+                        ?.let { CryptoManager.decrypt(item.password, it) }
+                } catch (e: UserNotAuthenticatedException) {
+                    Logcat.e("BackupManager", "Export timeout on password", e)
+                    throw Exception("导出超时：生物识别授权已过期。")
+                } ?: throw Exception("无法导出: 条目 \"${item.title}\" 的密码解密失败。")
 
                 val obj = JSONObject().apply {
                     put("title", item.title)
@@ -76,7 +86,7 @@ object BackupManager {
 
             val rawData = jsonArray.toString().toByteArray()
 
-            // 2. 加密 JSON 数据
+            // 2. 加密 JSON 数据 (使用备份密码)
             val salt = ByteArray(SALT_LENGTH).apply { SecureRandom().nextBytes(this) }
             val secretKey = deriveKey(password, salt)
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -84,28 +94,23 @@ object BackupManager {
             val iv = cipher.iv
             val encryptedData = cipher.doFinal(rawData)
 
-            // 3. 写入文件格式: VERSION(1) + SALT(16) + IV(12) + ENCRYPTED_DATA
+            // 3. 写入文件
             context.contentResolver.openOutputStream(uri)?.use { output ->
                 output.write(BACKUP_VERSION)
                 output.write(salt)
                 output.write(iv)
                 output.write(encryptedData)
-            } ?: return@withContext Result.failure(Exception("无法打开输出流"))
+            } ?: return@withContext Result.failure(Exception("无法保存到指定路径"))
 
             Result.success(Unit)
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) {
-                Logcat.e("BackupManager", "Export failed", e)
-            } else {
-                Logcat.e("BackupManager", "Export failed: ${e.message}")
-            }
+            if (BuildConfig.DEBUG) Logcat.e("BackupManager", "Export failed", e)
             Result.failure(e)
         }
     }
 
     /**
      * 导入并恢复备份
-     * @param mode 导入模式：追加或覆盖
      */
     suspend fun importBackup(
         context: Context,
@@ -114,50 +119,57 @@ object BackupManager {
         mode: ImportMode = ImportMode.OVERWRITE
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            // 1. 获取并解密备份数据
-            val backupDataResult = getBackupData(context, uri, password)
-            if (backupDataResult.isFailure) return@withContext Result.failure(backupDataResult.exceptionOrNull()!!)
-            val itemsToImport = backupDataResult.getOrNull() ?: return@withContext Result.failure(Exception("备份数据为空"))
-
-            // 2. 准备数据库
+            // 0. 预热数据库
             val db = AppDatabase.getDatabase(context)
             val dao = db.vaultDao()
 
-            // 3. 重新加密并导入 (在数据库事务中执行)
-            // 关键优化：提前获取 Cipher，并重用于所有条目的重新加密，提高效率
-            db.withTransaction {
-                val cipher = CryptoManager.getEncryptCipher() 
-                    ?: throw Exception("导入失败: 无法初始化加密引擎。请确保已通过生物识别授权。")
+            // 1. 获取解密后的明文数据
+            val backupDataResult = getBackupData(context, uri, password)
+            if (backupDataResult.isFailure) return@withContext Result.failure(backupDataResult.exceptionOrNull()!!)
+            val itemsToImport = backupDataResult.getOrNull() ?: return@withContext Result.failure(Exception("备份为空"))
 
-                val encryptedItems = itemsToImport.map { item ->
-                    val encUser = CryptoManager.encrypt(item.username, cipher)
-                    val encPass = CryptoManager.encrypt(item.password, cipher)
+            // 2. 重新加密
+            val encryptedItems = try {
+                itemsToImport.map { item ->
+                    val cipherUser = CryptoManager.getEncryptCipher() 
+                        ?: throw Exception("无法初始化加密引擎。")
+                    val encUser = CryptoManager.encrypt(item.username, cipherUser)
+                    
+                    val cipherPass = CryptoManager.getEncryptCipher() 
+                        ?: throw Exception("无法初始化加密引擎。")
+                    val encPass = CryptoManager.encrypt(item.password, cipherPass)
+                    
                     item.copy(username = encUser, password = encPass)
                 }
+            } catch (e: UserNotAuthenticatedException) {
+                Logcat.e("BackupManager", "Import timeout during re-encryption", e)
+                throw Exception("导入超时：生物识别授权已过期，请重试。")
+            }
 
-                // 执行写入逻辑
+            // 3. 执行写入
+            db.withTransaction {
                 if (mode == ImportMode.OVERWRITE) {
                     val currentItems = dao.getAllItems().first()
                     currentItems.forEach { dao.delete(it) }
                 }
-                
                 encryptedItems.forEach { dao.insert(it) }
             }
 
             Result.success(Unit)
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) {
-                Logcat.e("BackupManager", "Import failed", e)
-            } else {
-                Logcat.e("BackupManager", "Import failed: ${e.message}")
+            if (BuildConfig.DEBUG) Logcat.e("BackupManager", "Import failed", e)
+            
+            val refinedMessage = when {
+                e.message?.contains("超时") == true -> e.message!!
+                e is android.database.sqlite.SQLiteException -> "导入失败: 数据库访问出错。请尝试清除应用数据后重试。"
+                else -> "导入失败: ${e.message}"
             }
-            Result.failure(e)
+            Result.failure(Exception(refinedMessage))
         }
     }
     
     /**
-     * 从备份文件中读取数据并解密。
-     * 返回的 VaultItem 列表中 username 和 password 字段是【明文】。
+     * 读取备份并解密
      */
     suspend fun getBackupData(
         context: Context,
@@ -166,22 +178,17 @@ object BackupManager {
     ): Result<List<VaultItem>> = withContext(Dispatchers.IO) {
         try {
             context.contentResolver.openInputStream(uri)?.use { input ->
-                // 1. 读取版本号
                 val version = input.read()
-                if (version != BACKUP_VERSION) {
-                    throw Exception("不支持的备份版本 (发现版本: $version, 需要版本: $BACKUP_VERSION)")
-                }
+                if (version != BACKUP_VERSION) throw Exception("不支持的备份版本 ($version)")
 
-                // 2. 读取 Salt 和 IV
-                val salt = ByteArray(SALT_LENGTH).also { 
-                    if (input.read(it) != SALT_LENGTH) throw Exception("无效的备份文件 (Salt 长度错误)")
-                }
-                val iv = ByteArray(IV_LENGTH).also { 
-                    if (input.read(it) != IV_LENGTH) throw Exception("无效的备份文件 (IV 长度错误)")
-                }
+                val salt = ByteArray(SALT_LENGTH)
+                if (readAll(input, salt) != SALT_LENGTH) throw Exception("备份文件 Salt 损坏")
+                
+                val iv = ByteArray(IV_LENGTH)
+                if (readAll(input, iv) != IV_LENGTH) throw Exception("备份文件 IV 损坏")
+                
                 val encryptedData = input.readBytes()
 
-                // 3. 解密数据
                 val secretKey = deriveKey(password, salt)
                 val cipher = Cipher.getInstance("AES/GCM/NoPadding")
                 cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
@@ -192,7 +199,6 @@ object BackupManager {
                 val items = mutableListOf<VaultItem>()
                 for (i in 0 until jsonArray.length()) {
                     val obj = jsonArray.getJSONObject(i)
-                    
                     items.add(VaultItem(
                         title = obj.getString("title"),
                         username = obj.getString("username"),
@@ -203,14 +209,15 @@ object BackupManager {
                     ))
                 }
                 Result.success(items)
-            } ?: Result.failure(Exception("无法打开输入流"))
+            } ?: Result.failure(Exception("无法读取文件"))
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) {
-                Logcat.e("BackupManager", "Get backup data failed", e)
-            } else {
-                Logcat.e("BackupManager", "Get backup data failed: ${e.message}")
+            if (BuildConfig.DEBUG) Logcat.e("BackupManager", "Get backup data failed", e)
+            
+            val message = when (e) {
+                is AEADBadTagException -> "备份密码错误，请重试"
+                else -> e.message ?: "读取备份失败"
             }
-            Result.failure(e)
+            Result.failure(Exception(message))
         }
     }
 
@@ -219,5 +226,15 @@ object BackupManager {
         val spec = PBEKeySpec(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH)
         val keyBytes = factory.generateSecret(spec).encoded
         return SecretKeySpec(keyBytes, "AES")
+    }
+
+    private fun readAll(input: java.io.InputStream, buffer: ByteArray): Int {
+        var totalRead = 0
+        while (totalRead < buffer.size) {
+            val read = input.read(buffer, totalRead, buffer.size - totalRead)
+            if (read == -1) break
+            totalRead += read
+        }
+        return totalRead
     }
 }

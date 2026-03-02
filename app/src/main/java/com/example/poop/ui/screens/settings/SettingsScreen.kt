@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.poop.BuildConfig
 import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.ui.screens.vault.VaultActivity
 import kotlinx.coroutines.delay
@@ -145,7 +146,7 @@ fun SettingsScreen(
             item {
                 SettingsClickableItem(
                     title = "版本号",
-                    value = "v1.0.0",
+                    value = "v${BuildConfig.VERSION_NAME}",
                     onClick = {
                         versionTapCount++
                         if (versionTapCount >= 3) {
