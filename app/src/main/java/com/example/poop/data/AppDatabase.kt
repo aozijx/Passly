@@ -8,6 +8,8 @@ import androidx.core.content.edit
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import com.example.poop.BuildConfig
 import com.example.poop.util.Logcat
 import net.sqlcipher.database.SupportFactory
 import java.nio.ByteBuffer
@@ -17,12 +19,17 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
-@Database(entities = [VaultItem::class], version = 1, exportSchema = false)
+@Database(
+    entities = [VaultItem::class, PasswordHistory::class],
+    version = 1,
+    exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
+)
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun vaultDao(): VaultDao
-
     companion object {
         private const val TAG = "AppDatabase"
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -31,8 +38,12 @@ abstract class AppDatabase : RoomDatabase() {
             val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
             if (!ks.containsAlias(alias)) {
-                val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
-                val spec = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                val keyGenerator =
+                    KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+                val spec = KeyGenParameterSpec.Builder(
+                    alias,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
                     .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                     .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                     .setKeySize(256)
@@ -56,8 +67,8 @@ abstract class AppDatabase : RoomDatabase() {
                     cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
                     return cipher.doFinal(encrypted)
                 } catch (e: Exception) {
-                    Logcat.e(TAG, "Database passphrase decryption failed! Data might be locked.", e)
-                    throw e 
+                    Logcat.e(TAG, "Database passphrase decryption failed!", e)
+                    throw e
                 }
             }
 

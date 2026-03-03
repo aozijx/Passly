@@ -30,7 +30,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     // 主题状态
     val isDarkMode: StateFlow<Boolean?> = preference.isDarkMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
-    
+
     val isDynamicColor: StateFlow<Boolean> = preference.isDynamicColor
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
@@ -93,26 +93,27 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val vaultItems: StateFlow<List<VaultItem>> = combine(_searchQuery, _selectedCategory) { query, category ->
-        query to category
-    }.flatMapLatest { (query, category) ->
-        if (query.isNotEmpty()) {
-            dao.searchItems(query)
-        } else if (category != null) {
-            dao.getItemsByCategory(category)
-        } else {
-            dao.getAllItems()
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+    val vaultItems: StateFlow<List<VaultItem>> =
+        combine(_searchQuery, _selectedCategory) { query, category ->
+            query to category
+        }.flatMapLatest { (query, category) ->
+            if (query.isNotEmpty()) {
+                dao.searchItems(query)
+            } else if (category != null) {
+                dao.getItemsByCategory(category)
+            } else {
+                dao.getAllItems()
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     // 新增对话框状态
     var showAddDialog by mutableStateOf(false)
         private set
-    
+
     var addDialogTitle by mutableStateOf("")
     var addDialogUsername by mutableStateOf("")
     var addDialogPassword by mutableStateOf("")
@@ -124,8 +125,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var isEditingCategory by mutableStateOf(false)
     var editedCategory by mutableStateOf("")
-    
-    // 修改账号和密码的独立状态
+
     var isEditingUsername by mutableStateOf(false)
     var isEditingPassword by mutableStateOf(false)
     var editedUsername by mutableStateOf("")
@@ -195,21 +195,21 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             isEditingCategory = false
         }
     }
-    
+
     fun startEditingUsername(currentUsername: String) {
         editedUsername = currentUsername
         isEditingUsername = true
     }
-    
+
     fun startEditingPassword(currentPassword: String) {
         editedPassword = currentPassword
         isEditingPassword = true
     }
-    
+
     fun cancelEditingUsername() {
         isEditingUsername = false
     }
-    
+
     fun cancelEditingPassword() {
         isEditingPassword = false
     }
@@ -231,6 +231,17 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             dao.update(updatedItem)
             detailItem = updatedItem
             isEditingPassword = false
+        }
+    }
+
+    // 核心更新方法：用于更新 VaultItem 的任何字段（包括新增的 iconName）
+    fun updateVaultItem(item: VaultItem) {
+        viewModelScope.launch {
+            dao.update(item)
+            // 同步更新当前正在显示的详情条目，确保 UI 实时刷新
+            if (detailItem?.id == item.id) {
+                detailItem = item
+            }
         }
     }
 

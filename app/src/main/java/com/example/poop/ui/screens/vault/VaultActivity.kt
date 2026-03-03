@@ -55,7 +55,6 @@ class VaultActivity : FragmentActivity() {
         requestAuthentication(isFirstTime = true)
 
         setContent {
-            // 从 ViewModel 获取全局唯一的主题配置 StateFlow
             val isDarkModePref by viewModel.isDarkMode.collectAsState()
             val isDynamicColorPref by viewModel.isDynamicColor.collectAsState()
 
@@ -67,7 +66,6 @@ class VaultActivity : FragmentActivity() {
                 if (viewModel.isAuthorized) {
                     VaultContent(this, viewModel)
                 } else {
-                    // 传递验证方法，点击占位符即可重新验证
                     AuthorizationPlaceholder { requestAuthentication(isFirstTime = false) }
                 }
             }
@@ -95,22 +93,15 @@ class VaultActivity : FragmentActivity() {
 
     override fun onUserInteraction() {
         super.onUserInteraction()
-        // 每次交互重置计时器
         viewModel.updateInteraction()
     }
 
     override fun onResume() {
         super.onResume()
-        // 回到应用时执行后台流逝时间校验
         viewModel.checkAndLock()
         if (viewModel.isAuthorized) {
             viewModel.startLockTimer()
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // 应用进入后台，此处不显式 cancel 计时器，允许其在后台进程中继续尝试执行
     }
 }
 

@@ -66,22 +66,39 @@ fun VaultDetailDialog(
     var revealedPassword by remember { mutableStateOf<String?>(null) }
     val isRevealed = revealedUsername != null && revealedPassword != null
 
+    // 图标选择器显示状态
+    val showIconPicker = remember { mutableStateOf(false) }
+
+    if (showIconPicker.value) {
+        IconPickerDialog(
+            onDismiss = { showIconPicker.value = false },
+            currentIconName = item.iconName,
+            onIconSelected = { newIconName ->
+                // 更新条目的图标设置
+                viewModel.updateVaultItem(item.copy(iconName = newIconName))
+                showIconPicker.value = false
+            }
+        )
+    }
+
     AlertDialog(
         onDismissRequest = { viewModel.dismissDetail() },
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // 现在图标支持点击打开选择器
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .clickable { showIconPicker.value = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        getCategoryIcon(item.category),
-                        contentDescription = null,
+                        imageVector = getVaultItemIcon(item),
+                        contentDescription = "选择图标",
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -109,9 +126,7 @@ fun VaultDetailDialog(
                                     try {
                                         val cipher = CryptoManager.getEncryptCipher() ?: throw Exception("无法初始化加密引擎")
                                         viewModel.saveUsernameEdit(CryptoManager.encrypt(newValue, cipher))
-                                        // 保存成功后即时刷新 UI
                                         revealedUsername = newValue
-                                        viewModel.cancelEditingUsername()
                                     } catch (e: Exception) {
                                         Logcat.e("VaultDetail", "Save username failed", e)
                                         Toast.makeText(activity, "保存失败", Toast.LENGTH_SHORT).show()
@@ -154,7 +169,6 @@ fun VaultDetailDialog(
                                     try {
                                         val cipher = CryptoManager.getEncryptCipher() ?: throw Exception("无法初始化加密引擎")
                                         viewModel.savePasswordEdit(CryptoManager.encrypt(newValue, cipher))
-                                        // 保存成功后即时刷新 UI
                                         revealedPassword = newValue
                                     } catch (e: Exception) {
                                         Logcat.e("VaultDetail", "Save password failed", e)
@@ -356,10 +370,6 @@ private fun DetailItem(
     }
 }
 
-/**
- * 统一解密核心逻辑
- * 增加内部 try-catch 和详细日志，确保单字段失败不影响全局，返回 List<String?>
- */
 private fun decrypt(
     activity: FragmentActivity,
     encryptedTexts: List<String>,
@@ -383,10 +393,7 @@ private fun decrypt(
                     val cipher = iv?.let { CryptoManager.getDecryptCipher(it) }
                     if (cipher != null) {
                         CryptoManager.decrypt(encryptedText, cipher)
-                    } else {
-                        Logcat.e("VaultDetail", "Failed to get decrypt cipher (IV or Key error)")
-                        null
-                    }
+                    } else null
                 } catch (e: Exception) {
                     Logcat.e("VaultDetail", "Individual field decryption error", e)
                     null
@@ -397,9 +404,6 @@ private fun decrypt(
     )
 }
 
-/**
- * 单字段解密薄包装层
- */
 private fun decryptSingle(
     activity: FragmentActivity,
     encryptedText: String,

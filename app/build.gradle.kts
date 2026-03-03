@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
 }
 
 // 读取 local.properties
@@ -36,16 +37,6 @@ android {
         }
     }
 
-    // 1. 启用 APK 拆分配置
-    splits {
-        abi {
-            isEnable = true // 开启拆分
-            reset() // 重置默认包含的所有架构
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64") // 指定要拆分的架构
-            isUniversalApk = true // 是否额外生成一个包含所有架构的通用 APK
-        }
-    }
-
     signingConfigs {
         create("release") {
             // 这里使用 Safe Call 和 Explicit Type 处理从 Properties 读取的平台类型字符串
@@ -67,12 +58,23 @@ android {
             if (releaseSigning?.storeFile != null) {
                 signingConfig = releaseSigning
             }
+            buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "true")
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
             isDebuggable = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "false")
+        }
+    }
+    // 1. 启用 APK 拆分配置
+    splits {
+        abi {
+            isEnable = true // 开启拆分
+            reset() // 重置默认包含的所有架构
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64") // 指定要拆分的架构
+            isUniversalApk = true // 是否额外生成一个包含所有架构的通用 APK
         }
     }
 
@@ -101,6 +103,11 @@ android {
         compose = true
         buildConfig = true
     }
+}
+
+room {
+    // 指定 schema 导出目录，$projectDir 指向 app 模块目录
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
