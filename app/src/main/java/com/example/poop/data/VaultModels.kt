@@ -11,9 +11,11 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import java.io.Serializable
 
 /**
  * 主表：保险库条目
+ * 实现 Serializable 以支持在 Intent 中传递
  */
 @Entity(tableName = "vault_items")
 data class VaultItem(
@@ -53,11 +55,10 @@ data class VaultItem(
     val createdAt: Long? = System.currentTimeMillis(),
     val updatedAt: Long? = null,
     val expiresAt: Long? = null
-)
+) : Serializable
 
 /**
  * 历史表：密码变更记录
- * 增加 (itemId, changedAt) 的复合唯一索引，防止重复插入
  */
 @Entity(
     tableName = "password_history",
@@ -70,15 +71,15 @@ data class VaultItem(
         )
     ],
     indices = [
-        Index(value = ["itemId", "changedAt"], unique = true) // 关键修复：复合唯一索引
+        Index(value = ["itemId", "changedAt"], unique = true)
     ]
 )
 data class PasswordHistory(
     @PrimaryKey(autoGenerate = true) val historyId: Int = 0,
     val itemId: Int,
-    val oldPassword: String, // 加密后的旧密码
+    val oldPassword: String,
     val changedAt: Long = System.currentTimeMillis()
-)
+) : Serializable
 
 @Dao
 interface VaultDao {
@@ -102,13 +103,26 @@ interface VaultDao {
     fun searchItems(query: String): Flow<List<VaultItem>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(item: VaultItem)
+    suspend fun insertInternal(item: VaultItem)
+
+    suspend fun insert(item: VaultItem) {
+        val now = System.currentTimeMillis()
+        val toInsert = item.copy(
+            createdAt = item.createdAt ?: now,
+            updatedAt = now
+        )
+        insertInternal(toInsert)
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<VaultItem>)
 
     @Update
-    suspend fun update(item: VaultItem)
+    suspend fun updateInternal(item: VaultItem)
+
+    suspend fun update(item: VaultItem) {
+        updateInternal(item.copy(updatedAt = System.currentTimeMillis()))
+    }
 
     @Delete
     suspend fun delete(item: VaultItem)
@@ -116,7 +130,7 @@ interface VaultDao {
     @Query("DELETE FROM vault_items")
     suspend fun deleteAll()
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE) // 如果违反唯一约束则静默忽略
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertHistory(history: PasswordHistory)
 
     @Query("SELECT * FROM password_history WHERE itemId = :itemId ORDER BY changedAt DESC")

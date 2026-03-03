@@ -7,10 +7,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- 生物识别权限：用于安全验证和自动填充授权 -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
     <!-- 相机相关 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" />
 
+    <!-- 允许查询所有包名：用于自动填充时更精准地匹配目标 App -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <queries>
@@ -43,6 +47,15 @@
 
         <activity android:name=".ui.screens.vault.VaultActivity" />
 
+        <!-- 自动填充的透明验证界面：引用自定义的透明主题 -->
+        <activity
+            android:name=".service.autofill.AutofillAuthActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@style/Theme.Poop.TransparentAuth" />
+
         <receiver
             android:name=".ui.screens.widgets.BeautySentenceWidgetReceiver"
             android:exported="true">
@@ -63,6 +76,20 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- 自动填充服务注册 -->
+        <service
+            android:name=".service.autofill.PoopAutofillService"
+            android:exported="true"
+            android:label="@string/autofill_service_name"
+            android:permission="android.permission.BIND_AUTOFILL_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.autofill.AutofillService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.autofill"
+                android:resource="@xml/autofill_service_config" />
+        </service>
 
     </application>
 
