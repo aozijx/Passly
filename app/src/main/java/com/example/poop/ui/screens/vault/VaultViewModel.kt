@@ -3,18 +3,19 @@ package com.example.poop.ui.screens.vault
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.poop.AppContext
 import com.example.poop.data.AppDatabase
 import com.example.poop.data.VaultItem
 import com.example.poop.util.BackupManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,9 +26,62 @@ import kotlinx.coroutines.launch
 
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).vaultDao()
+    private val preference = AppContext.get().preference
     
-    private val handler = Handler(Looper.getMainLooper())
     private val autoHideTasks = mutableMapOf<Int, Runnable>()
+    private val androidHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+    // 主题状态：直接暴露给 Activity 使用，避免在 UI 中重复创建 Preference 对象
+    val isDarkMode: StateFlow<Boolean?> = preference.isDarkMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    
+    val isDynamicColor: StateFlow<Boolean> = preference.isDynamicColor
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    // --- 自动锁定相关逻辑 ---
+    private val lockTimeMs = 60000L
+    private var lockJob: Job? = null
+    private var lastInteractionTime = System.currentTimeMillis()
+
+    var isAuthorized by mutableStateOf(false)
+        private set
+
+    fun authorize() {
+        isAuthorized = true
+        updateInteraction()
+    }
+
+    fun lock() {
+        isAuthorized = false
+        cancelLockTimer()
+    }
+
+    fun startLockTimer() {
+        lockJob?.cancel()
+        lockJob = viewModelScope.launch {
+            delay(lockTimeMs)
+            if (isAuthorized) lock()
+        }
+    }
+
+    fun cancelLockTimer() {
+        lockJob?.cancel()
+    }
+
+    fun updateInteraction() {
+        lastInteractionTime = System.currentTimeMillis()
+        if (isAuthorized) {
+            startLockTimer()
+        }
+    }
+
+    fun checkAndLock() {
+        val elapsed = System.currentTimeMillis() - lastInteractionTime
+        if (isAuthorized && elapsed >= lockTimeMs) {
+            lock()
+        }
+    }
+    // -----------------------
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -251,16 +305,16 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setRevealedData(itemId: Int, username: String, password: String) {
         revealedItems[itemId] = username to password
-        autoHideTasks[itemId]?.let { handler.removeCallbacks(it) }
+        autoHideTasks[itemId]?.let { androidHandler.removeCallbacks(it) }
         val hideTask = Runnable { clearRevealedData(itemId) }
         autoHideTasks[itemId] = hideTask
-        handler.postDelayed(hideTask, 60000L)
+        androidHandler.postDelayed(hideTask, 60000L)
     }
 
     fun clearRevealedData(itemId: Int) {
         revealedItems.remove(itemId)
         autoHideTasks[itemId]?.let {
-            handler.removeCallbacks(it)
+            androidHandler.removeCallbacks(it)
             autoHideTasks.remove(itemId)
         }
     }
@@ -317,7 +371,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        autoHideTasks.values.forEach { handler.removeCallbacks(it) }
+        autoHideTasks.values.forEach { androidHandler.removeCallbacks(it) }
         autoHideTasks.clear()
+        cancelLockTimer()
     }
 }

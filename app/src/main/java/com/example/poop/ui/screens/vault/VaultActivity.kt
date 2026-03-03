@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,77 +22,109 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
-import com.example.poop.data.Preference
 import com.example.poop.ui.theme.PoopTheme
 import com.example.poop.util.BiometricHelper
 
 class VaultActivity : FragmentActivity() {
     private val viewModel: VaultViewModel by viewModels()
-    private var isAuthorized by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        // 安全增强：禁止截屏和多任务预览
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE,
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        
-        // 开启边到边显示（使内容可以延伸到状态栏下方）
+
         enableEdgeToEdge()
-        
-        // 配置系统栏行为：粘性沉浸模式（滑动显示后自动恢复隐藏）
+
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.systemBarsBehavior = 
+        windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        // 验证身份
-        BiometricHelper.authenticate(
-            activity = this,
-            title = "安全验证",
-            subtitle = "验证身份以访问保险箱",
-            onSuccess = { isAuthorized = true },
-            onError = { error ->
-                Toast.makeText(this, "安全验证失败: $error", Toast.LENGTH_SHORT).show()
-                finish()
-            }
-        )
+        // 初始验证
+        requestAuthentication(isFirstTime = true)
 
         setContent {
-            val preference = remember { Preference(applicationContext) }
-            val isDarkModePref by preference.isDarkMode.collectAsState(initial = null)
-            val isDynamicColorPref by preference.isDynamicColor.collectAsState(initial = true)
+            // 从 ViewModel 获取全局唯一的主题配置 StateFlow
+            val isDarkModePref by viewModel.isDarkMode.collectAsState()
+            val isDynamicColorPref by viewModel.isDynamicColor.collectAsState()
 
             PoopTheme(
                 darkTheme = if (isDarkModePref == true) true else null,
                 dynamicColor = isDynamicColorPref
             ) {
-                if (isAuthorized) {
+                // 响应 ViewModel 中的授权状态变化
+                if (viewModel.isAuthorized) {
                     VaultContent(this, viewModel)
                 } else {
-                    AuthorizationPlaceholder()
+                    // 传递验证方法，点击占位符即可重新验证
+                    AuthorizationPlaceholder { requestAuthentication(isFirstTime = false) }
                 }
             }
         }
     }
+
+    private fun requestAuthentication(isFirstTime: Boolean) {
+        BiometricHelper.authenticate(
+            activity = this,
+            title = "安全验证",
+            subtitle = "验证身份以访问保险箱",
+            onSuccess = {
+                viewModel.authorize()
+            },
+            onError = { error ->
+                if (isFirstTime) {
+                    Toast.makeText(this, "安全验证失败: $error", Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    Toast.makeText(this, "验证未通过", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        // 每次交互重置计时器
+        viewModel.updateInteraction()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 回到应用时执行后台流逝时间校验
+        viewModel.checkAndLock()
+        if (viewModel.isAuthorized) {
+            viewModel.startLockTimer()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // 应用进入后台，此处不显式 cancel 计时器，允许其在后台进程中继续尝试执行
+    }
 }
 
 @androidx.compose.runtime.Composable
-private fun AuthorizationPlaceholder() {
+private fun AuthorizationPlaceholder(onRetry: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onRetry
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -101,7 +135,12 @@ private fun AuthorizationPlaceholder() {
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Text("正在进行安全验证...", color = MaterialTheme.colorScheme.onSurface)
+            Text("保险箱已锁定", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "点击屏幕以解锁",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
