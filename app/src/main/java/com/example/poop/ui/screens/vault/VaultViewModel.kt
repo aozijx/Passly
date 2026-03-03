@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
@@ -27,11 +26,8 @@ import kotlinx.coroutines.launch
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).vaultDao()
     private val preference = AppContext.get().preference
-    
-    private val autoHideTasks = mutableMapOf<Int, Runnable>()
-    private val androidHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
-    // 主题状态：直接暴露给 Activity 使用，避免在 UI 中重复创建 Preference 对象
+    // 主题状态
     val isDarkMode: StateFlow<Boolean?> = preference.isDarkMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     
@@ -126,7 +122,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     // 详情对话框状态
     var detailItem by mutableStateOf<VaultItem?>(null)
         private set
-    var detailPasswordVisible by mutableStateOf(false)
     var isEditingCategory by mutableStateOf(false)
     var editedCategory by mutableStateOf("")
     
@@ -149,8 +144,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var backupPassword by mutableStateOf("")
     var importMode by mutableStateOf(BackupManager.ImportMode.OVERWRITE)
 
-    val revealedItems = mutableStateMapOf<Int, Pair<String, String>>()
-
     fun onAddClick() {
         resetAddDialogFields()
         showAddDialog = true
@@ -170,7 +163,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun showDetail(item: VaultItem) {
         detailItem = item
-        detailPasswordVisible = false
         isEditingCategory = false
         isEditingUsername = false
         isEditingPassword = false
@@ -178,7 +170,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun dismissDetail() {
-        detailItem?.let { clearRevealedData(it.id) }
         detailItem = null
         isEditingCategory = false
         isEditingUsername = false
@@ -229,9 +220,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             val updatedItem = item.copy(username = encryptedUsername)
             dao.update(updatedItem)
             detailItem = updatedItem
-            // 更新缓存
-            val currentData = revealedItems[item.id]
-            revealedItems[item.id] = editedUsername to (currentData?.second ?: "")
             isEditingUsername = false
         }
     }
@@ -242,9 +230,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             val updatedItem = item.copy(password = encryptedPassword)
             dao.update(updatedItem)
             detailItem = updatedItem
-            // 更新缓存
-            val currentData = revealedItems[item.id]
-            revealedItems[item.id] = (currentData?.first ?: "") to editedPassword
             isEditingPassword = false
         }
     }
@@ -303,26 +288,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setRevealedData(itemId: Int, username: String, password: String) {
-        revealedItems[itemId] = username to password
-        autoHideTasks[itemId]?.let { androidHandler.removeCallbacks(it) }
-        val hideTask = Runnable { clearRevealedData(itemId) }
-        autoHideTasks[itemId] = hideTask
-        androidHandler.postDelayed(hideTask, 60000L)
-    }
-
-    fun clearRevealedData(itemId: Int) {
-        revealedItems.remove(itemId)
-        autoHideTasks[itemId]?.let {
-            androidHandler.removeCallbacks(it)
-            autoHideTasks.remove(itemId)
-        }
-    }
-
-    fun isItemRevealed(itemId: Int): Boolean = revealedItems.containsKey(itemId)
-
-    fun getDecryptedData(itemId: Int): Pair<String, String>? = revealedItems[itemId]
-
     fun startExport(uri: Uri) {
         pendingUri = uri
         isExporting = true
@@ -371,8 +336,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        autoHideTasks.values.forEach { androidHandler.removeCallbacks(it) }
-        autoHideTasks.clear()
         cancelLockTimer()
     }
 }
