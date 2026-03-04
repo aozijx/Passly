@@ -9,6 +9,13 @@
     <string name="autofill_no_suggestions">Poop 暂无匹配建议</string>
     <string name="widget_loading">加载中…</string>
     <string name="widget_description">每日美句欣赏</string>
+
+    <!-- 快捷菜单资源 -->
+    <string name="shortcut_vault_short">打开保险库</string>
+    <string name="shortcut_vault_long">直接打开保险库并验证身份</string>
+    <string name="shortcut_scanner_short">扫一扫</string>
+    <string name="shortcut_scanner_long">扫一扫添加 TOTP</string>
+
     <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
     <string name="changelog_last"><![CDATA[
 0.1.3 更新啦！

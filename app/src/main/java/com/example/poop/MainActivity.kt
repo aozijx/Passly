@@ -12,6 +12,7 @@ import com.example.poop.ui.navigation.NavGraph
 import com.example.poop.ui.navigation.Screen
 import com.example.poop.ui.theme.PoopTheme
 import com.example.poop.util.PermissionManager
+import com.example.poop.util.ShortcutManager
 import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
@@ -21,7 +22,10 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 初始化权限管理器，它现在是生命周期感知的，会自动处理清理工作
+        // 动态初始化快捷方式，适配当前环境包名
+        ShortcutManager.init(this)
+
+        // 初始化权限管理器
         PermissionManager.getInstance().init(this) { isGranted ->
             updateNotificationPref(isGranted)
         }

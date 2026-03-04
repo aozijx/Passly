@@ -6,15 +6,15 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
     <!-- 生物识别权限：用于安全验证和自动填充授权 -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-
     <!-- 相机相关 -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
-    <!-- 允许查询所有包名：用于自动填充时更精准地匹配目标 App -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <queries>
@@ -45,7 +45,15 @@
             android:name=".ui.screens.login.LoginActivity"
             android:windowSoftInputMode="adjustResize" />
 
-        <activity android:name=".ui.screens.vault.VaultActivity" />
+        <activity
+            android:name=".ui.screens.vault.VaultActivity"
+            android:exported="true" />
+
+        <!-- 注册独立的扫描 Activity -->
+        <activity
+            android:name=".ui.screens.scanner.ScannerActivity"
+            android:exported="true"
+            android:label="扫一扫" />
 
         <!-- 自动填充的透明验证界面：引用自定义的透明主题 -->
         <activity
@@ -56,8 +64,9 @@
             android:noHistory="true"
             android:theme="@style/Theme.Poop.TransparentAuth" />
 
+        <!-- 桌面小组件：更新至重构后的 QuoteWidgetReceiver -->
         <receiver
-            android:name=".ui.screens.widgets.BeautySentenceWidgetReceiver"
+            android:name=".service.widgets.QuoteWidgetReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -77,7 +86,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- 自动填充服务注册 -->
+        <!-- 自动填充服务：确保指向 autofill 子包 -->
         <service
             android:name=".service.autofill.PoopAutofillService"
             android:exported="true"
