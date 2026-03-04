@@ -16,7 +16,7 @@ object ShortcutManager {
         val vaultShortcut = ShortcutInfoCompat.Builder(context, "open_vault")
             .setShortLabel(context.getString(R.string.shortcut_vault_short))
             .setLongLabel(context.getString(R.string.shortcut_vault_long))
-            .setIcon(IconCompat.createWithResource(context, android.R.drawable.ic_lock_idle_lock))
+            .setIcon(IconCompat.createWithResource(context, R.drawable.outline_lock_person_24))
             .setIntent(
                 Intent(context, VaultActivity::class.java).apply {
                     action = Intent.ACTION_VIEW

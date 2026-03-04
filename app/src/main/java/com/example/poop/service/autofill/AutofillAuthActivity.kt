@@ -13,16 +13,20 @@ import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.poop.R
-import com.example.poop.data.VaultItem
+import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.utils.BiometricHelper
 import com.example.poop.util.Logcat
 import kotlinx.coroutines.launch
 
 /**
- * 自动填充验证 Activity (重构版：高内聚低耦合)
+ * 自动填充验证 Activity
  * 职责：仅作为验证网关，驱动生物识别并组装结果
  */
 class AutofillAuthActivity : FragmentActivity() {
+
+    private companion object {
+        const val TAG = "AutofillAuthActivity"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,12 +34,13 @@ class AutofillAuthActivity : FragmentActivity() {
         // 初始设为取消状态
         setResult(RESULT_CANCELED)
 
-        val item = IntentCompat.getSerializableExtra(intent, "vault_item", VaultItem::class.java)
+        val entry = IntentCompat.getSerializableExtra(intent, "vault_item", VaultEntry::class.java)
         val usernameId = IntentCompat.getParcelableExtra(intent, "username_id", AutofillId::class.java)
         val passwordId = IntentCompat.getParcelableExtra(intent, "password_id", AutofillId::class.java)
         val otpId = IntentCompat.getParcelableExtra(intent, "otp_id", AutofillId::class.java)
 
-        if (item == null) {
+        if (entry == null) {
+            Logcat.e(TAG, "Entry is null")
             finish()
             return
         }
@@ -46,8 +51,7 @@ class AutofillAuthActivity : FragmentActivity() {
             title = getString(R.string.autofill_auth_title),
             subtitle = getString(R.string.autofill_auth_subtitle),
             onSuccess = {
-                // 调用高内聚的业务提供者获取解密凭据
-                val credentials = AutofillCredentialProvider.getCredentials(item)
+                val credentials = AutofillCredentialProvider.getCredentials(entry)
 
                 if (credentials != null) {
                     val replyIntent = Intent()
@@ -82,19 +86,18 @@ class AutofillAuthActivity : FragmentActivity() {
 
                     // 异步更新统计信息
                     lifecycleScope.launch {
-                        AutofillRepository.updateUsageStats(applicationContext, item)
+                        AutofillRepository.updateUsageStats(applicationContext, entry)
                     }
                 } else {
-                    // 优化：解密失败提供友好 Toast 提示
+                    Logcat.e(TAG, "Failed to decrypt credentials for entry: ${entry.id}")
                     Toast.makeText(this, "解密凭据失败，请重试", Toast.LENGTH_SHORT).show()
-                    Logcat.e("AutofillAuth", "Decryption failed during auth flow for item ${item.id}")
                     setResult(RESULT_CANCELED)
                 }
                 finish()
             },
-            onError = {
-                // 验证失败提示并返回取消状态
-                Toast.makeText(this, "验证失败", Toast.LENGTH_SHORT).show()
+            onError = { error ->
+                Logcat.e(TAG, "Biometric auth failed: $error")
+                Toast.makeText(this, "验证失败: $error", Toast.LENGTH_SHORT).show()
                 setResult(RESULT_CANCELED)
                 finish()
             }

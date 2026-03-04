@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "b00b3a683742600ce64827100456b584",
+    "identityHash": "3e8e744cc9146062fc27051eccb6bb19",
     "entities": [
       {
         "tableName": "vault_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `category` TEXT NOT NULL, `notes` TEXT, `iconName` TEXT, `iconCustomPath` TEXT, `totpSecret` TEXT, `totpPeriod` INTEGER NOT NULL, `totpDigits` INTEGER NOT NULL, `totpAlgorithm` TEXT NOT NULL, `associatedAppPackage` TEXT, `associatedDomain` TEXT, `uriList` TEXT, `matchType` INTEGER NOT NULL, `customFieldsJson` TEXT, `autoSubmit` INTEGER NOT NULL, `strengthScore` REAL, `lastUsedAt` INTEGER, `usageCount` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, `tags` TEXT, `createdAt` INTEGER, `updatedAt` INTEGER, `expiresAt` INTEGER)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `category` TEXT NOT NULL, `notes` TEXT, `iconName` TEXT, `iconCustomPath` TEXT, `totpSecret` TEXT, `totpPeriod` INTEGER NOT NULL, `totpDigits` INTEGER NOT NULL, `totpAlgorithm` TEXT NOT NULL, `passkeyDataJson` TEXT, `recoveryCodes` TEXT, `hardwareKeyInfo` TEXT, `entryType` INTEGER NOT NULL, `associatedAppPackage` TEXT, `associatedDomain` TEXT, `uriList` TEXT, `matchType` INTEGER NOT NULL, `customFieldsJson` TEXT, `autoSubmit` INTEGER NOT NULL, `strengthScore` REAL, `lastUsedAt` INTEGER, `usageCount` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, `tags` TEXT, `createdAt` INTEGER, `updatedAt` INTEGER, `expiresAt` INTEGER)",
         "fields": [
           {
             "fieldPath": "id",
@@ -74,6 +74,27 @@
             "fieldPath": "totpAlgorithm",
             "columnName": "totpAlgorithm",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passkeyDataJson",
+            "columnName": "passkeyDataJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "recoveryCodes",
+            "columnName": "recoveryCodes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hardwareKeyInfo",
+            "columnName": "hardwareKeyInfo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "entryType",
+            "columnName": "entryType",
+            "affinity": "INTEGER",
             "notNull": true
           },
           {
@@ -222,7 +243,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b00b3a683742600ce64827100456b584')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3e8e744cc9146062fc27051eccb6bb19')"
     ]
   }
 }

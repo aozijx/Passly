@@ -9,130 +9,107 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import java.io.Serializable
 
 /**
- * 主表：保险库条目
- * 实现 Serializable 以支持在 Intent 中传递
- */
-@Entity(tableName = "vault_items")
-data class VaultItem(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val title: String,
-    val username: String, // 加密后的用户名
-    val password: String, // 加密后的密码
-    val category: String, // 分类
-    val notes: String? = null, // 备注/笔记
-    
-    // 图标相关
-    val iconName: String? = null, // 预设图标标识
-    val iconCustomPath: String? = null, // 本地自定义图片路径
-    
-    // TOTP 相关
-    val totpSecret: String? = null, // 加密后的密钥
-    val totpPeriod: Int = 30, // 步长
-    val totpDigits: Int = 6, // 位数
-    val totpAlgorithm: String = "SHA1",
-    
-    // Autofill & 匹配增强 (核心)
-    val associatedAppPackage: String? = null, // 关联 App 包名
-    val associatedDomain: String? = null, // 关联网站域名
-    val uriList: String? = null, // 多 URI 列表 (JSON)
-    val matchType: Int = 0, // 匹配规则: 0-等值, 1-主机名, 2-基础域名, 3-正则
-    val customFieldsJson: String? = null, // 自定义字段 (JSON: key-value)
-    val autoSubmit: Boolean = false,
-    
-    // 安全与统计
-    val strengthScore: Float? = null, // 强度评分
-    val lastUsedAt: Long? = null, // 最后使用时间
-    val usageCount: Int = 0, // 使用次数
-    
-    // 元数据
-    val favorite: Boolean = false,
-    val tags: String? = null, // 标签
-    val createdAt: Long? = System.currentTimeMillis(),
-    val updatedAt: Long? = null,
-    val expiresAt: Long? = null
-) : Serializable
-
-/**
- * 历史表：密码变更记录
+ * 历史表：全维度变更记录
+ * 与 VaultEntry 深度绑定，追踪字段级变化
  */
 @Entity(
-    tableName = "password_history",
+    tableName = DatabaseConfig.TABLE_HISTORY,
     foreignKeys = [
         ForeignKey(
-            entity = VaultItem::class,
+            entity = VaultEntry::class,
             parentColumns = ["id"],
-            childColumns = ["itemId"],
-            onDelete = ForeignKey.CASCADE
+            childColumns = ["entryId"],
+            onDelete = ForeignKey.CASCADE // 主表删除，历史同步清理
         )
     ],
     indices = [
-        Index(value = ["itemId", "changedAt"], unique = true)
+        Index(value = ["entryId"]),
+        Index(value = ["changedAt"])
     ]
 )
-data class PasswordHistory(
+data class VaultHistory(
     @PrimaryKey(autoGenerate = true) val historyId: Int = 0,
-    val itemId: Int,
-    val oldPassword: String,
+    val entryId: Int,
+    
+    // 变更详情
+    val fieldName: String,      // 被修改的字段名，如 "password", "notes", "cardCvv"
+    val oldValue: String?,      // 修改前的加密密文
+    val newValue: String?,      // 修改后的加密密文
+    
+    // 操作上下文
+    val changeType: Int = 0,    // 0: 手动修改, 1: 批量导入, 2: 自动生成, 3: 恢复记录
+    val deviceName: String? = null, // 操作设备名称
+    
     val changedAt: Long = System.currentTimeMillis()
 ) : Serializable
 
 @Dao
 interface VaultDao {
-    @Query("SELECT * FROM vault_items ORDER BY favorite DESC, usageCount DESC, createdAt DESC")
-    fun getAllItems(): Flow<List<VaultItem>>
+    // --- 基础查询 ---
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} ORDER BY favorite DESC, usageCount DESC, createdAt DESC")
+    fun getAllEntries(): Flow<List<VaultEntry>>
 
-    @Query("SELECT * FROM vault_items WHERE category = :category ORDER BY createdAt DESC")
-    fun getItemsByCategory(category: String): Flow<List<VaultItem>>
-
-    @Query("SELECT DISTINCT category FROM vault_items ORDER BY category ASC")
+    @Query("SELECT DISTINCT category FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE category IS NOT NULL AND category != ''")
     fun getAllCategories(): Flow<List<String>>
 
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE category = :category ORDER BY createdAt DESC")
+    fun getEntriesByCategory(category: String): Flow<List<VaultEntry>>
+
     @Query("""
-        SELECT * FROM vault_items 
+        SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} 
         WHERE title LIKE '%' || :query || '%' 
         OR category LIKE '%' || :query || '%' 
         OR tags LIKE '%' || :query || '%'
-        OR associatedDomain LIKE '%' || :query || '%'
-        OR associatedAppPackage LIKE '%' || :query || '%'
     """)
-    fun searchItems(query: String): Flow<List<VaultItem>>
+    fun searchEntries(query: String): Flow<List<VaultEntry>>
 
+    // --- 进阶历史记录配合逻辑 ---
+    
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId ORDER BY changedAt DESC")
+    fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistory>>
+
+    /**
+     * 事务操作：更新主表并自动记录历史
+     */
+    @Transaction
+    suspend fun updateWithHistory(entry: VaultEntry, history: VaultHistory) {
+        update(entry.copy(updatedAt = System.currentTimeMillis()))
+        insertHistory(history)
+    }
+
+    // --- 内部基础操作 ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertInternal(item: VaultItem)
+    suspend fun insertInternal(entry: VaultEntry)
 
-    suspend fun insert(item: VaultItem) {
+    suspend fun insert(entry: VaultEntry) {
         val now = System.currentTimeMillis()
-        val toInsert = item.copy(
-            createdAt = item.createdAt ?: now,
-            updatedAt = now
-        )
-        insertInternal(toInsert)
+        insertInternal(entry.copy(createdAt = entry.createdAt ?: now, updatedAt = now))
     }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(items: List<VaultItem>)
+    suspend fun insertAll(entries: List<VaultEntry>)
 
     @Update
-    suspend fun updateInternal(item: VaultItem)
+    suspend fun update(entry: VaultEntry)
 
-    suspend fun update(item: VaultItem) {
-        updateInternal(item.copy(updatedAt = System.currentTimeMillis()))
-    }
+    @Update
+    suspend fun updateInternal(entry: VaultEntry)
 
     @Delete
-    suspend fun delete(item: VaultItem)
+    suspend fun delete(entry: VaultEntry)
 
-    @Query("DELETE FROM vault_items")
+    @Query("DELETE FROM ${DatabaseConfig.TABLE_ENTRIES}")
     suspend fun deleteAll()
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertHistory(history: PasswordHistory)
-
-    @Query("SELECT * FROM password_history WHERE itemId = :itemId ORDER BY changedAt DESC")
-    fun getHistoryByItemId(itemId: Int): Flow<List<PasswordHistory>>
+    suspend fun insertHistory(history: VaultHistory)
+    
+    @Query("DELETE FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId")
+    suspend fun clearHistoryByEntryId(entryId: Int)
 }

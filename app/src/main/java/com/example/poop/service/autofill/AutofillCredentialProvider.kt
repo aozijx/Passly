@@ -1,6 +1,6 @@
 package com.example.poop.service.autofill
 
-import com.example.poop.data.VaultItem
+import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.utils.CryptoManager
 import com.example.poop.ui.screens.vault.utils.TotpUtils
 import com.example.poop.util.Logcat
@@ -22,7 +22,7 @@ object AutofillCredentialProvider {
      * 一键获取条目的明文凭据
      * 内部处理多字段解密逻辑，返回统一的数据模型
      */
-    fun getCredentials(item: VaultItem): DecryptedCredential? {
+    fun getCredentials(item: VaultEntry): DecryptedCredential? {
         return try {
             // 1. 分别获取各字段的 IV 并初始化解密器
             val ivUser = CryptoManager.getIvFromCipherText(item.username)

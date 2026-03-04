@@ -43,7 +43,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.poop.data.VaultItem
+import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.utils.TotpUtils
 import com.example.poop.util.ClipboardUtils
 import com.example.poop.util.QrCodeUtils
@@ -52,7 +52,7 @@ import java.net.URLEncoder
 
 @Composable
 fun TotpSection(
-    item: VaultItem,
+    item: VaultEntry,
     secret: String
 ) {
     val context = LocalContext.current
@@ -201,7 +201,7 @@ private fun QrExportDialog(
     )
 }
 
-private fun constructOtpAuthUri(item: VaultItem, secret: String): String {
+private fun constructOtpAuthUri(item: VaultEntry, secret: String): String {
     val label = URLEncoder.encode(item.username, "UTF-8").replace("+", "%20")
     val issuer = URLEncoder.encode(item.title, "UTF-8").replace("+", "%20")
     return "otpauth://totp/$label?secret=$secret&issuer=$issuer&digits=${item.totpDigits}&period=${item.totpPeriod}"

@@ -9,9 +9,11 @@
 -keep class net.sqlcipher.database.** { *; }
 -keep class androidx.sqlite.db.SupportSQLite* { *; }
 
-# 核心数据模型 (VaultItem) 防止被混淆导致 Room 无法映射
--keepclassmembers class com.example.poop.data.VaultItem { *; }
--keep class com.example.poop.data.VaultItem { *; }
+# 核心数据模型防止被混淆导致 Room 无法映射
+-keepclassmembers class com.example.poop.data.VaultEntry { *; }
+-keep class com.example.poop.data.VaultEntry { *; }
+-keepclassmembers class com.example.poop.data.VaultHistory { *; }
+-keep class com.example.poop.data.VaultHistory { *; }
 
 # DAO 接口防止被优化
 -keep interface com.example.poop.data.VaultDao { *; }

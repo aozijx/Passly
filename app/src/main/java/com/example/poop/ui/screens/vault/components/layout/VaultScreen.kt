@@ -96,7 +96,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                     EmptyVaultPlaceholder()
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(items, key = { it.id }) { item -> PasswordSection(item = item, viewModel = viewModel) }
+                        items(items, key = { it.id }) { item -> PasswordSection(entry = item, viewModel = viewModel) }
                         item { Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp)) }
                     }
                 }

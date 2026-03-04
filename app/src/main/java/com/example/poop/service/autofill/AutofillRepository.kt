@@ -2,7 +2,7 @@ package com.example.poop.service.autofill
 
 import android.content.Context
 import com.example.poop.data.AppDatabase
-import com.example.poop.data.VaultItem
+import com.example.poop.data.VaultEntry
 import com.example.poop.util.Logcat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,16 +16,16 @@ object AutofillRepository {
     /**
      * 异步更新条目的使用统计信息
      */
-    suspend fun updateUsageStats(context: Context, item: VaultItem) = withContext(Dispatchers.IO) {
+    suspend fun updateUsageStats(context: Context, entry: VaultEntry) = withContext(Dispatchers.IO) {
         try {
             val dao = AppDatabase.getDatabase(context).vaultDao()
-            val updatedItem = item.copy(
+            val updatedEntry = entry.copy(
                 lastUsedAt = System.currentTimeMillis(),
-                usageCount = item.usageCount + 1
+                usageCount = entry.usageCount + 1
             )
-            dao.update(updatedItem)
+            dao.update(updatedEntry)
         } catch (e: Exception) {
-            Logcat.e("AutofillRepo", "Failed to update usage count for ${item.id}", e)
+            Logcat.e("AutofillRepo", "Failed to update usage count for ${entry.id}", e)
         }
     }
 }

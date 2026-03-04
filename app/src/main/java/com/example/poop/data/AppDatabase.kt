@@ -19,9 +19,19 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
+/**
+ * 数据库全局配置
+ */
+object DatabaseConfig {
+    const val DATABASE_NAME = "vault_database" // 数据库文件名
+    const val TABLE_ENTRIES = "vault_entries"  // 条目表名
+    const val TABLE_HISTORY = "vault_history"  // 历史记录表名
+    const val VERSION = 1                      // 版本号
+}
+
 @Database(
-    entities = [VaultItem::class, PasswordHistory::class],
-    version = 1,
+    entities = [VaultEntry::class, VaultHistory::class],
+    version = DatabaseConfig.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
 )
 @TypeConverters(Converters::class)
@@ -54,7 +64,7 @@ abstract class AppDatabase : RoomDatabase() {
 
             val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
             val sharedPrefs = context.getSharedPreferences("secure_db_prefs", Context.MODE_PRIVATE)
-            val encryptedPassphrase = sharedPrefs.getString("db_passphrase", null)
+            val encryptedPassphrase = sharedPrefs.getString("db_phrase", null)
 
             if (encryptedPassphrase != null) {
                 try {
@@ -81,7 +91,7 @@ abstract class AppDatabase : RoomDatabase() {
 
             sharedPrefs.edit {
                 putString(
-                    "db_passphrase",
+                    "db_phrase",
                     Base64.encodeToString(combined, Base64.NO_WRAP)
                 )
             }
@@ -93,9 +103,9 @@ abstract class AppDatabase : RoomDatabase() {
                 try {
                     val passphrase = getDatabasePassphrase(context)
                     val factory = SupportFactory(passphrase)
-                    val instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "vault_database")
+                    val instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DatabaseConfig.DATABASE_NAME)
                         .openHelperFactory(factory)
-                        .fallbackToDestructiveMigration(false)
+                        .fallbackToDestructiveMigration(true)
                         .build()
                     INSTANCE = instance
                     instance

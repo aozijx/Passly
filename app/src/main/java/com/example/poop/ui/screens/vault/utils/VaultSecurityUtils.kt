@@ -2,10 +2,11 @@ package com.example.poop.ui.screens.vault.utils
 
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.util.Logcat
+import org.json.JSONArray
 
 /**
  * 保险箱安全验证工具类
- * 集中处理涉及生物识别的加解密逻辑
+ * 集中处理涉及生物识别的加解密及复杂字段序列化逻辑
  */
 object VaultSecurityUtils {
 
@@ -90,5 +91,35 @@ object VaultSecurityUtils {
                 onSuccess(results)
             }
         )
+    }
+
+    /**
+     * 将恢复码文本（换行分隔）序列化为 JSON 数组字符串
+     */
+    fun serializeRecoveryCodes(rawText: String): String {
+        val codes = rawText.split("\n")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        val jsonArray = JSONArray()
+        codes.forEach { jsonArray.put(it) }
+        return jsonArray.toString()
+    }
+
+    /**
+     * 将 JSON 数组字符串反序列化为恢复码列表
+     */
+    fun deserializeRecoveryCodes(json: String?): List<String> {
+        if (json.isNullOrEmpty()) return emptyList()
+        return try {
+            val jsonArray = JSONArray(json)
+            val list = mutableListOf<String>()
+            for (i in 0 until jsonArray.length()) {
+                list.add(jsonArray.getString(i))
+            }
+            list
+        } catch (e: Exception) {
+            Logcat.e("VaultSecurity", "Failed to deserialize recovery codes", e)
+            emptyList()
+        }
     }
 }

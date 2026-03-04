@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
  * Poop 自动填充服务
  * 增强版：支持多域名匹配、模糊匹配兜底及最近使用优先排序
  */
-class PoopAutofillService : AutofillService() {
+class AutofillService : AutofillService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val tag = "PoopAutofill"
@@ -45,23 +45,23 @@ class PoopAutofillService : AutofillService() {
         serviceScope.launch {
             try {
                 val db = AppDatabase.getDatabase(applicationContext)
-                val items = db.vaultDao().getAllItems().first()
+                val entries = db.vaultDao().getAllEntries().first()
 
                 // 核心匹配与排序逻辑
-                val filteredItems = items.filter { item ->
+                val filteredEntries = entries.filter { entry ->
                     // 1. 包名或域名完全匹配
-                    val directMatch = (item.associatedAppPackage != null && item.associatedAppPackage == parser.packageName) ||
-                                     (item.associatedDomain != null && item.associatedDomain == parser.webDomain)
+                    val directMatch = (entry.associatedAppPackage != null && entry.associatedAppPackage == parser.packageName) ||
+                                     (entry.associatedDomain != null && entry.associatedDomain == parser.webDomain)
 
-                    // 2. URI 列表匹配 (支持一个账号多个域名/App)
-                    val uriMatch = item.uriList?.split(",")?.any { uri ->
+                    // 2. URI 列表匹配 (现在 uriList 是 List<String> 类型)
+                    val uriMatch = entry.uriList?.any { uri ->
                         val trimmed = uri.trim()
                         trimmed == parser.packageName || trimmed == parser.webDomain
                     } ?: false
 
                     // 3. 标题模糊匹配 (作为兜底)
-                    val titleMatch = parser.packageName?.let { item.title.contains(it, ignoreCase = true) } ?: false ||
-                                    parser.webDomain?.let { item.title.contains(it, ignoreCase = true) } ?: false
+                    val titleMatch = parser.packageName?.let { entry.title.contains(it, ignoreCase = true) } ?: false ||
+                                    parser.webDomain?.let { entry.title.contains(it, ignoreCase = true) } ?: false
 
                     directMatch || uriMatch || titleMatch
                 }.sortedByDescending {
@@ -69,31 +69,31 @@ class PoopAutofillService : AutofillService() {
                     it.lastUsedAt ?: 0L
                 }.take(5)
 
-                if (filteredItems.isEmpty()) {
+                if (filteredEntries.isEmpty()) {
                     callback.onSuccess(null)
                     return@launch
                 }
 
                 val responseBuilder = FillResponse.Builder()
 
-                filteredItems.forEach { item ->
+                filteredEntries.forEach { entry ->
                     val presentation = RemoteViews(packageName, R.layout.autofill_dataset_item).apply {
-                        setTextViewText(R.id.title, item.title)
+                        setTextViewText(R.id.title, entry.title)
                         setTextViewText(R.id.username, "点击验证并填充")
                     }
 
                     val authIntent = Intent(
-                        this@PoopAutofillService,
+                        this@AutofillService,
                         AutofillAuthActivity::class.java
                     ).apply {
-                        putExtra("vault_item", item)
+                        putExtra("vault_item", entry)
                         putExtra("username_id", parser.usernameId)
                         putExtra("password_id", parser.passwordId)
                     }
 
                     val pendingIntent = PendingIntent.getActivity(
-                        this@PoopAutofillService,
-                        item.id,
+                        this@AutofillService,
+                        entry.id,
                         authIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
