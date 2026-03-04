@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import coil.compose.AsyncImage
-import com.example.poop.data.VaultItem
+import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.components.common.VaultItemIcon
 import com.example.poop.ui.screens.vault.components.dialog.IconPickerDialog
@@ -58,7 +58,7 @@ import com.example.poop.util.ClipboardUtils
 @Composable
 fun VaultDetailDialog(
     activity: FragmentActivity,
-    item: VaultItem,
+    item: VaultEntry,
     viewModel: VaultViewModel
 ) {
     // 瞬时状态管理
@@ -75,11 +75,11 @@ fun VaultDetailDialog(
             currentIconName = item.iconName,
             currentCustomPath = item.iconCustomPath,
             onIconSelected = { newIconName ->
-                viewModel.updateVaultItem(item.copy(iconName = newIconName, iconCustomPath = null))
+                viewModel.updateVaultEntry(item.copy(iconName = newIconName, iconCustomPath = null))
                 showIconPicker.value = false
             },
             onCustomImageSelected = { uri ->
-                viewModel.updateVaultItem(item.copy(iconName = null, iconCustomPath = uri.toString()))
+                viewModel.updateVaultEntry(item.copy(iconName = null, iconCustomPath = uri.toString()))
                 showIconPicker.value = false
             }
         )
@@ -140,7 +140,7 @@ fun VaultDetailDialog(
 }
 
 @Composable
-private fun DetailHeader(item: VaultItem, onIconClick: () -> Unit) {
+private fun DetailHeader(item: VaultEntry, onIconClick: () -> Unit) {
     if (!item.iconCustomPath.isNullOrEmpty()) {
         Box(
             modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onIconClick)
@@ -169,7 +169,7 @@ private fun DetailHeader(item: VaultItem, onIconClick: () -> Unit) {
 @Composable
 private fun CredentialSection(
     activity: FragmentActivity,
-    item: VaultItem,
+    item: VaultEntry,
     viewModel: VaultViewModel,
     revealedUsername: String?,
     revealedPassword: String?,
@@ -280,13 +280,13 @@ private fun EditTextField(value: String, onValueChange: (String) -> Unit, label:
 }
 
 @Composable
-private fun CategoryItem(viewModel: VaultViewModel, item: VaultItem) {
+private fun CategoryItem(viewModel: VaultViewModel, entry: VaultEntry) {
     if (viewModel.isEditingCategory) {
         EditTextField(value = viewModel.editedCategory, onValueChange = { viewModel.editedCategory = it }, label = "修改分类", onSave = { viewModel.saveCategoryEdit() })
     } else {
         Row(modifier = Modifier.fillMaxWidth().clickable { viewModel.startEditingCategory() }.padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("分类", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
-            Text(item.category, fontWeight = FontWeight.SemiBold)
+            Text(entry.category, fontWeight = FontWeight.SemiBold)
         }
     }
 }

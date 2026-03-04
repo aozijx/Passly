@@ -6,13 +6,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
-import com.example.poop.data.VaultItem
+import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.utils.BiometricHelper
 
 @Composable
 fun DeleteConfirmationDialog(
     activity: FragmentActivity,
-    item: VaultItem,
+    item: VaultEntry,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {

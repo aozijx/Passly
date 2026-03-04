@@ -14,26 +14,18 @@ data class FeaturedItem(
     val imageUrl: String
 )
 
-data class NewsItem(
-    val id: Int,
-    val title: String,
-    val summary: String,
-    val imageUrl: String,
-    val isFavorite: Boolean = false
-)
-
 data class Article(
     val id: Int,
     val cover: Any,
     val title: String,
     val link: String,
-    val description: String
+    val description: String,
+    val isFavorite: Boolean = false
 )
 
 data class HomeUiState(
     val userName: String = "开发者",
     val featuredItems: List<FeaturedItem> = emptyList(),
-    val newsFeed: List<NewsItem> = emptyList(),
     val articles: List<Article> = emptyList(),
     val isLoading: Boolean = false
 )
@@ -56,30 +48,20 @@ class HomeViewModel : ViewModel() {
             FeaturedItem(3, "精选内容 #3", "点击查看更多详情...", "https://picsum.photos/400/300?random=3")
         )
 
-        val news = List(5) { index ->
-            NewsItem(
-                id = index,
-                title = "Jetpack Compose 更新日志 v1.$index",
-                summary = "探索最新的 UI 构建工具包特性，提升开发效率...",
-                imageUrl = "https://picsum.photos/100/100?random=${index + 100}"
-            )
-        }
-
         _uiState.update { 
             it.copy(
                 featuredItems = featured,
-                newsFeed = news,
                 isLoading = false
             )
         }
     }
 
-    fun toggleFavorite(newsId: Int) {
+    fun toggleArticleFavorite(articleId: Int) {
         _uiState.update { state ->
-            val updatedFeed = state.newsFeed.map {
-                if (it.id == newsId) it.copy(isFavorite = !it.isFavorite) else it
+            val updatedArticles = state.articles.map {
+                if (it.id == articleId) it.copy(isFavorite = !it.isFavorite) else it
             }
-            state.copy(newsFeed = updatedFeed)
+            state.copy(articles = updatedArticles)
         }
     }
 

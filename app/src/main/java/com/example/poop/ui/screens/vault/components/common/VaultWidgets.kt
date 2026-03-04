@@ -60,7 +60,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.poop.data.VaultItem
+import com.example.poop.data.VaultEntry
 
 /**
  * 集中管理所有可选图标
@@ -118,7 +118,7 @@ object VaultIcons {
  */
 @Composable
 fun VaultItemIcon(
-    item: VaultItem,
+    item: VaultEntry,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
