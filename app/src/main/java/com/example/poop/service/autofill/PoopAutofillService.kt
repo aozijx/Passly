@@ -16,7 +16,7 @@ import android.service.autofill.SaveRequest
 import android.widget.RemoteViews
 import com.example.poop.R
 import com.example.poop.data.AppDatabase
-import com.example.poop.util.AutofillParser
+import com.example.poop.ui.screens.vault.utils.AutofillParser
 import com.example.poop.util.Logcat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -1,4 +1,4 @@
-package com.example.poop.util
+package com.example.poop.ui.screens.vault.utils
 
 import android.widget.Toast
 import androidx.biometric.BiometricManager

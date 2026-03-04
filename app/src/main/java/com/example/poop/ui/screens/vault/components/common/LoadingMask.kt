@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components
+package com.example.poop.ui.screens.vault.components.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

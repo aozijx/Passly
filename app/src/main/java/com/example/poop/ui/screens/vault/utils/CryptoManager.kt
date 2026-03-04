@@ -1,9 +1,10 @@
-package com.example.poop.util
+package com.example.poop.ui.screens.vault.utils
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import com.example.poop.util.Logcat
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -15,7 +16,7 @@ object CryptoManager {
     private const val BLOCK_MODE = KeyProperties.BLOCK_MODE_GCM
     private const val PADDING = KeyProperties.ENCRYPTION_PADDING_NONE
     private const val TRANSFORMATION = "$ALGORITHM/$BLOCK_MODE/$PADDING"
-    
+
     // 使用新的别名以确保新的安全策略（Time-bound）生效。
     // 注意：更改别名会导致旧别名加密的数据无法解密。
     private const val KEY_ALIAS = "com.example.poop.vault_master_key_v2"
@@ -36,13 +37,13 @@ object CryptoManager {
             .setEncryptionPaddings(PADDING)
             .setKeySize(256)
             .setUserAuthenticationRequired(true)
-            .setInvalidatedByBiometricEnrollment(true) 
-            
+            .setInvalidatedByBiometricEnrollment(true)
+
         // 关键修复：设置 10 秒的身份验证有效期 (Time-bound)。
         // 这允许在一次生物识别验证后，10秒内执行多次加密/解密操作（如同时加解密用户名和密码）。
         // 这样就不再受限于 "每个 Cipher 只能 doFinal 一次" 的限制。
         builder.setUserAuthenticationParameters(
-            10, 
+            10,
             KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
         )
 

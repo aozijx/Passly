@@ -1,4 +1,4 @@
-package com.example.poop.util
+package com.example.poop.ui.screens.vault.utils
 
 import android.app.assist.AssistStructure
 import android.view.autofill.AutofillId

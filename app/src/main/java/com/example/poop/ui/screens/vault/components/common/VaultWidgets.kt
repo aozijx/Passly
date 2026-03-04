@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components
+package com.example.poop.ui.screens.vault.components.common
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -115,10 +115,6 @@ object VaultIcons {
 
 /**
  * 统一图标展示组件
- * 优先级：
- * 1. iconCustomPath (上传的自定义图片)
- * 2. iconName (App内选择的自定义图标)
- * 3. 默认图标 (根据 category 映射)
  */
 @Composable
 fun VaultItemIcon(
@@ -143,7 +139,7 @@ fun VaultItemIcon(
             imageVector = icon,
             contentDescription = null,
             tint = tint,
-            modifier = modifier.size(20.dp)
+            modifier = modifier.size(24.dp)
         )
     }
 }

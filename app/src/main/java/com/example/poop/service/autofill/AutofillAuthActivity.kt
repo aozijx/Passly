@@ -14,7 +14,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.poop.R
 import com.example.poop.data.VaultItem
-import com.example.poop.util.BiometricHelper
+import com.example.poop.ui.screens.vault.utils.BiometricHelper
 import com.example.poop.util.Logcat
 import kotlinx.coroutines.launch
 

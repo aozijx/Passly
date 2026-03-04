@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -29,8 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.ui.screens.vault.components.layout.VaultContent
+import com.example.poop.ui.screens.vault.utils.BiometricHelper
 import com.example.poop.ui.theme.PoopTheme
-import com.example.poop.util.BiometricHelper
 
 class VaultActivity : FragmentActivity() {
     private val viewModel: VaultViewModel by viewModels()
@@ -105,7 +107,8 @@ class VaultActivity : FragmentActivity() {
     }
 }
 
-@androidx.compose.runtime.Composable
+
+@Composable
 private fun AuthorizationPlaceholder(onRetry: () -> Unit) {
     Box(
         modifier = Modifier
@@ -126,7 +129,11 @@ private fun AuthorizationPlaceholder(onRetry: () -> Unit) {
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Text("保险箱已锁定", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "保险箱已锁定",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Text(
                 "点击屏幕以解锁",
                 style = MaterialTheme.typography.bodyMedium,

@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components
+package com.example.poop.ui.screens.vault.components.dialog
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -7,7 +7,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.data.VaultItem
-import com.example.poop.util.BiometricHelper
+import com.example.poop.ui.screens.vault.utils.BiometricHelper
 
 @Composable
 fun DeleteConfirmationDialog(

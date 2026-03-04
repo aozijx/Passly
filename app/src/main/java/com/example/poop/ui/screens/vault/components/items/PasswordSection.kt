@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components
+package com.example.poop.ui.screens.vault.components.items
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,9 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.poop.data.VaultItem
 import com.example.poop.ui.screens.vault.VaultViewModel
+import com.example.poop.ui.screens.vault.components.common.VaultItemIcon
 
 @Composable
-fun VaultItemRow(
+fun PasswordSection(
     item: VaultItem,
     viewModel: VaultViewModel
 ) {
@@ -36,10 +37,6 @@ fun VaultItemRow(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 使用统一的图标组件，已内置优先级逻辑：
-            // 1. iconCustomPath (上传)
-            // 2. iconName (App自定义)
-            // 3. 默认 (根据分类)
             VaultItemIcon(item = item)
 
             Spacer(modifier = Modifier.width(20.dp))

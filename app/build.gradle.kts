@@ -111,38 +111,45 @@ room {
 }
 
 dependencies {
+    // Android Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+
+    // Lifecycle & Navigation
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
+
+    // Jetpack Compose & UI
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.foundation)
+
+    // Material Design & Icons
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.coil.compose)
-    implementation(libs.coil.gif)
-    implementation(libs.coil.svg)
-    implementation(libs.androidx.glance.appwidget)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.datastore.preferences)
 
-    // Room
+    // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Biometric & Security
+    // Security & Biometric
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.security.crypto)
 
-    // SQLCipher
+    // SQLCipher & SQLite
     implementation(libs.sqlcipher)
     implementation(libs.androidx.sqlite)
+
+    // Data Persistence & Widgets
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.glance.appwidget)
 
     // CameraX
     implementation(libs.androidx.camera.core)
@@ -150,13 +157,19 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
 
-    // Google ML Kit Barcode Scanning
+    // Barcode Scanning & QR Code
     implementation(libs.barcode.scanning)
+    implementation(libs.zxing.core)
 
-    // Permission handling (Guava for CameraX)
+    // Image Loading
+    implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
+    implementation(libs.coil.svg)
+
+    // Utils
     implementation(libs.guava)
-    implementation(libs.androidx.compose.foundation)
 
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

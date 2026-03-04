@@ -1,9 +1,9 @@
 package com.example.poop.service.autofill
 
 import com.example.poop.data.VaultItem
-import com.example.poop.util.CryptoManager
+import com.example.poop.ui.screens.vault.utils.CryptoManager
+import com.example.poop.ui.screens.vault.utils.TotpUtils
 import com.example.poop.util.Logcat
-import com.example.poop.util.TotpUtils
 
 /**
  * 自动填充凭据提供者

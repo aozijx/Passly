@@ -1,5 +1,6 @@
-package com.example.poop.ui.screens.vault.components
+package com.example.poop.ui.screens.vault.components.dialog
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,8 +24,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.ui.screens.vault.VaultViewModel
-import com.example.poop.util.BackupManager
-import com.example.poop.util.BiometricHelper
+import com.example.poop.ui.screens.vault.utils.BackupManager
+import com.example.poop.ui.screens.vault.utils.BiometricHelper
 
 @Composable
 fun BackupPasswordDialog(
@@ -37,7 +38,7 @@ fun BackupPasswordDialog(
         onDismissRequest = { viewModel.dismissBackupPasswordDialog() },
         title = { Text(if (viewModel.isExporting) "设置备份密码" else "导入恢复选项") },
         text = {
-            Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
                     if (viewModel.isExporting) 
                         "此密码用于加密备份文件，请务必牢记。若忘记此密码，备份数据将无法恢复。" 
