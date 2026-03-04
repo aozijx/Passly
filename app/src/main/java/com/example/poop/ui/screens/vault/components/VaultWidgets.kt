@@ -6,35 +6,46 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AlternateEmail
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Flight
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MedicalInformation
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Icon
@@ -43,8 +54,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.poop.data.VaultItem
 
 /**
@@ -52,43 +67,84 @@ import com.example.poop.data.VaultItem
  */
 object VaultIcons {
     val allIcons = mapOf(
-        "Fingerprint" to Icons.Default.Fingerprint,
-        "CreditCard" to Icons.Default.CreditCard,
-        "Wallet" to Icons.Default.AccountBalanceWallet,
-        "Account" to Icons.Default.AlternateEmail,
-        "App" to Icons.Default.Apps,
-        "Email" to Icons.Default.Email,
-        "Security" to Icons.Default.Security,
-        "Savings" to Icons.Default.Savings,
-        "Medical" to Icons.Default.MedicalInformation,
-        "Badge" to Icons.Default.Badge,
-        "Wifi" to Icons.Default.Wifi,
-        "Game" to Icons.Default.SportsEsports,
-        "Cloud" to Icons.Default.Cloud,
-        "Note" to Icons.Default.EditNote,
-        "Key" to Icons.Default.Key,
-        "Lock" to Icons.Default.Lock,
-        "Shopping" to Icons.Default.ShoppingCart,
-        "Car" to Icons.Default.DirectionsCar,
-        "Home" to Icons.Default.Home,
-        "Work" to Icons.Default.Work,
-        "Flight" to Icons.Default.Flight,
-        "Star" to Icons.Default.Star,
-        "Heart" to Icons.Default.Favorite,
-        "Shield" to Icons.Default.Shield,
-        "Call" to Icons.Default.Call,
-        "Language" to Icons.Default.Language,
-        "Terminal" to Icons.Default.Terminal,
-        "Public" to Icons.Default.Public,
-        "School" to Icons.Default.School,
-        "Person" to Icons.Default.Person
+        "银行" to Icons.Default.AccountBalance,
+        "信用卡" to Icons.Default.CreditCard,
+        "钱包" to Icons.Default.AccountBalanceWallet,
+        "账单" to Icons.Default.Payments,
+        "储蓄" to Icons.Default.Savings,
+        "理财" to Icons.AutoMirrored.Filled.TrendingUp,
+        "个人" to Icons.Default.Person,
+        "隐私" to Icons.Default.Fingerprint,
+        "社交" to Icons.Default.Forum,
+        "群组" to Icons.Default.Groups,
+        "证件" to Icons.Default.Badge,
+        "密钥" to Icons.Default.VpnKey,
+        "邮件" to Icons.Default.Email,
+        "账号" to Icons.Default.AlternateEmail,
+        "游戏" to Icons.Default.SportsEsports,
+        "视频" to Icons.Default.Subscriptions,
+        "影视" to Icons.Default.Movie,
+        "购物车" to Icons.Default.ShoppingCart,
+        "购物袋" to Icons.Default.ShoppingBag,
+        "直播" to Icons.Default.LiveTv,
+        "摄像" to Icons.Default.Videocam,
+        "收藏" to Icons.Default.Star,
+        "心仪" to Icons.Default.Favorite,
+        "医疗" to Icons.Default.HealthAndSafety,
+        "健康" to Icons.Default.MedicalServices,
+        "云端" to Icons.Default.Cloud,
+        "笔记" to Icons.Default.EditNote,
+        "日记" to Icons.Default.Book,
+        "高铁" to Icons.Default.Train,
+        "飞机" to Icons.Default.Flight,
+        "校园" to Icons.Default.School,
+        "工作" to Icons.Default.Work,
+        "代码" to Icons.Default.Terminal,
+        "网页" to Icons.Default.Language,
+        "WiFi" to Icons.Default.Wifi,
+        "默认" to Icons.Default.Key,
+        "锁定" to Icons.Default.Lock,
+        "防护" to Icons.Default.Shield,
+        "应用" to Icons.Default.Apps,
     )
 
-    /**
-     * 获取指定名称的图标，找不到则返回 Key 默认图标
-     */
     fun getIconByName(name: String?): ImageVector {
         return allIcons[name] ?: Icons.Default.Key
+    }
+}
+
+/**
+ * 统一图标展示组件
+ * 优先级：
+ * 1. iconCustomPath (上传的自定义图片)
+ * 2. iconName (App内选择的自定义图标)
+ * 3. 默认图标 (根据 category 映射)
+ */
+@Composable
+fun VaultItemIcon(
+    item: VaultItem,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
+) {
+    if (!item.iconCustomPath.isNullOrEmpty()) {
+        AsyncImage(
+            model = item.iconCustomPath,
+            contentDescription = null,
+            modifier = modifier.size(36.dp).clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        val icon = if (!item.iconName.isNullOrEmpty()) {
+            VaultIcons.getIconByName(item.iconName)
+        } else {
+            getCategoryIcon(item.category)
+        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = modifier.size(20.dp)
+        )
     }
 }
 
@@ -114,34 +170,27 @@ fun EmptyVaultPlaceholder() {
     }
 }
 
-/**
- * 根据 VaultItem 获取图标逻辑：
- * 优先级：自定义 iconName > category 映射 > 默认图标
- */
-fun getVaultItemIcon(item: VaultItem): ImageVector {
-    // 1. 如果有自定义图标，优先使用
-    if (item.iconName != null) {
-        return VaultIcons.getIconByName(item.iconName)
-    }
-    
-    // 2. 否则按分类自动映射
-    return getCategoryIcon(item.category)
-}
-
 fun getCategoryIcon(category: String): ImageVector = when (category.lowercase()) {
-    "个人", "private" -> Icons.Default.Fingerprint
-    "银行卡", "bank card", "金融", "finance" -> Icons.Default.CreditCard
-    "支付", "payment", "充值", "recharge" -> Icons.Default.AccountBalanceWallet
-    "账号", "account", "登录", "login" -> Icons.Default.AlternateEmail
-    "应用", "APP", "app", "application" -> Icons.Default.Apps
+    "个人", "private", "隐私" -> Icons.Default.Fingerprint
+    "银行卡", "bank card", "金融", "finance", "网银", "银行" -> Icons.Default.AccountBalance
+    "支付", "payment", "充值", "recharge", "转账" -> Icons.Default.Payments
+    "提现", "withdraw", "理财", "financial management", "存钱" -> Icons.AutoMirrored.Filled.TrendingUp
+    "账号", "account", "登录", "login" -> Icons.Default.VpnKey
+    "社交", "social", "聊天", "沟通", "微信", "qq" -> Icons.Default.Forum
     "邮箱", "email", "邮件", "mail" -> Icons.Default.Email
-    "安全", "security", "权限", "permission" -> Icons.Default.Security
-    "提现", "withdraw", "理财", "financial management" -> Icons.Default.Savings
-    "社保", "social security", "医保", "medical insurance" -> Icons.Default.MedicalInformation
-    "身份证", "ID card", "证件", "certificate" -> Icons.Default.Badge
-    "WiFi", "网络", "无线" -> Icons.Default.Wifi
+    "应用", "APP", "app", "application" -> Icons.Default.Apps
     "游戏", "game" -> Icons.Default.SportsEsports
+    "视频", "video", "会员", "影音", "movie", "影视" -> Icons.Default.Subscriptions
+    "购物", "shopping", "电商", "淘宝", "京东" -> Icons.Default.ShoppingCart
+    "直播", "live", "主播" -> Icons.Default.LiveTv
+    "公积金", "社保", "医保", "健康", "health", "medical" -> Icons.Default.HealthAndSafety
     "网盘", "cloud", "云盘", "drive" -> Icons.Default.Cloud
-    "日记", "note", "记事", "diary" -> Icons.Default.EditNote
+    "笔记", "note", "记事", "日记", "diary", "书" -> Icons.Default.EditNote
+    "工作", "work", "打工" -> Icons.Default.Work
+    "学习", "school", "教育", "校园" -> Icons.Default.School
+    "出行", "travel", "高铁", "火车" -> Icons.Default.Train
+    "飞机", "飞行", "flight" -> Icons.Default.Flight
+    "wifi", "网络", "无线" -> Icons.Default.Wifi
+    "安全", "security", "权限", "permission" -> Icons.Default.Security
     else -> Icons.Default.Key
 }

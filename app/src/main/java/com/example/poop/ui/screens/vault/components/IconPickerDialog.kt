@@ -1,10 +1,13 @@
 package com.example.poop.ui.screens.vault.components
 
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -13,6 +16,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,14 +29,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.poop.ui.screens.profile.ImageType
+import com.example.poop.util.rememberImagePicker
 
 @Composable
 fun IconPickerDialog(
     onDismiss: () -> Unit,
     onIconSelected: (String?) -> Unit,
-    currentIconName: String?
+    onCustomImageSelected: (Uri) -> Unit,
+    currentIconName: String?,
+    currentCustomPath: String?
 ) {
+    val pickPhoto = rememberImagePicker { uri, _ ->
+        onCustomImageSelected(uri)
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -44,35 +56,63 @@ fun IconPickerDialog(
         text = {
             Column {
                 Text(
-                    "为该条目选择一个个性化图标",
+                    "为该条目选择预设图标或上传自定义图片",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                
+
                 Box(modifier = Modifier.height(300.dp)) {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(56.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // 选项：恢复默认（自动映射）
+                        // 选项 1：恢复默认（自动映射）
                         item {
                             IconItem(
                                 name = null,
-                                isSelected = currentIconName == null,
+                                isSelected = currentIconName == null && currentCustomPath == null,
                                 onClick = { onIconSelected(null) }
                             )
                         }
-                        
+
                         // 渲染所有预设图标
                         items(VaultIcons.allIcons.keys.toList()) { name ->
                             IconItem(
                                 name = name,
-                                isSelected = currentIconName == name,
+                                isSelected = currentIconName == name && currentCustomPath == null,
                                 onClick = { onIconSelected(name) }
                             )
                         }
+
+                        // 选项 2：添加自定义图片 (末尾添加)
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        if (currentCustomPath != null) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable { pickPhoto(ImageType.AVATAR) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AddAPhoto,
+                                    contentDescription = "添加图片",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        item{}
                     }
                 }
             }
@@ -96,7 +136,7 @@ private fun IconItem(
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     }
-    
+
     val iconColor = if (isSelected) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {
@@ -124,12 +164,5 @@ private fun IconItem(
                 modifier = Modifier.size(24.dp)
             )
         }
-        
-        Text(
-            text = if (name == null) "自动" else "",
-            style = MaterialTheme.typography.labelSmall,
-            color = iconColor,
-            fontSize = 10.sp
-        )
     }
 }

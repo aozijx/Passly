@@ -5,12 +5,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,8 +24,6 @@ fun VaultItemRow(
     item: VaultItem,
     viewModel: VaultViewModel
 ) {
-    val categoryIcon = getCategoryIcon(item.category)
-
     Card(
         onClick = { viewModel.showDetail(item) },
         modifier = Modifier.fillMaxWidth(),
@@ -40,12 +36,11 @@ fun VaultItemRow(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                categoryIcon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.size(24.dp)
-            )
+            // 使用统一的图标组件，已内置优先级逻辑：
+            // 1. iconCustomPath (上传)
+            // 2. iconName (App自定义)
+            // 3. 默认 (根据分类)
+            VaultItemIcon(item = item)
 
             Spacer(modifier = Modifier.width(20.dp))
 

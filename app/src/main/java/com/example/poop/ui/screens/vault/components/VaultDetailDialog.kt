@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,11 +43,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
+import coil.compose.AsyncImage
 import com.example.poop.data.VaultItem
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.util.BiometricHelper
@@ -60,8 +64,8 @@ fun VaultDetailDialog(
     viewModel: VaultViewModel
 ) {
     val context = LocalContext.current
-    
-    // 瞬时状态管理：明文仅在 Dialog 生命周期内存在，随弹窗关闭自动从内存销毁
+
+    // 瞬时状态管理：明文仅在 Dialog 生命周期内存在
     var revealedUsername by remember { mutableStateOf<String?>(null) }
     var revealedPassword by remember { mutableStateOf<String?>(null) }
     val isRevealed = revealedUsername != null && revealedPassword != null
@@ -73,9 +77,13 @@ fun VaultDetailDialog(
         IconPickerDialog(
             onDismiss = { showIconPicker.value = false },
             currentIconName = item.iconName,
+            currentCustomPath = item.iconCustomPath,
             onIconSelected = { newIconName ->
-                // 更新条目的图标设置
-                viewModel.updateVaultItem(item.copy(iconName = newIconName))
+                viewModel.updateVaultItem(item.copy(iconName = newIconName, iconCustomPath = null))
+                showIconPicker.value = false
+            },
+            onCustomImageSelected = { uri ->
+                viewModel.updateVaultItem(item.copy(iconName = null, iconCustomPath = uri.toString()))
                 showIconPicker.value = false
             }
         )
@@ -84,34 +92,60 @@ fun VaultDetailDialog(
     AlertDialog(
         onDismissRequest = { viewModel.dismissDetail() },
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // 现在图标支持点击打开选择器
+            // 如果有自定义图片，展示为背景大图
+            if (!item.iconCustomPath.isNullOrEmpty()) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .clickable { showIconPicker.value = true },
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showIconPicker.value = true }
                 ) {
-                    Icon(
-                        imageVector = getVaultItemIcon(item),
-                        contentDescription = "选择图标",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp)
+                    AsyncImage(
+                        model = item.iconCustomPath,
+                        contentDescription = "背景图",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(item.title, fontWeight = FontWeight.Bold)
+            } else {
+                // 原有的标题栏布局（没有背景图时）
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .clickable { showIconPicker.value = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        VaultItemIcon(
+                            item = item,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(item.title, fontWeight = FontWeight.Bold)
+                }
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // 如果显示了背景图，标题放在正文顶部
+                if (!item.iconCustomPath.isNullOrEmpty()) {
+                    Text(
+                        item.title,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
+
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                
+
                 CategoryItem(viewModel, item)
 
-                // 账号项编辑与展示
+                // 账号项
                 if (viewModel.isEditingUsername) {
                     EditTextField(
                         value = viewModel.editedUsername,
@@ -148,13 +182,13 @@ fun VaultDetailDialog(
                                 }
                             }
                         },
-                        onEdit = { 
+                        onEdit = {
                             revealedUsername?.let { viewModel.startEditingUsername(it) }
                         }
                     )
                 }
 
-                // 密码项编辑与展示
+                // 密码项
                 if (viewModel.isEditingPassword) {
                     EditTextField(
                         value = viewModel.editedPassword,
@@ -191,7 +225,7 @@ fun VaultDetailDialog(
                                 }
                             }
                         },
-                        onEdit = { 
+                        onEdit = {
                             revealedPassword?.let { viewModel.startEditingPassword(it) }
                         }
                     )
@@ -202,7 +236,7 @@ fun VaultDetailDialog(
                     Button(
                         onClick = {
                             decrypt(
-                                activity = activity, 
+                                activity = activity,
                                 encryptedTexts = listOf(item.username, item.password),
                                 subtitle = "验证以查看完整信息"
                             ) { results ->
@@ -221,7 +255,7 @@ fun VaultDetailDialog(
                     }
                 } else if (isRevealed && !viewModel.isEditingUsername && !viewModel.isEditingPassword) {
                     TextButton(
-                        onClick = { 
+                        onClick = {
                             revealedUsername = null
                             revealedPassword = null
                         },
@@ -249,8 +283,8 @@ fun VaultDetailDialog(
                     Text("删除")
                 }
 
-                TextButton(onClick = { viewModel.dismissDetail() }) { 
-                    Text("关闭") 
+                TextButton(onClick = { viewModel.dismissDetail() }) {
+                    Text("关闭")
                 }
             }
         }
