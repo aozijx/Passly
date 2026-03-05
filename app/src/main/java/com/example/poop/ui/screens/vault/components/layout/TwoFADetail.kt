@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -57,17 +56,14 @@ import com.example.poop.ui.screens.vault.utils.VaultSecurityUtils
 import com.example.poop.util.ClipboardUtils
 
 @Composable
-fun VaultDetailDialog(
+fun TwoFADetailDialog(
     activity: FragmentActivity,
     item: VaultEntry,
     viewModel: VaultViewModel
 ) {
-    // 瞬时状态管理
     var revealedUsername by remember { mutableStateOf<String?>(null) }
-    var revealedPassword by remember { mutableStateOf<String?>(null) }
     var revealed2faSecret by remember { mutableStateOf<String?>(null) }
-    
-    // 图标选择器状态
+    var revealedNotes by remember { mutableStateOf<String?>(null) }
     val showIconPicker = remember { mutableStateOf(false) }
 
     if (showIconPicker.value) {
@@ -101,36 +97,94 @@ fun VaultDetailDialog(
 
                 CategoryItem(viewModel, item)
 
-                // 2FA 动态码区域
-                if (item.totpSecret != null) {
-                    if (revealed2faSecret != null) {
-                        TwoFASection(item = item, secret = revealed2faSecret!!)
-                    } else {
-                        Button(
-                            onClick = {
-                                VaultSecurityUtils.decryptSingle(activity, item.totpSecret) { revealed2faSecret = it }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.Visibility, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("验证身份并查看 2FA 动态码")
-                        }
+                // 2FA 动态码区域 (核心)
+                if (revealed2faSecret != null) {
+                    TwoFASection(item = item, secret = revealed2faSecret!!)
+                } else {
+                    Button(
+                        onClick = {
+                            VaultSecurityUtils.decryptSingle(activity, item.totpSecret ?: "") { revealed2faSecret = it }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Visibility, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("验证并显示 2FA 动态码")
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 }
 
-                // 账号凭据区域
-                CredentialSection(
-                    activity = activity,
-                    item = item,
-                    viewModel = viewModel,
-                    revealedUsername = revealedUsername,
-                    revealedPassword = revealedPassword,
-                    onUsernameRevealed = { revealedUsername = it },
-                    onPasswordRevealed = { revealedPassword = it }
-                )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                // 账号信息 (辅助)
+                if (viewModel.isEditingUsername) {
+                    EditTextField(
+                        value = viewModel.editedUsername,
+                        onValueChange = { viewModel.editedUsername = it },
+                        label = "修改账号",
+                        onSave = {
+                            val newValue = viewModel.editedUsername
+                            VaultSecurityUtils.encryptMultiple(activity, listOf(newValue), title = "保存修改") { results ->
+                                viewModel.saveUsernameEdit(results[0])
+                                revealedUsername = newValue
+                            }
+                        }
+                    )
+                } else {
+                    DetailItem(
+                        label = "关联账号",
+                        value = if (item.username.isEmpty()) "未设置账号" else (revealedUsername ?: "••••••••"),
+                        isRevealed = revealedUsername != null,
+                        onCopy = {
+                            if (item.username.isNotEmpty()) {
+                                VaultSecurityUtils.decryptSingle(activity, item.username) { it?.let { ClipboardUtils.copy(context = activity, it) } }
+                            }
+                        },
+                        onEdit = { 
+                            val current = revealedUsername ?: ""
+                            viewModel.startEditingUsername(current)
+                        }
+                    )
+                }
+
+                // 备注展示
+                if (!item.notes.isNullOrEmpty()) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    DetailItem(
+                        label = "备注",
+                        value = revealedNotes ?: "••••••••",
+                        isRevealed = revealedNotes != null,
+                        onCopy = {
+                            revealedNotes?.let { ClipboardUtils.copy(activity, it) }
+                        },
+                        onEdit = { /* 暂时不支持直接编辑备注 */ }
+                    )
+                }
+
+                // 统一的详情显示按钮 (如果没有全部显示)
+                val needsReveal = (revealedUsername == null && item.username.isNotEmpty()) || (revealedNotes == null && !item.notes.isNullOrEmpty())
+                if (needsReveal) {
+                    TextButton(
+                        onClick = {
+                            val toDecrypt = mutableListOf<String>()
+                            if (revealedUsername == null && item.username.isNotEmpty()) toDecrypt.add(item.username)
+                            if (revealedNotes == null && !item.notes.isNullOrEmpty()) toDecrypt.add(
+                                item.notes
+                            )
+                            
+                            VaultSecurityUtils.decryptMultiple(activity, toDecrypt) { results ->
+                                var idx = 0
+                                if (revealedUsername == null && item.username.isNotEmpty()) revealedUsername = results[idx++]
+                                if (revealedNotes == null && !item.notes.isNullOrEmpty()) revealedNotes = results[idx++]
+                            }
+                        },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Icon(Icons.Default.Visibility, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("验证并显示账号/备注详情")
+                    }
+                }
             }
         },
         confirmButton = {
@@ -150,7 +204,6 @@ private fun DetailHeader(item: VaultEntry, onIconClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onIconClick)
         ) {
             AsyncImage(
-                // 修复 javaHwBitmap 错误：对于可能的大图，关闭硬件位图支持
                 model = ImageRequest.Builder(context)
                     .data(item.iconCustomPath)
                     .allowHardware(false)
@@ -171,114 +224,6 @@ private fun DetailHeader(item: VaultEntry, onIconClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(12.dp))
             Text(item.title, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun CredentialSection(
-    activity: FragmentActivity,
-    item: VaultEntry,
-    viewModel: VaultViewModel,
-    revealedUsername: String?,
-    revealedPassword: String?,
-    onUsernameRevealed: (String?) -> Unit,
-    onPasswordRevealed: (String?) -> Unit
-) {
-    val context = LocalContext.current
-    // 如果是 2FA 且密码为空，则不显示密码项
-    val showPassword = item.password.isNotEmpty() || item.entryType != 1
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // 账号
-        if (viewModel.isEditingUsername) {
-            EditTextField(
-                value = viewModel.editedUsername,
-                onValueChange = { viewModel.editedUsername = it },
-                label = "修改账号",
-                onSave = {
-                    val newValue = viewModel.editedUsername
-                    VaultSecurityUtils.encryptMultiple(activity, listOf(newValue), title = "保存修改") { results ->
-                        viewModel.saveUsernameEdit(results[0])
-                        onUsernameRevealed(newValue)
-                    }
-                }
-            )
-        } else {
-            DetailItem(
-                label = "账号",
-                value = if (item.username.isEmpty() && item.entryType == 1) "未关联账号" else (revealedUsername ?: "••••••••"),
-                isRevealed = revealedUsername != null,
-                onCopy = {
-                    if (item.username.isNotEmpty()) {
-                        VaultSecurityUtils.decryptSingle(activity, item.username) { it?.let { ClipboardUtils.copy(context, it) } }
-                    }
-                },
-                onEdit = { 
-                    val current = revealedUsername ?: ""
-                    viewModel.startEditingUsername(current) 
-                }
-            )
-        }
-
-        // 密码
-        if (showPassword) {
-            if (viewModel.isEditingPassword) {
-                EditTextField(
-                    value = viewModel.editedPassword,
-                    onValueChange = { viewModel.editedPassword = it },
-                    label = "修改密码",
-                    onSave = {
-                        val newValue = viewModel.editedPassword
-                        VaultSecurityUtils.encryptMultiple(activity, listOf(newValue), title = "保存修改") { results ->
-                            viewModel.savePasswordEdit(results[0])
-                            onPasswordRevealed(newValue)
-                        }
-                    }
-                )
-            } else {
-                DetailItem(
-                    label = "密码",
-                    value = revealedPassword ?: "••••••••",
-                    isRevealed = revealedPassword != null,
-                    onCopy = {
-                        VaultSecurityUtils.decryptSingle(activity, item.password) { it?.let { ClipboardUtils.copy(context, it) } }
-                    },
-                    onEdit = { revealedPassword?.let { viewModel.startEditingPassword(it) } }
-                )
-            }
-        }
-
-        // 显隐按钮逻辑
-        val hasHiddenContent = (revealedUsername == null && item.username.isNotEmpty()) || (revealedPassword == null && showPassword && item.password.isNotEmpty())
-        
-        if (hasHiddenContent && !viewModel.isEditingUsername && !viewModel.isEditingPassword) {
-            Button(
-                onClick = {
-                    val fieldsToDecrypt = mutableListOf<String>()
-                    if (item.username.isNotEmpty()) fieldsToDecrypt.add(item.username)
-                    if (item.password.isNotEmpty() && showPassword) fieldsToDecrypt.add(item.password)
-                    
-                    VaultSecurityUtils.decryptMultiple(activity, fieldsToDecrypt) { results ->
-                        var idx = 0
-                        if (item.username.isNotEmpty()) onUsernameRevealed(results[idx++])
-                        if (item.password.isNotEmpty() && showPassword) onPasswordRevealed(results[idx++])
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Icon(Icons.Default.Visibility, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("验证并显示详情")
-            }
-        } else if (!hasHiddenContent && (revealedUsername != null || (revealedPassword != null && showPassword)) && !viewModel.isEditingUsername && !viewModel.isEditingPassword) {
-            TextButton(
-                onClick = { onUsernameRevealed(null); onPasswordRevealed(null) },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
-                Icon(Icons.Default.VisibilityOff, contentDescription = null); Text("隐藏敏感信息")
-            }
         }
     }
 }

@@ -20,7 +20,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
-import com.example.poop.ui.screens.vault.AddType
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.utils.VaultSecurityUtils
 
@@ -29,11 +28,9 @@ fun AddVaultItemDialog(
     activity: FragmentActivity,
     viewModel: VaultViewModel
 ) {
-    val isTotp = viewModel.addType == AddType.TOTP
-
     AlertDialog(
         onDismissRequest = { viewModel.dismissAddDialog() },
-        title = { Text(if (isTotp) "新增 TOTP 令牌" else "新增密码项", fontWeight = FontWeight.Bold) },
+        title = { Text("新增密码项", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -43,37 +40,28 @@ fun AddVaultItemDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 
-                if (isTotp) {
-                    OutlinedTextField(
-                        value = viewModel.addDialogTotpSecret,
-                        onValueChange = { viewModel.addDialogTotpSecret = it },
-                        label = { Text("秘钥 (Secret Key)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("例如: JBSWY3DPEHPK3PXP") }
-                    )
-                } else {
-                    OutlinedTextField(
-                        value = viewModel.addDialogUsername, 
-                        onValueChange = { viewModel.addDialogUsername = it }, 
-                        label = { Text("用户名 / 手机号") }, 
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = viewModel.addDialogPassword, 
-                        onValueChange = { viewModel.addDialogPassword = it }, 
-                        label = { Text("密码") },
-                        visualTransformation = if (viewModel.addDialogPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { viewModel.addDialogPasswordVisible = !viewModel.addDialogPasswordVisible }) {
-                                Icon(
-                                    imageVector = if (viewModel.addDialogPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = "显示密码"
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                OutlinedTextField(
+                    value = viewModel.addDialogUsername, 
+                    onValueChange = { viewModel.addDialogUsername = it }, 
+                    label = { Text("用户名 / 手机号") }, 
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                OutlinedTextField(
+                    value = viewModel.addDialogPassword, 
+                    onValueChange = { viewModel.addDialogPassword = it }, 
+                    label = { Text("密码") },
+                    visualTransformation = if (viewModel.addDialogPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { viewModel.addDialogPasswordVisible = !viewModel.addDialogPasswordVisible }) {
+                            Icon(
+                                imageVector = if (viewModel.addDialogPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = "显示密码"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
                 
                 OutlinedTextField(
                     value = viewModel.addDialogCategory,
@@ -88,27 +76,14 @@ fun AddVaultItemDialog(
             Button(
                 onClick = { 
                     if(viewModel.addDialogTitle.isNotBlank() && viewModel.addDialogCategory.isNotBlank()) {
-                        if (isTotp) {
-                            // TOTP 特化逻辑：验证身份并加密 Secret
-                            VaultSecurityUtils.encryptMultiple(activity, listOf(viewModel.addDialogTotpSecret.trim())) { results ->
-                                viewModel.addItem(
-                                    title = viewModel.addDialogTitle,
-                                    encryptedUser = "", // TOTP 可不填用户名
-                                    encryptedPass = "",
-                                    category = viewModel.addDialogCategory,
-                                    totpSecret = results[0]
-                                )
-                            }
-                        } else {
-                            // 普通密码项
-                            VaultSecurityUtils.encryptMultiple(activity, listOf(viewModel.addDialogUsername, viewModel.addDialogPassword)) { results ->
-                                viewModel.addItem(
-                                    viewModel.addDialogTitle, 
-                                    results[0], 
-                                    results[1], 
-                                    viewModel.addDialogCategory
-                                )
-                            }
+                        // 普通密码项
+                        VaultSecurityUtils.encryptMultiple(activity, listOf(viewModel.addDialogUsername, viewModel.addDialogPassword)) { results ->
+                            viewModel.addItem(
+                                viewModel.addDialogTitle, 
+                                results[0], 
+                                results[1], 
+                                viewModel.addDialogCategory
+                            )
                         }
                     }
                 }

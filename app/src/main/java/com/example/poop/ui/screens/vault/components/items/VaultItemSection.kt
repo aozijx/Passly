@@ -20,8 +20,12 @@ import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.components.common.VaultItemIcon
 
+/**
+ * 保险库条目列表项：通用列表卡片
+ * 点击后打开详情对话框 (VaultDetailDialog)
+ */
 @Composable
-fun PasswordSection(
+fun VaultItemSection(
     entry: VaultEntry,
     viewModel: VaultViewModel
 ) {

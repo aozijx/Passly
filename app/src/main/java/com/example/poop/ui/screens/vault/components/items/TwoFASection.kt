@@ -51,7 +51,7 @@ import kotlinx.coroutines.delay
 import java.net.URLEncoder
 
 @Composable
-fun TotpSection(
+fun TwoFASection(
     item: VaultEntry,
     secret: String
 ) {
@@ -60,14 +60,17 @@ fun TotpSection(
     var progress by remember { mutableFloatStateOf(1f) }
     var showQrDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(secret) {
+    LaunchedEffect(secret, item.totpAlgorithm, item.totpDigits, item.totpPeriod) {
         while (true) {
             val period = item.totpPeriod.coerceAtLeast(1)
             val currentTime = System.currentTimeMillis() / 1000
             val remaining = period - (currentTime % period)
             progress = remaining.toFloat() / period
             totpCode = TotpUtils.generateTotp(
-                secret, item.totpDigits, item.totpPeriod
+                secret = secret, 
+                digits = item.totpDigits, 
+                period = item.totpPeriod,
+                algorithm = item.totpAlgorithm
             )
             delay(500)
         }
@@ -202,7 +205,7 @@ private fun QrExportDialog(
 }
 
 private fun constructOtpAuthUri(item: VaultEntry, secret: String): String {
-    val label = URLEncoder.encode(item.username, "UTF-8").replace("+", "%20")
+    val label = URLEncoder.encode(item.username.ifBlank { "Account" }, "UTF-8").replace("+", "%20")
     val issuer = URLEncoder.encode(item.title, "UTF-8").replace("+", "%20")
-    return "otpauth://totp/$label?secret=$secret&issuer=$issuer&digits=${item.totpDigits}&period=${item.totpPeriod}"
+    return "otpauth://totp/$issuer:$label?secret=$secret&issuer=$issuer&digits=${item.totpDigits}&period=${item.totpPeriod}&algorithm=${item.totpAlgorithm}"
 }

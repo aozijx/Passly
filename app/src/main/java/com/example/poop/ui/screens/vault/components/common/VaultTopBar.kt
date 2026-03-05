@@ -183,7 +183,7 @@ fun VaultTopBar(
                                 when (tab) {
                                     VaultTab.ALL -> "全部"
                                     VaultTab.PASSWORDS -> "密码"
-                                    VaultTab.TOTP -> "TOTP"
+                                    VaultTab.TOTP -> "2FA"
                                 },
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal

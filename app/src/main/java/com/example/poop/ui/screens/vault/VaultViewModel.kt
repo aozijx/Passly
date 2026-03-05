@@ -63,7 +63,13 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var addDialogCategory by mutableStateOf("")
     var addDialogNotes by mutableStateOf("")
     var addDialogPasswordVisible by mutableStateOf(false)
+    
+    // TOTP 相关
     var addDialogTotpSecret by mutableStateOf("")
+    var addDialogTotpPeriod by mutableStateOf("30")
+    var addDialogTotpDigits by mutableStateOf("6")
+    var addDialogTotpAlgorithm by mutableStateOf("SHA1")
+
     var addDialogCardCvv by mutableStateOf("")
     var addDialogCardExpiration by mutableStateOf("")
     var addDialogIdNumber by mutableStateOf("")
@@ -148,6 +154,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private fun resetAddDialogFields() {
         addDialogTitle = ""; addDialogUsername = ""; addDialogPassword = ""
         addDialogCategory = ""; addDialogNotes = ""; addDialogTotpSecret = ""
+        addDialogTotpPeriod = "30"; addDialogTotpDigits = "6"; addDialogTotpAlgorithm = "SHA1"
         addDialogCardCvv = ""; addDialogCardExpiration = ""; addDialogIdNumber = ""
         addDialogPaymentPin = ""; addDialogSshPrivateKey = ""; addDialogCryptoSeedPhrase = ""
         addDialogRecoveryCodes = ""; addDialogWifiEncryption = "WPA"; addDialogWifiIsHidden = false

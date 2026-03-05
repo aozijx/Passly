@@ -41,10 +41,11 @@ import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.components.common.EmptyVaultPlaceholder
 import com.example.poop.ui.screens.vault.components.common.LoadingMask
 import com.example.poop.ui.screens.vault.components.common.VaultTopBar
+import com.example.poop.ui.screens.vault.components.dialog.AddTwoFADialog
 import com.example.poop.ui.screens.vault.components.dialog.AddVaultItemDialog
 import com.example.poop.ui.screens.vault.components.dialog.BackupPasswordDialog
 import com.example.poop.ui.screens.vault.components.dialog.DeleteConfirmationDialog
-import com.example.poop.ui.screens.vault.components.items.PasswordSection
+import com.example.poop.ui.screens.vault.components.items.VaultItemSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,12 +97,19 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                     EmptyVaultPlaceholder()
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(items, key = { it.id }) { item -> PasswordSection(entry = item, viewModel = viewModel) }
+                        items(items, key = { it.id }) { item -> VaultItemSection(entry = item, viewModel = viewModel) }
                         item { Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp)) }
                     }
                 }
 
-                viewModel.detailItem?.let { item -> VaultDetailDialog(activity = activity, item = item, viewModel = viewModel) }
+                viewModel.detailItem?.let { item ->
+                    if (item.totpSecret != null) {
+                        TwoFADetailDialog(activity = activity, item = item, viewModel = viewModel)
+                    } else {
+                        VaultDetailDialog(activity = activity, item = item, viewModel = viewModel)
+                    }
+                }
+
                 viewModel.itemToDelete?.let { item ->
                     DeleteConfirmationDialog(activity = activity, item = item, onConfirm = { viewModel.confirmDelete() }, onDismiss = { viewModel.dismissDeleteDialog() })
                 }
@@ -109,8 +117,10 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                 if (viewModel.isBackupLoading) LoadingMask(message = if (viewModel.isExporting) "正在导出备份..." else "正在导入恢复...")
             }
 
-            if (viewModel.addType == AddType.PASSWORD || viewModel.addType == AddType.TOTP) {
-                AddVaultItemDialog(activity = activity, viewModel = viewModel)
+            when (viewModel.addType) {
+                AddType.PASSWORD -> AddVaultItemDialog(activity = activity, viewModel = viewModel)
+                AddType.TOTP -> AddTwoFADialog(activity = activity, viewModel = viewModel)
+                else -> {}
             }
         }
 
@@ -125,7 +135,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
             ) {
                 VaultScanner(
                     activity = activity,
-                    viewModel = viewModel,
+                    vaultViewModel = viewModel,
                     onDismiss = { viewModel.dismissAddDialog() }
                 )
             }

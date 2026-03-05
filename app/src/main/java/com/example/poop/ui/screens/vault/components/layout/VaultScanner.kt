@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -30,10 +32,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,43 +44,58 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.ui.screens.components.ScannerView
+import com.example.poop.ui.screens.profile.ImageType
+import com.example.poop.ui.screens.scanner.ScannerViewModel
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.utils.VaultSecurityUtils
+import com.example.poop.util.rememberImagePicker
 import java.net.URLDecoder
 
 /**
  * Vault 专用的扫码特化组件
+ * 复用 ScannerViewModel 进行图片识别，减少冗余代码
  */
 @Composable
 fun VaultScanner(
     activity: FragmentActivity,
-    viewModel: VaultViewModel,
+    vaultViewModel: VaultViewModel,
+    scannerViewModel: ScannerViewModel = viewModel(),
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    var scannedTotp by remember { mutableStateOf<OtpAuthData?>(null) }
+    val scanResult by scannerViewModel.scanResult.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    // 解析扫码结果
+    val scannedTotp = remember(scanResult) { parseOtpAuthUri(scanResult) }
+
+    // 直接复用通用的图片选取器，并调用 scannerViewModel 的识别逻辑
+    val pickPhoto = rememberImagePicker { uri, _ ->
+        scannerViewModel.decodeImage(context, uri)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
         ScannerView(
             onBarcodeDetected = { barcode ->
                 if (scannedTotp != null) return@ScannerView
-                val parsed = parseOtpAuthUri(barcode)
-                if (parsed != null) {
-                    scannedTotp = parsed
-                }
+                scannerViewModel.onBarcodeDetected(context, barcode)
             },
             onPermissionDenied = { onDismiss() }
         )
 
-        // 扫码结果确认卡片：增加了 navigationBarsPadding 以适配底部导航栏
+        // 扫码结果确认卡片
         AnimatedVisibility(
             visible = scannedTotp != null,
             enter = fadeIn() + slideInVertically { it },
             exit = fadeOut() + slideOutHorizontally { it },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .navigationBarsPadding() // 核心：检测并避开底部导航栏
+                .navigationBarsPadding()
                 .padding(24.dp)
         ) {
             scannedTotp?.let { totp ->
@@ -106,20 +122,25 @@ fun VaultScanner(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { scannedTotp = null },
+                                onClick = {
+                                    scannerViewModel.onBarcodeDetected(
+                                        context,
+                                        ""
+                                    )
+                                }, // 清空结果以重新扫描
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors()
                             ) {
                                 Text("重扫")
                             }
-                            
+
                             Button(
                                 onClick = {
                                     VaultSecurityUtils.encryptMultiple(
@@ -128,14 +149,19 @@ fun VaultScanner(
                                         title = "保存令牌",
                                         subtitle = "验证身份以保存 ${totp.issuer ?: totp.label}",
                                         onSuccess = { encryptedResults: List<String> ->
-                                            viewModel.addItem(
-                                                title = totp.issuer ?: totp.label.split(":").firstOrNull() ?: "TOTP",
+                                            vaultViewModel.addItem(
+                                                title = totp.issuer ?: totp.label.split(":")
+                                                    .firstOrNull() ?: "TOTP",
                                                 encryptedUser = totp.label,
                                                 encryptedPass = "",
                                                 category = "OTP",
                                                 totpSecret = encryptedResults[0]
                                             )
-                                            Toast.makeText(context, "已成功保存到保险库", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                "已成功保存到保险库",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                             onDismiss()
                                         }
                                     )
@@ -143,7 +169,11 @@ fun VaultScanner(
                                 modifier = Modifier.weight(2f),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.Save,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("保存到保险库")
                             }
@@ -152,12 +182,28 @@ fun VaultScanner(
                 }
             }
         }
-
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).padding(top = 32.dp)
+        // 底部操作栏
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Close, contentDescription = "关闭", tint = Color.White)
+            IconButton(
+                onClick = { pickPhoto(ImageType.SCREEN) },
+                modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+            ) {
+                Icon(Icons.Default.PhotoLibrary, contentDescription = "相册导入", tint = Color.White)
+            }
+
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "关闭", tint = Color.White)
+            }
         }
     }
 }
@@ -169,6 +215,7 @@ private data class OtpAuthData(
 )
 
 private fun parseOtpAuthUri(uriString: String): OtpAuthData? {
+    if (uriString.isBlank()) return null
     return try {
         val uri = uriString.toUri()
         if (uri.scheme != "otpauth" || uri.host != "totp") return null

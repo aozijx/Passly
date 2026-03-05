@@ -33,29 +33,26 @@ object AutofillCredentialProvider {
             val passCipher = ivPass?.let { CryptoManager.getDecryptCipher(it) }
             val totpCipher = ivTotp?.let { CryptoManager.getDecryptCipher(it) }
 
-            if (userCipher == null || passCipher == null) {
-                Logcat.e(TAG, "Critical: Decrypt cipher initialization failed for item ${item.id}")
-                return null
-            }
-
             // 2. 执行核心解密
-            val username = CryptoManager.decrypt(item.username, userCipher)
-            val password = CryptoManager.decrypt(item.password, passCipher)
-
-            if (username == null || password == null) {
-                Logcat.e(TAG, "Critical: Plaintext recovery failed for item ${item.id}")
-                return null
-            }
+            val username = if (userCipher != null) CryptoManager.decrypt(item.username, userCipher) else ""
+            val password = if (passCipher != null) CryptoManager.decrypt(item.password, passCipher) else ""
 
             // 3. 处理 TOTP 生成
             val totpCode = item.totpSecret?.let { secret ->
                 totpCipher?.let { cipher ->
                     val rawSecret = CryptoManager.decrypt(secret, cipher)
-                    rawSecret?.let { TotpUtils.generateTotp(it) }
+                    rawSecret?.let { 
+                        TotpUtils.generateTotp(
+                            secret = it,
+                            digits = item.totpDigits,
+                            period = item.totpPeriod,
+                            algorithm = item.totpAlgorithm
+                        ) 
+                    }
                 }
             }
 
-            DecryptedCredential(username, password, totpCode)
+            DecryptedCredential(username ?: "", password ?: "", totpCode)
         } catch (e: Exception) {
             Logcat.e(TAG, "Unexpected error during credential decryption", e)
             null

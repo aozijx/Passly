@@ -75,19 +75,19 @@ fun VaultFab(viewModel: VaultViewModel) {
                     }
                 )
                 FabMenuItem(
+                    label = "2FA",
+                    icon = Icons.Default.Pin,
+                    onClick = {
+                        showFabMenu = false
+                        viewModel.onAddTypeSelect(AddType.TOTP)
+                    }
+                )
+                FabMenuItem(
                     label = "密码",
                     icon = Icons.Default.Key,
                     onClick = {
                         showFabMenu = false
                         viewModel.onAddTypeSelect(AddType.PASSWORD)
-                    }
-                )
-                FabMenuItem(
-                    label = "TOTP",
-                    icon = Icons.Default.Pin,
-                    onClick = {
-                        showFabMenu = false
-                        viewModel.onAddTypeSelect(AddType.TOTP)
                     }
                 )
             }
