@@ -2,7 +2,7 @@ package com.example.poop.service.autofill
 
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.utils.CryptoManager
-import com.example.poop.ui.screens.vault.utils.TotpUtils
+import com.example.poop.ui.screens.vault.utils.TwoFAUtils
 import com.example.poop.util.Logcat
 
 /**
@@ -42,7 +42,7 @@ object AutofillCredentialProvider {
                 totpCipher?.let { cipher ->
                     val rawSecret = CryptoManager.decrypt(secret, cipher)
                     rawSecret?.let { 
-                        TotpUtils.generateTotp(
+                        TwoFAUtils.generateTotp(
                             secret = it,
                             digits = item.totpDigits,
                             period = item.totpPeriod,

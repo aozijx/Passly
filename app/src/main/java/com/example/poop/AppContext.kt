@@ -14,7 +14,7 @@ class AppContext : Application() {
     }
 
     override fun onCreate() {
+        instance = this // 提前初始化，避免 Logcat 等工具类在 super.onCreate 中调用时报错
         super.onCreate()
-        instance = this
     }
 }

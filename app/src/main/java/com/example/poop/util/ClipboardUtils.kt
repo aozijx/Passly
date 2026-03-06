@@ -9,7 +9,7 @@ import android.os.Looper
 import android.os.PersistableBundle
 
 /**
- * 剪贴板工具类，提供安全复制和自动清除功能
+ * 剪贴板工具类，提供安全复制、自动清除以及内容获取功能
  */
 object ClipboardUtils {
     private const val CLIP_LABEL = "vault_data"
@@ -20,9 +20,6 @@ object ClipboardUtils {
 
     /**
      * 安全复制到剪贴板
-     * @param context 上下文
-     * @param text 要复制的文本
-     * @param isSensitive 是否为敏感内容（密码、账号等）
      */
     fun copy(context: Context, text: String, isSensitive: Boolean = true) {
         val appContext = context.applicationContext
@@ -37,12 +34,10 @@ object ClipboardUtils {
         }
         clipboard.setPrimaryClip(clipData)
 
-        // 取消之前的清除任务，确保新的任务重新计时
         lastClearRunnable?.let { handler.removeCallbacks(it) }
 
         val clearRunnable = Runnable {
             try {
-                // 仅当剪贴板内容仍是我们本次复制的内容时才清除
                 if (clipboard.hasPrimaryClip() && clipboard.primaryClipDescription?.label == CLIP_LABEL) {
                     clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
                 }
@@ -53,5 +48,15 @@ object ClipboardUtils {
 
         lastClearRunnable = clearRunnable
         handler.postDelayed(clearRunnable, CLEAR_DELAY_MS)
+    }
+
+    /**
+     * 获取剪贴板中的第一条文本内容
+     */
+    fun getText(context: Context): String {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        if (!clipboard.hasPrimaryClip()) return ""
+        val item = clipboard.primaryClip?.getItemAt(0)
+        return item?.text?.toString() ?: ""
     }
 }

@@ -10,7 +10,7 @@ import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.utils.BiometricHelper
 
 @Composable
-fun DeleteConfirmationDialog(
+fun DeleteConfirmDialog(
     activity: FragmentActivity,
     item: VaultEntry,
     onConfirm: () -> Unit,

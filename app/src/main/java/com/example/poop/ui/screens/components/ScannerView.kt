@@ -122,7 +122,10 @@ fun ScannerView(
                                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
                                 barcodeScanner.process(image)
                                     .addOnSuccessListener { barcodes ->
-                                        barcodes.firstOrNull()?.rawValue?.let { onBarcodeDetected(it) }
+                                        barcodes.firstOrNull()?.rawValue?.let { 
+                                            android.util.Log.d("ScannerView", "Detected barcode: $it") // 核心调试日志
+                                            onBarcodeDetected(it) 
+                                        }
                                     }
                                     .addOnCompleteListener { imageProxy.close() }
                             } else {

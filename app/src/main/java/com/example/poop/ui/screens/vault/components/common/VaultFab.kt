@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components.layout
+package com.example.poop.ui.screens.vault.components.common
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState

@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
@@ -24,6 +25,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,8 +39,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -62,6 +68,16 @@ fun VaultTopBar(
     val selectedTab by viewModel.selectedTab.collectAsState()
     val focusManager = LocalFocusManager.current
 
+    // 本地状态：控制是否显示分类子菜单
+    var showCategorySubMenu by remember { mutableStateOf(false) }
+
+    // 当整个“更多”菜单关闭时，重置子菜单状态
+    LaunchedEffect(viewModel.isMoreMenuExpanded) {
+        if (!viewModel.isMoreMenuExpanded) {
+            showCategorySubMenu = false
+        }
+    }
+
     Column {
         CenterAlignedTopAppBar(
             scrollBehavior = scrollBehavior,
@@ -84,7 +100,10 @@ fun VaultTopBar(
                         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
                     )
                 } else {
-                    Text("安全保险箱", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (selectedCategory != null) "分类: $selectedCategory" else "安全保险箱",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             },
             navigationIcon = {
@@ -98,30 +117,6 @@ fun VaultTopBar(
             actions = {
                 if (!viewModel.isSearchActive) {
                     Box {
-                        IconButton(onClick = { viewModel.toggleFilterMenu(true) }) {
-                            Icon(
-                                Icons.Default.FilterList,
-                                contentDescription = "过滤",
-                                tint = if (selectedCategory != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = viewModel.isFilterMenuExpanded,
-                            onDismissRequest = { viewModel.toggleFilterMenu(false) }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("全部分类") },
-                                onClick = { viewModel.onCategorySelect(null) }
-                            )
-                            availableCategories.forEach { category ->
-                                DropdownMenuItem(
-                                    text = { Text(category) },
-                                    onClick = { viewModel.onCategorySelect(category) }
-                                )
-                            }
-                        }
-                    }
-                    Box {
                         IconButton(onClick = { viewModel.toggleMoreMenu(true) }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "更多")
                         }
@@ -129,22 +124,62 @@ fun VaultTopBar(
                             expanded = viewModel.isMoreMenuExpanded,
                             onDismissRequest = { viewModel.toggleMoreMenu(false) }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("导出备份") },
-                                onClick = {
-                                    viewModel.toggleMoreMenu(false)
-                                    onExportClick()
-                                },
-                                leadingIcon = { Icon(Icons.Default.FileUpload, contentDescription = null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("导入恢复") },
-                                onClick = {
-                                    viewModel.toggleMoreMenu(false)
-                                    onImportClick()
-                                },
-                                leadingIcon = { Icon(Icons.Default.FileDownload, contentDescription = null) }
-                            )
+                            if (!showCategorySubMenu) {
+                                // --- 主菜单界面 ---
+                                DropdownMenuItem(
+                                    text = { Text("分类筛选") },
+                                    onClick = { showCategorySubMenu = true },
+                                    leadingIcon = { Icon(Icons.Default.FilterList, null) }
+                                )
+
+                                HorizontalDivider()
+
+                                DropdownMenuItem(
+                                    text = { Text("导出备份") },
+                                    onClick = {
+                                        viewModel.toggleMoreMenu(false)
+                                        onExportClick()
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.FileUpload, null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("导入恢复") },
+                                    onClick = {
+                                        viewModel.toggleMoreMenu(false)
+                                        onImportClick()
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.FileDownload, null) }
+                                )
+                            } else {
+                                // --- 分类子菜单界面 ---
+                                DropdownMenuItem(
+                                    text = { Text("返回") },
+                                    onClick = { showCategorySubMenu = false },
+                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
+                                )
+
+                                HorizontalDivider()
+
+                                DropdownMenuItem(
+                                    text = { Text("全部分类") },
+                                    onClick = {
+                                        viewModel.onCategorySelect(null)
+                                        viewModel.toggleMoreMenu(false)
+                                    },
+                                    trailingIcon = { if (selectedCategory == null) Icon(Icons.Default.Check, null) }
+                                )
+
+                                availableCategories.forEach { category ->
+                                    DropdownMenuItem(
+                                        text = { Text(category) },
+                                        onClick = {
+                                            viewModel.onCategorySelect(category)
+                                            viewModel.toggleMoreMenu(false)
+                                        },
+                                        trailingIcon = { if (selectedCategory == category) Icon(Icons.Default.Check, null) }
+                                    )
+                                }
+                            }
                         }
                     }
                 } else if (searchQuery.isNotEmpty()) {

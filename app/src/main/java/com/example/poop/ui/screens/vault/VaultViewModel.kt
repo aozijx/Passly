@@ -33,7 +33,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).vaultDao()
     private val preference = com.example.poop.AppContext.get().preference
 
-    // --- 1. 状态管理 (UI States) ---
+    // --- 状态管理 ---
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
@@ -63,24 +63,16 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var addDialogCategory by mutableStateOf("")
     var addDialogNotes by mutableStateOf("")
     var addDialogPasswordVisible by mutableStateOf(false)
+    var addDialogIconName by mutableStateOf<String?>(null)
+    var addDialogIconPath by mutableStateOf<String?>(null)
     
-    // TOTP 相关
+    // TOTP 状态
     var addDialogTotpSecret by mutableStateOf("")
     var addDialogTotpPeriod by mutableStateOf("30")
     var addDialogTotpDigits by mutableStateOf("6")
     var addDialogTotpAlgorithm by mutableStateOf("SHA1")
 
-    var addDialogCardCvv by mutableStateOf("")
-    var addDialogCardExpiration by mutableStateOf("")
-    var addDialogIdNumber by mutableStateOf("")
-    var addDialogPaymentPin by mutableStateOf("")
-    var addDialogSshPrivateKey by mutableStateOf("")
-    var addDialogCryptoSeedPhrase by mutableStateOf("")
-    var addDialogRecoveryCodes by mutableStateOf("")
-    var addDialogWifiEncryption by mutableStateOf("WPA")
-    var addDialogWifiIsHidden by mutableStateOf(false)
-
-    // 详情与编辑状态
+    // 详情与编辑
     var detailItem by mutableStateOf<VaultEntry?>(null)
         private set
     var isEditingCategory by mutableStateOf(false)
@@ -89,6 +81,16 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var isEditingPassword by mutableStateOf(false)
     var editedUsername by mutableStateOf("")
     var editedPassword by mutableStateOf("")
+
+    // TOTP 编辑状态
+    var isEditingTotpConfig by mutableStateOf(false)
+    var editedTotpSecret by mutableStateOf("")
+    var editedTotpPeriod by mutableStateOf("")
+    var editedTotpDigits by mutableStateOf("")
+    var editedTotpAlgorithm by mutableStateOf("")
+
+    // 图标选择状态
+    var showIconPicker by mutableStateOf(false)
 
     // 删除与备份
     var itemToDelete by mutableStateOf<VaultEntry?>(null)
@@ -129,7 +131,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // --- 3. 核心业务方法 ---
+    // --- 方法 ---
     fun authorize() { isAuthorized = true; updateInteraction() }
     fun lock() { isAuthorized = false; cancelLockTimer() }
     fun startLockTimer() {
@@ -143,7 +145,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     // 搜索与过滤
     fun onSearchQueryChange(newQuery: String) { _searchQuery.value = newQuery }
     fun toggleSearch(active: Boolean) { isSearchActive = active; if (!active) _searchQuery.value = "" }
-    fun toggleFilterMenu(expanded: Boolean) { isFilterMenuExpanded = expanded }
     fun toggleMoreMenu(expanded: Boolean) { isMoreMenuExpanded = expanded }
     fun onCategorySelect(category: String?) { _selectedCategory.value = category; isFilterMenuExpanded = false }
     fun onTabSelect(tab: VaultTab) { _selectedTab.value = tab }
@@ -155,18 +156,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         addDialogTitle = ""; addDialogUsername = ""; addDialogPassword = ""
         addDialogCategory = ""; addDialogNotes = ""; addDialogTotpSecret = ""
         addDialogTotpPeriod = "30"; addDialogTotpDigits = "6"; addDialogTotpAlgorithm = "SHA1"
-        addDialogCardCvv = ""; addDialogCardExpiration = ""; addDialogIdNumber = ""
-        addDialogPaymentPin = ""; addDialogSshPrivateKey = ""; addDialogCryptoSeedPhrase = ""
-        addDialogRecoveryCodes = ""; addDialogWifiEncryption = "WPA"; addDialogWifiIsHidden = false
         addDialogPasswordVisible = false
+        addDialogIconName = null; addDialogIconPath = null; showIconPicker = false
     }
 
     fun addItem(entry: VaultEntry) {
-        viewModelScope.launch {
-            dao.insert(entry)
-            addType = AddType.NONE
-            resetAddDialogFields()
-        }
+        viewModelScope.launch { dao.insert(entry); addType = AddType.NONE; resetAddDialogFields() }
     }
 
     /**
@@ -190,67 +185,81 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         addItem(entry)
     }
 
-    // 详情与编辑
     fun showDetail(entry: VaultEntry) { 
         detailItem = entry
         isEditingCategory = false; isEditingUsername = false; isEditingPassword = false
-        editedCategory = entry.category 
+        isEditingTotpConfig = false; showIconPicker = false
     }
     fun dismissDetail() { detailItem = null }
-    
+
+    fun onIconSelected(name: String?, path: String? = null) {
+        detailItem?.let { item ->
+            updateVaultEntry(item.copy(iconName = name, iconCustomPath = path))
+        } ?: run {
+            addDialogIconName = name
+            addDialogIconPath = path
+            showIconPicker = false
+        }
+    }
+
+    fun updateVaultEntry(entry: VaultEntry) {
+        viewModelScope.launch {
+            dao.update(entry)
+            if (detailItem?.id == entry.id) detailItem = entry
+            showIconPicker = false
+        }
+    }
+
+    // TOTP 配置相关
+    fun startEditingTotp(secret: String) {
+        editedTotpSecret = secret
+        detailItem?.let {
+            editedTotpPeriod = it.totpPeriod.toString()
+            editedTotpDigits = it.totpDigits.toString()
+            editedTotpAlgorithm = it.totpAlgorithm
+        }
+        isEditingTotpConfig = true
+    }
+
+    fun saveTotpEdit(newEncryptedSecret: String) {
+        detailItem?.let { item ->
+            updateVaultEntry(item.copy(
+                totpSecret = newEncryptedSecret,
+                totpPeriod = editedTotpPeriod.toIntOrNull() ?: 30,
+                totpDigits = editedTotpDigits.toIntOrNull() ?: 6,
+                totpAlgorithm = editedTotpAlgorithm
+            ))
+            isEditingTotpConfig = false
+        }
+    }
+
+    fun detectSteam(text: String, isEditing: Boolean) {
+        if (text.contains("Steam", ignoreCase = true)) {
+            if (isEditing) {
+                editedTotpAlgorithm = "STEAM"; editedTotpDigits = "5"
+            } else {
+                addDialogTotpAlgorithm = "STEAM"; addDialogTotpDigits = "5"
+            }
+        }
+    }
+
     fun startEditingCategory() { isEditingCategory = true; editedCategory = detailItem?.category ?: "" }
     fun saveCategoryEdit() {
         val item = detailItem ?: return
         val newCategory = editedCategory.trim()
         if (newCategory.isNotEmpty() && newCategory != item.category) {
-            viewModelScope.launch { val updatedItem = item.copy(category = newCategory); dao.update(updatedItem); detailItem = updatedItem; isEditingCategory = false }
+            updateVaultEntry(item.copy(category = newCategory))
         } else isEditingCategory = false
     }
     fun startEditingUsername(u: String) { editedUsername = u; isEditingUsername = true }
     fun startEditingPassword(p: String) { editedPassword = p; isEditingPassword = true }
+    fun saveUsernameEdit(enc: String) { detailItem?.let { updateVaultEntry(it.copy(username = enc)); isEditingUsername = false } }
+    fun savePasswordEdit(enc: String) { detailItem?.let { updateVaultEntry(it.copy(password = enc)); isEditingPassword = false } }
 
-    fun saveUsernameEdit(newEncryptedUsername: String) {
-        val item = detailItem ?: return
-        viewModelScope.launch {
-            val updatedItem = item.copy(username = newEncryptedUsername)
-            dao.update(updatedItem)
-            detailItem = updatedItem
-            isEditingUsername = false
-        }
-    }
-
-    fun savePasswordEdit(newEncryptedPassword: String) {
-        val item = detailItem ?: return
-        viewModelScope.launch {
-            val updatedItem = item.copy(password = newEncryptedPassword)
-            dao.update(updatedItem)
-            detailItem = updatedItem
-            isEditingPassword = false
-        }
-    }
-
-    /**
-     * 统一更新入口：更新数据并重置所有编辑状态
-     */
-    fun updateVaultEntry(entry: VaultEntry) {
-        viewModelScope.launch {
-            dao.update(entry)
-            if (detailItem?.id == entry.id) detailItem = entry
-            isEditingCategory = false
-            isEditingUsername = false
-            isEditingPassword = false
-        }
-    }
-
-    // 删除逻辑
     fun requestDelete(entry: VaultEntry) { dismissDetail(); itemToDelete = entry }
     fun dismissDeleteDialog() { itemToDelete = null }
     fun confirmDelete() { itemToDelete?.let { viewModelScope.launch { dao.delete(it); itemToDelete = null } } }
 
-    // 备份处理
-    fun startExport(uri: Uri) { pendingUri = uri; isExporting = true; backupPassword = ""; showBackupPasswordDialog = true }
-    fun startImport(uri: Uri) { pendingUri = uri; isExporting = false; backupPassword = ""; importMode = BackupManager.ImportMode.OVERWRITE; showBackupPasswordDialog = true }
-    fun dismissBackupPasswordDialog() { showBackupPasswordDialog = false; pendingUri = null }
     fun processBackupAction(context: Context) {
         val uri = pendingUri ?: return
         val pwd = backupPassword.toCharArray()
@@ -259,12 +268,13 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             isBackupLoading = true
             val res = if (isExporting) BackupManager.exportBackup(context, uri, pwd) else BackupManager.importBackup(context, uri, pwd, importMode)
             isBackupLoading = false
-            backupMessage = if (res.isSuccess) (if (isExporting) "数据备份成功" else "导入成功") 
+            backupMessage = if (res.isSuccess) (if (isExporting) "数据备份成功" else "导入成功")
             else "${if (isExporting) "导出" else "导入"}失败: ${res.exceptionOrNull()?.message}"
             pendingUri = null
         }
     }
     fun clearBackupMessage() { backupMessage = null }
-
-    override fun onCleared() { super.onCleared(); cancelLockTimer() }
+    fun startExport(uri: Uri) { pendingUri = uri; isExporting = true; showBackupPasswordDialog = true }
+    fun startImport(uri: Uri) { pendingUri = uri; isExporting = false; showBackupPasswordDialog = true }
+    fun dismissBackupPasswordDialog() { showBackupPasswordDialog = false; pendingUri = null }
 }

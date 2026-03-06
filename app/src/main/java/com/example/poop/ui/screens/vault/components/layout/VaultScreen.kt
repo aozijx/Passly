@@ -40,12 +40,16 @@ import com.example.poop.ui.screens.vault.AddType
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.components.common.EmptyVaultPlaceholder
 import com.example.poop.ui.screens.vault.components.common.LoadingMask
+import com.example.poop.ui.screens.vault.components.common.VaultFab
 import com.example.poop.ui.screens.vault.components.common.VaultTopBar
-import com.example.poop.ui.screens.vault.components.dialog.AddTwoFADialog
-import com.example.poop.ui.screens.vault.components.dialog.AddVaultItemDialog
+import com.example.poop.ui.screens.vault.components.dialog.AddPasswordDialog
 import com.example.poop.ui.screens.vault.components.dialog.BackupPasswordDialog
-import com.example.poop.ui.screens.vault.components.dialog.DeleteConfirmationDialog
+import com.example.poop.ui.screens.vault.components.dialog.DeleteConfirmDialog
+import com.example.poop.ui.screens.vault.components.dialog.IconPickerDialog
+import com.example.poop.ui.screens.vault.components.dialog.PasswordDetailDialog
 import com.example.poop.ui.screens.vault.components.items.VaultItemSection
+import com.example.poop.ui.screens.vault.twoFA.AddTwoFADialog
+import com.example.poop.ui.screens.vault.twoFA.TwoFADetailDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,22 +107,42 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                 }
 
                 viewModel.detailItem?.let { item ->
+                    // 统一处理图标选择器
+                    if (viewModel.showIconPicker) {
+                        IconPickerDialog(
+                            onDismiss = { viewModel.showIconPicker = false },
+                            currentIconName = item.iconName,
+                            currentCustomPath = item.iconCustomPath,
+                            onIconSelected = { name -> viewModel.onIconSelected(name) },
+                            onCustomImageSelected = { uri -> viewModel.onIconSelected(null, uri.toString()) }
+                        )
+                    }
+
                     if (item.totpSecret != null) {
-                        TwoFADetailDialog(activity = activity, item = item, viewModel = viewModel)
+                        // 2FA 详情逻辑已下沉至组件内部，此处直接调用
+                        TwoFADetailDialog(
+                            activity = activity,
+                            item = item,
+                            viewModel = viewModel
+                        )
                     } else {
-                        VaultDetailDialog(activity = activity, item = item, viewModel = viewModel)
+                        PasswordDetailDialog(
+                            activity = activity,
+                            item = item,
+                            viewModel = viewModel
+                        )
                     }
                 }
 
                 viewModel.itemToDelete?.let { item ->
-                    DeleteConfirmationDialog(activity = activity, item = item, onConfirm = { viewModel.confirmDelete() }, onDismiss = { viewModel.dismissDeleteDialog() })
+                    DeleteConfirmDialog(activity = activity, item = item, onConfirm = { viewModel.confirmDelete() }, onDismiss = { viewModel.dismissDeleteDialog() })
                 }
                 if (viewModel.showBackupPasswordDialog) BackupPasswordDialog(activity = activity, viewModel = viewModel)
                 if (viewModel.isBackupLoading) LoadingMask(message = if (viewModel.isExporting) "正在导出备份..." else "正在导入恢复...")
             }
 
             when (viewModel.addType) {
-                AddType.PASSWORD -> AddVaultItemDialog(activity = activity, viewModel = viewModel)
+                AddType.PASSWORD -> AddPasswordDialog(activity = activity, viewModel = viewModel)
                 AddType.TOTP -> AddTwoFADialog(activity = activity, viewModel = viewModel)
                 else -> {}
             }

@@ -18,6 +18,7 @@ object VaultSecurityUtils {
         encryptedTexts: List<String>,
         title: String = "验证身份",
         subtitle: String = "请验证以继续",
+        onFailure: (() -> Unit)? = null,
         onSuccess: (List<String?>) -> Unit
     ) {
         if (encryptedTexts.isEmpty()) {
@@ -29,6 +30,7 @@ object VaultSecurityUtils {
             activity = activity,
             title = title,
             subtitle = subtitle,
+            onError = { _ -> onFailure?.invoke() },
             onSuccess = {
                 val results = encryptedTexts.map { text ->
                     try {
@@ -55,9 +57,10 @@ object VaultSecurityUtils {
         encryptedText: String,
         title: String = "验证身份",
         subtitle: String = "请验证以继续",
+        onFailure: (() -> Unit)? = null,
         onSuccess: (String?) -> Unit
     ) {
-        decryptMultiple(activity, listOf(encryptedText), title, subtitle) { results ->
+        decryptMultiple(activity, listOf(encryptedText), title, subtitle, onFailure) { results ->
             onSuccess(results.firstOrNull())
         }
     }

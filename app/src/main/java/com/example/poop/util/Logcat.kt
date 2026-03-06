@@ -3,6 +3,7 @@ package com.example.poop.util
 import android.util.Log
 import com.example.poop.AppContext
 import com.example.poop.BuildConfig
+import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
 import java.io.PrintWriter
@@ -13,25 +14,20 @@ import java.util.concurrent.Executors
 
 /**
  * 增强型日志工具类
- * 支持分级打印、详细时间戳、本地日志持久化，便于后续导出分析
+ * 修复了异步写入可能导致的数据丢失问题
  */
 object Logcat {
     private const val DEFAULT_TAG = "AppLog"
     private val isDebug = BuildConfig.DEBUG
     
-    // 使用单线程池处理文件写入，避免阻塞主线程且保证写入顺序
+    // 使用单线程池处理文件写入，保证顺序且不阻塞主线程
     private val logExecutor = Executors.newSingleThreadExecutor()
 
-    // 使用 Locale.US 确保日志格式在不同语言环境下保持一致，同时避免 Lint 警告
     private val fileDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val logTimeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
 
     enum class Level(val prefix: String) {
-        VERBOSE("V"),
-        DEBUG("D"),
-        INFO("I"),
-        WARN("W"),
-        ERROR("E")
+        VERBOSE("V"), DEBUG("D"), INFO("I"), WARN("W"), ERROR("E")
     }
 
     fun v(tag: String = DEFAULT_TAG, msg: String) = log(Level.VERBOSE, tag, msg)
@@ -41,7 +37,6 @@ object Logcat {
     fun e(tag: String = DEFAULT_TAG, msg: String, tr: Throwable? = null) = log(Level.ERROR, tag, msg, tr)
 
     private fun log(level: Level, tag: String, msg: String, tr: Throwable? = null) {
-        // 控制台打印
         if (isDebug || level.ordinal >= Level.INFO.ordinal) {
             when (level) {
                 Level.VERBOSE -> Log.v(tag, msg)
@@ -52,53 +47,63 @@ object Logcat {
             }
         }
 
-        // 只有 INFO 级别及以上才持久化到本地文件
         if (level.ordinal >= Level.INFO.ordinal) {
-            saveToFile(level, tag, msg, tr)
+            try {
+                AppContext.get()
+                saveToFile(level, tag, msg, tr)
+            } catch (e: Exception) {
+                Log.w(DEFAULT_TAG, "AppContext not ready, skipping file log: $msg")
+            }
         }
     }
 
-    /**
-     * 将日志信息保存到本地文件
-     */
     private fun saveToFile(level: Level, tag: String, msg: String, tr: Throwable?) {
         logExecutor.execute {
+            var writer: PrintWriter? = null
             try {
-                val logDir = AppContext.get().getExternalFilesDir("logs")
-                if (logDir?.exists() == false) logDir.mkdirs()
+                val context = AppContext.get()
+                val logDir = context.getExternalFilesDir("logs") ?: return@execute
+                if (!logDir.exists()) logDir.mkdirs()
 
                 val now = Date()
                 val fileName = "log_${fileDateFormatter.format(now)}.log"
                 val logFile = File(logDir, fileName)
                 val timestamp = logTimeFormatter.format(now)
 
-                FileWriter(logFile, true).use { fw ->
-                    PrintWriter(fw).use { pw ->
-                        // 格式: [时间] [级别] [标签] 消息
-                        pw.println("[$timestamp] [${level.prefix}] [$tag] $msg")
-                        tr?.let {
-                            pw.println("--- StackTrace ---")
-                            it.printStackTrace(pw)
-                            pw.println("------------------")
-                        }
-                    }
+                // 使用 BufferedWriter 提升性能，并显式设置 autoFlush = true
+                writer = PrintWriter(BufferedWriter(FileWriter(logFile, true)), true)
+                writer.println("[$timestamp] [${level.prefix}] [$tag] $msg")
+                tr?.let {
+                    writer.println("--- StackTrace ---")
+                    it.printStackTrace(writer)
+                    writer.println("------------------")
                 }
+                // 确保数据立即刷入磁盘
+                writer.flush()
             } catch (e: Exception) {
                 Log.e(DEFAULT_TAG, "Failed to write log to file", e)
+            } finally {
+                try { writer?.close() } catch (_: Exception) {}
             }
         }
     }
 
-    /**
-     * 获取日志目录，用于导出
-     */
     fun getLogFolder(): File? {
-        return AppContext.get().getExternalFilesDir("logs")
+        return try {
+            AppContext.get().getExternalFilesDir("logs")
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /**
-     * 清理过期日志（例如保留最近7天）
+     * 强行同步所有未写入的日志（用于崩溃处理或手动导出前）
      */
+    fun flushLogs() {
+        // 由于是单线程池，提交一个空任务并等待执行完毕即可实现类似 flush 的效果
+        logExecutor.submit { }.get()
+    }
+
     fun clearOldLogs(daysToKeep: Int = 7) {
         logExecutor.execute {
             try {

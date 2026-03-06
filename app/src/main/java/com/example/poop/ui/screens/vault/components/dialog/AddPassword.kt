@@ -24,7 +24,7 @@ import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.utils.VaultSecurityUtils
 
 @Composable
-fun AddVaultItemDialog(
+fun AddPasswordDialog(
     activity: FragmentActivity,
     viewModel: VaultViewModel
 ) {
@@ -75,14 +75,14 @@ fun AddVaultItemDialog(
         confirmButton = {
             Button(
                 onClick = { 
-                    if(viewModel.addDialogTitle.isNotBlank() && viewModel.addDialogCategory.isNotBlank()) {
+                    if(viewModel.addDialogTitle.isNotBlank()) {
                         // 普通密码项
                         VaultSecurityUtils.encryptMultiple(activity, listOf(viewModel.addDialogUsername, viewModel.addDialogPassword)) { results ->
                             viewModel.addItem(
                                 viewModel.addDialogTitle, 
                                 results[0], 
-                                results[1], 
-                                viewModel.addDialogCategory
+                                results[1],
+                                viewModel.addDialogCategory.ifBlank { "未分类" }
                             )
                         }
                     }
