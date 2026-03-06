@@ -47,6 +47,9 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var isFilterMenuExpanded by mutableStateOf(false)
     var isMoreMenuExpanded by mutableStateOf(false)
 
+    // TOTP 显示控制
+    var showTOTPCode by mutableStateOf(true)
+
     // 安全锁定
     private val lockTimeMs = 60000L
     private var lockJob: Job? = null

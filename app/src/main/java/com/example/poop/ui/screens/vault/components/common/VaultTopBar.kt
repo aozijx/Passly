@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -130,6 +132,20 @@ fun VaultTopBar(
                                     text = { Text("分类筛选") },
                                     onClick = { showCategorySubMenu = true },
                                     leadingIcon = { Icon(Icons.Default.FilterList, null) }
+                                )
+
+                                DropdownMenuItem(
+                                    text = { Text(if (viewModel.showTOTPCode) "隐藏验证码" else "显示验证码") },
+                                    onClick = {
+                                        viewModel.showTOTPCode = !viewModel.showTOTPCode
+                                        viewModel.toggleMoreMenu(false)
+                                    },
+                                    leadingIcon = { 
+                                        Icon(
+                                            if (viewModel.showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility, 
+                                            null
+                                        ) 
+                                    }
                                 )
 
                                 HorizontalDivider()

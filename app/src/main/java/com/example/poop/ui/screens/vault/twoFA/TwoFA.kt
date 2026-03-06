@@ -50,9 +50,11 @@ import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.components.common.CategoryItem
 import com.example.poop.ui.screens.vault.components.common.DetailActions
 import com.example.poop.ui.screens.vault.components.common.DetailHeader
+import com.example.poop.ui.screens.vault.utils.BiometricHelper
+import com.example.poop.ui.screens.vault.utils.CryptoManager
 import com.example.poop.ui.screens.vault.utils.TwoFAUtils
-import com.example.poop.ui.screens.vault.utils.VaultSecurityUtils
 import com.example.poop.util.ClipboardUtils
+import com.example.poop.util.Logcat
 import com.example.poop.util.QrCodeUtils
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
@@ -70,14 +72,18 @@ fun TwoFADetailDialog(
     var showQrDialog by remember { mutableStateOf(false) }
     var showAdvancedSettings by remember { mutableStateOf(false) }
 
-    // 1. 内部解密逻辑
+    // 1. 静默解密逻辑（移除生物识别拦截，直接尝试使用系统密钥库解密）
     LaunchedEffect(item.id, item.totpSecret) {
-        if (item.totpSecret == null) return@LaunchedEffect
-        VaultSecurityUtils.decryptSingle(
-            activity = activity,
-            encryptedText = item.totpSecret,
-            onFailure = { viewModel.dismissDetail() }
-        ) { decryptedSecret = it }
+        val encrypted = item.totpSecret ?: return@LaunchedEffect
+        try {
+            val iv = CryptoManager.getIvFromCipherText(encrypted)
+            val cipher = iv?.let { CryptoManager.getDecryptCipher(it) }
+            if (cipher != null) {
+                decryptedSecret = CryptoManager.decrypt(encrypted, cipher)
+            }
+        } catch (e: Exception) {
+            Logcat.e("TwoFADetail", "Silent decryption failed", e)
+        }
     }
 
     // 2. 验证码生成逻辑
@@ -100,16 +106,25 @@ fun TwoFADetailDialog(
         }
     }
 
-    // 只有解密成功后才显示 UI，避免闪烁或空显示
-    if (decryptedSecret == null) return
-
     AlertDialog(
         onDismissRequest = { viewModel.dismissDetail() },
         title = {
             DetailHeader(
                 item = item,
                 onIconClick = { viewModel.showIconPicker = true },
-                onMoreClick = { showAdvancedSettings = !showAdvancedSettings }
+                onMoreClick = {
+                    if (showAdvancedSettings) {
+                        showAdvancedSettings = false
+                    } else {
+                        // 仅在查看/编辑密钥（高级设置）时要求验证
+                        BiometricHelper.authenticate(
+                            activity = activity,
+                            title = "查看敏感信息",
+                            subtitle = "请验证身份以查看密钥详情",
+                            onSuccess = { showAdvancedSettings = true }
+                        )
+                    }
+                }
             )
         },
         text = {
@@ -163,9 +178,9 @@ fun TwoFADetailDialog(
                     }
                 }
 
-                if (showAdvancedSettings) {
+                if (showAdvancedSettings && decryptedSecret != null) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    AddTwoFASection(activity = activity, item = item, viewModel = viewModel, revealedSecret = decryptedSecret)
+                    AddTwoFASection(activity = activity, item = item, viewModel = viewModel, revealedSecret = decryptedSecret!!)
                 }
             }
         },
@@ -175,9 +190,13 @@ fun TwoFADetailDialog(
     )
 
     if (showQrDialog) {
-        val qrContent = remember(item, decryptedSecret) { constructOtpAuthUri(item, decryptedSecret!!) }
-        val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
-        QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })
+        val qrContent = remember(item, decryptedSecret) { 
+            if (decryptedSecret != null) constructOtpAuthUri(item, decryptedSecret!!) else "" 
+        }
+        if (qrContent.isNotEmpty()) {
+            val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
+            QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components.items
+package com.example.poop.ui.screens.vault.components.common
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,14 +18,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
-import com.example.poop.ui.screens.vault.components.common.VaultItemIcon
 
 /**
  * 保险库条目列表项：通用列表卡片
  * 点击后打开详情对话框 (VaultDetailDialog)
  */
 @Composable
-fun VaultItemSection(
+fun VaultItem(
     entry: VaultEntry,
     viewModel: VaultViewModel
 ) {
