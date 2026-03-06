@@ -1,11 +1,11 @@
 package com.example.poop.ui.screens.vault.utils
 
 import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import com.example.poop.util.Logcat
 import java.security.KeyStore
+import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -17,35 +17,41 @@ object CryptoManager {
     private const val PADDING = KeyProperties.ENCRYPTION_PADDING_NONE
     private const val TRANSFORMATION = "$ALGORITHM/$BLOCK_MODE/$PADDING"
 
-    // 使用新的别名以确保新的安全策略（Time-bound）生效。
-    // 注意：更改别名会导致旧别名加密的数据无法解密。
-    private const val KEY_ALIAS = "com.example.poop.vault_master_key_v2"
+    // 标准安全密钥（受 10s 验证限制）
+    private const val KEY_ALIAS_SECURE = "com.example.poop.vault_master_key_v2"
+    // 免验证密钥（用于 TOTP 自动刷新等静默场景）
+    private const val KEY_ALIAS_SILENT = "com.example.poop.vault_silent_key_v1"
 
     private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
-    private fun getKey(): SecretKey {
-        val existingKey = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
-        return existingKey?.secretKey ?: createKey()
+    private fun getKey(isSilent: Boolean): SecretKey {
+        val alias = if (isSilent) KEY_ALIAS_SILENT else KEY_ALIAS_SECURE
+        val existingKey = keyStore.getEntry(alias, null) as? KeyStore.SecretKeyEntry
+        return existingKey?.secretKey ?: createKey(isSilent)
     }
 
-    private fun createKey(): SecretKey {
+    private fun createKey(isSilent: Boolean): SecretKey {
+        val alias = if (isSilent) KEY_ALIAS_SILENT else KEY_ALIAS_SECURE
         val builder = KeyGenParameterSpec.Builder(
-            KEY_ALIAS,
+            alias,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
         )
             .setBlockModes(BLOCK_MODE)
             .setEncryptionPaddings(PADDING)
             .setKeySize(256)
-            .setUserAuthenticationRequired(true)
             .setInvalidatedByBiometricEnrollment(true)
 
-        // 关键修复：设置 10 秒的身份验证有效期 (Time-bound)。
-        // 这允许在一次生物识别验证后，10秒内执行多次加密/解密操作（如同时加解密用户名和密码）。
-        // 这样就不再受限于 "每个 Cipher 只能 doFinal 一次" 的限制。
-        builder.setUserAuthenticationParameters(
-            10,
-            KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
-        )
+        if (isSilent) {
+            // 静默密钥不要求生物识别验证，只要设备已解锁即可使用
+            builder.setUserAuthenticationRequired(false)
+        } else {
+            // 安全密钥要求 10 秒内有过生物识别验证
+            builder.setUserAuthenticationRequired(true)
+            builder.setUserAuthenticationParameters(
+                10,
+                KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
+            )
+        }
 
         return KeyGenerator.getInstance(ALGORITHM, "AndroidKeyStore").apply {
             init(builder.build())
@@ -54,31 +60,31 @@ object CryptoManager {
 
     /**
      * 获取加密 Cipher
-     * 内部捕获异常并返回 null，提高调用安全性
+     * @param isSilent 是否使用免验证密钥
      */
-    fun getEncryptCipher(): Cipher? {
+    fun getEncryptCipher(isSilent: Boolean = false): Cipher? {
         return try {
             val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.ENCRYPT_MODE, getKey())
+            cipher.init(Cipher.ENCRYPT_MODE, getKey(isSilent))
             cipher
         } catch (e: Exception) {
-            Logcat.e("CryptoManager", "getEncryptCipher failed", e)
+            Logcat.cryptoError("CryptoManager", "getEncryptCipher(silent=$isSilent)", e)
             null
         }
     }
 
     /**
      * 获取解密 Cipher
-     * 内部捕获异常并返回 null，提高调用安全性
+     * @param isSilent 是否使用免验证密钥
      */
-    fun getDecryptCipher(iv: ByteArray): Cipher? {
+    fun getDecryptCipher(iv: ByteArray, isSilent: Boolean = false): Cipher? {
         return try {
             val cipher = Cipher.getInstance(TRANSFORMATION)
             val spec = GCMParameterSpec(128, iv)
-            cipher.init(Cipher.DECRYPT_MODE, getKey(), spec)
+            cipher.init(Cipher.DECRYPT_MODE, getKey(isSilent), spec)
             cipher
         } catch (e: Exception) {
-            Logcat.e("CryptoManager", "getDecryptCipher failed", e)
+            Logcat.cryptoError("CryptoManager", "getDecryptCipher(silent=$isSilent)", e)
             null
         }
     }
@@ -95,11 +101,13 @@ object CryptoManager {
             if (combined.size <= 12) return null
             val encryptedBytes = combined.sliceArray(12 until combined.size)
             String(cipher.doFinal(encryptedBytes))
-        } catch (e: KeyPermanentlyInvalidatedException) {
-            Logcat.e("CryptoManager", "Key invalidated. Needs reset with PIN/Pattern.", e)
-            null
         } catch (e: Exception) {
-            Logcat.e("CryptoManager", "Decryption failed", e)
+            if (e is AEADBadTagException) {
+                // 如果是标签不匹配，说明密钥用错了，记录为 Warn 即可，不要记录为 Error 抛堆栈
+                Logcat.w("CryptoManager", "Decryption tag mismatch (Possible wrong key alias)")
+            } else {
+                Logcat.cryptoError("CryptoManager", "decrypt", e)
+            }
             null
         }
     }

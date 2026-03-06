@@ -46,10 +46,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.components.ScannerView
 import com.example.poop.ui.screens.profile.ImageType
 import com.example.poop.ui.screens.scanner.ScannerViewModel
 import com.example.poop.ui.screens.vault.VaultViewModel
+import com.example.poop.ui.screens.vault.utils.CryptoManager
 import com.example.poop.ui.screens.vault.utils.VaultSecurityUtils
 import com.example.poop.util.rememberImagePicker
 import java.net.URLDecoder
@@ -86,8 +88,6 @@ fun VaultScanner(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // 1. 修复：必须传递 scanResult 给 ScannerView，否则它不会显示结果卡片
-        // 2. 修复：设置 showResultCard = (scannedTotp == null)，即如果是 OTP 则不显示通用卡片，否则显示
         ScannerView(
             scanResult = scanResult,
             showResultCard = scannedTotp == null, 
@@ -175,23 +175,50 @@ fun VaultScanner(
                             
                             Button(
                                 onClick = {
-                                    VaultSecurityUtils.encryptMultiple(
-                                        activity = activity,
-                                        texts = listOf(totp.secret),
-                                        title = "保存令牌",
-                                        subtitle = "验证身份以保存 ${totp.issuer ?: totp.label}",
-                                        onSuccess = { encryptedResults: List<String> ->
-                                            vaultViewModel.addItem(
-                                                title = totp.issuer ?: totp.label.split(":").firstOrNull() ?: "2FA",
-                                                encryptedUser = totp.label,
-                                                encryptedPass = "",
-                                                category = "OTP",
-                                                totpSecret = encryptedResults[0]
-                                            )
-                                            Toast.makeText(context, "已成功保存到保险库", Toast.LENGTH_SHORT).show()
-                                            onDismiss()
-                                        }
-                                    )
+                                    val isSteam = (totp.issuer?.contains("Steam", ignoreCase = true) == true) || 
+                                                 (totp.label.contains("Steam", ignoreCase = true))
+                                    
+                                    // 使用免验证密钥加密，以便后续静默刷新
+                                    val cipher = CryptoManager.getEncryptCipher(isSilent = true)
+                                    if (cipher != null) {
+                                        val encryptedSecret = CryptoManager.encrypt(totp.secret, cipher)
+                                        val entry = VaultEntry(
+                                            title = totp.issuer ?: totp.label.split(":").firstOrNull() ?: "2FA",
+                                            username = totp.label,
+                                            password = "",
+                                            category = "OTP",
+                                            totpSecret = encryptedSecret,
+                                            totpDigits = if (isSteam) 5 else (totp.digits ?: 6),
+                                            totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm ?: "SHA1"),
+                                            entryType = 1
+                                        )
+                                        vaultViewModel.addItem(entry)
+                                        Toast.makeText(context, "已成功保存到保险库", Toast.LENGTH_SHORT).show()
+                                        onDismiss()
+                                    } else {
+                                        // 备选方案：如果免验证密钥不可用，则回退到带生物识别验证的加密（确保安全性）
+                                        VaultSecurityUtils.encryptMultiple(
+                                            activity = activity,
+                                            texts = listOf(totp.secret),
+                                            title = "保存令牌",
+                                            subtitle = "验证身份以保存 ${totp.issuer ?: totp.label}",
+                                            onSuccess = { encryptedResults ->
+                                                val entry = VaultEntry(
+                                                    title = totp.issuer ?: totp.label.split(":").firstOrNull() ?: "2FA",
+                                                    username = totp.label,
+                                                    password = "",
+                                                    category = "OTP",
+                                                    totpSecret = encryptedResults[0],
+                                                    totpDigits = if (isSteam) 5 else (totp.digits ?: 6),
+                                                    totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm ?: "SHA1"),
+                                                    entryType = 1
+                                                )
+                                                vaultViewModel.addItem(entry)
+                                                Toast.makeText(context, "已成功保存到保险库", Toast.LENGTH_SHORT).show()
+                                                onDismiss()
+                                            }
+                                        )
+                                    }
                                 },
                                 modifier = Modifier.weight(2f),
                                 shape = RoundedCornerShape(8.dp)
@@ -211,7 +238,9 @@ fun VaultScanner(
 private data class OtpAuthData(
     val label: String,
     val secret: String,
-    val issuer: String?
+    val issuer: String?,
+    val digits: Int? = null,
+    val algorithm: String? = null
 )
 
 private fun parseOtpAuthUri(uriString: String): OtpAuthData? {
@@ -222,7 +251,9 @@ private fun parseOtpAuthUri(uriString: String): OtpAuthData? {
         val label = URLDecoder.decode(uri.path?.trimStart('/') ?: "", "UTF-8")
         val secret = uri.getQueryParameter("secret") ?: return null
         val issuer = uri.getQueryParameter("issuer")
-        OtpAuthData(label, secret, issuer)
+        val digits = uri.getQueryParameter("digits")?.toIntOrNull()
+        val algorithm = uri.getQueryParameter("algorithm")?.uppercase()
+        OtpAuthData(label, secret, issuer, digits, algorithm)
     } catch (_: Exception) {
         null
     }

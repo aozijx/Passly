@@ -1,5 +1,6 @@
 package com.example.poop.util
 
+import android.security.keystore.UserNotAuthenticatedException
 import android.util.Log
 import com.example.poop.AppContext
 import com.example.poop.BuildConfig
@@ -35,6 +36,17 @@ object Logcat {
     fun i(tag: String = DEFAULT_TAG, msg: String) = log(Level.INFO, tag, msg)
     fun w(tag: String = DEFAULT_TAG, msg: String, tr: Throwable? = null) = log(Level.WARN, tag, msg, tr)
     fun e(tag: String = DEFAULT_TAG, msg: String, tr: Throwable? = null) = log(Level.ERROR, tag, msg, tr)
+
+    /**
+     * 专门处理 Crypto 相关异常，避免堆栈污染日志文件
+     */
+    fun cryptoError(tag: String, action: String, e: Exception) {
+        if (e is UserNotAuthenticatedException) {
+            w(tag, "$action: User not authenticated (Key is locked)")
+        } else {
+            e(tag, "$action failed", e)
+        }
+    }
 
     private fun log(level: Level, tag: String, msg: String, tr: Throwable? = null) {
         if (isDebug || level.ordinal >= Level.INFO.ordinal) {

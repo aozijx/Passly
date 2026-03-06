@@ -30,8 +30,9 @@ import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
-import com.example.poop.ui.screens.vault.utils.VaultSecurityUtils
+import com.example.poop.ui.screens.vault.utils.CryptoManager
 import com.example.poop.util.ClipboardUtils
+import com.example.poop.util.Logcat
 import java.net.URLDecoder
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,7 +66,7 @@ fun AddTwoFADialog(
             val checkText = issuer ?: label
             viewModel.detectSteam(checkText, false)
 
-            // 如果不是 Steam，则应用解析出的算法和位数
+            // 如果不是 Steam，则应用解析出的算法 and 位数
             if (viewModel.addDialogTotpAlgorithm != "STEAM") {
                 val algorithm = rawAlgorithm?.takeIf { algorithms.contains(it) } ?: "SHA1"
                 viewModel.addDialogTotpAlgorithm = algorithm
@@ -75,22 +76,9 @@ fun AddTwoFADialog(
 
             Toast.makeText(context, "已解析 URI", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
+            Logcat.e("AddTwoFA", "URI 解析失败", e)
             Toast.makeText(context, "URI 解析失败", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    val tempEntry = remember(viewModel.addDialogTitle, viewModel.addDialogCategory, viewModel.addDialogTotpAlgorithm, viewModel.addDialogTotpDigits) {
-        VaultEntry(
-            title = viewModel.addDialogTitle.ifBlank { "新增 2FA 令牌" },
-            username = viewModel.addDialogUsername,
-            password = "",
-            category = viewModel.addDialogCategory,
-            totpSecret = viewModel.addDialogTotpSecret,
-            totpDigits = viewModel.addDialogTotpDigits.toIntOrNull() ?: 6,
-            totpPeriod = viewModel.addDialogTotpPeriod.toIntOrNull() ?: 30,
-            totpAlgorithm = viewModel.addDialogTotpAlgorithm,
-            entryType = 1
-        )
     }
 
     AlertDialog(
@@ -98,10 +86,6 @@ fun AddTwoFADialog(
         title = { Text("新增 2FA 令牌", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (tempEntry.iconCustomPath.isNullOrEmpty()) {
-                    Text(tempEntry.title, modifier = Modifier.padding(bottom = 8.dp))
-                }
-
                 OutlinedTextField(
                     value = viewModel.addDialogTitle,
                     onValueChange = {
@@ -134,16 +118,29 @@ fun AddTwoFADialog(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     AddTwoFASection(
                         activity = activity,
-                        item = tempEntry,
+                        item = VaultEntry(
+                            title = viewModel.addDialogTitle,
+                            username = viewModel.addDialogUsername,
+                            password = "",
+                            category = viewModel.addDialogCategory,
+                            totpSecret = viewModel.addDialogTotpSecret,
+                            totpDigits = viewModel.addDialogTotpDigits.toIntOrNull() ?: 6,
+                            totpPeriod = viewModel.addDialogTotpPeriod.toIntOrNull() ?: 30,
+                            totpAlgorithm = viewModel.addDialogTotpAlgorithm,
+                            entryType = 1
+                        ),
                         viewModel = viewModel,
                         revealedSecret = viewModel.addDialogTotpSecret
                     )
+                } else {
+                    TextButton(onClick = { showAdvanced = true }) {
+                        Text("高级配置")
+                    }
                 }
             }
         },
         confirmButton = {
             Button(onClick = {
-                // 如果在高级模式下编辑过，从 viewModel.edited... 中获取值
                 val finalSecret = if (showAdvanced) viewModel.editedTotpSecret else viewModel.addDialogTotpSecret
                 val finalAlgorithm = if (showAdvanced) viewModel.editedTotpAlgorithm else viewModel.addDialogTotpAlgorithm
                 val finalDigits = if (showAdvanced) viewModel.editedTotpDigits else viewModel.addDialogTotpDigits
@@ -154,16 +151,16 @@ fun AddTwoFADialog(
                     return@Button
                 }
 
-                VaultSecurityUtils.encryptMultiple(
-                    activity,
-                    listOf(finalSecret.trim())
-                ) { results ->
+                // 使用免验证密钥加密 TOTP 密钥，以便静默刷新
+                val cipher = CryptoManager.getEncryptCipher(isSilent = true)
+                if (cipher != null) {
+                    val encryptedSecret = CryptoManager.encrypt(finalSecret.trim(), cipher)
                     val entry = VaultEntry(
                         title = viewModel.addDialogTitle,
                         username = viewModel.addDialogUsername,
                         password = "",
                         category = viewModel.addDialogCategory,
-                        totpSecret = results[0],
+                        totpSecret = encryptedSecret,
                         totpDigits = finalDigits.toIntOrNull() ?: 6,
                         totpPeriod = finalPeriod.toIntOrNull() ?: 30,
                         totpAlgorithm = finalAlgorithm,
@@ -171,6 +168,8 @@ fun AddTwoFADialog(
                     )
                     viewModel.addItem(entry)
                     viewModel.dismissAddDialog()
+                } else {
+                    Toast.makeText(context, "加密失败，请重试", Toast.LENGTH_SHORT).show()
                 }
             }) {
                 Text("保存")

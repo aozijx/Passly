@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.AlertDialog
@@ -30,9 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,12 +51,8 @@ import com.example.poop.ui.screens.vault.components.common.CategoryItem
 import com.example.poop.ui.screens.vault.components.common.DetailActions
 import com.example.poop.ui.screens.vault.components.common.DetailHeader
 import com.example.poop.ui.screens.vault.utils.BiometricHelper
-import com.example.poop.ui.screens.vault.utils.CryptoManager
-import com.example.poop.ui.screens.vault.utils.TwoFAUtils
 import com.example.poop.util.ClipboardUtils
-import com.example.poop.util.Logcat
 import com.example.poop.util.QrCodeUtils
-import kotlinx.coroutines.delay
 import java.net.URLEncoder
 
 @Composable
@@ -66,45 +62,11 @@ fun TwoFADetailDialog(
     viewModel: VaultViewModel
 ) {
     val context = LocalContext.current
-    var decryptedSecret by remember { mutableStateOf<String?>(null) }
-    var totpCode by remember { mutableStateOf("") }
-    var progress by remember { mutableFloatStateOf(1f) }
-    var showQrDialog by remember { mutableStateOf(false) }
-    var showAdvancedSettings by remember { mutableStateOf(false) }
-
-    // 1. 静默解密逻辑（移除生物识别拦截，直接尝试使用系统密钥库解密）
-    LaunchedEffect(item.id, item.totpSecret) {
-        val encrypted = item.totpSecret ?: return@LaunchedEffect
-        try {
-            val iv = CryptoManager.getIvFromCipherText(encrypted)
-            val cipher = iv?.let { CryptoManager.getDecryptCipher(it) }
-            if (cipher != null) {
-                decryptedSecret = CryptoManager.decrypt(encrypted, cipher)
-            }
-        } catch (e: Exception) {
-            Logcat.e("TwoFADetail", "Silent decryption failed", e)
-        }
-    }
-
-    // 2. 验证码生成逻辑
+    
+    // 使用提取出来的统一状态逻辑 (详情页开启自动迁移逻辑)
+    val totpState = rememberTotpState(entry = item, viewModel = viewModel, autoMigrate = true)
     val isSteam = remember(item.totpAlgorithm) { item.totpAlgorithm.uppercase() == "STEAM" }
-    LaunchedEffect(decryptedSecret, item.totpAlgorithm, item.totpDigits, item.totpPeriod) {
-        val secret = decryptedSecret ?: return@LaunchedEffect
-        while (true) {
-            val period = item.totpPeriod.coerceAtLeast(1)
-            val currentTime = System.currentTimeMillis() / 1000
-            val remaining = period - (currentTime % period)
-            progress = remaining.toFloat() / period
-
-            totpCode = TwoFAUtils.generateTotp(
-                secret = secret,
-                digits = if (isSteam) 5 else item.totpDigits,
-                period = item.totpPeriod,
-                algorithm = item.totpAlgorithm
-            )
-            delay(500)
-        }
-    }
+    var showQrDialog by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = { viewModel.dismissDetail() },
@@ -113,22 +75,24 @@ fun TwoFADetailDialog(
                 item = item,
                 onIconClick = { viewModel.showIconPicker = true },
                 onMoreClick = {
-                    if (showAdvancedSettings) {
-                        showAdvancedSettings = false
+                    if (viewModel.isEditingTotpConfig) {
+                        viewModel.isEditingTotpConfig = false
                     } else {
-                        // 仅在查看/编辑密钥（高级设置）时要求验证
                         BiometricHelper.authenticate(
                             activity = activity,
                             title = "查看敏感信息",
                             subtitle = "请验证身份以查看密钥详情",
-                            onSuccess = { showAdvancedSettings = true }
+                            onSuccess = { viewModel.startEditingTotp(totpState.decryptedSecret ?: "") }
                         )
                     }
                 }
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 CategoryItem(viewModel = viewModel, entry = item)
 
@@ -138,15 +102,30 @@ fun TwoFADetailDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("动态验证码", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
-                    IconButton(onClick = { showQrDialog = true }, modifier = Modifier.size(24.dp)) {
+                    IconButton(
+                        onClick = {
+                            BiometricHelper.authenticate(
+                                activity = activity,
+                                title = "查看二维码",
+                                subtitle = "请验证身份以导出二维码",
+                                onSuccess = {
+                                    viewModel.isEditingTotpConfig = false
+                                    showQrDialog = true
+                                } 
+                            )
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
                         Icon(Icons.Default.QrCode, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     }
                 }
 
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable {
-                        ClipboardUtils.copy(context, totpCode)
-                        Toast.makeText(context, "验证码已复制", Toast.LENGTH_SHORT).show()
+                        if (totpState.code.isNotEmpty() && !totpState.code.contains("-")) {
+                            ClipboardUtils.copy(context, totpState.code)
+                            Toast.makeText(context, "验证码已复制", Toast.LENGTH_SHORT).show()
+                        }
                     },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
                     shape = RoundedCornerShape(12.dp),
@@ -158,29 +137,29 @@ fun TwoFADetailDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = if (isSteam) totpCode else totpCode.chunked(3).joinToString(" "),
+                            text = if (totpState.decryptedSecret == null) "验证以显示" else (if (isSteam) totpState.code else totpState.code.chunked(3).joinToString(" ")),
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = if (isSteam) 4.sp else 2.sp,
                                 fontFamily = FontFamily.Monospace
                             ),
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if (totpState.decryptedSecret == null) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(24.dp))
                         CircularProgressIndicator(
-                            progress = { progress },
+                            progress = { if (totpState.decryptedSecret == null) 0f else totpState.progress },
                             modifier = Modifier.size(28.dp),
                             strokeWidth = 4.dp,
-                            color = if (progress < 0.2f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            color = if (totpState.progress < 0.2f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                         )
                     }
                 }
 
-                if (showAdvancedSettings && decryptedSecret != null) {
+                if (viewModel.isEditingTotpConfig && totpState.decryptedSecret != null) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    AddTwoFASection(activity = activity, item = item, viewModel = viewModel, revealedSecret = decryptedSecret!!)
+                    AddTwoFASection(activity = activity, item = item, viewModel = viewModel, revealedSecret = totpState.decryptedSecret)
                 }
             }
         },
@@ -190,37 +169,65 @@ fun TwoFADetailDialog(
     )
 
     if (showQrDialog) {
-        val qrContent = remember(item, decryptedSecret) { 
-            if (decryptedSecret != null) constructOtpAuthUri(item, decryptedSecret!!) else "" 
+        val qrContent = remember(item, totpState.decryptedSecret) { 
+            if (totpState.decryptedSecret != null) constructOtpAuthUri(item,
+                totpState.decryptedSecret
+            ) else ""
         }
         if (qrContent.isNotEmpty()) {
             val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
-            QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })
+            QrExportDialog(item = item, bitmap = qrBitmap, onDismiss = { showQrDialog = false })
         }
     }
 }
 
 @Composable
-private fun QrExportDialog(bitmap: Bitmap?, onDismiss: () -> Unit) {
+private fun QrExportDialog(item: VaultEntry, bitmap: Bitmap?, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("导出二维码") },
         text = {
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), 
+                horizontalAlignment = Alignment.CenterHorizontally, 
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Text("使用其他验证器应用扫描此二维码即可迁移此令牌。", style = MaterialTheme.typography.bodyMedium)
+                
                 if (bitmap != null) {
-                    Card(modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f), shape = RoundedCornerShape(12.dp)) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Image(bitmap = bitmap.asImageBitmap(), contentDescription = "QR Code", modifier = Modifier.padding(16.dp).fillMaxSize())
+                    Card(
+                        modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f), 
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
+                            Image(bitmap = bitmap.asImageBitmap(), contentDescription = "QR Code", modifier = Modifier.fillMaxSize())
                         }
                     }
                 } else {
                     CircularProgressIndicator()
                 }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    ExportInfoItem(label = "位数", value = item.totpDigits.toString())
+                    ExportInfoItem(label = "周期", value = "${item.totpPeriod}s")
+                    ExportInfoItem(label = "算法", value = item.totpAlgorithm)
+                }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("关闭") } }
     )
+}
+
+@Composable
+private fun ExportInfoItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+    }
 }
 
 private fun constructOtpAuthUri(item: VaultEntry, secret: String): String {
