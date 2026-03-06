@@ -74,7 +74,9 @@ fun AddTwoFADialog(
             }
             viewModel.addDialogTotpPeriod = period.toString()
 
-            Toast.makeText(context, "已解析 URI", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "已解析 URI 并自动清理剪贴板", Toast.LENGTH_SHORT).show()
+            // 解析成功后立即清除剪贴板，保护敏感 URI
+            ClipboardUtils.clear(context)
         } catch (e: Exception) {
             Logcat.e("AddTwoFA", "URI 解析失败", e)
             Toast.makeText(context, "URI 解析失败", Toast.LENGTH_SHORT).show()

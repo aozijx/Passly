@@ -1,5 +1,9 @@
 <resources>
     <string name="app_name">poop</string>
+    <string name="title_login">登录</string>
+    <string name="title_vault">保险库</string>
+    <string name="title_scanner">扫一扫</string>
+
     <string name="autofill_service_name">Poop 自动填充</string>
     <string name="AutoFill_icon">icon</string>
     <string name="autofill_auth_title">安全验证</string>

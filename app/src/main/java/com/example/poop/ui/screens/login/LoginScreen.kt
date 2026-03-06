@@ -29,6 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -78,17 +81,24 @@ fun LoginScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // 用户名字段 - 使用新版 ContentType API
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
                 label = { Text("用户名/邮箱") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        contentType = ContentType.Username
+                    },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // 密码字段 - 使用新版 ContentType API
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -96,14 +106,21 @@ fun LoginScreen(onBack: () -> Unit) {
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        contentType = ContentType.Password
+                    },
                 singleLine = true
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { /* TODO: 执行登录逻辑 */ },
+                onClick = { 
+                    // 模拟登录成功逻辑
+                    onBack() 
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),

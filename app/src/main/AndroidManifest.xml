@@ -43,17 +43,19 @@
 
         <activity
             android:name=".ui.screens.login.LoginActivity"
+            android:label="@string/title_login"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ui.screens.vault.VaultActivity"
-            android:exported="true" />
+            android:exported="true"
+            android:label="@string/title_vault"/>
 
         <!-- 注册独立的扫描 Activity -->
         <activity
             android:name=".ui.screens.scanner.ScannerActivity"
             android:exported="true"
-            android:label="扫一扫" />
+            android:label="@string/title_scanner" />
 
         <!-- 自动填充的透明验证界面：引用自定义的透明主题 -->
         <activity
@@ -88,7 +90,7 @@
 
         <!-- 自动填充服务：确保指向 autofill 子包 -->
         <service
-            android:name="android.service.autofill.AutofillService"
+            android:name=".service.autofill.AutofillService"
             android:exported="true"
             android:label="@string/autofill_service_name"
             android:permission="android.permission.BIND_AUTOFILL_SERVICE">

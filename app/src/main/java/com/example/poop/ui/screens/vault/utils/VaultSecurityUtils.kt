@@ -6,7 +6,6 @@ import org.json.JSONArray
 
 /**
  * 保险箱安全验证工具类
- * 集中处理涉及生物识别的加解密及复杂字段序列化逻辑
  */
 object VaultSecurityUtils {
 
@@ -35,7 +34,7 @@ object VaultSecurityUtils {
                 val results = encryptedTexts.map { text ->
                     try {
                         val iv = CryptoManager.getIvFromCipherText(text)
-                        val cipher = iv?.let { CryptoManager.getDecryptCipher(it) }
+                        val cipher = iv?.let { CryptoManager.getDecryptCipher(it, isSilent = false) }
                         if (cipher != null) {
                             CryptoManager.decrypt(text, cipher)
                         } else null
@@ -49,9 +48,6 @@ object VaultSecurityUtils {
         )
     }
 
-    /**
-     * 单个解密（需身份验证）
-     */
     fun decryptSingle(
         activity: FragmentActivity,
         encryptedText: String,
@@ -65,9 +61,6 @@ object VaultSecurityUtils {
         }
     }
 
-    /**
-     * 批量加密（需身份验证）
-     */
     fun encryptMultiple(
         activity: FragmentActivity,
         texts: List<String>,
@@ -81,36 +74,20 @@ object VaultSecurityUtils {
             subtitle = subtitle,
             onSuccess = {
                 val results = texts.map { text ->
-                    try {
-                        val cipher = CryptoManager.getEncryptCipher()
-                        if (cipher != null) {
-                            CryptoManager.encrypt(text, cipher)
-                        } else ""
-                    } catch (e: Exception) {
-                        Logcat.e("VaultSecurity", "Encryption failed", e)
-                        ""
-                    }
+                    CryptoManager.encrypt(text, isSilent = false) ?: ""
                 }
                 onSuccess(results)
             }
         )
     }
 
-    /**
-     * 将恢复码文本（换行分隔）序列化为 JSON 数组字符串
-     */
     fun serializeRecoveryCodes(rawText: String): String {
-        val codes = rawText.split("\n")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        val codes = rawText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
         val jsonArray = JSONArray()
         codes.forEach { jsonArray.put(it) }
         return jsonArray.toString()
     }
 
-    /**
-     * 将 JSON 数组字符串反序列化为恢复码列表
-     */
     fun deserializeRecoveryCodes(json: String?): List<String> {
         if (json.isNullOrEmpty()) return emptyList()
         return try {

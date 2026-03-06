@@ -39,7 +39,7 @@ object ClipboardUtils {
         val clearRunnable = Runnable {
             try {
                 if (clipboard.hasPrimaryClip() && clipboard.primaryClipDescription?.label == CLIP_LABEL) {
-                    clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+                    clear(context)
                 }
             } catch (e: Exception) {
                 Logcat.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
@@ -48,6 +48,18 @@ object ClipboardUtils {
 
         lastClearRunnable = clearRunnable
         handler.postDelayed(clearRunnable, CLEAR_DELAY_MS)
+    }
+
+    /**
+     * 清除剪贴板内容
+     */
+    fun clear(context: Context) {
+        try {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.clearPrimaryClip()
+        } catch (e: Exception) {
+            Logcat.e("ClipboardUtils", "Clear clipboard failed", e)
+        }
     }
 
     /**

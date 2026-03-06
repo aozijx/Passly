@@ -17,9 +17,7 @@ object CryptoManager {
     private const val PADDING = KeyProperties.ENCRYPTION_PADDING_NONE
     private const val TRANSFORMATION = "$ALGORITHM/$BLOCK_MODE/$PADDING"
 
-    // 标准安全密钥（受 10s 验证限制）
     private const val KEY_ALIAS_SECURE = "com.example.poop.vault_master_key_v2"
-    // 免验证密钥（用于 TOTP 自动刷新等静默场景）
     private const val KEY_ALIAS_SILENT = "com.example.poop.vault_silent_key_v1"
 
     private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -42,10 +40,8 @@ object CryptoManager {
             .setInvalidatedByBiometricEnrollment(true)
 
         if (isSilent) {
-            // 静默密钥不要求生物识别验证，只要设备已解锁即可使用
             builder.setUserAuthenticationRequired(false)
         } else {
-            // 安全密钥要求 10 秒内有过生物识别验证
             builder.setUserAuthenticationRequired(true)
             builder.setUserAuthenticationParameters(
                 10,
@@ -59,8 +55,8 @@ object CryptoManager {
     }
 
     /**
-     * 获取加密 Cipher
-     * @param isSilent 是否使用免验证密钥
+     * 获取加密 Cipher (兼容旧版调用)
+     * 每次调用都会返回一个新的、已初始化的 Cipher 实例，避免 IV 重用错误
      */
     fun getEncryptCipher(isSilent: Boolean = false): Cipher? {
         return try {
@@ -74,8 +70,7 @@ object CryptoManager {
     }
 
     /**
-     * 获取解密 Cipher
-     * @param isSilent 是否使用免验证密钥
+     * 获取解密 Cipher (IV 是必须的)
      */
     fun getDecryptCipher(iv: ByteArray, isSilent: Boolean = false): Cipher? {
         return try {
@@ -84,17 +79,38 @@ object CryptoManager {
             cipher.init(Cipher.DECRYPT_MODE, getKey(isSilent), spec)
             cipher
         } catch (e: Exception) {
-            Logcat.cryptoError("CryptoManager", "getDecryptCipher(silent=$isSilent)", e)
+            Logcat.cryptoError("CryptoManager", "getDecryptCipher", e)
             null
         }
     }
 
+    /**
+     * 加密方法重载 1：使用外部提供的 Cipher (兼容旧版)
+     * 注意：传入的 cipher 只能执行一次此方法
+     */
     fun encrypt(text: String, cipher: Cipher): String {
         val encryptedBytes = cipher.doFinal(text.toByteArray())
+        // 将 IV (12字节) 和密文拼接
         val combined = (cipher.iv ?: ByteArray(12)) + encryptedBytes
         return Base64.encodeToString(combined, Base64.NO_WRAP)
     }
 
+    /**
+     * 加密方法重载 2：快捷单次加密 (自动处理 Cipher 生命周期)
+     */
+    fun encrypt(text: String, isSilent: Boolean = false): String? {
+        val cipher = getEncryptCipher(isSilent) ?: return null
+        return try {
+            encrypt(text, cipher)
+        } catch (e: Exception) {
+            Logcat.cryptoError("CryptoManager", "quick encrypt", e)
+            null
+        }
+    }
+
+    /**
+     * 解密方法
+     */
     fun decrypt(encryptedText: String, cipher: Cipher): String? {
         return try {
             val combined = Base64.decode(encryptedText, Base64.NO_WRAP)
@@ -103,8 +119,7 @@ object CryptoManager {
             String(cipher.doFinal(encryptedBytes))
         } catch (e: Exception) {
             if (e is AEADBadTagException) {
-                // 如果是标签不匹配，说明密钥用错了，记录为 Warn 即可，不要记录为 Error 抛堆栈
-                Logcat.w("CryptoManager", "Decryption tag mismatch (Possible wrong key alias)")
+                Logcat.w("CryptoManager", "Decryption tag mismatch")
             } else {
                 Logcat.cryptoError("CryptoManager", "decrypt", e)
             }

@@ -102,7 +102,6 @@ object VaultIcons {
         "代码" to Icons.Default.Terminal,
         "网页" to Icons.Default.Language,
         "WiFi" to Icons.Default.Wifi,
-        "默认" to Icons.Default.Key,
         "锁定" to Icons.Default.Lock,
         "防护" to Icons.Default.Shield,
         "应用" to Icons.Default.Apps,

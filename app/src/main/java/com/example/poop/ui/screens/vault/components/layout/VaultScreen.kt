@@ -38,6 +38,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.ui.screens.vault.AddType
 import com.example.poop.ui.screens.vault.VaultViewModel
+import com.example.poop.ui.screens.vault.autofill.AutoFillDetailDialog
 import com.example.poop.ui.screens.vault.components.common.EmptyVaultPlaceholder
 import com.example.poop.ui.screens.vault.components.common.LoadingMask
 import com.example.poop.ui.screens.vault.components.common.VaultFab
@@ -48,6 +49,7 @@ import com.example.poop.ui.screens.vault.components.dialog.BackupPasswordDialog
 import com.example.poop.ui.screens.vault.components.dialog.DeleteConfirmDialog
 import com.example.poop.ui.screens.vault.components.dialog.IconPickerDialog
 import com.example.poop.ui.screens.vault.components.dialog.PasswordDetailDialog
+import com.example.poop.ui.screens.vault.components.items.AutoFillItem
 import com.example.poop.ui.screens.vault.components.items.TwoFAItem
 import com.example.poop.ui.screens.vault.twoFA.AddTwoFADialog
 import com.example.poop.ui.screens.vault.twoFA.TwoFADetailDialog
@@ -103,10 +105,16 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(items, key = { it.id }) { item -> 
-                            if (item.totpSecret != null) {
-                                TwoFAItem(entry = item, viewModel = viewModel, showCode = viewModel.showTOTPCode)
-                            } else {
-                                VaultItem(entry = item, viewModel = viewModel)
+                            when {
+                                item.totpSecret != null -> {
+                                    TwoFAItem(entry = item, viewModel = viewModel, showCode = viewModel.showTOTPCode)
+                                }
+                                item.category == "自动抓取" || item.associatedDomain != null || item.associatedAppPackage != null -> {
+                                    AutoFillItem(entry = item, viewModel = viewModel)
+                                }
+                                else -> {
+                                    VaultItem(entry = item, viewModel = viewModel)
+                                }
                             }
                         }
                         item { Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp)) }
@@ -125,19 +133,28 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                         )
                     }
 
-                    if (item.totpSecret != null) {
-                        // 2FA 详情逻辑已下沉至组件内部，此处直接调用
-                        TwoFADetailDialog(
-                            activity = activity,
-                            item = item,
-                            viewModel = viewModel
-                        )
-                    } else {
-                        PasswordDetailDialog(
-                            activity = activity,
-                            item = item,
-                            viewModel = viewModel
-                        )
+                    when {
+                        item.totpSecret != null -> {
+                            TwoFADetailDialog(
+                                activity = activity,
+                                item = item,
+                                viewModel = viewModel
+                            )
+                        }
+                        item.category == "自动抓取" || item.associatedDomain != null || item.associatedAppPackage != null -> {
+                            AutoFillDetailDialog(
+                                activity = activity,
+                                item = item,
+                                viewModel = viewModel
+                            )
+                        }
+                        else -> {
+                            PasswordDetailDialog(
+                                activity = activity,
+                                item = item,
+                                viewModel = viewModel
+                            )
+                        }
                     }
                 }
 

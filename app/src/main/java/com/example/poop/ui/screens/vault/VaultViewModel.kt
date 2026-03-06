@@ -85,6 +85,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var editedUsername by mutableStateOf("")
     var editedPassword by mutableStateOf("")
 
+    // 新增：域名和包名编辑状态
+    var isEditingDomain by mutableStateOf(false)
+    var editedDomain by mutableStateOf("")
+    var isEditingPackage by mutableStateOf(false)
+    var editedPackage by mutableStateOf("")
+
     // TOTP 编辑状态
     var isEditingTotpConfig by mutableStateOf(false)
     var editedTotpSecret by mutableStateOf("")
@@ -191,6 +197,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun showDetail(entry: VaultEntry) { 
         detailItem = entry
         isEditingCategory = false; isEditingUsername = false; isEditingPassword = false
+        isEditingDomain = false; isEditingPackage = false
         isEditingTotpConfig = false; showIconPicker = false
     }
     fun dismissDetail() { detailItem = null }
@@ -258,6 +265,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun startEditingPassword(p: String) { editedPassword = p; isEditingPassword = true }
     fun saveUsernameEdit(enc: String) { detailItem?.let { updateVaultEntry(it.copy(username = enc)); isEditingUsername = false } }
     fun savePasswordEdit(enc: String) { detailItem?.let { updateVaultEntry(it.copy(password = enc)); isEditingPassword = false } }
+
+    // 新增：域名和包名编辑保存方法
+    fun startEditingDomain(d: String) { editedDomain = d; isEditingDomain = true }
+    fun saveDomainEdit(newDomain: String) { detailItem?.let { updateVaultEntry(it.copy(associatedDomain = newDomain)); isEditingDomain = false } }
+    fun startEditingPackage(p: String) { editedPackage = p; isEditingPackage = true }
+    fun savePackageEdit(newPackage: String) { detailItem?.let { updateVaultEntry(it.copy(associatedAppPackage = newPackage)); isEditingPackage = false } }
 
     fun requestDelete(entry: VaultEntry) { dismissDetail(); itemToDelete = entry }
     fun dismissDeleteDialog() { itemToDelete = null }

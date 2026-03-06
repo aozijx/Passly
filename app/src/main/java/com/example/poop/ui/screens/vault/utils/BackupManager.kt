@@ -155,9 +155,24 @@ object BackupManager {
 
     private fun decryptField(encryptedText: String): String {
         if (encryptedText.isEmpty()) return ""
+        // 尝试两种 Key (静默和正式)
         val iv = CryptoManager.getIvFromCipherText(encryptedText) ?: return ""
-        val cipher = CryptoManager.getDecryptCipher(iv) ?: return ""
-        return CryptoManager.decrypt(encryptedText, cipher) ?: ""
+        
+        // 1. 尝试静默解密
+        val silentCipher = CryptoManager.getDecryptCipher(iv, isSilent = true)
+        if (silentCipher != null) {
+            val decrypted = CryptoManager.decrypt(encryptedText, silentCipher)
+            if (decrypted != null) return decrypted
+        }
+
+        // 2. 尝试正式解密 (需要注意：导出时如果需要指纹授权，这里可能会失败，需确保导出环境已授权)
+        val secureCipher = CryptoManager.getDecryptCipher(iv, isSilent = false)
+        if (secureCipher != null) {
+            val decrypted = CryptoManager.decrypt(encryptedText, secureCipher)
+            if (decrypted != null) return decrypted
+        }
+
+        return ""
     }
 
     /**
@@ -174,7 +189,7 @@ object BackupManager {
             val db = AppDatabase.getDatabase(context)
             val entriesToImport = getBackupData(context, uri, password).getOrThrow()
 
-            // 重新加密字段以适应当前设备的 KeyStore
+            // 重新加密字段以适应当前设备的 KeyStore (统一使用正式 Key 加密)
             val encryptedEntries = entriesToImport.map { entry ->
                 encryptEntryFields(entry)
             }
@@ -197,8 +212,8 @@ object BackupManager {
     private fun encryptEntryFields(entry: VaultEntry): VaultEntry {
         fun encryptIfNotNull(text: String?): String? {
             if (text.isNullOrEmpty()) return text
-            val cipher = CryptoManager.getEncryptCipher() ?: throw Exception("无法获取加密器")
-            return CryptoManager.encrypt(text, cipher)
+            // 导入时一律使用正式 Key 加密
+            return CryptoManager.encrypt(text, isSilent = false)
         }
 
         return entry.copy(

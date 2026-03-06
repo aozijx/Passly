@@ -1,5 +1,7 @@
 package com.example.poop.ui.screens.vault.components.common
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -49,6 +52,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -64,6 +68,7 @@ fun VaultTopBar(
     onExportClick: () -> Unit,
     onImportClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val availableCategories by viewModel.availableCategories.collectAsState()
@@ -146,6 +151,17 @@ fun VaultTopBar(
                                             null
                                         ) 
                                     }
+                                )
+
+                                DropdownMenuItem(
+                                    text = { Text("自动填充") },
+                                    onClick = {
+                                        viewModel.toggleMoreMenu(false)
+                                        // 使用 ACTION_AUTOFILL_SETTINGS 直接跳转到设置页面
+                                        val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE)
+                                        context.startActivity(intent)
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
                                 )
 
                                 HorizontalDivider()

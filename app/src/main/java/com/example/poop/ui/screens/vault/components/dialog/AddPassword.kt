@@ -3,6 +3,7 @@ package com.example.poop.ui.screens.vault.components.dialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -16,6 +17,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -36,15 +39,23 @@ fun AddPasswordDialog(
                 OutlinedTextField(
                     value = viewModel.addDialogTitle, 
                     onValueChange = { viewModel.addDialogTitle = it }, 
-                    label = { Text("标题 (如: 微信, 招行)") }, 
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("标题") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    )
                 )
                 
                 OutlinedTextField(
                     value = viewModel.addDialogUsername, 
                     onValueChange = { viewModel.addDialogUsername = it }, 
                     label = { Text("用户名 / 手机号") }, 
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    )
                 )
                 
                 OutlinedTextField(
@@ -60,15 +71,23 @@ fun AddPasswordDialog(
                             )
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next
+                    )
                 )
                 
                 OutlinedTextField(
                     value = viewModel.addDialogCategory,
                     onValueChange = { viewModel.addDialogCategory = it },
-                    label = { Text("自定义分类 (如: 社交, 工作)") },
+                    label = { Text("自定义分类") },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("输入分类名称") }
+                    placeholder = { Text("输入分类名称") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Done
+                    )
                 )
             }
         },
