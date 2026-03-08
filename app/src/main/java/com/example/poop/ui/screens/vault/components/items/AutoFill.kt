@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
-import com.example.poop.ui.screens.vault.components.common.VaultItemIcon
+import com.example.poop.ui.screens.vault.common.icons.VaultItemIcon
 
 @Composable
 fun AutoFillItem(
@@ -34,7 +34,7 @@ fun AutoFillItem(
     viewModel: VaultViewModel
 ) {
     // 判断是否为自动抓取的“静默”数据
-    val isAutoCaptured = entry.category == "自动抓取"
+    val isAutoCaptured = entry.category == "自动填充"
 
     Card(
         onClick = { viewModel.showDetail(entry) },

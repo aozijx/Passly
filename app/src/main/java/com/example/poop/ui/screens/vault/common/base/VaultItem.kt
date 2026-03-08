@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components.common
+package com.example.poop.ui.screens.vault.common.base
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
+import com.example.poop.ui.screens.vault.common.icons.VaultItemIcon
 
 /**
  * 保险库条目列表项：通用列表卡片

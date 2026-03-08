@@ -31,7 +31,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.ui.screens.vault.components.layout.VaultContent
-import com.example.poop.ui.screens.vault.utils.BiometricHelper
 import com.example.poop.ui.theme.PoopTheme
 
 class VaultActivity : FragmentActivity() {
@@ -75,7 +74,7 @@ class VaultActivity : FragmentActivity() {
     }
 
     private fun requestAuthentication(isFirstTime: Boolean) {
-        BiometricHelper.authenticate(
+        viewModel.authenticate(
             activity = this,
             title = "安全验证",
             subtitle = "验证身份以访问保险箱",
@@ -101,12 +100,8 @@ class VaultActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.checkAndLock()
-        if (viewModel.isAuthorized) {
-            viewModel.startLockTimer()
-        }
     }
 }
-
 
 @Composable
 private fun AuthorizationPlaceholder(onRetry: () -> Unit) {

@@ -2,59 +2,69 @@ package com.example.poop.service.autofill
 
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.utils.CryptoManager
-import com.example.poop.ui.screens.vault.utils.TwoFAUtils
 import com.example.poop.util.Logcat
 
-/**
- * 自动填充凭据提供者
- * 核心职责：封装加密数据的解密逻辑以及 TOTP 动态码的生成
- */
 object AutofillCredentialProvider {
     private const val TAG = "AutofillCredentialProvider"
 
-    data class DecryptedCredential(
+    data class BasicCredentials(
         val username: String,
-        val password: String,
-        val totpCode: String?
+        val password: String
     )
 
     /**
-     * 一键获取条目的明文凭据
-     * 内部处理多字段解密逻辑，返回统一的数据模型
+     * 解密凭据，支持自动回退模式 (Silent -> Secure)
      */
-    fun getCredentials(item: VaultEntry): DecryptedCredential? {
+    fun getBasicCredentials(item: VaultEntry): BasicCredentials? {
+        Logcat.d(TAG, "Attempting decryption for item: ${item.title} (ID: ${item.id})")
+
+        // 1. 优先尝试静默模式 (AutofillService 自动保存的数据默认使用此模式)
+        val silentResult = decryptWithMode(item, isSilent = true)
+        if (silentResult != null) {
+            Logcat.i(TAG, "Decryption success using SILENT mode")
+            return silentResult
+        }
+
+        // 2. 如果静默解密失败（返回 null，通常是因为 Tag 校验失败），尝试安全模式
+        Logcat.d(TAG, "Silent mode failed, retrying with SECURE mode")
+        val secureResult = decryptWithMode(item, isSilent = false)
+        if (secureResult != null) {
+            Logcat.i(TAG, "Decryption success using SECURE mode")
+            return secureResult
+        }
+
+        Logcat.e(TAG, "All decryption attempts failed for item: ${item.title}")
+        return null
+    }
+
+    private fun decryptWithMode(item: VaultEntry, isSilent: Boolean): BasicCredentials? {
         return try {
-            // 1. 分别获取各字段的 IV 并初始化解密器
             val ivUser = CryptoManager.getIvFromCipherText(item.username)
             val ivPass = CryptoManager.getIvFromCipherText(item.password)
-            val ivTotp = item.totpSecret?.let { CryptoManager.getIvFromCipherText(it) }
 
-            val userCipher = ivUser?.let { CryptoManager.getDecryptCipher(it) }
-            val passCipher = ivPass?.let { CryptoManager.getDecryptCipher(it) }
-            val totpCipher = ivTotp?.let { CryptoManager.getDecryptCipher(it) }
+            if (ivUser == null || ivPass == null) return null
 
-            // 2. 执行核心解密
-            val username = if (userCipher != null) CryptoManager.decrypt(item.username, userCipher) else ""
-            val password = if (passCipher != null) CryptoManager.decrypt(item.password, passCipher) else ""
+            val userCipher = CryptoManager.getDecryptCipher(ivUser, isSilent)
+            val passCipher = CryptoManager.getDecryptCipher(ivPass, isSilent)
 
-            // 3. 处理 TOTP 生成
-            val totpCode = item.totpSecret?.let { secret ->
-                totpCipher?.let { cipher ->
-                    val rawSecret = CryptoManager.decrypt(secret, cipher)
-                    rawSecret?.let { 
-                        TwoFAUtils.generateTotp(
-                            secret = it,
-                            digits = item.totpDigits,
-                            period = item.totpPeriod,
-                            algorithm = item.totpAlgorithm
-                        ) 
-                    }
-                }
+            if (userCipher == null || passCipher == null) return null
+
+            val username = CryptoManager.decrypt(item.username, userCipher)
+            val password = CryptoManager.decrypt(item.password, passCipher)
+
+            // 如果解密结果为 null（CryptoManager 内部捕获了 AEADBadTagException），返回 null 触发重试
+            if (username == null || password == null) {
+                return null
             }
 
-            DecryptedCredential(username ?: "", password ?: "", totpCode)
+            // 至少有一个不为空才算成功
+            if (username.isBlank() && password.isBlank()) {
+                return null
+            }
+
+            BasicCredentials(username, password)
         } catch (e: Exception) {
-            Logcat.e(TAG, "Unexpected error during credential decryption", e)
+            Logcat.w(TAG, "[$isSilent] Decryption error: ${e.message}")
             null
         }
     }

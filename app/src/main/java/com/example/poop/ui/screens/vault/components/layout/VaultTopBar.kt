@@ -1,7 +1,9 @@
-package com.example.poop.ui.screens.vault.components.common
+package com.example.poop.ui.screens.vault.components.layout
 
 import android.content.Intent
 import android.provider.Settings
+import android.view.autofill.AutofillManager
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -9,8 +11,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -50,6 +54,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -57,8 +62,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.example.poop.ui.screens.vault.VaultTab
+import androidx.core.net.toUri
 import com.example.poop.ui.screens.vault.VaultViewModel
+import com.example.poop.ui.screens.vault.core.VaultTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,10 +81,8 @@ fun VaultTopBar(
     val selectedTab by viewModel.selectedTab.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    // 本地状态：控制是否显示分类子菜单
     var showCategorySubMenu by remember { mutableStateOf(false) }
 
-    // 当整个“更多”菜单关闭时，重置子菜单状态
     LaunchedEffect(viewModel.isMoreMenuExpanded) {
         if (!viewModel.isMoreMenuExpanded) {
             showCategorySubMenu = false
@@ -107,10 +111,17 @@ fun VaultTopBar(
                         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
                     )
                 } else {
-                    Text(
-                        text = if (selectedCategory != null) "分类: $selectedCategory" else "安全保险箱",
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (selectedCategory != null) "分类: $selectedCategory" else "安全保险箱",
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (selectedCategory != null) {
+                            IconButton(onClick = { viewModel.onCategorySelect(null) }) {
+                                Icon(Icons.Default.Clear, "清除筛选", modifier = Modifier.padding(start = 4.dp))
+                            }
+                        }
+                    }
                 }
             },
             navigationIcon = {
@@ -124,15 +135,14 @@ fun VaultTopBar(
             actions = {
                 if (!viewModel.isSearchActive) {
                     Box {
-                        IconButton(onClick = { viewModel.toggleMoreMenu(true) }) {
+                        IconButton(onClick = { viewModel.isMoreMenuExpanded = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "更多")
                         }
                         DropdownMenu(
                             expanded = viewModel.isMoreMenuExpanded,
-                            onDismissRequest = { viewModel.toggleMoreMenu(false) }
+                            onDismissRequest = { viewModel.isMoreMenuExpanded = false }
                         ) {
                             if (!showCategorySubMenu) {
-                                // --- 主菜单界面 ---
                                 DropdownMenuItem(
                                     text = { Text("分类筛选") },
                                     onClick = { showCategorySubMenu = true },
@@ -143,7 +153,7 @@ fun VaultTopBar(
                                     text = { Text(if (viewModel.showTOTPCode) "隐藏验证码" else "显示验证码") },
                                     onClick = {
                                         viewModel.showTOTPCode = !viewModel.showTOTPCode
-                                        viewModel.toggleMoreMenu(false)
+                                        viewModel.isMoreMenuExpanded = false
                                     },
                                     leadingIcon = { 
                                         Icon(
@@ -153,23 +163,41 @@ fun VaultTopBar(
                                     }
                                 )
 
-                                DropdownMenuItem(
-                                    text = { Text("自动填充") },
-                                    onClick = {
-                                        viewModel.toggleMoreMenu(false)
-                                        // 使用 ACTION_AUTOFILL_SETTINGS 直接跳转到设置页面
-                                        val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE)
-                                        context.startActivity(intent)
-                                    },
-                                    leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
-                                )
+                                val autofillManager = remember { context.getSystemService(AutofillManager::class.java) }
+                                val isAutofillEnabled = remember(autofillManager) {
+                                    autofillManager?.isAutofillSupported == true && autofillManager.hasEnabledAutofillServices()
+                                }
+                                
+                                if (!isAutofillEnabled) {
+                                    DropdownMenuItem(
+                                        text = { Text("开启自动填充") },
+                                        onClick = {
+                                            viewModel.isMoreMenuExpanded = false
+                                            try {
+                                                // 尝试直接弹出设为默认对话框
+                                                val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
+                                                    data = "package:${context.packageName}".toUri()
+                                                }
+                                                context.startActivity(intent)
+                                            } catch (e: Exception) {
+                                                try {
+                                                    // 备选方案：跳转到自动填充设置列表（使用字符串常量兼容性更好）
+                                                    context.startActivity(Intent("android.settings.AUTOFILL_SETTINGS"))
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(context, "请在系统设置中开启自动填充", Toast.LENGTH_LONG).show()
+                                                }
+                                            }
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
+                                    )
+                                }
 
                                 HorizontalDivider()
 
                                 DropdownMenuItem(
                                     text = { Text("导出备份") },
                                     onClick = {
-                                        viewModel.toggleMoreMenu(false)
+                                        viewModel.isMoreMenuExpanded = false
                                         onExportClick()
                                     },
                                     leadingIcon = { Icon(Icons.Default.FileUpload, null) }
@@ -177,13 +205,12 @@ fun VaultTopBar(
                                 DropdownMenuItem(
                                     text = { Text("导入恢复") },
                                     onClick = {
-                                        viewModel.toggleMoreMenu(false)
+                                        viewModel.isMoreMenuExpanded = false
                                         onImportClick()
                                     },
                                     leadingIcon = { Icon(Icons.Default.FileDownload, null) }
                                 )
                             } else {
-                                // --- 分类子菜单界面 ---
                                 DropdownMenuItem(
                                     text = { Text("返回") },
                                     onClick = { showCategorySubMenu = false },
@@ -196,7 +223,7 @@ fun VaultTopBar(
                                     text = { Text("全部分类") },
                                     onClick = {
                                         viewModel.onCategorySelect(null)
-                                        viewModel.toggleMoreMenu(false)
+                                        viewModel.isMoreMenuExpanded = false
                                     },
                                     trailingIcon = { if (selectedCategory == null) Icon(Icons.Default.Check, null) }
                                 )
@@ -206,7 +233,7 @@ fun VaultTopBar(
                                         text = { Text(category) },
                                         onClick = {
                                             viewModel.onCategorySelect(category)
-                                            viewModel.toggleMoreMenu(false)
+                                            viewModel.isMoreMenuExpanded = false
                                         },
                                         trailingIcon = { if (selectedCategory == category) Icon(Icons.Default.Check, null) }
                                     )

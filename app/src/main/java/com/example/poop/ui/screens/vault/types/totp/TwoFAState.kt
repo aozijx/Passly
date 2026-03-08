@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.twoFA
+package com.example.poop.ui.screens.vault.types.totp
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components.common
+package com.example.poop.ui.screens.vault.components.layout
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -39,8 +39,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.poop.ui.screens.vault.AddType
 import com.example.poop.ui.screens.vault.VaultViewModel
+import com.example.poop.ui.screens.vault.core.AddType
 
 @Composable
 fun VaultFab(viewModel: VaultViewModel) {

@@ -1,10 +1,5 @@
-package com.example.poop.ui.screens.vault.components.common
+package com.example.poop.ui.screens.vault.common.icons
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -50,20 +45,21 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.poop.data.VaultEntry
+import com.example.poop.util.Logcat
 
 /**
- * 集中管理所有可选图标
+ * 集中管理所有可选图标映射
  */
 object VaultIcons {
     val allIcons = mapOf(
@@ -113,7 +109,7 @@ object VaultIcons {
 }
 
 /**
- * 统一图标展示组件
+ * 统一图标展示原子组件
  */
 @Composable
 fun VaultItemIcon(
@@ -121,12 +117,32 @@ fun VaultItemIcon(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
+    val context = LocalContext.current
+    
+    val appIcon = remember(item.associatedAppPackage) {
+        if (!item.associatedAppPackage.isNullOrEmpty()) {
+            try {
+                context.packageManager.getApplicationIcon(item.associatedAppPackage)
+            } catch (e: Exception) {
+                Logcat.e("VaultItemIcon", "Failed to load icon for ${item.associatedAppPackage}", e)
+                null
+            }
+        } else null
+    }
+
     if (!item.iconCustomPath.isNullOrEmpty()) {
         AsyncImage(
             model = item.iconCustomPath,
             contentDescription = null,
             modifier = modifier.size(36.dp).clip(CircleShape),
             contentScale = ContentScale.Crop
+        )
+    } else if (appIcon != null) {
+        AsyncImage(
+            model = appIcon,
+            contentDescription = null,
+            modifier = modifier.size(36.dp).clip(CircleShape),
+            contentScale = ContentScale.Fit
         )
     } else {
         val icon = if (!item.iconName.isNullOrEmpty()) {
@@ -143,28 +159,9 @@ fun VaultItemIcon(
     }
 }
 
-@Composable
-fun EmptyVaultPlaceholder() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            Icons.Default.Lock,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.outlineVariant
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            "你的保险箱空空如也",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.outline
-        )
-    }
-}
-
+/**
+ * 类别到图标的语义映射
+ */
 fun getCategoryIcon(category: String): ImageVector = when (category.lowercase()) {
     "个人", "private", "隐私" -> Icons.Default.Fingerprint
     "银行卡", "bank card", "金融", "finance", "网银", "银行" -> Icons.Default.AccountBalance
@@ -177,6 +174,7 @@ fun getCategoryIcon(category: String): ImageVector = when (category.lowercase())
     "游戏", "game" -> Icons.Default.SportsEsports
     "视频", "video", "会员", "影音", "movie", "影视" -> Icons.Default.Subscriptions
     "购物", "shopping", "电商", "淘宝", "京东" -> Icons.Default.ShoppingCart
+    "购物袋", "shopping bag" -> Icons.Default.ShoppingBag
     "直播", "live", "主播" -> Icons.Default.LiveTv
     "公积金", "社保", "医保", "健康", "health", "medical" -> Icons.Default.HealthAndSafety
     "网盘", "cloud", "云盘", "drive" -> Icons.Default.Cloud

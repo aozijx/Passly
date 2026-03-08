@@ -6,7 +6,6 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.example.poop.R
-import com.example.poop.ui.screens.scanner.ScannerActivity
 import com.example.poop.ui.screens.vault.VaultActivity
 
 object ShortcutManager {
@@ -30,8 +29,10 @@ object ShortcutManager {
             .setLongLabel(context.getString(R.string.shortcut_scanner_long))
             .setIcon(IconCompat.createWithResource(context, R.drawable.baseline_qr_code_scanner_24))
             .setIntent(
-                Intent(context, ScannerActivity::class.java).apply {
-                    action = Intent.ACTION_VIEW
+                Intent(context, VaultActivity::class.java).apply {
+                    action = "ACTION_SCAN_QR" // 设置特定 Action
+                    putExtra("START_SCAN", true) // 也可以使用 Extra 标记
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
             )
             .build()

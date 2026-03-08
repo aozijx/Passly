@@ -30,7 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.poop.ui.screens.profile.ImageType
-import com.example.poop.ui.screens.vault.components.common.VaultIcons
+import com.example.poop.ui.screens.vault.common.icons.VaultIcons
 import com.example.poop.util.rememberImagePicker
 
 @Composable

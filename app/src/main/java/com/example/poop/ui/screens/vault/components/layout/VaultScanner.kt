@@ -52,7 +52,6 @@ import com.example.poop.ui.screens.profile.ImageType
 import com.example.poop.ui.screens.scanner.ScannerViewModel
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.utils.CryptoManager
-import com.example.poop.ui.screens.vault.utils.VaultSecurityUtils
 import com.example.poop.util.rememberImagePicker
 import java.net.URLDecoder
 
@@ -103,23 +102,23 @@ fun VaultScanner(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(16.dp),
+                .padding(32.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { 
+                onClick = {
                     scannerViewModel.onBarcodeDetected(context, "") // 先重置上次结果
-                    pickPhoto(ImageType.SCREEN) 
+                    pickPhoto(ImageType.SCREEN)
                 },
-                modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                modifier = Modifier.size(56.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
             ) {
                 Icon(Icons.Default.PhotoLibrary, contentDescription = "相册导入", tint = Color.White)
             }
 
             IconButton(
                 onClick = onDismiss,
-                modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                modifier = Modifier.size(56.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
             ) {
                 Icon(Icons.Default.Close, contentDescription = "关闭", tint = Color.White)
             }
@@ -197,7 +196,7 @@ fun VaultScanner(
                                         onDismiss()
                                     } else {
                                         // 备选方案：如果免验证密钥不可用，则回退到带生物识别验证的加密（确保安全性）
-                                        VaultSecurityUtils.encryptMultiple(
+                                        vaultViewModel.encryptMultiple(
                                             activity = activity,
                                             texts = listOf(totp.secret),
                                             title = "保存令牌",

@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.autofill
+package com.example.poop.ui.screens.vault.types.autofill
 
 import java.util.Calendar
 

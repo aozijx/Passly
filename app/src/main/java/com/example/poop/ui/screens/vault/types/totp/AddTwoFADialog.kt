@@ -1,0 +1,137 @@
+package com.example.poop.ui.screens.vault.types.totp
+
+import android.widget.Toast
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import com.example.poop.data.VaultEntry
+import com.example.poop.ui.screens.vault.VaultViewModel
+import com.example.poop.ui.screens.vault.common.base.BaseVaultDialog
+import com.example.poop.ui.screens.vault.common.fields.CategoryDropdown
+import com.example.poop.ui.screens.vault.common.fields.VaultTextField
+import com.example.poop.ui.screens.vault.common.sections.TotpConfigForm
+import com.example.poop.ui.screens.vault.utils.CryptoManager
+import com.example.poop.util.ClipboardUtils
+import com.example.poop.util.Logcat
+import java.net.URLDecoder
+
+@Composable
+fun AddTwoFADialog(
+    viewModel: VaultViewModel
+) {
+    val context = LocalContext.current
+    val state = remember { TotpAddState() }
+    val algorithms = listOf("SHA1", "SHA256", "SHA512", "STEAM")
+
+    // 自动解析 otpauth URI 逻辑
+    LaunchedEffect(state.uriText) {
+        if (!state.uriText.startsWith("otpauth://totp/")) return@LaunchedEffect
+        try {
+            val uri = state.uriText.toUri()
+            val label = URLDecoder.decode(uri.path?.trimStart('/') ?: "", "UTF-8")
+            val secret = uri.getQueryParameter("secret") ?: ""
+            val issuer = uri.getQueryParameter("issuer")
+            val rawAlgorithm = uri.getQueryParameter("algorithm")?.uppercase()
+            val digits = uri.getQueryParameter("digits")?.toIntOrNull() ?: 6
+            val period = uri.getQueryParameter("period")?.toIntOrNull() ?: 30
+
+            state.title = issuer ?: label.split(":").firstOrNull() ?: ""
+            state.username = label
+            state.secret = secret
+
+            if ((issuer ?: label).contains("Steam", ignoreCase = true)) {
+                state.algorithm = "STEAM"
+                state.digits = "5"
+            } else {
+                state.algorithm = rawAlgorithm?.takeIf { algorithms.contains(it) } ?: "SHA1"
+                state.digits = digits.toString()
+            }
+            state.period = period.toString()
+
+            Toast.makeText(context, "已解析 URI 并自动清理剪贴板", Toast.LENGTH_SHORT).show()
+            ClipboardUtils.clear(context)
+        } catch (e: Exception) {
+            Logcat.e("AddTwoFA", "URI 解析失败", e)
+        }
+    }
+
+    BaseVaultDialog(
+        title = "新增 2FA 令牌",
+        onDismiss = { viewModel.dismissAddDialog() },
+        confirmEnabled = state.isValid,
+        onConfirm = {
+            val cipher = CryptoManager.getEncryptCipher(isSilent = true)
+            if (cipher != null) {
+                val entry = VaultEntry(
+                    title = state.title,
+                    username = state.username,
+                    password = "",
+                    category = state.category.ifBlank { "OTP" },
+                    totpSecret = CryptoManager.encrypt(state.secret.trim(), cipher),
+                    totpDigits = state.digits.toIntOrNull() ?: 6,
+                    totpPeriod = state.period.toIntOrNull() ?: 30,
+                    totpAlgorithm = state.algorithm,
+                    entryType = 1
+                )
+                viewModel.addItem(entry)
+                viewModel.dismissAddDialog()
+            } else {
+                Toast.makeText(context, "加密失败，请重试", Toast.LENGTH_SHORT).show()
+            }
+        }
+    ) {
+        VaultTextField(
+            value = state.title,
+            onValueChange = { state.title = it },
+            label = "标题"
+        )
+
+        VaultTextField(
+            value = state.uriText,
+            onValueChange = { state.uriText = it },
+            label = "粘贴 otpauth:// URI",
+            trailingIcon = {
+                TextButton(onClick = { state.uriText = ClipboardUtils.getText(context) }) {
+                    Icon(Icons.Default.ContentPaste, null, modifier = Modifier.padding(end = 4.dp))
+                    Text("粘贴")
+                }
+            }
+        )
+
+        CategoryDropdown(
+            selectedCategory = state.category,
+            onCategorySelected = { state.category = it },
+            availableCategories = viewModel.availableCategories.collectAsState().value
+        )
+
+        if (state.showAdvanced) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            TotpConfigForm(
+                secret = state.secret,
+                onSecretChange = { state.secret = it },
+                period = state.period,
+                onPeriodChange = { state.period = it },
+                digits = state.digits,
+                onDigitsChange = { state.digits = it },
+                algorithm = state.algorithm,
+                onAlgorithmChange = { state.algorithm = it }
+            )
+        } else {
+            TextButton(onClick = { state.showAdvanced = true }) {
+                Text("高级手动配置")
+            }
+        }
+    }
+}

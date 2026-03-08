@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
-import com.example.poop.ui.screens.vault.components.common.VaultItemIcon
-import com.example.poop.ui.screens.vault.twoFA.rememberTotpState
+import com.example.poop.ui.screens.vault.common.icons.VaultItemIcon
+import com.example.poop.ui.screens.vault.types.totp.rememberTotpState
 
 /**
  * 2FA 专用列表项：包含动态验证码显示

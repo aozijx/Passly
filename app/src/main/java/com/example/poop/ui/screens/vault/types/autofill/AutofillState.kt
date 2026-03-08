@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.autofill
+package com.example.poop.ui.screens.vault.types.autofill
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

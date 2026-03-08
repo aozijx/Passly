@@ -1,114 +1,58 @@
 package com.example.poop.ui.screens.vault.components.dialog
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.ui.screens.vault.VaultViewModel
-import com.example.poop.ui.screens.vault.utils.BackupManager
-import com.example.poop.ui.screens.vault.utils.BiometricHelper
 
 @Composable
-fun BackupPasswordDialog(
-    activity: FragmentActivity,
-    viewModel: VaultViewModel
-) {
+fun BackupPasswordDialog(activity: FragmentActivity, viewModel: VaultViewModel) {
     val context = LocalContext.current
-
     AlertDialog(
         onDismissRequest = { viewModel.dismissBackupPasswordDialog() },
-        title = { Text(if (viewModel.isExporting) "设置备份密码" else "导入恢复选项") },
+        title = { Text(if (viewModel.isExporting) "设置备份密码" else "输入备份密码") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column {
                 Text(
-                    if (viewModel.isExporting) 
-                        "此密码用于加密备份文件，请务必牢记。若忘记此密码，备份数据将无法恢复。" 
-                    else "请输入导出该备份文件时设置的密码，并选择导入方式。"
+                    text = if (viewModel.isExporting) "请设置一个密码来加密备份文件。恢复时需要此密码。"
+                           else "请输入备份文件的密码以解密数据。"
                 )
-                
-                if (!viewModel.isExporting) {
-                    Column(Modifier.selectableGroup()) {
-                        Text("导入方式：", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        Row(
-                            Modifier.fillMaxWidth().height(48.dp)
-                                .selectable(
-                                    selected = (viewModel.importMode == BackupManager.ImportMode.OVERWRITE),
-                                    onClick = { viewModel.importMode = BackupManager.ImportMode.OVERWRITE },
-                                    role = Role.RadioButton
-                                ),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = (viewModel.importMode == BackupManager.ImportMode.OVERWRITE),
-                                onClick = null
-                            )
-                            Text(text = "覆盖现有数据", modifier = Modifier.padding(start = 16.dp))
-                        }
-                        Row(
-                            Modifier.fillMaxWidth().height(48.dp)
-                                .selectable(
-                                    selected = (viewModel.importMode == BackupManager.ImportMode.APPEND),
-                                    onClick = { viewModel.importMode = BackupManager.ImportMode.APPEND },
-                                    role = Role.RadioButton
-                                ),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = (viewModel.importMode == BackupManager.ImportMode.APPEND),
-                                onClick = null
-                            )
-                            Text(text = "追加到现有数据", modifier = Modifier.padding(start = 16.dp))
-                        }
-                    }
-                }
-
-                OutlinedTextField(
+                TextField(
                     value = viewModel.backupPassword,
                     onValueChange = { viewModel.backupPassword = it },
-                    label = { Text("备份密码") },
-                    modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true
+                    singleLine = true,
+                    label = { Text("密码") }
                 )
             }
         },
         confirmButton = {
-            Button(
+            TextButton(
                 onClick = {
-                    BiometricHelper.authenticate(
-                        activity = activity,
-                        title = if (viewModel.isExporting) "备份导出验证" else "恢复导入验证",
-                        subtitle = "请验证身份以执行该安全操作"
-                    ) {
-                        viewModel.processBackupAction(context)
+                    if (viewModel.backupPassword.isNotEmpty()) {
+                        viewModel.authenticate(
+                            activity = activity,
+                            title = "验证身份",
+                            subtitle = if (viewModel.isExporting) "验证以导出数据" else "验证以导入数据"
+                        ) {
+                            viewModel.processBackupAction(context)
+                        }
                     }
-                },
-                enabled = viewModel.backupPassword.isNotBlank()
+                }
             ) {
                 Text("确定")
             }
         },
         dismissButton = {
-            TextButton(onClick = { viewModel.dismissBackupPasswordDialog() }) { Text("取消") }
+            TextButton(onClick = { viewModel.dismissBackupPasswordDialog() }) {
+                Text("取消")
+            }
         }
     )
 }
