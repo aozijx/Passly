@@ -37,10 +37,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.BuildConfig
 import com.example.poop.R
 import com.example.poop.ui.navigation.TopBarConfig
+import com.example.poop.ui.screens.settings.components.AllRoundedShape
+import com.example.poop.ui.screens.settings.components.BottomRoundedShape
 import com.example.poop.ui.screens.settings.components.LogDetailDialog
+import com.example.poop.ui.screens.settings.components.MiddleShape
 import com.example.poop.ui.screens.settings.components.SectionTitle
 import com.example.poop.ui.screens.settings.components.SettingsClickableItem
 import com.example.poop.ui.screens.settings.components.SettingsSwitchItem
+import com.example.poop.ui.screens.settings.components.TopRoundedShape
 import com.example.poop.ui.screens.vault.VaultActivity
 import kotlinx.coroutines.delay
 
@@ -141,84 +145,112 @@ fun SettingsScreen(
 
     Surface(modifier = Modifier.fillMaxSize()) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            item { SectionTitle("通用") }
+            item { SectionTitle("通知与权限") }
             item {
                 SettingsSwitchItem(
                     title = "开启消息通知",
+                    subtitle = "接收重要提醒与更新通知",
                     checked = uiState.isNotificationsEnabled,
-                    onCheckedChange = viewModel::toggleNotifications
+                    onCheckedChange = viewModel::toggleNotifications,
+                    shape = TopRoundedShape,
+                    showDivider = true
                 )
             }
             item {
                 SettingsClickableItem(
                     title = "权限管理",
+                    subtitle = "查看与管理应用所需的系统权限",
                     value = "前往系统设置",
                     onClick = {
                         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                             data = Uri.fromParts("package", context.packageName, null)
                         }
                         context.startActivity(intent)
-                    }
+                    },
+                    shape = BottomRoundedShape
                 )
             }
+
+            item { SectionTitle("外观展示") }
             item {
                 SettingsSwitchItem(
                     title = "深色模式",
-                    subtitle = if (uiState.isDarkMode) "已开启" else "跟随系统",
+                    subtitle = if (uiState.isDarkMode) "已强制开启深色" else "跟随系统设置",
                     checked = uiState.isDarkMode,
-                    onCheckedChange = viewModel::toggleDarkMode
+                    onCheckedChange = viewModel::toggleDarkMode,
+                    shape = TopRoundedShape,
+                    showDivider = true
                 )
             }
             item {
                 SettingsSwitchItem(
                     title = "动态颜色",
-                    subtitle = "使用系统壁纸颜色作为主题 (Android 12+)",
+                    subtitle = "从壁纸提取主色调 (仅 Android 12+)",
                     checked = uiState.isDynamicColor,
-                    onCheckedChange = viewModel::toggleDynamicColor
+                    onCheckedChange = viewModel::toggleDynamicColor,
+                    shape = BottomRoundedShape
                 )
             }
 
-            item { SectionTitle("关于") }
+            item { SectionTitle("数据管理") }
             item {
                 SettingsClickableItem(
-                    title = "清除缓存",
+                    title = "清除应用缓存",
+                    subtitle = "释放被占用的临时存储空间",
                     value = uiState.cacheSize,
-                    onClick = { viewModel.clearCache() }
+                    onClick = { viewModel.clearCache() },
+                    shape = AllRoundedShape
                 )
             }
+
+            item { SectionTitle("关于与反馈") }
             item {
                 SettingsClickableItem(
                     title = "导出本地日志",
-                    subtitle = "将最近的运行日志打包导出",
-                    onClick = { viewModel.exportLogs() }
+                    subtitle = "导出运行数据以协助诊断问题",
+                    onClick = { viewModel.exportLogs() },
+                    shape = TopRoundedShape,
+                    showDivider = true
                 )
             }
             item {
                 SettingsClickableItem(
                     title = "查看更新日志",
-                    subtitle = "获取最新版本动态",
+                    subtitle = "查看当前版本的改进与修复",
                     onClick = {
                         viewModel.fetchLog(changelogUrl)
-                    }
+                    },
+                    shape = MiddleShape,
+                    showDivider = true
+                )
+            }
+            item {
+                SettingsClickableItem(
+                    title = "检查更新",
+                    subtitle = "检查是否有更高版本可用",
+                    onClick = { /* TODO */ },
+                    shape = MiddleShape,
+                    showDivider = true
                 )
             }
             item {
                 SettingsClickableItem(
                     title = "版本号",
+                    subtitle = "Poop Tool 正式版",
                     value = "v${BuildConfig.VERSION_NAME}",
                     onClick = {
                         versionTapCount++
                         if (versionTapCount >= 3) {
-                            // 点击三次后直接跳
                             context.startActivity(Intent(context, VaultActivity::class.java))
                             versionTapCount = 0
                         }
-                    }
+                    },
+                    shape = BottomRoundedShape
                 )
             }
 
             item {
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(40.dp))
             }
         }
     }

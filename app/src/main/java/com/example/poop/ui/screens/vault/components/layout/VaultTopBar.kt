@@ -196,23 +196,31 @@ fun VaultTopBar(
                                         text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
                                         onClick = {
                                             viewModel.isMoreMenuExpanded = false
-                                            try {
-                                                val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
+                                            val intents = listOf(
+                                                // 1. 尝试直接请求设置为默认服务 (API 26+)
+                                                Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
                                                     data = "package:${context.packageName}".toUri()
-                                                }
-                                                context.startActivity(intent)
-                                            } catch (e: Exception) {
-                                                Logcat.e("VaultTopBar", "Request autofill service failed", e)
+                                                },
+                                                // 2. 尝试打开系统的自动填充设置列表
+                                                Intent("android.settings.AUTOFILL_SETTINGS"),
+                                                // 3. 兜底方案：打开“语言和输入法”或“密码与账密”页面（视系统而定）
+                                                Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
+                                            )
+
+                                            var success = false
+                                            for (intent in intents) {
                                                 try {
-                                                    context.startActivity(Intent("android.settings.AUTOFILL_SETTINGS"))
-                                                } catch (e2: Exception) {
-                                                    Logcat.e("VaultTopBar", "Open settings failed", e2)
-                                                    Toast.makeText(
-                                                        context, 
-                                                        autofillToastMessage,
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
+                                                    context.startActivity(intent)
+                                                    success = true
+                                                    break
+                                                } catch (e: Exception) {
+                                                    Logcat.e("VaultTopBar", "打开设置失败", e)
+                                                    continue // 尝试下一个 Intent
                                                 }
+                                            }
+
+                                            if (!success) {
+                                                Toast.makeText(context, autofillToastMessage, Toast.LENGTH_LONG).show()
                                             }
                                         },
                                         leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }

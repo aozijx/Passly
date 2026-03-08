@@ -5,8 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,7 +46,10 @@ import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.core.AddType
 
 @Composable
-fun VaultFab(viewModel: VaultViewModel) {
+fun VaultFab(
+    viewModel: VaultViewModel,
+    isVisible: Boolean = true
+) {
     var showFabMenu by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
         targetValue = if (showFabMenu) 45f else 0f,
@@ -53,60 +57,74 @@ fun VaultFab(viewModel: VaultViewModel) {
         label = "fabRotation"
     )
 
-    Column(
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.navigationBarsPadding().padding(bottom = 16.dp, end = 8.dp)
+    // 如果主按钮被隐藏，自动收起菜单
+    if (!isVisible) {
+        showFabMenu = false
+    }
+
+    // 动画改为缩放 (Scale)，变换中心为右下角 (1f, 1f)
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn() + scaleIn(transformOrigin = TransformOrigin(1f, 1f)),
+        exit = fadeOut() + scaleOut(transformOrigin = TransformOrigin(1f, 1f))
     ) {
-        // 选项菜单：上下排列，并从屏幕右侧边缘滑入
-        AnimatedVisibility(
-            visible = showFabMenu,
-            enter = fadeIn() + slideInHorizontally { fullWidth -> fullWidth },
-            exit = fadeOut() + slideOutHorizontally { fullWidth -> fullWidth }
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(bottom = 16.dp, end = 8.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            // 选项菜单：也使用缩放动画
+            AnimatedVisibility(
+                visible = showFabMenu,
+                enter = fadeIn() + scaleIn(transformOrigin = TransformOrigin(1f, 1f)),
+                exit = fadeOut() + scaleOut(transformOrigin = TransformOrigin(1f, 1f))
             ) {
-                FabMenuItem(
-                    label = stringResource(R.string.vault_fab_scan),
-                    icon = Icons.Default.QrCodeScanner,
-                    onClick = {
-                        showFabMenu = false
-                        viewModel.onAddTypeSelect(AddType.SCAN)
-                    }
-                )
-                FabMenuItem(
-                    label = stringResource(R.string.vault_fab_2fa),
-                    icon = Icons.Default.Pin,
-                    onClick = {
-                        showFabMenu = false
-                        viewModel.onAddTypeSelect(AddType.TOTP)
-                    }
-                )
-                FabMenuItem(
-                    label = stringResource(R.string.vault_fab_password),
-                    icon = Icons.Default.Key,
-                    onClick = {
-                        showFabMenu = false
-                        viewModel.onAddTypeSelect(AddType.PASSWORD)
-                    }
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FabMenuItem(
+                        label = stringResource(R.string.vault_fab_scan),
+                        icon = Icons.Default.QrCodeScanner,
+                        onClick = {
+                            showFabMenu = false
+                            viewModel.onAddTypeSelect(AddType.SCAN)
+                        }
+                    )
+                    FabMenuItem(
+                        label = stringResource(R.string.vault_fab_2fa),
+                        icon = Icons.Default.Pin,
+                        onClick = {
+                            showFabMenu = false
+                            viewModel.onAddTypeSelect(AddType.TOTP)
+                        }
+                    )
+                    FabMenuItem(
+                        label = stringResource(R.string.vault_fab_password),
+                        icon = Icons.Default.Key,
+                        onClick = {
+                            showFabMenu = false
+                            viewModel.onAddTypeSelect(AddType.PASSWORD)
+                        }
+                    )
+                }
+            }
+
+            // 主 FAB
+            FloatingActionButton(
+                onClick = { showFabMenu = !showFabMenu },
+                containerColor = if (showFabMenu) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(12.dp),
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(R.string.action_add),
+                    modifier = Modifier.rotate(rotation)
                 )
             }
-        }
-
-        // 主 FAB：方形设计
-        FloatingActionButton(
-            onClick = { showFabMenu = !showFabMenu },
-            containerColor = if (showFabMenu) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(12.dp),
-            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
-        ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = stringResource(R.string.action_add),
-                modifier = Modifier.rotate(rotation)
-            )
         }
     }
 }

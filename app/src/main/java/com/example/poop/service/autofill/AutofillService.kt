@@ -27,20 +27,23 @@ import kotlinx.coroutines.launch
 /**
  * Poop 自动填充服务 - 增强版
  * 优化重点：通过 FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE 和 TriggerId 提升保存弹出率
+ * 异步解析结构，减少对系统 Binder 线程的占用，解决 Jank 问题
  */
 class AutofillService : android.service.autofill.AutofillService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val tag = "PoopAutofill"
     
     override fun onFillRequest(request: FillRequest, cancellationSignal: CancellationSignal, callback: FillCallback) {
-        val parser = AutofillParser(request.fillContexts.last().structure)
-        
-        Logcat.d(tag, "onFillRequest: pkg=${parser.packageName}, domain=${parser.webDomain}")
-
-        val availableIds = listOfNotNull(parser.usernameId, parser.passwordId, parser.otpId)
+        val structure = request.fillContexts.last().structure
         
         serviceScope.launch {
             try {
+                // 优化：将解析过程移入协程，避免阻塞 Binder 线程导致系统报告 "Jank out of time"
+                val parser = AutofillParser(structure)
+                
+                Logcat.d(tag, "onFillRequest: pkg=${parser.packageName}, domain=${parser.webDomain}")
+
+                val availableIds = listOfNotNull(parser.usernameId, parser.passwordId, parser.otpId)
                 val entries = AutofillRepository.findMatchingEntries(applicationContext, parser.packageName, parser.webDomain)
                 val responseBuilder = FillResponse.Builder()
 
@@ -108,8 +111,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                         val customDescription = CustomDescription.Builder(
                             RemoteViews(packageName, R.layout.autofill_save_description).apply {
                                 setImageViewBitmap(R.id.save_icon, iconBitmap)
-                                setTextViewText(R.id.save_title
-                                    , "保存 $appLabel ？")
+                                setTextViewText(R.id.save_title, "保存 $appLabel ？")
                                 setTextViewText(R.id.save_description, "是否保存 $appLabel 的账号密码？")
                             }
                         ).build()
@@ -128,7 +130,6 @@ class AutofillService : android.service.autofill.AutofillService() {
 
                     // 策略 C: 绑定登录按钮作为显式触发器
                     parser.submitId?.let {
-                        Logcat.d(tag, "Binding save trigger to button: $it")
                         saveInfoBuilder.setTriggerId(it)
                     }
 
