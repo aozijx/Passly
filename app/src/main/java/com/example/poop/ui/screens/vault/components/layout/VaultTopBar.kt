@@ -59,12 +59,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import com.example.poop.R
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.core.VaultTab
+import com.example.poop.util.Logcat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +83,9 @@ fun VaultTopBar(
     val availableCategories by viewModel.availableCategories.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
     val focusManager = LocalFocusManager.current
+
+    // 预解析字符串资源，避免在 onClick 等非 Composable 环境中直接查询导致的警告和错误
+    val autofillToastMessage = stringResource(R.string.vault_toast_enable_autofill_manual)
 
     var showCategorySubMenu by remember { mutableStateOf(false) }
 
@@ -99,7 +105,7 @@ fun VaultTopBar(
                         value = searchQuery,
                         onValueChange = { viewModel.onSearchQueryChange(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("搜索密码项...") },
+                        placeholder = { Text(stringResource(R.string.vault_search_placeholder)) },
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -113,12 +119,20 @@ fun VaultTopBar(
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (selectedCategory != null) "分类: $selectedCategory" else "安全保险箱",
+                            text = if (selectedCategory != null) {
+                                stringResource(R.string.vault_title_category, selectedCategory!!)
+                            } else {
+                                stringResource(R.string.vault_title_default)
+                            },
                             fontWeight = FontWeight.Bold
                         )
                         if (selectedCategory != null) {
                             IconButton(onClick = { viewModel.onCategorySelect(null) }) {
-                                Icon(Icons.Default.Clear, "清除筛选", modifier = Modifier.padding(start = 4.dp))
+                                Icon(
+                                    Icons.Default.Clear, 
+                                    stringResource(R.string.vault_clear_filter), 
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
                             }
                         }
                     }
@@ -128,7 +142,11 @@ fun VaultTopBar(
                 IconButton(onClick = { viewModel.toggleSearch(!viewModel.isSearchActive) }) {
                     Icon(
                         if (viewModel.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
-                        contentDescription = if (viewModel.isSearchActive) "返回" else "搜索"
+                        contentDescription = if (viewModel.isSearchActive) {
+                            stringResource(R.string.action_back)
+                        } else {
+                            stringResource(R.string.action_search)
+                        }
                     )
                 }
             },
@@ -136,7 +154,7 @@ fun VaultTopBar(
                 if (!viewModel.isSearchActive) {
                     Box {
                         IconButton(onClick = { viewModel.isMoreMenuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.action_more))
                         }
                         DropdownMenu(
                             expanded = viewModel.isMoreMenuExpanded,
@@ -144,13 +162,18 @@ fun VaultTopBar(
                         ) {
                             if (!showCategorySubMenu) {
                                 DropdownMenuItem(
-                                    text = { Text("分类筛选") },
+                                    text = { Text(stringResource(R.string.vault_menu_filter)) },
                                     onClick = { showCategorySubMenu = true },
                                     leadingIcon = { Icon(Icons.Default.FilterList, null) }
                                 )
 
                                 DropdownMenuItem(
-                                    text = { Text(if (viewModel.showTOTPCode) "隐藏验证码" else "显示验证码") },
+                                    text = { 
+                                        Text(
+                                            if (viewModel.showTOTPCode) stringResource(R.string.vault_menu_hide_totp) 
+                                            else stringResource(R.string.vault_menu_show_totp)
+                                        ) 
+                                    },
                                     onClick = {
                                         viewModel.showTOTPCode = !viewModel.showTOTPCode
                                         viewModel.isMoreMenuExpanded = false
@@ -170,21 +193,25 @@ fun VaultTopBar(
                                 
                                 if (!isAutofillEnabled) {
                                     DropdownMenuItem(
-                                        text = { Text("开启自动填充") },
+                                        text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
                                         onClick = {
                                             viewModel.isMoreMenuExpanded = false
                                             try {
-                                                // 尝试直接弹出设为默认对话框
                                                 val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
                                                     data = "package:${context.packageName}".toUri()
                                                 }
                                                 context.startActivity(intent)
                                             } catch (e: Exception) {
+                                                Logcat.e("VaultTopBar", "Request autofill service failed", e)
                                                 try {
-                                                    // 备选方案：跳转到自动填充设置列表（使用字符串常量兼容性更好）
                                                     context.startActivity(Intent("android.settings.AUTOFILL_SETTINGS"))
-                                                } catch (e: Exception) {
-                                                    Toast.makeText(context, "请在系统设置中开启自动填充", Toast.LENGTH_LONG).show()
+                                                } catch (e2: Exception) {
+                                                    Logcat.e("VaultTopBar", "Open settings failed", e2)
+                                                    Toast.makeText(
+                                                        context, 
+                                                        autofillToastMessage,
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
                                                 }
                                             }
                                         },
@@ -195,7 +222,7 @@ fun VaultTopBar(
                                 HorizontalDivider()
 
                                 DropdownMenuItem(
-                                    text = { Text("导出备份") },
+                                    text = { Text(stringResource(R.string.vault_menu_export)) },
                                     onClick = {
                                         viewModel.isMoreMenuExpanded = false
                                         onExportClick()
@@ -203,7 +230,7 @@ fun VaultTopBar(
                                     leadingIcon = { Icon(Icons.Default.FileUpload, null) }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("导入恢复") },
+                                    text = { Text(stringResource(R.string.vault_menu_import)) },
                                     onClick = {
                                         viewModel.isMoreMenuExpanded = false
                                         onImportClick()
@@ -212,7 +239,7 @@ fun VaultTopBar(
                                 )
                             } else {
                                 DropdownMenuItem(
-                                    text = { Text("返回") },
+                                    text = { Text(stringResource(R.string.action_back)) },
                                     onClick = { showCategorySubMenu = false },
                                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
                                 )
@@ -220,7 +247,7 @@ fun VaultTopBar(
                                 HorizontalDivider()
 
                                 DropdownMenuItem(
-                                    text = { Text("全部分类") },
+                                    text = { Text(stringResource(R.string.vault_menu_all_categories)) },
                                     onClick = {
                                         viewModel.onCategorySelect(null)
                                         viewModel.isMoreMenuExpanded = false
@@ -243,7 +270,7 @@ fun VaultTopBar(
                     }
                 } else if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                        Icon(Icons.Default.Clear, contentDescription = "清除")
+                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.vault_clear_filter))
                     }
                 }
             },
@@ -275,9 +302,9 @@ fun VaultTopBar(
                         text = {
                             Text(
                                 when (tab) {
-                                    VaultTab.ALL -> "全部"
-                                    VaultTab.PASSWORDS -> "密码"
-                                    VaultTab.TOTP -> "2FA"
+                                    VaultTab.ALL -> stringResource(R.string.vault_tab_all)
+                                    VaultTab.PASSWORDS -> stringResource(R.string.vault_tab_passwords)
+                                    VaultTab.TOTP -> stringResource(R.string.vault_tab_totp)
                                 },
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal

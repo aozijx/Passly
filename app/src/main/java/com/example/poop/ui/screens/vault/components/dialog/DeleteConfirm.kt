@@ -5,7 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 
@@ -19,23 +21,23 @@ fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("确认删除") },
-        text = { Text("确定要删除 \"${item.title}\" 吗？此操作不可撤销。") },
+        title = { Text(stringResource(R.string.vault_delete_title)) },
+        text = { Text(stringResource(R.string.vault_delete_message, item.title)) },
         confirmButton = {
             TextButton(onClick = {
                 viewModel.authenticate(
                     activity = activity,
-                    title = "确认删除",
-                    subtitle = "请验证身份以执行删除操作"
+                    title = activity.getString(R.string.vault_delete_title),
+                    subtitle = activity.getString(R.string.vault_delete_auth_subtitle)
                 ) {
                     onConfirm()
                 }
             }) {
-                Text("确认删除", color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.vault_delete_title), color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }

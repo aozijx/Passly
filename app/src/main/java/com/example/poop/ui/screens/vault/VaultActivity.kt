@@ -26,10 +26,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.R
 import com.example.poop.ui.screens.vault.components.layout.VaultContent
 import com.example.poop.ui.theme.PoopTheme
 
@@ -76,17 +78,17 @@ class VaultActivity : FragmentActivity() {
     private fun requestAuthentication(isFirstTime: Boolean) {
         viewModel.authenticate(
             activity = this,
-            title = "安全验证",
-            subtitle = "验证身份以访问保险箱",
+            title = getString(R.string.vault_auth_title),
+            subtitle = getString(R.string.vault_auth_subtitle),
             onSuccess = {
                 viewModel.authorize()
             },
             onError = { error ->
                 if (isFirstTime) {
-                    Toast.makeText(this, "安全验证失败: $error", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.vault_auth_error_format, error), Toast.LENGTH_SHORT).show()
                     finish()
                 } else {
-                    Toast.makeText(this, "验证未通过", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -125,12 +127,12 @@ private fun AuthorizationPlaceholder(onRetry: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "保险箱已锁定",
+                stringResource(R.string.vault_locked_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                "点击屏幕以解锁",
+                stringResource(R.string.vault_locked_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

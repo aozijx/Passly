@@ -1,5 +1,6 @@
 package com.example.poop.ui.screens.vault.common.icons
 
+import android.content.Context
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -55,62 +56,71 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
-import com.example.poop.util.Logcat
+import com.example.poop.util.PackageUtils
 
 /**
  * 集中管理所有可选图标映射
+ * 优化：使用资源 ID 作为 Key，支持多语言且更规范
  */
 object VaultIcons {
     val allIcons = mapOf(
-        "银行" to Icons.Default.AccountBalance,
-        "信用卡" to Icons.Default.CreditCard,
-        "钱包" to Icons.Default.AccountBalanceWallet,
-        "账单" to Icons.Default.Payments,
-        "储蓄" to Icons.Default.Savings,
-        "理财" to Icons.AutoMirrored.Filled.TrendingUp,
-        "个人" to Icons.Default.Person,
-        "隐私" to Icons.Default.Fingerprint,
-        "社交" to Icons.Default.Forum,
-        "群组" to Icons.Default.Groups,
-        "证件" to Icons.Default.Badge,
-        "密钥" to Icons.Default.VpnKey,
-        "邮件" to Icons.Default.Email,
-        "账号" to Icons.Default.AlternateEmail,
-        "游戏" to Icons.Default.SportsEsports,
-        "视频" to Icons.Default.Subscriptions,
-        "影视" to Icons.Default.Movie,
-        "购物车" to Icons.Default.ShoppingCart,
-        "购物袋" to Icons.Default.ShoppingBag,
-        "直播" to Icons.Default.LiveTv,
-        "摄像" to Icons.Default.Videocam,
-        "收藏" to Icons.Default.Star,
-        "心仪" to Icons.Default.Favorite,
-        "医疗" to Icons.Default.HealthAndSafety,
-        "健康" to Icons.Default.MedicalServices,
-        "云端" to Icons.Default.Cloud,
-        "笔记" to Icons.Default.EditNote,
-        "日记" to Icons.Default.Book,
-        "高铁" to Icons.Default.Train,
-        "飞机" to Icons.Default.Flight,
-        "校园" to Icons.Default.School,
-        "工作" to Icons.Default.Work,
-        "代码" to Icons.Default.Terminal,
-        "网页" to Icons.Default.Language,
-        "WiFi" to Icons.Default.Wifi,
-        "锁定" to Icons.Default.Lock,
-        "防护" to Icons.Default.Shield,
-        "应用" to Icons.Default.Apps,
+        R.string.icon_bank to Icons.Default.AccountBalance,
+        R.string.icon_card to Icons.Default.CreditCard,
+        R.string.icon_wallet to Icons.Default.AccountBalanceWallet,
+        R.string.icon_bill to Icons.Default.Payments,
+        R.string.icon_savings to Icons.Default.Savings,
+        R.string.icon_trending to Icons.AutoMirrored.Filled.TrendingUp,
+        R.string.icon_person to Icons.Default.Person,
+        R.string.icon_privacy to Icons.Default.Fingerprint,
+        R.string.icon_social to Icons.Default.Forum,
+        R.string.icon_groups to Icons.Default.Groups,
+        R.string.icon_badge to Icons.Default.Badge,
+        R.string.icon_key to Icons.Default.VpnKey,
+        R.string.icon_email to Icons.Default.Email,
+        R.string.label_username to Icons.Default.AlternateEmail,
+        R.string.icon_game to Icons.Default.SportsEsports,
+        R.string.icon_video to Icons.Default.Subscriptions,
+        R.string.icon_movie to Icons.Default.Movie,
+        R.string.icon_shopping to Icons.Default.ShoppingCart,
+        R.string.icon_bag to Icons.Default.ShoppingBag,
+        R.string.icon_live to Icons.Default.LiveTv,
+        R.string.icon_camera to Icons.Default.Videocam,
+        R.string.icon_star to Icons.Default.Star,
+        R.string.icon_heart to Icons.Default.Favorite,
+        R.string.icon_medical to Icons.Default.HealthAndSafety,
+        R.string.icon_health to Icons.Default.MedicalServices,
+        R.string.icon_cloud to Icons.Default.Cloud,
+        R.string.icon_note to Icons.Default.EditNote,
+        R.string.icon_book to Icons.Default.Book,
+        R.string.icon_train to Icons.Default.Train,
+        R.string.icon_flight to Icons.Default.Flight,
+        R.string.icon_school to Icons.Default.School,
+        R.string.icon_work to Icons.Default.Work,
+        R.string.icon_code to Icons.Default.Terminal,
+        R.string.icon_web to Icons.Default.Language,
+        R.string.icon_wifi to Icons.Default.Wifi,
+        R.string.icon_lock to Icons.Default.Lock,
+        R.string.icon_shield to Icons.Default.Shield,
+        R.string.icon_apps to Icons.Default.Apps,
     )
 
     fun getIconByName(name: String?): ImageVector {
-        return allIcons[name] ?: Icons.Default.Key
+        if (name == null) return Icons.Default.Key
+        return try {
+            val resId = allIcons.keys.find { it.toString() == name } ?: 0
+            allIcons[resId] ?: Icons.Default.Key
+        } catch (_: Exception) {
+            Icons.Default.Key
+        }
+    }
+    
+    fun getIconByRes(resId: Int?): ImageVector {
+        return allIcons[resId] ?: Icons.Default.Key
     }
 }
 
-/**
- * 统一图标展示原子组件
- */
 @Composable
 fun VaultItemIcon(
     item: VaultEntry,
@@ -118,16 +128,10 @@ fun VaultItemIcon(
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
     val context = LocalContext.current
-    
     val appIcon = remember(item.associatedAppPackage) {
-        if (!item.associatedAppPackage.isNullOrEmpty()) {
-            try {
-                context.packageManager.getApplicationIcon(item.associatedAppPackage)
-            } catch (e: Exception) {
-                Logcat.e("VaultItemIcon", "Failed to load icon for ${item.associatedAppPackage}", e)
-                null
-            }
-        } else null
+        item.associatedAppPackage?.let { pkg ->
+            PackageUtils.getAppIconDrawable(context, pkg)
+        }
     }
 
     if (!item.iconCustomPath.isNullOrEmpty()) {
@@ -145,10 +149,15 @@ fun VaultItemIcon(
             contentScale = ContentScale.Fit
         )
     } else {
-        val icon = if (!item.iconName.isNullOrEmpty()) {
-            VaultIcons.getIconByName(item.iconName)
-        } else {
-            getCategoryIcon(item.category)
+        val icon = remember(item.iconName, item.category) {
+            val resId = item.iconName?.toIntOrNull()
+            if (resId != null) {
+                VaultIcons.getIconByRes(resId)
+            } else if (!item.iconName.isNullOrEmpty()) {
+                VaultIcons.getIconByName(item.iconName)
+            } else {
+                getCategoryIcon(context, item.category)
+            }
         }
         Icon(
             imageVector = icon,
@@ -161,29 +170,34 @@ fun VaultItemIcon(
 
 /**
  * 类别到图标的语义映射
+ * 优化：从资源加载关键词，支持多语言动态匹配
  */
-fun getCategoryIcon(category: String): ImageVector = when (category.lowercase()) {
-    "个人", "private", "隐私" -> Icons.Default.Fingerprint
-    "银行卡", "bank card", "金融", "finance", "网银", "银行" -> Icons.Default.AccountBalance
-    "支付", "payment", "充值", "recharge", "转账" -> Icons.Default.Payments
-    "提现", "withdraw", "理财", "financial management", "存钱" -> Icons.AutoMirrored.Filled.TrendingUp
-    "账号", "account", "登录", "login" -> Icons.Default.VpnKey
-    "社交", "social", "聊天", "沟通", "微信", "qq" -> Icons.Default.Forum
-    "邮箱", "email", "邮件", "mail" -> Icons.Default.Email
-    "应用", "APP", "app", "application" -> Icons.Default.Apps
-    "游戏", "game" -> Icons.Default.SportsEsports
-    "视频", "video", "会员", "影音", "movie", "影视" -> Icons.Default.Subscriptions
-    "购物", "shopping", "电商", "淘宝", "京东" -> Icons.Default.ShoppingCart
-    "购物袋", "shopping bag" -> Icons.Default.ShoppingBag
-    "直播", "live", "主播" -> Icons.Default.LiveTv
-    "公积金", "社保", "医保", "健康", "health", "medical" -> Icons.Default.HealthAndSafety
-    "网盘", "cloud", "云盘", "drive" -> Icons.Default.Cloud
-    "笔记", "note", "记事", "日记", "diary", "书" -> Icons.Default.EditNote
-    "工作", "work", "打工" -> Icons.Default.Work
-    "学习", "school", "教育", "校园" -> Icons.Default.School
-    "出行", "travel", "高铁", "火车" -> Icons.Default.Train
-    "飞机", "飞行", "flight" -> Icons.Default.Flight
-    "wifi", "网络", "无线" -> Icons.Default.Wifi
-    "安全", "security", "权限", "permission" -> Icons.Default.Security
-    else -> Icons.Default.Key
+fun getCategoryIcon(context: Context, category: String): ImageVector {
+    val input = category.trim()
+    val res = context.resources
+    
+    // 定义匹配辅助函数
+    fun isMatch(arrayId: Int): Boolean = res.getStringArray(arrayId).contains(input)
+
+    return when {
+        isMatch(R.array.category_keywords_personal) -> Icons.Default.Fingerprint
+        isMatch(R.array.category_keywords_bank) -> Icons.Default.AccountBalance
+        isMatch(R.array.category_keywords_payment) -> Icons.Default.Payments
+        isMatch(R.array.category_keywords_finance) -> Icons.AutoMirrored.Filled.TrendingUp
+        isMatch(R.array.category_keywords_account) -> Icons.Default.VpnKey
+        isMatch(R.array.category_keywords_social) -> Icons.Default.Forum
+        isMatch(R.array.category_keywords_email) -> Icons.Default.Email
+        isMatch(R.array.category_keywords_apps) || input == context.getString(R.string.category_autofill) -> Icons.Default.Apps
+        isMatch(R.array.category_keywords_game) -> Icons.Default.SportsEsports
+        isMatch(R.array.category_keywords_video) -> Icons.Default.Subscriptions
+        isMatch(R.array.category_keywords_shopping) -> Icons.Default.ShoppingCart
+        isMatch(R.array.category_keywords_health) -> Icons.Default.HealthAndSafety
+        isMatch(R.array.category_keywords_note) -> Icons.Default.EditNote
+        isMatch(R.array.category_keywords_work) -> Icons.Default.Work
+        isMatch(R.array.category_keywords_school) -> Icons.Default.School
+        isMatch(R.array.category_keywords_travel) -> Icons.Default.Train
+        isMatch(R.array.category_keywords_wifi) -> Icons.Default.Wifi
+        isMatch(R.array.category_keywords_security) -> Icons.Default.Security
+        else -> Icons.Default.Key
+    }
 }

@@ -28,4 +28,283 @@
 • 添加自动保存的功能
 • 一些 UI 的美化
 ]]></string>
+
+    <!-- 通用操作 -->
+    <string name="action_save">保存</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_close">关闭</string>
+    <string name="action_back">返回</string>
+    <string name="action_search">搜索</string>
+    <string name="action_more">更多</string>
+    <string name="action_add">添加</string>
+    <string name="action_delete">删除</string>
+    <string name="action_confirm">确定</string>
+
+    <!-- 通用字段 -->
+    <string name="label_username">账号</string>
+    <string name="label_password">密码</string>
+    <string name="label_title">标题</string>
+    <string name="label_remark">备注</string>
+    <string name="label_default">默认</string>
+    <string name="label_category">分类</string>
+    <string name="label_edit_field">编辑%s</string>
+    <string name="label_hidden_mask">••••••••</string>
+    <string name="show_password">显示密码</string>
+    <string name="hide_password">隐藏密码</string>
+
+    <!-- 图标名称 (简化版) -->
+    <string name="icon_bank">银行</string>
+    <string name="icon_card">信用卡</string>
+    <string name="icon_wallet">钱包</string>
+    <string name="icon_bill">账单</string>
+    <string name="icon_savings">储蓄</string>
+    <string name="icon_trending">理财</string>
+    <string name="icon_person">个人</string>
+    <string name="icon_privacy">隐私</string>
+    <string name="icon_social">社交</string>
+    <string name="icon_groups">群组</string>
+    <string name="icon_badge">证件</string>
+    <string name="icon_key">密钥</string>
+    <string name="icon_email">邮件</string>
+    <string name="icon_game">游戏</string>
+    <string name="icon_video">视频</string>
+    <string name="icon_movie">影视</string>
+    <string name="icon_shopping">购物</string>
+    <string name="icon_bag">购物袋</string>
+    <string name="icon_live">直播</string>
+    <string name="icon_camera">摄像</string>
+    <string name="icon_star">收藏</string>
+    <string name="icon_heart">心仪</string>
+    <string name="icon_medical">医疗</string>
+    <string name="icon_health">健康</string>
+    <string name="icon_cloud">云端</string>
+    <string name="icon_note">笔记</string>
+    <string name="icon_book">日记</string>
+    <string name="icon_train">高铁</string>
+    <string name="icon_flight">飞机</string>
+    <string name="icon_school">校园</string>
+    <string name="icon_work">工作</string>
+    <string name="icon_code">代码</string>
+    <string name="icon_web">网页</string>
+    <string name="icon_wifi">WiFi</string>
+    <string name="icon_lock">锁定</string>
+    <string name="icon_shield">防护</string>
+    <string name="icon_apps">应用</string>
+
+    <!-- Vault Activity & General Auth -->
+    <string name="vault_auth_title">安全验证</string>
+    <string name="vault_auth_subtitle">验证身份以访问保险箱</string>
+    <string name="vault_auth_error_format">安全验证失败: %s</string>
+    <string name="vault_auth_failed">验证未通过</string>
+    <string name="vault_locked_title">保险箱已锁定</string>
+    <string name="vault_locked_subtitle">点击屏幕以解锁</string>
+    <string name="vault_auth_encrypt_title">验证加密</string>
+    <string name="vault_auth_encrypt_subtitle">请验证以保护信息</string>
+    <string name="vault_auth_decrypt_title">验证身份</string>
+    <string name="vault_auth_decrypt_subtitle_reveal">请验证以显示敏感信息</string>
+    <string name="vault_auth_decrypt_subtitle_generic">请验证以继续操作</string>
+
+    <!-- Vault TopBar -->
+    <string name="vault_search_placeholder">搜索密码项…</string>
+    <string name="vault_title_category">分类: %s</string>
+    <string name="vault_title_default">安全保险箱</string>
+    <string name="vault_clear_filter">清除筛选</string>
+    <string name="vault_menu_filter">分类筛选</string>
+    <string name="vault_menu_hide_totp">隐藏验证码</string>
+    <string name="vault_menu_show_totp">显示验证码</string>
+    <string name="vault_menu_enable_autofill">开启自动填充</string>
+    <string name="vault_toast_enable_autofill_manual">请在系统设置中开启自动填充</string>
+    <string name="vault_menu_export">导出备份</string>
+    <string name="vault_menu_import">导入恢复</string>
+    <string name="vault_menu_all_categories">全部分类</string>
+    <string name="vault_tab_all">全部</string>
+    <string name="vault_tab_passwords">密码</string>
+    <string name="vault_tab_totp">2FA</string>
+
+    <!-- Vault FAB -->
+    <string name="vault_fab_scan">扫码</string>
+    <string name="vault_fab_2fa">2FA</string>
+    <string name="vault_fab_password">密码</string>
+
+    <!-- Vault Common -->
+    <string name="category_autofill">自动填充</string>
+    <string name="category_unfiled">未分类</string>
+    <string name="category_otp">OTP</string>
+    <string name="loading_export">正在导出备份…</string>
+    <string name="loading_import">正在导入恢复…</string>
+    <string name="auth_to_show">验证以显示</string>
+    <string name="vault_empty_placeholder">你的保险箱空空如也</string>
+
+    <!-- Vault Detail -->
+    <string name="vault_detail_upgrade_security">验证并升级安全等级</string>
+    <string name="vault_detail_reveal_info">验证并显示详情</string>
+    <string name="vault_detail_associated_domain">关联域名</string>
+    <string name="vault_detail_associated_package">关联包名</string>
+    <string name="vault_detail_auth_reveal_title">查看敏感信息</string>
+    <string name="vault_detail_auth_reveal_subtitle">请验证身份以查看密钥详情</string>
+    <string name="vault_detail_auth_qr_title">查看二维码</string>
+    <string name="vault_detail_auth_qr_subtitle">请验证身份以导出二维码</string>
+    <string name="vault_detail_totp_label">动态验证码</string>
+    <string name="vault_detail_totp_copied">验证码已复制</string>
+    <string name="vault_detail_edit_totp_title">编辑 TOTP 配置</string>
+    <string name="vault_detail_export_qr_title">导出二维码</string>
+    <string name="vault_detail_export_qr_message">使用其他验证器应用扫描此二维码即可迁移此令牌。</string>
+
+    <!-- Vault Add Password -->
+    <string name="vault_add_password_title">添加新密码</string>
+    <string name="label_title_hint">标题 (如: Google, GitHub)</string>
+    <string name="label_username_hint">账号/邮箱</string>
+
+    <!-- Vault Add 2FA -->
+    <string name="vault_add_2fa_title">新增 2FA 令牌</string>
+    <string name="vault_2fa_uri_parsed">已解析 URI 并自动清理剪贴板</string>
+    <string name="vault_2fa_uri_parse_failed">URI 解析失败</string>
+    <string name="label_2fa_uri_hint">粘贴 otpauth:// URI</string>
+    <string name="action_paste">粘贴</string>
+    <string name="action_advanced_config">高级手动配置</string>
+    <string name="vault_error_encrypt_failed">加密失败，请重试</string>
+
+    <!-- Vault Scanner -->
+    <string name="vault_scanner_error_not_otp">识别成功，但不是有效的 2FA 二维码</string>
+    <string name="vault_scanner_action_album">相册导入</string>
+    <string name="vault_scanner_result_title">发现 2FA 密钥</string>
+    <string name="vault_scanner_result_account">账户: %s</string>
+    <string name="vault_scanner_action_rescan">重扫</string>
+    <string name="vault_scanner_success_save">已成功保存到保险库</string>
+    <string name="vault_scanner_auth_save_title">保存令牌</string>
+    <string name="vault_scanner_auth_save_subtitle">验证身份以保存 %s</string>
+
+    <!-- Vault Delete Dialog -->
+    <string name="vault_delete_title">确认删除</string>
+    <string name="vault_delete_message">确定要删除 “%s” 吗？此操作不可撤销。</string>
+    <string name="vault_delete_auth_subtitle">请验证身份以执行删除操作</string>
+
+    <!-- Vault Backup Dialog -->
+    <string name="vault_backup_title_export">设置备份密码</string>
+    <string name="vault_backup_title_import">输入备份密码</string>
+    <string name="vault_backup_message_export">请设置一个密码来加密备份文件。恢复时需要此密码。</string>
+    <string name="vault_backup_message_import">请输入备份文件的密码以解密数据。</string>
+    <string name="vault_backup_auth_title">验证身份</string>
+    <string name="vault_backup_auth_subtitle_export">验证以导出数据</string>
+    <string name="vault_backup_auth_subtitle_import">验证以导入数据</string>
+    <string name="vault_backup_success">操作成功</string>
+    <string name="vault_backup_failed_format">失败: %s</string>
+
+    <!-- Vault Edit Item -->
+    <string name="vault_edit_modify_category">修改分类</string>
+    <string name="vault_edit_save_category">保存分类</string>
+    <string name="vault_edit_modified_hint">内容已修改，别忘了保存</string>
+
+    <!-- TOTP Config -->
+    <string name="label_totp_secret">TOTP 密钥 (Base32)</string>
+    <string name="label_totp_period">周期 (秒)</string>
+    <string name="label_totp_digits">位数</string>
+    <string name="label_totp_algorithm">算法</string>
+
+    <!-- AutoFill Item -->
+    <string name="autofill_pending_verification">待验证</string>
+    <string name="autofill_security_upgrade_hint">建议验证提升安全等级</string>
+
+    <!-- Generate Title -->
+    <string name="autofill_title_late_night">深夜添加</string>
+    <string name="autofill_title_morning">上午添加</string>
+    <string name="autofill_title_noon">午间添加</string>
+    <string name="autofill_title_afternoon">下午添加</string>
+    <string name="autofill_title_evening">晚间添加</string>
+    <string name="autofill_title_new_entry">新凭据</string>
+    <string name="autofill_title_app_fallback">应用</string>
+
+    <!-- Icon Picker -->
+    <string name="icon_picker_title">选择图标</string>
+    <string name="icon_picker_subtitle">为该条目选择预设图标或上传自定义图片</string>
+    <string name="icon_picker_action_add_photo">添加图片</string>
+
+    <!-- 分类匹配关键词数组 -->
+    <string-array name="category_keywords_personal">
+        <item>个人</item>
+        <item>隐私</item>
+    </string-array>
+    <string-array name="category_keywords_bank">
+        <item>银行卡</item>
+        <item>金融</item>
+        <item>网银</item>
+        <item>银行</item>
+    </string-array>
+    <string-array name="category_keywords_payment">
+        <item>支付</item>
+        <item>充值</item>
+        <item>转账</item>
+    </string-array>
+    <string-array name="category_keywords_finance">
+        <item>提现</item>
+        <item>理财</item>
+        <item>存钱</item>
+    </string-array>
+    <string-array name="category_keywords_account">
+        <item>账号</item>
+        <item>登录</item>
+    </string-array>
+    <string-array name="category_keywords_social">
+        <item>社交</item>
+        <item>聊天</item>
+        <item>沟通</item>
+        <item>微信</item>
+        <item>qq</item>
+    </string-array>
+    <string-array name="category_keywords_email">
+        <item>邮箱</item>
+        <item>邮件</item>
+    </string-array>
+    <string-array name="category_keywords_apps">
+        <item>应用</item>
+    </string-array>
+    <string-array name="category_keywords_game">
+        <item>游戏</item>
+    </string-array>
+    <string-array name="category_keywords_video">
+        <item>视频</item>
+        <item>会员</item>
+        <item>影音</item>
+        <item>影视</item>
+    </string-array>
+    <string-array name="category_keywords_shopping">
+        <item>购物</item>
+        <item>电商</item>
+        <item>淘宝</item>
+        <item>京东</item>
+    </string-array>
+    <string-array name="category_keywords_health">
+        <item>公积金</item>
+        <item>社保</item>
+        <item>医保</item>
+        <item>健康</item>
+    </string-array>
+    <string-array name="category_keywords_note">
+        <item>笔记</item>
+        <item>记事</item>
+        <item>日记</item>
+    </string-array>
+    <string-array name="category_keywords_work">
+        <item>工作</item>
+        <item>打工</item>
+    </string-array>
+    <string-array name="category_keywords_school">
+        <item>学习</item>
+        <item>教育</item>
+        <item>校园</item>
+    </string-array>
+    <string-array name="category_keywords_travel">
+        <item>出行</item>
+        <item>高铁</item>
+        <item>火车</item>
+    </string-array>
+    <string-array name="category_keywords_wifi">
+        <item>wifi</item>
+        <item>网络</item>
+        <item>无线</item>
+    </string-array>
+    <string-array name="category_keywords_security">
+        <item>安全</item>
+        <item>权限</item>
+    </string-array>
 </resources>

@@ -42,11 +42,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.DetailActions
@@ -68,6 +70,13 @@ fun TwoFADetailDialog(
     val totpState = rememberTotpState(entry = item, viewModel = viewModel, autoMigrate = true)
     val isSteam = remember(item.totpAlgorithm) { item.totpAlgorithm.uppercase() == "STEAM" }
     var showQrDialog by remember { mutableStateOf(false) }
+
+    // 预加载字符串资源以供回调使用
+    val authRevealTitle = stringResource(R.string.vault_detail_auth_reveal_title)
+    val authRevealSubtitle = stringResource(R.string.vault_detail_auth_reveal_subtitle)
+    val authQrTitle = stringResource(R.string.vault_detail_auth_qr_title)
+    val authQrSubtitle = stringResource(R.string.vault_detail_auth_qr_subtitle)
+    val totpCopiedMsg = stringResource(R.string.vault_detail_totp_copied)
     
     // 初始化编辑状态
     val categoryEditState = remember(item) { VaultEditState(item) }
@@ -87,8 +96,8 @@ fun TwoFADetailDialog(
                     } else {
                         viewModel.authenticate(
                             activity = activity,
-                            title = "查看敏感信息",
-                            subtitle = "请验证身份以查看密钥详情",
+                            title = authRevealTitle,
+                            subtitle = authRevealSubtitle,
                             onSuccess = { 
                                 totpEditState.secret = totpState.decryptedSecret ?: ""
                                 totpEditState.isEditing = true 
@@ -111,13 +120,13 @@ fun TwoFADetailDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("动态验证码", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+                    Text(stringResource(R.string.vault_detail_totp_label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
                     IconButton(
                         onClick = {
                             viewModel.authenticate(
                                 activity = activity,
-                                title = "查看二维码",
-                                subtitle = "请验证身份以导出二维码",
+                                title = authQrTitle,
+                                subtitle = authQrSubtitle,
                                 onSuccess = {
                                     totpEditState.isEditing = false
                                     showQrDialog = true
@@ -134,7 +143,7 @@ fun TwoFADetailDialog(
                     modifier = Modifier.fillMaxWidth().clickable {
                         if (totpState.code.isNotEmpty() && !totpState.code.contains("-")) {
                             ClipboardUtils.copy(context, totpState.code)
-                            Toast.makeText(context, "验证码已复制", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, totpCopiedMsg, Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
@@ -146,7 +155,7 @@ fun TwoFADetailDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        val displayText = if (totpState.decryptedSecret == null) "验证以显示" 
+                        val displayText = if (totpState.decryptedSecret == null) stringResource(R.string.auth_to_show) 
                                         else (if (isSteam) totpState.code else totpState.code.chunked(3).joinToString(" "))
                         
                         Text(
@@ -207,7 +216,7 @@ private fun EditTotpSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("编辑 TOTP 配置", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(stringResource(R.string.vault_detail_edit_totp_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
         TotpConfigForm(
             secret = editState.secret, onSecretChange = { editState.secret = it },
             period = editState.period, onPeriodChange = { editState.period = it },
@@ -215,7 +224,7 @@ private fun EditTotpSection(
             algorithm = editState.algorithm, onAlgorithmChange = { editState.algorithm = it }
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = { editState.isEditing = false }) { Text("取消") }
+            TextButton(onClick = { editState.isEditing = false }) { Text(stringResource(R.string.action_cancel)) }
             Button(onClick = {
                 if (editState.secret.isNotBlank()) {
                     viewModel.encryptMultiple(activity, listOf(editState.secret)) { 
@@ -230,7 +239,7 @@ private fun EditTotpSection(
                         }
                     }
                 }
-            }) { Text("保存配置") }
+            }) { Text(stringResource(R.string.action_save)) }
         }
     }
 }
@@ -239,14 +248,14 @@ private fun EditTotpSection(
 private fun QrExportDialog(bitmap: Bitmap?, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导出二维码") },
+        title = { Text(stringResource(R.string.vault_detail_export_qr_title)) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), 
                 horizontalAlignment = Alignment.CenterHorizontally, 
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("使用其他验证器应用扫描此二维码即可迁移此令牌。", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.vault_detail_export_qr_message), style = MaterialTheme.typography.bodyMedium)
                 if (bitmap != null) {
                     Card(modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f), shape = RoundedCornerShape(12.dp)) {
                         Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
@@ -256,7 +265,7 @@ private fun QrExportDialog(bitmap: Bitmap?, onDismiss: () -> Unit) {
                 } else CircularProgressIndicator()
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("关闭") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } }
     )
 }
 

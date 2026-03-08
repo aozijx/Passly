@@ -32,10 +32,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.R
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.EmptyVaultPlaceholder
 import com.example.poop.ui.screens.vault.common.base.VaultItem
@@ -49,6 +51,9 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
     val items by viewModel.vaultItems.collectAsState()
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    // 预解析字符串资源
+    val categoryAutofill = stringResource(R.string.category_autofill)
 
     LaunchedEffect(scrollBehavior.state.collapsedFraction) {
         val window = activity.window
@@ -98,7 +103,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                                 item.totpSecret != null -> {
                                     TwoFAItem(entry = item, viewModel = viewModel, showCode = viewModel.showTOTPCode)
                                 }
-                                item.category == "自动抓取" || item.associatedDomain != null || item.associatedAppPackage != null -> {
+                                item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
                                     AutoFillItem(entry = item, viewModel = viewModel)
                                 }
                                 else -> {

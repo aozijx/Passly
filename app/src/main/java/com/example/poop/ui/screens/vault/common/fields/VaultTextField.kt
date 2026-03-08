@@ -13,9 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import com.example.poop.R
 
 @Composable
 fun VaultTextField(
@@ -49,19 +51,21 @@ fun PasswordInput(
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
-        label = { Text("密码") },
+        label = { Text(stringResource(R.string.label_password)) },
         singleLine = true,
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = keyboardOptions,
-        // 根据 isVisible 决定是否掩码
         visualTransformation = if (isVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { onVisibilityChange(!isVisible) }) {
                     Icon(
-                        // 修正图标：显示时展示“隐藏”动作图标，隐藏时展示“显示”动作图标
                         imageVector = if (isVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        contentDescription = if (isVisible) "隐藏密码" else "显示密码"
+                        contentDescription = if (isVisible) {
+                            stringResource(R.string.hide_password)
+                        } else {
+                            stringResource(R.string.show_password)
+                        }
                     )
                 }
             }

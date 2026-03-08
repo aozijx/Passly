@@ -37,8 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.poop.R
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.core.AddType
 
@@ -67,7 +69,7 @@ fun VaultFab(viewModel: VaultViewModel) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 FabMenuItem(
-                    label = "扫码",
+                    label = stringResource(R.string.vault_fab_scan),
                     icon = Icons.Default.QrCodeScanner,
                     onClick = {
                         showFabMenu = false
@@ -75,7 +77,7 @@ fun VaultFab(viewModel: VaultViewModel) {
                     }
                 )
                 FabMenuItem(
-                    label = "2FA",
+                    label = stringResource(R.string.vault_fab_2fa),
                     icon = Icons.Default.Pin,
                     onClick = {
                         showFabMenu = false
@@ -83,7 +85,7 @@ fun VaultFab(viewModel: VaultViewModel) {
                     }
                 )
                 FabMenuItem(
-                    label = "密码",
+                    label = stringResource(R.string.vault_fab_password),
                     icon = Icons.Default.Key,
                     onClick = {
                         showFabMenu = false
@@ -102,7 +104,7 @@ fun VaultFab(viewModel: VaultViewModel) {
         ) {
             Icon(
                 Icons.Default.Add,
-                contentDescription = "添加",
+                contentDescription = stringResource(R.string.action_add),
                 modifier = Modifier.rotate(rotation)
             )
         }

@@ -14,8 +14,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.base.BaseVaultDialog
@@ -34,6 +36,11 @@ fun AddTwoFADialog(
     val context = LocalContext.current
     val state = remember { TotpAddState() }
     val algorithms = listOf("SHA1", "SHA256", "SHA512", "STEAM")
+    
+    val uriParsedMsg = stringResource(R.string.vault_2fa_uri_parsed)
+    val uriParseFailedMsg = stringResource(R.string.vault_2fa_uri_parse_failed)
+    val encryptFailedMsg = stringResource(R.string.vault_error_encrypt_failed)
+    val otpCategory = stringResource(R.string.category_otp)
 
     // 自动解析 otpauth URI 逻辑
     LaunchedEffect(state.uriText) {
@@ -60,15 +67,15 @@ fun AddTwoFADialog(
             }
             state.period = period.toString()
 
-            Toast.makeText(context, "已解析 URI 并自动清理剪贴板", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, uriParsedMsg, Toast.LENGTH_SHORT).show()
             ClipboardUtils.clear(context)
         } catch (e: Exception) {
-            Logcat.e("AddTwoFA", "URI 解析失败", e)
+            Logcat.e("AddTwoFA", uriParseFailedMsg, e)
         }
     }
 
     BaseVaultDialog(
-        title = "新增 2FA 令牌",
+        title = stringResource(R.string.vault_add_2fa_title),
         onDismiss = { viewModel.dismissAddDialog() },
         confirmEnabled = state.isValid,
         onConfirm = {
@@ -78,7 +85,7 @@ fun AddTwoFADialog(
                     title = state.title,
                     username = state.username,
                     password = "",
-                    category = state.category.ifBlank { "OTP" },
+                    category = state.category.ifBlank { otpCategory },
                     totpSecret = CryptoManager.encrypt(state.secret.trim(), cipher),
                     totpDigits = state.digits.toIntOrNull() ?: 6,
                     totpPeriod = state.period.toIntOrNull() ?: 30,
@@ -88,24 +95,24 @@ fun AddTwoFADialog(
                 viewModel.addItem(entry)
                 viewModel.dismissAddDialog()
             } else {
-                Toast.makeText(context, "加密失败，请重试", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, encryptFailedMsg, Toast.LENGTH_SHORT).show()
             }
         }
     ) {
         VaultTextField(
             value = state.title,
             onValueChange = { state.title = it },
-            label = "标题"
+            label = stringResource(R.string.label_title)
         )
 
         VaultTextField(
             value = state.uriText,
             onValueChange = { state.uriText = it },
-            label = "粘贴 otpauth:// URI",
+            label = stringResource(R.string.label_2fa_uri_hint),
             trailingIcon = {
                 TextButton(onClick = { state.uriText = ClipboardUtils.getText(context) }) {
                     Icon(Icons.Default.ContentPaste, null, modifier = Modifier.padding(end = 4.dp))
-                    Text("粘贴")
+                    Text(stringResource(R.string.action_paste))
                 }
             }
         )
@@ -130,7 +137,7 @@ fun AddTwoFADialog(
             )
         } else {
             TextButton(onClick = { state.showAdvanced = true }) {
-                Text("高级手动配置")
+                Text(stringResource(R.string.action_advanced_config))
             }
         }
     }

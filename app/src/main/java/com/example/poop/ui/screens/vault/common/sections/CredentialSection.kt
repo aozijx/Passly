@@ -16,8 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.DetailItem
@@ -45,7 +47,7 @@ fun CredentialSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // 1. 账号行
         CredentialRow(
-            label = "账号",
+            label = stringResource(R.string.label_username),
             isEditing = editState.isEditingUsername,
             editedValue = editState.editedUsername,
             revealedValue = revealedUsername,
@@ -67,7 +69,7 @@ fun CredentialSection(
         val showPassword = item.password.isNotEmpty() || item.entryType != 1
         if (showPassword) {
             CredentialRow(
-                label = "密码",
+                label = stringResource(R.string.label_password),
                 isEditing = editState.isEditingPassword,
                 editedValue = editState.editedPassword,
                 revealedValue = revealedPassword,
@@ -105,7 +107,10 @@ fun CredentialSection(
             ) {
                 Icon(if (isSilentData) Icons.Default.Security else Icons.Default.Visibility, null)
                 Spacer(Modifier.width(8.dp))
-                Text(if (isSilentData) "验证并升级安全等级" else "验证并显示详情")
+                Text(
+                    if (isSilentData) stringResource(R.string.vault_detail_upgrade_security) 
+                    else stringResource(R.string.vault_detail_reveal_info)
+                )
             }
         }
     }
@@ -130,17 +135,21 @@ private fun CredentialRow(
             EditTextField(
                 value = editedValue,
                 onValueChange = onValueChange,
-                label = "编辑$label",
+                label = stringResource(R.string.label_edit_field, label),
                 onSave = { onSave(editedValue) }
             )
             if (editedValue != (revealedValue ?: "")) {
-                Text("内容已修改，别忘了保存", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                Text(
+                    stringResource(R.string.vault_edit_modified_hint), 
+                    style = MaterialTheme.typography.labelSmall, 
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
         }
     } else {
         DetailItem(
             label = label,
-            value = revealedValue ?: "••••••••",
+            value = revealedValue ?: stringResource(R.string.label_hidden_mask),
             isRevealed = revealedValue != null,
             onCopy = onCopy,
             onEdit = {

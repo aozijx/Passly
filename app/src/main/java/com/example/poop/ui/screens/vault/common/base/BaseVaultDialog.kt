@@ -7,7 +7,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.poop.R
 
 /**
  * 统一的弹窗脚手架（插槽架构的核心）
@@ -21,8 +23,8 @@ fun BaseVaultDialog(
     title: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = "保存",
-    dismissText: String = "取消",
+    confirmText: String = stringResource(R.string.action_save),
+    dismissText: String = stringResource(R.string.action_cancel),
     confirmEnabled: Boolean = true,
     content: @Composable () -> Unit
 ) {

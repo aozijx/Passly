@@ -1,7 +1,9 @@
 package com.example.poop.ui.screens.vault.components.layout
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.R
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.base.LoadingMask
 import com.example.poop.ui.screens.vault.components.dialog.BackupPasswordDialog
@@ -23,6 +25,8 @@ import com.example.poop.ui.screens.vault.types.totp.TwoFADetailDialog
  */
 @Composable
 fun VaultDialogs(activity: FragmentActivity, viewModel: VaultViewModel) {
+    val categoryAutofill = stringResource(R.string.category_autofill)
+    
     // --- Detail Dialogs ---
     viewModel.detailItem?.let { item ->
         // Icon Picker is a shared dialog, shown when a detail item is present
@@ -44,7 +48,7 @@ fun VaultDialogs(activity: FragmentActivity, viewModel: VaultViewModel) {
                     viewModel = viewModel
                 )
             }
-            item.category == "自动抓取" || item.associatedDomain != null || item.associatedAppPackage != null -> {
+            item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
                 AutoFillDetailDialog(
                     activity = activity,
                     item = item,
@@ -76,6 +80,12 @@ fun VaultDialogs(activity: FragmentActivity, viewModel: VaultViewModel) {
         BackupPasswordDialog(activity = activity, viewModel = viewModel)
     }
     if (viewModel.isBackupLoading) {
-        LoadingMask(message = if (viewModel.isExporting) "正在导出备份..." else "正在导入恢复...")
+        LoadingMask(
+            message = if (viewModel.isExporting) {
+                stringResource(R.string.loading_export)
+            } else {
+                stringResource(R.string.loading_import)
+            }
+        )
     }
 }

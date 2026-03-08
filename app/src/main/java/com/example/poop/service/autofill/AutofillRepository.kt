@@ -1,6 +1,7 @@
 package com.example.poop.service.autofill
 
 import android.content.Context
+import com.example.poop.R
 import com.example.poop.data.AppDatabase
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.types.autofill.AutofillTitleGenerator
@@ -82,6 +83,7 @@ object AutofillRepository {
                 }
 
                 val title = AutofillTitleGenerator.getSmartTitle(
+                    context = context,
                     pageTitle = pageTitle,
                     domain = webDomain,
                     appLabel = appLabel,
@@ -98,7 +100,7 @@ object AutofillRepository {
                     title = title,
                     username = encUser,
                     password = encPass,
-                    category = "自动填充",
+                    category = context.getString(R.string.category_autofill),
                     associatedAppPackage = packageName,
                     associatedDomain = webDomain,
                     entryType = 0,

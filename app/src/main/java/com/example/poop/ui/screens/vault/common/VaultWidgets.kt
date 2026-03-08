@@ -14,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.poop.R
 
 /**
  * 通用占位符组件
@@ -34,7 +36,7 @@ fun EmptyVaultPlaceholder() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "你的保险箱空空如也",
+            text = stringResource(R.string.vault_empty_placeholder),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.outline
         )

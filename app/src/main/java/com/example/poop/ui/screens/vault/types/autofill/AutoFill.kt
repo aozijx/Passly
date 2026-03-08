@@ -29,11 +29,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.DetailActions
@@ -42,6 +44,7 @@ import com.example.poop.ui.screens.vault.common.sections.CategoryItem
 import com.example.poop.ui.screens.vault.common.sections.CredentialSection
 import com.example.poop.ui.screens.vault.common.state.VaultEditState
 import com.example.poop.util.ClipboardUtils
+import com.example.poop.util.Logcat
 
 @Composable
 fun AutoFillDetailDialog(
@@ -90,11 +93,15 @@ fun AutoFillDetailDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("关联域名", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                        Text(
+                            text = stringResource(R.string.vault_detail_associated_domain),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = item.associatedDomain, 
-                                fontWeight = FontWeight.SemiBold, 
+                                text = item.associatedDomain,
+                                fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.End,
                                 modifier = Modifier.padding(end = 4.dp)
                             )
@@ -103,7 +110,9 @@ fun AutoFillDetailDialog(
                                     try {
                                         val url = if (item.associatedDomain.startsWith("http")) item.associatedDomain else "https://${item.associatedDomain}"
                                         context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-                                    } catch (e: Exception) {}
+                                    } catch (e: Exception) {
+                                        Logcat.e("AutoFillDetail", "Failed to open domain: ${item.associatedDomain}", e)
+                                    }
                                 },
                                 modifier = Modifier.size(24.dp)
                             ) {
@@ -120,11 +129,15 @@ fun AutoFillDetailDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("关联包名", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                        Text(
+                            text = stringResource(R.string.vault_detail_associated_package),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = item.associatedAppPackage, 
-                                fontWeight = FontWeight.SemiBold, 
+                                text = item.associatedAppPackage,
+                                fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.End,
                                 modifier = Modifier.padding(end = 4.dp)
                             )
@@ -133,7 +146,9 @@ fun AutoFillDetailDialog(
                                     try {
                                         val intent = context.packageManager.getLaunchIntentForPackage(item.associatedAppPackage)
                                         if (intent != null) context.startActivity(intent)
-                                    } catch (e: Exception) {}
+                                    } catch (e: Exception) {
+                                        Logcat.e("AutoFillDetail", "Failed to launch app: ${item.associatedAppPackage}", e)
+                                    }
                                 },
                                 modifier = Modifier.size(24.dp)
                             ) {
@@ -150,10 +165,14 @@ fun AutoFillDetailDialog(
                     ) {
                         Icon(Icons.Default.Security, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("建议验证提升安全等级", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            text = stringResource(R.string.autofill_security_upgrade_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
-                
+
                 CredentialSection(
                     activity = activity,
                     item = item,

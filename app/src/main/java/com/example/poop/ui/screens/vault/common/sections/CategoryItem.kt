@@ -28,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.state.VaultEditState
@@ -43,7 +45,7 @@ fun CategoryInputField(
     value: String,
     onValueChange: (String) -> Unit,
     viewModel: VaultViewModel,
-    label: String = "分类"
+    label: String = stringResource(R.string.label_category)
 ) {
     val categories by viewModel.availableCategories.collectAsState()
     var expanded by remember { mutableStateOf(false) }
@@ -96,7 +98,7 @@ fun CategoryItem(
                 value = editState.editedCategory,
                 onValueChange = { editState.editedCategory = it },
                 viewModel = viewModel,
-                label = "修改分类"
+                label = stringResource(R.string.vault_edit_modify_category)
             )
             TextButton(
                 onClick = {
@@ -108,7 +110,7 @@ fun CategoryItem(
             ) {
                 Icon(Icons.Default.Check, null)
                 Spacer(Modifier.width(4.dp))
-                Text("保存分类")
+                Text(stringResource(R.string.vault_edit_save_category))
             }
         }
     } else {
@@ -121,7 +123,7 @@ fun CategoryItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "分类",
+                stringResource(R.string.label_category),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.outline
             )

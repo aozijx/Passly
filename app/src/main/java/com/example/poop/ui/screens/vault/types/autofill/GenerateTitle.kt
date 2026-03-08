@@ -1,5 +1,7 @@
 package com.example.poop.ui.screens.vault.types.autofill
 
+import android.content.Context
+import com.example.poop.R
 import java.util.Calendar
 
 /**
@@ -11,6 +13,7 @@ object AutofillTitleGenerator {
      * 智能生成标题主入口
      */
     fun getSmartTitle(
+        context: Context,
         pageTitle: String?,
         domain: String?,
         appLabel: String?,
@@ -21,10 +24,10 @@ object AutofillTitleGenerator {
             domain != null -> generateSmartWebTitle(pageTitle, domain)
             
             // 2. 如果有应用信息，认为是 App 环境
-            appLabel != null || packageName != null -> generateSmartAppTitle(appLabel, packageName)
+            appLabel != null || packageName != null -> generateSmartAppTitle(context, appLabel, packageName)
             
             // 3. 兜底策略
-            else -> generateSmartFallbackTitle()
+            else -> generateSmartFallbackTitle(context)
         }
     }
 
@@ -59,7 +62,8 @@ object AutofillTitleGenerator {
     }
 
     // 辅助函数：智能生成应用标题
-    private fun generateSmartAppTitle(appLabel: String?, packageName: String?): String {
+    private fun generateSmartAppTitle(context: Context, appLabel: String?, packageName: String?): String {
+        val appFallback = context.getString(R.string.autofill_title_app_fallback)
         if (appLabel != null && appLabel.isNotBlank()) {
             return when {
                 appLabel.length > 20 -> appLabel.take(18) + "..."
@@ -74,29 +78,29 @@ object AutofillTitleGenerator {
                 segments.size >= 3 -> {
                     val lastTwo = segments.takeLast(2)
                     if (lastTwo.any { it == "ui" || it == "activity" || it == "view" }) {
-                        segments.takeLast(3).firstOrNull()?.replaceFirstChar { it.uppercase() } ?: "应用"
+                        segments.takeLast(3).firstOrNull()?.replaceFirstChar { it.uppercase() } ?: appFallback
                     } else {
-                        lastTwo.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: "应用"
+                        lastTwo.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: appFallback
                     }
                 }
                 segments.size == 2 -> segments.last().replaceFirstChar { it.uppercase() }
-                else -> segments.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: "应用"
+                else -> segments.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: appFallback
             }
         }
 
-        return generateSmartFallbackTitle()
+        return generateSmartFallbackTitle(context)
     }
 
     // 辅助函数：生成智能兜底标题
-    private fun generateSmartFallbackTitle(): String {
+    private fun generateSmartFallbackTitle(context: Context): String {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         return when (hour) {
-            in 0..5 -> "深夜添加"
-            in 6..11 -> "上午添加"
-            in 12..13 -> "午间添加"
-            in 14..17 -> "下午添加"
-            in 18..21 -> "晚间添加"
-            else -> "新凭据"
+            in 0..5 -> context.getString(R.string.autofill_title_late_night)
+            in 6..11 -> context.getString(R.string.autofill_title_morning)
+            in 12..13 -> context.getString(R.string.autofill_title_noon)
+            in 14..17 -> context.getString(R.string.autofill_title_afternoon)
+            in 18..21 -> context.getString(R.string.autofill_title_evening)
+            else -> context.getString(R.string.autofill_title_new_entry)
         }
     }
 

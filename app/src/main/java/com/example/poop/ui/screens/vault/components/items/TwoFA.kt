@@ -17,10 +17,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.icons.VaultItemIcon
@@ -77,7 +79,7 @@ fun TwoFAItem(
 
             if (showCode) {
                 Text(
-                    text = if (totpState.decryptedSecret == null) "验证以显示" else (if (isSteam) totpState.code else totpState.code.chunked(3).joinToString(" ")),
+                    text = if (totpState.decryptedSecret == null) stringResource(R.string.auth_to_show) else (if (isSteam) totpState.code else totpState.code.chunked(3).joinToString(" ")),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.ExtraBold,

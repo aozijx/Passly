@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.poop.R
 import com.example.poop.data.AppDatabase
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.core.AddType
@@ -100,13 +101,25 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             onSuccess = { updateInteraction(); onSuccess() }, onError = onError)
     }
 
-    fun encryptMultiple(activity: FragmentActivity, texts: List<String>, title: String = "验证加密", subtitle: String = "请验证以保护信息", onSuccess: (List<String>) -> Unit) {
+    fun encryptMultiple(
+        activity: FragmentActivity, 
+        texts: List<String>, 
+        title: String = getApplication<Application>().getString(R.string.vault_auth_encrypt_title), 
+        subtitle: String = getApplication<Application>().getString(R.string.vault_auth_encrypt_subtitle), 
+        onSuccess: (List<String>) -> Unit
+    ) {
         authenticate(activity, title, subtitle) {
             onSuccess(texts.map { CryptoManager.encrypt(it, isSilent = false) ?: "" })
         }
     }
 
-    fun decryptSingle(activity: FragmentActivity, text: String, title: String = "验证身份", subtitle: String = "请验证以显示敏感信息", onSuccess: (String?) -> Unit) {
+    fun decryptSingle(
+        activity: FragmentActivity, 
+        text: String, 
+        title: String = getApplication<Application>().getString(R.string.vault_auth_decrypt_title), 
+        subtitle: String = getApplication<Application>().getString(R.string.vault_auth_decrypt_subtitle_reveal), 
+        onSuccess: (String?) -> Unit
+    ) {
         authenticate(activity, title, subtitle) {
             val iv = CryptoManager.getIvFromCipherText(text)
             val cipher = iv?.let { CryptoManager.getDecryptCipher(it, isSilent = false) }
@@ -114,7 +127,13 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun decryptMultiple(activity: FragmentActivity, texts: List<String>, title: String = "验证身份", subtitle: String = "请验证以继续操作", onSuccess: (List<String?>) -> Unit) {
+    fun decryptMultiple(
+        activity: FragmentActivity, 
+        texts: List<String>, 
+        title: String = getApplication<Application>().getString(R.string.vault_auth_decrypt_title), 
+        subtitle: String = getApplication<Application>().getString(R.string.vault_auth_decrypt_subtitle_generic), 
+        onSuccess: (List<String?>) -> Unit
+    ) {
         if (texts.isEmpty()) return onSuccess(emptyList())
         authenticate(activity, title, subtitle) {
             onSuccess(texts.map { text ->
@@ -194,7 +213,11 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             isBackupLoading = true
             val res = if (isExporting) BackupManager.exportBackup(context, uri, backupPassword.toCharArray()) 
                       else BackupManager.importBackup(context, uri, backupPassword.toCharArray(), BackupManager.ImportMode.OVERWRITE)
-            backupMessage = if (res.isSuccess) "操作成功" else "失败: ${res.exceptionOrNull()?.message}"
+            
+            val successMsg = context.getString(R.string.vault_backup_success)
+            val failedFormat = context.getString(R.string.vault_backup_failed_format)
+            
+            backupMessage = if (res.isSuccess) successMsg else failedFormat.format(res.exceptionOrNull()?.message)
             isBackupLoading = false
             showBackupPasswordDialog = false
             pendingUri = null

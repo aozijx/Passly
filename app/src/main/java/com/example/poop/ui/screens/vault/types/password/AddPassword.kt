@@ -4,7 +4,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import com.example.poop.R
 import com.example.poop.data.VaultEntry
 import com.example.poop.ui.screens.vault.VaultViewModel
 import com.example.poop.ui.screens.vault.common.base.BaseVaultDialog
@@ -18,9 +20,10 @@ fun AddPasswordDialog(
     viewModel: VaultViewModel
 ) {
     val state = remember { PasswordAddState() }
+    val unfiledCategory = stringResource(R.string.category_unfiled)
 
     BaseVaultDialog(
-        title = "添加新密码",
+        title = stringResource(R.string.vault_add_password_title),
         onDismiss = { viewModel.dismissAddDialog() },
         confirmEnabled = state.isValid,
         onConfirm = {
@@ -32,7 +35,7 @@ fun AddPasswordDialog(
                 title = state.title,
                 username = encUser,
                 password = encPass,
-                category = state.category.ifBlank { "未分类" },
+                category = state.category.ifBlank { unfiledCategory },
                 entryType = 0
             )
             viewModel.addItem(entry)
@@ -41,14 +44,14 @@ fun AddPasswordDialog(
         VaultTextField(
             value = state.title,
             onValueChange = { state.title = it },
-            label = "标题 (如: Google, GitHub)",
+            label = stringResource(R.string.label_title_hint),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
         VaultTextField(
             value = state.username,
             onValueChange = { state.username = it },
-            label = "账号/邮箱",
+            label = stringResource(R.string.label_username_hint),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
