@@ -8,6 +8,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.CancellationSignal
+import android.service.autofill.CustomDescription
 import android.service.autofill.Dataset
 import android.service.autofill.Field
 import android.service.autofill.FillCallback
@@ -82,7 +83,9 @@ class AutofillService : android.service.autofill.AutofillService() {
                         availableIds.forEach { datasetBuilder.setField(it, field) }
                     } else {
                         @Suppress("DEPRECATION")
-                        availableIds.forEach { datasetBuilder.setValue(it, null, presentation) }
+                        availableIds.forEach { id ->
+                            datasetBuilder.setValue(id, null, presentation)
+                        }
                     }
                     
                     responseBuilder.addDataset(datasetBuilder.build())
@@ -96,7 +99,35 @@ class AutofillService : android.service.autofill.AutofillService() {
                         saveIds.toTypedArray()
                     )
 
-                    // 策略 A: 不可见即保存 (解决跳转/清空问题)
+                    // 获取应用名称，让提示更明显
+                    val appLabel = try {
+                        parser.packageName?.let { pkg ->
+                            val info = packageManager.getApplicationInfo(pkg, 0)
+                            packageManager.getApplicationLabel(info).toString()
+                        } ?: parser.webDomain ?: "该应用"
+                    } catch (_: Exception) { "该应用" }
+                    // --- 新增代码：配置带图标的自定义保存提示 ---
+                    val iconBitmap = try {
+                        parser.packageName?.let { pkg ->
+                            drawableToBitmap(packageManager.getApplicationIcon(pkg))
+                        }
+                    } catch (_: Exception) { null }
+
+                    if (iconBitmap != null) {
+                        // 如果有应用图标且系统支持，则使用 CustomDescription 显示图标和文字
+                        val customDescription = CustomDescription.Builder(
+                            RemoteViews(packageName, R.layout.autofill_save_description).apply {
+                                setImageViewBitmap(R.id.save_icon, iconBitmap)
+                                setTextViewText(R.id.save_title
+                                    , "保存到 Poop？")
+                                setTextViewText(R.id.save_description, "是否保存 $appLabel 的账号密码？")
+                            }
+                        ).build()
+                        saveInfoBuilder.setCustomDescription(customDescription)
+                    } else {
+                        // 设置描述：让用户知道保存的是哪个应用 (原有逻辑作为回退方案)
+                        saveInfoBuilder.setDescription("是否将 $appLabel 的账号密码保存到 Poop？")
+                    }
                     var saveFlags = SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE
                     
                     // 策略 B: 延迟保存 (解决分步登录，如先输账号点下一步再输密码)
