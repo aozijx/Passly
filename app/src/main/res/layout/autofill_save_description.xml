@@ -4,35 +4,37 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="16dp">
+    android:padding="20dp">
 
-    <!-- 应用图标：尺寸稍大一点，居中显示 -->
+    <!-- 应用图标：增加点击感，修复 contentDescription 警告 -->
     <ImageView
         android:id="@+id/save_icon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginBottom="12dp"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@string/autofill_save_icon_description"
         android:scaleType="fitCenter" />
 
-    <!-- 标题：加粗居中 -->
+    <!-- 标题：使用更醒目的字体大小和间距 -->
     <TextView
         android:id="@+id/save_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
+        android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="?android:attr/textColorPrimary"
         android:gravity="center"
-        android:text="保存到 Poop？" />
+        android:text="@string/autofill_save_prompt_title" />
 
-    <!-- 描述：次要文字，居中显示 -->
+    <!-- 描述：增加行间距，显示更清晰 -->
     <TextView
         android:id="@+id/save_description"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="8dp"
         android:textSize="14sp"
         android:textColor="?android:attr/textColorSecondary"
+        android:lineSpacingExtra="2dp"
         android:gravity="center" />
 
 </LinearLayout>

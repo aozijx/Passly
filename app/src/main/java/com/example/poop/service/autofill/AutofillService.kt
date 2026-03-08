@@ -2,10 +2,6 @@ package com.example.poop.service.autofill
 
 import android.app.PendingIntent
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.CancellationSignal
 import android.service.autofill.CustomDescription
@@ -19,10 +15,10 @@ import android.service.autofill.SaveCallback
 import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
 import android.widget.RemoteViews
-import androidx.core.graphics.createBitmap
 import com.example.poop.R
 import com.example.poop.ui.screens.vault.utils.AutofillParser
 import com.example.poop.util.Logcat
+import com.example.poop.util.PackageUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,10 +51,9 @@ class AutofillService : android.service.autofill.AutofillService() {
                         setTextViewText(R.id.username, if (entry.totpSecret.isNullOrBlank()) "点击填充" else "填充账号与验证码")
                         val appPkg = entry.associatedAppPackage
                         if (!appPkg.isNullOrEmpty()) {
-                            try {
-                                val icon = packageManager.getApplicationIcon(appPkg)
-                                setImageViewBitmap(R.id.icon, drawableToBitmap(icon))
-                            } catch (_: Exception) {}
+                            PackageUtils.getAppIconDrawable(applicationContext, appPkg)?.let { icon ->
+                                setImageViewBitmap(R.id.icon, PackageUtils.drawableToBitmap(icon))
+                            }
                         }
                     }
 
@@ -100,18 +95,13 @@ class AutofillService : android.service.autofill.AutofillService() {
                     )
 
                     // 获取应用名称，让提示更明显
-                    val appLabel = try {
-                        parser.packageName?.let { pkg ->
-                            val info = packageManager.getApplicationInfo(pkg, 0)
-                            packageManager.getApplicationLabel(info).toString()
-                        } ?: parser.webDomain ?: "该应用"
-                    } catch (_: Exception) { "该应用" }
+                    val appData = parser.packageName?.let { pkg ->
+                        PackageUtils.getAppLabelAndIcon(applicationContext, pkg)
+                    }
+                    val appLabel = appData?.first ?: parser.webDomain ?: "该应用"
+
                     // --- 新增代码：配置带图标的自定义保存提示 ---
-                    val iconBitmap = try {
-                        parser.packageName?.let { pkg ->
-                            drawableToBitmap(packageManager.getApplicationIcon(pkg))
-                        }
-                    } catch (_: Exception) { null }
+                    val iconBitmap = appData?.second?.let { PackageUtils.drawableToBitmap(it) }
 
                     if (iconBitmap != null) {
                         // 如果有应用图标且系统支持，则使用 CustomDescription 显示图标和文字
@@ -119,7 +109,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                             RemoteViews(packageName, R.layout.autofill_save_description).apply {
                                 setImageViewBitmap(R.id.save_icon, iconBitmap)
                                 setTextViewText(R.id.save_title
-                                    , "保存到 Poop？")
+                                    , "保存 $appLabel ？")
                                 setTextViewText(R.id.save_description, "是否保存 $appLabel 的账号密码？")
                             }
                         ).build()
@@ -153,15 +143,6 @@ class AutofillService : android.service.autofill.AutofillService() {
                 callback.onFailure(e.message)
             }
         }
-    }
-
-    private fun drawableToBitmap(drawable: Drawable): Bitmap {
-        if (drawable is BitmapDrawable) return drawable.bitmap
-        val bitmap = createBitmap(drawable.intrinsicWidth.coerceAtLeast(1), drawable.intrinsicHeight.coerceAtLeast(1))
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-        return bitmap
     }
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {

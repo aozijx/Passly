@@ -8,8 +8,9 @@
     <string name="AutoFill_icon">icon</string>
     <string name="autofill_auth_title">安全验证</string>
     <string name="autofill_auth_subtitle">验证身份以自动填充凭据</string>
-    <string name="autofill_save_prompt_title">保存到 Poop</string>
-    <string name="autofill_save_prompt_description">是否将此账号密码安全地保存到 Poop 保险库？</string>
+    <string name="autofill_save_prompt_title">保存 %s ？</string>
+    <string name="autofill_save_prompt_description">是否将 %s 的账号密码保存到 Poop？</string>
+    <string name="autofill_save_icon_description">应用图标</string>
     <string name="autofill_no_suggestions">Poop 暂无匹配建议</string>
     <string name="widget_loading">加载中…</string>
     <string name="widget_description">每日美句欣赏</string>
@@ -22,14 +23,9 @@
 
     <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
     <string name="changelog_last"><![CDATA[
-0.2.0 大版本更新！
-
-• 保险箱组件大重构，代码更整洁，运行更流畅。
-• 新增 TOTP 动态验证码支持，扫码一键添加。
-• 新增二维码导出功能，方便令牌跨设备迁移。
-• 统一通用扫码组件，支持识别结果快速复制。
-• 全屏交互体验优化，操作更丝滑。
-
-安全存储，就在 Poop！
+• 修复 steam 令牌的计算错误
+• 现在能更直观的看到动态验证码
+• 添加自动保存的功能
+• 一些 UI 的美化
 ]]></string>
 </resources>
