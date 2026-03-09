@@ -2,7 +2,9 @@ package com.example.poop.ui.screens.settings
 
 import android.app.Application
 import android.content.Intent
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.FileProvider
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.poop.R
@@ -32,6 +34,7 @@ data class SettingsUiState(
     val isNotificationsEnabled: Boolean = false,
     val isDarkMode: Boolean = false,
     val isDynamicColor: Boolean = true,
+    val language: String = "",
     val cacheSize: String = "0.00 KB",
     val showPermissionGuide: Boolean = false,
     val logContent: String? = null,
@@ -56,11 +59,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _logError = MutableStateFlow<String?>(null)
     private val _exportStatus = MutableStateFlow<ExportStatus?>(null)
 
-    // 修复：手动将多个 Flow 组合成单一的 uiState，避免嵌套导致 Kotlin 编译器类型推断失败
     val uiState: StateFlow<SettingsUiState> = combine(
         preference.isDarkMode,
         preference.isDynamicColor,
         preference.isNotificationsEnabled,
+        preference.language,
         _cacheSize,
         _showPermissionGuide,
         _logContent,
@@ -72,12 +75,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isDarkMode = args[0] as Boolean,
             isDynamicColor = args[1] as Boolean,
             isNotificationsEnabled = args[2] as Boolean,
-            cacheSize = args[3] as String,
-            showPermissionGuide = args[4] as Boolean,
-            logContent = args[5] as String?,
-            isLogLoading = args[6] as Boolean,
-            logError = args[7] as String?,
-            exportStatus = args[8] as ExportStatus?
+            language = args[3] as String,
+            cacheSize = args[4] as String,
+            showPermissionGuide = args[5] as Boolean,
+            logContent = args[6] as String?,
+            isLogLoading = args[7] as Boolean,
+            logError = args[8] as String?,
+            exportStatus = args[9] as ExportStatus?
         )
     }.stateIn(
         scope = viewModelScope,
@@ -157,6 +161,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun setLanguage(language: String) {
+        viewModelScope.launch {
+            preference.setLanguage(language)
+            val appLocale: LocaleListCompat = if (language.isEmpty()) {
+                LocaleListCompat.getEmptyLocaleList()
+            } else {
+                LocaleListCompat.forLanguageTags(language)
+            }
+            // 核心：设置语言。在某些设备上，如果不重启 Activity，
+            // LocalContext.current.resources 的内容可能不会刷新。
+            AppCompatDelegate.setApplicationLocales(appLocale)
+        }
+    }
+
     fun clearCache() {
         viewModelScope.launch(Dispatchers.IO) {
             val cacheDir = getApplication<Application>().cacheDir
@@ -226,7 +244,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     val logFolder = Logcat.getLogFolder() ?: throw Exception("日志目录不存在")
                     val logFiles = logFolder.listFiles { file -> file.extension == "log" }
                     
-                    // 优化点：如果是空文件夹，抛出特定异常，不触发 Logcat.e 写入
                     if (logFiles.isNullOrEmpty()) {
                         throw NoSuchElementException("目前没有任何日志记录")
                     }
@@ -257,10 +274,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }
                 _exportStatus.value = ExportStatus.Success(intent)
             } catch (e: NoSuchElementException) {
-                // 如果只是没文件，不要用 Logcat.e 记录（避免制造新日志），直接给 UI 报错状态
                 _exportStatus.value = ExportStatus.Error(e.message ?: "暂无日志")
             } catch (e: Exception) {
-                // 真正的技术故障才记录日志
                 Logcat.e("SettingsViewModel", "Export logs failed", e)
                 _exportStatus.value = ExportStatus.Error(e.message ?: "导出失败")
             }

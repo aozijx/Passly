@@ -3,6 +3,7 @@ package com.example.poop.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -16,6 +17,7 @@ class Preference(context: Context) {
         val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
         val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
+        val LANGUAGE_KEY = stringPreferencesKey("language")
     }
 
     // 读取深色模式设置
@@ -51,6 +53,18 @@ class Preference(context: Context) {
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         appContext.dataStore.edit { preferences ->
             preferences[NOTIFICATIONS_ENABLED_KEY] = enabled
+        }
+    }
+
+    // 读取语言设置
+    val language: Flow<String> = appContext.dataStore.data.map { preferences ->
+        preferences[LANGUAGE_KEY] ?: "" // 空字符串表示跟随系统
+    }
+
+    // 保存语言设置
+    suspend fun setLanguage(language: String) {
+        appContext.dataStore.edit { preferences ->
+            preferences[LANGUAGE_KEY] = language
         }
     }
 }

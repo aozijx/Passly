@@ -6,6 +6,8 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,9 +17,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -128,6 +134,50 @@ fun SettingsScreen(
         onDismiss = { viewModel.clearLogContent() }
     )
 
+    // 语言选择弹窗
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    if (showLanguageDialog) {
+        val languages = listOf(
+            "" to "跟随系统",
+            "en" to "English"
+        )
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text("选择语言") },
+            text = {
+                Column {
+                    languages.forEach { (tag, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.setLanguage(tag)
+                                    showLanguageDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = uiState.language == tag,
+                                onClick = {
+                                    viewModel.setLanguage(tag)
+                                    showLanguageDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(label)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
     // 点击计次
     var versionTapCount by remember { mutableIntStateOf(0) }
 
@@ -159,7 +209,7 @@ fun SettingsScreen(
             item {
                 SettingsClickableItem(
                     title = "权限管理",
-                    subtitle = "查看与管理应用所需的系统权限",
+                    subtitle = "管理应用所需的系统权限",
                     value = "前往系统设置",
                     onClick = {
                         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -175,7 +225,7 @@ fun SettingsScreen(
             item {
                 SettingsSwitchItem(
                     title = "深色模式",
-                    subtitle = if (uiState.isDarkMode) "已强制开启深色" else "跟随系统设置",
+                    subtitle = if (uiState.isDarkMode) "已开启" else "跟随系统设置",
                     checked = uiState.isDarkMode,
                     onCheckedChange = viewModel::toggleDarkMode,
                     shape = TopRoundedShape,
@@ -188,6 +238,20 @@ fun SettingsScreen(
                     subtitle = "从壁纸提取主色调 (仅 Android 12+)",
                     checked = uiState.isDynamicColor,
                     onCheckedChange = viewModel::toggleDynamicColor,
+                    shape = MiddleShape,
+                    showDivider = true
+                )
+            }
+            item {
+                SettingsClickableItem(
+                    title = "语言设置",
+                    subtitle = "设置应用显示语言",
+                    value = when(uiState.language) {
+                        "en" -> "English"
+                        else -> "跟随系统"
+                    },
+                    icon = Icons.Default.Translate,
+                    onClick = { showLanguageDialog = true },
                     shape = BottomRoundedShape
                 )
             }
@@ -196,7 +260,6 @@ fun SettingsScreen(
             item {
                 SettingsClickableItem(
                     title = "清除应用缓存",
-                    subtitle = "释放被占用的临时存储空间",
                     value = uiState.cacheSize,
                     onClick = { viewModel.clearCache() },
                     shape = AllRoundedShape
@@ -207,7 +270,6 @@ fun SettingsScreen(
             item {
                 SettingsClickableItem(
                     title = "导出本地日志",
-                    subtitle = "导出运行数据以协助诊断问题",
                     onClick = { viewModel.exportLogs() },
                     shape = TopRoundedShape,
                     showDivider = true
@@ -216,7 +278,6 @@ fun SettingsScreen(
             item {
                 SettingsClickableItem(
                     title = "查看更新日志",
-                    subtitle = "查看当前版本的改进与修复",
                     onClick = {
                         viewModel.fetchLog(changelogUrl)
                     },
@@ -227,7 +288,6 @@ fun SettingsScreen(
             item {
                 SettingsClickableItem(
                     title = "检查更新",
-                    subtitle = "检查是否有更高版本可用",
                     onClick = { /* TODO */ },
                     shape = MiddleShape,
                     showDivider = true
@@ -236,7 +296,6 @@ fun SettingsScreen(
             item {
                 SettingsClickableItem(
                     title = "版本号",
-                    subtitle = "Poop Tool 正式版",
                     value = "v${BuildConfig.VERSION_NAME}",
                     onClick = {
                         versionTapCount++

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppLightTheme" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- 修改 AppLightTheme 和 AppNightTheme 继承自 Theme.AppCompat，以支持 AppCompatActivity -->
+    <style name="AppLightTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/transparent</item>
     </style>
 
-    <style name="AppNightTheme" parent="android:Theme.Material.NoActionBar">
+    <style name="AppNightTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@android:color/transparent</item>
     </style>
 

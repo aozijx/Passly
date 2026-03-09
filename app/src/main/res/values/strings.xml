@@ -47,6 +47,7 @@
     <string name="label_remark">备注</string>
     <string name="label_default">默认</string>
     <string name="label_category">分类</string>
+    <string name="label_category_optional">分类 (可选)</string>
     <string name="label_edit_field">编辑%s</string>
     <string name="label_hidden_mask">••••••••</string>
     <string name="show_password">显示密码</string>

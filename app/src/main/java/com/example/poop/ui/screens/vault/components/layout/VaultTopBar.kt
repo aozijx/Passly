@@ -196,31 +196,31 @@ fun VaultTopBar(
                                         text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
                                         onClick = {
                                             viewModel.isMoreMenuExpanded = false
-                                            val intents = listOf(
-                                                // 1. 尝试直接请求设置为默认服务 (API 26+)
-                                                Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
-                                                    data = "package:${context.packageName}".toUri()
-                                                },
-                                                // 2. 尝试打开系统的自动填充设置列表
-                                                Intent("android.settings.AUTOFILL_SETTINGS"),
-                                                // 3. 兜底方案：打开“语言和输入法”或“密码与账密”页面（视系统而定）
-                                                Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
-                                            )
-
-                                            var success = false
-                                            for (intent in intents) {
-                                                try {
+                                            // 优先级 1：标准的自动填充请求（最推荐）
+                                            val standardIntent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
+                                                data = "package:${context.packageName}".toUri()
+                                            }
+                                            // 定义一个简单的跳转方法
+                                            fun tryStartActivity(intent: Intent): Boolean {
+                                                return try {
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                     context.startActivity(intent)
-                                                    success = true
-                                                    break
+                                                    true
                                                 } catch (e: Exception) {
-                                                    Logcat.e("VaultTopBar", "打开设置失败", e)
-                                                    continue // 尝试下一个 Intent
+                                                    Logcat.e("VaultTopBar", autofillToastMessage,e)
+                                                    false
                                                 }
                                             }
 
-                                            if (!success) {
-                                                Toast.makeText(context, autofillToastMessage, Toast.LENGTH_LONG).show()
+                                            if (!tryStartActivity(standardIntent)) {
+                                                // 优先级 2：如果标准方式报错，尝试进入“默认应用”设置（鸿蒙/国产机最稳妥的二级入口）
+                                                val defaultAppsIntent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+
+                                                if (!tryStartActivity(defaultAppsIntent)) {
+                                                    // 优先级 3：终极兜底，只跳到总设置，并给提示
+                                                    tryStartActivity(Intent(Settings.ACTION_SETTINGS))
+                                                    Toast.makeText(context, autofillToastMessage, Toast.LENGTH_LONG).show()
+                                                }
                                             }
                                         },
                                         leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }

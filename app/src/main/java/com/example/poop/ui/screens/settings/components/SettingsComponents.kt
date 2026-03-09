@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 // 预定义形状
@@ -93,6 +94,7 @@ fun SettingsClickableItem(
     title: String,
     subtitle: String? = null,
     value: String? = null,
+    icon: ImageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
     onClick: () -> Unit,
     shape: Shape = MiddleShape,
     showDivider: Boolean = false
@@ -129,8 +131,8 @@ fun SettingsClickableItem(
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    "详情",
+                    icon,
+                    null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
