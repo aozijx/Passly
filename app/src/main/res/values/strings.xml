@@ -39,6 +39,7 @@
     <string name="action_add">添加</string>
     <string name="action_delete">删除</string>
     <string name="action_confirm">确定</string>
+    <string name="follow_system">跟随系统</string>
 
     <!-- 通用字段 -->
     <string name="label_username">账号</string>
@@ -249,8 +250,6 @@
         <item>社交</item>
         <item>聊天</item>
         <item>沟通</item>
-        <item>微信</item>
-        <item>qq</item>
     </string-array>
     <string-array name="category_keywords_email">
         <item>邮箱</item>

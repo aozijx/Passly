@@ -39,6 +39,7 @@
     <string name="action_add">Add</string>
     <string name="action_delete">Delete</string>
     <string name="action_confirm">Confirm</string>
+    <string name="follow_system">Follow System</string>
 
     <!-- General Fields -->
     <string name="label_username">Username</string>
@@ -249,8 +250,6 @@
         <item>social</item>
         <item>chat</item>
         <item>communicate</item>
-        <item>wechat</item>
-        <item>qq</item>
     </string-array>
     <string-array name="category_keywords_email">
         <item>email</item>

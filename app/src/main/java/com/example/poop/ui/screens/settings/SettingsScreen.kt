@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.BuildConfig
 import com.example.poop.R
+import com.example.poop.i8n.LocaleConfigReader
 import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.ui.screens.settings.components.AllRoundedShape
 import com.example.poop.ui.screens.settings.components.BottomRoundedShape
@@ -62,6 +63,11 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val changelogUrl = stringResource(R.string.changelog)
+
+    // 获取支持的语言列表
+    val languages = remember(context) {
+        LocaleConfigReader.getSupportedLanguages(context)
+    }
 
     // 导出处理
     val shareLauncher = rememberLauncherForActivityResult(
@@ -137,35 +143,31 @@ fun SettingsScreen(
     // 语言选择弹窗
     var showLanguageDialog by remember { mutableStateOf(false) }
     if (showLanguageDialog) {
-        val languages = listOf(
-            "" to "跟随系统",
-            "en" to "English"
-        )
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
             title = { Text("选择语言") },
             text = {
                 Column {
-                    languages.forEach { (tag, label) ->
+                    languages.forEach { option ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    viewModel.setLanguage(tag)
+                                    viewModel.setLanguage(option.tag)
                                     showLanguageDialog = false
                                 }
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = uiState.language == tag,
+                                selected = uiState.language == option.tag,
                                 onClick = {
-                                    viewModel.setLanguage(tag)
+                                    viewModel.setLanguage(option.tag)
                                     showLanguageDialog = false
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(label)
+                            Text(option.displayName)
                         }
                     }
                 }
@@ -246,10 +248,7 @@ fun SettingsScreen(
                 SettingsClickableItem(
                     title = "语言设置",
                     subtitle = "设置应用显示语言",
-                    value = when(uiState.language) {
-                        "en" -> "English"
-                        else -> "跟随系统"
-                    },
+                    value = languages.find { it.tag == uiState.language }?.displayName ?: stringResource(R.string.follow_system),
                     icon = Icons.Default.Translate,
                     onClick = { showLanguageDialog = true },
                     shape = BottomRoundedShape
