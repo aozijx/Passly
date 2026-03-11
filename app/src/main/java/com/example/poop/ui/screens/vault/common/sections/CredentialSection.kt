@@ -108,8 +108,8 @@ fun CredentialSection(
                 Icon(if (isSilentData) Icons.Default.Security else Icons.Default.Visibility, null)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (isSilentData) stringResource(R.string.vault_detail_upgrade_security) 
-                    else stringResource(R.string.vault_detail_reveal_info)
+                    if (isSilentData) stringResource(R.string.vault_upgrade_security) 
+                    else stringResource(R.string.vault_reveal_info)
                 )
             }
         }
@@ -140,7 +140,7 @@ private fun CredentialRow(
             )
             if (editedValue != (revealedValue ?: "")) {
                 Text(
-                    stringResource(R.string.vault_edit_modified_hint), 
+                    stringResource(R.string.vault_edit_modified_hint),
                     style = MaterialTheme.typography.labelSmall, 
                     color = MaterialTheme.colorScheme.secondary
                 )

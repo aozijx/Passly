@@ -28,7 +28,7 @@ fun DeleteConfirmDialog(
                 viewModel.authenticate(
                     activity = activity,
                     title = activity.getString(R.string.vault_delete_title),
-                    subtitle = activity.getString(R.string.vault_delete_auth_subtitle)
+                    subtitle = activity.getString(R.string.vault_auth_decrypt_subtitle_generic)
                 ) {
                     onConfirm()
                 }

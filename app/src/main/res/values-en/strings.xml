@@ -1,35 +1,18 @@
 <resources>
-    <string name="app_name">poop</string>
-    <string name="title_login">Login</string>
-    <string name="title_vault">Vault</string>
-    <string name="title_scanner">Scanner</string>
 
-    <string name="autofill_service_name">Poop Autofill</string>
-    <string name="AutoFill_icon">icon</string>
-    <string name="autofill_auth_title">Security Verification</string>
-    <string name="autofill_auth_subtitle">Verify identity to autofill credentials</string>
-    <string name="autofill_save_prompt_title">Save %s?</string>
-    <string name="autofill_save_prompt_description">Do you want to save the username and password for %s to Poop?</string>
-    <string name="autofill_save_icon_description">App Icon</string>
-    <string name="autofill_no_suggestions">No matching suggestions in Poop</string>
-    <string name="widget_loading">Loading…</string>
-    <string name="widget_description">Daily Quotes</string>
+    <!-- General strings -->
+    <string name="vault">Vault</string>
+    <string name="login">Login</string>
+    <string name="scan">Scan</string>
+    <string name="auth_title">Security Verification</string>
+    <string name="category">Category</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="verify">Verify</string>
+    <string name="loading">Loading…</string>
+    <string name="unknown">Unknown</string>
 
-    <!-- Shortcut Resources -->
-    <string name="shortcut_vault_short">Open Vault</string>
-    <string name="shortcut_vault_long">Open Vault and verify identity directly</string>
-    <string name="shortcut_scanner_short">Scanner</string>
-    <string name="shortcut_scanner_long">Scan to add TOTP</string>
-
-    <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
-    <string name="changelog_last"><![CDATA[
-• Fixed Steam token calculation error
-• More intuitive dynamic verification code display
-• Added auto-save feature
-• UI improvements
-]]></string>
-
-    <!-- General Actions -->
+    <!-- Actions -->
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_close">Close</string>
@@ -39,189 +22,207 @@
     <string name="action_add">Add</string>
     <string name="action_delete">Delete</string>
     <string name="action_confirm">Confirm</string>
-    <string name="follow_system">Follow System</string>
+    <string name="action_paste">Paste</string>
+    <string name="action_advanced_config">Advanced Config</string>
+    <string name="follow_system">Follow system</string>
 
-    <!-- General Fields -->
+    <!-- App basics -->
+    <string name="app_name">poop</string>
+    <string name="title_login">Login</string>
+    <string name="title_vault">Vault</string>
+    <string name="title_scanner">Scan</string>
+
+    <!-- Autofill service -->
+    <string name="autofill_service_name">Poop Autofill</string>
+    <string name="AutoFill_icon" translatable="false">icon</string>
+    <string name="autofill_auth_title">Security Verification</string>
+    <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>
+    <string name="autofill_save_prompt_title">Save %s?</string>
+    <string name="autofill_save_prompt_description">Do you want to save the username and password for %s to Poop?</string>
+    <string name="autofill_save_icon_description">App icon</string>
+    <string name="autofill_no_suggestions">Poop has no matching suggestions</string>
+    <string name="autofill_pending_verification">Pending verification for autofill</string>
+
+    <!-- Autofill title generation -->
+    <string name="autofill_title_app_fallback">App</string>
+    <string name="autofill_title_late_night">Late Night Entry</string>
+    <string name="autofill_title_morning">Morning Entry</string>
+    <string name="autofill_title_noon">Noon Entry</string>
+    <string name="autofill_title_afternoon">Afternoon Entry</string>
+    <string name="autofill_title_evening">Evening Entry</string>
+    <string name="autofill_title_new_entry">New Entry</string>
+
+    <!-- Vault - adjusted for clearer distinction -->
+    <string name="vault_auth_subtitle">Verify your identity to access the vault</string>
+    <string name="vault_auth_error">Verification failed: %s</string>
+    <string name="vault_auth_failed">Verification failed</string>
+    <string name="vault_locked_title">Vault is locked</string>
+    <string name="vault_locked_subtitle">Tap the screen to unlock</string>
+    <string name="vault_auth_encrypt_title">Verify to encrypt</string>
+    <string name="vault_auth_encrypt_subtitle">Please verify to protect your data</string>
+    <string name="vault_auth_decrypt_title">Verify identity</string>
+    <string name="vault_auth_decrypt_subtitle_reveal">Please verify to reveal sensitive information</string>
+    <string name="vault_auth_decrypt_subtitle_generic">Please verify to continue</string>
+    <string name="vault_error_encrypt_failed">Encryption failed</string>
+
+    <!-- Vault - other strings -->
+    <string name="vault_search_placeholder">Search vault items…</string>
+    <string name="vault_title_category">Category: %s</string>
+    <string name="vault_title_default">Secure Vault</string>
+    <string name="vault_clear_filter">Clear filter</string>
+    <string name="vault_menu_filter">Filter by category</string>
+    <string name="vault_menu_hide_totp">Hide codes</string>
+    <string name="vault_menu_show_totp">Show codes</string>
+    <string name="vault_menu_enable_autofill">Enable autofill</string>
+    <string name="vault_toast_enable_autofill_manual">Please enable autofill in system settings</string>
+    <string name="vault_menu_export">Export backup</string>
+    <string name="vault_menu_import">Import backup</string>
+    <string name="vault_menu_all_categories">All categories</string>
+    <string name="vault_tab_all">All</string>
+    <string name="vault_tab_passwords">Passwords</string>
+    <string name="vault_tab_totp">2FA</string>
+
+    <string name="vault_fab_scan">Scan</string>
+    <string name="vault_fab_2fa">2FA</string>
+    <string name="vault_fab_password">Password</string>
+    <string name="vault_empty_placeholder">Your vault is empty</string>
+    <string name="vault_scanner_error_not_otp">Scanned successfully, but not a valid 2FA QR code</string>
+    <string name="vault_scanner_action_album">Import from album</string>
+    <string name="vault_scanner_result_title">2FA Secret Found</string>
+    <string name="vault_scanner_result_account">Account: %s</string>
+    <string name="vault_scanner_action_rescan">Rescan</string>
+    <string name="vault_scanner_success_save">Successfully saved to vault</string>
+
+    <string name="vault_delete_title">Confirm deletion</string>
+    <string name="vault_delete_message">Are you sure you want to delete “%s”? This action cannot be undone.</string>
+    <string name="vault_backup_title_export">Set backup password</string>
+    <string name="vault_backup_title_import">Enter backup password</string>
+    <string name="vault_backup_message_export">Please set a password to encrypt the backup file. You will need this password to restore.</string>
+    <string name="vault_backup_message_import">Please enter the password to decrypt the backup file.</string>
+    <string name="vault_backup_success">Backup/Restore successful</string>
+    <string name="vault_backup_failed">Backup/Restore failed: %s</string>
+    <string name="vault_backup_auth_title">Backup Security Verification</string>
+    <string name="vault_backup_auth_subtitle_export">Please verify identity to export encrypted backup</string>
+    <string name="vault_backup_auth_subtitle_import">Please verify identity to import and decrypt data</string>
+    <string name="loading_export">Exporting backup…</string>
+    <string name="loading_import">Importing backup…</string>
+
+    <!-- Detail additions -->
+    <string name="vault_add_password_title">Add Password</string>
+    <string name="vault_upgrade_security">Verify and upgrade security</string>
+    <string name="vault_reveal_info">Verify and reveal details</string>
+    <string name="vault_edit_modify_category">Modify Category</string>
+    <string name="vault_edit_save_category">Save Category</string>
+    <string name="vault_edit_modified_hint">Modified, don\'t forget to save</string>
+    <string name="vault_detail_associated_domain">Associated Domain</string>
+    <string name="vault_detail_associated_package">Associated Package</string>
+
+    <string name="vault_totp_label">Two-Factor Code</string>
+    <string name="vault_totp_copied">Code copied to clipboard</string>
+    <string name="vault_edit_totp_title">Edit 2FA Config</string>
+    <string name="vault_auth_reveal_subtitle">Verify identity to edit 2FA secret</string>
+    <string name="vault_auth_qr_title">Security Verification</string>
+    <string name="vault_auth_qr_subtitle">Verify identity to show export QR code</string>
+    <string name="vault_export_qr_title">Export 2FA Secret</string>
+    <string name="vault_export_qr_message">Scan this QR code with another authenticator app</string>
+    <string name="auth_to_show">Tap to verify and show</string>
+
+    <string name="vault_add_2fa_title">Add 2FA</string>
+    <string name="vault_2fa_uri_parsed">2FA URI parsed successfully</string>
+    <string name="vault_2fa_uri_parse_failed">Failed to parse 2FA URI</string>
+
+    <string name="envault_scanner_auth_save_title">Verify Encryption</string>
+    <string name="vault_scanner_auth_save_subtitle">Please verify to encrypt and save %s</string>
+
+    <!-- Icon Picker -->
+    <string name="icon_picker_title">Select Icon</string>
+    <string name="icon_picker_subtitle">Choose a suitable icon for your account entry</string>
+    <string name="icon_picker_action_add_photo">Add Custom Image</string>
+
+    <!-- TOTP Config -->
+    <string name="label_totp_secret">Secret (Base32)</string>
+    <string name="label_totp_period">Period (Seconds)</string>
+    <string name="label_totp_digits">Digits</string>
+    <string name="label_totp_algorithm">Algorithm</string>
+    <string name="label_2fa_uri_hint">2FA URI (otpauth://…)</string>
+
+    <!-- Form labels & hints -->
     <string name="label_username">Username</string>
     <string name="label_password">Password</string>
     <string name="label_title">Title</string>
-    <string name="label_remark">Remark</string>
+    <string name="label_remark">Note</string>
     <string name="label_default">Default</string>
     <string name="label_category">Category</string>
-    <string name="label_category_optional">Category (Optional)</string>
+    <string name="label_category_optional">Category (optional)</string>
     <string name="label_edit_field">Edit %s</string>
     <string name="label_hidden_mask">••••••••</string>
-    <string name="show_password">Show Password</string>
-    <string name="hide_password">Hide Password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="label_title_hint">Title (e.g. Google, GitHub)</string>
+    <string name="label_username_hint">Username / Email</string>
 
-    <!-- Icon Names -->
+    <!-- Icons (translated to English meanings) -->
     <string name="icon_bank">Bank</string>
-    <string name="icon_card">Card</string>
+    <string name="icon_card">Credit Card</string>
     <string name="icon_wallet">Wallet</string>
     <string name="icon_bill">Bill</string>
     <string name="icon_savings">Savings</string>
-    <string name="icon_trending">Finance</string>
+    <string name="icon_trending">Investment</string>
     <string name="icon_person">Personal</string>
     <string name="icon_privacy">Privacy</string>
     <string name="icon_social">Social</string>
     <string name="icon_groups">Groups</string>
-    <string name="icon_badge">ID</string>
+    <string name="icon_badge">ID / Badge</string>
     <string name="icon_key">Key</string>
     <string name="icon_email">Email</string>
     <string name="icon_game">Game</string>
     <string name="icon_video">Video</string>
-    <string name="icon_movie">Movie</string>
+    <string name="icon_movie">Movie / Series</string>
     <string name="icon_shopping">Shopping</string>
-    <string name="icon_bag">Bag</string>
-    <string name="icon_live">Live</string>
+    <string name="icon_bag">Shopping Bag</string>
+    <string name="icon_live">Live Stream</string>
     <string name="icon_camera">Camera</string>
-    <string name="icon_star">Star</string>
-    <string name="icon_heart">Heart</string>
+    <string name="icon_star">Favorite</string>
+    <string name="icon_heart">Liked</string>
     <string name="icon_medical">Medical</string>
     <string name="icon_health">Health</string>
     <string name="icon_cloud">Cloud</string>
     <string name="icon_note">Note</string>
     <string name="icon_book">Diary</string>
-    <string name="icon_train">Train</string>
+    <string name="icon_train">High-speed Rail</string>
     <string name="icon_flight">Flight</string>
-    <string name="icon_school">School</string>
+    <string name="icon_school">School / Campus</string>
     <string name="icon_work">Work</string>
     <string name="icon_code">Code</string>
-    <string name="icon_web">Web</string>
+    <string name="icon_web">Website</string>
     <string name="icon_wifi">WiFi</string>
     <string name="icon_lock">Lock</string>
     <string name="icon_shield">Shield</string>
     <string name="icon_apps">Apps</string>
 
-    <!-- Vault Activity & General Auth -->
-    <string name="vault_auth_title">Security Verification</string>
-    <string name="vault_auth_subtitle">Verify identity to access vault</string>
-    <string name="vault_auth_error_format">Verification failed: %s</string>
-    <string name="vault_auth_failed">Verification failed</string>
-    <string name="vault_locked_title">Vault Locked</string>
-    <string name="vault_locked_subtitle">Tap screen to unlock</string>
-    <string name="vault_auth_encrypt_title">Verify Encryption</string>
-    <string name="vault_auth_encrypt_subtitle">Please verify to protect info</string>
-    <string name="vault_auth_decrypt_title">Verify Identity</string>
-    <string name="vault_auth_decrypt_subtitle_reveal">Verify to show sensitive info</string>
-    <string name="vault_auth_decrypt_subtitle_generic">Verify to continue</string>
-
-    <!-- Vault TopBar -->
-    <string name="vault_search_placeholder">Search items…</string>
-    <string name="vault_title_category">Category: %s</string>
-    <string name="vault_title_default">Secure Vault</string>
-    <string name="vault_clear_filter">Clear Filter</string>
-    <string name="vault_menu_filter">Filter by Category</string>
-    <string name="vault_menu_hide_totp">Hide Code</string>
-    <string name="vault_menu_show_totp">Show Code</string>
-    <string name="vault_menu_enable_autofill">Enable Autofill</string>
-    <string name="vault_toast_enable_autofill_manual">Please enable Autofill in system settings</string>
-    <string name="vault_menu_export">Export Backup</string>
-    <string name="vault_menu_import">Import Recovery</string>
-    <string name="vault_menu_all_categories">All Categories</string>
-    <string name="vault_tab_all">All</string>
-    <string name="vault_tab_passwords">Passwords</string>
-    <string name="vault_tab_totp">2FA</string>
-
-    <!-- Vault FAB -->
-    <string name="vault_fab_scan">Scan</string>
-    <string name="vault_fab_2fa">2FA</string>
-    <string name="vault_fab_password">Password</string>
-
-    <!-- Vault Common -->
+    <!-- Categories -->
     <string name="category_autofill">Autofill</string>
     <string name="category_unfiled">Uncategorized</string>
     <string name="category_otp">OTP</string>
-    <string name="loading_export">Exporting backup…</string>
-    <string name="loading_import">Importing recovery…</string>
-    <string name="auth_to_show">Verify to show</string>
-    <string name="vault_empty_placeholder">Your vault is empty</string>
 
-    <!-- Vault Detail -->
-    <string name="vault_detail_upgrade_security">Verify &amp; upgrade security</string>
-    <string name="vault_detail_reveal_info">Verify &amp; show details</string>
-    <string name="vault_detail_associated_domain">Domain</string>
-    <string name="vault_detail_associated_package">Package</string>
-    <string name="vault_detail_auth_reveal_title">View Sensitive Info</string>
-    <string name="vault_detail_auth_reveal_subtitle">Verify to view secret details</string>
-    <string name="vault_detail_auth_qr_title">View QR Code</string>
-    <string name="vault_detail_auth_qr_subtitle">Verify to export QR code</string>
-    <string name="vault_detail_totp_label">Verification Code</string>
-    <string name="vault_detail_totp_copied">Code copied</string>
-    <string name="vault_detail_edit_totp_title">Edit TOTP Config</string>
-    <string name="vault_detail_export_qr_title">Export QR Code</string>
-    <string name="vault_detail_export_qr_message">Scan this QR code with another authenticator app to migrate.</string>
+    <!-- Widget & Shortcuts -->
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_description">Daily quote</string>
+    <string name="shortcut_vault_short">Open Vault</string>
+    <string name="shortcut_vault_long">Open Vault and verify identity</string>
+    <string name="shortcut_scanner_short">Scan</string>
+    <string name="shortcut_scanner_long">Scan to add TOTP</string>
 
-    <!-- Vault Add Password -->
-    <string name="vault_add_password_title">Add New Password</string>
-    <string name="label_title_hint">Title (e.g., Google, GitHub)</string>
-    <string name="label_username_hint">Username/Email</string>
+    <!-- Changelog (kept original URL, translated last changelog) -->
+    <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
+    <string name="changelog_last"><![CDATA[
+• Fixed Steam token calculation error
+• Now TOTP codes are displayed more clearly
+• Added auto-save feature
+• Some UI improvements
+]]></string>
 
-    <!-- Vault Add 2FA -->
-    <string name="vault_add_2fa_title">Add 2FA Token</string>
-    <string name="vault_2fa_uri_parsed">URI parsed and clipboard cleared</string>
-    <string name="vault_2fa_uri_parse_failed">URI parse failed</string>
-    <string name="label_2fa_uri_hint">Paste otpauth:// URI</string>
-    <string name="action_paste">Paste</string>
-    <string name="action_advanced_config">Advanced Manual Config</string>
-    <string name="vault_error_encrypt_failed">Encryption failed, please try again</string>
-
-    <!-- Vault Scanner -->
-    <string name="vault_scanner_error_not_otp">Scan successful, but not a valid 2FA QR code</string>
-    <string name="vault_scanner_action_album">Import from Gallery</string>
-    <string name="vault_scanner_result_title">2FA Key Found</string>
-    <string name="vault_scanner_result_account">Account: %s</string>
-    <string name="vault_scanner_action_rescan">Rescan</string>
-    <string name="vault_scanner_success_save">Successfully saved to vault</string>
-    <string name="vault_scanner_auth_save_title">Save Token</string>
-    <string name="vault_scanner_auth_save_subtitle">Verify identity to save %s</string>
-
-    <!-- Vault Delete Dialog -->
-    <string name="vault_delete_title">Confirm Delete</string>
-    <string name="vault_delete_message">Are you sure you want to delete \"%s\"? This action cannot be undone.</string>
-    <string name="vault_delete_auth_subtitle">Verify identity to delete</string>
-
-    <!-- Vault Backup Dialog -->
-    <string name="vault_backup_title_export">Set Backup Password</string>
-    <string name="vault_backup_title_import">Enter Backup Password</string>
-    <string name="vault_backup_message_export">Set a password to encrypt your backup. You will need it to restore.</string>
-    <string name="vault_backup_message_import">Enter the password to decrypt your backup data.</string>
-    <string name="vault_backup_auth_title">Verify Identity</string>
-    <string name="vault_backup_auth_subtitle_export">Verify to export data</string>
-    <string name="vault_backup_auth_subtitle_import">Verify to import data</string>
-    <string name="vault_backup_success">Operation successful</string>
-    <string name="vault_backup_failed_format">Failed: %s</string>
-
-    <!-- Vault Edit Item -->
-    <string name="vault_edit_modify_category">Modify Category</string>
-    <string name="vault_edit_save_category">Save Category</string>
-    <string name="vault_edit_modified_hint">Changes made, don\'t forget to save</string>
-
-    <!-- TOTP Config -->
-    <string name="label_totp_secret">TOTP Secret (Base32)</string>
-    <string name="label_totp_period">Period (seconds)</string>
-    <string name="label_totp_digits">Digits</string>
-    <string name="label_totp_algorithm">Algorithm</string>
-
-    <!-- AutoFill Item -->
-    <string name="autofill_pending_verification">Pending Verification</string>
-    <string name="autofill_security_upgrade_hint">Verification recommended for better security</string>
-
-    <!-- Generate Title -->
-    <string name="autofill_title_late_night">Added late night</string>
-    <string name="autofill_title_morning">Added in morning</string>
-    <string name="autofill_title_noon">Added at noon</string>
-    <string name="autofill_title_afternoon">Added in afternoon</string>
-    <string name="autofill_title_evening">Added in evening</string>
-    <string name="autofill_title_new_entry">New Entry</string>
-    <string name="autofill_title_app_fallback">App</string>
-
-    <!-- Icon Picker -->
-    <string name="icon_picker_title">Select Icon</string>
-    <string name="icon_picker_subtitle">Choose a preset icon or upload a custom image</string>
-    <string name="icon_picker_action_add_photo">Add Photo</string>
-
-    <!-- Category Keywords -->
+    <!-- Category keyword arrays (translated to English keywords for matching) -->
     <string-array name="category_keywords_personal">
         <item>personal</item>
         <item>privacy</item>
@@ -234,13 +235,13 @@
     </string-array>
     <string-array name="category_keywords_payment">
         <item>payment</item>
-        <item>topup</item>
+        <item>top up</item>
         <item>transfer</item>
     </string-array>
     <string-array name="category_keywords_finance">
         <item>withdraw</item>
-        <item>finance</item>
-        <item>saving</item>
+        <item>investment</item>
+        <item>savings</item>
     </string-array>
     <string-array name="category_keywords_account">
         <item>account</item>
@@ -249,29 +250,29 @@
     <string-array name="category_keywords_social">
         <item>social</item>
         <item>chat</item>
-        <item>communicate</item>
+        <item>messaging</item>
     </string-array>
     <string-array name="category_keywords_email">
         <item>email</item>
         <item>mail</item>
     </string-array>
     <string-array name="category_keywords_apps">
-        <item>apps</item>
+        <item>app</item>
     </string-array>
     <string-array name="category_keywords_game">
         <item>game</item>
     </string-array>
     <string-array name="category_keywords_video">
         <item>video</item>
-        <item>member</item>
-        <item>video</item>
+        <item>membership</item>
+        <item>streaming</item>
         <item>movie</item>
     </string-array>
     <string-array name="category_keywords_shopping">
         <item>shopping</item>
-        <item>ecommerce</item>
-        <item>amazon</item>
-        <item>ebay</item>
+        <item>e-commerce</item>
+        <item>Taobao</item>
+        <item>JD</item>
     </string-array>
     <string-array name="category_keywords_health">
         <item>provident fund</item>
@@ -291,7 +292,7 @@
     <string-array name="category_keywords_school">
         <item>study</item>
         <item>education</item>
-        <item>school</item>
+        <item>campus</item>
     </string-array>
     <string-array name="category_keywords_travel">
         <item>travel</item>
@@ -307,4 +308,5 @@
         <item>security</item>
         <item>permission</item>
     </string-array>
+
 </resources>

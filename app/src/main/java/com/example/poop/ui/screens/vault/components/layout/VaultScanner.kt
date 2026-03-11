@@ -73,7 +73,7 @@ fun VaultScanner(
     // 预解析字符串资源
     val errorNotOtp = stringResource(R.string.vault_scanner_error_not_otp)
     val successSaveMsg = stringResource(R.string.vault_scanner_success_save)
-    val authSaveTitle = stringResource(R.string.vault_scanner_auth_save_title)
+    val authSaveTitle = stringResource(R.string.envault_scanner_auth_save_title)
     val scanResult by scannerViewModel.scanResult.collectAsState()
     
     // 解析扫码结果是否为有效的 OTP 协议

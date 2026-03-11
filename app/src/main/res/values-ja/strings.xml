@@ -1,225 +1,225 @@
 <resources>
-    <string name="app_name">poop</string>
-    <string name="title_login">ログイン</string>
-    <string name="title_vault">保管庫</string>
-    <string name="title_scanner">スキャン</string>
 
-    <string name="autofill_service_name">Poop 自動入力</string>
-    <string name="AutoFill_icon">icon</string>
-    <string name="autofill_auth_title">本人確認</string>
-    <string name="autofill_auth_subtitle">資格情報を自动入力するために本人確認を行ってください</string>
-    <string name="autofill_save_prompt_title">%s を保存しますか？</string>
-    <string name="autofill_save_prompt_description">%s のユーザー名とパスワードを Poop に保存しますか？</string>
-    <string name="autofill_save_icon_description">アプリのアイコン</string>
-    <string name="autofill_no_suggestions">Poop に一致する候補がありません</string>
-    <string name="widget_loading">読み込み中…</string>
-    <string name="widget_description">今日の名言</string>
+    <!-- 基本通用 -->
+    <string name="vault">金庫</string>
+    <string name="login">ログイン</string>
+    <string name="scan">スキャン</string>
+    <string name="auth_title">本人確認</string>
+    <string name="category">分類</string>
+    <string name="username">ユーザー名</string>
+    <string name="password">パスワード</string>
+    <string name="verify">確認</string>
+    <string name="loading">読み込み中…</string>
+    <string name="unknown">不明</string>
 
-    <!-- ショートカットリソース -->
-    <string name="shortcut_vault_short">保管庫を開く</string>
-    <string name="shortcut_vault_long">保管庫を直接開き、本人確認を行います</string>
-    <string name="shortcut_scanner_short">スキャン</string>
-    <string name="shortcut_scanner_long">スキャンして TOTP を追加</string>
-
-    <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
-    <string name="changelog_last"><![CDATA[
-• Steam トークンの計算エラーを修正
-• ワンタイムパスワードの表示をより直感的に改善
-• 自動保存機能を追加
-• UI を一部改善
-]]></string>
-
-    <!-- 一般的な操作 -->
+    <!-- 操作 -->
     <string name="action_save">保存</string>
     <string name="action_cancel">キャンセル</string>
     <string name="action_close">閉じる</string>
     <string name="action_back">戻る</string>
     <string name="action_search">検索</string>
-    <string name="action_more">その他</string>
-    <string name="action_add">追加</string>
+    <string name="action_more">もっと見る</string>    <string name="action_add">追加</string>
     <string name="action_delete">削除</string>
     <string name="action_confirm">確定</string>
-    <string name="follow_system">システムに従う"></string>
+    <string name="action_paste">貼り付け</string>
+    <string name="action_advanced_config">詳細設定</string>
+    <string name="follow_system">システムに従う</string>
 
-    <!-- 一般的なフィールド -->
+    <!-- アプリ基本 -->
+    <string name="app_name">poop</string>
+    <string name="title_login">ログイン</string>
+    <string name="title_vault">金庫</string>
+    <string name="title_scanner">スキャン</string>
+
+    <!-- 自動入力サービス -->
+    <string name="autofill_service_name">Poop 自動入力</string>
+    <string name="AutoFill_icon" translatable="false">icon</string>
+    <string name="autofill_auth_title">本人確認</string>
+    <string name="autofill_auth_subtitle">認証して認証情報を自動入力</string>
+    <string name="autofill_save_prompt_title">%s を保存しますか？</string>
+    <string name="autofill_save_prompt_description">%s のユーザー名とパスワードをPoopに保存しますか？</string>
+    <string name="autofill_save_icon_description">アプリアイコン</string>
+    <string name="autofill_no_suggestions">Poopに該当する提案はありません</string>
+    <string name="autofill_pending_verification">検証待ちの自動入力項目</string>
+
+    <!-- 自動入力タイトル生成 -->
+    <string name="autofill_title_app_fallback">アプリ</string>
+    <string name="autofill_title_late_night">深夜の記録</string>
+    <string name="autofill_title_morning">朝の記録</string>
+    <string name="autofill_title_noon">昼の記録</string>
+    <string name="autofill_title_afternoon">午後の記録</string>
+    <string name="autofill_title_evening">夜の記録</string>
+    <string name="autofill_title_new_entry">新規記録</string>
+
+    <!-- 金庫関連 -->
+    <string name="vault_auth_subtitle">本人確認して金庫にアクセス</string>
+    <string name="vault_auth_error">認証失敗：%s</string>
+    <string name="vault_auth_failed">認証に失敗しました</string>
+    <string name="vault_locked_title">金庫がロックされています</string>
+    <string name="vault_locked_subtitle">画面をタップして解除</string>
+    <string name="vault_auth_encrypt_title">暗号化確認</string>
+    <string name="vault_auth_encrypt_subtitle">データを保護するため確認してください</string>
+    <string name="vault_auth_decrypt_title">本人確認</string>
+    <string name="vault_auth_decrypt_subtitle_reveal">機密情報を表示するため確認</string>
+    <string name="vault_auth_decrypt_subtitle_generic">操作を続けるため確認</string>
+    <string name="vault_error_encrypt_failed">暗号化に失敗しました</string>
+
+    <!-- 金庫 - その他 -->
+    <string name="vault_search_placeholder">項目を検索…</string>
+    <string name="vault_title_category">分類：%s</string>
+    <string name="vault_title_default">安全な金庫</string>
+    <string name="vault_clear_filter">フィルター解除</string>
+    <string name="vault_menu_filter">分類フィルター</string>
+    <string name="vault_menu_hide_totp">コードを隠す</string>
+    <string name="vault_menu_show_totp">コードを表示</string>
+    <string name="vault_menu_enable_autofill">自動入力を有効化</string>
+    <string name="vault_toast_enable_autofill_manual">システム設定で自動入力を有効にしてください</string>
+    <string name="vault_menu_export">バックアップ出力</string>
+    <string name="vault_menu_import">バックアップ復元</string>
+    <string name="vault_menu_all_categories">全分類</string>
+    <string name="vault_tab_all">すべて</string>
+    <string name="vault_tab_passwords">パスワード</string>
+    <string name="vault_tab_totp">2段階認証</string>
+
+    <string name="vault_fab_scan">スキャン</string>
+    <string name="vault_fab_2fa">2FA</string>
+    <string name="vault_fab_password">パスワード</string>
+    <string name="vault_empty_placeholder">金庫は空です</string>
+    <string name="vault_scanner_error_not_otp">スキャン成功しましたが、有効な2FA QRコードではありません</string>
+    <string name="vault_scanner_action_album">アルバムから選択</string>
+    <string name="vault_scanner_result_title">2FA秘密鍵を検出</string>
+    <string name="vault_scanner_result_account">アカウント：%s</string>
+    <string name="vault_scanner_action_rescan">再スキャン</string>
+    <string name="vault_scanner_success_save">金庫に保存しました</string>
+
+    <string name="vault_delete_title">削除確認</string>
+    <string name="vault_delete_message">「%s」を削除しますか？この操作は元に戻せません。</string>
+    <string name="vault_backup_title_export">バックアップ用パスワード設定</string>
+    <string name="vault_backup_title_import">バックアップ用パスワード入力</string>
+    <string name="vault_backup_message_export">バックアップファイルを暗号化するパスワードを設定してください。復元時に必要です。</string>
+    <string name="vault_backup_message_import">バックアップファイルを復号化するパスワードを入力してください。</string>
+    <string name="vault_backup_success">バックアップ/復元成功</string>
+    <string name="vault_backup_failed">バックアップ/復元失敗：%s</string>
+    <string name="vault_backup_auth_title">バックアップ本人確認</string>
+    <string name="vault_backup_auth_subtitle_export">認証して暗号化バックアップをエクスポート</string>
+    <string name="vault_backup_auth_subtitle_import">認証してデータをインポート・復号化</string>
+    <string name="loading_export">バックアップを出力中…</string>
+    <string name="loading_import">バックアップを復元中…</string>
+
+    <!-- 詳細と編集 -->
+    <string name="vault_add_password_title">パスワードを追加</string>
+    <string name="vault_upgrade_security">本人確認してセキュリティを向上</string>
+    <string name="vault_reveal_info">本人確認して詳細を表示</string>
+    <string name="vault_edit_modify_category">分類を変更</string>
+    <string name="vault_edit_save_category">分類を保存</string>
+    <string name="vault_edit_modified_hint">変更されました。保存をお忘れなく</string>
+    <string name="vault_detail_associated_domain">関連ドメイン</string>
+    <string name="vault_detail_associated_package">関連パッケージ名</string>
+
+    <string name="vault_totp_label">動的認証コード</string>
+    <string name="vault_totp_copied">認証コードをコピーしました</string>
+    <string name="vault_edit_totp_title">2FA設定を編集</string>
+    <string name="vault_auth_reveal_subtitle">本人確認して2FA秘密鍵を編集</string>
+    <string name="vault_auth_qr_title">本人確認</string>
+    <string name="vault_auth_qr_subtitle">本人確認してエクスポート用QRコードを表示</string>
+    <string name="vault_export_qr_title">2FA秘密鍵をエクスポート</string>
+    <string name="vault_export_qr_message">他のデバイスの認証アプリでこのQRコードをスキャンしてください</string>
+    <string name="auth_to_show">タップして本人確認し、表示する</string>
+
+    <string name="vault_add_2fa_title">2FAを追加</string>
+    <string name="vault_2fa_uri_parsed">2FA URIを解析しました</string>
+    <string name="vault_2fa_uri_parse_failed">2FA URIの解析に失敗しました</string>
+
+    <string name="envault_scanner_auth_save_title">暗号化の確認</string>
+    <string name="vault_scanner_auth_save_subtitle">%sを暗号化して保存するために確認してください</string>
+
+    <!-- アイコン選択 -->
+    <string name="icon_picker_title">アイコンを選択</string>
+    <string name="icon_picker_subtitle">アカウント項目に適したアイコンを選択してください</string>
+    <string name="icon_picker_action_add_photo">カスタム画像を追加</string>
+
+    <!-- TOTP 設定 -->
+    <string name="label_totp_secret">秘密鍵 (Base32)</string>
+    <string name="label_totp_period">更新周期 (秒)</string>
+    <string name="label_totp_digits">桁数</string>
+    <string name="label_totp_algorithm">暗号化アルゴリズム</string>
+    <string name="label_2fa_uri_hint">2FA URI (otpauth://…)</string>
+
+    <!-- フォーム項目 -->
     <string name="label_username">ユーザー名</string>
     <string name="label_password">パスワード</string>
     <string name="label_title">タイトル</string>
     <string name="label_remark">メモ</string>
-    <string name="label_default">デフォルト</string>
-    <string name="label_category">カテゴリ</string>
-    <string name="label_category_optional">カテゴリ (任意)</string>
-    <string name="label_edit_field">%s を編集</string>
+    <string name="label_default">既定</string>
+    <string name="label_category">分類</string>
+    <string name="label_category_optional">分類（任意）</string>
+    <string name="label_edit_field">%sを編集</string>
     <string name="label_hidden_mask">••••••••</string>
-    <string name="show_password">パスワードを表示</string>
-    <string name="hide_password">パスワードを非表示</string>
+    <string name="show_password">パスワード表示</string>
+    <string name="hide_password">パスワード非表示</string>
+    <string name="label_title_hint">タイトル（例：Google、GitHub）</string>
+    <string name="label_username_hint">ユーザー名／メールアドレス</string>
 
-    <!-- アイコン名 -->
+    <!-- アイコン -->
     <string name="icon_bank">銀行</string>
-    <string name="icon_card">カード</string>
-    <string name="icon_wallet">ウォレット</string>
+    <string name="icon_card">クレジットカード</string>
+    <string name="icon_wallet">財布</string>
     <string name="icon_bill">請求書</string>
-    <string name="icon_savings">貯蓄</string>
-    <string name="icon_trending">資産運用</string>
+    <string name="icon_savings">貯金</string>
+    <string name="icon_trending">投資</string>
     <string name="icon_person">個人</string>
     <string name="icon_privacy">プライバシー</string>
     <string name="icon_social">SNS</string>
     <string name="icon_groups">グループ</string>
-    <string name="icon_badge">ID</string>
-    <string name="icon_key">キー</string>
+    <string name="icon_badge">身分証</string>
+    <string name="icon_key">鍵</string>
     <string name="icon_email">メール</string>
     <string name="icon_game">ゲーム</string>
-    <string name="icon_video">ビデオ</string>
-    <string name="icon_movie">映画</string>
+    <string name="icon_video">動画</string>
+    <string name="icon_movie">映画・ドラマ</string>
     <string name="icon_shopping">ショッピング</string>
-    <string name="icon_bag">バッグ</string>
-    <string name="icon_live">ライブ</string>
+    <string name="icon_bag">買い物袋</string>
+    <string name="icon_live">ライブ配信</string>
     <string name="icon_camera">カメラ</string>
-    <string name="icon_star">スター</string>
-    <string name="icon_heart">お気に入り</string>
+    <string name="icon_star">お気に入り</string>
+    <string name="icon_heart">いいね</string>
     <string name="icon_medical">医療</string>
     <string name="icon_health">健康</string>
     <string name="icon_cloud">クラウド</string>
-    <string name="icon_note">ノート</string>
+    <string name="icon_note">メモ</string>
     <string name="icon_book">日記</string>
-    <string name="icon_train">鉄道</string>
+    <string name="icon_train">新幹線</string>
     <string name="icon_flight">飛行機</string>
     <string name="icon_school">学校</string>
     <string name="icon_work">仕事</string>
     <string name="icon_code">コード</string>
-    <string name="icon_web">ウェブ</string>
-    <string name="icon_wifi">WiFi</string>
+    <string name="icon_web">ウェブサイト</string>
+    <string name="icon_wifi">Wi-Fi</string>
     <string name="icon_lock">ロック</string>
-    <string name="icon_shield">シールド</string>
+    <string name="icon_shield">盾</string>
     <string name="icon_apps">アプリ</string>
 
-    <!-- Vault アクティビティ & 一般認証 -->
-    <string name="vault_auth_title">本人確認</string>
-    <string name="vault_auth_subtitle">保管庫にアクセスするために本人確認を行ってください</string>
-    <string name="vault_auth_error_format">認証に失敗しました: %s</string>
-    <string name="vault_auth_failed">認証に失敗しました</string>
-    <string name="vault_locked_title">保管庫がロックされています</string>
-    <string name="vault_locked_subtitle">画面をタップしてロック解除</string>
-    <string name="vault_auth_encrypt_title">暗号化を確認</string>
-    <string name="vault_auth_encrypt_subtitle">情報を保護するために本人確認を行ってください</string>
-    <string name="vault_auth_decrypt_title">本人確認</string>
-    <string name="vault_auth_decrypt_subtitle_reveal">機密情報を表示するために本人確認を行ってください</string>
-    <string name="vault_auth_decrypt_subtitle_generic">操作を続行するために本人確認を行ってください</string>
-
-    <!-- Vault トップバー -->
-    <string name="vault_search_placeholder">パスワード項目を検索…</string>
-    <string name="vault_title_category">カテゴリ: %s</string>
-    <string name="vault_title_default">セキュア保管庫</string>
-    <string name="vault_clear_filter">フィルターをクリア</string>
-    <string name="vault_menu_filter">カテゴリでフィルタ</string>
-    <string name="vault_menu_hide_totp">コードを非表示</string>
-    <string name="vault_menu_show_totp">コードを表示</string>
-    <string name="vault_menu_enable_autofill">自動入力を有効にする</string>
-    <string name="vault_toast_enable_autofill_manual">システム設定で自動入力を有効にしてください</string>
-    <string name="vault_menu_export">バックアップをエクスポート</string>
-    <string name="vault_menu_import">バックアップをインポート</string>
-    <string name="vault_menu_all_categories">すべてのカテゴリ</string>
-    <string name="vault_tab_all">すべて</string>
-    <string name="vault_tab_passwords">パスワード</string>
-    <string name="vault_tab_totp">2FA</string>
-
-    <!-- Vault FAB -->
-    <string name="vault_fab_scan">スキャン</string>
-    <string name="vault_fab_2fa">2FA</string>
-    <string name="vault_fab_password">パスワード</string>
-
-    <!-- Vault 共通 -->
+    <!-- カテゴリ -->
     <string name="category_autofill">自動入力</string>
-    <string name="category_unfiled">未分類</string>
+    <string name="category_unfiled">未分类</string>
     <string name="category_otp">OTP</string>
-    <string name="loading_export">バックアップをエクスポート中…</string>
-    <string name="loading_import">データをインポート中…</string>
-    <string name="auth_to_show">認証して表示</string>
-    <string name="vault_empty_placeholder">保管庫は空です</string>
 
-    <!-- Vault 詳細 -->
-    <string name="vault_detail_upgrade_security">認証してセキュリティをアップグレード</string>
-    <string name="vault_detail_reveal_info">認証して詳細を表示</string>
-    <string name="vault_detail_associated_domain">ドメイン</string>
-    <string name="vault_detail_associated_package">パッケージ</string>
-    <string name="vault_detail_auth_reveal_title">機密情報を表示</string>
-    <string name="vault_detail_auth_reveal_subtitle">秘密の詳細を表示するには本人確認を行ってください</string>
-    <string name="vault_detail_auth_qr_title">QRコードを表示</string>
-    <string name="vault_detail_auth_qr_subtitle">QRコードをエクスポートするには本人確認を行ってください</string>
-    <string name="vault_detail_totp_label">ワンタイムパスワード</string>
-    <string name="vault_detail_totp_copied">コードをコピーしました</string>
-    <string name="vault_detail_edit_totp_title">TOTP 設定を編集</string>
-    <string name="vault_detail_export_qr_title">QRコードをエクスポート</string>
-    <string name="vault_detail_export_qr_message">他の認証アプリでこのQRコードをスキャンして移行できます。</string>
+    <!-- ウィジェット・ショートカット -->
+    <string name="widget_loading">読み込み中…</string>
+    <string name="widget_description">今日の名言</string>
+    <string name="shortcut_vault_short">金庫を開く</string>
+    <string name="shortcut_vault_long">金庫を開いて本人確認</string>
+    <string name="shortcut_scanner_short">スキャン</string>
+    <string name="shortcut_scanner_long">TOTPをスキャンして追加</string>
 
-    <!-- Vault パスワード追加 -->
-    <string name="vault_add_password_title">パスワードを追加</string>
-    <string name="label_title_hint">タイトル (例: Google, GitHub)</string>
-    <string name="label_username_hint">ユーザー名/メールアドレス</string>
-
-    <!-- Vault 2FA 追加 -->
-    <string name="vault_add_2fa_title">2FA トークンを追加</string>
-    <string name="vault_2fa_uri_parsed">URI を解析し、クリップボードを消去しました</string>
-    <string name="vault_2fa_uri_parse_failed">URI の解析に失敗しました</string>
-    <string name="label_2fa_uri_hint">otpauth:// URI を貼り付け</string>
-    <string name="action_paste">貼り付け</string>
-    <string name="action_advanced_config">詳細な手動設定</string>
-    <string name="vault_error_encrypt_failed">暗号化に失敗しました。もう一度お試しください</string>
-
-    <!-- Vault スキャナー -->
-    <string name="vault_scanner_error_not_otp">スキャンに成功しましたが、有効な 2FA QRコードではありません</string>
-    <string name="vault_scanner_action_album">ギャラリーからインポート</string>
-    <string name="vault_scanner_result_title">2FA キーが見つかりました</string>
-    <string name="vault_scanner_result_account">アカウント: %s</string>
-    <string name="vault_scanner_action_rescan">再スキャン</string>
-    <string name="vault_scanner_success_save">保管庫に保存しました</string>
-    <string name="vault_scanner_auth_save_title">トークンを保存</string>
-    <string name="vault_scanner_auth_save_subtitle">%s を保存するには本人確認を行ってください</string>
-
-    <!-- Vault 削除ダイアログ -->
-    <string name="vault_delete_title">削除の確認</string>
-    <string name="vault_delete_message">「%s」を削除してもよろしいですか？この操作は取り消せません。</string>
-    <string name="vault_delete_auth_subtitle">削除するには本人確認を行ってください</string>
-
-    <!-- Vault バックアップダイアログ -->
-    <string name="vault_backup_title_export">バックアップパスワードを設定</string>
-    <string name="vault_backup_title_import">バックアップパスワードを入力</string>
-    <string name="vault_backup_message_export">バックアップファイルを暗号化するためのパスワードを設定してください。復元時に必要になります。</string>
-    <string name="vault_backup_message_import">バックアップデータを復号するためのパスワードを入力してください。</string>
-    <string name="vault_backup_auth_title">本人確認</string>
-    <string name="vault_backup_auth_subtitle_export">データのエクスポートには本人確認が必要です</string>
-    <string name="vault_backup_auth_subtitle_import">データのインポートには本人確認が必要です</string>
-    <string name="vault_backup_success">操作が完了しました</string>
-    <string name="vault_backup_failed_format">失敗しました: %s</string>
-
-    <!-- Vault アイテム編集 -->
-    <string name="vault_edit_modify_category">カテゴリを変更</string>
-    <string name="vault_edit_save_category">カテゴリを保存</string>
-    <string name="vault_edit_modified_hint">変更が加えられました。保存を忘れないでください。</string>
-
-    <!-- TOTP 設定 -->
-    <string name="label_totp_secret">TOTP シークレット (Base32)</string>
-    <string name="label_totp_period">期間 (秒)</string>
-    <string name="label_totp_digits">桁数</string>
-    <string name="label_totp_algorithm">アルゴリズム</string>
-
-    <!-- 自動入力アイテム -->
-    <string name="autofill_pending_verification">確認待ち</string>
-    <string name="autofill_security_upgrade_hint">セキュリティ向上のために確認を推奨します</string>
-
-    <!-- タイトル生成 -->
-    <string name="autofill_title_late_night">深夜に追加</string>
-    <string name="autofill_title_morning">午前中に追加</string>
-    <string name="autofill_title_noon">正午に追加</string>
-    <string name="autofill_title_afternoon">午後に追加</string>
-    <string name="autofill_title_evening">夜間に追加</string>
-    <string name="autofill_title_new_entry">新規エントリ</string>
-    <string name="autofill_title_app_fallback">アプリ</string>
-
-    <!-- アイコンピッカー -->
-    <string name="icon_picker_title">アイコンを選択</string>
-    <string name="icon_picker_subtitle">プリセットアイコンを選択するか、カスタム画像をアップロードしてください</string>
-    <string name="icon_picker_action_add_photo">写真を追加</string>
+    <!-- 変更履歴 -->
+    <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
+    <string name="changelog_last"><![CDATA[
+• Steamトークンの計算エラー修正
+• 動的認証コードの表示をより見やすく改善
+• 自動保存機能追加
+• 一部UIの美化
+]]></string>
 
     <!-- カテゴリキーワード -->
     <string-array name="category_keywords_personal">
@@ -307,4 +307,5 @@
         <item>セキュリティ</item>
         <item>権限</item>
     </string-array>
+
 </resources>

@@ -12,75 +12,64 @@ data class LanguageOption(
 )
 
 object LocaleConfigReader {
-
+    private var cachedRawTags: List<String>? = null
     private var cachedOptions: List<LanguageOption>? = null
+    private var lastDisplayLocale: Locale? = null
 
-    /**
-     * 获取支持的语言列表
-     * @param context 用于读取资源和字符串
-     * @param localesConfigResId 默认使用 R.xml.local_config
-     * @return 排序后的 LanguageOption 列表
-     */
     fun getSupportedLanguages(
         context: Context,
         @XmlRes localesConfigResId: Int = R.xml.local_config
     ): List<LanguageOption> {
-        cachedOptions?.let { return it }
+        val currentLocale = Locale.getDefault()
 
-        val options = mutableListOf<LanguageOption>()
-        
-        // 核心逻辑：从 res/xml/local_config.xml 解析
-        try {
-            val parser: XmlResourceParser = context.resources.getXml(localesConfigResId)
-            var eventType = parser.eventType
-
-            while (eventType != XmlResourceParser.END_DOCUMENT) {
-                if (eventType == XmlResourceParser.START_TAG && parser.name == "locale") {
-                    // 读取 android:name 属性
-                    val name = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "name")?.trim() ?: ""
-                    
-                    val displayName = if (name.isEmpty()) {
-                        context.getString(R.string.follow_system)
-                    } else {
-                        val locale = Locale.forLanguageTag(name)
-                        getNiceDisplayName(locale, name)
-                    }
-                    
-                    if (options.none { it.tag == name }) {
-                        options.add(LanguageOption(name, displayName))
-                    }
-                }
-                eventType = parser.next()
-            }
-            parser.close()
-        } catch (e: Exception) {
-            // Fallback
-            if (options.isEmpty()) {
-                options.add(LanguageOption("", context.getString(R.string.follow_system)))
-                options.add(LanguageOption("en", "English"))
-                options.add(LanguageOption("zh", "中文 (简体)"))
-            }
+        // 只有当显示语言改变时，才重新生成带翻译的名称
+        if (cachedRawTags != null && lastDisplayLocale == currentLocale) {
+            return cachedOptions!!
         }
 
-        // 排序：空 tag (跟随系统) 置顶
-        val sorted = options.sortedWith(compareBy { it.tag.isNotEmpty() })
+        val tags = cachedRawTags ?: parseLocalesConfig(context, localesConfigResId)
+        cachedRawTags = tags
 
+        val options = tags.map { tag ->
+            val displayName = if (tag.isEmpty()) {
+                context.getString(R.string.follow_system)
+            } else {
+                getNiceDisplayName(Locale.forLanguageTag(tag), currentLocale)
+            }
+            LanguageOption(tag, displayName)
+        }
+
+        val sorted = options.sortedWith(compareBy { it.tag.isNotEmpty() })
         cachedOptions = sorted
+        lastDisplayLocale = currentLocale
         return sorted
     }
 
-    private fun getNiceDisplayName(locale: Locale, tag: String): String {
-        return when (tag) {
-            "zh", "zh-CN", "zh-Hans" -> "中文 (简体)"
-            "zh-TW", "zh-HK", "zh-Hant" -> "中文 (繁體)"
-            "en" -> "English"
-            "ja" -> "日本語"
-            else -> {
-                // 自适应显示：如果是该语言本身，则首字母大写
-                locale.getDisplayName(locale).replaceFirstChar { 
-                    if (it.isLowerCase()) it.titlecase(locale) else it.toString() 
+    private fun parseLocalesConfig(context: Context, resId: Int): List<String> {
+        val tags = mutableListOf<String>()
+        try {
+            context.resources.getXml(resId).use { parser ->
+                var eventType = parser.eventType
+                while (eventType != XmlResourceParser.END_DOCUMENT) {
+                    if (eventType == XmlResourceParser.START_TAG && parser.name == "locale") {
+                        // 同时尝试获取带命名空间和不带命名空间的属性
+                        val name = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "name")
+                            ?: parser.getAttributeValue(null, "name")
+                        name?.let { tags.add(it.trim()) }
+                    }
+                    eventType = parser.next()
                 }
             }
+        } catch (e: Exception) {
+            // 失败时返回基础默认值
+            return listOf("", "en", "zh")
+        }
+        return if (tags.isEmpty()) listOf("", "en", "zh") else tags
+    }
+
+    private fun getNiceDisplayName(locale: Locale, displayLocale: Locale): String {
+        return locale.getDisplayName(displayLocale).replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(displayLocale) else it.toString()
         }
     }
 }

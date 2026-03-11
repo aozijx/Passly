@@ -215,7 +215,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
                       else BackupManager.importBackup(context, uri, backupPassword.toCharArray(), BackupManager.ImportMode.OVERWRITE)
             
             val successMsg = context.getString(R.string.vault_backup_success)
-            val failedFormat = context.getString(R.string.vault_backup_failed_format)
+            val failedFormat = context.getString(R.string.vault_backup_failed)
             
             backupMessage = if (res.isSuccess) successMsg else failedFormat.format(res.exceptionOrNull()?.message)
             isBackupLoading = false

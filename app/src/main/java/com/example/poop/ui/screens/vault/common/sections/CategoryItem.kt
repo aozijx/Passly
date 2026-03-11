@@ -98,7 +98,7 @@ fun CategoryItem(
                 value = editState.editedCategory,
                 onValueChange = { editState.editedCategory = it },
                 viewModel = viewModel,
-                label = stringResource(R.string.vault_edit_modify_category)
+                label = stringResource(R.string.label_category)
             )
             TextButton(
                 onClick = {
@@ -110,7 +110,7 @@ fun CategoryItem(
             ) {
                 Icon(Icons.Default.Check, null)
                 Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.vault_edit_save_category))
+                Text(stringResource(R.string.action_save))
             }
         }
     } else {

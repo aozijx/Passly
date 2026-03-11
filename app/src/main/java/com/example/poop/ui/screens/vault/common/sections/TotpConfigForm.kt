@@ -26,6 +26,7 @@ fun TotpConfigForm(
     onAlgorithmChange: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // TOTP 密钥输入框
         OutlinedTextField(
             value = secret,
             onValueChange = onSecretChange,
@@ -38,25 +39,31 @@ fun TotpConfigForm(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // 更新周期 (通常为 30s)
             OutlinedTextField(
                 value = period,
                 onValueChange = onPeriodChange,
                 label = { Text(stringResource(R.string.label_totp_period)) },
                 modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
+            // 验证码位数 (通常为 6位)
             OutlinedTextField(
                 value = digits,
                 onValueChange = onDigitsChange,
                 label = { Text(stringResource(R.string.label_totp_digits)) },
                 modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
+            // 加密算法 (如 SHA1, SHA256)
             OutlinedTextField(
                 value = algorithm,
                 onValueChange = onAlgorithmChange,
                 label = { Text(stringResource(R.string.label_totp_algorithm)) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                singleLine = true
             )
         }
     }

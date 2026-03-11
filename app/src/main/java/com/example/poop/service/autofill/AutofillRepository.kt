@@ -66,49 +66,65 @@ object AutofillRepository {
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val dao = AppDatabase.getDatabase(context).vaultDao()
-            val existing = dao.getAllEntries().first().find {
-                (it.associatedAppPackage == packageName && packageName != null) ||
-                (it.associatedDomain == webDomain && webDomain != null)
+            // 获取所有条目以匹配用户名（由于加密，无法直接 SQL 查询）
+            val allEntries = dao.getAllEntries().first()
+            
+            // 查找是否存在包名/域名匹配 且 用户名匹配的条目
+            val existing = allEntries.find { entry ->
+                val scopeMatch = (entry.associatedAppPackage == packageName && packageName != null) ||
+                                (entry.associatedDomain == webDomain && webDomain != null)
+                if (scopeMatch) {
+                    // 获取 IV 并初始化解密 Cipher
+                    val iv = CryptoManager.getIvFromCipherText(entry.username)
+                    val cipher = iv?.let { CryptoManager.getDecryptCipher(it, isSilent = true) }
+                    val decUser = cipher?.let { CryptoManager.decrypt(entry.username, it) }
+                    decUser == usernameValue
+                } else false
             }
 
             val encUser = CryptoManager.encrypt(usernameValue, isSilent = true)
             val encPass = CryptoManager.encrypt(passwordValue, isSilent = true)
             
             if (encUser != null && encPass != null) {
-                val appLabel = packageName?.let { pkg ->
-                    try {
-                        val info = context.packageManager.getApplicationInfo(pkg, 0)
-                        context.packageManager.getApplicationLabel(info).toString()
-                    } catch (_: Exception) { null }
+                if (existing != null) {
+                    // 如果存在，只更新密码
+                    val updatedEntry = existing.copy(
+                        password = encPass,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    dao.update(updatedEntry)
+                    Logcat.i(TAG, "Updated existing account: $usernameValue")
+                } else {
+                    // 如果不存在，创建新条目
+                    val appLabel = packageName?.let { pkg ->
+                        try {
+                            val info = context.packageManager.getApplicationInfo(pkg, 0)
+                            context.packageManager.getApplicationLabel(info).toString()
+                        } catch (_: Exception) { null }
+                    }
+
+                    val title = AutofillTitleGenerator.getSmartTitle(
+                        context = context,
+                        pageTitle = pageTitle,
+                        domain = webDomain,
+                        appLabel = appLabel,
+                        packageName = packageName
+                    )
+
+                    val newEntry = VaultEntry(
+                        title = title,
+                        username = encUser,
+                        password = encPass,
+                        category = context.getString(R.string.category_autofill),
+                        associatedAppPackage = packageName,
+                        associatedDomain = webDomain,
+                        entryType = 0,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    dao.insert(newEntry)
+                    Logcat.i(TAG, "Saved new captured entry: $title")
                 }
-
-                val title = AutofillTitleGenerator.getSmartTitle(
-                    context = context,
-                    pageTitle = pageTitle,
-                    domain = webDomain,
-                    appLabel = appLabel,
-                    packageName = packageName
-                )
-
-                val entry = existing?.copy(
-                    username = encUser,
-                    password = encPass,
-                    associatedAppPackage = packageName ?: existing.associatedAppPackage,
-                    associatedDomain = webDomain ?: existing.associatedDomain,
-                    updatedAt = System.currentTimeMillis()
-                ) ?: VaultEntry(
-                    title = title,
-                    username = encUser,
-                    password = encPass,
-                    category = context.getString(R.string.category_autofill),
-                    associatedAppPackage = packageName,
-                    associatedDomain = webDomain,
-                    entryType = 0,
-                    updatedAt = System.currentTimeMillis()
-                )
-
-                if (existing != null) dao.update(entry) else dao.insert(entry)
-                Logcat.i(TAG, "Successfully synchronized $title")
                 return@withContext true
             }
             return@withContext false

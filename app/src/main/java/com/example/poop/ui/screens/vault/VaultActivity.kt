@@ -78,14 +78,14 @@ class VaultActivity : FragmentActivity() {
     private fun requestAuthentication(isFirstTime: Boolean) {
         viewModel.authenticate(
             activity = this,
-            title = getString(R.string.vault_auth_title),
+            title = getString(R.string.auth_title),
             subtitle = getString(R.string.vault_auth_subtitle),
             onSuccess = {
                 viewModel.authorize()
             },
             onError = { error ->
                 if (isFirstTime) {
-                    Toast.makeText(this, getString(R.string.vault_auth_error_format, error), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.vault_auth_error, error), Toast.LENGTH_SHORT).show()
                     finish()
                 } else {
                     Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()

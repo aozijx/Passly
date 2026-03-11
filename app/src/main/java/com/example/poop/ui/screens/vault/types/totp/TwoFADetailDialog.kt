@@ -72,11 +72,11 @@ fun TwoFADetailDialog(
     var showQrDialog by remember { mutableStateOf(false) }
 
     // 预加载字符串资源以供回调使用
-    val authRevealTitle = stringResource(R.string.vault_detail_auth_reveal_title)
-    val authRevealSubtitle = stringResource(R.string.vault_detail_auth_reveal_subtitle)
-    val authQrTitle = stringResource(R.string.vault_detail_auth_qr_title)
-    val authQrSubtitle = stringResource(R.string.vault_detail_auth_qr_subtitle)
-    val totpCopiedMsg = stringResource(R.string.vault_detail_totp_copied)
+    val authRevealTitle = stringResource(R.string.vault_auth_decrypt_title)
+    val authRevealSubtitle = stringResource(R.string.vault_auth_reveal_subtitle)
+    val authQrTitle = stringResource(R.string.vault_auth_qr_title)
+    val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
+    val totpCopiedMsg = stringResource(R.string.vault_totp_copied)
     
     // 初始化编辑状态
     val categoryEditState = remember(item) { VaultEditState(item) }
@@ -120,7 +120,7 @@ fun TwoFADetailDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(R.string.vault_detail_totp_label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+                    Text(stringResource(R.string.vault_totp_label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
                     IconButton(
                         onClick = {
                             viewModel.authenticate(
@@ -216,7 +216,7 @@ private fun EditTotpSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(stringResource(R.string.vault_detail_edit_totp_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(stringResource(R.string.vault_edit_totp_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
         TotpConfigForm(
             secret = editState.secret, onSecretChange = { editState.secret = it },
             period = editState.period, onPeriodChange = { editState.period = it },
@@ -248,14 +248,14 @@ private fun EditTotpSection(
 private fun QrExportDialog(bitmap: Bitmap?, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.vault_detail_export_qr_title)) },
+        title = { Text(stringResource(R.string.vault_export_qr_title)) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), 
                 horizontalAlignment = Alignment.CenterHorizontally, 
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(stringResource(R.string.vault_detail_export_qr_message), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.vault_export_qr_message), style = MaterialTheme.typography.bodyMedium)
                 if (bitmap != null) {
                     Card(modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f), shape = RoundedCornerShape(12.dp)) {
                         Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
