@@ -2,11 +2,12 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:foreground="@null"
     android:gravity="center"
+    android:orientation="vertical"
     android:padding="20dp">
 
-    <!-- 应用图标：增加点击感，修复 contentDescription 警告 -->
+    <!-- 应用图标：增加点击感 -->
     <ImageView
         android:id="@+id/save_icon"
         android:layout_width="56dp"
@@ -20,11 +21,11 @@
         android:id="@+id/save_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary"
         android:gravity="center"
-        android:text="@string/autofill_save_prompt_title" />
+        android:text="@string/autofill_save_prompt_title"
+        android:textColor="@color/on_primary_container_light"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
     <!-- 描述：增加行间距，显示更清晰 -->
     <TextView
@@ -32,9 +33,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:textSize="14sp"
-        android:textColor="?android:attr/textColorSecondary"
+        android:gravity="center"
         android:lineSpacingExtra="2dp"
-        android:gravity="center" />
+        android:textColor="@color/on_primary_container_light"
+        android:textSize="14sp" />
 
 </LinearLayout>

@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -75,11 +77,10 @@ fun VaultFab(
                 .navigationBarsPadding()
                 .padding(bottom = 16.dp, end = 8.dp)
         ) {
-            // 选项菜单：也使用缩放动画
             AnimatedVisibility(
                 visible = showFabMenu,
-                enter = fadeIn() + scaleIn(transformOrigin = TransformOrigin(1f, 1f)),
-                exit = fadeOut() + scaleOut(transformOrigin = TransformOrigin(1f, 1f))
+                enter = fadeIn() + slideInHorizontally { fullWidth -> fullWidth },
+                exit = fadeOut() + slideOutHorizontally { fullWidth -> fullWidth }
             ) {
                 Column(
                     horizontalAlignment = Alignment.End,

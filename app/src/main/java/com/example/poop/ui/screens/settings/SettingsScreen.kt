@@ -212,7 +212,7 @@ fun SettingsScreen(
                 SettingsClickableItem(
                     title = "权限管理",
                     subtitle = "管理应用所需的系统权限",
-                    value = "前往系统设置",
+                    value = "系统设置",
                     onClick = {
                         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                             data = Uri.fromParts("package", context.packageName, null)

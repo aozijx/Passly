@@ -7,8 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import com.example.poop.ui.theme.PoopTheme
 import com.example.poop.data.Preference
+import com.example.poop.ui.theme.PoopTheme
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,7 +18,7 @@ class LoginActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            // 1. 实例化你的 Preference 类
+            // 1. 实例化 Preference 类
             val preference = remember { Preference(applicationContext) }
             // initialValue 建议使用系统默认值，这样启动时不会有闪烁
             val isDarkModePref by preference.isDarkMode.collectAsState(initial = null)

@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -123,13 +120,7 @@ private fun ProfileContent(
             ProfileStats(user.stats)
         }
 
-        // 功能列表项
-        items(user.menuItems) { menuItem ->
-            ProfileMenuItem(
-                icon = menuItem.icon, title = menuItem.title, onClick = { /* 根据需要处理点击 */ })
-        }
-
-        // 图片展示 (相册)
+        // 图片展示
         item {
             Text(
                 text = "我的相册",
@@ -261,36 +252,6 @@ fun StatItem(count: String, label: String) {
             text = label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f)
-        )
-        Icon(
-            painter = painterResource(id = android.R.drawable.arrow_down_float),
-            contentDescription = "进入",
-            modifier = Modifier
-                .size(16.dp)
-                .offset(y = 1.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
