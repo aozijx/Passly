@@ -17,6 +17,7 @@ import android.service.autofill.SaveRequest
 import android.widget.RemoteViews
 import com.example.poop.R
 import com.example.poop.ui.screens.vault.utils.AutofillParser
+import com.example.poop.ui.screens.vault.utils.CryptoManager
 import com.example.poop.util.Logcat
 import com.example.poop.util.PackageUtils
 import kotlinx.coroutines.CoroutineScope
@@ -49,9 +50,14 @@ class AutofillService : android.service.autofill.AutofillService() {
 
                 // 1. 处理填充建议 (Datasets)
                 entries.forEach { entry ->
+                    // 解密用户名以显示在提示列表中
+                    val iv = CryptoManager.getIvFromCipherText(entry.username)
+                    val cipher = iv?.let { CryptoManager.getDecryptCipher(it, isSilent = true) }
+                    val decryptedUsername = cipher?.let { CryptoManager.decrypt(entry.username, it) } ?: "点击填充"
+
                     val presentation = RemoteViews(packageName, R.layout.autofill_dataset_item).apply {
                         setTextViewText(R.id.title, entry.title)
-                        setTextViewText(R.id.username, if (entry.totpSecret.isNullOrBlank()) "点击填充" else "填充账号与验证码")
+                        setTextViewText(R.id.username, if (!entry.totpSecret.isNullOrBlank()) "OTP: $decryptedUsername" else decryptedUsername)
                         val appPkg = entry.associatedAppPackage
                         if (!appPkg.isNullOrEmpty()) {
                             PackageUtils.getAppIconDrawable(applicationContext, appPkg)?.let { icon ->
@@ -103,7 +109,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                     }
                     val appLabel = appData?.first ?: parser.webDomain ?: "该应用"
 
-                    // --- 新增代码：配置带图标的自定义保存提示 ---
+                    // --- 配置带图标的自定义保存提示 ---
                     val iconBitmap = appData?.second?.let { PackageUtils.drawableToBitmap(it) }
 
                     if (iconBitmap != null) {
