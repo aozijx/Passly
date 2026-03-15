@@ -68,9 +68,14 @@ class AutofillService : AutofillService() {
 
                 if (filteredEntries.isNotEmpty()) {
                     filteredEntries.forEach { entry ->
+                        // 解密用户名以显示在提示列表中
+                        val iv = CryptoManager.getIvFromCipherText(entry.username)
+                        val cipher = iv?.let { CryptoManager.getDecryptCipher(it, isSilent = true) }
+                        val decryptedUsername = cipher?.let { CryptoManager.decrypt(entry.username, it) } ?: "点击填充"
+
                         val presentation = RemoteViews(packageName, R.layout.autofill_dataset_item).apply {
                             setTextViewText(R.id.title, entry.title)
-                            setTextViewText(R.id.username, "点击填充")
+                            setTextViewText(R.id.username, decryptedUsername)
                         }
 
                         val authIntent = Intent(this@AutofillService, AutofillAuthActivity::class.java).apply {
