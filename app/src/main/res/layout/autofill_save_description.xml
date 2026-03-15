@@ -16,18 +16,18 @@
         android:contentDescription="@string/autofill_save_icon_description"
         android:scaleType="fitCenter" />
 
-    <!-- 标题：使用更醒目的字体大小和间距 -->
+    <!-- 标题：使用系统主文字颜色，自适应深浅色模式 -->
     <TextView
         android:id="@+id/save_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="@string/autofill_save_prompt_title"
-        android:textColor="@color/on_primary_container_light"
+        android:textColor="?android:attr/textColorPrimary"
         android:textSize="18sp"
         android:textStyle="bold" />
 
-    <!-- 描述：增加行间距，显示更清晰 -->
+    <!-- 描述：使用系统次要文字颜色，增加行间距 -->
     <TextView
         android:id="@+id/save_description"
         android:layout_width="wrap_content"
@@ -35,7 +35,7 @@
         android:layout_marginTop="8dp"
         android:gravity="center"
         android:lineSpacingExtra="2dp"
-        android:textColor="@color/on_primary_container_light"
+        android:textColor="?android:attr/textColorSecondary"
         android:textSize="14sp" />
 
 </LinearLayout>

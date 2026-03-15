@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,11 +67,15 @@ fun TwoFADetailDialog(
     viewModel: VaultViewModel
 ) {
     val context = LocalContext.current
-    val totpState = rememberTotpState(entry = item, viewModel = viewModel, autoMigrate = true)
+    
+    // 订阅全局 TOTP 状态
+    val totpStates by viewModel.totpStates.collectAsState()
+    val currentState = totpStates[item.id]
+    
     val isSteam = remember(item.totpAlgorithm) { item.totpAlgorithm.uppercase() == "STEAM" }
     var showQrDialog by remember { mutableStateOf(false) }
 
-    // 预加载字符串资源以供回调使用
+    // 预加载字符串资源
     val authRevealTitle = stringResource(R.string.vault_auth_decrypt_title)
     val authRevealSubtitle = stringResource(R.string.vault_auth_reveal_subtitle)
     val authQrTitle = stringResource(R.string.vault_auth_qr_title)
@@ -80,8 +84,8 @@ fun TwoFADetailDialog(
     
     // 初始化编辑状态
     val categoryEditState = remember(item) { VaultEditState(item) }
-    val totpEditState = remember(item, totpState.decryptedSecret) { 
-        TotpEditState(item, totpState.decryptedSecret ?: "") 
+    val totpEditState = remember(item, currentState?.decryptedSecret) { 
+        TotpEditState(item, currentState?.decryptedSecret ?: "") 
     }
 
     AlertDialog(
@@ -99,7 +103,7 @@ fun TwoFADetailDialog(
                             title = authRevealTitle,
                             subtitle = authRevealSubtitle,
                             onSuccess = { 
-                                totpEditState.secret = totpState.decryptedSecret ?: ""
+                                totpEditState.secret = currentState?.decryptedSecret ?: ""
                                 totpEditState.isEditing = true 
                             }
                         )
@@ -141,9 +145,12 @@ fun TwoFADetailDialog(
 
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable {
-                        if (totpState.code.isNotEmpty() && !totpState.code.contains("-")) {
-                            ClipboardUtils.copy(context, totpState.code)
+                        if (currentState != null && currentState.code.isNotEmpty() && !currentState.code.contains("-")) {
+                            ClipboardUtils.copy(context, currentState.code)
                             Toast.makeText(context, totpCopiedMsg, Toast.LENGTH_SHORT).show()
+                        } else if (currentState?.decryptedSecret == null) {
+                            // 使用统一的解锁逻辑：静默 -> 手动 -> 自动迁移
+                            viewModel.ensureTotpUnlocked(activity, item)
                         }
                     },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
@@ -155,8 +162,8 @@ fun TwoFADetailDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        val displayText = if (totpState.decryptedSecret == null) stringResource(R.string.auth_to_show) 
-                                        else (if (isSteam) totpState.code else totpState.code.chunked(3).joinToString(" "))
+                        val displayText = if (currentState?.decryptedSecret == null) stringResource(R.string.auth_to_show) 
+                                        else (if (isSteam) currentState.code else currentState.code.chunked(3).joinToString(" "))
                         
                         Text(
                             text = displayText,
@@ -165,21 +172,21 @@ fun TwoFADetailDialog(
                                 letterSpacing = if (isSteam) 4.sp else 2.sp,
                                 fontFamily = FontFamily.Monospace
                             ),
-                            color = if (totpState.decryptedSecret == null) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
+                            color = if (currentState?.decryptedSecret == null) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(24.dp))
                         CircularProgressIndicator(
-                            progress = { if (totpState.decryptedSecret == null) 0f else totpState.progress },
+                            progress = { if (currentState?.decryptedSecret == null) 0f else currentState.progress },
                             modifier = Modifier.size(28.dp),
                             strokeWidth = 4.dp,
-                            color = if (totpState.progress < 0.2f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            color = if ((currentState?.progress ?: 1f) < 0.2f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                         )
                     }
                 }
 
-                if (totpEditState.isEditing && totpState.decryptedSecret != null) {
+                if (totpEditState.isEditing && currentState?.decryptedSecret != null) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     EditTotpSection(activity, item, viewModel, totpEditState)
                 }
@@ -191,8 +198,8 @@ fun TwoFADetailDialog(
     )
 
     if (showQrDialog) {
-        if (totpState.decryptedSecret != null) {
-            val qrContent = constructOtpAuthUri(item, totpState.decryptedSecret)
+        if (currentState?.decryptedSecret != null) {
+            val qrContent = constructOtpAuthUri(item, currentState.decryptedSecret)
             val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
             QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })
         }
@@ -251,26 +258,32 @@ private fun QrExportDialog(bitmap: Bitmap?, onDismiss: () -> Unit) {
         title = { Text(stringResource(R.string.vault_export_qr_title)) },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), 
-                horizontalAlignment = Alignment.CenterHorizontally, 
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(stringResource(R.string.vault_export_qr_message), style = MaterialTheme.typography.bodyMedium)
                 if (bitmap != null) {
-                    Card(modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f), shape = RoundedCornerShape(12.dp)) {
+                    Card(modifier = Modifier.size(240.dp), shape = RoundedCornerShape(12.dp)) {
                         Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
                             Image(bitmap = bitmap.asImageBitmap(), contentDescription = "QR Code", modifier = Modifier.fillMaxSize())
                         }
                     }
-                } else CircularProgressIndicator()
+                }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } }
     )
 }
 
-private fun constructOtpAuthUri(item: VaultEntry, secret: String): String {
-    val label = URLEncoder.encode(item.username.ifBlank { "Account" }, "UTF-8").replace("+", "%20")
-    val issuer = URLEncoder.encode(item.title, "UTF-8").replace("+", "%20")
-    return "otpauth://totp/$issuer:$label?secret=$secret&issuer=$issuer&digits=${item.totpDigits}&period=${item.totpPeriod}&algorithm=${item.totpAlgorithm}"
+/**
+ * 构造 otpauth 链接
+ */
+private fun constructOtpAuthUri(entry: VaultEntry, secret: String): String {
+    val type = if (entry.totpAlgorithm.uppercase() == "STEAM") "totp" else "totp"
+    val issuer = URLEncoder.encode(entry.category, "UTF-8")
+    val label = URLEncoder.encode(entry.title, "UTF-8")
+    val secretEncoded = secret.replace(" ", "").uppercase()
+    
+    return "otpauth://$type/$label?secret=$secretEncoded&issuer=$issuer&period=${entry.totpPeriod}&digits=${entry.totpDigits}&algorithm=${entry.totpAlgorithm}"
 }
