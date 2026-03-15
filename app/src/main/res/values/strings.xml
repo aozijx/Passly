@@ -215,6 +215,7 @@
     <string name="shortcut_scanner_long">扫一扫添加 TOTP</string>
     <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
     <string name="changelog_last"><![CDATA[
+## [0.3.0] - 2026-03-15
 • 修复 steam 令牌的计算错误
 • 现在能更直观的看到动态验证码
 • 添加自动保存的功能
