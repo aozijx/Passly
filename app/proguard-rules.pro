@@ -9,21 +9,27 @@
 -keep class net.sqlcipher.database.** { *; }
 -keep class androidx.sqlite.db.SupportSQLite* { *; }
 
-# 核心数据模型防止被混淆导致 Room 无法映射
--keepclassmembers class com.example.poop.data.VaultEntry { *; }
+# 核心数据模型防止被混淆
 -keep class com.example.poop.data.VaultEntry { *; }
--keepclassmembers class com.example.poop.data.VaultHistory { *; }
--keep class com.example.poop.data.VaultHistory { *; }
 
-# DAO 接口防止被优化
--keep interface com.example.poop.data.VaultDao { *; }
+# 核心工具类防止被混淆
+-keep class com.example.poop.util.Logcat { *; }
 
-# 处理反射相关的异常堆栈保留
+# 丢弃第三方库可能使用的标准 Log 调用
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+}
+
+# 丢弃 System.out.println
+-assumenosideeffects class java.io.PrintStream {
+    public void println(java.lang.String);
+    public void print(java.lang.String);
+}
+
+# 保留混淆后的堆栈信息以便 Retrace
 -keepattributes Signature
 -keepattributes *Annotation*
 -keepattributes EnclosingMethod
 -keepattributes InnerClasses
 -keepattributes SourceFile,LineNumberTable
-
-# 记录日志相关的类
--keep class com.example.poop.util.Logcat { *; }

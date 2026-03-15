@@ -27,10 +27,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.poop.R
 import com.example.poop.ui.screens.profile.ImageType
-import com.example.poop.ui.screens.vault.components.common.VaultIcons
+import com.example.poop.ui.screens.vault.common.icons.VaultIcons
 import com.example.poop.util.rememberImagePicker
 
 @Composable
@@ -49,7 +51,7 @@ fun IconPickerDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "选择图标",
+                text = stringResource(R.string.icon_picker_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -57,7 +59,7 @@ fun IconPickerDialog(
         text = {
             Column {
                 Text(
-                    "为该条目选择预设图标或上传自定义图片",
+                    text = stringResource(R.string.icon_picker_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -79,11 +81,11 @@ fun IconPickerDialog(
                         }
 
                         // 渲染所有预设图标
-                        items(VaultIcons.allIcons.keys.toList()) { name ->
+                        items(VaultIcons.allIcons.keys.toList()) { resId ->
                             IconItem(
-                                name = name,
-                                isSelected = currentIconName == name && currentCustomPath == null,
-                                onClick = { onIconSelected(name) }
+                                name = resId,
+                                isSelected = currentIconName == resId.toString() && currentCustomPath == null,
+                                onClick = { onIconSelected(resId.toString()) }
                             )
                         }
 
@@ -107,7 +109,7 @@ fun IconPickerDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.AddAPhoto,
-                                    contentDescription = "添加图片",
+                                    contentDescription = stringResource(R.string.icon_picker_action_add_photo),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
                                 )
@@ -119,7 +121,7 @@ fun IconPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -127,7 +129,7 @@ fun IconPickerDialog(
 
 @Composable
 private fun IconItem(
-    name: String?,
+    name: Int?,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -158,8 +160,8 @@ private fun IconItem(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = VaultIcons.getIconByName(name),
-                contentDescription = name ?: "默认",
+                imageVector = VaultIcons.getIconByRes(name),
+                contentDescription = if (name != null) stringResource(name) else stringResource(R.string.label_default),
                 tint = iconColor,
                 modifier = Modifier.size(24.dp)
             )

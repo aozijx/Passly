@@ -1,5 +1,6 @@
 package com.example.poop.ui.navigation
 
+import android.content.Intent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
@@ -25,32 +26,32 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.poop.ui.screens.animation.AnimationScreen
 import com.example.poop.ui.screens.detail.DetailScreen
 import com.example.poop.ui.screens.detail.components.AppSdkClassifier
 import com.example.poop.ui.screens.home.HomeScreen
 import com.example.poop.ui.screens.profile.ProfileScreen
 import com.example.poop.ui.screens.scanner.ScannerScreen
 import com.example.poop.ui.screens.settings.SettingsScreen
+import com.example.poop.ui.screens.vault.VaultActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavGraph(startDestination: String = Screen.Home.route) {
     val navController = rememberNavController()
-    val bottomNavItems = listOf(Screen.Home, Screen.Profile, Screen.Animation, Screen.Detail)
-    
+    val bottomNavItems = Screen.bottomNavItems
     val topBarState = remember { TopBarState() }
-    
     // 配置 enterAlways 效果的滚动行为
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -63,20 +64,18 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
             topBar = {
                 if (topBarState.isVisible) {
                     val navigationIcon: @Composable () -> Unit = {
-                        val noBackIconRoutes = listOf(
-                            Screen.Home.route,
-                            Screen.Profile.route,
-                            Screen.Animation.route,
-                            Screen.Detail.route
-                        )
-                        val shouldShowBackIcon = navController.previousBackStackEntry != null && 
-                                               currentDestination?.route !in noBackIconRoutes
+                        val currentScreen = Screen.fromRoute(currentDestination?.route)
+                        val shouldShowBackIcon = currentScreen?.showBackIcon == true &&
+                                navController.previousBackStackEntry != null
 
                         if (topBarState.navigationIcon != null) {
                             topBarState.navigationIcon?.invoke()
                         } else if (shouldShowBackIcon) {
                             IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "返回"
+                                )
                             }
                         }
                     }
@@ -99,8 +98,8 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 }
             },
             bottomBar = {
-                val shouldShowBottomBar = bottomNavItems.any { it.route == currentDestination?.route }
-                if (shouldShowBottomBar) {
+                val currentScreen = Screen.fromRoute(currentDestination?.route)
+                if (currentScreen?.isBottomNav == true) {
                     NavigationBar {
                         bottomNavItems.forEach { screen ->
                             NavigationBarItem(
@@ -139,30 +138,76 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 composable(Screen.Profile.route) {
                     ProfileScreen(navController)
                 }
-                composable(Screen.Animation.route) {
-                    AnimationScreen()
+                composable(Screen.Vault.route) {
+                    // 1. 获取上下文（Compose 中获取 Context 的标准方式）
+                    val context = LocalContext.current
+
+                    // 使用 LaunchedEffect 确保跳转逻辑只在进入此路由时执行一次
+                    LaunchedEffect(Unit) {
+                        val intent = Intent(context, VaultActivity::class.java).apply {
+                            // 如果需要，可以在这里添加 flags，例如清除任务栈
+                            // flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        context.startActivity(intent)
+
+                        // 跳转后立即从导航栈中移除此占位路由，防止用户返回时看到空白页
+                        navController.popBackStack()
+                    }
+
+                    // 返回一个空布局，因为跳转是异步的，此处需要一个 Composable
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize())
                 }
                 composable(Screen.Detail.route) {
                     DetailScreen(navController)
                 }
                 composable(
                     Screen.Scanner.route,
-                    enterTransition = { slideInVertically(initialOffsetY = { it }, animationSpec = tween(400)) + fadeIn() },
-                    exitTransition = { slideOutVertically(targetOffsetY = { it }, animationSpec = tween(400)) + fadeOut() }
+                    enterTransition = {
+                        slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = tween(400)
+                        ) + fadeIn()
+                    },
+                    exitTransition = {
+                        slideOutVertically(
+                            targetOffsetY = { it },
+                            animationSpec = tween(400)
+                        ) + fadeOut()
+                    }
                 ) {
                     ScannerScreen()
                 }
                 composable(
                     Screen.Setting.route,
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400)) + fadeIn() },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400)) + fadeOut() }
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(400)
+                        ) + fadeIn()
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(400)
+                        ) + fadeOut()
+                    }
                 ) {
                     SettingsScreen()
                 }
                 composable(
                     Screen.AppAnalysis.route,
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400)) + fadeIn() },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400)) + fadeOut() }
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(400)
+                        ) + fadeIn()
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(400)
+                        ) + fadeOut()
+                    }
                 ) {
                     AppSdkClassifier()
                 }

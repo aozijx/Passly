@@ -6,11 +6,20 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.poop.R
 import com.example.poop.data.AppDatabase
 import com.example.poop.data.VaultEntry
+import com.example.poop.ui.screens.vault.core.AddType
+import com.example.poop.ui.screens.vault.core.VaultTab
+import com.example.poop.ui.screens.vault.types.totp.TotpState
 import com.example.poop.ui.screens.vault.utils.BackupManager
+import com.example.poop.ui.screens.vault.utils.BiometricHelper
+import com.example.poop.ui.screens.vault.utils.CryptoManager
+import com.example.poop.ui.screens.vault.utils.TwoFAUtils
+import com.example.poop.util.Logcat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,19 +30,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class VaultTab { ALL, PASSWORDS, TOTP }
-enum class AddType { 
-    NONE, PASSWORD, TOTP, SCAN, WIFI, 
-    CREDIT_CARD, CRYPTO_SEED, IDENTITY_DOC, SSH_KEY 
-}
-
+/**
+ * 全局控制中心 - 统一管理 TOTP 的解密、刷新和进度计算逻辑
+ */
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).vaultDao()
     private val preference = com.example.poop.AppContext.get().preference
 
-    // --- 状态管理 ---
+    // --- 全局 UI 状态 ---
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
@@ -44,75 +51,29 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     val selectedTab: StateFlow<VaultTab> = _selectedTab
 
     var isSearchActive by mutableStateOf(false)
-    var isFilterMenuExpanded by mutableStateOf(false)
     var isMoreMenuExpanded by mutableStateOf(false)
-
-    // TOTP 显示控制
     var showTOTPCode by mutableStateOf(true)
 
-    // 安全锁定
+    // --- 全局 TOTP 状态管理 ---
+    private val _totpStates = MutableStateFlow<Map<Int, TotpState>>(emptyMap())
+    val totpStates: StateFlow<Map<Int, TotpState>> = _totpStates
+
+    // --- 安全锁定逻辑 ---
     private val lockTimeMs = 60000L
     private var lockJob: Job? = null
     private var lastInteractionTime = System.currentTimeMillis()
     var isAuthorized by mutableStateOf(false)
         private set
 
-    // 添加表单状态
+    // --- 当前正在交互的对象（路由核心） ---
     var addType by mutableStateOf(AddType.NONE)
-        private set
-    var addDialogTitle by mutableStateOf("")
-    var addDialogUsername by mutableStateOf("")
-    var addDialogPassword by mutableStateOf("")
-    var addDialogCategory by mutableStateOf("")
-    var addDialogNotes by mutableStateOf("")
-    var addDialogPasswordVisible by mutableStateOf(false)
-    var addDialogIconName by mutableStateOf<String?>(null)
-    var addDialogIconPath by mutableStateOf<String?>(null)
-    
-    // TOTP 状态
-    var addDialogTotpSecret by mutableStateOf("")
-    var addDialogTotpPeriod by mutableStateOf("30")
-    var addDialogTotpDigits by mutableStateOf("6")
-    var addDialogTotpAlgorithm by mutableStateOf("SHA1")
-
-    // 详情与编辑
     var detailItem by mutableStateOf<VaultEntry?>(null)
-        private set
-    var isEditingCategory by mutableStateOf(false)
-    var editedCategory by mutableStateOf("")
-    var isEditingUsername by mutableStateOf(false)
-    var isEditingPassword by mutableStateOf(false)
-    var editedUsername by mutableStateOf("")
-    var editedPassword by mutableStateOf("")
+    var itemToDelete by mutableStateOf<VaultEntry?>(null)
 
-    // 新增：域名和包名编辑状态
-    var isEditingDomain by mutableStateOf(false)
-    var editedDomain by mutableStateOf("")
-    var isEditingPackage by mutableStateOf(false)
-    var editedPackage by mutableStateOf("")
-
-    // TOTP 编辑状态
-    var isEditingTotpConfig by mutableStateOf(false)
-    var editedTotpSecret by mutableStateOf("")
-    var editedTotpPeriod by mutableStateOf("")
-    var editedTotpDigits by mutableStateOf("")
-    var editedTotpAlgorithm by mutableStateOf("")
-
-    // 图标选择状态
+    // 图标选择共享状态
     var showIconPicker by mutableStateOf(false)
 
-    // 删除与备份
-    var itemToDelete by mutableStateOf<VaultEntry?>(null)
-        private set
-    var isBackupLoading by mutableStateOf(false)
-    var backupMessage by mutableStateOf<String?>(null)
-    var showBackupPasswordDialog by mutableStateOf(false)
-    var isExporting by mutableStateOf(true)
-    var pendingUri by mutableStateOf<Uri?>(null)
-    var backupPassword by mutableStateOf("")
-    var importMode by mutableStateOf(BackupManager.ImportMode.OVERWRITE)
-
-    // --- 2. 偏好与数据流 ---
+    // --- 偏好与数据流 ---
     val isDarkMode: StateFlow<Boolean?> = preference.isDarkMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val isDynamicColor: StateFlow<Boolean> = preference.isDynamicColor
@@ -140,76 +101,190 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // --- 方法 ---
-    fun authorize() { isAuthorized = true; updateInteraction() }
-    fun lock() { isAuthorized = false; cancelLockTimer() }
-    fun startLockTimer() {
-        lockJob?.cancel()
-        lockJob = viewModelScope.launch { delay(lockTimeMs); if (isAuthorized) lock() }
-    }
-    fun cancelLockTimer() { lockJob?.cancel() }
-    fun updateInteraction() { lastInteractionTime = System.currentTimeMillis(); if (isAuthorized) startLockTimer() }
-    fun checkAndLock() { if (isAuthorized && System.currentTimeMillis() - lastInteractionTime >= lockTimeMs) lock() }
-
-    // 搜索与过滤
-    fun onSearchQueryChange(newQuery: String) { _searchQuery.value = newQuery }
-    fun toggleSearch(active: Boolean) { isSearchActive = active; if (!active) _searchQuery.value = "" }
-    fun toggleMoreMenu(expanded: Boolean) { isMoreMenuExpanded = expanded }
-    fun onCategorySelect(category: String?) { _selectedCategory.value = category; isFilterMenuExpanded = false }
-    fun onTabSelect(tab: VaultTab) { _selectedTab.value = tab }
-
-    // 添加逻辑
-    fun onAddTypeSelect(type: AddType) { resetAddDialogFields(); addType = type }
-    fun dismissAddDialog() { addType = AddType.NONE }
-    private fun resetAddDialogFields() {
-        addDialogTitle = ""; addDialogUsername = ""; addDialogPassword = ""
-        addDialogCategory = ""; addDialogNotes = ""; addDialogTotpSecret = ""
-        addDialogTotpPeriod = "30"; addDialogTotpDigits = "6"; addDialogTotpAlgorithm = "SHA1"
-        addDialogPasswordVisible = false
-        addDialogIconName = null; addDialogIconPath = null; showIconPicker = false
+    init {
+        // 1. 启动全局 TOTP 刷新器
+        startTotpRefresher()
+        
+        // 2. 自动尝试静默解密所有 TOTP
+        observeAndSilentUnlock()
     }
 
-    fun addItem(entry: VaultEntry) {
-        viewModelScope.launch { dao.insert(entry); addType = AddType.NONE; resetAddDialogFields() }
+    private fun startTotpRefresher() {
+        viewModelScope.launch {
+            while (true) {
+                val currentMap = _totpStates.value
+                if (currentMap.isNotEmpty()) {
+                    val entries = vaultItems.value
+                    val updatedMap = currentMap.mapValues { (id, state) ->
+                        val entry = entries.find { it.id == id } ?: return@mapValues state
+                        val secret = state.decryptedSecret ?: return@mapValues state
+                        
+                        val period = entry.totpPeriod.coerceAtLeast(1)
+                        val currentTime = System.currentTimeMillis() / 1000
+                        val remaining = period - (currentTime % period)
+                        val progress = remaining.toFloat() / period
+                        
+                        val isSteam = entry.totpAlgorithm.uppercase() == "STEAM"
+                        val code = TwoFAUtils.generateTotp(
+                            secret = secret,
+                            digits = if (isSteam) 5 else entry.totpDigits,
+                            period = entry.totpPeriod,
+                            algorithm = entry.totpAlgorithm
+                        )
+                        state.copy(code = code, progress = progress)
+                    }
+                    _totpStates.value = updatedMap
+                }
+                delay(500)
+            }
+        }
+    }
+
+    private fun observeAndSilentUnlock() {
+        viewModelScope.launch {
+            vaultItems.collect { entries ->
+                val currentStates = _totpStates.value
+                entries.forEach { entry ->
+                    if (entry.totpSecret != null && !currentStates.containsKey(entry.id)) {
+                        trySilentUnlock(entry)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun trySilentUnlock(entry: VaultEntry) {
+        val encrypted = entry.totpSecret ?: return
+        try {
+            val iv = CryptoManager.getIvFromCipherText(encrypted) ?: return
+            val cipher = CryptoManager.getDecryptCipher(iv, isSilent = true)
+            val decrypted = cipher?.let { CryptoManager.decrypt(encrypted, it) }
+            
+            if (decrypted != null) {
+                Logcat.i("VaultViewModel", "Entry ${entry.id} unlocked silently")
+                unlockTotp(entry, decrypted, isManual = false)
+            }
+        } catch (_: Exception) {
+            // 静默失败很正常，可能是因为密钥是 Secure 类型的
+        }
     }
 
     /**
-     * 为兼容旧版调用的 addItem 重载
+     * 确保 TOTP 已解锁。由 UI 组件在显示前调用。
+     * 支持 PIN/密码解锁：不直接传递 CryptoObject，而是先验证用户身份。
      */
-    fun addItem(
-        title: String,
-        encryptedUser: String,
-        encryptedPass: String,
-        category: String,
-        totpSecret: String? = null
-    ) {
-        val entry = VaultEntry(
-            title = title,
-            username = encryptedUser,
-            password = encryptedPass,
-            category = category,
-            totpSecret = totpSecret,
-            entryType = if (totpSecret != null) 1 else 0
-        )
-        addItem(entry)
-    }
+    fun ensureTotpUnlocked(activity: FragmentActivity, entry: VaultEntry) {
+        if (_totpStates.value.containsKey(entry.id)) return
 
-    fun showDetail(entry: VaultEntry) { 
-        detailItem = entry
-        isEditingCategory = false; isEditingUsername = false; isEditingPassword = false
-        isEditingDomain = false; isEditingPackage = false
-        isEditingTotpConfig = false; showIconPicker = false
-    }
-    fun dismissDetail() { detailItem = null }
+        val encrypted = entry.totpSecret ?: return
+        val iv = CryptoManager.getIvFromCipherText(encrypted) ?: return
 
-    fun onIconSelected(name: String?, path: String? = null) {
-        detailItem?.let { item ->
-            updateVaultEntry(item.copy(iconName = name, iconCustomPath = path))
-        } ?: run {
-            addDialogIconName = name
-            addDialogIconPath = path
-            showIconPicker = false
+        // 1. 再次尝试静默解锁 (免验证密钥)
+        try {
+            val silentCipher = CryptoManager.getDecryptCipher(iv, isSilent = true)
+            val decrypted = silentCipher?.let { CryptoManager.decrypt(encrypted, it) }
+            if (decrypted != null) {
+                Logcat.i("VaultViewModel", "Entry ${entry.id} unlocked silently on demand")
+                unlockTotp(entry, decrypted, isManual = false)
+                return
+            }
+        } catch (_: Exception) {}
+
+        // 2. 静默失败，提示用户验证 (支持 PIN/密码)
+        Logcat.i("VaultViewModel", "Silent unlock failed for ${entry.id}, requesting auth (PIN supported)")
+        authenticate(activity, activity.getString(R.string.vault_auth_decrypt_title), entry.title) {
+            // 验证成功后，10秒内可以直接获取解密 Cipher，无需传入 CryptoObject
+            val cipher = CryptoManager.getDecryptCipher(iv, isSilent = false)
+            val decrypted = cipher?.let { CryptoManager.decrypt(encrypted, it) }
+            if (decrypted != null) {
+                Logcat.i("VaultViewModel", "Entry ${entry.id} unlocked with auth (PIN/Biometric)")
+                unlockTotp(entry, decrypted, isManual = true)
+            }
         }
+    }
+
+    fun unlockTotp(entry: VaultEntry, decryptedSecret: String, isManual: Boolean = false) {
+        val period = entry.totpPeriod.coerceAtLeast(1)
+        val remaining = period - ((System.currentTimeMillis() / 1000) % period)
+        
+        _totpStates.update { it + (entry.id to TotpState(
+            code = "------",
+            progress = remaining.toFloat() / period,
+            decryptedSecret = decryptedSecret
+        )) }
+
+        if (isManual) {
+            viewModelScope.launch {
+                try {
+                    val newCipher = CryptoManager.getEncryptCipher(isSilent = true)
+                    if (newCipher != null) {
+                        val reEncrypted = CryptoManager.encrypt(decryptedSecret, newCipher)
+                        val updated = entry.copy(totpSecret = reEncrypted)
+                        dao.update(updated)
+                        if (detailItem?.id == entry.id) detailItem = updated
+                        Logcat.i("VaultViewModel", "Entry ${entry.id} migrated to silent key")
+                    }
+                } catch (e: Exception) {
+                    Logcat.e("VaultViewModel", "Migration failed for ${entry.id}", e)
+                }
+            }
+        }
+    }
+
+    // --- 核心操作：加解密验证 ---
+
+    fun authenticate(activity: FragmentActivity, title: String, subtitle: String = "", onError: ((String) -> Unit)? = null, onSuccess: () -> Unit) {
+        // 这里不传 CryptoObject，BiometricPrompt 就会显示 "Use PIN/Password" 按钮
+        BiometricHelper.authenticate(activity, title, subtitle, 
+            onSuccess = { updateInteraction(); onSuccess() }, onError = onError)
+    }
+
+    fun encryptMultiple(
+        activity: FragmentActivity, 
+        texts: List<String>, 
+        title: String = getApplication<Application>().getString(R.string.vault_auth_encrypt_title), 
+        subtitle: String = getApplication<Application>().getString(R.string.vault_auth_encrypt_subtitle), 
+        onSuccess: (List<String>) -> Unit
+    ) {
+        authenticate(activity, title, subtitle) {
+            onSuccess(texts.map { CryptoManager.encrypt(it, isSilent = false) ?: "" })
+        }
+    }
+
+    fun decryptSingle(
+        activity: FragmentActivity, 
+        text: String, 
+        title: String = getApplication<Application>().getString(R.string.vault_auth_decrypt_title), 
+        subtitle: String = getApplication<Application>().getString(R.string.vault_auth_decrypt_subtitle_reveal), 
+        onSuccess: (String?) -> Unit
+    ) {
+        authenticate(activity, title, subtitle) {
+            val iv = CryptoManager.getIvFromCipherText(text)
+            val cipher = iv?.let { CryptoManager.getDecryptCipher(it, isSilent = false) }
+            onSuccess(cipher?.let { CryptoManager.decrypt(text, it) })
+        }
+    }
+
+    fun decryptMultiple(
+        activity: FragmentActivity, 
+        texts: List<String>, 
+        title: String = getApplication<Application>().getString(R.string.vault_auth_decrypt_title), 
+        subtitle: String = getApplication<Application>().getString(R.string.vault_auth_decrypt_subtitle_generic), 
+        onSuccess: (List<String?>) -> Unit
+    ) {
+        if (texts.isEmpty()) return onSuccess(emptyList())
+        authenticate(activity, title, subtitle) {
+            onSuccess(texts.map { text ->
+                val iv = CryptoManager.getIvFromCipherText(text)
+                val cipher = iv?.let { CryptoManager.getDecryptCipher(it, isSilent = false) }
+                cipher?.let { CryptoManager.decrypt(text, it) }
+            })
+        }
+    }
+
+    // --- 核心操作：数据库 CRUD ---
+    fun addItem(entry: VaultEntry) {
+        viewModelScope.launch { dao.insert(entry); addType = AddType.NONE }
     }
 
     fun updateVaultEntry(entry: VaultEntry) {
@@ -217,80 +292,97 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             dao.update(entry)
             if (detailItem?.id == entry.id) detailItem = entry
             showIconPicker = false
+            _totpStates.update { it - entry.id }
         }
     }
 
-    // TOTP 配置相关
-    fun startEditingTotp(secret: String) {
-        editedTotpSecret = secret
-        detailItem?.let {
-            editedTotpPeriod = it.totpPeriod.toString()
-            editedTotpDigits = it.totpDigits.toString()
-            editedTotpAlgorithm = it.totpAlgorithm
-        }
-        isEditingTotpConfig = true
+    fun requestDelete(entry: VaultEntry) {
+        dismissDetail()
+        itemToDelete = entry
     }
 
-    fun saveTotpEdit(newEncryptedSecret: String) {
-        detailItem?.let { item ->
-            updateVaultEntry(item.copy(
-                totpSecret = newEncryptedSecret,
-                totpPeriod = editedTotpPeriod.toIntOrNull() ?: 30,
-                totpDigits = editedTotpDigits.toIntOrNull() ?: 6,
-                totpAlgorithm = editedTotpAlgorithm
-            ))
-            isEditingTotpConfig = false
-        }
+    fun dismissDeleteDialog() {
+        itemToDelete = null
     }
 
-    fun detectSteam(text: String, isEditing: Boolean) {
-        if (text.contains("Steam", ignoreCase = true)) {
-            if (isEditing) {
-                editedTotpAlgorithm = "STEAM"; editedTotpDigits = "5"
-            } else {
-                addDialogTotpAlgorithm = "STEAM"; addDialogTotpDigits = "5"
+    fun confirmDelete() {
+        itemToDelete?.let { entry ->
+            viewModelScope.launch {
+                dao.delete(entry)
+                itemToDelete = null
+                _totpStates.update { it - entry.id }
             }
         }
     }
 
-    fun startEditingCategory() { isEditingCategory = true; editedCategory = detailItem?.category ?: "" }
-    fun saveCategoryEdit() {
-        val item = detailItem ?: return
-        val newCategory = editedCategory.trim()
-        if (newCategory.isNotEmpty() && newCategory != item.category) {
-            updateVaultEntry(item.copy(category = newCategory))
-        } else isEditingCategory = false
+    // --- 生命周期管理 ---
+    fun authorize() { isAuthorized = true; updateInteraction() }
+    fun lock() { isAuthorized = false; lockJob?.cancel() }
+    fun updateInteraction() { 
+        lastInteractionTime = System.currentTimeMillis()
+        lockJob?.cancel()
+        lockJob = viewModelScope.launch { delay(lockTimeMs); if (isAuthorized) lock() }
     }
-    fun startEditingUsername(u: String) { editedUsername = u; isEditingUsername = true }
-    fun startEditingPassword(p: String) { editedPassword = p; isEditingPassword = true }
-    fun saveUsernameEdit(enc: String) { detailItem?.let { updateVaultEntry(it.copy(username = enc)); isEditingUsername = false } }
-    fun savePasswordEdit(enc: String) { detailItem?.let { updateVaultEntry(it.copy(password = enc)); isEditingPassword = false } }
+    fun checkAndLock() { if (isAuthorized && System.currentTimeMillis() - lastInteractionTime >= lockTimeMs) lock() }
 
-    // 新增：域名和包名编辑保存方法
-    fun startEditingDomain(d: String) { editedDomain = d; isEditingDomain = true }
-    fun saveDomainEdit(newDomain: String) { detailItem?.let { updateVaultEntry(it.copy(associatedDomain = newDomain)); isEditingDomain = false } }
-    fun startEditingPackage(p: String) { editedPackage = p; isEditingPackage = true }
-    fun savePackageEdit(newPackage: String) { detailItem?.let { updateVaultEntry(it.copy(associatedAppPackage = newPackage)); isEditingPackage = false } }
+    // --- 其他 UI 事件处理 ---
+    fun onSearchQueryChange(q: String) { _searchQuery.value = q }
+    fun toggleSearch(active: Boolean) { isSearchActive = active; if (!active) _searchQuery.value = "" }
+    fun onCategorySelect(c: String?) { _selectedCategory.value = c }
+    fun onTabSelect(t: VaultTab) { _selectedTab.value = t }
+    fun onAddTypeSelect(t: AddType) { addType = t }
+    fun dismissAddDialog() { addType = AddType.NONE }
+    fun showDetail(entry: VaultEntry) { detailItem = entry }
+    fun dismissDetail() { detailItem = null }
+    fun onIconSelected(name: String?, path: String? = null) {
+        detailItem?.let { updateVaultEntry(it.copy(iconName = name, iconCustomPath = path)) }
+    }
 
-    fun requestDelete(entry: VaultEntry) { dismissDetail(); itemToDelete = entry }
-    fun dismissDeleteDialog() { itemToDelete = null }
-    fun confirmDelete() { itemToDelete?.let { viewModelScope.launch { dao.delete(it); itemToDelete = null } } }
+    // --- 备份逻辑 ---
+    var isBackupLoading by mutableStateOf(false)
+    var backupMessage by mutableStateOf<String?>(null)
+    var showBackupPasswordDialog by mutableStateOf(false)
+    var isExporting by mutableStateOf(true)
+    var pendingUri by mutableStateOf<Uri?>(null)
+    var backupPassword by mutableStateOf("")
 
     fun processBackupAction(context: Context) {
         val uri = pendingUri ?: return
-        val pwd = backupPassword.toCharArray()
-        showBackupPasswordDialog = false
         viewModelScope.launch {
             isBackupLoading = true
-            val res = if (isExporting) BackupManager.exportBackup(context, uri, pwd) else BackupManager.importBackup(context, uri, pwd, importMode)
+            val res = if (isExporting) BackupManager.exportBackup(context, uri, backupPassword.toCharArray()) 
+                      else BackupManager.importBackup(context, uri, backupPassword.toCharArray(), BackupManager.ImportMode.OVERWRITE)
+            
+            val successMsg = context.getString(R.string.vault_backup_success)
+            val failedFormat = context.getString(R.string.vault_backup_failed)
+            
+            backupMessage = if (res.isSuccess) successMsg else failedFormat.format(res.exceptionOrNull()?.message)
             isBackupLoading = false
-            backupMessage = if (res.isSuccess) (if (isExporting) "数据备份成功" else "导入成功")
-            else "${if (isExporting) "导出" else "导入"}失败: ${res.exceptionOrNull()?.message}"
+            showBackupPasswordDialog = false
             pendingUri = null
+            backupPassword = ""
         }
     }
-    fun clearBackupMessage() { backupMessage = null }
-    fun startExport(uri: Uri) { pendingUri = uri; isExporting = true; showBackupPasswordDialog = true }
-    fun startImport(uri: Uri) { pendingUri = uri; isExporting = false; showBackupPasswordDialog = true }
-    fun dismissBackupPasswordDialog() { showBackupPasswordDialog = false; pendingUri = null }
+
+    fun clearBackupMessage() {
+        backupMessage = null
+    }
+
+    fun startExport(uri: Uri) {
+        pendingUri = uri
+        isExporting = true
+        showBackupPasswordDialog = true
+    }
+
+    fun startImport(uri: Uri) {
+        pendingUri = uri
+        isExporting = false
+        showBackupPasswordDialog = true
+    }
+
+    fun dismissBackupPasswordDialog() {
+        showBackupPasswordDialog = false
+        pendingUri = null
+        backupPassword = ""
+    }
 }

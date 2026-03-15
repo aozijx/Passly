@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -29,30 +30,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
-import com.example.poop.ui.screens.vault.AddType
+import com.example.poop.R
 import com.example.poop.ui.screens.vault.VaultViewModel
-import com.example.poop.ui.screens.vault.autofill.AutoFillDetailDialog
-import com.example.poop.ui.screens.vault.components.common.EmptyVaultPlaceholder
-import com.example.poop.ui.screens.vault.components.common.LoadingMask
-import com.example.poop.ui.screens.vault.components.common.VaultFab
-import com.example.poop.ui.screens.vault.components.common.VaultItem
-import com.example.poop.ui.screens.vault.components.common.VaultTopBar
-import com.example.poop.ui.screens.vault.components.dialog.AddPasswordDialog
-import com.example.poop.ui.screens.vault.components.dialog.BackupPasswordDialog
-import com.example.poop.ui.screens.vault.components.dialog.DeleteConfirmDialog
-import com.example.poop.ui.screens.vault.components.dialog.IconPickerDialog
-import com.example.poop.ui.screens.vault.components.dialog.PasswordDetailDialog
+import com.example.poop.ui.screens.vault.common.EmptyVaultPlaceholder
+import com.example.poop.ui.screens.vault.common.base.VaultItem
 import com.example.poop.ui.screens.vault.components.items.AutoFillItem
 import com.example.poop.ui.screens.vault.components.items.TwoFAItem
-import com.example.poop.ui.screens.vault.twoFA.AddTwoFADialog
-import com.example.poop.ui.screens.vault.twoFA.TwoFADetailDialog
+import com.example.poop.ui.screens.vault.core.AddType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +58,27 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
     val items by viewModel.vaultItems.collectAsState()
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    
+    val listState = rememberLazyListState()
+    var isFabVisible by remember { mutableStateOf(true) }
+
+    // 使用 NestedScrollConnection 监听滚动，这比直接监听 LazyListState 更稳定
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                // available.y < 0 代表上划（内容上移），available.y > 0 代表下划
+                if (available.y < -1) {
+                    isFabVisible = false
+                } else if (available.y > 1) {
+                    isFabVisible = true
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
+    // 预解析字符串资源
+    val categoryAutofill = stringResource(R.string.category_autofill)
 
     LaunchedEffect(scrollBehavior.state.collapsedFraction) {
         val window = activity.window
@@ -87,7 +106,8 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            // 合并多个 NestedScrollConnection
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).nestedScroll(nestedScrollConnection),
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             topBar = {
                 VaultTopBar(
@@ -97,19 +117,29 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                     onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) }
                 )
             },
-            floatingActionButton = { VaultFab(viewModel = viewModel) }
+            floatingActionButton = { 
+                VaultFab(
+                    viewModel = viewModel,
+                    isVisible = isFabVisible
+                ) 
+            }
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize().padding(innerPadding).background(MaterialTheme.colorScheme.surface)) {
                 if (items.isEmpty()) {
                     EmptyVaultPlaceholder()
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(), 
+                        contentPadding = PaddingValues(16.dp), 
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         items(items, key = { it.id }) { item -> 
                             when {
                                 item.totpSecret != null -> {
                                     TwoFAItem(entry = item, viewModel = viewModel, showCode = viewModel.showTOTPCode)
                                 }
-                                item.category == "自动抓取" || item.associatedDomain != null || item.associatedAppPackage != null -> {
+                                item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
                                     AutoFillItem(entry = item, viewModel = viewModel)
                                 }
                                 else -> {
@@ -121,54 +151,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: VaultViewModel) {
                     }
                 }
 
-                viewModel.detailItem?.let { item ->
-                    // 统一处理图标选择器
-                    if (viewModel.showIconPicker) {
-                        IconPickerDialog(
-                            onDismiss = { viewModel.showIconPicker = false },
-                            currentIconName = item.iconName,
-                            currentCustomPath = item.iconCustomPath,
-                            onIconSelected = { name -> viewModel.onIconSelected(name) },
-                            onCustomImageSelected = { uri -> viewModel.onIconSelected(null, uri.toString()) }
-                        )
-                    }
-
-                    when {
-                        item.totpSecret != null -> {
-                            TwoFADetailDialog(
-                                activity = activity,
-                                item = item,
-                                viewModel = viewModel
-                            )
-                        }
-                        item.category == "自动抓取" || item.associatedDomain != null || item.associatedAppPackage != null -> {
-                            AutoFillDetailDialog(
-                                activity = activity,
-                                item = item,
-                                viewModel = viewModel
-                            )
-                        }
-                        else -> {
-                            PasswordDetailDialog(
-                                activity = activity,
-                                item = item,
-                                viewModel = viewModel
-                            )
-                        }
-                    }
-                }
-
-                viewModel.itemToDelete?.let { item ->
-                    DeleteConfirmDialog(activity = activity, item = item, onConfirm = { viewModel.confirmDelete() }, onDismiss = { viewModel.dismissDeleteDialog() })
-                }
-                if (viewModel.showBackupPasswordDialog) BackupPasswordDialog(activity = activity, viewModel = viewModel)
-                if (viewModel.isBackupLoading) LoadingMask(message = if (viewModel.isExporting) "正在导出备份..." else "正在导入恢复...")
-            }
-
-            when (viewModel.addType) {
-                AddType.PASSWORD -> AddPasswordDialog(activity = activity, viewModel = viewModel)
-                AddType.TOTP -> AddTwoFADialog(activity = activity, viewModel = viewModel)
-                else -> {}
+                VaultDialogs(activity = activity, viewModel = viewModel)
             }
         }
 

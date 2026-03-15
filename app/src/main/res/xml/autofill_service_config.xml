@@ -1,3 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <autofill-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:settingsActivity="com.example.poop.ui.screens.vault.VaultActivity" />
+    android:settingsActivity="com.example.poop.ui.screens.vault.VaultActivity">
+
+    <!--
+      启用自动填充兼容模式 (Compatibility Mode)
+      它利用系统的无障碍内核来嗅探那些没有原生适配 Autofill API 的 App。
+      用户只需要开启“自动填充服务”，无需手动去“无障碍”开关里设置。
+    -->
+
+    <!-- 常用浏览器 -->
+    <compatibility-package android:name="com.android.chrome" />
+    <compatibility-package android:name="com.chrome.beta" />
+    <compatibility-package android:name="org.mozilla.firefox" />
+    <compatibility-package android:name="com.microsoft.emmx" /> <!-- Edge -->
+
+    <!-- 顽固 App 示例 -->
+    <compatibility-package android:name="com.tencent.mm" /> <!-- 微信 -->
+    <compatibility-package android:name="com.tencent.mobileqq" /> <!-- QQ -->
+    <compatibility-package android:name="com.eg.android.AlipayGphone" /> <!-- 支付宝 -->
+    <compatibility-package android:name="com.taobao.taobao" /> <!-- 淘宝 -->
+
+</autofill-service>

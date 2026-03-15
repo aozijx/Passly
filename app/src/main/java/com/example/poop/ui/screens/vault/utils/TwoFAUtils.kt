@@ -1,6 +1,7 @@
 package com.example.poop.ui.screens.vault.utils
 
 import android.util.Base64
+import com.example.poop.data.VaultEntry
 import com.example.poop.util.Logcat
 import java.nio.ByteBuffer
 import javax.crypto.Mac
@@ -12,6 +13,31 @@ import kotlin.math.pow
  * 支持标准 TOTP (RFC 6238) 和 Steam Guard 特有逻辑
  */
 object TwoFAUtils {
+
+    /**
+     * 从 VaultEntry 生成当前的 TOTP 验证码
+     * 注意：AutofillService 保存时通常使用 isSilent = true
+     */
+    fun generateCurrentTotpFromEntry(entry: VaultEntry, crypto: CryptoManager, isSilent: Boolean = true): String? {
+        val secretCiphertext = entry.totpSecret ?: return null
+        if (secretCiphertext.isBlank()) return null
+        
+        return try {
+            val iv = crypto.getIvFromCipherText(secretCiphertext) ?: return null
+            val cipher = crypto.getDecryptCipher(iv, isSilent) ?: return null
+            val secret = crypto.decrypt(secretCiphertext, cipher) ?: return null
+            
+            generateTotp(
+                secret = secret,
+                digits = entry.totpDigits,
+                period = entry.totpPeriod,
+                algorithm = entry.totpAlgorithm
+            )
+        } catch (e: Exception) {
+            Logcat.e("TwoFAUtils", "Failed to generate TOTP from entry (isSilent=$isSilent)", e)
+            null
+        }
+    }
 
     /**
      * 生成验证码

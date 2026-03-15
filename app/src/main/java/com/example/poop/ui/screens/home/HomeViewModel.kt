@@ -27,8 +27,11 @@ data class HomeUiState(
     val userName: String = "开发者",
     val featuredItems: List<FeaturedItem> = emptyList(),
     val articles: List<Article> = emptyList(),
-    val isLoading: Boolean = false
-)
+    val isLoading: Boolean = false,
+    val isCardRotated: Boolean = false,
+) {
+    fun toggleCardRotation() = copy(isCardRotated = !isCardRotated)
+}
 
 class HomeViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -41,19 +44,38 @@ class HomeViewModel : ViewModel() {
 
     private fun loadHomeData() {
         _uiState.update { it.copy(isLoading = true) }
-        
+
         val featured = listOf(
-            FeaturedItem(1, "精选内容 #1", "点击查看更多详情...", "https://picsum.photos/400/300?random=1"),
-            FeaturedItem(2, "精选内容 #2", "点击查看更多详情...", "https://picsum.photos/400/300?random=2"),
-            FeaturedItem(3, "精选内容 #3", "点击查看更多详情...", "https://picsum.photos/400/300?random=3")
+            FeaturedItem(
+                1,
+                "精选内容 #1",
+                "点击查看更多详情...",
+                "https://picsum.photos/400/300?random=1"
+            ),
+            FeaturedItem(
+                2,
+                "精选内容 #2",
+                "点击查看更多详情...",
+                "https://picsum.photos/400/300?random=2"
+            ),
+            FeaturedItem(
+                3,
+                "精选内容 #3",
+                "点击查看更多详情...",
+                "https://picsum.photos/400/300?random=3"
+            )
         )
 
-        _uiState.update { 
+        _uiState.update {
             it.copy(
                 featuredItems = featured,
                 isLoading = false
             )
         }
+    }
+
+    fun toggleCardRotation() {
+        _uiState.update { it.toggleCardRotation() }
     }
 
     fun toggleArticleFavorite(articleId: Int) {

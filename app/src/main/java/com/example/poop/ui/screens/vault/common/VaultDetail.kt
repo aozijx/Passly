@@ -1,4 +1,4 @@
-package com.example.poop.ui.screens.vault.components.common
+package com.example.poop.ui.screens.vault.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,16 +17,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,23 +27,19 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.poop.data.VaultEntry
-import com.example.poop.ui.screens.vault.VaultViewModel
+import com.example.poop.ui.screens.vault.common.icons.VaultItemIcon
 
 @Composable
 fun DetailHeader(
@@ -116,56 +105,28 @@ fun EditTextField(value: String, onValueChange: (String) -> Unit, label: String,
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CategoryInputField(value: String, onValueChange: (String) -> Unit, viewModel: VaultViewModel, label: String = "分类") {
-    val categories by viewModel.availableCategories.collectAsState()
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = {  expanded = it }
-    ) {
-        OutlinedTextField(
-            value = value, onValueChange = onValueChange, label = { Text(label) },
-            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true).fillMaxWidth(),
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-        )
-        if (categories.isNotEmpty()) {
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                categories.forEach { DropdownMenuItem(text = { Text(it) }, onClick = { onValueChange(it); expanded = false }) }
-            }
-        }
-    }
-}
-
-@Composable
-fun CategoryItem(viewModel: VaultViewModel, entry: VaultEntry) {
-    if (viewModel.isEditingCategory) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            CategoryInputField(value = viewModel.editedCategory, onValueChange = { viewModel.editedCategory = it }, viewModel = viewModel, label = "修改分类")
-            TextButton(onClick = { viewModel.saveCategoryEdit() }, modifier = Modifier.align(Alignment.End)) {
-                Icon(Icons.Default.Check, null); Spacer(Modifier.width(4.dp)); Text("保存分类")
-            }
-        }
-    } else {
-        Row(modifier = Modifier.fillMaxWidth().clickable { viewModel.startEditingCategory() }.padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("分类", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
-            Text(entry.category, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
 @Composable
 fun DetailItem(label: String, value: String, isRevealed: Boolean, onCopy: () -> Unit, onEdit: () -> Unit) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(value, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), letterSpacing = if (isRevealed) 0.sp else 2.sp)
-            IconButton(onClick = if (isRevealed) onEdit else onCopy, modifier = Modifier.size(32.dp)) {
-                Icon(if (isRevealed) Icons.Default.Edit else Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-            }
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { if (isRevealed) onEdit() else onCopy() }
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.outline
+        )
+        Text(
+            text = value,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f).padding(start = 16.dp),
+            letterSpacing = if (isRevealed) 0.sp else 2.sp,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.End
+        )
     }
 }

@@ -2,7 +2,10 @@ package com.example.poop.util
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
+import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -34,22 +37,27 @@ object PackageUtils {
         val packages = pm.getInstalledPackages(0)
 
         return packages.mapNotNull { pkg ->
-            val appInfo = pkg.applicationInfo
-            if (appInfo != null) {
-                val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                if (includeSystem || !isSystem) {
-                    val arch = getAppArchitecture(appInfo)
-
-                    AppWithSdk(
-                        packageName = pkg.packageName,
-                        appName = appInfo.loadLabel(pm).toString(),
-                        targetSdk = appInfo.targetSdkVersion,
-                        versionName = pkg.versionName ?: "N/A",
-                        architecture = arch
-                    )
-                } else null
-            } else null
+            pkg.toAppWithSdk(context, includeSystem)
         }
+    }
+
+    /**
+     * 将 PackageInfo 转换为 AppWithSdk，减少重复查询
+     */
+    fun PackageInfo.toAppWithSdk(context: Context, includeSystem: Boolean = true): AppWithSdk? {
+        val appInfo = applicationInfo ?: return null
+        val pm = context.packageManager
+        
+        val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+        if (!includeSystem && isSystem) return null
+
+        return AppWithSdk(
+            packageName = packageName,
+            appName = appInfo.loadLabel(pm).toString(),
+            targetSdk = appInfo.targetSdkVersion,
+            versionName = versionName ?: "N/A",
+            architecture = getAppArchitecture(appInfo)
+        )
     }
 
     private fun getAppArchitecture(appInfo: ApplicationInfo): String {
@@ -93,16 +101,39 @@ object PackageUtils {
     }
 
     /**
+     * 一次性获取应用名称和图标，减少 PackageManager 查询开销
+     */
+    fun getAppLabelAndIcon(context: Context, packageName: String): Pair<String, Drawable>? {
+        return try {
+            val pm = context.packageManager
+            val appInfo = pm.getApplicationInfo(packageName, 0)
+            val label = appInfo.loadLabel(pm).toString()
+            val icon = appInfo.loadIcon(pm)
+            label to icon
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 将 Drawable 转换为 Bitmap，优先复用 BitmapDrawable 中的 Bitmap
+     */
+    fun drawableToBitmap(drawable: Drawable): Bitmap {
+        if (drawable is BitmapDrawable) return drawable.bitmap
+        val bitmapWidth = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1
+        val bitmapHeight = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1
+        val bitmap = createBitmap(bitmapWidth, bitmapHeight)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
+    }
+
+    /**
      * 将 Drawable 转换为 Compose 的 ImageBitmap
      */
     fun Drawable.toImageBitmap(): ImageBitmap {
-        val bitmapWidth = if (intrinsicWidth > 0) intrinsicWidth else 1
-        val bitmapHeight = if (intrinsicHeight > 0) intrinsicHeight else 1
-        val bitmap = createBitmap(bitmapWidth, bitmapHeight)
-        val canvas = Canvas(bitmap)
-        setBounds(0, 0, canvas.width, canvas.height)
-        draw(canvas)
-        return bitmap.asImageBitmap()
+        return drawableToBitmap(this).asImageBitmap()
     }
 }
 

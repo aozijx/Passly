@@ -33,7 +33,6 @@ fun PoopTheme(
         dynamicColor -> {
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         isDark -> AppColor.darkScheme()
         else -> AppColor.lightScheme()
     }

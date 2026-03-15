@@ -3,9 +3,9 @@ package com.example.poop
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.poop.data.Preference
 import com.example.poop.ui.navigation.NavGraph
@@ -15,7 +15,7 @@ import com.example.poop.util.PermissionManager
 import com.example.poop.util.ShortcutManager
 import kotlinx.coroutines.launch
 
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
     private val preference by lazy { Preference(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {

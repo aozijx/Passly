@@ -3,12 +3,4 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/transparent">
-
-    <!-- 可以加一个半透明遮罩（可选），让背景略暗 -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#80000000" />
-
-    <!-- 留空，让 BiometricPrompt 居中显示 -->
 </FrameLayout>

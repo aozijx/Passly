@@ -35,7 +35,6 @@ val md_theme_dark_surfaceVariant @Composable get() = colorResource(R.color.surfa
 val md_theme_dark_outline @Composable get() = colorResource(R.color.outline_dark)
 
 object AppColor {
-
     @Composable
     fun lightScheme(): ColorScheme = lightColorScheme(
         primary = md_theme_light_primary,
