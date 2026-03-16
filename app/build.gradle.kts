@@ -1,22 +1,25 @@
-﻿import java.util.Properties
+﻿import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.variant.FilterConfiguration
+import java.io.FileInputStream
+import java.util.Locale
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
 }
 
-// 读取 local.properties
-// 显式指定类型以消除 "Platform Type" 警告
-val localProperties: Properties = Properties()
-val localPropertiesFile: File = rootProject.file("local.properties")
-
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { localProperties.load(it) }
+// 读取 local.properties（放在文件顶部或根项目）
+val localProperties = Properties().apply {
+    val localPropFile = rootProject.file("local.properties")
+    if (localPropFile.exists()) {
+        load(FileInputStream(localPropFile))
+    }
 }
 
+// Android 配置
 android {
     namespace = "com.example.poop"
     compileSdk = 36
@@ -27,82 +30,106 @@ android {
         targetSdk = 36
         versionCode = 5
         versionName = "0.3.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // 配置支持的 CPU 架构
-        ndk {
-            // 限制打包进 APK 的本地库架构
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
-        }
     }
 
     signingConfigs {
+        // 改用 getByName 或 create
         create("release") {
-            // 这里使用 Safe Call 和 Explicit Type 处理从 Properties 读取的平台类型字符串
-            storeFile = localProperties.getProperty("signing.store.file")?.let { file(it) }
-            storePassword = localProperties.getProperty("signing.store.password")
-            keyAlias = localProperties.getProperty("signing.key.alias")
-            keyPassword = localProperties.getProperty("signing.key.password")
-        }
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            )
-            // 获取 SigningConfig 时也显式处理
-            val releaseSigning = signingConfigs.findByName("release")
-            if (releaseSigning?.storeFile != null) {
-                signingConfig = releaseSigning
+            val props = Properties().apply {
+                val localPropFile = rootProject.file("local.properties")
+                if (localPropFile.exists()) {
+                    localPropFile.inputStream().use { load(it) }
+                }
             }
-            buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "true")
+            storeFile = props.getProperty("signing.store.file")?.let { file(it) }
+            storePassword = props.getProperty("signing.store.password")
+            keyAlias = props.getProperty("signing.key.alias")
+            keyPassword = props.getProperty("signing.key.password")
         }
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-            isDebuggable = true
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
-            buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "false")
-        }
-    }
-    // 1. 启用 APK 拆分配置
-    splits {
-        abi {
-            isEnable = true // 开启拆分
-            reset() // 重置默认包含的所有架构
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64") // 指定要拆分的架构
-            isUniversalApk = true // 是否额外生成一个包含所有架构的通用 APK
-        }
-    }
 
-    // 2. 自定义生成的 APK 文件名
-    applicationVariants.all {
-        val variant = this
-        outputs.forEach { output ->
-            val apkOutput = output as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            // 获取当前 APK 对应的架构名，如果是 universal APK 则返回 null
-            val abi = apkOutput.getFilter("ABI") ?: "universal"
-            // 设置新的文件名：应用名_版本号_架构.apk
-            apkOutput.outputFileName = "poop_v${variant.versionName}_${abi}.apk"
-        }
-    }
+        buildTypes {
+            getByName("release") {  // 用 getByName 更安全
+                isMinifyEnabled = true
+                proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro"
+                )
+                signingConfig = signingConfigs.getByName("release")  // 简化判断
+                buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "true")
+            }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            getByName("debug") {
+                signingConfig = signingConfigs.getByName("debug")
+                isDebuggable = true
+                applicationIdSuffix = ".debug"
+                versionNameSuffix = "-debug"
+                buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "false")
+            }
+        }
+
+        buildFeatures {
+            compose = true
+            buildConfig = true
+        }
+
+        splits {
+            abi {
+                isEnable = true // 必须是 isEnable
+                reset() // 必须重置，否则 include 可能不生效
+                include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+                isUniversalApk = true // 如果设为 true，会多出一个包含所有架构的大包
+            }
         }
     }
-    buildFeatures {
-        compose = true
-        buildConfig = true
+}
+
+// 使用现代化的 androidComponents API 来重构 APK 重命名逻辑
+androidComponents {
+    onVariants { variant ->
+        // 获取所有输出（处理 ABI 分包情况）
+        variant.outputs.forEach { output ->
+            val abi = output.filters.find {
+                it.filterType == FilterConfiguration.FilterType.ABI
+            }?.identifier ?: "universal"
+
+            val verName = variant.outputs.map { it.versionName.getOrElse("1.0") }.first()
+
+            // 构建任务名称
+            val variantName = variant.name.replaceFirstChar { it.uppercase(Locale.getDefault()) }
+            val abiSuffix =
+                abi.replace("-", "").replaceFirstChar { it.uppercase(Locale.getDefault()) }
+            val taskName = "copyAndRename${variantName}${abiSuffix}Apk"
+
+            // 注册 Copy 任务
+            val renameTask = tasks.register<Copy>(taskName) {
+                // 显式设置重复文件处理策略为“覆盖”
+                duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+                from(variant.artifacts.get(SingleArtifact.APK))
+                into(layout.buildDirectory.dir("outputs/renamed-apk/${variant.name.lowercase()}"))
+
+                // 建议：精细化匹配源文件，避免通配符一次抓取到多个文件导致冲突
+                include("**/$abi/*.apk", "**/*-$abi-*.apk")
+
+                rename { fileName ->
+                    if (fileName.endsWith(".apk")) "poop_v${verName}_${abi}.apk" else fileName
+                }
+            }
+
+            // 【关键修复】使用更安全的监听方式来挂载依赖
+            // 而不是直接用 tasks.named("assembleDebug")
+            afterEvaluate {
+                val assembleTaskName = "assemble$variantName"
+                tasks.findByName(assembleTaskName)?.finalizedBy(renameTask)
+            }
+        }
     }
+}
+
+// Kotlin 配置
+kotlin {
+    jvmToolchain(21)
 }
 
 room {
@@ -114,6 +141,7 @@ dependencies {
     // Android Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.exifinterface)
 
     // Lifecycle & Navigation
     implementation(libs.androidx.lifecycle.runtime.ktx)

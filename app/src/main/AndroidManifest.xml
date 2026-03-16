@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- 生物识别权限：用于安全验证和自动填充授权 -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- 位置权限-->
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <!-- 相机相关 -->
     <uses-feature
         android:name="android.hardware.camera"
@@ -32,6 +34,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:targetApi="33">
+
+        <!-- ML Kit 扫码模型自动下载配置 -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode" />
 
         <activity
             android:name=".MainActivity"

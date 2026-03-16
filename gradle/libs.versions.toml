@@ -1,21 +1,22 @@
 [versions]
 # Build & Tooling
-agp = "8.13.2"
+agp = "9.0.1"
 kotlin = "2.3.10"
 ksp = "2.3.5"
 
 # Android Core & Jetpack
-coreKtx = "1.17.0"
+coreKtx = "1.18.0"
 lifecycleRuntimeKtx = "2.10.0"
 room = "2.8.4"
 navigationCompose = "2.9.7"
 datastorePreferences = "1.2.0"
 coreSplashscreen = "1.2.0"
 glanceAppwidget = "1.1.1"
+exifinterface = "1.4.2"
 
 # UI & Material Design
-composeBom = "2026.02.01"
-activityCompose = "1.12.4"
+composeBom = "2026.03.00"
+activityCompose = "1.13.0"
 foundation = "1.10.4"
 materialIcons = "1.7.8"
 coil = "2.7.0"
@@ -24,10 +25,12 @@ coil = "2.7.0"
 biometric = "1.2.0-alpha05"
 securityCrypto = "1.1.0"
 sqlcipher = "4.5.4"
+# 不要升级，版本需要和 room 匹配
 sqlite = "2.2.0"
 
 # Camera & Barcode Scanning
-barcodeScanning = "17.3.0"
+# 切换到非捆绑版本 (GMS 版)
+barcodeScanning = "18.3.1"
 cameraxVersion = "1.5.3"
 zxing = "3.5.4"
 
@@ -43,6 +46,7 @@ espressoCore = "3.7.0"
 # Android Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 
 # Lifecycle & Navigation
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
@@ -87,8 +91,8 @@ androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.r
 androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraxVersion" }
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraxVersion" }
 
-# Barcode Scanning & QR Code
-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "barcodeScanning" }
+# Barcode Scanning & QR Code (改为 play-services 版本)
+barcode-scanning = { module = "com.google.android.gms:play-services-mlkit-barcode-scanning", version.ref = "barcodeScanning" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 
 # Image Loading
@@ -108,7 +112,6 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
