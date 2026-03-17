@@ -71,7 +71,7 @@ class NotificationHelper(private val context: Context) {
 
         // 2. 构建子通知
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.app_icon_main)
+            .setSmallIcon(R.mipmap.launcher_logo)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -86,7 +86,7 @@ class NotificationHelper(private val context: Context) {
         // 3. 构建并发送摘要通知（Summary）
         // 摘要通知是堆叠的外壳，必须设置 setGroupSummary(true)
         val summaryNotification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.app_icon_main)
+            .setSmallIcon(R.mipmap.launcher_logo)
             .setContentTitle("收到多条通知") // 堆叠时的总标题
             .setContentText("点击展开查看详情")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

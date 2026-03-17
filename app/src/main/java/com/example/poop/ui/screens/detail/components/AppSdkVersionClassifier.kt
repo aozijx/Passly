@@ -214,7 +214,7 @@ fun SdkGroupHeader(
 fun AppInfoItem(app: AppWithSdk) {
     val iconPainter = rememberAppIconPainter(
         packageName = app.packageName,
-        defaultIconResId = R.mipmap.app_icon_main
+        defaultIconResId = R.mipmap.launcher_logo
     )
 
     Card(

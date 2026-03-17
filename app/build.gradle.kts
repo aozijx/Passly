@@ -34,7 +34,6 @@ android {
     }
 
     signingConfigs {
-        // 改用 getByName 或 create
         create("release") {
             val props = Properties().apply {
                 val localPropFile = rootProject.file("local.properties")
@@ -47,39 +46,59 @@ android {
             keyAlias = props.getProperty("signing.key.alias")
             keyPassword = props.getProperty("signing.key.password")
         }
+    }
 
-        buildTypes {
-            getByName("release") {  // 用 getByName 更安全
-                isMinifyEnabled = true
-                proguardFiles(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
-                    "proguard-rules.pro"
-                )
-                signingConfig = signingConfigs.getByName("release")  // 简化判断
-                buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "true")
-            }
-
-            getByName("debug") {
-                signingConfig = signingConfigs.getByName("debug")
-                isDebuggable = true
-                applicationIdSuffix = ".debug"
-                versionNameSuffix = "-debug"
-                buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "false")
-            }
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
+            buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "true")
         }
 
-        buildFeatures {
-            compose = true
-            buildConfig = true
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("debug")
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "false")
         }
+    }
 
-        splits {
-            abi {
-                isEnable = true // 必须是 isEnable
-                reset() // 必须重置，否则 include 可能不生效
-                include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-                isUniversalApk = true // 如果设为 true，会多出一个包含所有架构的大包
-            }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
+    // 定义
+    flavorDimensions += listOf("scope")
+
+    productFlavors {
+        // 功能范围 (完整 vs 仅保险箱)
+        create("full") {
+            dimension = "scope"
+            buildConfigField("boolean", "IS_VAULT_ONLY", "false")
+        }
+        create("vaultOnly") {
+            dimension = "scope"
+            applicationIdSuffix = ".vault" // 甚至可以作为独立包名共存
+            versionNameSuffix = "-vault"
+            // 覆盖默认值
+            buildConfigField("boolean", "IS_VAULT_ONLY", "true")
+            // 如果你想彻底在 VaultOnly 中剔除某些代码，可以使用以下配置
+             manifestPlaceholders["launcherActivity"] = ".ui.screens.vault.VaultActivity"
         }
     }
 }
@@ -165,6 +184,7 @@ dependencies {
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.appcompat)
     ksp(libs.androidx.room.compiler)
 
     // Security & Biometric
@@ -193,9 +213,6 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
-
-    // Utils
-    implementation(libs.guava)
 
     // Testing
     testImplementation(libs.junit)

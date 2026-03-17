@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
+    <application android:icon="@mipmap/launcher_logo">
+        <!-- Full 版本的入口 -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.screens.login.LoginActivity"
+            android:configChanges="locale|layoutDirection|screenSize|orientation"
+            android:label="@string/title_login"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.screens.vault.VaultActivity"
+            android:configChanges="locale|layoutDirection|screenSize|orientation"
+            android:exported="true"
+            android:label="@string/title_vault" />
+
+        <!-- 自动填充相关的透明验证界面 -->
+        <activity
+            android:name=".service.autofill.AutofillAuthActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@style/Theme.Poop.TransparentAuth" />
+
+    </application>
+</manifest>
