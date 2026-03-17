@@ -1,7 +1,10 @@
 package com.example.poop.ui.screens.profile
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,8 +60,19 @@ fun ProfileScreen(
     navController: NavController? = null, viewModel: ProfileViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    // 图片选择器
     val pickPhoto = rememberImagePicker { uri, type ->
         viewModel.updateSelectedImage(uri, type)
+    }
+
+    // 权限请求启动器：专门用于 Android 10+ 获取图片原始位置信息 (ACCESS_MEDIA_LOCATION)
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        // 权限请求完毕后，无论结果如何都继续打开相册
+        // 即使拒绝权限，也不影响选图，只是后续 Exif 解析拿不到 GPS
+        pickPhoto(ImageType.COVER)
     }
 
     // 1. 配置当前页面的顶栏信息
@@ -89,7 +103,10 @@ fun ProfileScreen(
         ProfileContent(
             uiState = uiState,
             onPickAvatar = { pickPhoto(ImageType.AVATAR) },
-            onPickCover = { pickPhoto(ImageType.COVER) }
+            onPickCover = {
+                // 直接启动权限请求（由系统处理版本兼容性）
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
+            }
         )
     }
 }
@@ -115,20 +132,17 @@ private fun ProfileContent(
             )
         }
 
-        // 统计数据栏
+        // 图片展示与 Exif 信息
         item {
-            ProfileStats(user.stats)
-        }
-
-        // 图片展示
-        item {
-            Text(
-                text = "我的相册",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp, 8.dp)
-            )
+            if (uiState.coverUri == null) {
+                Text(
+                    text = "我的相册",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp, 8.dp)
+                )
+            }
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -147,6 +161,13 @@ private fun ProfileContent(
                     placeholder = painterResource(id = android.R.drawable.ic_menu_upload),
                     error = painterResource(id = android.R.drawable.btn_star_big_on)
                 )
+            }
+        }
+
+        // 展示 Exif 详细信息
+        uiState.exifInfo?.let { info ->
+            item {
+                ExifInfoList(info)
             }
         }
     }
@@ -229,29 +250,53 @@ fun ProfileHeader(
 }
 
 @Composable
-fun ProfileStats(stats: List<ProfileStat>) {
-    Row(
+fun ExifInfoList(info: Map<String, String>) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+            .padding(16.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .padding(16.dp)
     ) {
-        stats.forEach { stat ->
-            StatItem(count = stat.count, label = stat.label)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 8.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = android.R.drawable.ic_menu_info_details),
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(
+                text = "图片详情 (Exif)",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
         }
-    }
-}
 
-@Composable
-fun StatItem(count: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = count, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        info.forEach { (label, value) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
     }
 }

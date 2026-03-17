@@ -19,6 +19,7 @@ import com.example.poop.ui.screens.vault.utils.BackupManager
 import com.example.poop.ui.screens.vault.utils.BiometricHelper
 import com.example.poop.ui.screens.vault.utils.CryptoManager
 import com.example.poop.ui.screens.vault.utils.TwoFAUtils
+import com.example.poop.ui.screens.vault.utils.VaultFileUtils
 import com.example.poop.util.Logcat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -308,6 +309,11 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun confirmDelete() {
         itemToDelete?.let { entry ->
             viewModelScope.launch {
+                // 如果有自定义图片，先从文件系统中删除
+                entry.iconCustomPath?.let { path ->
+                    VaultFileUtils.deleteImage(path)
+                }
+
                 dao.delete(entry)
                 itemToDelete = null
                 _totpStates.update { it - entry.id }
@@ -334,8 +340,32 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun dismissAddDialog() { addType = AddType.NONE }
     fun showDetail(entry: VaultEntry) { detailItem = entry }
     fun dismissDetail() { detailItem = null }
-    fun onIconSelected(name: String?, path: String? = null) {
-        detailItem?.let { updateVaultEntry(it.copy(iconName = name, iconCustomPath = path)) }
+    // 支持处理 Uri 并自动持久化
+    fun onIconSelected(name: String?, uri: Uri? = null) {
+        viewModelScope.launch {
+            var finalPath: String? = null
+
+            if (uri != null) {
+                // 将临时 URI 图片保存到内部存储
+                finalPath = VaultFileUtils.saveImageToInternalStorage(getApplication(), uri)
+                if (finalPath == null) {
+                    Logcat.e("VaultViewModel", "Failed to save custom icon from URI: $uri")
+                    return@launch
+                }
+
+                // 可选：如果原来已经有自定义图片，删除旧文件释放空间
+                detailItem?.iconCustomPath?.let { oldPath ->
+                    VaultFileUtils.deleteImage(oldPath)
+                }
+            }
+
+            detailItem?.let {
+                updateVaultEntry(it.copy(
+                    iconName = name,
+                    iconCustomPath = finalPath // 存储的是持久化的本地绝对路径
+                ))
+            }
+        }
     }
 
     // --- 备份逻辑 ---

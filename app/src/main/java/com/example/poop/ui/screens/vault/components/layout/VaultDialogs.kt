@@ -36,7 +36,10 @@ fun VaultDialogs(activity: FragmentActivity, viewModel: VaultViewModel) {
                 currentIconName = item.iconName,
                 currentCustomPath = item.iconCustomPath,
                 onIconSelected = { name -> viewModel.onIconSelected(name) },
-                onCustomImageSelected = { uri -> viewModel.onIconSelected(null, uri.toString()) }
+                onCustomImageSelected = { uri ->
+                    // 直接传递 uri 对象
+                    viewModel.onIconSelected(null, uri)
+                }
             )
         }
 

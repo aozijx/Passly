@@ -17,15 +17,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,39 +53,85 @@ fun DetailHeader(
 ) {
     val context = LocalContext.current
     val hasCustomPath = !item.iconCustomPath.isNullOrEmpty()
-    
+
     Column(modifier = Modifier.fillMaxWidth()) {
         if (hasCustomPath) {
-            Box(modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onIconClick)) {
+            // 自定义封面模式
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable(onClick = onIconClick)
+            ) {
                 AsyncImage(
-                    model = ImageRequest.Builder(context).data(item.iconCustomPath).crossfade(true).build(),
+                    model = ImageRequest.Builder(context)
+                        .data(item.iconCustomPath)
+                        .crossfade(true)
+                        .build(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                if (onMoreClick != null) {
-                    IconButton(
-                        onClick = onMoreClick,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), CircleShape).size(32.dp)
+
+                // 更多按钮悬浮在右上角
+                onMoreClick?.let {
+                    Surface(
+                        onClick = it,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                        tonalElevation = 4.dp
                     ) {
-                        Icon(Icons.Default.MoreVert, null, modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "更多",
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .size(20.dp)
+                        )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(item.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
         } else {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).clickable(onClick = onIconClick),
-                    contentAlignment = Alignment.Center
+            // 默认图标模式
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    onClick = onIconClick,
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(52.dp)
                 ) {
-                    VaultItemIcon(item = item, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Box(contentAlignment = Alignment.Center) {
+                        VaultItemIcon(
+                            item = item,
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(item.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                if (onMoreClick != null) IconButton(onClick = onMoreClick) { Icon(Icons.Default.MoreVert, null) }
+                Spacer(Modifier.width(16.dp))
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.weight(1f)
+                )
+                onMoreClick?.let {
+                    IconButton(onClick = it) { Icon(Icons.Default.MoreVert, null) }
+                }
             }
         }
     }
@@ -89,44 +139,97 @@ fun DetailHeader(
 
 @Composable
 fun DetailActions(onDeleteClick: () -> Unit, onDismiss: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        TextButton(onClick = onDeleteClick, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-            Icon(Icons.Default.Delete, null); Spacer(Modifier.width(4.dp)); Text("删除")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedButton(
+            onClick = onDeleteClick,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("删除")
         }
-        TextButton(onClick = onDismiss) { Text("关闭") }
+        Button(
+            onClick = onDismiss,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("确认")
+        }
     }
 }
 
 @Composable
-fun EditTextField(value: String, onValueChange: (String) -> Unit, label: String, onSave: () -> Unit) {
+fun EditTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    onSave: () -> Unit
+) {
     OutlinedTextField(
-        value = value, onValueChange = onValueChange, label = { Text(label) }, modifier = Modifier.fillMaxWidth(),
-        trailingIcon = { IconButton(onClick = onSave) { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) } }
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        trailingIcon = {
+            IconButton(onClick = onSave) {
+                Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
+            }
+        },
+        singleLine = true
     )
 }
 
 @Composable
-fun DetailItem(label: String, value: String, isRevealed: Boolean, onCopy: () -> Unit, onEdit: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { if (isRevealed) onEdit() else onCopy() }
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+fun DetailItem(
+    label: String,
+    value: String,
+    isRevealed: Boolean,
+    onCopy: () -> Unit,
+    onEdit: () -> Unit
+) {
+    Surface(
+        onClick = { if (isRevealed) onEdit() else onCopy() },
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        modifier = Modifier.padding(vertical = 4.dp)
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.outline
-        )
-        Text(
-            text = value,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.weight(1f).padding(start = 16.dp),
-            letterSpacing = if (isRevealed) 0.sp else 2.sp,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.End
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.width(70.dp)
+            )
+            Text(
+                text = value,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                letterSpacing = if (isRevealed) 0.sp else 3.sp,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.End,
+                maxLines = 1
+            )
+            Icon(
+                imageVector = if (isRevealed) Icons.Default.Edit else Icons.Default.ContentCopy,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .size(16.dp),
+                tint = MaterialTheme.colorScheme.outline
+            )
+        }
     }
 }
