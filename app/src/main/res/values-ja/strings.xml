@@ -32,7 +32,7 @@
     <string name="title_scanner">スキャン</string>
 
     <!-- 自動入力サービス -->
-    <string name="autofill_service_name">Poop 自動入力</string>
+    <string name="autofill_service_name">Vault 自動入力</string>
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">本人確認</string>
     <string name="autofill_auth_subtitle">認証して認証情報を自動入力</string>

@@ -19,7 +19,7 @@ sealed class Screen(
 ) {
     data object Home : Screen("home", "首页", Icons.Rounded.Home, isBottomNav = true)
     data object Profile : Screen("profile", "我的", Icons.Rounded.Person, isBottomNav = true)
-    data object Vault : Screen("vault", "保险箱", Icons.Rounded.AddCard)
+    data object Vault : Screen("vault", "保险箱", Icons.Rounded.AddCard, isBottomNav = true) // 修改为 true 以在导航栏显示
     data object Detail : Screen("detail", "详情", Icons.Rounded.Info, isBottomNav = true)
     data object Scanner : Screen("scanner", "扫码", Icons.Rounded.Search)
     data object Setting : Screen("setting", "设置", Icons.Rounded.Settings)
@@ -28,10 +28,28 @@ sealed class Screen(
     data object AppAnalysis : Screen("app_analysis", "应用分析", Icons.AutoMirrored.Rounded.List)
 
     companion object {
-        // 使用 getter 避免初始化顺序导致的 null 问题
-        val bottomNavItems get() = listOf(Home, Profile, Vault, Detail)
+        private const val VAULT_ACTIVITY_CLASS = "com.example.poop.ui.screens.vault.VaultActivity"
 
-        // 辅助函数：根据 route 找 Screen 对象
+        /**
+         * 动态获取底部导航项：如果 Vault 功能存在，则将其加入
+         */
+        val bottomNavItems: List<Screen> get() = buildList {
+            add(Home)
+            if (isVaultAvailable()) add(Vault)
+            add(Profile)
+            add(Detail)
+        }
+
+        /**
+         * 检查当前包中是否存在 VaultActivity
+         */
+        fun isVaultAvailable(): Boolean = try {
+            Class.forName(VAULT_ACTIVITY_CLASS)
+            true
+        } catch (_: Exception) {
+            false
+        }
+
         fun fromRoute(route: String?): Screen? = when (route) {
             Home.route -> Home
             Vault.route -> Vault

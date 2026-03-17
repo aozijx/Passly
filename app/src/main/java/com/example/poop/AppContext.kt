@@ -3,20 +3,18 @@ package com.example.poop
 import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import com.example.poop.data.Preference
+import com.example.poop.data.AppPreference
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class AppContext : Application() {
     
-    // 全局单例 Preference，懒加载以提高启动速度
-    val preference: Preference by lazy { Preference(this) }
+    // 全局单例 AppPreference，属于 main
+    val preference: AppPreference by lazy { AppPreference(this) }
 
     companion object {
         private var _instance: AppContext? = null
-        
-        // 使用非空断言，因为 Application 的实例在进程启动时必然存在
         fun get(): AppContext = _instance!!
     }
 
@@ -35,5 +33,4 @@ class AppContext : Application() {
             AppCompatDelegate.setApplicationLocales(appLocale)
         }
     }
-
 }

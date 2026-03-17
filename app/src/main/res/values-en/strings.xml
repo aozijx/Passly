@@ -33,7 +33,7 @@
     <string name="title_scanner">Scan</string>
 
     <!-- Autofill service -->
-    <string name="autofill_service_name">Poop Autofill</string>
+    <string name="autofill_service_name">Vault Autofill</string>
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">Security Verification</string>
     <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>

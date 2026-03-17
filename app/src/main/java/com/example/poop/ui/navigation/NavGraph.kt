@@ -44,7 +44,6 @@ import com.example.poop.ui.screens.home.HomeScreen
 import com.example.poop.ui.screens.profile.ProfileScreen
 import com.example.poop.ui.screens.scanner.ScannerScreen
 import com.example.poop.ui.screens.settings.SettingsScreen
-import com.example.poop.ui.screens.vault.VaultActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +51,6 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
     val navController = rememberNavController()
     val bottomNavItems = Screen.bottomNavItems
     val topBarState = remember { TopBarState() }
-    // 配置 enterAlways 效果的滚动行为
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     CompositionLocalProvider(LocalTopBarState provides topBarState) {
@@ -139,22 +137,26 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                     ProfileScreen(navController)
                 }
                 composable(Screen.Vault.route) {
-                    // 1. 获取上下文（Compose 中获取 Context 的标准方式）
                     val context = LocalContext.current
 
-                    // 使用 LaunchedEffect 确保跳转逻辑只在进入此路由时执行一次
-                    LaunchedEffect(Unit) {
-                        val intent = Intent(context, VaultActivity::class.java).apply {
-                            // 如果需要，可以在这里添加 flags，例如清除任务栈
-                            // flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    // 检查 Vault 功能是否在当前包中可用
+                    if (Screen.isVaultAvailable()) {
+                        LaunchedEffect(Unit) {
+                            val intent = Intent().apply {
+                                setClassName(context.packageName, "com.example.poop.ui.screens.vault.VaultActivity")
+                            }
+                            context.startActivity(intent)
+                            navController.popBackStack()
                         }
-                        context.startActivity(intent)
-
-                        // 跳转后立即从导航栈中移除此占位路由，防止用户返回时看到空白页
-                        navController.popBackStack()
+                    } else {
+                        // 如果不可用，自动退回首页
+                        LaunchedEffect(Unit) {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                            }
+                        }
                     }
 
-                    // 返回一个空布局，因为跳转是异步的，此处需要一个 Composable
                     androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize())
                 }
                 composable(Screen.Detail.route) {

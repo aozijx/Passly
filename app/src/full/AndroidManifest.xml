@@ -36,14 +36,5 @@
             android:exported="true"
             android:label="@string/title_vault" />
 
-        <!-- 自动填充相关的透明验证界面 -->
-        <activity
-            android:name=".service.autofill.AutofillAuthActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:launchMode="singleTask"
-            android:noHistory="true"
-            android:theme="@style/Theme.Poop.TransparentAuth" />
-
     </application>
 </manifest>

@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.BuildConfig
 import com.example.poop.R
 import com.example.poop.i8n.LocaleConfigReader
+import com.example.poop.ui.navigation.Screen
 import com.example.poop.ui.navigation.TopBarConfig
 import com.example.poop.ui.screens.settings.components.AllRoundedShape
 import com.example.poop.ui.screens.settings.components.BottomRoundedShape
@@ -52,7 +53,6 @@ import com.example.poop.ui.screens.settings.components.SectionTitle
 import com.example.poop.ui.screens.settings.components.SettingsClickableItem
 import com.example.poop.ui.screens.settings.components.SettingsSwitchItem
 import com.example.poop.ui.screens.settings.components.TopRoundedShape
-import com.example.poop.ui.screens.vault.VaultActivity
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -299,7 +299,15 @@ fun SettingsScreen(
                     onClick = {
                         versionTapCount++
                         if (versionTapCount >= 3) {
-                            context.startActivity(Intent(context, VaultActivity::class.java))
+                            // 修复点：改用字符串类名跳转
+                            if (Screen.isVaultAvailable()) {
+                                val intent = Intent().apply {
+                                    setClassName(context.packageName, "com.example.poop.ui.screens.vault.VaultActivity")
+                                }
+                                context.startActivity(intent)
+                            } else {
+                                Toast.makeText(context, "当前版本不支持保险箱", Toast.LENGTH_SHORT).show()
+                            }
                             versionTapCount = 0
                         }
                     },

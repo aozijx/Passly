@@ -27,15 +27,6 @@
             android:label="@string/title_scanner"
             android:configChanges="locale|layoutDirection|screenSize|orientation" />
 
-        <!-- 自动填充的透明验证界面 -->
-        <activity
-            android:name=".service.autofill.AutofillAuthActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:launchMode="singleTask"
-            android:noHistory="true"
-            android:theme="@style/Theme.Poop.TransparentAuth" />
-
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"
@@ -69,20 +60,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-        <!-- 自动填充服务 -->
-        <service
-            android:name=".service.autofill.AutofillService"
-            android:exported="true"
-            android:label="@string/autofill_service_name"
-            android:permission="android.permission.BIND_AUTOFILL_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.autofill.AutofillService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.autofill"
-                android:resource="@xml/autofill_service_config" />
-        </service>
 
     </application>
 

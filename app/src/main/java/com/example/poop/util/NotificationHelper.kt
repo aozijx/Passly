@@ -13,13 +13,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.poop.MainActivity
 import com.example.poop.R
-import com.example.poop.data.Preference
+import com.example.poop.data.AppPreference
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
 class NotificationHelper(private val context: Context) {
     // 实例化 Preference
-    private val preference = Preference(context)
+    private val preference = AppPreference(context)
 
     // 通知渠道ID
     private val channelId = "STATUS_BAR_POPUP_CHANNEL"

@@ -8,7 +8,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.poop.R
-import com.example.poop.data.Preference
+import com.example.poop.data.AppPreference
 import com.example.poop.util.Logcat
 import com.example.poop.util.PermissionManager
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +50,7 @@ sealed class ExportStatus {
 }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-    private val preference = Preference(application)
+    private val preference = AppPreference(application)
     private val permissionManager = PermissionManager.getInstance()
     private val _cacheSize = MutableStateFlow("0.00 KB")
     private val _showPermissionGuide = MutableStateFlow(false)
