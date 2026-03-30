@@ -57,7 +57,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.poop.R
-import com.example.poop.data.VaultEntry
 import com.example.poop.util.PackageUtils
 
 /**
@@ -123,7 +122,7 @@ object VaultIcons {
 
 @Composable
 fun VaultItemIcon(
-    item: VaultEntry,
+    item: com.example.poop.data.model.VaultEntry,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {

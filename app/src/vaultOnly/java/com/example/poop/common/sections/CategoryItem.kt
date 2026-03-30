@@ -31,10 +31,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.common.state.VaultEditState
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
+import com.example.poop.features.vault.VaultViewModel
 
 /**
  * 分类选择输入框 (内部组件)
@@ -44,7 +44,7 @@ import com.example.poop.data.VaultEntry
 fun CategoryInputField(
     value: String,
     onValueChange: (String) -> Unit,
-    viewModel: MainViewModel,
+    viewModel: VaultViewModel,
     label: String = stringResource(R.string.label_category)
 ) {
     val categories by viewModel.availableCategories.collectAsState()
@@ -88,7 +88,7 @@ fun CategoryInputField(
  */
 @Composable
 fun CategoryItem(
-    viewModel: MainViewModel,
+    viewModel: VaultViewModel,
     entry: VaultEntry,
     editState: VaultEditState
 ) {

@@ -1,4 +1,4 @@
-package com.example.poop.utils
+package com.example.poop.core.util
 
 import android.content.Context
 import android.net.Uri

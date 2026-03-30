@@ -17,21 +17,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import com.example.poop.MainViewModel
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.R
 import com.example.poop.common.base.BaseVaultDialog
 import com.example.poop.common.fields.CategoryDropdown
 import com.example.poop.common.fields.VaultTextField
 import com.example.poop.common.sections.TotpConfigForm
-import com.example.poop.data.VaultEntry
+import com.example.poop.core.AddType
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.data.model.VaultEntry
 import com.example.poop.util.ClipboardUtils
 import com.example.poop.util.Logcat
-import com.example.poop.utils.CryptoManager
 import java.net.URLDecoder
 
 @Composable
 fun AddTwoFADialog(
-    viewModel: MainViewModel
+    viewModel: VaultViewModel
 ) {
     val context = LocalContext.current
     val state = remember { TotpAddState() }
@@ -39,7 +40,6 @@ fun AddTwoFADialog(
     
     val uriParsedMsg = stringResource(R.string.vault_2fa_uri_parsed)
     val uriParseFailedMsg = stringResource(R.string.vault_2fa_uri_parse_failed)
-    val encryptFailedMsg = stringResource(R.string.vault_error_encrypt_failed)
     val otpCategory = stringResource(R.string.category_otp)
 
     // 自动解析 otpauth URI 逻辑
@@ -76,26 +76,27 @@ fun AddTwoFADialog(
 
     BaseVaultDialog(
         title = stringResource(R.string.vault_add_2fa_title),
-        onDismiss = { viewModel.dismissAddDialog() },
+        onDismiss = { viewModel.addType = AddType.NONE },
         confirmEnabled = state.isValid,
         onConfirm = {
-            val cipher = CryptoManager.getEncryptCipher(isSilent = true)
-            if (cipher != null) {
+            try {
+                val encryptedSecret = CryptoManager.encrypt(state.secret.trim())
                 val entry = VaultEntry(
                     title = state.title,
                     username = state.username,
                     password = "",
                     category = state.category.ifBlank { otpCategory },
-                    totpSecret = CryptoManager.encrypt(state.secret.trim(), cipher),
+                    totpSecret = encryptedSecret,
                     totpDigits = state.digits.toIntOrNull() ?: 6,
                     totpPeriod = state.period.toIntOrNull() ?: 30,
                     totpAlgorithm = state.algorithm,
                     entryType = 1
                 )
                 viewModel.addItem(entry)
-                viewModel.dismissAddDialog()
-            } else {
-                Toast.makeText(context, encryptFailedMsg, Toast.LENGTH_SHORT).show()
+                viewModel.addType = AddType.NONE
+            } catch (e: Exception) {
+                Logcat.e("AddTwoFA", "Failed to encrypt/save", e)
+                Toast.makeText(context, "加密保存失败", Toast.LENGTH_SHORT).show()
             }
         }
     ) {

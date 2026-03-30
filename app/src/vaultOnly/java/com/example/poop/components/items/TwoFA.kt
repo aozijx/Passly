@@ -29,7 +29,8 @@ import androidx.fragment.app.FragmentActivity
 import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.common.icons.VaultItemIcon
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
+import com.example.poop.features.vault.VaultViewModel
 
 /**
  * 2FA 专用列表项：包含动态验证码显示
@@ -37,12 +38,12 @@ import com.example.poop.data.VaultEntry
 @Composable
 fun TwoFAItem(
     entry: VaultEntry,
-    viewModel: MainViewModel,
+    vaultViewModel: VaultViewModel,
+    mainViewModel: MainViewModel,
     showCode: Boolean = true
 ) {
     val context = LocalContext.current
-    // 从 ViewModel 订阅全局 TOTP 状态
-    val totpStates by viewModel.totpStates.collectAsState()
+    val totpStates by vaultViewModel.totpStates.collectAsState()
     val currentState = totpStates[entry.id]
     
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
@@ -50,11 +51,12 @@ fun TwoFAItem(
     Card(
         onClick = { 
             if (currentState?.decryptedSecret == null) {
-                // 如果未解密，调用 ViewModel 提供的统一解锁入口
-                viewModel.ensureTotpUnlocked(context as FragmentActivity, entry)
+                // 调用 vaultViewModel 的解锁逻辑，并传入 mainViewModel 的认证能力
+                vaultViewModel.ensureTotpUnlocked(context as FragmentActivity, entry) { activity, title, subtitle, _, onSuccess ->
+                    mainViewModel.authenticate(activity, title, subtitle, onSuccess = onSuccess)
+                }
             } else {
-                // 已解密状态下点击进入详情
-                viewModel.showDetail(entry)
+                vaultViewModel.showDetail(entry)
             }
         },
         modifier = Modifier.fillMaxWidth(),
@@ -84,7 +86,6 @@ fun TwoFAItem(
                 )
             }
             
-            // 进度条跟随全局状态刷新
             CircularProgressIndicator(
                 progress = { currentState?.progress ?: 0f },
                 modifier = Modifier.size(24.dp),

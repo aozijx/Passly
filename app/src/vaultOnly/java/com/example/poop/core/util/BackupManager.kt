@@ -1,4 +1,4 @@
-package com.example.poop.utils
+package com.example.poop.core.util
 
 import android.content.Context
 import android.net.Uri
@@ -7,8 +7,9 @@ import android.util.JsonReader
 import android.util.JsonToken
 import android.util.JsonWriter
 import androidx.room.withTransaction
-import com.example.poop.data.AppDatabase
-import com.example.poop.data.VaultEntry
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.data.local.AppDatabase
+import com.example.poop.data.model.VaultEntry
 import com.example.poop.util.Logcat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -26,12 +27,10 @@ import javax.crypto.spec.SecretKeySpec
 
 /**
  * 备份管理类：支持将数据库内容导出为加密文件，并支持从加密文件恢复。
- * 已优化为流式读写（JsonReader/JsonWriter + CipherStream），防止处理大量条目时内存溢出。
  */
 object BackupManager {
     private const val TAG = "BackupManager"
     private const val BACKUP_VERSION = 1
-
     private const val PBKDF2_ITERATIONS = 200000
     private const val KEY_LENGTH = 256
     private const val SALT_LENGTH = 16
@@ -41,9 +40,6 @@ object BackupManager {
         APPEND, OVERWRITE
     }
 
-    /**
-     * 导出加密备份 (流式)
-     */
     suspend fun exportBackup(
         context: Context,
         uri: Uri,
@@ -93,60 +89,46 @@ object BackupManager {
         writer.name("category").value(entry.category)
         writer.name("notes").value(entry.notes?.let { decryptField(it) })
         writer.name("iconName").value(entry.iconName)
-        // 剔除 iconCustomPath，因为本地路径跨设备无效
         writer.name("totpSecret").value(entry.totpSecret?.let { decryptField(it) })
         writer.name("totpPeriod").value(entry.totpPeriod.toLong())
         writer.name("totpDigits").value(entry.totpDigits.toLong())
         writer.name("totpAlgorithm").value(entry.totpAlgorithm)
-
         writer.name("passkeyDataJson").value(entry.passkeyDataJson?.let { decryptField(it) })
         writer.name("recoveryCodes").value(entry.recoveryCodes?.let { decryptField(it) })
         writer.name("hardwareKeyInfo").value(entry.hardwareKeyInfo)
         writer.name("wifiEncryptionType").value(entry.wifiEncryptionType)
         writer.name("wifiIsHidden").value(entry.wifiIsHidden)
-
         writer.name("cardCvv").value(entry.cardCvv?.let { decryptField(it) })
         writer.name("cardExpiration").value(entry.cardExpiration?.let { decryptField(it) })
         writer.name("idNumber").value(entry.idNumber?.let { decryptField(it) })
         writer.name("paymentPin").value(entry.paymentPin?.let { decryptField(it) })
         writer.name("sshPrivateKey").value(entry.sshPrivateKey?.let { decryptField(it) })
         writer.name("cryptoSeedPhrase").value(entry.cryptoSeedPhrase?.let { decryptField(it) })
-
         writer.name("entryType").value(entry.entryType.toLong())
         writer.name("associatedAppPackage").value(entry.associatedAppPackage)
         writer.name("associatedDomain").value(entry.associatedDomain)
-
         writer.name("uriList")
-        if (entry.uriList == null) {
-            writer.nullValue()
-        } else {
+        if (entry.uriList == null) writer.nullValue()
+        else {
             writer.beginArray()
             entry.uriList.forEach { writer.value(it) }
             writer.endArray()
         }
-
         writer.name("matchType").value(entry.matchType.toLong())
         writer.name("customFieldsJson").value(entry.customFieldsJson?.let { decryptField(it) })
         writer.name("autoSubmit").value(entry.autoSubmit)
-
-        writer.name("encryptedImageData").value(entry.encryptedImageData?.let {
-            Base64.encodeToString(it, Base64.NO_WRAP)
-        })
-
+        writer.name("encryptedImageData").value(entry.encryptedImageData?.let { Base64.encodeToString(it, Base64.NO_WRAP) })
         writer.name("strengthScore").value(entry.strengthScore?.toDouble())
         writer.name("lastUsedAt").value(entry.lastUsedAt)
         writer.name("usageCount").value(entry.usageCount.toLong())
         writer.name("favorite").value(entry.favorite)
-
         writer.name("tags")
-        if (entry.tags == null) {
-            writer.nullValue()
-        } else {
+        if (entry.tags == null) writer.nullValue()
+        else {
             writer.beginArray()
             entry.tags.forEach { writer.value(it) }
             writer.endArray()
         }
-
         writer.name("createdAt").value(entry.createdAt)
         writer.name("updatedAt").value(entry.updatedAt)
         writer.name("expiresAt").value(entry.expiresAt)
@@ -155,29 +137,15 @@ object BackupManager {
 
     private fun decryptField(encryptedText: String): String {
         if (encryptedText.isEmpty()) return ""
-        // 尝试两种 Key (静默和正式)
-        val iv = CryptoManager.getIvFromCipherText(encryptedText) ?: return ""
-        
-        // 1. 尝试静默解密
-        val silentCipher = CryptoManager.getDecryptCipher(iv, isSilent = true)
-        if (silentCipher != null) {
-            val decrypted = CryptoManager.decrypt(encryptedText, silentCipher)
-            if (decrypted != null) return decrypted
+        return try {
+            // 核心修复：直接使用重构后的解密逻辑
+            CryptoManager.decrypt(encryptedText)
+        } catch (e: Exception) {
+            Logcat.e(TAG, "Field decryption failed during backup", e)
+            ""
         }
-
-        // 2. 尝试正式解密 (需要注意：导出时如果需要指纹授权，这里可能会失败，需确保导出环境已授权)
-        val secureCipher = CryptoManager.getDecryptCipher(iv, isSilent = false)
-        if (secureCipher != null) {
-            val decrypted = CryptoManager.decrypt(encryptedText, secureCipher)
-            if (decrypted != null) return decrypted
-        }
-
-        return ""
     }
 
-    /**
-     * 导入并恢复备份
-     */
     suspend fun importBackup(
         context: Context,
         uri: Uri,
@@ -188,15 +156,10 @@ object BackupManager {
             Logcat.i(TAG, "开始导入备份: $uri, 模式: $mode")
             val db = AppDatabase.getDatabase(context)
             val entriesToImport = getBackupData(context, uri, password).getOrThrow()
-
-            // 重新加密字段以适应当前设备的 KeyStore (统一使用正式 Key 加密)
-            val encryptedEntries = entriesToImport.map { entry ->
-                encryptEntryFields(entry)
-            }
+            val encryptedEntries = entriesToImport.map { encryptEntryFields(it) }
 
             db.withTransaction {
                 if (mode == ImportMode.OVERWRITE) {
-                    Logcat.d(TAG, "清空现有数据库 (OVERWRITE 模式)")
                     db.vaultDao().deleteAll()
                 }
                 db.vaultDao().insertAll(encryptedEntries)
@@ -210,12 +173,7 @@ object BackupManager {
     }
 
     private fun encryptEntryFields(entry: VaultEntry): VaultEntry {
-        fun encryptIfNotNull(text: String?): String? {
-            if (text.isNullOrEmpty()) return text
-            // 导入时一律使用正式 Key 加密
-            return CryptoManager.encrypt(text, isSilent = false)
-        }
-
+        fun encryptIfNotNull(text: String?): String? = if (text.isNullOrEmpty()) text else CryptoManager.encrypt(text)
         return entry.copy(
             username = encryptIfNotNull(entry.username) ?: "",
             password = encryptIfNotNull(entry.password) ?: "",
@@ -243,7 +201,6 @@ object BackupManager {
                 val versionBuf = ByteArray(1)
                 input.read(versionBuf)
                 val version = versionBuf[0].toInt() and 0xFF
-                Logcat.d(TAG, "解析备份文件，版本号: $version")
                 val salt = ByteArray(SALT_LENGTH)
                 input.read(salt)
                 val iv = ByteArray(IV_LENGTH)
@@ -257,59 +214,30 @@ object BackupManager {
                 CipherInputStream(input, cipher).use { cis ->
                     JsonReader(InputStreamReader(cis, "UTF-8")).use { reader ->
                         reader.beginArray()
-                        while (reader.hasNext()) {
-                            entries.add(readEntry(reader))
-                        }
+                        while (reader.hasNext()) entries.add(readEntry(reader))
                         reader.endArray()
                     }
                 }
-                Logcat.i(TAG, "备份解析成功，解析出 ${entries.size} 条数据")
                 Result.success(entries)
-            } ?: Result.failure(Exception("无法读取文件内容 (InputStream 为 null)"))
+            } ?: Result.failure(Exception("InputStream 为 null"))
         } catch (e: Exception) {
-            Logcat.e(TAG, "解析备份数据失败", e)
             Result.failure(e)
         }
     }
 
     private fun readEntry(reader: JsonReader): VaultEntry {
-        var title = ""
-        var username = ""
-        var password = ""
-        var category = ""
-        var notes: String? = null
-        var iconName: String? = null
-        var totpSecret: String? = null
-        var totpPeriod = 30
-        var totpDigits = 6
-        var totpAlgorithm = "SHA1"
-        var passkeyDataJson: String? = null
-        var recoveryCodes: String? = null
-        var hardwareKeyInfo: String? = null
-        var wifiEncryptionType: String? = "WPA"
-        var wifiIsHidden = false
-        var cardCvv: String? = null
-        var cardExpiration: String? = null
-        var idNumber: String? = null
-        var paymentPin: String? = null
-        var sshPrivateKey: String? = null
-        var cryptoSeedPhrase: String? = null
-        var entryType = 0
-        var associatedAppPackage: String? = null
-        var associatedDomain: String? = null
-        var uriList: List<String>? = null
-        var matchType = 0
-        var customFieldsJson: String? = null
-        var autoSubmit = false
-        var encryptedImageData: ByteArray? = null
-        var strengthScore: Float? = null
-        var lastUsedAt: Long? = null
-        var usageCount = 0
-        var favorite = false
-        var tags: List<String>? = null
-        var createdAt: Long? = System.currentTimeMillis()
-        var updatedAt: Long? = null
-        var expiresAt: Long? = null
+        var title = ""; var username = ""; var password = ""; var category = ""
+        var notes: String? = null; var iconName: String? = null; var totpSecret: String? = null
+        var totpPeriod = 30; var totpDigits = 6; var totpAlgorithm = "SHA1"
+        var passkeyDataJson: String? = null; var recoveryCodes: String? = null; var hardwareKeyInfo: String? = null
+        var wifiEncryptionType: String? = "WPA"; var wifiIsHidden = false
+        var cardCvv: String? = null; var cardExpiration: String? = null; var idNumber: String? = null
+        var paymentPin: String? = null; var sshPrivateKey: String? = null; var cryptoSeedPhrase: String? = null
+        var entryType = 0; var associatedAppPackage: String? = null; var associatedDomain: String? = null
+        var uriList: List<String>? = null; var matchType = 0; var customFieldsJson: String? = null
+        var autoSubmit = false; var encryptedImageData: ByteArray? = null; var strengthScore: Float? = null
+        var lastUsedAt: Long? = null; var usageCount = 0; var favorite = false; var tags: List<String>? = null
+        var createdAt: Long? = System.currentTimeMillis(); var updatedAt: Long? = null; var expiresAt: Long? = null
 
         reader.beginObject()
         while (reader.hasNext()) {
@@ -358,7 +286,7 @@ object BackupManager {
 
         return VaultEntry(
             title = title, username = username, password = password, category = category,
-            notes = notes, iconName = iconName, iconCustomPath = null, // 强制置空
+            notes = notes, iconName = iconName, iconCustomPath = null,
             totpSecret = totpSecret, totpPeriod = totpPeriod, totpDigits = totpDigits,
             totpAlgorithm = totpAlgorithm, passkeyDataJson = passkeyDataJson,
             recoveryCodes = recoveryCodes, hardwareKeyInfo = hardwareKeyInfo,
@@ -381,27 +309,13 @@ object BackupManager {
         return SecretKeySpec(factory.generateSecret(spec).encoded, "AES")
     }
 
-    // --- JsonReader 扩展方法 (辅助流式解析) ---
-    private fun JsonReader.nextNullableString(): String? = if (peek() == JsonToken.NULL) {
-        skipValue(); null
-    } else nextString()
-
-    private fun JsonReader.nextNullableDouble(): Double? = if (peek() == JsonToken.NULL) {
-        skipValue(); null
-    } else nextDouble()
-
-    private fun JsonReader.nextNullableLong(): Long? = if (peek() == JsonToken.NULL) {
-        skipValue(); null
-    } else nextLong()
-
+    private fun JsonReader.nextNullableString(): String? = if (peek() == JsonToken.NULL) { skipValue(); null } else nextString()
+    private fun JsonReader.nextNullableDouble(): Double? = if (peek() == JsonToken.NULL) { skipValue(); null } else nextDouble()
+    private fun JsonReader.nextNullableLong(): Long? = if (peek() == JsonToken.NULL) { skipValue(); null } else nextLong()
     private fun JsonReader.nextStringList(): List<String>? {
-        if (peek() == JsonToken.NULL) {
-            skipValue(); return null
-        }
-        val list = mutableListOf<String>()
-        beginArray()
+        if (peek() == JsonToken.NULL) { skipValue(); return null }
+        val list = mutableListOf<String>(); beginArray()
         while (hasNext()) list.add(nextString())
-        endArray()
-        return list
+        endArray(); return list
     }
 }

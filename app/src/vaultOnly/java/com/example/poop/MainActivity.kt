@@ -83,12 +83,8 @@ class MainActivity : FragmentActivity() {
                 viewModel.authorize()
             },
             onError = { error ->
-                if (isFirstTime) {
-                    Toast.makeText(this, getString(R.string.vault_auth_error, error), Toast.LENGTH_SHORT).show()
-                    finish()
-                } else {
-                    Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()
-                }
+                // 即使第一次认证失败也不退出应用，让用户可以重试
+                Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()
             }
         )
     }

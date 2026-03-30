@@ -6,30 +6,30 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import com.example.poop.MainViewModel
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.R
 import com.example.poop.common.base.BaseVaultDialog
 import com.example.poop.common.fields.CategoryDropdown
 import com.example.poop.common.fields.PasswordInput
 import com.example.poop.common.fields.VaultTextField
-import com.example.poop.data.VaultEntry
-import com.example.poop.utils.CryptoManager
+import com.example.poop.core.AddType
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.data.model.VaultEntry
 
 @Composable
 fun AddPasswordDialog(
-    viewModel: MainViewModel
+    viewModel: VaultViewModel
 ) {
     val state = remember { PasswordAddState() }
     val unfiledCategory = stringResource(R.string.category_unfiled)
 
     BaseVaultDialog(
         title = stringResource(R.string.vault_add_password_title),
-        onDismiss = { viewModel.dismissAddDialog() },
+        onDismiss = { viewModel.addType = AddType.NONE },
         confirmEnabled = state.isValid,
         onConfirm = {
-            // 直接使用静默加密，不再通过 viewModel.encryptMultiple 触发验证
-            val encUser = CryptoManager.encrypt(state.username, isSilent = true) ?: ""
-            val encPass = CryptoManager.encrypt(state.password, isSilent = true) ?: ""
+            val encUser = CryptoManager.encrypt(state.username)
+            val encPass = CryptoManager.encrypt(state.password)
             
             val entry = VaultEntry(
                 title = state.title,

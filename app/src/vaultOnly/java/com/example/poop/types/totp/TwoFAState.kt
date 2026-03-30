@@ -3,7 +3,7 @@ package com.example.poop.types.totp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
 
 /**
  * TOTP 实时显示状态

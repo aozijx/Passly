@@ -1,4 +1,4 @@
-package com.example.poop.types.password
+package com.example.poop.domain.model
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,14 +33,16 @@ import com.example.poop.common.DetailHeader
 import com.example.poop.common.sections.CategoryItem
 import com.example.poop.common.sections.CredentialSection
 import com.example.poop.common.state.VaultEditState
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.types.autofill.rememberDecryptedAutofillData
 
 @Composable
 fun PasswordDetailDialog(
     activity: FragmentActivity,
     item: VaultEntry,
-    viewModel: MainViewModel
+    vaultViewModel: VaultViewModel,
+    mainViewModel: MainViewModel
 ) {
     var revealedUsername by remember { mutableStateOf<String?>(null) }
     var revealedPassword by remember { mutableStateOf<String?>(null) }
@@ -62,18 +64,18 @@ fun PasswordDetailDialog(
     }
 
     AlertDialog(
-        onDismissRequest = { viewModel.dismissDetail() },
+        onDismissRequest = { vaultViewModel.dismissDetail() },
         title = {
             DetailHeader(
                 item = item,
-                onIconClick = { viewModel.showIconPicker = true }
+                onIconClick = { vaultViewModel.showIconPicker = true }
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 
-                CategoryItem(viewModel, item, editState)
+                CategoryItem(vaultViewModel, item, editState)
 
                 if (isSilentData) {
                     Row(
@@ -92,7 +94,8 @@ fun PasswordDetailDialog(
                 CredentialSection(
                     activity = activity,
                     item = item,
-                    viewModel = viewModel,
+                    vaultViewModel = vaultViewModel,
+                    mainViewModel = mainViewModel,
                     editState = editState,
                     revealedUsername = revealedUsername,
                     revealedPassword = revealedPassword,
@@ -105,7 +108,7 @@ fun PasswordDetailDialog(
             }
         },
         confirmButton = {
-            DetailActions(onDeleteClick = { viewModel.requestDelete(item) }, onDismiss = { viewModel.dismissDetail() })
+            DetailActions(onDeleteClick = { vaultViewModel.itemToDelete = item }, onDismiss = { vaultViewModel.dismissDetail() })
         }
     )
 }

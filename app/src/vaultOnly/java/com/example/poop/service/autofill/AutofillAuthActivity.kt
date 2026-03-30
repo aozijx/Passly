@@ -13,11 +13,10 @@ import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.poop.R
-import com.example.poop.data.VaultEntry
+import com.example.poop.core.crypto.BiometricHelper
+import com.example.poop.data.model.VaultEntry
 import com.example.poop.util.Logcat
-import com.example.poop.utils.BiometricHelper
-import com.example.poop.utils.CryptoManager
-import com.example.poop.utils.TwoFAUtils
+import com.example.poop.core.util.TwoFAUtils
 import kotlinx.coroutines.launch
 
 /**
@@ -32,6 +31,7 @@ class AutofillAuthActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
 
+        // 核心修复：更新 VaultEntry 的引用路径并处理可空性
         val entry = IntentCompat.getSerializableExtra(intent, "vault_item", VaultEntry::class.java)
         val usernameId = IntentCompat.getParcelableExtra(intent, "username_id", AutofillId::class.java)
         val passwordId = IntentCompat.getParcelableExtra(intent, "password_id", AutofillId::class.java)
@@ -48,7 +48,7 @@ class AutofillAuthActivity : FragmentActivity() {
             title = getString(R.string.autofill_auth_title),
             subtitle = getString(R.string.autofill_auth_subtitle),
             onSuccess = {
-                // 调用 getBasicCredentials 触发自动回退解密机制 (Silent -> Secure)
+                // 调用 getBasicCredentials 触发解密
                 val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
                 if (basicCred == null) {
                     Logcat.e(TAG, "Failed to decrypt credentials")
@@ -58,9 +58,8 @@ class AutofillAuthActivity : FragmentActivity() {
                     return@authenticate
                 }
 
-                // TOTP 解密同样不再需要显式指定 isSilent，内部已支持回退
                 val totpCode = if (otpId != null && entry.totpSecret?.isNotBlank() == true) {
-                    TwoFAUtils.generateCurrentTotpFromEntry(entry, CryptoManager)
+                    TwoFAUtils.generateCurrentTotpFromEntry(entry)
                 } else null
 
                 val dataset = buildDataset(
@@ -73,7 +72,6 @@ class AutofillAuthActivity : FragmentActivity() {
                 )
 
                 if (dataset != null) {
-                    // 修复：Dataset authentication 必须返回 Dataset 而不是 FillResponse
                     setResult(RESULT_OK, Intent().apply {
                         putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset)
                     })

@@ -1,9 +1,13 @@
 package com.example.poop.service.autofill
 
-import com.example.poop.data.VaultEntry
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.data.model.VaultEntry
 import com.example.poop.util.Logcat
-import com.example.poop.utils.CryptoManager
 
+/**
+ * 自动填充凭据提供器
+ * 负责在自动填充流程中解密用户名和密码
+ */
 object AutofillCredentialProvider {
     private const val TAG = "AutofillCredentialProvider"
 
@@ -13,58 +17,23 @@ object AutofillCredentialProvider {
     )
 
     /**
-     * 解密凭据，支持自动回退模式 (Silent -> Secure)
+     * 解密凭据，内部已封装 AES-GCM 解密逻辑
      */
     fun getBasicCredentials(item: VaultEntry): BasicCredentials? {
         Logcat.d(TAG, "Attempting decryption for item: ${item.title} (ID: ${item.id})")
 
-        // 1. 优先尝试静默模式 (AutofillService 自动保存的数据默认使用此模式)
-        val silentResult = decryptWithMode(item, isSilent = true)
-        if (silentResult != null) {
-            Logcat.i(TAG, "Decryption success using SILENT mode")
-            return silentResult
-        }
-
-        // 2. 如果静默解密失败（返回 null，通常是因为 Tag 校验失败），尝试安全模式
-        Logcat.d(TAG, "Silent mode failed, retrying with SECURE mode")
-        val secureResult = decryptWithMode(item, isSilent = false)
-        if (secureResult != null) {
-            Logcat.i(TAG, "Decryption success using SECURE mode")
-            return secureResult
-        }
-
-        Logcat.e(TAG, "All decryption attempts failed for item: ${item.title}")
-        return null
-    }
-
-    private fun decryptWithMode(item: VaultEntry, isSilent: Boolean): BasicCredentials? {
         return try {
-            val ivUser = CryptoManager.getIvFromCipherText(item.username)
-            val ivPass = CryptoManager.getIvFromCipherText(item.password)
+            // 直接调用重构后的解密逻辑，内部已处理 IV 提取和 Tag 校验
+            val username = CryptoManager.decrypt(item.username)
+            val password = CryptoManager.decrypt(item.password)
 
-            if (ivUser == null || ivPass == null) return null
-
-            val userCipher = CryptoManager.getDecryptCipher(ivUser, isSilent)
-            val passCipher = CryptoManager.getDecryptCipher(ivPass, isSilent)
-
-            if (userCipher == null || passCipher == null) return null
-
-            val username = CryptoManager.decrypt(item.username, userCipher)
-            val password = CryptoManager.decrypt(item.password, passCipher)
-
-            // 如果解密结果为 null（CryptoManager 内部捕获了 AEADBadTagException），返回 null 触发重试
-            if (username == null || password == null) {
-                return null
-            }
-
-            // 至少有一个不为空才算成功
             if (username.isBlank() && password.isBlank()) {
-                return null
+                null
+            } else {
+                BasicCredentials(username, password)
             }
-
-            BasicCredentials(username, password)
         } catch (e: Exception) {
-            Logcat.w(TAG, "[$isSilent] Decryption error: ${e.message}")
+            Logcat.e(TAG, "Decryption failed for item: ${item.title}", e)
             null
         }
     }

@@ -16,19 +16,17 @@ import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
 import android.widget.RemoteViews
 import com.example.poop.R
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.core.util.AutofillParser
 import com.example.poop.util.Logcat
 import com.example.poop.util.PackageUtils
-import com.example.poop.utils.AutofillParser
-import com.example.poop.utils.CryptoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /**
- * Poop 自动填充服务 - 增强版
- * 优化重点：通过 FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE 和 TriggerId 提升保存弹出率
- * 异步解析结构，减少对系统 Binder 线程的占用，解决 Jank 问题
+ * Poop 自动填充服务
  */
 class AutofillService : android.service.autofill.AutofillService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -39,27 +37,21 @@ class AutofillService : android.service.autofill.AutofillService() {
 
         serviceScope.launch {
             try {
-                // 优化：将解析过程移入协程，避免阻塞 Binder 线程导致系统报告 "Jank out of time"
                 val parser = AutofillParser(structure)
-
                 Logcat.d(tag, "onFillRequest: pkg=${parser.packageName}, domain=${parser.webDomain}")
 
                 val availableIds = listOfNotNull(parser.usernameId, parser.passwordId, parser.otpId)
                 val entries = AutofillRepository.findMatchingEntries(applicationContext, parser.packageName, parser.webDomain)
                 val responseBuilder = FillResponse.Builder()
 
-                // 1. 处理填充建议 (Datasets)
                 entries.forEach { entry ->
-                    // 解密用户名以显示在提示列表中
-                    val iv = CryptoManager.getIvFromCipherText(entry.username)
-                    val cipher = iv?.let { CryptoManager.getDecryptCipher(it, isSilent = true) }
-                    val decryptedUsername = cipher?.let { CryptoManager.decrypt(entry.username, it) } ?: "点击填充"
+                    // 核心修复：显式指定类型避免类型推断错误
+                    val decryptedUsername = CryptoManager.decrypt(entry.username).ifBlank { "点击填充" }
 
                     val presentation = RemoteViews(packageName, R.layout.autofill_dataset_item).apply {
                         setTextViewText(R.id.title, entry.title)
                         setTextViewText(R.id.username, if (!entry.totpSecret.isNullOrBlank()) "OTP: $decryptedUsername" else decryptedUsername)
-                        val appPkg = entry.associatedAppPackage
-                        if (!appPkg.isNullOrEmpty()) {
+                        entry.associatedAppPackage?.let { appPkg ->
                             PackageUtils.getAppIconDrawable(applicationContext, appPkg)?.let { icon ->
                                 setImageViewBitmap(R.id.icon, PackageUtils.drawableToBitmap(icon))
                             }
@@ -95,7 +87,6 @@ class AutofillService : android.service.autofill.AutofillService() {
                     responseBuilder.addDataset(datasetBuilder.build())
                 }
 
-                // 2. 核心：精准保存策略
                 val saveIds = listOfNotNull(parser.usernameId, parser.passwordId)
                 if (saveIds.isNotEmpty()) {
                     val saveInfoBuilder = SaveInfo.Builder(
@@ -103,17 +94,13 @@ class AutofillService : android.service.autofill.AutofillService() {
                         saveIds.toTypedArray()
                     )
 
-                    // 获取应用名称，让提示更明显
                     val appData = parser.packageName?.let { pkg ->
                         PackageUtils.getAppLabelAndIcon(applicationContext, pkg)
                     }
                     val appLabel = appData?.first ?: parser.webDomain ?: "该应用"
-
-                    // --- 配置带图标的自定义保存提示 ---
                     val iconBitmap = appData?.second?.let { PackageUtils.drawableToBitmap(it) }
 
                     if (iconBitmap != null) {
-                        // 如果有应用图标且系统支持，则使用 CustomDescription 显示图标和文字
                         val customDescription = CustomDescription.Builder(
                             RemoteViews(packageName, R.layout.autofill_save_description).apply {
                                 setImageViewBitmap(R.id.save_icon, iconBitmap)
@@ -123,21 +110,14 @@ class AutofillService : android.service.autofill.AutofillService() {
                         ).build()
                         saveInfoBuilder.setCustomDescription(customDescription)
                     } else {
-                        // 设置描述：让用户知道保存的是哪个应用 (原有逻辑作为回退方案)
                         saveInfoBuilder.setDescription("是否将 $appLabel 的账号密码保存到 Poop？")
                     }
                     var saveFlags = SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE
-
-                    // 策略 B: 延迟保存 (解决分步登录，如先输账号点下一步再输密码)
                     if (parser.usernameId != null && parser.passwordId == null) {
                         saveFlags = saveFlags or SaveInfo.FLAG_DELAY_SAVE
                     }
                     saveInfoBuilder.setFlags(saveFlags)
-
-                    // 策略 C: 绑定登录按钮作为显式触发器
-                    parser.submitId?.let {
-                        saveInfoBuilder.setTriggerId(it)
-                    }
+                    parser.submitId?.let { saveInfoBuilder.setTriggerId(it) }
 
                     responseBuilder.setSaveInfo(saveInfoBuilder.build())
                 }
@@ -153,23 +133,14 @@ class AutofillService : android.service.autofill.AutofillService() {
     }
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
-        var username = ""
-        var password = ""
-        var pkg: String? = null
-        var domain: String? = null
-        var title: String? = null
-
+        var username = ""; var password = ""; var pkg: String? = null; var domain: String? = null; var title: String? = null
         request.fillContexts.forEach { context ->
             val p = AutofillParser(context.structure)
             if (!p.usernameValue.isNullOrBlank()) username = p.usernameValue!!
             if (!p.passwordValue.isNullOrBlank()) password = p.passwordValue!!
-            p.packageName?.let { pkg = it }
-            p.webDomain?.let { domain = it }
-            p.pageTitle?.let { title = it }
+            p.packageName?.let { pkg = it }; p.webDomain?.let { domain = it }; p.pageTitle?.let { title = it }
         }
-
         if (password.isBlank()) return callback.onSuccess()
-
         serviceScope.launch {
             val success = AutofillRepository.saveOrUpdateEntry(applicationContext, pkg, domain, title, username, password)
             if (success) callback.onSuccess() else callback.onFailure("Save failed")

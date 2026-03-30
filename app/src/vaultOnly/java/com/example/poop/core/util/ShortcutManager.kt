@@ -1,4 +1,4 @@
-package com.example.poop.util
+package com.example.poop.core.util
 
 import android.content.Context
 import android.content.Intent
@@ -14,7 +14,7 @@ object ShortcutManager {
 
     fun init(context: Context) {
         // 如果当前构建版本不支持 Vault 功能，则不添加快捷方式
-        if (!Screen.isVaultAvailable()) {
+        if (!Screen.Companion.isVaultAvailable()) {
             ShortcutManagerCompat.removeAllDynamicShortcuts(context)
             return
         }

@@ -4,7 +4,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
 
 /**
  * 统一的保险箱编辑状态管理器
@@ -39,8 +39,8 @@ class VaultEditState(initialEntry: VaultEntry) {
     val isDirty by derivedStateOf {
         editedTitle != sourceEntry.title ||
         editedCategory != sourceEntry.category ||
-        editedUsername != originalDecryptedUsername ||  // 新增：账号变化检测
-        editedPassword != originalDecryptedPassword ||  // 新增：密码变化检测
+        editedUsername != originalDecryptedUsername ||
+        editedPassword != originalDecryptedPassword ||
         editedNotes != (sourceEntry.notes ?: "") ||
         editedDomain != (sourceEntry.associatedDomain ?: "") ||
         editedPackage != (sourceEntry.associatedAppPackage ?: "") ||

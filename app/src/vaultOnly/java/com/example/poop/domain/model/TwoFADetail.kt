@@ -1,4 +1,4 @@
-package com.example.poop.types.totp
+package com.example.poop.domain.model
 
 import android.graphics.Bitmap
 import android.widget.Toast
@@ -55,21 +55,25 @@ import com.example.poop.common.DetailHeader
 import com.example.poop.common.sections.CategoryItem
 import com.example.poop.common.sections.TotpConfigForm
 import com.example.poop.common.state.VaultEditState
-import com.example.poop.data.VaultEntry
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.data.model.VaultEntry
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.util.ClipboardUtils
-import com.example.poop.util.QrCodeUtils
+import com.example.poop.core.util.QrCodeUtils
+import com.example.poop.types.totp.TotpEditState
 import java.net.URLEncoder
 
 @Composable
 fun TwoFADetailDialog(
     activity: FragmentActivity,
     item: VaultEntry,
-    viewModel: MainViewModel
+    vaultViewModel: VaultViewModel,
+    mainViewModel: MainViewModel
 ) {
     val context = LocalContext.current
     
     // 订阅全局 TOTP 状态
-    val totpStates by viewModel.totpStates.collectAsState()
+    val totpStates by vaultViewModel.totpStates.collectAsState()
     val currentState = totpStates[item.id]
     
     val isSteam = remember(item.totpAlgorithm) { item.totpAlgorithm.uppercase() == "STEAM" }
@@ -89,16 +93,16 @@ fun TwoFADetailDialog(
     }
 
     AlertDialog(
-        onDismissRequest = { viewModel.dismissDetail() },
+        onDismissRequest = { vaultViewModel.dismissDetail() },
         title = {
             DetailHeader(
                 item = item,
-                onIconClick = { viewModel.showIconPicker = true },
+                onIconClick = { vaultViewModel.showIconPicker = true },
                 onMoreClick = {
                     if (totpEditState.isEditing) {
                         totpEditState.isEditing = false
                     } else {
-                        viewModel.authenticate(
+                        mainViewModel.authenticate(
                             activity = activity,
                             title = authRevealTitle,
                             subtitle = authRevealSubtitle,
@@ -117,7 +121,7 @@ fun TwoFADetailDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                CategoryItem(viewModel = viewModel, entry = item, editState = categoryEditState)
+                CategoryItem(viewModel = vaultViewModel, entry = item, editState = categoryEditState)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -127,7 +131,7 @@ fun TwoFADetailDialog(
                     Text(stringResource(R.string.vault_totp_label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
                     IconButton(
                         onClick = {
-                            viewModel.authenticate(
+                            mainViewModel.authenticate(
                                 activity = activity,
                                 title = authQrTitle,
                                 subtitle = authQrSubtitle,
@@ -150,7 +154,9 @@ fun TwoFADetailDialog(
                             Toast.makeText(context, totpCopiedMsg, Toast.LENGTH_SHORT).show()
                         } else if (currentState?.decryptedSecret == null) {
                             // 使用统一的解锁逻辑：静默 -> 手动 -> 自动迁移
-                            viewModel.ensureTotpUnlocked(activity, item)
+                            vaultViewModel.ensureTotpUnlocked(activity, item) { activityParam, title, subtitle, _, onSuccess ->
+                                mainViewModel.authenticate(activityParam, title, subtitle, onSuccess = onSuccess)
+                            }
                         }
                     },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
@@ -188,12 +194,12 @@ fun TwoFADetailDialog(
 
                 if (totpEditState.isEditing && currentState?.decryptedSecret != null) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    EditTotpSection(activity, item, viewModel, totpEditState)
+                    EditTotpSection(activity, item, vaultViewModel, mainViewModel, totpEditState)
                 }
             }
         },
         confirmButton = {
-            DetailActions(onDeleteClick = { viewModel.requestDelete(item) }, onDismiss = { viewModel.dismissDetail() })
+            DetailActions(onDeleteClick = { vaultViewModel.itemToDelete = item }, onDismiss = { vaultViewModel.dismissDetail() })
         }
     )
 
@@ -213,7 +219,8 @@ fun TwoFADetailDialog(
 private fun EditTotpSection(
     activity: FragmentActivity,
     item: VaultEntry,
-    viewModel: MainViewModel,
+    vaultViewModel: VaultViewModel,
+    mainViewModel: MainViewModel,
     editState: TotpEditState
 ) {
     LaunchedEffect(editState.secret) {
@@ -234,16 +241,17 @@ private fun EditTotpSection(
             TextButton(onClick = { editState.isEditing = false }) { Text(stringResource(R.string.action_cancel)) }
             Button(onClick = {
                 if (editState.secret.isNotBlank()) {
-                    viewModel.encryptMultiple(activity, listOf(editState.secret)) { 
-                        it.firstOrNull()?.let { enc -> 
-                            viewModel.updateVaultEntry(item.copy(
-                                totpSecret = enc,
-                                totpPeriod = editState.period.toIntOrNull() ?: 30,
-                                totpDigits = editState.digits.toIntOrNull() ?: 6,
-                                totpAlgorithm = editState.algorithm
-                            ))
-                            editState.isEditing = false
-                        }
+                    try {
+                        val encrypted = CryptoManager.encrypt(editState.secret.trim())
+                        vaultViewModel.updateVaultEntry(item.copy(
+                            totpSecret = encrypted,
+                            totpPeriod = editState.period.toIntOrNull() ?: 30,
+                            totpDigits = editState.digits.toIntOrNull() ?: 6,
+                            totpAlgorithm = editState.algorithm
+                        ))
+                        editState.isEditing = false
+                    } catch (e: Exception) {
+                        // 加密失败处理
                     }
                 }
             }) { Text(stringResource(R.string.action_save)) }

@@ -42,14 +42,16 @@ import com.example.poop.common.DetailHeader
 import com.example.poop.common.sections.CategoryItem
 import com.example.poop.common.sections.CredentialSection
 import com.example.poop.common.state.VaultEditState
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.util.ClipboardUtils
 import com.example.poop.util.Logcat
 
 @Composable
 fun AutoFillDetailDialog(
     item: VaultEntry,
-    viewModel: MainViewModel,
+    vaultViewModel: VaultViewModel,
+    mainViewModel: MainViewModel,
     activity: FragmentActivity
 ) {
     val context = LocalContext.current
@@ -73,18 +75,18 @@ fun AutoFillDetailDialog(
     }
 
     AlertDialog(
-        onDismissRequest = { viewModel.dismissDetail() },
+        onDismissRequest = { vaultViewModel.dismissDetail() },
         title = {
             DetailHeader(
                 item = item,
-                onIconClick = { viewModel.showIconPicker = true }
+                onIconClick = { vaultViewModel.showIconPicker = true }
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-                CategoryItem(viewModel, item, editState)
+                CategoryItem(vaultViewModel, item, editState)
 
                 // 域名详情
                 if (!item.associatedDomain.isNullOrBlank()) {
@@ -176,7 +178,8 @@ fun AutoFillDetailDialog(
                 CredentialSection(
                     activity = activity,
                     item = item,
-                    viewModel = viewModel,
+                    vaultViewModel = vaultViewModel,
+                    mainViewModel = mainViewModel,
                     editState = editState,
                     revealedUsername = revealedUsername,
                     revealedPassword = revealedPassword,
@@ -189,8 +192,8 @@ fun AutoFillDetailDialog(
         },
         confirmButton = {
             DetailActions(
-                onDeleteClick = { viewModel.requestDelete(item) },
-                onDismiss = { viewModel.dismissDetail() }
+                onDeleteClick = { vaultViewModel.itemToDelete = item },
+                onDismiss = { vaultViewModel.dismissDetail() }
             )
         }
     )

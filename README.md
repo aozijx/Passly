@@ -20,6 +20,43 @@
 - **安全组件**：AndroidX Biometric + AndroidX Security
 - **扫码能力**：CameraX + Google ML Kit Barcode Scanning
 
+## 项目
+
+采用按功能模块划分（Package by Feature）并结合简洁架构（Clean Architecture）的思想。
+com.example.poop
+├── core                // 核心底层能力（跨模块通用）
+│   ├── crypto          // 加密解密核心逻辑 (原 CryptoManager, BiometricHelper)
+│   ├── common          // 基础基类、常量
+│   ├── designsystem    // 自定义 UI 组件库 (原 components, sections, icons)
+│   └── util            // 纯工具类 (原 BackupManager, TwoFAUtils)
+│
+├── data                // 数据层（不含 UI 逻辑）
+│   ├── local           // Room 数据库, DataStore (原 Preference.kt)
+│   ├── repository      // 聚合数据源，提供给 ViewModel 使用
+│   └── model           // 数据库实体 (Entity)
+│
+├── domain              // 领域层（业务模型和规则）
+│   └── model           // 业务模型 (原 types 文件夹下的内容)
+│
+├── features            // 功能模块层（按业务划分，每个文件夹一个功能）
+│   ├── vault           // 保险箱主界面
+│   │   ├── VaultScreen.kt
+│   │   ├── VaultViewModel.kt
+│   │   └── components   // 仅限该功能使用的组件
+│   ├── detail          // 详情页
+│   ├── settings        // 设置页
+│   └── scanner         // 扫码功能 (原 QRCodeUtils 相关的 UI)
+│
+├── service             // 系统级服务
+│   └── autofill        // 自动填充功能 (原 service.autofill)
+│       ├── AutofillService.kt
+│       ├── AutofillViewModel.kt // 建议服务也用单独的逻辑处理
+│       └── AutofillAuthActivity.kt
+│
+└── ui                  // 全局 UI 相关
+├── theme           // 主题配置 (Color, Type, Theme)
+└── NavGraph.kt     // 导航路由
+
 ## 快速开始
 
 ### 开发环境要求

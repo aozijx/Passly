@@ -49,37 +49,35 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.MainViewModel
 import com.example.poop.R
-import com.example.poop.data.VaultEntry
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.data.model.VaultEntry
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.ui.screens.components.ScannerView
 import com.example.poop.ui.screens.profile.ImageType
 import com.example.poop.ui.screens.scanner.ScannerViewModel
+import com.example.poop.util.Logcat
 import com.example.poop.util.rememberImagePicker
-import com.example.poop.utils.CryptoManager
 import java.net.URLDecoder
 
 /**
  * Vault 专用的扫码特化组件
- * 优化：预解析字符串资源，避免在回调中通过 context 手动获取引发 Lint 警告
  */
 @Composable
 fun VaultScanner(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
+    vaultViewModel: VaultViewModel,
     scannerViewModel: ScannerViewModel = viewModel(),
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     
-    // 预解析字符串资源
     val errorNotOtp = stringResource(R.string.vault_scanner_error_not_otp)
     val successSaveMsg = stringResource(R.string.vault_scanner_success_save)
-    val authSaveTitle = stringResource(R.string.envault_scanner_auth_save_title)
     val scanResult by scannerViewModel.scanResult.collectAsState()
     
-    // 解析扫码结果是否为有效的 OTP 协议
     val scannedTotp = remember(scanResult) { parseOtpAuthUri(scanResult) }
 
-    // 监听非 OTP 协议的识别结果
     LaunchedEffect(scanResult) {
         if (scanResult.isNotEmpty() && scannedTotp == null) {
             if (!scanResult.startsWith("otpauth://")) {
@@ -103,7 +101,6 @@ fun VaultScanner(
             onPermissionDenied = { onDismiss() }
         )
 
-        // 顶部操作栏
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -130,7 +127,6 @@ fun VaultScanner(
             }
         }
 
-        // 扫码结果确认卡片
         AnimatedVisibility(
             visible = scannedTotp != null,
             enter = fadeIn() + slideInVertically { it },
@@ -141,9 +137,6 @@ fun VaultScanner(
                 .padding(24.dp)
         ) {
             scannedTotp?.let { totp ->
-                // 预解析带参数的格式化字符串
-                val authSaveSubtitle = stringResource(R.string.vault_scanner_auth_save_subtitle, totp.issuer ?: totp.label)
-
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -186,9 +179,9 @@ fun VaultScanner(
                                     val isSteam = (totp.issuer?.contains("Steam", ignoreCase = true) == true) || 
                                                  (totp.label.contains("Steam", ignoreCase = true))
                                     
-                                    val cipher = CryptoManager.getEncryptCipher(isSilent = true)
-                                    if (cipher != null) {
-                                        val encryptedSecret = CryptoManager.encrypt(totp.secret, cipher)
+                                    try {
+                                        // 核心修复：直接使用简化后的加密逻辑
+                                        val encryptedSecret = CryptoManager.encrypt(totp.secret)
                                         val entry = VaultEntry(
                                             title = totp.issuer ?: totp.label.split(":").firstOrNull() ?: "2FA",
                                             username = totp.label,
@@ -199,31 +192,12 @@ fun VaultScanner(
                                             totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm ?: "SHA1"),
                                             entryType = 1
                                         )
-                                        mainViewModel.addItem(entry)
+                                        vaultViewModel.addItem(entry)
                                         Toast.makeText(context, successSaveMsg, Toast.LENGTH_SHORT).show()
                                         onDismiss()
-                                    } else {
-                                        mainViewModel.encryptMultiple(
-                                            activity = activity,
-                                            texts = listOf(totp.secret),
-                                            title = authSaveTitle,
-                                            subtitle = authSaveSubtitle,
-                                            onSuccess = { encryptedResults ->
-                                                val entry = VaultEntry(
-                                                    title = totp.issuer ?: totp.label.split(":").firstOrNull() ?: "2FA",
-                                                    username = totp.label,
-                                                    password = "",
-                                                    category = "OTP",
-                                                    totpSecret = encryptedResults[0],
-                                                    totpDigits = if (isSteam) 5 else (totp.digits ?: 6),
-                                                    totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm ?: "SHA1"),
-                                                    entryType = 1
-                                                )
-                                                mainViewModel.addItem(entry)
-                                                Toast.makeText(context, successSaveMsg, Toast.LENGTH_SHORT).show()
-                                                onDismiss()
-                                            }
-                                        )
+                                    } catch (e: Exception) {
+                                        Logcat.e("VaultScanner", "Failed to encrypt/save TOTP", e)
+                                        Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 modifier = Modifier.weight(2f),

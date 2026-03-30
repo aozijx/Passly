@@ -43,13 +43,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.core.AddType
+import com.example.poop.features.vault.VaultViewModel
 
 @Composable
 fun VaultFab(
-    viewModel: MainViewModel,
+    viewModel: VaultViewModel,
     isVisible: Boolean = true
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
@@ -91,7 +91,7 @@ fun VaultFab(
                         icon = Icons.Default.QrCodeScanner,
                         onClick = {
                             showFabMenu = false
-                            viewModel.onAddTypeSelect(AddType.SCAN)
+                            viewModel.addType = AddType.SCAN
                         }
                     )
                     FabMenuItem(
@@ -99,7 +99,7 @@ fun VaultFab(
                         icon = Icons.Default.Pin,
                         onClick = {
                             showFabMenu = false
-                            viewModel.onAddTypeSelect(AddType.TOTP)
+                            viewModel.addType = AddType.TOTP
                         }
                     )
                     FabMenuItem(
@@ -107,7 +107,7 @@ fun VaultFab(
                         icon = Icons.Default.Key,
                         onClick = {
                             showFabMenu = false
-                            viewModel.onAddTypeSelect(AddType.PASSWORD)
+                            viewModel.addType = AddType.PASSWORD
                         }
                     )
                 }

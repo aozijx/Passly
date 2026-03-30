@@ -64,35 +64,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.core.VaultTab
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.util.Logcat
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTopBar(
-    viewModel: MainViewModel,
+    vaultViewModel: VaultViewModel,
     scrollBehavior: TopAppBarScrollBehavior,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
-    val availableCategories by viewModel.availableCategories.collectAsState()
-    val selectedTab by viewModel.selectedTab.collectAsState()
+    val searchQuery by vaultViewModel.searchQuery.collectAsState()
+    val selectedCategory by vaultViewModel.selectedCategory.collectAsState()
+    val availableCategories by vaultViewModel.availableCategories.collectAsState()
+    val selectedTab by vaultViewModel.selectedTab.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    // 预解析字符串资源，避免在 onClick 等非 Composable 环境中直接查询导致的警告和错误
     val autofillToastMessage = stringResource(R.string.vault_toast_enable_autofill_manual)
-
     var showCategorySubMenu by remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel.isMoreMenuExpanded) {
-        if (!viewModel.isMoreMenuExpanded) {
-            showCategorySubMenu = false
-        }
+    LaunchedEffect(vaultViewModel.isMoreMenuExpanded) {
+        if (!vaultViewModel.isMoreMenuExpanded) showCategorySubMenu = false
     }
 
     Column {
@@ -100,10 +97,10 @@ fun VaultTopBar(
             scrollBehavior = scrollBehavior,
             windowInsets = WindowInsets.statusBars,
             title = {
-                if (viewModel.isSearchActive) {
+                if (vaultViewModel.isSearchActive) {
                     TextField(
                         value = searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChange(it) },
+                        onValueChange = { vaultViewModel.onSearchQueryChange(it) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text(stringResource(R.string.vault_search_placeholder)) },
                         singleLine = true,
@@ -119,46 +116,35 @@ fun VaultTopBar(
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (selectedCategory != null) {
-                                stringResource(R.string.vault_title_category, selectedCategory!!)
-                            } else {
-                                stringResource(R.string.vault_title_default)
-                            },
+                            text = if (selectedCategory != null) stringResource(R.string.vault_title_category, selectedCategory!!) 
+                                   else stringResource(R.string.vault_title_default),
                             fontWeight = FontWeight.Bold
                         )
                         if (selectedCategory != null) {
-                            IconButton(onClick = { viewModel.onCategorySelect(null) }) {
-                                Icon(
-                                    Icons.Default.Clear, 
-                                    stringResource(R.string.vault_clear_filter), 
-                                    modifier = Modifier.padding(start = 4.dp)
-                                )
+                            IconButton(onClick = { vaultViewModel.selectedCategory.let { (vaultViewModel.selectedCategory as MutableStateFlow).value = null } }) {
+                                Icon(Icons.Default.Clear, stringResource(R.string.vault_clear_filter), modifier = Modifier.padding(start = 4.dp))
                             }
                         }
                     }
                 }
             },
             navigationIcon = {
-                IconButton(onClick = { viewModel.toggleSearch(!viewModel.isSearchActive) }) {
+                IconButton(onClick = { vaultViewModel.toggleSearch(!vaultViewModel.isSearchActive) }) {
                     Icon(
-                        if (viewModel.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
-                        contentDescription = if (viewModel.isSearchActive) {
-                            stringResource(R.string.action_back)
-                        } else {
-                            stringResource(R.string.action_search)
-                        }
+                        if (vaultViewModel.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
+                        contentDescription = stringResource(if (vaultViewModel.isSearchActive) R.string.action_back else R.string.action_search)
                     )
                 }
             },
             actions = {
-                if (!viewModel.isSearchActive) {
+                if (!vaultViewModel.isSearchActive) {
                     Box {
-                        IconButton(onClick = { viewModel.isMoreMenuExpanded = true }) {
+                        IconButton(onClick = { vaultViewModel.isMoreMenuExpanded = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.action_more))
                         }
                         DropdownMenu(
-                            expanded = viewModel.isMoreMenuExpanded,
-                            onDismissRequest = { viewModel.isMoreMenuExpanded = false }
+                            expanded = vaultViewModel.isMoreMenuExpanded,
+                            onDismissRequest = { vaultViewModel.isMoreMenuExpanded = false }
                         ) {
                             if (!showCategorySubMenu) {
                                 DropdownMenuItem(
@@ -166,58 +152,35 @@ fun VaultTopBar(
                                     onClick = { showCategorySubMenu = true },
                                     leadingIcon = { Icon(Icons.Default.FilterList, null) }
                                 )
-
                                 DropdownMenuItem(
-                                    text = { 
-                                        Text(
-                                            if (viewModel.showTOTPCode) stringResource(R.string.vault_menu_hide_totp) 
-                                            else stringResource(R.string.vault_menu_show_totp)
-                                        ) 
-                                    },
-                                    onClick = {
-                                        viewModel.showTOTPCode = !viewModel.showTOTPCode
-                                        viewModel.isMoreMenuExpanded = false
-                                    },
-                                    leadingIcon = { 
-                                        Icon(
-                                            if (viewModel.showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility, 
-                                            null
-                                        ) 
-                                    }
+                                    text = { Text(stringResource(if (vaultViewModel.showTOTPCode) R.string.vault_menu_hide_totp else R.string.vault_menu_show_totp)) },
+                                    onClick = { vaultViewModel.showTOTPCode = !vaultViewModel.showTOTPCode; vaultViewModel.isMoreMenuExpanded = false },
+                                    leadingIcon = { Icon(if (vaultViewModel.showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility, null) }
                                 )
 
                                 val autofillManager = remember { context.getSystemService(AutofillManager::class.java) }
                                 val isAutofillEnabled = remember(autofillManager) {
                                     autofillManager?.isAutofillSupported == true && autofillManager.hasEnabledAutofillServices()
                                 }
-                                
                                 if (!isAutofillEnabled) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
                                         onClick = {
-                                            viewModel.isMoreMenuExpanded = false
-                                            // 优先级 1：标准的自动填充请求（最推荐）
-                                            val standardIntent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
-                                                data = "package:${context.packageName}".toUri()
-                                            }
-                                            // 定义一个简单的跳转方法
+                                            vaultViewModel.isMoreMenuExpanded = false
+                                            val standardIntent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply { data = "package:${context.packageName}".toUri() }
                                             fun tryStartActivity(intent: Intent): Boolean {
                                                 return try {
                                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                     context.startActivity(intent)
                                                     true
                                                 } catch (e: Exception) {
-                                                    Logcat.e("VaultTopBar", autofillToastMessage,e)
+                                                    Logcat.e("VaultTopBar", "Failed to start activity", e)
                                                     false
                                                 }
                                             }
 
                                             if (!tryStartActivity(standardIntent)) {
-                                                // 优先级 2：如果标准方式报错，尝试进入“默认应用”设置（鸿蒙/国产机最稳妥的二级入口）
-                                                val defaultAppsIntent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
-
-                                                if (!tryStartActivity(defaultAppsIntent)) {
-                                                    // 优先级 3：终极兜底，只跳到总设置，并给提示
+                                                if (!tryStartActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))) {
                                                     tryStartActivity(Intent(Settings.ACTION_SETTINGS))
                                                     Toast.makeText(context, autofillToastMessage, Toast.LENGTH_LONG).show()
                                                 }
@@ -226,23 +189,15 @@ fun VaultTopBar(
                                         leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
                                     )
                                 }
-
                                 HorizontalDivider()
-
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_export)) },
-                                    onClick = {
-                                        viewModel.isMoreMenuExpanded = false
-                                        onExportClick()
-                                    },
+                                    onClick = { vaultViewModel.isMoreMenuExpanded = false; onExportClick() },
                                     leadingIcon = { Icon(Icons.Default.FileUpload, null) }
                                 )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_import)) },
-                                    onClick = {
-                                        viewModel.isMoreMenuExpanded = false
-                                        onImportClick()
-                                    },
+                                    onClick = { vaultViewModel.isMoreMenuExpanded = false; onImportClick() },
                                     leadingIcon = { Icon(Icons.Default.FileDownload, null) }
                                 )
                             } else {
@@ -251,25 +206,16 @@ fun VaultTopBar(
                                     onClick = { showCategorySubMenu = false },
                                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
                                 )
-
                                 HorizontalDivider()
-
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_all_categories)) },
-                                    onClick = {
-                                        viewModel.onCategorySelect(null)
-                                        viewModel.isMoreMenuExpanded = false
-                                    },
+                                    onClick = { (vaultViewModel.selectedCategory as MutableStateFlow).value = null; vaultViewModel.isMoreMenuExpanded = false },
                                     trailingIcon = { if (selectedCategory == null) Icon(Icons.Default.Check, null) }
                                 )
-
                                 availableCategories.forEach { category ->
                                     DropdownMenuItem(
                                         text = { Text(category) },
-                                        onClick = {
-                                            viewModel.onCategorySelect(category)
-                                            viewModel.isMoreMenuExpanded = false
-                                        },
+                                        onClick = { (vaultViewModel.selectedCategory as MutableStateFlow).value = category; vaultViewModel.isMoreMenuExpanded = false },
                                         trailingIcon = { if (selectedCategory == category) Icon(Icons.Default.Check, null) }
                                     )
                                 }
@@ -277,7 +223,7 @@ fun VaultTopBar(
                         }
                     }
                 } else if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                    IconButton(onClick = { vaultViewModel.onSearchQueryChange("") }) {
                         Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.vault_clear_filter))
                     }
                 }
@@ -289,7 +235,7 @@ fun VaultTopBar(
         )
 
         AnimatedVisibility(
-            visible = !viewModel.isSearchActive && selectedCategory == null && scrollBehavior.state.collapsedFraction < 0.5f,
+            visible = !vaultViewModel.isSearchActive && selectedCategory == null && scrollBehavior.state.collapsedFraction < 0.5f,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
@@ -306,14 +252,14 @@ fun VaultTopBar(
                 VaultTab.entries.forEach { tab ->
                     Tab(
                         selected = selectedTab == tab,
-                        onClick = { viewModel.onTabSelect(tab) },
+                        onClick = { (vaultViewModel.selectedTab as MutableStateFlow).value = tab },
                         text = {
                             Text(
-                                when (tab) {
-                                    VaultTab.ALL -> stringResource(R.string.vault_tab_all)
-                                    VaultTab.PASSWORDS -> stringResource(R.string.vault_tab_passwords)
-                                    VaultTab.TOTP -> stringResource(R.string.vault_tab_totp)
-                                },
+                                stringResource(when (tab) {
+                                    VaultTab.ALL -> R.string.vault_tab_all
+                                    VaultTab.PASSWORDS -> R.string.vault_tab_passwords
+                                    VaultTab.TOTP -> R.string.vault_tab_totp
+                                }),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
                             )

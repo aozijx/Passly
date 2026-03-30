@@ -1,4 +1,4 @@
-package com.example.poop.utils
+package com.example.poop.core.util
 
 import android.app.assist.AssistStructure
 import android.text.InputType

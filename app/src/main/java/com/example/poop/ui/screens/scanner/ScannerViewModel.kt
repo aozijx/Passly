@@ -5,7 +5,7 @@ import android.net.Uri
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
-import com.example.poop.util.QrCodeUtils
+import com.example.poop.core.util.QrCodeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

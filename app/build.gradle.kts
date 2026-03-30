@@ -35,16 +35,16 @@ android {
 
     signingConfigs {
         create("release") {
-            val props = Properties().apply {
-                val localPropFile = rootProject.file("local.properties")
-                if (localPropFile.exists()) {
-                    localPropFile.inputStream().use { load(it) }
-                }
+            val storeFilePath = localProperties.getProperty("signing.store.file")
+            if (storeFilePath != null) {
+                storeFile = file(storeFilePath)
+                storePassword = localProperties.getProperty("signing.store.password")
+                keyAlias = localProperties.getProperty("signing.key.alias")
+                keyPassword = localProperties.getProperty("signing.key.password")
+            } else {
+                // 如果没有签名配置（如在 CI/CodeQL 环境中），回退到 debug 签名以保证编译通过
+                initWith(getByName("debug"))
             }
-            storeFile = props.getProperty("signing.store.file")?.let { file(it) }
-            storePassword = props.getProperty("signing.store.password")
-            keyAlias = props.getProperty("signing.key.alias")
-            keyPassword = props.getProperty("signing.key.password")
         }
     }
 

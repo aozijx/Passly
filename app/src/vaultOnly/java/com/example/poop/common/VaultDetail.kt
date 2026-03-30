@@ -43,11 +43,10 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.poop.common.icons.VaultItemIcon
-import com.example.poop.data.VaultEntry
 
 @Composable
 fun DetailHeader(
-    item: VaultEntry,
+    item: com.example.poop.data.model.VaultEntry,
     onIconClick: () -> Unit,
     onMoreClick: (() -> Unit)? = null
 ) {

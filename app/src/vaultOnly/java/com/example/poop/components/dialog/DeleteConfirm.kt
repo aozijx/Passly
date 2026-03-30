@@ -9,13 +9,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.MainViewModel
 import com.example.poop.R
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
 
 @Composable
 fun DeleteConfirmDialog(
     activity: FragmentActivity,
     item: VaultEntry,
-    viewModel: MainViewModel,
+    mainViewModel: MainViewModel,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -25,7 +25,7 @@ fun DeleteConfirmDialog(
         text = { Text(stringResource(R.string.vault_delete_message, item.title)) },
         confirmButton = {
             TextButton(onClick = {
-                viewModel.authenticate(
+                mainViewModel.authenticate(
                     activity = activity,
                     title = activity.getString(R.string.vault_delete_title),
                     subtitle = activity.getString(R.string.vault_auth_decrypt_subtitle_generic)

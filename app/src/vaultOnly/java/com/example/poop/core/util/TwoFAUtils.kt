@@ -1,7 +1,8 @@
-package com.example.poop.utils
+package com.example.poop.core.util
 
 import android.util.Base64
-import com.example.poop.data.VaultEntry
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.data.model.VaultEntry
 import com.example.poop.util.Logcat
 import java.nio.ByteBuffer
 import javax.crypto.Mac
@@ -16,16 +17,14 @@ object TwoFAUtils {
 
     /**
      * 从 VaultEntry 生成当前的 TOTP 验证码
-     * 注意：AutofillService 保存时通常使用 isSilent = true
      */
-    fun generateCurrentTotpFromEntry(entry: VaultEntry, crypto: CryptoManager, isSilent: Boolean = true): String? {
+    fun generateCurrentTotpFromEntry(entry: VaultEntry): String? {
         val secretCiphertext = entry.totpSecret ?: return null
         if (secretCiphertext.isBlank()) return null
         
         return try {
-            val iv = crypto.getIvFromCipherText(secretCiphertext) ?: return null
-            val cipher = crypto.getDecryptCipher(iv, isSilent) ?: return null
-            val secret = crypto.decrypt(secretCiphertext, cipher) ?: return null
+            // 核心修复：直接使用简化后的解密逻辑
+            val secret = CryptoManager.decrypt(secretCiphertext)
             
             generateTotp(
                 secret = secret,
@@ -34,7 +33,7 @@ object TwoFAUtils {
                 algorithm = entry.totpAlgorithm
             )
         } catch (e: Exception) {
-            Logcat.e("TwoFAUtils", "Failed to generate TOTP from entry (isSilent=$isSilent)", e)
+            Logcat.e("TwoFAUtils", "Failed to generate TOTP from entry", e)
             null
         }
     }
@@ -56,10 +55,8 @@ object TwoFAUtils {
             val algoUpper = algorithm.uppercase()
             val isSteam = algoUpper == "STEAM"
             
-            // 1. 解码密钥
             val decodedKey = if (isSteam) {
                 try {
-                    // Steam 的 shared_secret 可能是 Base64 (从 JSON 提取) 或 Base32 (手动输入)
                     if (secret.length == 32 && !secret.contains("/") && !secret.contains("+")) {
                         base32Decode(secret)
                     } else {
@@ -74,12 +71,10 @@ object TwoFAUtils {
 
             if (decodedKey.isEmpty()) return "INVALID"
 
-            // 2. 计算时间步长 (Steam 固定 30s)
             val timeSeconds = timestamp ?: (System.currentTimeMillis() / 1000)
             val timeWindow = timeSeconds / period
             val data = ByteBuffer.allocate(8).putLong(timeWindow).array()
 
-            // 3. HMAC 签名 (Steam 强制使用 SHA1)
             val hmacAlgo = when (algoUpper) {
                 "SHA256" -> "HmacSHA256"
                 "SHA512" -> "HmacSHA512"
@@ -91,11 +86,9 @@ object TwoFAUtils {
             mac.init(signKey)
             val hash = mac.doFinal(data)
 
-            // 4. 生成最终代码
             return if (isSteam) {
                 generateSteamCode(hash)
             } else {
-                // 标准数字逻辑
                 val offset = hash[hash.size - 1].toInt() and 0x0f
                 val truncatedHash = ((hash[offset].toInt() and 0x7f) shl 24) or
                         ((hash[offset + 1].toInt() and 0xff) shl 16) or
@@ -111,17 +104,10 @@ object TwoFAUtils {
         }
     }
 
-    /**
-     * Steam 特有的 5 位字母数字验证码生成算法
-     * 字符集: 23456789BCDFGHJKMNPQRTVWXY (26个字符)
-     */
     private fun generateSteamCode(hash: ByteArray): String {
         val steamChars = "23456789BCDFGHJKMNPQRTVWXY"
-        val alphabetSize = steamChars.length // 应为 26
-
+        val alphabetSize = steamChars.length
         val offset = hash[hash.size - 1].toInt() and 0x0f
-
-        // RFC 4226 动态截断
         var fullCode = ((hash[offset].toInt() and 0x7f) shl 24) or
                 ((hash[offset + 1].toInt() and 0xff) shl 16) or
                 ((hash[offset + 2].toInt() and 0xff) shl 8) or
@@ -138,22 +124,16 @@ object TwoFAUtils {
     private fun base32Decode(base32: String): ByteArray {
         val clean = base32.uppercase().replace(" ", "").replace("-", "").replace("=", "")
         if (clean.isEmpty()) return byteArrayOf()
-
         val output = ByteArray(clean.length * 5 / 8)
-        var buffer = 0
-        var bitsLeft = 0
-        var index = 0
-
+        var buffer = 0; var bitsLeft = 0; var index = 0
         for (char in clean) {
             val value = when (char) {
                 in 'A'..'Z' -> char - 'A'
                 in '2'..'7' -> char - '2' + 26
                 else -> continue
             }
-
             buffer = (buffer shl 5) or value
             bitsLeft += 5
-
             if (bitsLeft >= 8) {
                 bitsLeft -= 8
                 output[index++] = (buffer shr bitsLeft).toByte()

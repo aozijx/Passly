@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.common.EmptyVaultPlaceholder
@@ -51,33 +52,33 @@ import com.example.poop.common.base.VaultItem
 import com.example.poop.components.items.AutoFillItem
 import com.example.poop.components.items.TwoFAItem
 import com.example.poop.core.AddType
+import com.example.poop.features.vault.VaultViewModel
+import com.example.poop.features.settings.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VaultContent(activity: FragmentActivity, viewModel: MainViewModel) {
-    val items by viewModel.vaultItems.collectAsState()
+fun VaultContent(
+    activity: FragmentActivity, 
+    mainViewModel: MainViewModel,
+    vaultViewModel: VaultViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel()
+) {
+    val items by vaultViewModel.vaultItems.collectAsState()
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     
     val listState = rememberLazyListState()
     var isFabVisible by remember { mutableStateOf(true) }
 
-    // 使用 NestedScrollConnection 监听滚动，这比直接监听 LazyListState 更稳定
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                // available.y < 0 代表上划（内容上移），available.y > 0 代表下划
-                if (available.y < -1) {
-                    isFabVisible = false
-                } else if (available.y > 1) {
-                    isFabVisible = true
-                }
+                if (available.y < -1) isFabVisible = false else if (available.y > 1) isFabVisible = true
                 return Offset.Zero
             }
         }
     }
 
-    // 预解析字符串资源
     val categoryAutofill = stringResource(R.string.category_autofill)
 
     LaunchedEffect(scrollBehavior.state.collapsedFraction) {
@@ -91,27 +92,26 @@ fun VaultContent(activity: FragmentActivity, viewModel: MainViewModel) {
     }
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { 
-        it?.let { viewModel.startExport(it) } 
+        it?.let { settingsViewModel.startExport(it) } 
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { 
-        it?.let { viewModel.startImport(it) } 
+        it?.let { settingsViewModel.startImport(it) } 
     }
 
-    LaunchedEffect(viewModel.backupMessage) {
-        viewModel.backupMessage?.let {
+    LaunchedEffect(settingsViewModel.backupMessage) {
+        settingsViewModel.backupMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            viewModel.clearBackupMessage()
+            settingsViewModel.clearBackupMessage()
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            // 合并多个 NestedScrollConnection
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).nestedScroll(nestedScrollConnection),
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             topBar = {
                 VaultTopBar(
-                    viewModel = viewModel,
+                    vaultViewModel = vaultViewModel,
                     scrollBehavior = scrollBehavior,
                     onExportClick = { exportLauncher.launch("vault_backup_${System.currentTimeMillis()}.poop") },
                     onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) }
@@ -119,7 +119,7 @@ fun VaultContent(activity: FragmentActivity, viewModel: MainViewModel) {
             },
             floatingActionButton = { 
                 VaultFab(
-                    viewModel = viewModel,
+                    viewModel = vaultViewModel,
                     isVisible = isFabVisible
                 ) 
             }
@@ -137,13 +137,18 @@ fun VaultContent(activity: FragmentActivity, viewModel: MainViewModel) {
                         items(items, key = { it.id }) { item -> 
                             when {
                                 item.totpSecret != null -> {
-                                    TwoFAItem(entry = item, viewModel = viewModel, showCode = viewModel.showTOTPCode)
+                                    TwoFAItem(
+                                        entry = item, 
+                                        vaultViewModel = vaultViewModel, 
+                                        mainViewModel = mainViewModel,
+                                        showCode = vaultViewModel.showTOTPCode
+                                    )
                                 }
                                 item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
-                                    AutoFillItem(entry = item, viewModel = viewModel)
+                                    AutoFillItem(entry = item, viewModel = vaultViewModel)
                                 }
                                 else -> {
-                                    VaultItem(entry = item, viewModel = viewModel)
+                                    VaultItem(entry = item, viewModel = vaultViewModel)
                                 }
                             }
                         }
@@ -151,12 +156,17 @@ fun VaultContent(activity: FragmentActivity, viewModel: MainViewModel) {
                     }
                 }
 
-                VaultDialogs(activity = activity, viewModel = viewModel)
+                VaultDialogs(
+                    activity = activity, 
+                    mainViewModel = mainViewModel, 
+                    vaultViewModel = vaultViewModel,
+                    settingsViewModel = settingsViewModel
+                )
             }
         }
 
         AnimatedVisibility(
-            visible = viewModel.addType == AddType.SCAN,
+            visible = vaultViewModel.addType == AddType.SCAN,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
         ) {
@@ -166,8 +176,9 @@ fun VaultContent(activity: FragmentActivity, viewModel: MainViewModel) {
             ) {
                 VaultScanner(
                     activity = activity,
-                    mainViewModel = viewModel,
-                    onDismiss = { viewModel.dismissAddDialog() }
+                    mainViewModel = mainViewModel,
+                    vaultViewModel = vaultViewModel,
+                    onDismiss = { vaultViewModel.addType = AddType.NONE }
                 )
             }
         }

@@ -1,4 +1,4 @@
-package com.example.poop.util
+package com.example.poop.core.util
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.net.Uri
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
+import com.example.poop.util.Logcat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.google.zxing.BarcodeFormat
@@ -27,7 +28,8 @@ object QrCodeUtils {
             val bitmap = createBitmap(width, height, Bitmap.Config.RGB_565)
             for (x in 0 until width) {
                 for (y in 0 until height) {
-                    bitmap[x, y] = if (bitMatrix.get(x, y)) Color.BLACK else Color.WHITE
+                    val isBlack = bitMatrix.get(x, y)
+                    bitmap[x, y] = if (isBlack) Color.BLACK else Color.WHITE
                 }
             }
             bitmap

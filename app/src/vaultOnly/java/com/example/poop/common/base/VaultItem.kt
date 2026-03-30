@@ -16,9 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.poop.MainViewModel
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.common.icons.VaultItemIcon
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
 
 /**
  * 保险库条目列表项：通用列表卡片
@@ -27,7 +27,7 @@ import com.example.poop.data.VaultEntry
 @Composable
 fun VaultItem(
     entry: VaultEntry,
-    viewModel: MainViewModel
+    viewModel: VaultViewModel
 ) {
     Card(
         onClick = { viewModel.showDetail(entry) },

@@ -25,15 +25,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.common.icons.VaultItemIcon
-import com.example.poop.data.VaultEntry
+import com.example.poop.data.model.VaultEntry
+import com.example.poop.features.vault.VaultViewModel
 
 @Composable
 fun AutoFillItem(
     entry: VaultEntry,
-    viewModel: MainViewModel
+    viewModel: VaultViewModel
 ) {
     // 判断是否为自动抓取的“静默”数据
     val isAutoCaptured = entry.category == stringResource(R.string.category_autofill)

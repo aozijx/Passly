@@ -24,16 +24,18 @@ import com.example.poop.R
 import com.example.poop.common.DetailItem
 import com.example.poop.common.EditTextField
 import com.example.poop.common.state.VaultEditState
-import com.example.poop.data.VaultEntry
+import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.data.model.VaultEntry
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.types.autofill.upgradeToSecureEntry
 import com.example.poop.util.ClipboardUtils
-import com.example.poop.utils.CryptoManager
 
 @Composable
 fun CredentialSection(
     activity: FragmentActivity,
     item: VaultEntry,
-    viewModel: MainViewModel,
+    vaultViewModel: VaultViewModel,
+    mainViewModel: MainViewModel,
     editState: VaultEditState,
     revealedUsername: String?,
     revealedPassword: String?,
@@ -55,11 +57,13 @@ fun CredentialSection(
             onValueChange = { editState.editedUsername = it },
             onCopy = {
                 if (revealedUsername != null) ClipboardUtils.copy(context, revealedUsername)
-                else viewModel.decryptSingle(activity, item.username) { it?.let { ClipboardUtils.copy(context, it) } }
+                else vaultViewModel.decryptSingle(activity, item.username, mainViewModel::authenticate) { 
+                    it?.let { ClipboardUtils.copy(context, it) } 
+                }
             },
             onSave = { newValue ->
                 saveEncrypted(newValue, revealedUsername, { editState.isEditingUsername = false }) { encrypted ->
-                    viewModel.updateVaultEntry(item.copy(username = encrypted))
+                    vaultViewModel.updateVaultEntry(item.copy(username = encrypted))
                     onUsernameRevealed(newValue)
                 }
             }
@@ -77,11 +81,13 @@ fun CredentialSection(
                 onValueChange = { editState.editedPassword = it },
                 onCopy = {
                     if (revealedPassword != null) ClipboardUtils.copy(context, revealedPassword)
-                    else viewModel.decryptSingle(activity, item.password) { it?.let { ClipboardUtils.copy(context, it) } }
+                    else vaultViewModel.decryptSingle(activity, item.password, mainViewModel::authenticate) { 
+                        it?.let { ClipboardUtils.copy(context, it) } 
+                    }
                 },
                 onSave = { newValue ->
                     saveEncrypted(newValue, revealedPassword, { editState.isEditingPassword = false }) { encrypted ->
-                        viewModel.updateVaultEntry(item.copy(password = encrypted))
+                        vaultViewModel.updateVaultEntry(item.copy(password = encrypted))
                         onPasswordRevealed(newValue)
                     }
                 }
@@ -93,11 +99,11 @@ fun CredentialSection(
             Button(
                 onClick = {
                     val fieldsToDecrypt = listOfNotNull(item.username.takeIf { it.isNotEmpty() }, item.password.takeIf { it.isNotEmpty() })
-                    viewModel.decryptMultiple(activity, fieldsToDecrypt) { results ->
+                    vaultViewModel.decryptMultiple(activity, fieldsToDecrypt, mainViewModel::authenticate) { results ->
                         onUsernameRevealed(results.getOrNull(0))
                         onPasswordRevealed(results.getOrNull(1))
                         if (isSilentData) {
-                            upgradeToSecureEntry(item, viewModel)
+                            upgradeToSecureEntry(item, vaultViewModel)
                             onUpgraded()
                         }
                     }
@@ -116,9 +122,6 @@ fun CredentialSection(
     }
 }
 
-/**
- * 封装的通用凭据行，处理显示与编辑切换
- */
 @Composable
 private fun CredentialRow(
     label: String,
@@ -160,9 +163,6 @@ private fun CredentialRow(
     }
 }
 
-/**
- * 辅助保存方法：处理脏检查与加密流程
- */
 private fun saveEncrypted(
     newValue: String,
     oldValue: String?,
@@ -172,9 +172,12 @@ private fun saveEncrypted(
     if (newValue == oldValue) {
         onClose()
     } else {
-        CryptoManager.encrypt(newValue, isSilent = true)?.let { encrypted ->
+        try {
+            val encrypted = CryptoManager.encrypt(newValue)
             onSuccess(encrypted)
             onClose()
+        } catch (e: Exception) {
+            // 加密失败处理
         }
     }
 }
