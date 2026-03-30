@@ -53,7 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.core.common.AddType
-import com.example.poop.core.designsystem.EmptyVaultPlaceholder
+import com.example.poop.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.example.poop.core.designsystem.base.VaultItem
 import com.example.poop.core.designsystem.components.AutoFillItem
 import com.example.poop.core.designsystem.components.TwoFAItem

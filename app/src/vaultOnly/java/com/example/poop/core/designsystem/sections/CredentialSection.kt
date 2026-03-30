@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.MainViewModel
 import com.example.poop.R
-import com.example.poop.core.designsystem.DetailItem
-import com.example.poop.core.designsystem.EditTextField
+import com.example.poop.core.designsystem.detail.DetailItem
+import com.example.poop.core.designsystem.detail.EditTextField
 import com.example.poop.core.designsystem.state.VaultEditState
 import com.example.poop.core.crypto.CryptoManager
 import com.example.poop.data.model.VaultEntry

@@ -1,4 +1,4 @@
-package com.example.poop.core.designsystem
+package com.example.poop.core.designsystem.widgets
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

@@ -33,8 +33,8 @@ import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.MainViewModel
 import com.example.poop.R
-import com.example.poop.core.designsystem.DetailActions
-import com.example.poop.core.designsystem.DetailHeader
+import com.example.poop.core.designsystem.detail.DetailActions
+import com.example.poop.core.designsystem.detail.DetailHeader
 import com.example.poop.core.designsystem.sections.CategoryItem
 import com.example.poop.core.designsystem.sections.CredentialSection
 import com.example.poop.core.designsystem.state.VaultEditState

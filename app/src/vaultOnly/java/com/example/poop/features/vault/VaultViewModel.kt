@@ -10,11 +10,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.poop.core.common.AddType
 import com.example.poop.core.common.VaultTab
 import com.example.poop.core.crypto.CryptoManager
+import com.example.poop.core.designsystem.state.TotpState
 import com.example.poop.data.local.AppDatabase
 import com.example.poop.data.local.VaultPrefs
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.data.repository.VaultRepository
-import com.example.poop.features.vault.TotpState
 import com.example.poop.core.util.TwoFAUtils
 import com.example.poop.core.util.VaultFileUtils
 import com.example.poop.util.Logcat

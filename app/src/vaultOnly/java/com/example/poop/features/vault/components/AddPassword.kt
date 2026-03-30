@@ -13,8 +13,8 @@ import com.example.poop.core.designsystem.base.BaseVaultDialog
 import com.example.poop.core.designsystem.fields.CategoryDropdown
 import com.example.poop.core.designsystem.fields.PasswordInput
 import com.example.poop.core.designsystem.fields.VaultTextField
+import com.example.poop.core.designsystem.state.PasswordAddState
 import com.example.poop.data.model.VaultEntry
-import com.example.poop.features.vault.PasswordAddState
 import com.example.poop.features.vault.VaultViewModel
 
 @Composable

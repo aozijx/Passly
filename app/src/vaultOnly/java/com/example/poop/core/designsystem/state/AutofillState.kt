@@ -1,4 +1,4 @@
-package com.example.poop.features.vault
+package com.example.poop.core.designsystem.state
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

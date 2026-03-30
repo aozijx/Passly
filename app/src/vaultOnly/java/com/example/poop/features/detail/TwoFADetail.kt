@@ -50,17 +50,17 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.example.poop.MainViewModel
 import com.example.poop.R
-import com.example.poop.core.designsystem.DetailActions
-import com.example.poop.core.designsystem.DetailHeader
+import com.example.poop.core.designsystem.detail.DetailActions
+import com.example.poop.core.designsystem.detail.DetailHeader
 import com.example.poop.core.designsystem.sections.CategoryItem
 import com.example.poop.core.designsystem.sections.TotpConfigForm
 import com.example.poop.core.designsystem.state.VaultEditState
+import com.example.poop.core.designsystem.state.TotpEditState
 import com.example.poop.core.crypto.CryptoManager
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.util.ClipboardUtils
 import com.example.poop.core.util.QrCodeUtils
-import com.example.poop.features.vault.TotpEditState
 import java.net.URLEncoder
 
 @Composable
