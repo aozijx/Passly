@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -27,7 +26,6 @@ import com.example.poop.core.designsystem.state.VaultEditState
 import com.example.poop.core.crypto.CryptoManager
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.vault.VaultViewModel
-import com.example.poop.features.vault.upgradeToSecureEntry
 import com.example.poop.util.ClipboardUtils
 
 @Composable
@@ -39,15 +37,12 @@ fun CredentialSection(
     editState: VaultEditState,
     revealedUsername: String?,
     revealedPassword: String?,
-    isSilentData: Boolean,
     onUsernameRevealed: (String?) -> Unit,
-    onPasswordRevealed: (String?) -> Unit,
-    onUpgraded: () -> Unit = {}
+    onPasswordRevealed: (String?) -> Unit
 ) {
     val context = LocalContext.current
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // 1. 账号行
         CredentialRow(
             label = stringResource(R.string.label_username),
             isEditing = editState.isEditingUsername,
@@ -69,7 +64,6 @@ fun CredentialSection(
             }
         )
 
-        // 2. 密码行 (如果是 TOTP 类型且密码为空则不显示)
         val showPassword = item.password.isNotEmpty() || item.entryType != 1
         if (showPassword) {
             CredentialRow(
@@ -94,29 +88,32 @@ fun CredentialSection(
             )
         }
 
-        // 3. 验证与升级按钮
-        if (revealedUsername == null || revealedPassword == null || isSilentData) {
+        if (revealedUsername == null || revealedPassword == null) {
             Button(
                 onClick = {
-                    val fieldsToDecrypt = listOfNotNull(item.username.takeIf { it.isNotEmpty() }, item.password.takeIf { it.isNotEmpty() })
+                    val fieldsToDecrypt = mutableListOf<String>()
+                    if (revealedUsername == null && item.username.isNotEmpty()) {
+                        fieldsToDecrypt.add(item.username)
+                    }
+                    if (revealedPassword == null && item.password.isNotEmpty()) {
+                        fieldsToDecrypt.add(item.password)
+                    }
                     vaultViewModel.decryptMultiple(activity, fieldsToDecrypt, mainViewModel::authenticate) { results ->
-                        onUsernameRevealed(results.getOrNull(0))
-                        onPasswordRevealed(results.getOrNull(1))
-                        if (isSilentData) {
-                            upgradeToSecureEntry(item, vaultViewModel)
-                            onUpgraded()
+                        var resultIndex = 0
+                        if (revealedUsername == null && item.username.isNotEmpty()) {
+                            onUsernameRevealed(results.getOrNull(resultIndex++))
+                        }
+                        if (revealedPassword == null && item.password.isNotEmpty()) {
+                            onPasswordRevealed(results.getOrNull(resultIndex))
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Icon(if (isSilentData) Icons.Default.Security else Icons.Default.Visibility, null)
+                Icon(Icons.Default.Visibility, null)
                 Spacer(Modifier.width(8.dp))
-                Text(
-                    if (isSilentData) stringResource(R.string.vault_upgrade_security) 
-                    else stringResource(R.string.vault_reveal_info)
-                )
+                Text(stringResource(R.string.vault_reveal_info))
             }
         }
     }
@@ -177,7 +174,6 @@ private fun saveEncrypted(
             onSuccess(encrypted)
             onClose()
         } catch (e: Exception) {
-            // 加密失败处理
         }
     }
 }

@@ -5,15 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Launch
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -21,7 +18,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,7 +40,6 @@ import com.example.poop.core.designsystem.sections.CredentialSection
 import com.example.poop.core.designsystem.state.VaultEditState
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.vault.VaultViewModel
-import com.example.poop.features.vault.rememberDecryptedAutofillData
 import com.example.poop.util.ClipboardUtils
 import com.example.poop.util.Logcat
 
@@ -58,22 +53,8 @@ fun AutoFillDetailDialog(
     val context = LocalContext.current
     var revealedUsername by remember { mutableStateOf<String?>(null) }
     var revealedPassword by remember { mutableStateOf<String?>(null) }
-    var isSilentData by remember { mutableStateOf(false) }
 
-    // 初始化通用的编辑状态
     val editState = remember(item) { VaultEditState(item) }
-
-    // 1. 应用静默解密逻辑
-    val (silentUser, silentPass) = rememberDecryptedAutofillData(
-        entry = item,
-        onReadyToUpgrade = { isSilentData = true }
-    )
-
-    // 如果是静默数据，且尚未被显式覆盖，则同步显示
-    LaunchedEffect(silentUser, silentPass) {
-        if (silentUser != null) revealedUsername = silentUser
-        if (silentPass != null) revealedPassword = silentPass
-    }
 
     AlertDialog(
         onDismissRequest = { vaultViewModel.dismissDetail() },
@@ -89,7 +70,6 @@ fun AutoFillDetailDialog(
 
                 CategoryItem(vaultViewModel, item, editState)
 
-                // 域名详情
                 if (!item.associatedDomain.isNullOrBlank()) {
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { ClipboardUtils.copy(context, item.associatedDomain) }.padding(vertical = 4.dp),
@@ -125,7 +105,6 @@ fun AutoFillDetailDialog(
                     }
                 }
 
-                // 包名详情
                 if (!item.associatedAppPackage.isNullOrBlank()) {
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { ClipboardUtils.copy(context, item.associatedAppPackage) }.padding(vertical = 4.dp),
@@ -161,21 +140,6 @@ fun AutoFillDetailDialog(
                     }
                 }
 
-                if (isSilentData) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                    ) {
-                        Icon(Icons.Default.Security, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.vault_upgrade_security),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
                 CredentialSection(
                     activity = activity,
                     item = item,
@@ -184,7 +148,6 @@ fun AutoFillDetailDialog(
                     editState = editState,
                     revealedUsername = revealedUsername,
                     revealedPassword = revealedPassword,
-                    isSilentData = isSilentData,
                     onUsernameRevealed = { revealedUsername = it },
                     onPasswordRevealed = { revealedPassword = it }
                 )

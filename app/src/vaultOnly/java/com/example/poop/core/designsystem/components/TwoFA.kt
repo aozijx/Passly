@@ -14,20 +14,16 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.fragment.app.FragmentActivity
-import com.example.poop.MainViewModel
-import com.example.poop.R
 import com.example.poop.core.designsystem.icons.VaultItemIcon
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.vault.VaultViewModel
@@ -39,25 +35,20 @@ import com.example.poop.features.vault.VaultViewModel
 fun TwoFAItem(
     entry: VaultEntry,
     vaultViewModel: VaultViewModel,
-    mainViewModel: MainViewModel,
     showCode: Boolean = true
 ) {
-    val context = LocalContext.current
     val totpStates by vaultViewModel.totpStates.collectAsState()
     val currentState = totpStates[entry.id]
     
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
+    
+    LaunchedEffect(entry.id) {
+        vaultViewModel.autoUnlockTotp(entry)
+    }
 
     Card(
         onClick = { 
-            if (currentState?.decryptedSecret == null) {
-                // 调用 vaultViewModel 的解锁逻辑，并传入 mainViewModel 的认证能力
-                vaultViewModel.ensureTotpUnlocked(context as FragmentActivity, entry) { activity, title, subtitle, _, onSuccess ->
-                    mainViewModel.authenticate(activity, title, subtitle, onSuccess = onSuccess)
-                }
-            } else {
-                vaultViewModel.showDetail(entry)
-            }
+            vaultViewModel.showDetail(entry)
         },
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -96,18 +87,14 @@ fun TwoFAItem(
 
             if (showCode) {
                 Text(
-                    text = if (currentState?.decryptedSecret == null) {
-                        stringResource(R.string.auth_to_show)
-                    } else {
-                        if (isSteam) currentState.code else currentState.code.chunked(3).joinToString(" ")
-                    },
+                    text = if (isSteam) (currentState?.code ?: "------") else (currentState?.code?.chunked(3)?.joinToString(" ") ?: "------"),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 1.sp,
-                        fontSize = if (currentState?.decryptedSecret == null) 14.sp else 18.sp
+                        fontSize = 18.sp
                     ),
-                    color = if (currentState?.decryptedSecret == null) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
 

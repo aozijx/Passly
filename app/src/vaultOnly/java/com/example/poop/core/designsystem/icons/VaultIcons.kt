@@ -128,8 +128,12 @@ fun VaultItemIcon(
 ) {
     val context = LocalContext.current
     val appIcon = remember(item.associatedAppPackage) {
-        item.associatedAppPackage?.let { pkg ->
-            PackageUtils.getAppIconDrawable(context, pkg)
+        try {
+            item.associatedAppPackage?.let { pkg ->
+                PackageUtils.getAppIconDrawable(context, pkg)
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 

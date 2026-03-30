@@ -2,7 +2,6 @@ package com.example.poop.core.util
 
 import android.content.Context
 import android.net.Uri
-import android.util.Base64
 import android.util.JsonReader
 import android.util.JsonToken
 import android.util.JsonWriter
@@ -117,7 +116,6 @@ object BackupManager {
         writer.name("matchType").value(entry.matchType.toLong())
         writer.name("customFieldsJson").value(entry.customFieldsJson?.let { decryptField(it) })
         writer.name("autoSubmit").value(entry.autoSubmit)
-        writer.name("encryptedImageData").value(entry.encryptedImageData?.let { Base64.encodeToString(it, Base64.NO_WRAP) })
         writer.name("strengthScore").value(entry.strengthScore?.toDouble())
         writer.name("lastUsedAt").value(entry.lastUsedAt)
         writer.name("usageCount").value(entry.usageCount.toLong())
@@ -201,6 +199,12 @@ object BackupManager {
                 val versionBuf = ByteArray(1)
                 input.read(versionBuf)
                 val version = versionBuf[0].toInt() and 0xFF
+                Logcat.i(TAG, "读取到备份文件版本: $version")
+                
+                if (version > BACKUP_VERSION) {
+                    return@withContext Result.failure(Exception("备份文件版本 ($version) 高于当前应用支持的版本 ($BACKUP_VERSION)，请更新应用"))
+                }
+                
                 val salt = ByteArray(SALT_LENGTH)
                 input.read(salt)
                 val iv = ByteArray(IV_LENGTH)
@@ -235,7 +239,7 @@ object BackupManager {
         var paymentPin: String? = null; var sshPrivateKey: String? = null; var cryptoSeedPhrase: String? = null
         var entryType = 0; var associatedAppPackage: String? = null; var associatedDomain: String? = null
         var uriList: List<String>? = null; var matchType = 0; var customFieldsJson: String? = null
-        var autoSubmit = false; var encryptedImageData: ByteArray? = null; var strengthScore: Float? = null
+        var autoSubmit = false; var strengthScore: Float? = null
         var lastUsedAt: Long? = null; var usageCount = 0; var favorite = false; var tags: List<String>? = null
         var createdAt: Long? = System.currentTimeMillis(); var updatedAt: Long? = null; var expiresAt: Long? = null
 
@@ -270,7 +274,6 @@ object BackupManager {
                 "matchType" -> matchType = reader.nextInt()
                 "customFieldsJson" -> customFieldsJson = reader.nextNullableString()
                 "autoSubmit" -> autoSubmit = reader.nextBoolean()
-                "encryptedImageData" -> encryptedImageData = reader.nextNullableString()?.let { Base64.decode(it, Base64.NO_WRAP) }
                 "strengthScore" -> strengthScore = reader.nextNullableDouble()?.toFloat()
                 "lastUsedAt" -> lastUsedAt = reader.nextNullableLong()
                 "usageCount" -> usageCount = reader.nextInt()
@@ -296,7 +299,7 @@ object BackupManager {
             cryptoSeedPhrase = cryptoSeedPhrase, entryType = entryType,
             associatedAppPackage = associatedAppPackage, associatedDomain = associatedDomain,
             uriList = uriList, matchType = matchType, customFieldsJson = customFieldsJson,
-            autoSubmit = autoSubmit, encryptedImageData = encryptedImageData,
+            autoSubmit = autoSubmit, encryptedImageData = null,
             strengthScore = strengthScore, lastUsedAt = lastUsedAt, usageCount = usageCount,
             favorite = favorite, tags = tags, createdAt = createdAt,
             updatedAt = updatedAt, expiresAt = expiresAt

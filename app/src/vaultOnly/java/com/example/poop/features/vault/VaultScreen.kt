@@ -178,8 +178,7 @@ fun VaultContent(
                                     item.totpSecret != null -> {
                                         TwoFAItem(
                                             entry = item, 
-                                            vaultViewModel = vaultViewModel, 
-                                            mainViewModel = mainViewModel,
+                                            vaultViewModel = vaultViewModel,
                                             showCode = vaultViewModel.showTOTPCode
                                         )
                                     }

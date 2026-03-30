@@ -3,6 +3,7 @@ package com.example.poop.util
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
@@ -91,9 +92,13 @@ object PackageUtils {
      */
     fun getAppIconDrawable(context: Context, packageName: String): Drawable? {
         return try {
+            if (packageName.isBlank()) return null
             val pm = context.packageManager
             val appInfo = pm.getApplicationInfo(packageName, 0)
             appInfo.loadIcon(pm)
+        } catch (e: PackageManager.NameNotFoundException) {
+            Logcat.e("PackageUtils", "应用未安装: $packageName", e)
+            null
         } catch (e: Exception) {
             Logcat.e("PackageUtils", "获取图标失败: $packageName", e)
             null
@@ -105,12 +110,17 @@ object PackageUtils {
      */
     fun getAppLabelAndIcon(context: Context, packageName: String): Pair<String, Drawable>? {
         return try {
+            if (packageName.isBlank()) return null
             val pm = context.packageManager
             val appInfo = pm.getApplicationInfo(packageName, 0)
             val label = appInfo.loadLabel(pm).toString()
             val icon = appInfo.loadIcon(pm)
             label to icon
+        } catch (e: PackageManager.NameNotFoundException) {
+            Logcat.e("PackageUtils", "应用未安装: $packageName", e)
+            null
         } catch (e: Exception) {
+            Logcat.e("PackageUtils", "获取应用信息失败: $packageName", e)
             null
         }
     }

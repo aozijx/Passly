@@ -148,6 +148,17 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun autoUnlockTotp(entry: VaultEntry) {
+        if (_totpStates.value.containsKey(entry.id)) return
+        val encrypted = entry.totpSecret ?: return
+        try {
+            val decrypted = CryptoManager.decrypt(encrypted)
+            unlockTotp(entry, decrypted)
+        } catch (e: Exception) {
+            Logcat.e("VaultViewModel", "Auto unlock failed", e)
+        }
+    }
+
     fun showDetail(entry: VaultEntry) { detailItem = entry }
     fun dismissDetail() { detailItem = null }
     fun addItem(entry: VaultEntry) { viewModelScope.launch { repository.insert(entry); addType = AddType.NONE } }
