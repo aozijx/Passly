@@ -5,7 +5,7 @@ import com.example.poop.R
 import com.example.poop.core.crypto.CryptoManager
 import com.example.poop.data.local.AppDatabase
 import com.example.poop.data.model.VaultEntry
-import com.example.poop.types.autofill.AutofillTitleGenerator
+import com.example.poop.domain.model.AutofillTitleGenerator
 import com.example.poop.util.Logcat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first

@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
-import com.example.poop.components.layout.VaultContent
+import com.example.poop.features.vault.VaultContent
 import com.example.poop.ui.theme.PoopTheme
 
 class MainActivity : FragmentActivity() {
