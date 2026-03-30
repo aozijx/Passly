@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +22,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.launch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,6 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -56,9 +61,11 @@ import com.example.poop.core.designsystem.components.VaultDialogs
 import com.example.poop.core.designsystem.components.VaultFab
 import com.example.poop.core.designsystem.components.VaultScanner
 import com.example.poop.core.designsystem.components.VaultTopBar
+import com.example.poop.core.common.VaultTab
 import com.example.poop.features.settings.SettingsViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun VaultContent(
     activity: FragmentActivity, 
@@ -67,11 +74,14 @@ fun VaultContent(
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
     val items by vaultViewModel.vaultItems.collectAsState()
+    val selectedTab by vaultViewModel.selectedTab.collectAsState()
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     
     val listState = rememberLazyListState()
     var isFabVisible by remember { mutableStateOf(true) }
+    val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
+    val scope = rememberCoroutineScope()
 
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
@@ -83,6 +93,21 @@ fun VaultContent(
     }
 
     val categoryAutofill = stringResource(R.string.category_autofill)
+
+    LaunchedEffect(selectedTab) {
+        if (pagerState.currentPage != selectedTab.ordinal) {
+            scope.launch {
+                pagerState.animateScrollToPage(selectedTab.ordinal)
+            }
+        }
+    }
+
+    LaunchedEffect(pagerState.currentPage) {
+        val newTab = VaultTab.entries[pagerState.currentPage]
+        if (newTab != selectedTab) {
+            (vaultViewModel.selectedTab as MutableStateFlow).value = newTab
+        }
+    }
 
     LaunchedEffect(scrollBehavior.state.collapsedFraction) {
         val window = activity.window
@@ -128,34 +153,46 @@ fun VaultContent(
             }
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize().padding(innerPadding).background(MaterialTheme.colorScheme.surface)) {
-                if (items.isEmpty()) {
-                    EmptyVaultPlaceholder()
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(), 
-                        contentPadding = PaddingValues(16.dp), 
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(items, key = { it.id }) { item -> 
-                            when {
-                                item.totpSecret != null -> {
-                                    TwoFAItem(
-                                        entry = item, 
-                                        vaultViewModel = vaultViewModel, 
-                                        mainViewModel = mainViewModel,
-                                        showCode = vaultViewModel.showTOTPCode
-                                    )
-                                }
-                                item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
-                                    AutoFillItem(entry = item, viewModel = vaultViewModel)
-                                }
-                                else -> {
-                                    VaultItem(entry = item, viewModel = vaultViewModel)
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { pageIndex ->
+                    val currentTab = VaultTab.entries[pageIndex]
+                    val filteredItems = when (currentTab) {
+                        VaultTab.ALL -> items
+                        VaultTab.PASSWORDS -> items.filter { it.totpSecret == null }
+                        VaultTab.TOTP -> items.filter { it.totpSecret != null }
+                    }
+                    
+                    if (filteredItems.isEmpty()) {
+                        EmptyVaultPlaceholder()
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(), 
+                            contentPadding = PaddingValues(16.dp), 
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(filteredItems, key = { it.id }) { item -> 
+                                when {
+                                    item.totpSecret != null -> {
+                                        TwoFAItem(
+                                            entry = item, 
+                                            vaultViewModel = vaultViewModel, 
+                                            mainViewModel = mainViewModel,
+                                            showCode = vaultViewModel.showTOTPCode
+                                        )
+                                    }
+                                    item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
+                                        AutoFillItem(entry = item, viewModel = vaultViewModel)
+                                    }
+                                    else -> {
+                                        VaultItem(entry = item, viewModel = vaultViewModel)
+                                    }
                                 }
                             }
+                            item { Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp)) }
                         }
-                        item { Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp)) }
                     }
                 }
 

@@ -60,21 +60,15 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val vaultItems: StateFlow<List<VaultEntry>> =
-        combine(_searchQuery, _selectedCategory, _selectedTab) { query, category, tab ->
-            Triple(query, category, tab)
-        }.flatMapLatest { (query, category, tab) ->
+        combine(_searchQuery, _selectedCategory) { query, category ->
+            Pair(query, category)
+        }.flatMapLatest { (query, category) ->
             val baseFlow = when {
                 query.isNotEmpty() -> repository.searchEntries(query)
                 category != null -> repository.getEntriesByCategory(category)
                 else -> repository.allEntries
             }
-            baseFlow.map { entries ->
-                when (tab) {
-                    VaultTab.ALL -> entries
-                    VaultTab.PASSWORDS -> entries.filter { it.totpSecret == null }
-                    VaultTab.TOTP -> entries.filter { it.totpSecret != null }
-                }
-            }
+            baseFlow
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

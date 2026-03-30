@@ -9,6 +9,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -54,11 +57,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -87,9 +94,17 @@ fun VaultTopBar(
 
     val autofillToastMessage = stringResource(R.string.vault_toast_enable_autofill_manual)
     var showCategorySubMenu by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(vaultViewModel.isMoreMenuExpanded) {
         if (!vaultViewModel.isMoreMenuExpanded) showCategorySubMenu = false
+    }
+
+    LaunchedEffect(vaultViewModel.isSearchActive) {
+        if (vaultViewModel.isSearchActive) {
+            focusRequester.requestFocus()
+        }
     }
 
     Column {
@@ -101,7 +116,7 @@ fun VaultTopBar(
                     TextField(
                         value = searchQuery,
                         onValueChange = { vaultViewModel.onSearchQueryChange(it) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                         placeholder = { Text(stringResource(R.string.vault_search_placeholder)) },
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
@@ -239,32 +254,34 @@ fun VaultTopBar(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            SecondaryTabRow(
-                selectedTabIndex = selectedTab.ordinal,
-                containerColor = MaterialTheme.colorScheme.surface,
-                indicator = {
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(selectedTab.ordinal),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            ) {
-                VaultTab.entries.forEach { tab ->
-                    Tab(
-                        selected = selectedTab == tab,
-                        onClick = { (vaultViewModel.selectedTab as MutableStateFlow).value = tab },
-                        text = {
-                            Text(
-                                stringResource(when (tab) {
-                                    VaultTab.ALL -> R.string.vault_tab_all
-                                    VaultTab.PASSWORDS -> R.string.vault_tab_passwords
-                                    VaultTab.TOTP -> R.string.vault_tab_totp
-                                }),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
+            Column {
+                SecondaryTabRow(
+                    selectedTabIndex = selectedTab.ordinal,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    indicator = {
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(selectedTab.ordinal),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                ) {
+                    VaultTab.entries.forEach { tab ->
+                        Tab(
+                            selected = selectedTab == tab,
+                            onClick = { (vaultViewModel.selectedTab as MutableStateFlow).value = tab },
+                            text = {
+                                Text(
+                                    stringResource(when (tab) {
+                                        VaultTab.ALL -> R.string.vault_tab_all
+                                        VaultTab.PASSWORDS -> R.string.vault_tab_passwords
+                                        VaultTab.TOTP -> R.string.vault_tab_totp
+                                    }),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }
