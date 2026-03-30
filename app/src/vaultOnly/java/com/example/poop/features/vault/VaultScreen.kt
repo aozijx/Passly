@@ -54,6 +54,7 @@ import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.core.common.AddType
 import com.example.poop.core.designsystem.widgets.EmptyVaultPlaceholder
+import com.example.poop.core.designsystem.widgets.SwipeToDelete
 import com.example.poop.core.designsystem.base.VaultItem
 import com.example.poop.core.designsystem.components.AutoFillItem
 import com.example.poop.core.designsystem.components.TwoFAItem
@@ -174,19 +175,24 @@ fun VaultContent(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(filteredItems, key = { it.id }) { item -> 
-                                when {
-                                    item.totpSecret != null -> {
-                                        TwoFAItem(
-                                            entry = item, 
-                                            vaultViewModel = vaultViewModel,
-                                            showCode = vaultViewModel.showTOTPCode
-                                        )
-                                    }
-                                    item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
-                                        AutoFillItem(entry = item, viewModel = vaultViewModel)
-                                    }
-                                    else -> {
-                                        VaultItem(entry = item, viewModel = vaultViewModel)
+                                SwipeToDelete(
+                                    onDelete = { vaultViewModel.itemToDelete = item },
+                                    isActive = vaultViewModel.itemToDelete?.id != item.id
+                                ) {
+                                    when {
+                                        item.totpSecret != null -> {
+                                            TwoFAItem(
+                                                entry = item, 
+                                                vaultViewModel = vaultViewModel,
+                                                showCode = vaultViewModel.showTOTPCode
+                                            )
+                                        }
+                                        item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
+                                            AutoFillItem(entry = item, viewModel = vaultViewModel)
+                                        }
+                                        else -> {
+                                            VaultItem(entry = item, viewModel = vaultViewModel)
+                                        }
                                     }
                                 }
                             }
