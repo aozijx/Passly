@@ -255,6 +255,27 @@ fun SettingsScreen(
                 )
             }
 
+            item { SectionTitle("交互设置") }
+            item {
+                SettingsSwitchItem(
+                    title = "开启滑动操作",
+                    subtitle = "滑动列表项执行删除等操作",
+                    checked = uiState.isSwipeEnabled,
+                    onCheckedChange = viewModel::toggleSwipeEnabled,
+                    shape = TopRoundedShape,
+                    showDivider = true
+                )
+            }
+            item {
+                SettingsSwitchItem(
+                    title = "滑动前需要验证",
+                    subtitle = "执行滑动操作前进行身份验证",
+                    checked = uiState.isSwipeRequireVerification,
+                    onCheckedChange = viewModel::toggleSwipeRequireVerification,
+                    shape = BottomRoundedShape
+                )
+            }
+
             item { SectionTitle("数据管理") }
             item {
                 SettingsClickableItem(

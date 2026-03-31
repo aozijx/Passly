@@ -54,7 +54,7 @@ class MainActivity : FragmentActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         // 初始验证
-        requestAuthentication(isFirstTime = true)
+        requestAuthentication()
 
         setContent {
             val isDarkModePref by viewModel.isDarkMode.collectAsState()
@@ -68,13 +68,13 @@ class MainActivity : FragmentActivity() {
                 if (viewModel.isAuthorized) {
                     VaultContent(this, viewModel)
                 } else {
-                    AuthorizationPlaceholder { requestAuthentication(isFirstTime = false) }
+                    AuthorizationPlaceholder { requestAuthentication() }
                 }
             }
         }
     }
 
-    private fun requestAuthentication(isFirstTime: Boolean) {
+    private fun requestAuthentication() {
         viewModel.authenticate(
             activity = this,
             title = getString(R.string.vault_auth_decrypt_title),
@@ -82,7 +82,7 @@ class MainActivity : FragmentActivity() {
             onSuccess = {
                 viewModel.authorize()
             },
-            onError = { error ->
+            onError = { _ ->
                 // 即使第一次认证失败也不退出应用，让用户可以重试
                 Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()
             }

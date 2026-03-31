@@ -40,7 +40,9 @@ data class SettingsUiState(
     val logContent: String? = null,
     val isLogLoading: Boolean = false,
     val logError: String? = null,
-    val exportStatus: ExportStatus? = null
+    val exportStatus: ExportStatus? = null,
+    val isSwipeEnabled: Boolean = true,
+    val isSwipeRequireVerification: Boolean = false
 )
 
 sealed class ExportStatus {
@@ -69,7 +71,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _logContent,
         _isLogLoading,
         _logError,
-        _exportStatus
+        _exportStatus,
+        preference.isSwipeEnabled,
+        preference.isSwipeRequireVerification
     ) { args ->
         SettingsUiState(
             isDarkMode = args[0] as Boolean,
@@ -81,7 +85,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             logContent = args[6] as String?,
             isLogLoading = args[7] as Boolean,
             logError = args[8] as String?,
-            exportStatus = args[9] as ExportStatus?
+            exportStatus = args[9] as ExportStatus?,
+            isSwipeEnabled = args[10] as Boolean,
+            isSwipeRequireVerification = args[11] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -284,5 +290,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun clearExportStatus() {
         _exportStatus.value = null
+    }
+
+    fun toggleSwipeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preference.setSwipeEnabled(enabled)
+        }
+    }
+
+    fun toggleSwipeRequireVerification(enabled: Boolean) {
+        viewModelScope.launch {
+            preference.setSwipeRequireVerification(enabled)
+        }
     }
 }

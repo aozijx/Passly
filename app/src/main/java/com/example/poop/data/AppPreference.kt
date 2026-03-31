@@ -20,6 +20,8 @@ class AppPreference(private val context: Context) {
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
         val LANGUAGE_KEY = stringPreferencesKey("language")
         val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
+        val SWIPE_ENABLED_KEY = booleanPreferencesKey("swipe_enabled")
+        val SWIPE_REQUIRE_VERIFICATION_KEY = booleanPreferencesKey("swipe_require_verification")
     }
 
     val isDarkMode: Flow<Boolean> = context.dataStore.data.map { it[DARK_MODE_KEY] ?: false }
@@ -33,4 +35,10 @@ class AppPreference(private val context: Context) {
 
     val isNotificationsEnabled: Flow<Boolean> = context.dataStore.data.map { it[NOTIFICATIONS_ENABLED_KEY] ?: false }
     suspend fun setNotificationsEnabled(enabled: Boolean) = context.dataStore.edit { it[NOTIFICATIONS_ENABLED_KEY] = enabled }
+
+    val isSwipeEnabled: Flow<Boolean> = context.dataStore.data.map { it[SWIPE_ENABLED_KEY] ?: true }
+    suspend fun setSwipeEnabled(enabled: Boolean) = context.dataStore.edit { it[SWIPE_ENABLED_KEY] = enabled }
+
+    val isSwipeRequireVerification: Flow<Boolean> = context.dataStore.data.map { it[SWIPE_REQUIRE_VERIFICATION_KEY] ?: false }
+    suspend fun setSwipeRequireVerification(enabled: Boolean) = context.dataStore.edit { it[SWIPE_REQUIRE_VERIFICATION_KEY] = enabled }
 }

@@ -63,6 +63,7 @@ import com.example.poop.core.designsystem.components.VaultFab
 import com.example.poop.core.designsystem.components.VaultScanner
 import com.example.poop.core.designsystem.components.VaultTopBar
 import com.example.poop.core.common.VaultTab
+import com.example.poop.data.AppPreference
 import com.example.poop.features.settings.SettingsViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -78,6 +79,9 @@ fun VaultContent(
     val selectedTab by vaultViewModel.selectedTab.collectAsState()
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    
+    val appPreference = remember { AppPreference(context) }
+    val isSwipeEnabled by appPreference.isSwipeEnabled.collectAsState(initial = true)
     
     val listState = rememberLazyListState()
     var isFabVisible by remember { mutableStateOf(true) }
@@ -175,10 +179,7 @@ fun VaultContent(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(filteredItems, key = { it.id }) { item -> 
-                                SwipeToDelete(
-                                    onDelete = { vaultViewModel.itemToDelete = item },
-                                    isActive = vaultViewModel.itemToDelete?.id != item.id
-                                ) {
+                                val itemContent = @Composable {
                                     when {
                                         item.totpSecret != null -> {
                                             TwoFAItem(
@@ -194,6 +195,17 @@ fun VaultContent(
                                             VaultItem(entry = item, viewModel = vaultViewModel)
                                         }
                                     }
+                                }
+                                
+                                if (isSwipeEnabled) {
+                                    SwipeToDelete(
+                                        onDelete = { vaultViewModel.itemToDelete = item },
+                                        isActive = vaultViewModel.itemToDelete?.id != item.id
+                                    ) {
+                                        itemContent()
+                                    }
+                                } else {
+                                    itemContent()
                                 }
                             }
                             item { Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp)) }
