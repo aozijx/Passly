@@ -155,10 +155,7 @@ fun AutoFillDetailDialog(
             }
         },
         confirmButton = {
-            DetailActions(
-                onDeleteClick = { vaultViewModel.itemToDelete = item },
-                onDismiss = { vaultViewModel.dismissDetail() }
-            )
+            DetailActions(onDeleteClick = { vaultViewModel.itemToDelete = item })
         }
     )
 }

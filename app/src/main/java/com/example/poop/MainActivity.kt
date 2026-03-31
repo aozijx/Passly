@@ -23,7 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -31,11 +33,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import com.example.poop.features.settings.SettingsScreen
 import com.example.poop.features.vault.VaultContent
 import com.example.poop.ui.theme.PoopTheme
 
 class MainActivity : FragmentActivity() {
     private val viewModel: MainViewModel by viewModels()
+    private var showSettings by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,11 +68,20 @@ class MainActivity : FragmentActivity() {
                 darkTheme = if (isDarkModePref == true) true else null,
                 dynamicColor = isDynamicColorPref
             ) {
-                // 响应 ViewModel 中的授权状态变化
-                if (viewModel.isAuthorized) {
-                    VaultContent(this, viewModel)
-                } else {
-                    AuthorizationPlaceholder { requestAuthentication() }
+                when {
+                    showSettings -> {
+                        SettingsScreen(onBack = { showSettings = false })
+                    }
+                    viewModel.isAuthorized -> {
+                        VaultContent(
+                            activity = this,
+                            mainViewModel = viewModel,
+                            onSettingsClick = { showSettings = true }
+                        )
+                    }
+                    else -> {
+                        AuthorizationPlaceholder { requestAuthentication() }
+                    }
                 }
             }
         }

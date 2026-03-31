@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,7 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import kotlinx.coroutines.launch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -50,11 +48,13 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.poop.AppContext
 import com.example.poop.MainViewModel
 import com.example.poop.R
 import com.example.poop.core.common.AddType
-import com.example.poop.core.designsystem.widgets.EmptyVaultPlaceholder
-import com.example.poop.core.designsystem.widgets.SwipeToDelete
+import com.example.poop.core.common.SwipeActionType
+import com.example.poop.core.common.VaultTab
+import com.example.poop.core.crypto.CryptoManager
 import com.example.poop.core.designsystem.base.VaultItem
 import com.example.poop.core.designsystem.components.AutoFillItem
 import com.example.poop.core.designsystem.components.TwoFAItem
@@ -62,18 +62,24 @@ import com.example.poop.core.designsystem.components.VaultDialogs
 import com.example.poop.core.designsystem.components.VaultFab
 import com.example.poop.core.designsystem.components.VaultScanner
 import com.example.poop.core.designsystem.components.VaultTopBar
-import com.example.poop.core.common.VaultTab
-import com.example.poop.AppContext
+import com.example.poop.core.designsystem.widgets.EmptyVaultPlaceholder
+import com.example.poop.core.designsystem.widgets.SwipeDirection
+import com.example.poop.core.designsystem.widgets.SwipeToAction
+import com.example.poop.core.designsystem.widgets.createSwipeAction
+import com.example.poop.core.designsystem.widgets.handleSwipeAction
 import com.example.poop.features.settings.SettingsViewModel
+import com.example.poop.util.ClipboardUtils
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultContent(
-    activity: FragmentActivity, 
+    activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
+    onSettingsClick: () -> Unit = {}
 ) {
     val items by vaultViewModel.vaultItems.collectAsState()
     val selectedTab by vaultViewModel.selectedTab.collectAsState()
@@ -82,6 +88,8 @@ fun VaultContent(
     
     val vaultPrefs = remember { AppContext.get().preference }
     val isSwipeEnabled by vaultPrefs.isSwipeEnabled.collectAsState(initial = true)
+    val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsState(initial = SwipeActionType.DELETE)
+    val swipeRightAction by vaultPrefs.swipeRightAction.collectAsState(initial = SwipeActionType.DISABLED)
     
     val listState = rememberLazyListState()
     var isFabVisible by remember { mutableStateOf(true) }
@@ -147,7 +155,8 @@ fun VaultContent(
                     vaultViewModel = vaultViewModel,
                     scrollBehavior = scrollBehavior,
                     onExportClick = { exportLauncher.launch("vault_backup_${System.currentTimeMillis()}.poop") },
-                    onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) }
+                    onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
+                    onSettingsClick = onSettingsClick
                 )
             },
             floatingActionButton = { 
@@ -198,10 +207,59 @@ fun VaultContent(
                                 }
                                 
                                 if (isSwipeEnabled) {
-                                    SwipeToDelete(
-                                        onDelete = { vaultViewModel.itemToDelete = item },
-                                        isActive = vaultViewModel.itemToDelete?.id != item.id
-                                    ) {
+                                    val leftAction = createSwipeAction(
+                                        actionType = swipeLeftAction,
+                                        direction = SwipeDirection.LEFT,
+                                        onAction = {
+                                            handleSwipeAction(
+                                                swipeLeftAction, item,
+                                                onAuthRequired = { onSuccess -> mainViewModel.authenticate(activity, "删除确认", item.title, null, onSuccess) },
+                                                onQuickDelete = { vaultViewModel.quickDelete(it) },
+                                                onCopyPassword = { password -> ClipboardUtils.copy(activity, password) },
+                                                onDecryptPassword = { callback ->
+                                                    try {
+                                                        val decrypted = CryptoManager.decrypt(item.password)
+                                                        callback(decrypted)
+                                                    } catch (e: Exception) {
+                                                        callback(null)
+                                                    }
+                                                }
+                                            )
+                                        },
+                                        backgroundColor = MaterialTheme.colorScheme.error,
+                                        iconTint = MaterialTheme.colorScheme.onError
+                                    )
+                                    val rightAction = createSwipeAction(
+                                        actionType = swipeRightAction,
+                                        direction = SwipeDirection.RIGHT,
+                                        onAction = {
+                                            handleSwipeAction(
+                                                swipeRightAction, item,
+                                                onAuthRequired = { onSuccess -> mainViewModel.authenticate(activity, "删除确认", item.title, null, onSuccess) },
+                                                onQuickDelete = { vaultViewModel.quickDelete(it) },
+                                                onCopyPassword = { password -> ClipboardUtils.copy(activity, password) },
+                                                onDecryptPassword = { callback ->
+                                                    try {
+                                                        val decrypted = CryptoManager.decrypt(item.password)
+                                                        callback(decrypted)
+                                                    } catch (e: Exception) {
+                                                        callback(null)
+                                                    }
+                                                }
+                                            )
+                                        },
+                                        backgroundColor = MaterialTheme.colorScheme.primary,
+                                        iconTint = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                    val actions = listOfNotNull(leftAction, rightAction)
+                                    if (actions.isNotEmpty()) {
+                                        SwipeToAction(
+                                            actions = actions,
+                                            isActive = vaultViewModel.itemToDelete?.id != item.id
+                                        ) {
+                                            itemContent()
+                                        }
+                                    } else {
                                         itemContent()
                                     }
                                 } else {
@@ -214,8 +272,8 @@ fun VaultContent(
                 }
 
                 VaultDialogs(
-                    activity = activity, 
-                    mainViewModel = mainViewModel, 
+                    activity = activity,
+                    mainViewModel = mainViewModel,
                     vaultViewModel = vaultViewModel,
                     settingsViewModel = settingsViewModel
                 )

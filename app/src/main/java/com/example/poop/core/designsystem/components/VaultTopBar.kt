@@ -9,7 +9,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,8 +16,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -30,6 +27,7 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -57,15 +55,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -83,7 +79,8 @@ fun VaultTopBar(
     vaultViewModel: VaultViewModel,
     scrollBehavior: TopAppBarScrollBehavior,
     onExportClick: () -> Unit,
-    onImportClick: () -> Unit
+    onImportClick: () -> Unit,
+    onSettingsClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val searchQuery by vaultViewModel.searchQuery.collectAsState()
@@ -95,7 +92,6 @@ fun VaultTopBar(
     val autofillToastMessage = stringResource(R.string.vault_toast_enable_autofill_manual)
     var showCategorySubMenu by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(vaultViewModel.isMoreMenuExpanded) {
         if (!vaultViewModel.isMoreMenuExpanded) showCategorySubMenu = false
@@ -205,6 +201,11 @@ fun VaultTopBar(
                                     )
                                 }
                                 HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_settings)) },
+                                    onClick = { vaultViewModel.isMoreMenuExpanded = false; onSettingsClick() },
+                                    leadingIcon = { Icon(Icons.Default.Settings, null) }
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_export)) },
                                     onClick = { vaultViewModel.isMoreMenuExpanded = false; onExportClick() },

@@ -131,28 +131,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun ensureTotpUnlocked(
-        activity: FragmentActivity, 
-        entry: VaultEntry,
-        authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit
-    ) {
-        if (_totpStates.value.containsKey(entry.id)) return
-        val encrypted = entry.totpSecret ?: return
-        try {
-            val decrypted = CryptoManager.decrypt(encrypted)
-            unlockTotp(entry, decrypted)
-            return
-        } catch (_: Exception) {}
-        authenticate(activity, "解密验证", entry.title, null) {
-            try {
-                val decrypted = CryptoManager.decrypt(encrypted)
-                unlockTotp(entry, decrypted)
-            } catch (e: Exception) {
-                Logcat.e("VaultViewModel", "Decrypt failed", e)
-            }
-        }
-    }
-
     fun autoUnlockTotp(entry: VaultEntry) {
         if (_totpStates.value.containsKey(entry.id)) return
         val encrypted = entry.totpSecret ?: return
@@ -183,6 +161,14 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
                 itemToDelete = null
                 _totpStates.update { it - entry.id }
             }
+        }
+    }
+
+    fun quickDelete(entry: VaultEntry) {
+        viewModelScope.launch {
+            entry.iconCustomPath?.let { VaultFileUtils.deleteImage(it) }
+            repository.delete(entry)
+            _totpStates.update { it - entry.id }
         }
     }
 

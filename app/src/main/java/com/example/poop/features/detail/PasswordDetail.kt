@@ -31,7 +31,7 @@ fun PasswordDetailDialog(
 ) {
     var revealedUsername by remember { mutableStateOf<String?>(null) }
     var revealedPassword by remember { mutableStateOf<String?>(null) }
-    
+
     val editState = remember(item) { VaultEditState(item) }
 
     AlertDialog(
@@ -45,7 +45,7 @@ fun PasswordDetailDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                
+
                 CategoryItem(vaultViewModel, item, editState)
 
                 CredentialSection(
@@ -62,8 +62,6 @@ fun PasswordDetailDialog(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             }
         },
-        confirmButton = {
-            DetailActions(onDeleteClick = { vaultViewModel.itemToDelete = item }, onDismiss = { vaultViewModel.dismissDetail() })
-        }
+        confirmButton = { DetailActions(onDeleteClick = { vaultViewModel.itemToDelete = item }) }
     )
 }

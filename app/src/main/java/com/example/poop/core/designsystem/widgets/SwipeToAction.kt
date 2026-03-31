@@ -13,11 +13,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +34,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.example.poop.core.common.SwipeActionType
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -133,19 +130,17 @@ fun SwipeToAction(
                         Brush.horizontalGradient(
                             colors = if (offset.value < 0) {
                                 listOf(
-                                    currentAction.backgroundColor.copy(alpha = swipeFraction * 0.7f),
-                                    currentAction.backgroundColor.copy(alpha = swipeFraction * 0.3f),
-                                    Color.Transparent
-                                )
-                            } else {
-                                listOf(
                                     Color.Transparent,
                                     currentAction.backgroundColor.copy(alpha = swipeFraction * 0.3f),
                                     currentAction.backgroundColor.copy(alpha = swipeFraction * 0.7f)
                                 )
-                            },
-                            startX = if (offset.value < 0) Float.POSITIVE_INFINITY else 0f,
-                            endX = if (offset.value < 0) 0f else Float.POSITIVE_INFINITY
+                            } else {
+                                listOf(
+                                    currentAction.backgroundColor.copy(alpha = swipeFraction * 0.7f),
+                                    currentAction.backgroundColor.copy(alpha = swipeFraction * 0.3f),
+                                    Color.Transparent
+                                )
+                            }
                         )
                     ),
                 contentAlignment = if (offset.value < 0) Alignment.CenterEnd else Alignment.CenterStart
@@ -187,15 +182,7 @@ fun SwipeToAction(
                             }
                             if (action != null) {
                                 action.onAction()
-                                val targetOffset = if (current < 0) {
-                                    -componentWidthPx.floatValue
-                                } else {
-                                    componentWidthPx.floatValue
-                                }
-                                offset.animateTo(
-                                    targetValue = targetOffset,
-                                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                                )
+                                offset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                             } else {
                                 offset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                             }
@@ -211,64 +198,48 @@ fun SwipeToAction(
     }
 }
 
-@Composable
-fun SwipeToDelete(
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier,
-    isActive: Boolean = true,
-    cornerRadius: Dp = 16.dp,
-    deleteThreshold: Float = 0.5f,
-    content: @Composable () -> Unit
-) {
-    SwipeToAction(
-        actions = listOf(
-            SwipeAction(
-                icon = Icons.Default.Delete,
-                backgroundColor = MaterialTheme.colorScheme.error,
-                iconTint = MaterialTheme.colorScheme.onError,
-                onAction = onDelete,
-                direction = SwipeDirection.LEFT
-            )
-        ),
-        modifier = modifier,
-        isActive = isActive,
-        cornerRadius = cornerRadius,
-        actionThreshold = deleteThreshold,
-        content = content
+fun createSwipeAction(
+    actionType: SwipeActionType,
+    direction: SwipeDirection,
+    onAction: () -> Unit,
+    backgroundColor: Color,
+    iconTint: Color
+): SwipeAction? {
+    if (actionType == SwipeActionType.DISABLED || actionType.icon == null) return null
+    return SwipeAction(
+        icon = actionType.icon,
+        backgroundColor = backgroundColor,
+        iconTint = iconTint,
+        onAction = onAction,
+        direction = direction
     )
 }
 
-@Composable
-fun SwipeToEditAndDelete(
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier,
-    isActive: Boolean = true,
-    cornerRadius: Dp = 16.dp,
-    actionThreshold: Float = 0.5f,
-    content: @Composable () -> Unit
+fun handleSwipeAction(
+    actionType: SwipeActionType,
+    item: com.example.poop.data.model.VaultEntry,
+    onAuthRequired: (onSuccess: () -> Unit) -> Unit,
+    onQuickDelete: (com.example.poop.data.model.VaultEntry) -> Unit,
+    onCopyPassword: (decryptedPassword: String) -> Unit,
+    onDecryptPassword: (onResult: (String?) -> Unit) -> Unit
 ) {
-    SwipeToAction(
-        actions = listOf(
-            SwipeAction(
-                icon = Icons.Default.Edit,
-                backgroundColor = MaterialTheme.colorScheme.primary,
-                iconTint = MaterialTheme.colorScheme.onPrimary,
-                onAction = onEdit,
-                direction = SwipeDirection.RIGHT
-            ),
-            SwipeAction(
-                icon = Icons.Default.Delete,
-                backgroundColor = MaterialTheme.colorScheme.error,
-                iconTint = MaterialTheme.colorScheme.onError,
-                onAction = onDelete,
-                direction = SwipeDirection.LEFT
-            )
-        ),
-        modifier = modifier,
-        isActive = isActive,
-        cornerRadius = cornerRadius,
-        actionThreshold = actionThreshold,
-        content = content
-    )
+    when (actionType) {
+        SwipeActionType.DELETE -> {
+            onAuthRequired { onQuickDelete(item) }
+        }
+        SwipeActionType.EDIT -> {
+            // TODO: implement edit action
+        }
+        SwipeActionType.DETAIL -> {
+            // TODO: implement detail action
+        }
+        SwipeActionType.COPY_PASSWORD -> {
+            onDecryptPassword { decryptedPassword ->
+                decryptedPassword?.let { onCopyPassword(it) }
+            }
+        }
+        SwipeActionType.DISABLED -> {
+            // do nothing
+        }
+    }
 }

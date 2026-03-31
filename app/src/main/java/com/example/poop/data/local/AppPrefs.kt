@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.poop.core.common.SwipeActionType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -22,6 +24,8 @@ class AppPrefs(context: Context) {
         val DARK_MODE_KEY = booleanPreferencesKey("vault_dark_mode") // null = 跟随系统
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("vault_dynamic_color")
         val SWIPE_ENABLED_KEY = booleanPreferencesKey("vault_swipe_enabled")
+        val SWIPE_LEFT_ACTION_KEY = stringPreferencesKey("vault_swipe_left_action")
+        val SWIPE_RIGHT_ACTION_KEY = stringPreferencesKey("vault_swipe_right_action")
     }
 
     val lockTimeout: Flow<Long> = appContext.vaultDataStore.data.map { it[LOCK_TIMEOUT_KEY] ?: 60000L }
@@ -35,6 +39,16 @@ class AppPrefs(context: Context) {
     
     // 滑动操作相关设置
     val isSwipeEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[SWIPE_ENABLED_KEY] ?: true }
+    
+    // 左滑动作配置
+    val swipeLeftAction: Flow<SwipeActionType> = appContext.vaultDataStore.data.map { 
+        SwipeActionType.fromString(it[SWIPE_LEFT_ACTION_KEY] ?: SwipeActionType.DELETE.name)
+    }
+    
+    // 右滑动作配置
+    val swipeRightAction: Flow<SwipeActionType> = appContext.vaultDataStore.data.map { 
+        SwipeActionType.fromString(it[SWIPE_RIGHT_ACTION_KEY] ?: SwipeActionType.DISABLED.name)
+    }
 
     suspend fun setLockTimeout(timeoutMs: Long) {
         appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
@@ -52,5 +66,17 @@ class AppPrefs(context: Context) {
 
     suspend fun setDynamicColor(enabled: Boolean) {
         appContext.vaultDataStore.edit { it[DYNAMIC_COLOR_KEY] = enabled }
+    }
+
+    suspend fun setSwipeEnabled(enabled: Boolean) {
+        appContext.vaultDataStore.edit { it[SWIPE_ENABLED_KEY] = enabled }
+    }
+
+    suspend fun setSwipeLeftAction(action: SwipeActionType) {
+        appContext.vaultDataStore.edit { it[SWIPE_LEFT_ACTION_KEY] = action.name }
+    }
+
+    suspend fun setSwipeRightAction(action: SwipeActionType) {
+        appContext.vaultDataStore.edit { it[SWIPE_RIGHT_ACTION_KEY] = action.name }
     }
 }

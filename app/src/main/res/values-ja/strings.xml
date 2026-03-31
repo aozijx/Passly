@@ -18,7 +18,9 @@
     <string name="action_close">閉じる</string>
     <string name="action_back">戻る</string>
     <string name="action_search">検索</string>
-    <string name="action_more">もっと見る</string>    <string name="action_add">追加</string>
+    <string name="action_more">もっと見る</string>
+    <string name="action_settings">設定</string>
+    <string name="action_add">追加</string>
     <string name="action_delete">削除</string>
     <string name="action_confirm">確定</string>
     <string name="action_paste">貼り付け</string>

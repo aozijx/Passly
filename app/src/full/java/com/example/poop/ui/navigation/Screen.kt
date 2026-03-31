@@ -27,6 +27,9 @@ sealed class Screen(
     // SDK 分析路由
     data object AppAnalysis : Screen("app_analysis", "应用分析", Icons.AutoMirrored.Rounded.List)
 
+    // Vault 设置页面
+    data object VaultSettings : Screen("vault_settings", "保险箱设置", isBottomNav = false)
+
     companion object {
         private const val VAULT_ACTIVITY_CLASS = "com.example.poop.MainActivity"
 
@@ -58,6 +61,7 @@ sealed class Screen(
             Scanner.route -> Scanner
             Setting.route -> Setting
             AppAnalysis.route -> AppAnalysis
+            VaultSettings.route -> VaultSettings
             else -> null
         }
     }

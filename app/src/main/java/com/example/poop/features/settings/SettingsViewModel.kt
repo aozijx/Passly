@@ -8,10 +8,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.poop.core.common.SwipeActionType
 import com.example.poop.core.util.BackupManager
 import com.example.poop.data.local.AppDatabase
 import com.example.poop.data.local.AppPrefs
 import com.example.poop.data.repository.VaultRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 /**
@@ -19,9 +21,14 @@ import kotlinx.coroutines.launch
  */
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val prefs = AppPrefs(application)
+    val isSwipeEnabled: Flow<Boolean> = prefs.isSwipeEnabled
+    val swipeLeftAction: Flow<SwipeActionType> = prefs.swipeLeftAction
+    val swipeRightAction: Flow<SwipeActionType> = prefs.swipeRightAction
+
     private val repository: VaultRepository by lazy {
         val database = AppDatabase.getDatabase(application)
-        VaultRepository(database.vaultDao(), AppPrefs(application))
+        VaultRepository(database.vaultDao(), prefs)
     }
 
     // --- 备份/恢复状态 ---
@@ -76,5 +83,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun clearBackupMessage() {
         backupMessage = null
+    }
+
+    fun setSwipeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            prefs.setSwipeEnabled(enabled)
+        }
+    }
+
+    fun setSwipeLeftAction(action: SwipeActionType) {
+        viewModelScope.launch {
+            prefs.setSwipeLeftAction(action)
+        }
+    }
+
+    fun setSwipeRightAction(action: SwipeActionType) {
+        viewModelScope.launch {
+            prefs.setSwipeRightAction(action)
+        }
     }
 }
