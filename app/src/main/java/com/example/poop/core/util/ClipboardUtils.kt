@@ -1,4 +1,4 @@
-package com.example.poop.util
+package com.example.poop.core.util
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
+import com.example.poop.util.Logcat
 
 /**
  * 剪贴板工具类，提供安全复制、自动清除以及内容获取功能

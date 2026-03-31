@@ -38,9 +38,9 @@ import com.example.poop.core.designsystem.detail.DetailHeader
 import com.example.poop.core.designsystem.sections.CategoryItem
 import com.example.poop.core.designsystem.sections.CredentialSection
 import com.example.poop.core.designsystem.state.VaultEditState
+import com.example.poop.core.util.ClipboardUtils
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.vault.VaultViewModel
-import com.example.poop.util.ClipboardUtils
 import com.example.poop.util.Logcat
 
 @Composable

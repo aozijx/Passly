@@ -34,13 +34,18 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.features.settings.SettingsScreen
+import com.example.poop.features.settings.SettingsViewModel
 import com.example.poop.features.vault.VaultContent
+import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.ui.theme.PoopTheme
 
 class MainActivity : FragmentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private var showSettings by mutableStateOf(false)
+    private var showDetail by mutableStateOf(false)
+    private var detailEntry by mutableStateOf<com.example.poop.data.model.VaultEntry?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +66,9 @@ class MainActivity : FragmentActivity() {
         // 添加返回按钮回调
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (showSettings) {
+                if (showDetail) {
+                    showDetail = false
+                } else if (showSettings) {
                     showSettings = false
                 } else {
                     isEnabled = false
@@ -76,12 +83,23 @@ class MainActivity : FragmentActivity() {
         setContent {
             val isDarkModePref by viewModel.isDarkMode.collectAsState()
             val isDynamicColorPref by viewModel.isDynamicColor.collectAsState()
+            val vaultViewModel: VaultViewModel = viewModel()
+            val settingsViewModel: SettingsViewModel = viewModel()
 
             PoopTheme(
                 darkTheme = if (isDarkModePref == true) true else null,
                 dynamicColor = isDynamicColorPref
             ) {
                 when {
+                    showDetail && detailEntry != null -> {
+                        com.example.poop.features.detail.DetailScreen(
+                            entry = detailEntry!!,
+                            onBack = { showDetail = false },
+                            activity = this,
+                            mainViewModel = viewModel,
+                            vaultViewModel = vaultViewModel
+                        )
+                    }
                     showSettings -> {
                         SettingsScreen(onBack = { showSettings = false })
                     }
@@ -89,7 +107,13 @@ class MainActivity : FragmentActivity() {
                         VaultContent(
                             activity = this,
                             mainViewModel = viewModel,
-                            onSettingsClick = { showSettings = true }
+                            vaultViewModel = vaultViewModel,
+                            settingsViewModel = settingsViewModel,
+                            onSettingsClick = { showSettings = true },
+                            onShowDetail = { entry -> 
+                                detailEntry = entry
+                                showDetail = true
+                            }
                         )
                     }
                     else -> {

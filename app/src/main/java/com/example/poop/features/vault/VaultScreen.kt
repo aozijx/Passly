@@ -66,8 +66,9 @@ import com.example.poop.core.designsystem.widgets.SwipeDirection
 import com.example.poop.core.designsystem.widgets.SwipeToAction
 import com.example.poop.core.designsystem.widgets.createSwipeAction
 import com.example.poop.core.designsystem.widgets.handleSwipeAction
+import com.example.poop.core.util.ClipboardUtils
+import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.settings.SettingsViewModel
-import com.example.poop.util.ClipboardUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,7 +78,8 @@ fun VaultContent(
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel(),
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    onShowDetail: (VaultEntry) -> Unit = {}
 ) {
     val items by vaultViewModel.vaultItems.collectAsState()
     val selectedTab by vaultViewModel.selectedTab.collectAsState()
@@ -221,7 +223,8 @@ fun VaultContent(
                                                     } catch (e: Exception) {
                                                         callback(null)
                                                     }
-                                                }
+                                                },
+                                                onShowDetail = { onShowDetail(it) }
                                             )
                                         },
                                         backgroundColor = MaterialTheme.colorScheme.error,
@@ -246,7 +249,8 @@ fun VaultContent(
                                                     } catch (e: Exception) {
                                                         callback(null)
                                                     }
-                                                }
+                                                },
+                                                onShowDetail = { onShowDetail(it) }
                                             )
                                         },
                                         backgroundColor = MaterialTheme.colorScheme.primary,

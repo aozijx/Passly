@@ -25,9 +25,9 @@ import com.example.poop.core.designsystem.fields.CategoryDropdown
 import com.example.poop.core.designsystem.fields.VaultTextField
 import com.example.poop.core.designsystem.sections.TotpConfigForm
 import com.example.poop.core.designsystem.state.TotpAddState
+import com.example.poop.core.util.ClipboardUtils
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.vault.VaultViewModel
-import com.example.poop.util.ClipboardUtils
 import com.example.poop.util.Logcat
 import java.net.URLDecoder
 

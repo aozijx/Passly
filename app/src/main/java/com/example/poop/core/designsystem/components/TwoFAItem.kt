@@ -35,7 +35,8 @@ import com.example.poop.features.vault.VaultViewModel
 fun TwoFAItem(
     entry: VaultEntry,
     vaultViewModel: VaultViewModel,
-    showCode: Boolean = true
+    showCode: Boolean = true,
+    onClick: () -> Unit = { vaultViewModel.showDetail(entry) }
 ) {
     val totpStates by vaultViewModel.totpStates.collectAsState()
     val currentState = totpStates[entry.id]
@@ -47,9 +48,7 @@ fun TwoFAItem(
     }
 
     Card(
-        onClick = { 
-            vaultViewModel.showDetail(entry)
-        },
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(

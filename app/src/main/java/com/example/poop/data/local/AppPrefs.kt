@@ -42,12 +42,12 @@ class AppPrefs(context: Context) {
     
     // 左滑动作配置
     val swipeLeftAction: Flow<SwipeActionType> = appContext.vaultDataStore.data.map { 
-        SwipeActionType.fromString(it[SWIPE_LEFT_ACTION_KEY] ?: SwipeActionType.DELETE.name)
+        SwipeActionType.fromString(it[SWIPE_LEFT_ACTION_KEY] ?: SwipeActionType.COPY_PASSWORD.name)
     }
     
     // 右滑动作配置
     val swipeRightAction: Flow<SwipeActionType> = appContext.vaultDataStore.data.map { 
-        SwipeActionType.fromString(it[SWIPE_RIGHT_ACTION_KEY] ?: SwipeActionType.DISABLED.name)
+        SwipeActionType.fromString(it[SWIPE_RIGHT_ACTION_KEY] ?: SwipeActionType.DETAIL.name)
     }
 
     suspend fun setLockTimeout(timeoutMs: Long) {

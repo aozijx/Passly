@@ -27,10 +27,11 @@ import com.example.poop.features.vault.VaultViewModel
 @Composable
 fun VaultItem(
     entry: VaultEntry,
-    viewModel: VaultViewModel
+    viewModel: VaultViewModel,
+    onClick: () -> Unit = { viewModel.showDetail(entry) }
 ) {
     Card(
-        onClick = { viewModel.showDetail(entry) },
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(

@@ -57,10 +57,10 @@ import com.example.poop.core.designsystem.sections.CategoryItem
 import com.example.poop.core.designsystem.sections.TotpConfigForm
 import com.example.poop.core.designsystem.state.TotpEditState
 import com.example.poop.core.designsystem.state.VaultEditState
+import com.example.poop.core.util.ClipboardUtils
 import com.example.poop.core.util.QrCodeUtils
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.vault.VaultViewModel
-import com.example.poop.util.ClipboardUtils
 import java.net.URLEncoder
 
 @Composable

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.poop.core.common.SwipeActionType
+import com.example.poop.data.model.VaultEntry
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -217,11 +218,12 @@ fun createSwipeAction(
 
 fun handleSwipeAction(
     actionType: SwipeActionType,
-    item: com.example.poop.data.model.VaultEntry,
+    item: VaultEntry,
     onAuthRequired: (onSuccess: () -> Unit) -> Unit,
-    onQuickDelete: (com.example.poop.data.model.VaultEntry) -> Unit,
+    onQuickDelete: (VaultEntry) -> Unit,
     onCopyPassword: (decryptedPassword: String) -> Unit,
-    onDecryptPassword: (onResult: (String?) -> Unit) -> Unit
+    onDecryptPassword: (onResult: (String?) -> Unit) -> Unit,
+    onShowDetail: (VaultEntry) -> Unit
 ) {
     when (actionType) {
         SwipeActionType.DELETE -> {
@@ -231,7 +233,7 @@ fun handleSwipeAction(
             // TODO: implement edit action
         }
         SwipeActionType.DETAIL -> {
-            // TODO: implement detail action
+            onShowDetail(item)
         }
         SwipeActionType.COPY_PASSWORD -> {
             onDecryptPassword { decryptedPassword ->
