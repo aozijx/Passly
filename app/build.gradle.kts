@@ -89,16 +89,16 @@ android {
         // 功能范围 (完整 vs 仅保险箱)
         create("full") {
             dimension = "scope"
-            buildConfigField("boolean", "IS_VAULT_ONLY", "false")
+            buildConfigField("boolean", "IS_VAULT", "false")
         }
-        create("vaultOnly") {
+        create("vault") {
             dimension = "scope"
             applicationIdSuffix = ".vault" // 甚至可以作为独立包名共存
             versionNameSuffix = "-vault"
             // 覆盖默认值
-            buildConfigField("boolean", "IS_VAULT_ONLY", "true")
-            // 如果你想彻底在 VaultOnly 中剔除某些代码，可以使用以下配置
-             manifestPlaceholders["launcherActivity"] = ".ui.screens.vault.VaultActivity"
+            buildConfigField("boolean", "IS_VAULT", "true")
+            // 如果你想彻底在 Vault 中剔除某些代码，可以使用以下配置
+             manifestPlaceholders["launcherActivity"] = ".MainActivity"
         }
     }
 }

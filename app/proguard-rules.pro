@@ -10,10 +10,10 @@
 -keep class androidx.sqlite.db.SupportSQLite* { *; }
 
 # 核心数据模型防止被混淆
--keep class com.example.poop.data.VaultEntry { *; }
+-keep class com.example.poop.data.model.VaultEntry { *; }
 
 # 核心工具类防止被混淆
--keep class com.example.poop.util.Logcat { *; }
+-keep class com.example.poop.core.util.Logcat { *; }
 
 # --- ML Kit / Firebase 依赖注入系统修复 ---
 
