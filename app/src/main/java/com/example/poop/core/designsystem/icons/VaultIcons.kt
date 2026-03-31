@@ -136,15 +136,18 @@ fun VaultItemIcon(
         )
     } else if (!item.associatedAppPackage.isNullOrEmpty()) {
         val iconPainter = rememberAppIconPainter(
-            packageName = item.associatedAppPackage,
-            defaultIconResId = R.mipmap.launcher_logo
+            packageName = item.associatedAppPackage
         )
-        Image(
-            painter = iconPainter,
-            contentDescription = null,
-            modifier = modifier.size(36.dp).clip(CircleShape),
-            contentScale = ContentScale.Fit
-        )
+        if (iconPainter != null) {
+            Image(
+                painter = iconPainter,
+                contentDescription = null,
+                modifier = modifier.size(36.dp).clip(CircleShape),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            FallbackIcon(modifier, tint, item)
+        }
     } else {
         FallbackIcon(modifier, tint, item)
     }

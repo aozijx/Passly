@@ -35,6 +35,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.poop.features.detail.DetailScreen
 import com.example.poop.features.settings.SettingsScreen
 import com.example.poop.features.settings.SettingsViewModel
 import com.example.poop.features.vault.VaultContent
@@ -92,7 +93,7 @@ class MainActivity : FragmentActivity() {
             ) {
                 when {
                     showDetail && detailEntry != null -> {
-                        com.example.poop.features.detail.DetailScreen(
+                        DetailScreen(
                             entry = detailEntry!!,
                             onBack = { showDetail = false },
                             activity = this,

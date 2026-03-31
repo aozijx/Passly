@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.core.graphics.createBitmap
 import com.example.poop.util.Logcat
 
@@ -152,24 +151,23 @@ object PackageUtils {
  */
 @Composable
 fun rememberAppIconPainter(
-    packageName: String,
-    defaultIconResId: Int
-): Painter {
+    packageName: String
+): Painter? {
     val context = LocalContext.current
     val appIconBitmap = remember(packageName) {
-        val drawable = PackageUtils.getAppIconDrawable(context, packageName)
-        if (drawable != null) {
-            try {
+        try {
+            val drawable = PackageUtils.getAppIconDrawable(context, packageName)
+            if (drawable != null) {
                 with(PackageUtils) { drawable.toImageBitmap() }
-            } catch (e: Exception) {
-                null
-            }
-        } else null
+            } else null
+        } catch (e: Exception) {
+            null
+        }
     }
 
     return if (appIconBitmap != null) {
         BitmapPainter(appIconBitmap)
     } else {
-        painterResource(id = defaultIconResId)
+        null
     }
 }
