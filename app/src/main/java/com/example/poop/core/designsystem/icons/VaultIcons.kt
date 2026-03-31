@@ -1,6 +1,7 @@
 package com.example.poop.core.designsystem.icons
 
 import android.content.Context
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -57,7 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.poop.R
-import com.example.poop.util.PackageUtils
+import com.example.poop.core.util.rememberAppIconPainter
 
 /**
  * 集中管理所有可选图标映射
@@ -126,17 +127,6 @@ fun VaultItemIcon(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
-    val context = LocalContext.current
-    val appIcon = remember(item.associatedAppPackage) {
-        try {
-            item.associatedAppPackage?.let { pkg ->
-                PackageUtils.getAppIconDrawable(context, pkg)
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     if (!item.iconCustomPath.isNullOrEmpty()) {
         AsyncImage(
             model = item.iconCustomPath,
@@ -144,15 +134,31 @@ fun VaultItemIcon(
             modifier = modifier.size(36.dp).clip(CircleShape),
             contentScale = ContentScale.Crop
         )
-    } else if (appIcon != null) {
-        AsyncImage(
-            model = appIcon,
+    } else if (!item.associatedAppPackage.isNullOrEmpty()) {
+        val iconPainter = rememberAppIconPainter(
+            packageName = item.associatedAppPackage,
+            defaultIconResId = R.mipmap.launcher_logo
+        )
+        Image(
+            painter = iconPainter,
             contentDescription = null,
             modifier = modifier.size(36.dp).clip(CircleShape),
             contentScale = ContentScale.Fit
         )
     } else {
-        val icon = remember(item.iconName, item.category) {
+        FallbackIcon(modifier, tint, item)
+    }
+}
+
+@Composable
+private fun FallbackIcon(
+    modifier: Modifier,
+    tint: Color,
+    item: com.example.poop.data.model.VaultEntry? = null
+) {
+    val context = LocalContext.current
+    val icon = remember(item?.iconName, item?.category) {
+        if (item != null) {
             val resId = item.iconName?.toIntOrNull()
             if (resId != null) {
                 VaultIcons.getIconByRes(resId)
@@ -161,14 +167,16 @@ fun VaultItemIcon(
             } else {
                 getCategoryIcon(context, item.category)
             }
+        } else {
+            Icons.Default.Key
         }
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = modifier.size(24.dp)
-        )
     }
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = tint,
+        modifier = modifier.size(24.dp)
+    )
 }
 
 /**

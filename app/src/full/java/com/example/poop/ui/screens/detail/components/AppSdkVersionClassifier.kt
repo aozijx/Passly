@@ -52,8 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.R
 import com.example.poop.ui.navigation.TopBarConfig
-import com.example.poop.util.AppWithSdk
-import com.example.poop.util.rememberAppIconPainter
+import com.example.poop.core.util.AppWithSdk
+import com.example.poop.core.util.rememberAppIconPainter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

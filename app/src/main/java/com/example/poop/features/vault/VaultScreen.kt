@@ -34,7 +34,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -70,7 +69,6 @@ import com.example.poop.core.designsystem.widgets.handleSwipeAction
 import com.example.poop.features.settings.SettingsViewModel
 import com.example.poop.util.ClipboardUtils
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,10 +89,8 @@ fun VaultContent(
     val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsState(initial = SwipeActionType.DELETE)
     val swipeRightAction by vaultPrefs.swipeRightAction.collectAsState(initial = SwipeActionType.DISABLED)
     
-    val listState = rememberLazyListState()
     var isFabVisible by remember { mutableStateOf(true) }
     val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
-    val scope = rememberCoroutineScope()
 
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
@@ -109,9 +105,7 @@ fun VaultContent(
 
     LaunchedEffect(selectedTab) {
         if (pagerState.currentPage != selectedTab.ordinal) {
-            scope.launch {
-                pagerState.animateScrollToPage(selectedTab.ordinal)
-            }
+            pagerState.scrollToPage(selectedTab.ordinal)
         }
     }
 
@@ -172,6 +166,7 @@ fun VaultContent(
                     modifier = Modifier.fillMaxSize()
                 ) { pageIndex ->
                     val currentTab = VaultTab.entries[pageIndex]
+                    val listState = rememberLazyListState()
                     val filteredItems = when (currentTab) {
                         VaultTab.ALL -> items
                         VaultTab.PASSWORDS -> items.filter { it.totpSecret == null }

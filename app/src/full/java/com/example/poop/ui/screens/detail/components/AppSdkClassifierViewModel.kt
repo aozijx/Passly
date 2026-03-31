@@ -3,8 +3,8 @@ package com.example.poop.ui.screens.detail.components
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.poop.util.AppWithSdk
-import com.example.poop.util.PackageUtils
+import com.example.poop.core.util.AppWithSdk
+import com.example.poop.core.util.PackageUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

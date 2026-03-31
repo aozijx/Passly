@@ -1,4 +1,4 @@
-package com.example.poop.util
+package com.example.poop.core.util
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.core.graphics.createBitmap
+import com.example.poop.util.Logcat
 
 data class AppWithSdk(
     val packageName: String,
@@ -27,11 +28,8 @@ data class AppWithSdk(
 )
 
 object PackageUtils {
-
     /**
      * 获取所有已安装的应用及其 SDK 和架构信息
-     * 注意：需要清单文件中声明 QUERY_ALL_PACKAGES 权限
-     * @param includeSystem 是否包含系统应用
      */
     fun getAllInstalledApps(context: Context, includeSystem: Boolean = false): List<AppWithSdk> {
         val pm = context.packageManager
@@ -43,7 +41,7 @@ object PackageUtils {
     }
 
     /**
-     * 将 PackageInfo 转换为 AppWithSdk，减少重复查询
+     * 将 PackageInfo 转换为 AppWithSdk
      */
     fun PackageInfo.toAppWithSdk(context: Context, includeSystem: Boolean = true): AppWithSdk? {
         val appInfo = applicationInfo ?: return null
@@ -82,13 +80,14 @@ object PackageUtils {
                 else -> "32-bit"
             }
         } catch (e: Exception) {
-            Logcat.e("PackageUtils", "获取架构失败: ${appInfo.packageName}", e)
+            Logcat.d("PackageUtils", "获取架构跳过: ${appInfo.packageName}")
             "Unknown"
         }
     }
 
     /**
      * 获取应用图标的 Drawable
+     * 优化点：对未安装应用使用调试日志而非错误日志，避免日志污染
      */
     fun getAppIconDrawable(context: Context, packageName: String): Drawable? {
         return try {
@@ -97,16 +96,17 @@ object PackageUtils {
             val appInfo = pm.getApplicationInfo(packageName, 0)
             appInfo.loadIcon(pm)
         } catch (e: PackageManager.NameNotFoundException) {
-            Logcat.e("PackageUtils", "应用未安装: $packageName", e)
+            // 预期内的异常，使用静默处理或调试级别日志
+            Logcat.d("PackageUtils", "应用未安装，跳过图标加载: $packageName")
             null
         } catch (e: Exception) {
-            Logcat.e("PackageUtils", "获取图标失败: $packageName", e)
+            Logcat.w("PackageUtils", "获取图标未知异常: $packageName")
             null
         }
     }
 
     /**
-     * 一次性获取应用名称和图标，减少 PackageManager 查询开销
+     * 一次性获取应用名称和图标
      */
     fun getAppLabelAndIcon(context: Context, packageName: String): Pair<String, Drawable>? {
         return try {
@@ -117,16 +117,16 @@ object PackageUtils {
             val icon = appInfo.loadIcon(pm)
             label to icon
         } catch (e: PackageManager.NameNotFoundException) {
-            Logcat.e("PackageUtils", "应用未安装: $packageName", e)
+            Logcat.d("PackageUtils", "应用未安装，跳过信息获取: $packageName")
             null
         } catch (e: Exception) {
-            Logcat.e("PackageUtils", "获取应用信息失败: $packageName", e)
+            Logcat.w("PackageUtils", "获取应用信息异常: $packageName")
             null
         }
     }
 
     /**
-     * 将 Drawable 转换为 Bitmap，优先复用 BitmapDrawable 中的 Bitmap
+     * 将 Drawable 转换为 Bitmap
      */
     fun drawableToBitmap(drawable: Drawable): Bitmap {
         if (drawable is BitmapDrawable) return drawable.bitmap
@@ -162,7 +162,6 @@ fun rememberAppIconPainter(
             try {
                 with(PackageUtils) { drawable.toImageBitmap() }
             } catch (e: Exception) {
-                Logcat.e("PackageUtils", "图标转换 Bitmap 失败: $packageName", e)
                 null
             }
         } else null

@@ -1,10 +1,10 @@
 package com.example.poop.core.common
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class SwipeActionType(
@@ -29,7 +29,7 @@ enum class SwipeActionType(
     ),
     COPY_PASSWORD(
         displayName = "复制密码",
-        icon = Icons.Default.Visibility,
+        icon = Icons.Default.ContentCopy,
         requiresConfirm = false
     ),
     DISABLED(

@@ -18,8 +18,8 @@ import android.widget.RemoteViews
 import com.example.poop.R
 import com.example.poop.core.crypto.CryptoManager
 import com.example.poop.core.util.AutofillParser
+import com.example.poop.core.util.PackageUtils
 import com.example.poop.util.Logcat
-import com.example.poop.util.PackageUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
