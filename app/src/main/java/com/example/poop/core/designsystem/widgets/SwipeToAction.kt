@@ -154,7 +154,7 @@ fun SwipeToAction(
                             end = if (offset.value < 0) 20.dp else 0.dp,
                             start = if (offset.value < 0) 0.dp else 20.dp
                         )
-                        .size(28.dp)
+                        .size(24.dp)
                         .graphicsLayer {
                             val scale = 0.8f + (swipeFraction * 0.4f).coerceAtMost(0.4f)
                             scaleX = scale

@@ -3,6 +3,7 @@ package com.example.poop
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -56,6 +57,18 @@ class MainActivity : FragmentActivity() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
+        // 添加返回按钮回调
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (showSettings) {
+                    showSettings = false
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
 
         // 初始验证
         requestAuthentication()

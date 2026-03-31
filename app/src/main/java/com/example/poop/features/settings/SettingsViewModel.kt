@@ -8,10 +8,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.poop.AppContext
 import com.example.poop.core.common.SwipeActionType
 import com.example.poop.core.util.BackupManager
 import com.example.poop.data.local.AppDatabase
-import com.example.poop.data.local.AppPrefs
 import com.example.poop.data.repository.VaultRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
  */
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val prefs = AppPrefs(application)
+    private val prefs = AppContext.get().preference
     val isSwipeEnabled: Flow<Boolean> = prefs.isSwipeEnabled
     val swipeLeftAction: Flow<SwipeActionType> = prefs.swipeLeftAction
     val swipeRightAction: Flow<SwipeActionType> = prefs.swipeRightAction

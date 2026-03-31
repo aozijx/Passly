@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.poop.AppContext
 import com.example.poop.core.common.AddType
 import com.example.poop.core.common.VaultTab
 import com.example.poop.core.crypto.CryptoManager
@@ -36,7 +37,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: VaultRepository by lazy {
         val database = AppDatabase.getDatabase(application)
-        VaultRepository(database.vaultDao(), AppPrefs(application))
+        VaultRepository(database.vaultDao(), AppContext.get().preference)
     }
 
     private val _searchQuery = MutableStateFlow("")

@@ -210,7 +210,10 @@ fun VaultContent(
                                                 swipeLeftAction, item,
                                                 onAuthRequired = { onSuccess -> mainViewModel.authenticate(activity, "删除确认", item.title, null, onSuccess) },
                                                 onQuickDelete = { vaultViewModel.quickDelete(it) },
-                                                onCopyPassword = { password -> ClipboardUtils.copy(activity, password) },
+                                                onCopyPassword = { password -> 
+                                                    ClipboardUtils.copy(activity, password)
+                                                    Toast.makeText(context, "密码已复制", Toast.LENGTH_SHORT).show()
+                                                },
                                                 onDecryptPassword = { callback ->
                                                     try {
                                                         val decrypted = CryptoManager.decrypt(item.password)
@@ -232,7 +235,10 @@ fun VaultContent(
                                                 swipeRightAction, item,
                                                 onAuthRequired = { onSuccess -> mainViewModel.authenticate(activity, "删除确认", item.title, null, onSuccess) },
                                                 onQuickDelete = { vaultViewModel.quickDelete(it) },
-                                                onCopyPassword = { password -> ClipboardUtils.copy(activity, password) },
+                                                onCopyPassword = { password -> 
+                                                    ClipboardUtils.copy(activity, password)
+                                                    Toast.makeText(context, "密码已复制", Toast.LENGTH_SHORT).show()
+                                                },
                                                 onDecryptPassword = { callback ->
                                                     try {
                                                         val decrypted = CryptoManager.decrypt(item.password)
