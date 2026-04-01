@@ -134,9 +134,10 @@ fun VaultContent(
         }
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        if (scrollBehavior.state.collapsedFraction > 0.5f) {
+        // 增加阈值并添加平滑处理，防止频繁切换导致手势冲突
+        if (scrollBehavior.state.collapsedFraction > 0.6f) {
             insetsController.hide(WindowInsetsCompat.Type.statusBars())
-        } else {
+        } else if (scrollBehavior.state.collapsedFraction < 0.4f) {
             insetsController.show(WindowInsetsCompat.Type.statusBars())
         }
     }
@@ -158,7 +159,6 @@ fun VaultContent(
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             // 核心修复：只有在至少有一个组件需要折叠时，才挂载 scrollBehavior 的 nestedScrollConnection
-            // 这样在全部关闭时，列表不会被 scrollBehavior 拦截滑动
             modifier = Modifier
                 .then(if (isTopBarCollapsible || isTabBarCollapsible || isStatusBarAutoHide) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier)
                 .nestedScroll(fabScrollConnection),
@@ -171,7 +171,8 @@ fun VaultContent(
                     onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
                     onSettingsClick = onSettingsClick,
                     isTopBarCollapsible = isTopBarCollapsible,
-                    isTabBarCollapsible = isTabBarCollapsible
+                    isTabBarCollapsible = isTabBarCollapsible,
+                    isStatusBarAutoHide = isStatusBarAutoHide
                 )
             },
             floatingActionButton = { 

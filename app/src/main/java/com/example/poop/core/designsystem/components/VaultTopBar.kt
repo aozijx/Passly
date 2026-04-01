@@ -74,6 +74,7 @@ fun VaultTopBar(
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
     onSettingsClick: () -> Unit = {},
+    isStatusBarAutoHide: Boolean = false,
     isTopBarCollapsible: Boolean = true,
     isTabBarCollapsible: Boolean = true
 ) {
@@ -87,11 +88,11 @@ fun VaultTopBar(
     var showCategorySubMenu by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
-    // 关键点：如果标题栏不折叠但标签栏需要折叠，我们需要手动设置滚动上限
-    // 否则 scrollBehavior.state.collapsedFraction 永远是 0，导致标签栏无法驱动隐藏
-    LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible) {
-        if (!isTopBarCollapsible && isTabBarCollapsible) {
-            // 设置一个约 64dp 的滚动上限，用于驱动标签栏的隐藏动画
+    // 关键点：如果标题栏不折叠，但标签栏或状态栏需要折叠，我们需要手动设置滚动上限
+    // 否则 scrollBehavior.state.collapsedFraction 永远是 0，导致相关功能无法驱动
+    LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible, isStatusBarAutoHide) {
+        if (!isTopBarCollapsible && (isTabBarCollapsible || isStatusBarAutoHide)) {
+            // 设置一个约 64dp 的滚动上限，用于驱动折叠逻辑
             scrollBehavior.state.heightOffsetLimit = with(density) { -64.dp.toPx() }
         }
     }
@@ -222,9 +223,8 @@ fun VaultTopBar(
             )
         )
 
-        // 分类标签栏：逻辑修复
+        // 分类标签栏
         AnimatedVisibility(
-            // 如果开启了折叠，只有在标题栏折叠到位时（或者单独开启标签栏折叠时驱动）才隐藏
             visible = !vaultViewModel.isSearchActive && selectedCategory == null && 
                      (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
