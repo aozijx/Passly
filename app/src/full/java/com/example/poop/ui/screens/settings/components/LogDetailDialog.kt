@@ -1,8 +1,6 @@
 package com.example.poop.ui.screens.settings.components
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,9 +15,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
+import com.mikepenz.markdown.model.markdownPadding
 
 @Composable
 fun LogDetailDialog(
@@ -27,49 +26,51 @@ fun LogDetailDialog(
     isLoading: Boolean,
     content: String?,
     error: String?,
+    title: String = "日志详情",
     onDismiss: () -> Unit
 ) {
     if (isVisible) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("日志详情") },
+            title = { Text(title) },
             text = {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(400.dp),
+                        .height(450.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator()
                     } else if (error != null) {
                         Text(error, color = MaterialTheme.colorScheme.error)
-                    } else {
-                        // 模拟 <pre><code> 效果
+                    } else if (content != null) {
                         Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            shape = MaterialTheme.shapes.small
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                            shape = MaterialTheme.shapes.medium
                         ) {
                             val vScroll = rememberScrollState()
-                            val hScroll = rememberScrollState()
 
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
+                                    .fillMaxWidth()
                                     .verticalScroll(vScroll)
-                                    .horizontalScroll(hScroll)
-                                    .padding(12.dp)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
-                                Text(
-                                    text = content ?: "",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = FontFamily.Monospace,
-                                        fontSize = 12.sp,
-                                        lineHeight = 16.sp
+                                Markdown(
+                                    content = content,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    typography = markdownTypography(
+                                        h1 = MaterialTheme.typography.titleLarge,
+                                        h2 = MaterialTheme.typography.titleMedium,
+                                        h3 = MaterialTheme.typography.titleSmall,
+                                        text = MaterialTheme.typography.bodyMedium,
                                     ),
-                                    softWrap = false, // 禁用自动换行，保持原始缩进
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    padding = markdownPadding(
+                                        block = 4.dp,
+                                        list = 2.dp
+                                    )
                                 )
                             }
                         }
