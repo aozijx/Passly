@@ -53,11 +53,6 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 安全增强：禁止截屏和多任务预览 (默认开启)
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE,
-        )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         enableEdgeToEdge()
@@ -89,10 +84,11 @@ class MainActivity : FragmentActivity() {
             val vaultViewModel: VaultViewModel = viewModel()
             val settingsViewModel: SettingsViewModel = viewModel()
             
-            // 应用隐私屏设置
-            val isPrivacyScreenEnabled by settingsViewModel.isPrivacyScreenEnabled.collectAsStateWithLifecycle()
-            LaunchedEffect(isPrivacyScreenEnabled) {
-                if (isPrivacyScreenEnabled) {
+            // 应用高级安全防护设置
+            val isSecureContentEnabled by settingsViewModel.isSecureContentEnabled.collectAsStateWithLifecycle()
+            
+            LaunchedEffect(isSecureContentEnabled) {
+                if (isSecureContentEnabled) {
                     window.setFlags(
                         WindowManager.LayoutParams.FLAG_SECURE,
                         WindowManager.LayoutParams.FLAG_SECURE
@@ -102,7 +98,7 @@ class MainActivity : FragmentActivity() {
                 }
             }
             
-            // 修正引用：应用状态栏自动隐藏设置
+            // 应用状态栏自动隐藏行为设置
             val isStatusBarAutoHide by settingsViewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
             LaunchedEffect(isStatusBarAutoHide) {
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)

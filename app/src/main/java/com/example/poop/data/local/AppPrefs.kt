@@ -28,13 +28,15 @@ class AppPrefs(context: Context) {
         val AUTO_HIDE_STATUS_BAR_KEY = booleanPreferencesKey("ui_auto_hide_status_bar")
         val COLLAPSE_TOP_BAR_KEY = booleanPreferencesKey("ui_collapse_top_bar")
         val COLLAPSE_TAB_BAR_KEY = booleanPreferencesKey("ui_collapse_tab_bar")
-        val PRIVACY_SCREEN_KEY = booleanPreferencesKey("ui_privacy_screen")
+        
+        // --- 安全增强 (合并：截屏保护 + 隐私屏) ---
+        val SECURE_CONTENT_KEY = booleanPreferencesKey("ui_secure_content")
     }
 
     val isStatusBarAutoHide: Flow<Boolean> = appContext.vaultDataStore.data.map { it[AUTO_HIDE_STATUS_BAR_KEY] ?: true }
     val isTopBarCollapsible: Flow<Boolean> = appContext.vaultDataStore.data.map { it[COLLAPSE_TOP_BAR_KEY] ?: true }
     val isTabBarCollapsible: Flow<Boolean> = appContext.vaultDataStore.data.map { it[COLLAPSE_TAB_BAR_KEY] ?: true }
-    val isPrivacyScreenEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[PRIVACY_SCREEN_KEY] ?: true }
+    val isSecureContentEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[SECURE_CONTENT_KEY] ?: true }
 
     // 原有设置
     val lockTimeout: Flow<Long> = appContext.vaultDataStore.data.map { it[LOCK_TIMEOUT_KEY] ?: 60000L }
@@ -52,7 +54,7 @@ class AppPrefs(context: Context) {
     suspend fun setStatusBarAutoHide(autoHide: Boolean) = appContext.vaultDataStore.edit { it[AUTO_HIDE_STATUS_BAR_KEY] = autoHide }
     suspend fun setTopBarCollapsible(collapsible: Boolean) = appContext.vaultDataStore.edit { it[COLLAPSE_TOP_BAR_KEY] = collapsible }
     suspend fun setTabBarCollapsible(collapsible: Boolean) = appContext.vaultDataStore.edit { it[COLLAPSE_TAB_BAR_KEY] = collapsible }
-    suspend fun setPrivacyScreenEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[PRIVACY_SCREEN_KEY] = enabled }
+    suspend fun setSecureContentEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[SECURE_CONTENT_KEY] = enabled }
 
     suspend fun setLockTimeout(timeoutMs: Long) = appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
     suspend fun setBiometricEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }

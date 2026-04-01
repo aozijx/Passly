@@ -23,7 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.ViewDay
@@ -72,7 +72,7 @@ fun SettingsScreen(
     val isStatusBarAutoHide by viewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
     val isTopBarCollapsible by viewModel.isTopBarCollapsible.collectAsStateWithLifecycle()
     val isTabBarCollapsible by viewModel.isTabBarCollapsible.collectAsStateWithLifecycle()
-    val isPrivacyScreenEnabled by viewModel.isPrivacyScreenEnabled.collectAsStateWithLifecycle()
+    val isSecureContentEnabled by viewModel.isSecureContentEnabled.collectAsStateWithLifecycle()
     
     var showLeftActionDialog by remember { mutableStateOf(false) }
     var showRightActionDialog by remember { mutableStateOf(false) }
@@ -136,11 +136,11 @@ fun SettingsScreen(
                 SettingsGroupTitle(text = "安全与隐私")
                 SettingsCard {
                     SwitchSettingItem(
-                        icon = Icons.Default.PrivacyTip,
-                        title = "隐私屏保护",
-                        subtitle = "在任务切换预览中模糊应用内容",
-                        checked = isPrivacyScreenEnabled,
-                        onCheckedChange = { viewModel.setPrivacyScreenEnabled(it) }
+                        icon = Icons.Default.Security,
+                        title = "高级安全防护",
+                        subtitle = "禁止截屏录屏，并隐藏多任务预览内容",
+                        checked = isSecureContentEnabled,
+                        onCheckedChange = { viewModel.setSecureContentEnabled(it) }
                     )
                 }
             }

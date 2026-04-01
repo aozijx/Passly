@@ -30,7 +30,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val isTabBarCollapsible: StateFlow<Boolean> = prefs.isTabBarCollapsible
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
         
-    val isPrivacyScreenEnabled: StateFlow<Boolean> = prefs.isPrivacyScreenEnabled
+    // 合并后的安全设置 (控制 FLAG_SECURE)
+    val isSecureContentEnabled: StateFlow<Boolean> = prefs.isSecureContentEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     // --- 交互设置 ---
@@ -45,7 +46,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setStatusBarAutoHide(autoHide: Boolean) = viewModelScope.launch { prefs.setStatusBarAutoHide(autoHide) }
     fun setTopBarCollapsible(collapsible: Boolean) = viewModelScope.launch { prefs.setTopBarCollapsible(collapsible) }
     fun setTabBarCollapsible(collapsible: Boolean) = viewModelScope.launch { prefs.setTabBarCollapsible(collapsible) }
-    fun setPrivacyScreenEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setPrivacyScreenEnabled(enabled) }
+    fun setSecureContentEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setSecureContentEnabled(enabled) }
     
     fun setSwipeEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setSwipeEnabled(enabled) }
     fun setSwipeLeftAction(action: SwipeActionType) = viewModelScope.launch { prefs.setSwipeLeftAction(action) }
@@ -84,10 +85,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val result = if (isExporting) BackupManager.exportBackup(context, uri, password)
             else BackupManager.importBackup(context, uri, password, importMode)
             
-            backupMessage = if (result.isSuccess) {
-                if (isExporting) "导出成功" else "导入成功"
-            } else {
-                "失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+            backupMessage = if (result.isSuccess) "导出成功" else "导入成功"
+            if (!result.isSuccess) {
+                backupMessage = "失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
             }
             dismissBackupPasswordDialog()
         }
