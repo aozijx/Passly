@@ -213,8 +213,7 @@ fun SdkGroupHeader(
 @Composable
 fun AppInfoItem(app: AppWithSdk) {
     val iconPainter = rememberAppIconPainter(
-        packageName = app.packageName,
-        defaultIconResId = R.mipmap.launcher_logo
+        packageName = app.packageName
     )
 
     Card(
@@ -231,13 +230,24 @@ fun AppInfoItem(app: AppWithSdk) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = iconPainter,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
+            if (iconPainter != null) {
+                Image(
+                    painter = iconPainter,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .padding(8.dp)
+                )
+            }
             
             Spacer(modifier = Modifier.width(12.dp))
 

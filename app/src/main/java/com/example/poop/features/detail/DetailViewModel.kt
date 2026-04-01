@@ -21,17 +21,6 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
     var entry by mutableStateOf<VaultEntry?>(null)
         private set
 
-    // 用于显示明文的状态（安全起见，不持久化）
-    var revealedUsername by mutableStateOf<String?>(null)
-    var revealedPassword by mutableStateOf<String?>(null)
-
-    fun loadEntry(id: Int) {
-        viewModelScope.launch {
-            // 这里可以从 repository 按 ID 获取，目前假设从外部传入或查询
-            // repository.getEntryById(id).collect { entry = it }
-        }
-    }
-
     fun toggleFavorite() {
         entry?.let { current ->
             val updated = current.copy(favorite = !current.favorite)
