@@ -12,71 +12,53 @@ import kotlinx.coroutines.flow.map
 
 private val Context.vaultDataStore by preferencesDataStore(name = "vault_settings")
 
-/**
- * 基于 DataStore 的偏好设置管理
- */
 class AppPrefs(context: Context) {
     private val appContext = context.applicationContext
 
     companion object {
         val LOCK_TIMEOUT_KEY = longPreferencesKey("vault_lock_timeout")
         val BIOMETRIC_AUTH_KEY = booleanPreferencesKey("vault_biometric_auth")
-        val DARK_MODE_KEY = booleanPreferencesKey("vault_dark_mode") // null = 跟随系统
+        val DARK_MODE_KEY = booleanPreferencesKey("vault_dark_mode")
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("vault_dynamic_color")
         val SWIPE_ENABLED_KEY = booleanPreferencesKey("vault_swipe_enabled")
         val SWIPE_LEFT_ACTION_KEY = stringPreferencesKey("vault_swipe_left_action")
         val SWIPE_RIGHT_ACTION_KEY = stringPreferencesKey("vault_swipe_right_action")
+        
+        // --- 沉浸式折叠控制 ---
+        val AUTO_HIDE_STATUS_BAR_KEY = booleanPreferencesKey("ui_auto_hide_status_bar")
+        val COLLAPSE_TOP_BAR_KEY = booleanPreferencesKey("ui_collapse_top_bar")
+        val COLLAPSE_TAB_BAR_KEY = booleanPreferencesKey("ui_collapse_tab_bar")
+        val PRIVACY_SCREEN_KEY = booleanPreferencesKey("ui_privacy_screen")
     }
 
+    val isStatusBarAutoHide: Flow<Boolean> = appContext.vaultDataStore.data.map { it[AUTO_HIDE_STATUS_BAR_KEY] ?: true }
+    val isTopBarCollapsible: Flow<Boolean> = appContext.vaultDataStore.data.map { it[COLLAPSE_TOP_BAR_KEY] ?: true }
+    val isTabBarCollapsible: Flow<Boolean> = appContext.vaultDataStore.data.map { it[COLLAPSE_TAB_BAR_KEY] ?: true }
+    val isPrivacyScreenEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[PRIVACY_SCREEN_KEY] ?: true }
+
+    // 原有设置
     val lockTimeout: Flow<Long> = appContext.vaultDataStore.data.map { it[LOCK_TIMEOUT_KEY] ?: 60000L }
     val isBiometricEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[BIOMETRIC_AUTH_KEY] ?: true }
-    
-    // 深色模式：true, false, 或 null (跟随系统)
     val isDarkMode: Flow<Boolean?> = appContext.vaultDataStore.data.map { it[DARK_MODE_KEY] }
-    
-    // 动态颜色：默认开启 (Android 12+)
     val isDynamicColor: Flow<Boolean> = appContext.vaultDataStore.data.map { it[DYNAMIC_COLOR_KEY] ?: true }
-    
-    // 滑动操作相关设置
     val isSwipeEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[SWIPE_ENABLED_KEY] ?: true }
-    
-    // 左滑动作配置
     val swipeLeftAction: Flow<SwipeActionType> = appContext.vaultDataStore.data.map { 
         SwipeActionType.fromString(it[SWIPE_LEFT_ACTION_KEY] ?: SwipeActionType.COPY_PASSWORD.name)
     }
-    
-    // 右滑动作配置
     val swipeRightAction: Flow<SwipeActionType> = appContext.vaultDataStore.data.map { 
         SwipeActionType.fromString(it[SWIPE_RIGHT_ACTION_KEY] ?: SwipeActionType.DETAIL.name)
     }
 
-    suspend fun setLockTimeout(timeoutMs: Long) {
-        appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
-    }
+    suspend fun setStatusBarAutoHide(autoHide: Boolean) = appContext.vaultDataStore.edit { it[AUTO_HIDE_STATUS_BAR_KEY] = autoHide }
+    suspend fun setTopBarCollapsible(collapsible: Boolean) = appContext.vaultDataStore.edit { it[COLLAPSE_TOP_BAR_KEY] = collapsible }
+    suspend fun setTabBarCollapsible(collapsible: Boolean) = appContext.vaultDataStore.edit { it[COLLAPSE_TAB_BAR_KEY] = collapsible }
+    suspend fun setPrivacyScreenEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[PRIVACY_SCREEN_KEY] = enabled }
 
-    suspend fun setBiometricEnabled(enabled: Boolean) {
-        appContext.vaultDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }
-    }
-
-    suspend fun setDarkMode(enabled: Boolean?) {
-        appContext.vaultDataStore.edit { 
-            if (enabled == null) it.remove(DARK_MODE_KEY) else it[DARK_MODE_KEY] = enabled 
-        }
-    }
-
-    suspend fun setDynamicColor(enabled: Boolean) {
-        appContext.vaultDataStore.edit { it[DYNAMIC_COLOR_KEY] = enabled }
-    }
-
-    suspend fun setSwipeEnabled(enabled: Boolean) {
-        appContext.vaultDataStore.edit { it[SWIPE_ENABLED_KEY] = enabled }
-    }
-
-    suspend fun setSwipeLeftAction(action: SwipeActionType) {
-        appContext.vaultDataStore.edit { it[SWIPE_LEFT_ACTION_KEY] = action.name }
-    }
-
-    suspend fun setSwipeRightAction(action: SwipeActionType) {
-        appContext.vaultDataStore.edit { it[SWIPE_RIGHT_ACTION_KEY] = action.name }
-    }
+    suspend fun setLockTimeout(timeoutMs: Long) = appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
+    suspend fun setBiometricEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }
+    suspend fun setDarkMode(enabled: Boolean?) = appContext.vaultDataStore.edit { if (enabled == null) it.remove(DARK_MODE_KEY) else it[DARK_MODE_KEY] = enabled }
+    suspend fun setDynamicColor(enabled: Boolean) = appContext.vaultDataStore.edit { it[DYNAMIC_COLOR_KEY] = enabled }
+    suspend fun setSwipeEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[SWIPE_ENABLED_KEY] = enabled }
+    suspend fun setSwipeLeftAction(action: SwipeActionType) = appContext.vaultDataStore.edit { it[SWIPE_LEFT_ACTION_KEY] = action.name }
+    suspend fun setSwipeRightAction(action: SwipeActionType) = appContext.vaultDataStore.edit { it[SWIPE_RIGHT_ACTION_KEY] = action.name }
 }

@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.features.detail.DetailScreen
 import com.example.poop.features.settings.SettingsScreen
@@ -51,7 +53,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 安全增强：禁止截屏和多任务预览
+        // 安全增强：禁止截屏和多任务预览 (默认开启)
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE,
@@ -86,6 +88,30 @@ class MainActivity : FragmentActivity() {
             val isDynamicColorPref by viewModel.isDynamicColor.collectAsState()
             val vaultViewModel: VaultViewModel = viewModel()
             val settingsViewModel: SettingsViewModel = viewModel()
+            
+            // 应用隐私屏设置
+            val isPrivacyScreenEnabled by settingsViewModel.isPrivacyScreenEnabled.collectAsStateWithLifecycle()
+            LaunchedEffect(isPrivacyScreenEnabled) {
+                if (isPrivacyScreenEnabled) {
+                    window.setFlags(
+                        WindowManager.LayoutParams.FLAG_SECURE,
+                        WindowManager.LayoutParams.FLAG_SECURE
+                    )
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                }
+            }
+            
+            // 修正引用：应用状态栏自动隐藏设置
+            val isStatusBarAutoHide by settingsViewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
+            LaunchedEffect(isStatusBarAutoHide) {
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.systemBarsBehavior = if (isStatusBarAutoHide) {
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                } else {
+                    WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                }
+            }
 
             PoopTheme(
                 darkTheme = if (isDarkModePref == true) true else null,
@@ -134,7 +160,6 @@ class MainActivity : FragmentActivity() {
                 viewModel.authorize()
             },
             onError = { _ ->
-                // 即使第一次认证失败也不退出应用，让用户可以重试
                 Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()
             }
         )

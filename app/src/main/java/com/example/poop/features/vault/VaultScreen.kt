@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.AppContext
 import com.example.poop.MainViewModel
@@ -91,10 +92,15 @@ fun VaultContent(
     val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsState(initial = SwipeActionType.DELETE)
     val swipeRightAction by vaultPrefs.swipeRightAction.collectAsState(initial = SwipeActionType.DISABLED)
     
+    // 沉浸式设置状态
+    val isStatusBarAutoHide by settingsViewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
+    val isTopBarCollapsible by settingsViewModel.isTopBarCollapsible.collectAsStateWithLifecycle()
+    val isTabBarCollapsible by settingsViewModel.isTabBarCollapsible.collectAsStateWithLifecycle()
+    
     var isFabVisible by remember { mutableStateOf(true) }
     val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
 
-    val nestedScrollConnection = remember {
+    val fabScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (available.y < -1) isFabVisible = false else if (available.y > 1) isFabVisible = true
@@ -118,7 +124,14 @@ fun VaultContent(
         }
     }
 
-    LaunchedEffect(scrollBehavior.state.collapsedFraction) {
+    // 处理状态栏隐藏逻辑
+    LaunchedEffect(scrollBehavior.state.collapsedFraction, isStatusBarAutoHide) {
+        if (!isStatusBarAutoHide) {
+            val window = activity.window
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            insetsController.show(WindowInsetsCompat.Type.statusBars())
+            return@LaunchedEffect
+        }
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
         if (scrollBehavior.state.collapsedFraction > 0.5f) {
@@ -144,7 +157,11 @@ fun VaultContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).nestedScroll(nestedScrollConnection),
+            // 核心修复：只有在至少有一个组件需要折叠时，才挂载 scrollBehavior 的 nestedScrollConnection
+            // 这样在全部关闭时，列表不会被 scrollBehavior 拦截滑动
+            modifier = Modifier
+                .then(if (isTopBarCollapsible || isTabBarCollapsible || isStatusBarAutoHide) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier)
+                .nestedScroll(fabScrollConnection),
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             topBar = {
                 VaultTopBar(
@@ -152,7 +169,9 @@ fun VaultContent(
                     scrollBehavior = scrollBehavior,
                     onExportClick = { exportLauncher.launch("vault_backup_${System.currentTimeMillis()}.poop") },
                     onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
-                    onSettingsClick = onSettingsClick
+                    onSettingsClick = onSettingsClick,
+                    isTopBarCollapsible = isTopBarCollapsible,
+                    isTabBarCollapsible = isTabBarCollapsible
                 )
             },
             floatingActionButton = { 
@@ -210,11 +229,11 @@ fun VaultContent(
                                         onAction = {
                                             handleSwipeAction(
                                                 swipeLeftAction, item,
-                                                onAuthRequired = { onSuccess -> mainViewModel.authenticate(activity, "删除确认", item.title, null, onSuccess) },
+                                                onAuthRequired = { onSuccess -> mainViewModel.authenticate(activity, "确认验证", item.title, null, onSuccess) },
                                                 onQuickDelete = { vaultViewModel.quickDelete(it) },
                                                 onCopyPassword = { password -> 
                                                     ClipboardUtils.copy(activity, password)
-                                                    Toast.makeText(context, "密码已复制", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
                                                 },
                                                 onDecryptPassword = { callback ->
                                                     try {
@@ -224,7 +243,7 @@ fun VaultContent(
                                                         callback(null)
                                                     }
                                                 },
-                                                onShowDetail = { onShowDetail(it) }
+                                                onShowDetail = { onShowDetail(item) }
                                             )
                                         },
                                         backgroundColor = MaterialTheme.colorScheme.error,
@@ -236,11 +255,11 @@ fun VaultContent(
                                         onAction = {
                                             handleSwipeAction(
                                                 swipeRightAction, item,
-                                                onAuthRequired = { onSuccess -> mainViewModel.authenticate(activity, "删除确认", item.title, null, onSuccess) },
+                                                onAuthRequired = { onSuccess -> mainViewModel.authenticate(activity, "确认验证", item.title, null, onSuccess) },
                                                 onQuickDelete = { vaultViewModel.quickDelete(it) },
                                                 onCopyPassword = { password -> 
                                                     ClipboardUtils.copy(activity, password)
-                                                    Toast.makeText(context, "密码已复制", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
                                                 },
                                                 onDecryptPassword = { callback ->
                                                     try {
@@ -250,7 +269,7 @@ fun VaultContent(
                                                         callback(null)
                                                     }
                                                 },
-                                                onShowDetail = { onShowDetail(it) }
+                                                onShowDetail = { onShowDetail(item) }
                                             )
                                         },
                                         backgroundColor = MaterialTheme.colorScheme.primary,

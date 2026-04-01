@@ -46,7 +46,11 @@ fun AutoFillDetailDialog(
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-                CategoryItem(vaultViewModel, item, editState)
+                CategoryItem(
+                    viewModel = vaultViewModel,
+                    entry = item,
+                    editState = editState
+                )
 
                 CredentialSection(
                     activity = activity,
@@ -56,14 +60,16 @@ fun AutoFillDetailDialog(
                     editState = editState,
                     revealedUsername = revealedUsername,
                     revealedPassword = revealedPassword,
-                    onUsernameRevealed = { revealedUsername = it },
-                    onPasswordRevealed = { revealedPassword = it }
+                    onUsernameRevealed = { newValue: String? -> revealedUsername = newValue },
+                    onPasswordRevealed = { newValue: String? -> revealedPassword = newValue }
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             }
         },
         confirmButton = {
-            DetailActions(onDeleteClick = { vaultViewModel.itemToDelete = item })
+            DetailActions(
+                onDeleteClick = { vaultViewModel.itemToDelete = item }
+            )
         }
     )
 }

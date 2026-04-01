@@ -1,9 +1,5 @@
 package com.example.poop.core.designsystem.components
 
-import android.content.Intent
-import android.provider.Settings
-import android.view.autofill.AutofillManager
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -28,7 +24,6 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -60,17 +55,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.example.poop.R
 import com.example.poop.core.common.VaultTab
 import com.example.poop.features.vault.VaultViewModel
-import com.example.poop.util.Logcat
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,18 +73,28 @@ fun VaultTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    isTopBarCollapsible: Boolean = true,
+    isTabBarCollapsible: Boolean = true
 ) {
-    val context = LocalContext.current
+    val density = LocalDensity.current
     val searchQuery by vaultViewModel.searchQuery.collectAsState()
     val selectedCategory by vaultViewModel.selectedCategory.collectAsState()
     val availableCategories by vaultViewModel.availableCategories.collectAsState()
     val selectedTab by vaultViewModel.selectedTab.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    val autofillToastMessage = stringResource(R.string.vault_toast_enable_autofill_manual)
     var showCategorySubMenu by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+
+    // 关键点：如果标题栏不折叠但标签栏需要折叠，我们需要手动设置滚动上限
+    // 否则 scrollBehavior.state.collapsedFraction 永远是 0，导致标签栏无法驱动隐藏
+    LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible) {
+        if (!isTopBarCollapsible && isTabBarCollapsible) {
+            // 设置一个约 64dp 的滚动上限，用于驱动标签栏的隐藏动画
+            scrollBehavior.state.heightOffsetLimit = with(density) { -64.dp.toPx() }
+        }
+    }
 
     LaunchedEffect(vaultViewModel.isMoreMenuExpanded) {
         if (!vaultViewModel.isMoreMenuExpanded) showCategorySubMenu = false
@@ -105,7 +108,8 @@ fun VaultTopBar(
 
     Column {
         CenterAlignedTopAppBar(
-            scrollBehavior = scrollBehavior,
+            // 如果标题栏不折叠，传入 null，TopAppBar 将固定在顶部
+            scrollBehavior = if (isTopBarCollapsible) scrollBehavior else null,
             windowInsets = WindowInsets.statusBars,
             title = {
                 if (vaultViewModel.isSearchActive) {
@@ -132,7 +136,7 @@ fun VaultTopBar(
                             fontWeight = FontWeight.Bold
                         )
                         if (selectedCategory != null) {
-                            IconButton(onClick = { vaultViewModel.selectedCategory.let { (vaultViewModel.selectedCategory as MutableStateFlow).value = null } }) {
+                            IconButton(onClick = { (vaultViewModel.selectedCategory as MutableStateFlow).value = null }) {
                                 Icon(Icons.Default.Clear, stringResource(R.string.vault_clear_filter), modifier = Modifier.padding(start = 4.dp))
                             }
                         }
@@ -168,38 +172,6 @@ fun VaultTopBar(
                                     onClick = { vaultViewModel.showTOTPCode = !vaultViewModel.showTOTPCode; vaultViewModel.isMoreMenuExpanded = false },
                                     leadingIcon = { Icon(if (vaultViewModel.showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility, null) }
                                 )
-
-                                val autofillManager = remember { context.getSystemService(AutofillManager::class.java) }
-                                val isAutofillEnabled = remember(autofillManager) {
-                                    autofillManager?.isAutofillSupported == true && autofillManager.hasEnabledAutofillServices()
-                                }
-                                if (!isAutofillEnabled) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
-                                        onClick = {
-                                            vaultViewModel.isMoreMenuExpanded = false
-                                            val standardIntent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply { data = "package:${context.packageName}".toUri() }
-                                            fun tryStartActivity(intent: Intent): Boolean {
-                                                return try {
-                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                    context.startActivity(intent)
-                                                    true
-                                                } catch (e: Exception) {
-                                                    Logcat.e("VaultTopBar", "Failed to start activity", e)
-                                                    false
-                                                }
-                                            }
-
-                                            if (!tryStartActivity(standardIntent)) {
-                                                if (!tryStartActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))) {
-                                                    tryStartActivity(Intent(Settings.ACTION_SETTINGS))
-                                                    Toast.makeText(context, autofillToastMessage, Toast.LENGTH_LONG).show()
-                                                }
-                                            }
-                                        },
-                                        leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
-                                    )
-                                }
                                 HorizontalDivider()
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_settings)) },
@@ -250,39 +222,40 @@ fun VaultTopBar(
             )
         )
 
+        // 分类标签栏：逻辑修复
         AnimatedVisibility(
-            visible = !vaultViewModel.isSearchActive && selectedCategory == null && scrollBehavior.state.collapsedFraction < 0.5f,
+            // 如果开启了折叠，只有在标题栏折叠到位时（或者单独开启标签栏折叠时驱动）才隐藏
+            visible = !vaultViewModel.isSearchActive && selectedCategory == null && 
+                     (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            Column {
-                SecondaryTabRow(
-                    selectedTabIndex = selectedTab.ordinal,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    indicator = {
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(selectedTab.ordinal),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                ) {
-                    VaultTab.entries.forEach { tab ->
-                        Tab(
-                            selected = selectedTab == tab,
-                            onClick = { (vaultViewModel.selectedTab as MutableStateFlow).value = tab },
-                            text = {
-                                Text(
-                                    stringResource(when (tab) {
-                                        VaultTab.ALL -> R.string.vault_tab_all
-                                        VaultTab.PASSWORDS -> R.string.vault_tab_passwords
-                                        VaultTab.TOTP -> R.string.vault_tab_totp
-                                    }),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
-                        )
-                    }
+            SecondaryTabRow(
+                selectedTabIndex = selectedTab.ordinal,
+                containerColor = MaterialTheme.colorScheme.surface,
+                indicator = {
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(selectedTab.ordinal),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            ) {
+                VaultTab.entries.forEach { tab ->
+                    Tab(
+                        selected = selectedTab == tab,
+                        onClick = { (vaultViewModel.selectedTab as MutableStateFlow).value = tab },
+                        text = {
+                            Text(
+                                stringResource(when (tab) {
+                                    VaultTab.ALL -> R.string.vault_tab_all
+                                    VaultTab.PASSWORDS -> R.string.vault_tab_passwords
+                                    VaultTab.TOTP -> R.string.vault_tab_totp
+                                }),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    )
                 }
             }
         }

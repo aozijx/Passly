@@ -23,6 +23,7 @@
 ## 项目
 
 采用按功能模块划分（Package by Feature）并结合简洁架构（Clean Architecture）的思想。
+```tree
 com.example.poop
 ├── core                // 核心底层能力（跨模块通用）
 │   ├── crypto          // 加密解密核心逻辑 (原 CryptoManager, BiometricHelper)
@@ -56,6 +57,7 @@ com.example.poop
 └── ui                  // 全局 UI 相关
 ├── theme           // 主题配置 (Color, Type, Theme)
 └── NavGraph.kt     // 导航路由
+```
 
 ## 快速开始
 
