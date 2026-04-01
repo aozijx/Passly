@@ -45,8 +45,8 @@ jobs:
         include:
         - language: actions
           build-mode: none
-        # NOTE: Using 'manual' build mode with a version patch because 'none' mode
-        # failed to detect source code, and Kotlin 2.3.20 is too recent for the extractor.
+        # NOTE: Using 'manual' build mode with a version patch because Kotlin 2.3.20 
+        # is too recent for the extractor.
         - language: java-kotlin
           build-mode: manual
 
@@ -62,14 +62,18 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    # 核心修复步骤：由于 CodeQL 不支持 Kotlin 2.3.20，我们在构建前通过脚本临时降级版本
-    - name: Patch Kotlin Version for CodeQL
+    # 核心修复步骤 1：降级 Kotlin 以适配 CodeQL
+    # 核心修复步骤 2：注入 android.disallowKotlinSourceSets=false 以适配 Gradle 9.1/AGP 9.0
+    - name: Patch Project for CodeQL Compatibility
       if: matrix.build-mode == 'manual'
       shell: bash
       run: |
-        echo "Patching Kotlin version from 2.3.20 to 2.1.0 for CodeQL compatibility..."
+        echo "Patching Kotlin version from 2.3.20 to 2.1.0..."
         sed -i 's/kotlin = "2.3.20"/kotlin = "2.1.0"/' gradle/libs.versions.toml
         sed -i 's/ksp = "2.3.5"/ksp = "2.1.0-1.0.29"/' gradle/libs.versions.toml
+        
+        echo "Suppressing Kotlin SourceSet DSL error for AGP 9.0..."
+        echo "android.disallowKotlinSourceSets=false" >> gradle.properties
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
