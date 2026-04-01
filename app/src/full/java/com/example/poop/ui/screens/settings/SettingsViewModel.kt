@@ -40,6 +40,7 @@ data class SettingsUiState(
     val logContent: String? = null,
     val isLogLoading: Boolean = false,
     val logError: String? = null,
+    val logTitle: String = "日志详情",
     val exportStatus: ExportStatus? = null
 )
 
@@ -57,6 +58,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _logContent = MutableStateFlow<String?>(null)
     private val _isLogLoading = MutableStateFlow(false)
     private val _logError = MutableStateFlow<String?>(null)
+    private val _logTitle = MutableStateFlow("日志详情")
     private val _exportStatus = MutableStateFlow<ExportStatus?>(null)
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -69,6 +71,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _logContent,
         _isLogLoading,
         _logError,
+        _logTitle,
         _exportStatus
     ) { args ->
         SettingsUiState(
@@ -81,7 +84,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             logContent = args[6] as String?,
             isLogLoading = args[7] as Boolean,
             logError = args[8] as String?,
-            exportStatus = args[9] as ExportStatus?
+            logTitle = args[9] as String,
+            exportStatus = args[10] as ExportStatus?
         )
     }.stateIn(
         scope = viewModelScope,
@@ -144,7 +148,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             viewModelScope.launch { preference.setNotificationsEnabled(false) }
         }
     }
-    
+
     fun dismissPermissionGuide() {
         _showPermissionGuide.value = false
     }
@@ -169,8 +173,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             } else {
                 LocaleListCompat.forLanguageTags(language)
             }
-            // 核心：设置语言。在某些设备上，如果不重启 Activity，
-            // LocalContext.current.resources 的内容可能不会刷新。
             AppCompatDelegate.setApplicationLocales(appLocale)
         }
     }
@@ -198,6 +200,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun fetchLog(urlStr: String) {
+        _logTitle.value = "更新日志"
         if (urlStr.isBlank() || !urlStr.startsWith("http")) {
             Logcat.e("SettingsViewModel", "Invalid URL: $urlStr. Showing fallback log.")
             _logContent.value = getApplication<Application>().getString(R.string.changelog_last)
@@ -214,7 +217,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     connection.connectTimeout = 8000
                     connection.readTimeout = 8000
                     connection.requestMethod = "GET"
-                    
+
                     if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                         connection.inputStream.bufferedReader().use { it.readText() }
                     } else {
@@ -231,9 +234,48 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun viewLocalLogs() {
+        _logTitle.value = "本地日志"
+        viewModelScope.launch {
+            _isLogLoading.value = true
+            _logError.value = null
+            try {
+                val content = withContext(Dispatchers.IO) {
+                    val logFolder = Logcat.getLogFolder()
+                    if (logFolder == null || !logFolder.exists()) {
+                        throw Exception("日志目录不存在")
+                    }
+
+                    val logFiles = logFolder.listFiles { file -> file.extension == "log" }
+                        ?.sortedByDescending { it.lastModified() }
+
+                    if (logFiles.isNullOrEmpty()) {
+                        throw NoSuchElementException("目前没有任何日志记录")
+                    }
+
+                    val sb = StringBuilder()
+                    logFiles.take(5).forEach { file ->
+                        sb.appendLine("=== ${file.name} ===")
+                        sb.appendLine(file.readText())
+                        sb.appendLine()
+                    }
+                    sb.toString()
+                }
+                _logContent.value = content
+            } catch (e: NoSuchElementException) {
+                _logError.value = e.message
+            } catch (e: Exception) {
+                _logError.value = "读取日志失败: ${e.message}"
+            } finally {
+                _isLogLoading.value = false
+            }
+        }
+    }
+
     fun clearLogContent() {
         _logContent.value = null
         _logError.value = null
+        _logTitle.value = "日志详情"
     }
 
     fun exportLogs() {
@@ -243,7 +285,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val intent = withContext(Dispatchers.IO) {
                     val logFolder = Logcat.getLogFolder() ?: throw Exception("日志目录不存在")
                     val logFiles = logFolder.listFiles { file -> file.extension == "log" }
-                    
+
                     if (logFiles.isNullOrEmpty()) {
                         throw NoSuchElementException("目前没有任何日志记录")
                     }

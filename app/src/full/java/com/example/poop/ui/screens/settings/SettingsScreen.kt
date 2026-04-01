@@ -17,11 +17,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,8 +48,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.BuildConfig
@@ -64,12 +78,10 @@ fun SettingsScreen(
     val context = LocalContext.current
     val changelogUrl = stringResource(R.string.changelog)
 
-    // 获取支持的语言列表
     val languages = remember(context) {
         LocaleConfigReader.getSupportedLanguages(context)
     }
 
-    // 导出处理
     val shareLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { viewModel.clearExportStatus() }
@@ -87,10 +99,9 @@ fun SettingsScreen(
         }
     }
 
-    // 导出中加载弹窗
     if (uiState.exportStatus == ExportStatus.Loading) {
         AlertDialog(
-            onDismissRequest = { /* 禁止点击外部取消以保证打包完整 */ },
+            onDismissRequest = { },
             confirmButton = {},
             title = { Text("正在处理") },
             text = {
@@ -106,7 +117,6 @@ fun SettingsScreen(
         )
     }
 
-    // 权限引导对话框
     if (uiState.showPermissionGuide) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissPermissionGuide() },
@@ -131,32 +141,32 @@ fun SettingsScreen(
         )
     }
 
-    // 日志显示弹窗
     LogDetailDialog(
         isVisible = uiState.logContent != null || uiState.isLogLoading || uiState.logError != null,
         isLoading = uiState.isLogLoading,
         content = uiState.logContent,
         error = uiState.logError,
+        title = uiState.logTitle,
         onDismiss = { viewModel.clearLogContent() }
     )
 
-    // 语言选择弹窗
     var showLanguageDialog by remember { mutableStateOf(false) }
     if (showLanguageDialog) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
-            title = { Text("选择语言") },
+            title = { Text("选择语言", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     languages.forEach { option ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
                                 .clickable {
                                     viewModel.setLanguage(option.tag)
                                     showLanguageDialog = false
                                 }
-                                .padding(vertical = 12.dp),
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
@@ -167,7 +177,7 @@ fun SettingsScreen(
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(option.displayName)
+                            Text(option.displayName, style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }
@@ -176,11 +186,11 @@ fun SettingsScreen(
                 TextButton(onClick = { showLanguageDialog = false }) {
                     Text("取消")
                 }
-            }
+            },
+            shape = RoundedCornerShape(28.dp)
         )
     }
 
-    // 点击计次
     var versionTapCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(versionTapCount) {
@@ -195,7 +205,7 @@ fun SettingsScreen(
         centerTitle = true
     )
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item { SectionTitle("通知与权限") }
             item {
@@ -205,7 +215,8 @@ fun SettingsScreen(
                     checked = uiState.isNotificationsEnabled,
                     onCheckedChange = viewModel::toggleNotifications,
                     shape = TopRoundedShape,
-                    showDivider = true
+                    showDivider = true,
+                    icon = Icons.Default.Notifications
                 )
             }
             item {
@@ -219,7 +230,8 @@ fun SettingsScreen(
                         }
                         context.startActivity(intent)
                     },
-                    shape = BottomRoundedShape
+                    shape = BottomRoundedShape,
+                    itemIcon = Icons.Default.Security
                 )
             }
 
@@ -231,7 +243,8 @@ fun SettingsScreen(
                     checked = uiState.isDarkMode,
                     onCheckedChange = viewModel::toggleDarkMode,
                     shape = TopRoundedShape,
-                    showDivider = true
+                    showDivider = true,
+                    icon = Icons.Default.DarkMode
                 )
             }
             item {
@@ -241,7 +254,8 @@ fun SettingsScreen(
                     checked = uiState.isDynamicColor,
                     onCheckedChange = viewModel::toggleDynamicColor,
                     shape = MiddleShape,
-                    showDivider = true
+                    showDivider = true,
+                    icon = Icons.Default.Palette
                 )
             }
             item {
@@ -249,9 +263,9 @@ fun SettingsScreen(
                     title = "语言设置",
                     subtitle = "设置应用显示语言",
                     value = languages.find { it.tag == uiState.language }?.displayName ?: stringResource(R.string.follow_system),
-                    icon = Icons.Default.Translate,
                     onClick = { showLanguageDialog = true },
-                    shape = BottomRoundedShape
+                    shape = BottomRoundedShape,
+                    itemIcon = Icons.Default.Translate
                 )
             }
 
@@ -261,35 +275,46 @@ fun SettingsScreen(
                     title = "清除应用缓存",
                     value = uiState.cacheSize,
                     onClick = { viewModel.clearCache() },
-                    shape = AllRoundedShape
+                    shape = AllRoundedShape,
+                    itemIcon = Icons.Default.Storage
                 )
             }
 
             item { SectionTitle("关于与反馈") }
             item {
                 SettingsClickableItem(
+                    title = "查看本地日志",
+                    onClick = { viewModel.viewLocalLogs() },
+                    shape = TopRoundedShape,
+                    showDivider = true,
+                    itemIcon = Icons.AutoMirrored.Filled.List
+                )
+            }
+            item {
+                SettingsClickableItem(
                     title = "导出本地日志",
                     onClick = { viewModel.exportLogs() },
-                    shape = TopRoundedShape,
-                    showDivider = true
+                    shape = MiddleShape,
+                    showDivider = true,
+                    itemIcon = Icons.Default.BugReport
                 )
             }
             item {
                 SettingsClickableItem(
                     title = "查看更新日志",
-                    onClick = {
-                        viewModel.fetchLog(changelogUrl)
-                    },
+                    onClick = { viewModel.fetchLog(changelogUrl) },
                     shape = MiddleShape,
-                    showDivider = true
+                    showDivider = true,
+                    itemIcon = Icons.Default.History
                 )
             }
             item {
                 SettingsClickableItem(
                     title = "检查更新",
-                    onClick = { /* TODO */ },
+                    onClick = { },
                     shape = MiddleShape,
-                    showDivider = true
+                    showDivider = true,
+                    itemIcon = Icons.Default.Update
                 )
             }
             item {
@@ -299,7 +324,6 @@ fun SettingsScreen(
                     onClick = {
                         versionTapCount++
                         if (versionTapCount >= 3) {
-                            // 修复点：改用字符串类名跳转
                             if (Screen.isVaultAvailable()) {
                                 val intent = Intent().apply {
                                     setClassName(context.packageName, "com.example.poop.ui.screens.vault.VaultActivity")
@@ -311,7 +335,9 @@ fun SettingsScreen(
                             versionTapCount = 0
                         }
                     },
-                    shape = BottomRoundedShape
+                    shape = BottomRoundedShape,
+                    itemIcon = Icons.Default.Info,
+                    showArrow = false
                 )
             }
 

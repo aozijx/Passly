@@ -1,4 +1,4 @@
-﻿import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.FilterConfiguration
 import java.io.FileInputStream
 import java.util.Locale
@@ -122,7 +122,7 @@ androidComponents {
 
             // 注册 Copy 任务
             val renameTask = tasks.register<Copy>(taskName) {
-                // 显式设置重复文件处理策略为“覆盖”
+                // 显式设置重复文件处理策略为"覆盖"
                 duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
                 from(variant.artifacts.get(SingleArtifact.APK))
@@ -213,6 +213,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
+
+    // Markdown
+    implementation(libs.markdown.renderer)
 
     // Testing
     testImplementation(libs.junit)
