@@ -45,22 +45,31 @@ jobs:
         include:
         - language: actions
           build-mode: none
-        # NOTE: Using 'build-mode: none' for 'java-kotlin' to bypass compatibility issues 
-        # with Kotlin 2.3.20 (Alpha) and KSP in the current CodeQL extractor.
-        # This allows scanning source code directly without running Gradle.
+        # NOTE: Using 'manual' build mode with a version patch because 'none' mode
+        # failed to detect source code, and Kotlin 2.3.20 is too recent for the extractor.
         - language: java-kotlin
-          build-mode: none
-        # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
+          build-mode: manual
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
     # Add any setup steps before running the `github/codeql-action/init` action.
-    # This includes steps like installing compilers or runtimes (`actions/setup-node`
-    # or others). This is typically only required for manual builds.
-    # - name: Setup runtime (example)
-    #   uses: actions/setup-example@v1
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: gradle
+
+    # 核心修复步骤：由于 CodeQL 不支持 Kotlin 2.3.20，我们在构建前通过脚本临时降级版本
+    - name: Patch Kotlin Version for CodeQL
+      if: matrix.build-mode == 'manual'
+      shell: bash
+      run: |
+        echo "Patching Kotlin version from 2.3.20 to 2.1.0 for CodeQL compatibility..."
+        sed -i 's/kotlin = "2.3.20"/kotlin = "2.1.0"/' gradle/libs.versions.toml
+        sed -i 's/ksp = "2.3.5"/ksp = "2.1.0-1.0.29"/' gradle/libs.versions.toml
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
@@ -69,27 +78,22 @@ jobs:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
         # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
-        # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
 
     # If the analyze step fails for one of the languages you are analyzing with
     # "We were unable to automatically build your code", modify the matrix above
     # to set the build mode to "manual" for that language. Then modify this step
     # to build your code.
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
     - name: Run manual build steps
       if: matrix.build-mode == 'manual'
       shell: bash
       run: |
-        echo 'If you are using a "manual" build mode for one or more of the' \
-          'languages you are analyzing, replace this with the commands to build' \
-          'your code, for example:'
-        echo '  make bootstrap'
-        echo '  make release'
-        exit 1
+        chmod +x gradlew
+        # Build a single variant with memory constraints
+        ./gradlew :app:assembleFullDebug --no-daemon \
+          -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
+          -Dorg.gradle.parallel=false \
+          --stacktrace
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
