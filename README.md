@@ -15,63 +15,69 @@
 
 - **UI 框架**：Jetpack Compose (声明式 UI)
 - **数据库**：Room + SQLCipher (数据库级全磁盘加密)
+- **渲染器**：Multiplatform Markdown Renderer (Material 3)
 - **依赖注入**：原生 ViewModel + 状态管理
 - **异步处理**：Kotlin Coroutines & Flow
 - **安全组件**：AndroidX Biometric + AndroidX Security
 - **扫码能力**：CameraX + Google ML Kit Barcode Scanning
 
-## 项目
+## 项目结构
 
 采用按功能模块划分（Package by Feature）并结合简洁架构（Clean Architecture）的思想。
 ```tree
 com.example.poop
 ├── core                // 核心底层能力（跨模块通用）
-│   ├── crypto          // 加密解密核心逻辑 (原 CryptoManager, BiometricHelper)
+│   ├── crypto          // 加密解密核心逻辑
 │   ├── common          // 基础基类、常量
-│   ├── designsystem    // 自定义 UI 组件库 (原 components, sections, icons)
-│   └── util            // 纯工具类 (原 BackupManager, TwoFAUtils)
+│   ├── designsystem    // 自定义 UI 组件库 (Material 3)
+│   └── util            // 纯工具类 (Backup, Notification)
 │
 ├── data                // 数据层（不含 UI 逻辑）
-│   ├── local           // Room 数据库, DataStore (原 Preference.kt)
-│   ├── repository      // 聚合数据源，提供给 ViewModel 使用
+│   ├── local           // Room 数据库, DataStore
+│   ├── repository      // 聚合数据源
 │   └── model           // 数据库实体 (Entity)
 │
 ├── domain              // 领域层（业务模型和规则）
-│   └── model           // 业务模型 (原 types 文件夹下的内容)
+│   └── model           // 业务模型
 │
-├── features            // 功能模块层（按业务划分，每个文件夹一个功能）
+├── features            // 功能模块层（按业务划分）
 │   ├── vault           // 保险箱主界面
-│   │   ├── VaultScreen.kt
-│   │   ├── VaultViewModel.kt
-│   │   └── components   // 仅限该功能使用的组件
 │   ├── detail          // 详情页
 │   ├── settings        // 设置页
-│   └── scanner         // 扫码功能 (原 QRCodeUtils 相关的 UI)
+│   └── scanner         // 扫码功能
 │
 ├── service             // 系统级服务
-│   └── autofill        // 自动填充功能 (原 service.autofill)
-│       ├── AutofillService.kt
-│       ├── AutofillViewModel.kt // 建议服务也用单独的逻辑处理
-│       └── AutofillAuthActivity.kt
+│   └── autofill        // 自动填充功能
 │
 └── ui                  // 全局 UI 相关
-├── theme           // 主题配置 (Color, Type, Theme)
-└── NavGraph.kt     // 导航路由
+    ├── theme           // 主题配置 (Color, Type, Theme)
+    └── NavGraph.kt     // 导航路由
 ```
 
 ## 快速开始
 
 ### 开发环境要求
-- Android Studio Ladybug (或更高版本)
-- JDK 17
+- Android Studio **Otter (2024.2.2)** 或更高版本（需支持 AGP 9.0+）
+- **JDK 21** (项目采用 jvmToolchain 21)
 - Gradle 8.13+
 - Android 12.0+ (API 31+) 设备
 
 ### 构建步骤
-1. 克隆项目：`git clone https://github.com/your-username/poop.git`
+1. 克隆项目：`git clone https://github.com/aozijx/poop.git`
 2. 使用 Android Studio 打开项目。
-3. 在 `local.properties` 中配置你的签名信息（如果是为了发布）。
-4. 点击 `Run` 即可运行。
+3. 等待 Gradle 同步完成。
+4. 点击 `Run` 即可在真机或模拟器上运行。
+
+## 持续集成 (CI)
+
+项目配置了 **GitHub Actions + CodeQL** 自动化安全分析，确保代码符合安全规范：
+
+- **静态扫描 (Static Analysis)**：
+  - **技术方案**：采用 CodeQL 的 `build-mode: none` 模式。
+  - **原因注释**：由于项目使用了最新的 **Kotlin 2.3.20 (Alpha)** 和 **KSP**，传统的编译器拦截模式会产生版本不兼容报错（KotlinVersionTooRecent）。使用 `none` 模式可绕过编译器环境直接扫描源码，确保 CI 稳定性。
+- **漏洞防护**：
+  - 自动检测 Android 常见安全风险，如 **Implicit PendingIntent**（隐式意图重定向）等。
+  - 自动扫描泄露的硬编码密钥和敏感凭据。
 
 ## 隐私与安全
 

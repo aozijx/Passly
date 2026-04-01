@@ -59,17 +59,14 @@ class NotificationHelper(private val context: Context) {
      */
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun sendCustomNotification(title: String, message: String) {
-        // 关键点：检查设置中的通知开关状态
-        // 因为这是同步触发的操作，我们使用 runBlocking 获取 Flow 的当前值
         val isEnabled = runBlocking { preference.isNotificationsEnabled.first() }
         if (!isEnabled) return
 
         val notificationManager = NotificationManagerCompat.from(context)
-
-        // 1. 使用当前时间戳作为唯一 ID，确保新通知不会覆盖旧通知，从而形成堆叠
         val uniqueId = System.currentTimeMillis().toInt()
+        val pendingIntent = createPendingIntent()
 
-        // 2. 构建子通知
+        // 1. 构建子通知
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.launcher_logo)
             .setContentTitle(title)
@@ -77,36 +74,39 @@ class NotificationHelper(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setAutoCancel(true)
-            .setGroup(groupKey) // 关键：设置分组 Key
+            .setGroup(groupKey)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentIntent(createPendingIntent())
+            .setContentIntent(pendingIntent)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .build()
 
-        // 3. 构建并发送摘要通知（Summary）
-        // 摘要通知是堆叠的外壳，必须设置 setGroupSummary(true)
+        // 2. 构建并发送摘要通知（Summary）
+        // 修复：为摘要通知也添加显式的 PendingIntent
         val summaryNotification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.launcher_logo)
-            .setContentTitle("收到多条通知") // 堆叠时的总标题
+            .setContentTitle("收到多条通知")
             .setContentText("点击展开查看详情")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setGroup(groupKey)
-            .setGroupSummary(true) // 关键：标记为组摘要
+            .setGroupSummary(true)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent) // 修复点：必须显式设置 Intent
             .build()
 
-        // 先发送子通知，再发送/更新摘要通知
         notificationManager.notify(uniqueId, notification)
         notificationManager.notify(summaryId, summaryNotification)
     }
 
     private fun createPendingIntent(): PendingIntent {
+        // 使用显式 Intent 指定目标 Activity，防止 Intent 被劫持修改
+        val intent = Intent(context, FullActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
         return PendingIntent.getActivity(
             context,
             0,
-            Intent(context, FullActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            },
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
