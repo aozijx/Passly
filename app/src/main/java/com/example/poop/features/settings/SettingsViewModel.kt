@@ -34,6 +34,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val isSecureContentEnabled: StateFlow<Boolean> = prefs.isSecureContentEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val isFlipToLockEnabled: StateFlow<Boolean> = prefs.isFlipToLockEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     // --- 交互设置 ---
     val isSwipeEnabled: StateFlow<Boolean> = prefs.isSwipeEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -47,7 +50,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setTopBarCollapsible(collapsible: Boolean) = viewModelScope.launch { prefs.setTopBarCollapsible(collapsible) }
     fun setTabBarCollapsible(collapsible: Boolean) = viewModelScope.launch { prefs.setTabBarCollapsible(collapsible) }
     fun setSecureContentEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setSecureContentEnabled(enabled) }
-    
+    fun setFlipToLockEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setFlipToLockEnabled(enabled) }
+
     fun setSwipeEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setSwipeEnabled(enabled) }
     fun setSwipeLeftAction(action: SwipeActionType) = viewModelScope.launch { prefs.setSwipeLeftAction(action) }
     fun setSwipeRightAction(action: SwipeActionType) = viewModelScope.launch { prefs.setSwipeRightAction(action) }
