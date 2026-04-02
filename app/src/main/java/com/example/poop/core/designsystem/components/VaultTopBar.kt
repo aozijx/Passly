@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -55,12 +56,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.poop.R
 import com.example.poop.core.common.VaultTab
 import com.example.poop.features.vault.VaultViewModel
@@ -78,6 +81,7 @@ fun VaultTopBar(
     isTopBarCollapsible: Boolean = true,
     isTabBarCollapsible: Boolean = true
 ) {
+    val context = LocalContext.current
     val density = LocalDensity.current
     val searchQuery by vaultViewModel.searchQuery.collectAsState()
     val selectedCategory by vaultViewModel.selectedCategory.collectAsState()
@@ -88,11 +92,15 @@ fun VaultTopBar(
     var showCategorySubMenu by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
+    // 回到页面时自动通过 ViewModel 刷新状态
+    LifecycleResumeEffect(Unit) {
+        vaultViewModel.updateAutofillStatus()
+        onPauseOrDispose { }
+    }
+
     // 关键点：如果标题栏不折叠，但标签栏或状态栏需要折叠，我们需要手动设置滚动上限
-    // 否则 scrollBehavior.state.collapsedFraction 永远是 0，导致相关功能无法驱动
     LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible, isStatusBarAutoHide) {
         if (!isTopBarCollapsible && (isTabBarCollapsible || isStatusBarAutoHide)) {
-            // 设置一个约 64dp 的滚动上限，用于驱动折叠逻辑
             scrollBehavior.state.heightOffsetLimit = with(density) { -64.dp.toPx() }
         }
     }
@@ -109,7 +117,6 @@ fun VaultTopBar(
 
     Column {
         CenterAlignedTopAppBar(
-            // 如果标题栏不折叠，传入 null，TopAppBar 将固定在顶部
             scrollBehavior = if (isTopBarCollapsible) scrollBehavior else null,
             windowInsets = WindowInsets.statusBars,
             title = {
@@ -173,6 +180,16 @@ fun VaultTopBar(
                                     onClick = { vaultViewModel.showTOTPCode = !vaultViewModel.showTOTPCode; vaultViewModel.isMoreMenuExpanded = false },
                                     leadingIcon = { Icon(if (vaultViewModel.showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility, null) }
                                 )
+                                
+                                // 如果未开启自动填充，显示开启按钮
+                                if (!vaultViewModel.isAutofillEnabled) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
+                                        onClick = { vaultViewModel.openAutofillSettings(context) },
+                                        leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
+                                    )
+                                }
+
                                 HorizontalDivider()
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_settings)) },

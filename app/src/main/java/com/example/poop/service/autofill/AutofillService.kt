@@ -46,7 +46,7 @@ class AutofillService : android.service.autofill.AutofillService() {
 
                 entries.forEach { entry ->
                     // 核心修复：显式指定类型避免类型推断错误
-                    val decryptedUsername = CryptoManager.decrypt(entry.username).ifBlank { "点击填充" }
+                    val decryptedUsername = try { CryptoManager.decrypt(entry.username) } catch (_: Exception) { "" }.ifBlank { "点击填充" }
 
                     val presentation = RemoteViews(packageName, R.layout.autofill_dataset_item).apply {
                         setTextViewText(R.id.title, entry.title)
@@ -134,16 +134,42 @@ class AutofillService : android.service.autofill.AutofillService() {
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
         var username = ""; var password = ""; var pkg: String? = null; var domain: String? = null; var title: String? = null
+
+        // 核心修复：遍历所有 context 收集完整数据，并使用最新填入的值
         request.fillContexts.forEach { context ->
             val p = AutofillParser(context.structure)
+
+            // 抓取包名和域名
+            if (pkg == null) pkg = p.packageName
+            if (domain == null) domain = p.webDomain
+            if (title == null) title = p.pageTitle
+
+            // 抓取用户输入的值
             if (!p.usernameValue.isNullOrBlank()) username = p.usernameValue!!
             if (!p.passwordValue.isNullOrBlank()) password = p.passwordValue!!
-            p.packageName?.let { pkg = it }; p.webDomain?.let { domain = it }; p.pageTitle?.let { title = it }
         }
-        if (password.isBlank()) return callback.onSuccess()
+
+        Logcat.d(tag, "onSaveRequest: captured user=$username, hasPwd=${password.isNotBlank()}, pkg=$pkg")
+
+        if (password.isBlank()) {
+            Logcat.w(tag, "onSaveRequest: password is blank, ignore save")
+            return callback.onSuccess()
+        }
+
         serviceScope.launch {
-            val success = AutofillRepository.saveOrUpdateEntry(applicationContext, pkg, domain, title, username, password)
-            if (success) callback.onSuccess() else callback.onFailure("Save failed")
+            try {
+                val success = AutofillRepository.saveOrUpdateEntry(applicationContext, pkg, domain, title, username, password)
+                if (success) {
+                    Logcat.i(tag, "Successfully saved credentials for $username")
+                    callback.onSuccess()
+                } else {
+                    Logcat.e(tag, "Failed to save credentials")
+                    callback.onFailure("Save failed in repository")
+                }
+            } catch (e: Exception) {
+                Logcat.e(tag, "Exception during save", e)
+                callback.onFailure(e.message)
+            }
         }
     }
 }

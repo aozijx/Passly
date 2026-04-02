@@ -1,4 +1,4 @@
-# Poop Vault
+# Passly
 
 一款基于 **Jetpack Compose** 构建的现代化、极简且高安全的隐私保险库 Android 应用。
 
@@ -63,7 +63,7 @@ com.example.poop
 - Android 12.0+ (API 31+) 设备
 
 ### 构建步骤
-1. 克隆项目：`git clone https://github.com/aozijx/poop.git`
+1. 克隆项目：`git clone https://github.com/aozijx/Passly.git`
 2. 使用 Android Studio 打开项目。
 3. 等待 Gradle 同步完成。
 4. 点击 `Run` 即可在真机或模拟器上运行。
@@ -81,7 +81,7 @@ com.example.poop
 
 ## 隐私与安全
 
-Poop 设计初衷即为“零信任”架构：
+Passly 设计初衷即为“零信任”架构：
 - **无联网请求**：应用不包含任何上传数据的网络代码（仅支持手动获取更新日志）。
 - **零痕迹**：所有敏感数据在内存中均以加密形式存在，并在使用后立即清除。
 - **完全离线**：你的密码只属于你的手机，没有任何云端备份。

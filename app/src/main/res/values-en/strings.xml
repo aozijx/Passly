@@ -28,20 +28,20 @@
     <string name="follow_system">Follow system</string>
 
     <!-- App basics -->
-    <string name="app_name">poop</string>
+    <string name="app_name">Passly</string>
     <string name="title_login">Login</string>
     <string name="title_vault">Vault</string>
     <string name="title_scanner">Scan</string>
 
     <!-- Autofill service -->
-    <string name="autofill_service_name">Vault Autofill</string>
+    <string name="autofill_service_name">Passly Autofill</string>
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">Security Verification</string>
     <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>
     <string name="autofill_save_prompt_title">Save %s?</string>
-    <string name="autofill_save_prompt_description">Do you want to save the username and password for %s to Poop?</string>
+    <string name="autofill_save_prompt_description">Do you want to save the username and password for %s to Passly?</string>
     <string name="autofill_save_icon_description">App icon</string>
-    <string name="autofill_no_suggestions">Poop has no matching suggestions</string>
+    <string name="autofill_no_suggestions">Passly has no matching suggestions</string>
     <string name="autofill_pending_verification">Pending verification for autofill</string>
 
     <!-- Autofill title generation -->
@@ -214,14 +214,8 @@
     <string name="shortcut_scanner_short">Scan</string>
     <string name="shortcut_scanner_long">Scan to add TOTP</string>
 
-    <!-- Changelog (kept original URL, translated last changelog) -->
+    <!-- Changelog (kept original URL) -->
     <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
-    <string name="changelog_last"><![CDATA[
-• Fixed Steam token calculation error
-• Now TOTP codes are displayed more clearly
-• Added auto-save feature
-• Some UI improvements
-]]></string>
 
     <!-- Category keyword arrays (translated to English keywords for matching) -->
     <string-array name="category_keywords_personal">

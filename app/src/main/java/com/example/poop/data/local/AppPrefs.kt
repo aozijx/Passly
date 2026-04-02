@@ -31,12 +31,16 @@ class AppPrefs(context: Context) {
         
         // --- 安全增强 (合并：截屏保护 + 隐私屏) ---
         val SECURE_CONTENT_KEY = booleanPreferencesKey("ui_secure_content")
+
+        // --- 传感器交互 ---
+        val FLIP_TO_LOCK_KEY = booleanPreferencesKey("security_flip_to_lock")
     }
 
     val isStatusBarAutoHide: Flow<Boolean> = appContext.vaultDataStore.data.map { it[AUTO_HIDE_STATUS_BAR_KEY] ?: true }
     val isTopBarCollapsible: Flow<Boolean> = appContext.vaultDataStore.data.map { it[COLLAPSE_TOP_BAR_KEY] ?: true }
     val isTabBarCollapsible: Flow<Boolean> = appContext.vaultDataStore.data.map { it[COLLAPSE_TAB_BAR_KEY] ?: true }
     val isSecureContentEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[SECURE_CONTENT_KEY] ?: true }
+    val isFlipToLockEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[FLIP_TO_LOCK_KEY] ?: false }
 
     // 原有设置
     val lockTimeout: Flow<Long> = appContext.vaultDataStore.data.map { it[LOCK_TIMEOUT_KEY] ?: 60000L }
@@ -55,6 +59,7 @@ class AppPrefs(context: Context) {
     suspend fun setTopBarCollapsible(collapsible: Boolean) = appContext.vaultDataStore.edit { it[COLLAPSE_TOP_BAR_KEY] = collapsible }
     suspend fun setTabBarCollapsible(collapsible: Boolean) = appContext.vaultDataStore.edit { it[COLLAPSE_TAB_BAR_KEY] = collapsible }
     suspend fun setSecureContentEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[SECURE_CONTENT_KEY] = enabled }
+    suspend fun setFlipToLockEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[FLIP_TO_LOCK_KEY] = enabled }
 
     suspend fun setLockTimeout(timeoutMs: Long) = appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
     suspend fun setBiometricEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }

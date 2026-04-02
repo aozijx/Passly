@@ -191,8 +191,8 @@ fun VaultContent(
                     val listState = rememberLazyListState()
                     val filteredItems = when (currentTab) {
                         VaultTab.ALL -> items
-                        VaultTab.PASSWORDS -> items.filter { it.totpSecret == null }
-                        VaultTab.TOTP -> items.filter { it.totpSecret != null }
+                        VaultTab.PASSWORDS -> items.filter { it.totpSecret.isNullOrBlank() }
+                        VaultTab.TOTP -> items.filter { !it.totpSecret.isNullOrBlank() }
                     }
                     
                     if (filteredItems.isEmpty()) {
@@ -207,7 +207,7 @@ fun VaultContent(
                             items(filteredItems, key = { it.id }) { item -> 
                                 val itemContent = @Composable {
                                     when {
-                                        item.totpSecret != null -> {
+                                        !item.totpSecret.isNullOrBlank() -> {
                                             TwoFAItem(
                                                 entry = item, 
                                                 vaultViewModel = vaultViewModel,

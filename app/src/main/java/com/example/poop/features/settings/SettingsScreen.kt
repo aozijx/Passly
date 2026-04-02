@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
@@ -73,6 +74,7 @@ fun SettingsScreen(
     val isTopBarCollapsible by viewModel.isTopBarCollapsible.collectAsStateWithLifecycle()
     val isTabBarCollapsible by viewModel.isTabBarCollapsible.collectAsStateWithLifecycle()
     val isSecureContentEnabled by viewModel.isSecureContentEnabled.collectAsStateWithLifecycle()
+    val isFlipToLockEnabled by viewModel.isFlipToLockEnabled.collectAsStateWithLifecycle()
     
     var showLeftActionDialog by remember { mutableStateOf(false) }
     var showRightActionDialog by remember { mutableStateOf(false) }
@@ -141,6 +143,14 @@ fun SettingsScreen(
                         subtitle = "禁止截屏录屏，并隐藏多任务预览内容",
                         checked = isSecureContentEnabled,
                         onCheckedChange = { viewModel.setSecureContentEnabled(it) }
+                    )
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+                    SwitchSettingItem(
+                        icon = Icons.Default.Flip,
+                        title = "翻转即锁定",
+                        subtitle = "手机屏幕朝下放置时立即关闭保险箱",
+                        checked = isFlipToLockEnabled,
+                        onCheckedChange = { viewModel.setFlipToLockEnabled(it) }
                     )
                 }
             }

@@ -7,7 +7,6 @@ import androidx.core.content.FileProvider
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.poop.R
 import com.example.poop.data.AppPreference
 import com.example.poop.util.Logcat
 import com.example.poop.util.PermissionManager
@@ -201,12 +200,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun fetchLog(urlStr: String) {
         _logTitle.value = "更新日志"
-        if (urlStr.isBlank() || !urlStr.startsWith("http")) {
-            Logcat.e("SettingsViewModel", "Invalid URL: $urlStr. Showing fallback log.")
-            _logContent.value = getApplication<Application>().getString(R.string.changelog_last)
-            return
-        }
-
         viewModelScope.launch {
             _isLogLoading.value = true
             _logError.value = null
@@ -221,13 +214,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                         connection.inputStream.bufferedReader().use { it.readText() }
                     } else {
-                        throw Exception("Server error: ${connection.responseCode}")
+                        throw Exception("获取远程日志失败 (HTTP ${connection.responseCode})")
                     }
                 }
                 _logContent.value = content
             } catch (e: Exception) {
-                Logcat.e("SettingsViewModel", "Log fetching failed, showing local fallback. Detail: ${e.message}", e)
-                _logContent.value = getApplication<Application>().getString(R.string.changelog_last)
+                Logcat.e("SettingsViewModel", "Log fetching failed: ${e.message}", e)
+                _logError.value = "无法获取更新日志，请稍后再试。\n错误信息: ${e.message}"
             } finally {
                 _isLogLoading.value = false
             }

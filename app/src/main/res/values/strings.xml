@@ -28,20 +28,20 @@
     <string name="follow_system">跟随系统</string>
 
     <!-- 应用基本信息 -->
-    <string name="app_name">poop</string>
+    <string name="app_name">Passly</string>
     <string name="title_login">登录</string>
     <string name="title_vault">保险库</string>
     <string name="title_scanner">扫一扫</string>
 
     <!-- Autofill 服务相关 -->
-    <string name="autofill_service_name">Vault 自动填充</string>
+    <string name="autofill_service_name">Passly 自动填充</string>
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">安全验证</string>
     <string name="autofill_auth_subtitle">验证身份以自动填充凭据</string>
     <string name="autofill_save_prompt_title">保存 %s ？</string>
-    <string name="autofill_save_prompt_description">是否将 %s 的账号密码保存到 Poop？</string>
+    <string name="autofill_save_prompt_description">是否将 %s 的账号密码保存到 Passly？</string>
     <string name="autofill_save_icon_description">应用图标</string>
-    <string name="autofill_no_suggestions">Poop 暂无匹配建议</string>
+    <string name="autofill_no_suggestions">Passly 暂无匹配建议</string>
     <string name="autofill_pending_verification">待验证的自动填充项</string>
 
     <!-- 自动填充标题生成相关 -->
@@ -215,13 +215,6 @@
     <string name="shortcut_scanner_short">扫一扫</string>
     <string name="shortcut_scanner_long">扫一扫添加 TOTP</string>
     <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
-    <string name="changelog_last"><![CDATA[
-## [0.3.0] - 2026-03-15
-• 修复 steam 令牌的计算错误
-• 现在能更直观的看到动态验证码
-• 添加自动保存的功能
-• 一些 UI 的美化
-]]></string>
 
     <!-- 分类匹配关键词数组 -->
     <string-array name="category_keywords_personal">

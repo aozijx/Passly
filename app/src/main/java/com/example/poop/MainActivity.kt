@@ -1,5 +1,9 @@
 package com.example.poop
 
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
@@ -22,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,14 +49,21 @@ import com.example.poop.features.vault.VaultContent
 import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.ui.theme.PoopTheme
 
-class MainActivity : FragmentActivity() {
+class MainActivity : FragmentActivity(), SensorEventListener {
     private val viewModel: MainViewModel by viewModels()
     private var showSettings by mutableStateOf(false)
     private var showDetail by mutableStateOf(false)
     private var detailEntry by mutableStateOf<com.example.poop.data.model.VaultEntry?>(null)
 
+    private var sensorManager: SensorManager? = null
+    private var accelerometer: Sensor? = null
+    private var isFlipLockEnabled = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -96,6 +108,22 @@ class MainActivity : FragmentActivity() {
                 } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 }
+            }
+
+            // 翻转锁定逻辑
+            val flipToLock by settingsViewModel.isFlipToLockEnabled.collectAsStateWithLifecycle()
+            LaunchedEffect(flipToLock) {
+                isFlipLockEnabled = flipToLock
+                if (flipToLock) {
+                    registerSensor()
+                } else {
+                    unregisterSensor()
+                }
+            }
+
+            // 自动注销传感器
+            DisposableEffect(Unit) {
+                onDispose { unregisterSensor() }
             }
             
             // 应用状态栏自动隐藏行为设置
@@ -147,6 +175,30 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    private fun registerSensor() {
+        accelerometer?.let {
+            sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
+
+    private fun unregisterSensor() {
+        sensorManager?.unregisterListener(this)
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (!isFlipLockEnabled || event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
+        
+        val z = event.values[2]
+        // Z 轴负值表示屏幕朝下，通常 -9.8 左右是完全平放。这里取 -8.0 作为触发阈值。
+        if (z < -8.5f && viewModel.isAuthorized) {
+            viewModel.lock()
+            showDetail = false
+            showSettings = false
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
     private fun requestAuthentication() {
         viewModel.authenticate(
             activity = this,
@@ -169,6 +221,12 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.checkAndLock()
+        if (isFlipLockEnabled) registerSensor()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (isFlipLockEnabled) unregisterSensor()
     }
 }
 
