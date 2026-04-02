@@ -55,14 +55,16 @@ object AutofillRepository {
         passwordValue: String
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val dao = AppDatabase.getDatabase(context).vaultDao()
-            val allEntries = dao.getAllEntries().first()
+            // 核心修复：直接使用 applicationContext 避免潜在的 Context 泄露
+            val appContext = context.applicationContext
+            val dao = AppDatabase.getDatabase(appContext).vaultDao()
             
+            // 1. 先通过包名/域名匹配现有条目
+            val allEntries = dao.getAllEntries().first()
             val existing = allEntries.find { entry ->
                 val scopeMatch = (entry.associatedAppPackage == packageName && packageName != null) ||
                                 (entry.associatedDomain == webDomain && webDomain != null)
                 if (scopeMatch) {
-                    // 核心修复：直接使用简化后的解密逻辑
                     val decUser = try { CryptoManager.decrypt(entry.username) } catch (_: Exception) { null }
                     decUser == usernameValue
                 } else false
@@ -72,6 +74,7 @@ object AutofillRepository {
             val encPass = CryptoManager.encrypt(passwordValue)
             
             if (existing != null) {
+                // 更新逻辑
                 val updatedEntry = existing.copy(
                     password = encPass,
                     updatedAt = System.currentTimeMillis()
@@ -79,38 +82,42 @@ object AutofillRepository {
                 dao.update(updatedEntry)
                 Logcat.i(TAG, "Updated existing account: $usernameValue")
             } else {
+                // 新建逻辑
                 val appLabel = packageName?.let { pkg ->
                     try {
-                        val info = context.packageManager.getApplicationInfo(pkg, 0)
-                        context.packageManager.getApplicationLabel(info).toString()
+                        val info = appContext.packageManager.getApplicationInfo(pkg, 0)
+                        appContext.packageManager.getApplicationLabel(info).toString()
                     } catch (_: Exception) { null }
                 }
 
                 val title = AutofillTitleGenerator.getSmartTitle(
-                    context = context,
+                    context = appContext,
                     pageTitle = pageTitle,
                     domain = webDomain,
                     appLabel = appLabel,
                     packageName = packageName
                 )
 
+                // 重要：确保 category 不为空，且 entryType 设置正确
                 val newEntry = VaultEntry(
                     title = title,
                     username = encUser,
                     password = encPass,
-                    category = context.getString(R.string.category_autofill),
+                    category = appContext.getString(R.string.category_autofill).ifBlank { "自动填充" },
                     associatedAppPackage = packageName,
                     associatedDomain = webDomain,
-                    entryType = 0,
+                    entryType = 0, // 0 表示密码类型
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()
                 )
+                
+                // 关键点：执行插入操作
                 dao.insert(newEntry)
-                Logcat.i(TAG, "Saved new captured entry: $title")
+                Logcat.i(TAG, "Successfully saved new entry to DB: $title")
             }
             return@withContext true
         } catch (e: Exception) {
-            Logcat.e(TAG, "Save failed", e)
+            Logcat.e(TAG, "Save to database failed!", e)
             return@withContext false
         }
     }

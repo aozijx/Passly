@@ -15,7 +15,6 @@ import com.example.poop.core.designsystem.state.TotpState
 import com.example.poop.core.util.TwoFAUtils
 import com.example.poop.core.util.VaultFileUtils
 import com.example.poop.data.local.AppDatabase
-import com.example.poop.data.local.AppPrefs
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.data.repository.VaultRepository
 import com.example.poop.util.Logcat
@@ -157,6 +156,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun confirmDelete() {
         itemToDelete?.let { entry ->
             viewModelScope.launch {
+                // 如果当前正在查看的条目正是被删除的条目，先关闭详情弹窗
+                if (detailItem?.id == entry.id) {
+                    detailItem = null
+                }
                 entry.iconCustomPath?.let { VaultFileUtils.deleteImage(it) }
                 repository.delete(entry)
                 itemToDelete = null
@@ -167,6 +170,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun quickDelete(entry: VaultEntry) {
         viewModelScope.launch {
+            // 同样处理快速删除时的详情弹窗状态
+            if (detailItem?.id == entry.id) {
+                detailItem = null
+            }
             entry.iconCustomPath?.let { VaultFileUtils.deleteImage(it) }
             repository.delete(entry)
             _totpStates.update { it - entry.id }
