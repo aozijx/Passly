@@ -1,13 +1,20 @@
 package com.example.poop.features.vault
 
 import android.app.Application
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
+import android.view.autofill.AutofillManager
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.poop.AppContext
+import com.example.poop.R
 import com.example.poop.core.common.AddType
 import com.example.poop.core.common.VaultTab
 import com.example.poop.core.crypto.CryptoManager
@@ -52,6 +59,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var isMoreMenuExpanded by mutableStateOf(false)
     var showTOTPCode by mutableStateOf(true)
 
+    // 自动填充状态
+    var isAutofillEnabled by mutableStateOf(false)
+        private set
+
     private val _totpStates = MutableStateFlow<Map<Int, TotpState>>(emptyMap())
     val totpStates: StateFlow<Map<Int, TotpState>> = _totpStates
 
@@ -78,6 +89,66 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         startTotpRefresher()
+        updateAutofillStatus()
+    }
+
+    /**
+     * 更新自动填充服务启用状态
+     * 采用双重检查：系统设置字符串匹配 + 官方 API 状态
+     */
+    fun updateAutofillStatus() {
+        val context = getApplication<Application>()
+        val afm = context.getSystemService(AutofillManager::class.java)
+        
+        // 1. 直接检查系统设置（最快最准）：当前选中的服务包名是否包含我们
+        val currentService = Settings.Secure.getString(context.contentResolver, "autofill_service")
+        val isOurServiceSelected = currentService != null && currentService.contains(context.packageName)
+        
+        // 2. 官方 API 检查（用于兼容不同系统版本）
+        val isEnabledByApi = afm != null && afm.isEnabled && afm.hasEnabledAutofillServices()
+        
+        // 只要有一项成立，就认为已开启，从而隐藏“去开启”按钮
+        isAutofillEnabled = isOurServiceSelected || isEnabledByApi
+    }
+
+    /**
+     * 跳转至自动填充设置
+     */
+    fun openAutofillSettings(context: Context) {
+        isMoreMenuExpanded = false
+        
+        fun tryStartActivity(intent: Intent): Boolean {
+            return try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                true
+            } catch (e: Exception) {
+                Logcat.e("VaultViewModel", "Failed to start activity: ${intent.action}", e)
+                false
+            }
+        }
+
+        // 优先级 1：标准的自动填充请求
+        val standardIntent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
+            data = "package:${context.packageName}".toUri()
+        }
+
+        var started = tryStartActivity(standardIntent)
+        
+        if (!started) {
+            // 优先级 2：进入“默认应用”设置 (适配鸿蒙/国产机)
+            started = tryStartActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+        }
+        
+        if (!started) {
+            // 优先级 3：终极兜底跳转总设置
+            tryStartActivity(Intent(Settings.ACTION_SETTINGS))
+            Toast.makeText(
+                context, 
+                context.getString(R.string.vault_toast_enable_autofill_manual), 
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     private fun startTotpRefresher() {

@@ -1,4 +1,4 @@
-# Poop Vault
+# Passly
 
 一款基于 **Jetpack Compose** 构建的现代化、极简且高安全的隐私保险库 Android 应用。
 
@@ -20,24 +20,24 @@
 - **安全组件**：AndroidX Biometric + AndroidX Security
 - **扫码能力**：CameraX + Google ML Kit Barcode Scanning
 
-## 项目
+## 项目结构
 
 采用按功能模块划分（Package by Feature）并结合简洁架构（Clean Architecture）的思想。
 ```tree
 com.example.poop
 ├── core                // 核心底层能力（跨模块通用）
-│   ├── crypto          // 加密解密核心逻辑 (原 CryptoManager, BiometricHelper)
+│   ├── crypto          // 加密解密核心逻辑
 │   ├── common          // 基础基类、常量
-│   ├── designsystem    // 自定义 UI 组件库 (原 components, sections, icons)
-│   └── util            // 纯工具类 (原 BackupManager, TwoFAUtils)
+│   ├── designsystem    // 自定义 UI 组件库
+│   └── util            // 纯工具类
 │
 ├── data                // 数据层（不含 UI 逻辑）
-│   ├── local           // Room 数据库, DataStore (原 Preference.kt)
+│   ├── local           // Room 数据库, DataStore
 │   ├── repository      // 聚合数据源，提供给 ViewModel 使用
 │   └── model           // 数据库实体 (Entity)
 │
 ├── domain              // 领域层（业务模型和规则）
-│   └── model           // 业务模型 (原 types 文件夹下的内容)
+│   └── model           // 业务模型
 │
 ├── features            // 功能模块层（按业务划分，每个文件夹一个功能）
 │   ├── vault           // 保险箱主界面
@@ -46,12 +46,12 @@ com.example.poop
 │   │   └── components   // 仅限该功能使用的组件
 │   ├── detail          // 详情页
 │   ├── settings        // 设置页
-│   └── scanner         // 扫码功能 (原 QRCodeUtils 相关的 UI)
+│   └── scanner         // 扫码功能
 │
 ├── service             // 系统级服务
-│   └── autofill        // 自动填充功能 (原 service.autofill)
+│   └── autofill        // 自动填充功能
 │       ├── AutofillService.kt
-│       ├── AutofillViewModel.kt // 建议服务也用单独的逻辑处理
+│       ├── AutofillViewModel.kt
 │       └── AutofillAuthActivity.kt
 │
 └── ui                  // 全局 UI 相关
@@ -68,14 +68,14 @@ com.example.poop
 - Android 12.0+ (API 31+) 设备
 
 ### 构建步骤
-1. 克隆项目：`git clone https://github.com/your-username/poop.git`
+1. 克隆项目：`git clone https://github.com/aozijx/Passly.git`
 2. 使用 Android Studio 打开项目。
 3. 在 `local.properties` 中配置你的签名信息（如果是为了发布）。
 4. 点击 `Run` 即可运行。
 
 ## 隐私与安全
 
-Poop 设计初衷即为“零信任”架构：
+Passly 设计初衷即为“零信任”架构：
 - **无联网请求**：应用不包含任何上传数据的网络代码（仅支持手动获取更新日志）。
 - **零痕迹**：所有敏感数据在内存中均以加密形式存在，并在使用后立即清除。
 - **完全离线**：你的密码只属于你的手机，没有任何云端备份。
