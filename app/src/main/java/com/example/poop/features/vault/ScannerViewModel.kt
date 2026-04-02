@@ -23,6 +23,10 @@ class ScannerViewModel : ViewModel() {
         }
     }
 
+    fun clearScanResult() {
+        _scanResult.value = ""
+    }
+
     private fun vibrate(context: Context) {
         val vibratorManager =
             context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager

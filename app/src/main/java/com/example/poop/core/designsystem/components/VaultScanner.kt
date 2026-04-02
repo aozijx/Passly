@@ -32,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,11 +50,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.poop.R
 import com.example.poop.core.crypto.CryptoManager
 import com.example.poop.core.util.ImageType
+import com.example.poop.core.util.rememberImagePicker
 import com.example.poop.data.model.VaultEntry
 import com.example.poop.features.vault.ScannerViewModel
 import com.example.poop.features.vault.VaultViewModel
 import com.example.poop.util.Logcat
-import com.example.poop.core.util.rememberImagePicker
 import java.net.URLDecoder
 
 /**
@@ -67,6 +68,13 @@ fun VaultScanner(
 ) {
     val context = LocalContext.current
     
+    // 每次进入扫码页面或退出时，清除之前的扫码结果，防止隐私泄露
+    DisposableEffect(Unit) {
+        onDispose {
+            scannerViewModel.clearScanResult()
+        }
+    }
+
     val errorNotOtp = stringResource(R.string.vault_scanner_error_not_otp)
     val successSaveMsg = stringResource(R.string.vault_scanner_success_save)
     val scanResult by scannerViewModel.scanResult.collectAsState()
