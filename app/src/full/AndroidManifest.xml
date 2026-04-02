@@ -13,8 +13,11 @@
         </intent>
     </queries>
 
-    <application android:icon="@mipmap/launcher_logo">
-        <!-- Full 版本的入口 -->
+    <application
+        android:icon="@mipmap/launcher_logo"
+        android:localeConfig="@xml/local_config"
+        tools:targetApi="33">
+        <!-- Full 版本的唯一入口 -->
         <activity
             android:name=".FullActivity"
             android:exported="true">
@@ -24,15 +27,17 @@
             </intent-filter>
         </activity>
 
+        <!-- 关键修改：通过 tools:node="replace" 移除来自 main 的 intent-filter，防止生成双图标 -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            tools:replace="android:exported"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustResize"
+            tools:replace="android:exported">
+            <intent-filter tools:node="removeAll" />
+        </activity>
 
         <activity
             android:name=".ui.screens.login.LoginActivity"
-            android:configChanges="locale|layoutDirection|screenSize|orientation"
             android:label="@string/title_login"
             android:windowSoftInputMode="adjustResize" />
 

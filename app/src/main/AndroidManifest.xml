@@ -45,7 +45,7 @@
             android:exported="false"
             android:launchMode="singleTask"
             android:noHistory="true"
-            android:theme="@style/Theme.Poop.TransparentAuth" />
+            android:theme="@style/Theme.Passly.TransparentAuth" />
 
         <!-- 自动填充服务 -->
         <service

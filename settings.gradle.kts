@@ -19,6 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "poop"
+rootProject.name = "Passly"
 include(":app")
- 

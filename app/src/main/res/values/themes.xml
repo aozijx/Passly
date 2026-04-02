@@ -28,7 +28,7 @@
     </style>
 
     <!-- 透明验证主题：用于 AutofillAuthActivity -->
-    <style name="Theme.Poop.TransparentAuth" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.Passly.TransparentAuth" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- 核心：窗口完全透明 -->
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsTranslucent">true</item>

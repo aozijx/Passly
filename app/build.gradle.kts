@@ -1,7 +1,4 @@
-import com.android.build.api.artifact.SingleArtifact
-import com.android.build.api.variant.FilterConfiguration
 import java.io.FileInputStream
-import java.util.Locale
 import java.util.Properties
 
 plugins {
@@ -21,16 +18,20 @@ val localProperties = Properties().apply {
 
 // Android 配置
 android {
-    namespace = "com.example.poop"
+    namespace = "com.aozijx.passly"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.poop"
+        applicationId = "com.aozijx.passly"
         minSdk = 31
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.3.1"
+        versionCode = 7
+        versionName = "0.3.2"
+        flavorDimensions += listOf("scope")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 定义 Activity 类名常量
+        buildConfigField("String", "VAULT_ACTIVITY_CLASS", "\"com.aozijx.passly.MainActivity\"")
     }
 
     signingConfigs {
@@ -82,9 +83,6 @@ android {
         }
     }
 
-    // 定义
-    flavorDimensions += listOf("scope")
-
     productFlavors {
         // 功能范围 (完整 vs 仅保险箱)
         create("full") {
@@ -97,51 +95,6 @@ android {
             versionNameSuffix = "-vault"
             // 覆盖默认值
             buildConfigField("boolean", "IS_VAULT", "true")
-            // 如果你想彻底在 Vault 中剔除某些代码，可以使用以下配置
-             manifestPlaceholders["launcherActivity"] = ".MainActivity"
-        }
-    }
-}
-
-// 使用现代化的 androidComponents API 来重构 APK 重命名逻辑
-androidComponents {
-    onVariants { variant ->
-        // 获取所有输出（处理 ABI 分包情况）
-        variant.outputs.forEach { output ->
-            val abi = output.filters.find {
-                it.filterType == FilterConfiguration.FilterType.ABI
-            }?.identifier ?: "universal"
-
-            val verName = variant.outputs.map { it.versionName.getOrElse("1.0") }.first()
-
-            // 构建任务名称
-            val variantName = variant.name.replaceFirstChar { it.uppercase(Locale.getDefault()) }
-            val abiSuffix =
-                abi.replace("-", "").replaceFirstChar { it.uppercase(Locale.getDefault()) }
-            val taskName = "copyAndRename${variantName}${abiSuffix}Apk"
-
-            // 注册 Copy 任务
-            val renameTask = tasks.register<Copy>(taskName) {
-                // 显式设置重复文件处理策略为"覆盖"
-                duplicatesStrategy = DuplicatesStrategy.INCLUDE
-
-                from(variant.artifacts.get(SingleArtifact.APK))
-                into(layout.buildDirectory.dir("outputs/renamed-apk/${variant.name.lowercase()}"))
-
-                // 建议：精细化匹配源文件，避免通配符一次抓取到多个文件导致冲突
-                include("**/$abi/*.apk", "**/*-$abi-*.apk")
-
-                rename { fileName ->
-                    if (fileName.endsWith(".apk")) "poop_v${verName}_${abi}.apk" else fileName
-                }
-            }
-
-            // 【关键修复】使用更安全的监听方式来挂载依赖
-            // 而不是直接用 tasks.named("assembleDebug")
-            afterEvaluate {
-                val assembleTaskName = "assemble$variantName"
-                tasks.findByName(assembleTaskName)?.finalizedBy(renameTask)
-            }
         }
     }
 }
