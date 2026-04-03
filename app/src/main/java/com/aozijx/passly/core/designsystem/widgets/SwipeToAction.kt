@@ -224,14 +224,15 @@ fun handleSwipeAction(
     onQuickDelete: (VaultEntry) -> Unit,
     onCopyPassword: (decryptedPassword: String) -> Unit,
     onDecryptPassword: (onResult: (String?) -> Unit) -> Unit,
-    onShowDetail: (VaultEntry) -> Unit
+    onShowDetail: (VaultEntry) -> Unit,
+    onShowEditDetail: (VaultEntry) -> Unit
 ) {
     when (actionType) {
         SwipeActionType.DELETE -> {
             onAuthRequired { onQuickDelete(item) }
         }
         SwipeActionType.EDIT -> {
-            // TODO: implement edit action
+            onAuthRequired { onShowEditDetail(item) }
         }
         SwipeActionType.DETAIL -> {
             onShowDetail(item)
@@ -254,14 +255,15 @@ fun handleSwipeAction(
     onQuickDelete: (VaultSummary) -> Unit,
     onCopyPassword: (decryptedPassword: String) -> Unit,
     onDecryptPassword: (onResult: (String?) -> Unit) -> Unit,
-    onShowDetail: (VaultSummary) -> Unit
+    onShowDetail: (VaultSummary) -> Unit,
+    onShowEditDetail: (VaultSummary) -> Unit
 ) {
     when (actionType) {
         SwipeActionType.DELETE -> {
             onAuthRequired { onQuickDelete(item) }
         }
         SwipeActionType.EDIT -> {
-            // TODO: implement edit action
+            onAuthRequired { onShowEditDetail(item) }
         }
         SwipeActionType.DETAIL -> {
             onShowDetail(item)

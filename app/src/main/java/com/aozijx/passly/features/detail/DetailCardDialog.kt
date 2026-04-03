@@ -88,6 +88,40 @@ fun DetailCardDialog(
         vaultViewModel.updateVaultEntry(updated)
     }
 
+    LaunchedEffect(entry.id, vaultViewModel.shouldStartDetailInEditMode, vaultViewModel.shouldStartTotpEdit) {
+        if (!vaultViewModel.shouldStartDetailInEditMode) return@LaunchedEffect
+
+        if (vaultViewModel.shouldStartTotpEdit) {
+            vaultViewModel.prefilledTotpSecret?.let { prefilled ->
+                totpEditState.secret = prefilled
+            }
+            totpEditState.isEditing = true
+        } else {
+            val usernamePrefill = vaultViewModel.prefilledUsername
+            val passwordPrefill = vaultViewModel.prefilledPassword
+
+            when {
+                usernamePrefill != null -> {
+                    revealedUsername = usernamePrefill
+                    editState.editedUsername = usernamePrefill
+                    editState.isEditingUsername = true
+                    if (!entry.password.isEmpty() && passwordPrefill != null) {
+                        revealedPassword = passwordPrefill
+                        editState.editedPassword = passwordPrefill
+                    }
+                }
+
+                !entry.password.isEmpty() && passwordPrefill != null -> {
+                    revealedPassword = passwordPrefill
+                    editState.editedPassword = passwordPrefill
+                    editState.isEditingPassword = true
+                }
+            }
+        }
+
+        vaultViewModel.consumeDetailLaunchState()
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             revealedUsername = null

@@ -25,7 +25,7 @@ class NotificationHelper(private val context: Context) {
     private val channelId = "STATUS_BAR_POPUP_CHANNEL"
 
     // 通知分组 Key（相同 Key 的通知会被堆叠在一起）
-    private val groupKey = "com.example.poop.NOTIFICATION_GROUP"
+    private val groupKey = "com.aozijx.passly.NOTIFICATION_GROUP"
 
     // 摘要通知的固定 ID
     private val summaryId = 0

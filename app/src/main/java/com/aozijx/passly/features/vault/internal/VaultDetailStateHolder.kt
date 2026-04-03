@@ -11,4 +11,9 @@ internal class VaultDetailStateHolder {
     var detailItem by mutableStateOf<VaultEntry?>(null)
     var itemToDelete by mutableStateOf<VaultEntry?>(null)
     var showIconPicker by mutableStateOf(false)
+    var shouldStartDetailInEditMode by mutableStateOf(false)
+    var shouldStartTotpEdit by mutableStateOf(false)
+    var prefilledUsername by mutableStateOf<String?>(null)
+    var prefilledPassword by mutableStateOf<String?>(null)
+    var prefilledTotpSecret by mutableStateOf<String?>(null)
 }

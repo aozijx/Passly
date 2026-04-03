@@ -265,6 +265,11 @@ fun VaultContent(
                                                     vaultViewModel.loadEntryById(item.id) { entry ->
                                                         onShowDetail(entry)
                                                     }
+                                                },
+                                                onShowEditDetail = {
+                                                    vaultViewModel.loadEntryById(item.id) { entry ->
+                                                        vaultViewModel.showDetailForEdit(entry)
+                                                    }
                                                 }
                                             )
                                         },
@@ -294,6 +299,11 @@ fun VaultContent(
                                                 onShowDetail = {
                                                     vaultViewModel.loadEntryById(item.id) { entry ->
                                                         onShowDetail(entry)
+                                                    }
+                                                },
+                                                onShowEditDetail = {
+                                                    vaultViewModel.loadEntryById(item.id) { entry ->
+                                                        vaultViewModel.showDetailForEdit(entry)
                                                     }
                                                 }
                                             )

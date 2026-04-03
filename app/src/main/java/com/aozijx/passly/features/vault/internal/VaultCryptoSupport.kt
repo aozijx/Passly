@@ -8,6 +8,12 @@ internal typealias AuthenticateAction =
 
 internal class VaultCryptoSupport {
 
+    fun decryptSilently(encryptedData: String?): String? {
+        if (encryptedData == null) return null
+        if (encryptedData.isEmpty()) return ""
+        return runCatching { CryptoManager.decrypt(encryptedData) }.getOrNull()
+    }
+
     fun decryptSingle(
         activity: FragmentActivity,
         encryptedData: String,
@@ -46,7 +52,6 @@ internal class VaultCryptoSupport {
     }
 
     fun decryptTotpSecret(encrypted: String?): String? {
-        if (encrypted.isNullOrEmpty()) return null
-        return runCatching { CryptoManager.decrypt(encrypted) }.getOrNull()
+        return decryptSilently(encrypted)
     }
 }

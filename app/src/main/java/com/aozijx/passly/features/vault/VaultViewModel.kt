@@ -101,6 +101,27 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             detailState.showIconPicker = value
         }
 
+    var shouldStartDetailInEditMode: Boolean
+        get() = detailState.shouldStartDetailInEditMode
+        private set(value) {
+            detailState.shouldStartDetailInEditMode = value
+        }
+
+    var shouldStartTotpEdit: Boolean
+        get() = detailState.shouldStartTotpEdit
+        private set(value) {
+            detailState.shouldStartTotpEdit = value
+        }
+
+    val prefilledUsername: String?
+        get() = detailState.prefilledUsername
+
+    val prefilledPassword: String?
+        get() = detailState.prefilledPassword
+
+    val prefilledTotpSecret: String?
+        get() = detailState.prefilledTotpSecret
+
     val availableCategories: StateFlow<List<String>> = vaultUseCases.getCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -190,16 +211,55 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         unlockTotp(entry.id, decrypted)
     }
 
-    fun showDetail(entry: VaultEntry) { detailItem = entry }
+    private fun clearDetailLaunchState() {
+        shouldStartDetailInEditMode = false
+        shouldStartTotpEdit = false
+        detailState.prefilledUsername = null
+        detailState.prefilledPassword = null
+        detailState.prefilledTotpSecret = null
+    }
+
+    fun consumeDetailLaunchState() {
+        clearDetailLaunchState()
+    }
+
+    fun showDetail(entry: VaultEntry) {
+        clearDetailLaunchState()
+        detailItem = entry
+    }
+
+    fun showDetailForEdit(entry: VaultEntry) {
+        clearDetailLaunchState()
+        shouldStartDetailInEditMode = true
+
+        if (entry.totpSecret.isNullOrBlank()) {
+            shouldStartTotpEdit = false
+            detailState.prefilledUsername = cryptoSupport.decryptSilently(entry.username)
+            detailState.prefilledPassword = cryptoSupport.decryptSilently(entry.password)
+        } else {
+            shouldStartTotpEdit = true
+            detailState.prefilledTotpSecret = cryptoSupport.decryptTotpSecret(entry.totpSecret)
+        }
+
+        detailItem = entry
+    }
+
+    fun showDetailForEdit(entry: VaultSummary) {
+        loadEntryById(entry.id) { showDetailForEdit(it) }
+    }
+
     fun showDetail(entry: VaultSummary) {
-        loadEntryById(entry.id) { detailItem = it }
+        loadEntryById(entry.id) { showDetail(it) }
     }
     fun loadEntryById(entryId: Int, onLoaded: (VaultEntry) -> Unit) {
         viewModelScope.launch {
             vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) }
         }
     }
-    fun dismissDetail() { detailItem = null }
+    fun dismissDetail() {
+        detailItem = null
+        clearDetailLaunchState()
+    }
     fun addItem(entry: VaultEntry) {
         viewModelScope.launch {
             entryLifecycleSupport.addEntry(entry)
@@ -249,7 +309,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 // 如果当前正在查看的条目正是被删除的条目，先关闭详情弹窗
                 if (detailItem?.id == entry.id) {
-                    detailItem = null
+                    dismissDetail()
                 }
                 entryLifecycleSupport.deleteEntry(entry)
                 itemToDelete = null
@@ -262,7 +322,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             // 同样处理快速删除时的详情弹窗状态
             if (detailItem?.id == entry.id) {
-                detailItem = null
+                dismissDetail()
             }
             entryLifecycleSupport.deleteEntry(entry)
             _totpStates.update { it - entry.id }

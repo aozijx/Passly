@@ -21,7 +21,7 @@ object AppContainer {
 
     val vaultRepository: VaultRepository by lazy { VaultDataRepository(database.vaultDao()) }
     val settingsRepository: SettingsRepository by lazy { SettingsDataRepository(appContext.preference) }
-    val faviconRepository: FaviconRepository by lazy { FaviconDataRepository() }
+    val faviconRepository: FaviconRepository by lazy { FaviconDataRepository(appContext) }
     private val userConfigStore: UserConfigFileStore by lazy { UserConfigFileStore(appContext) }
     val userConfigRepository: UserConfigRepository by lazy { UserConfigDataRepository(userConfigStore) }
 
