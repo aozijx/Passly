@@ -292,6 +292,7 @@ fun SwitchSettingItem(icon: ImageVector? = null, title: String, subtitle: String
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) { Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp)); Spacer(modifier = Modifier.width(16.dp)) }
+        else { Spacer(modifier = Modifier.width(40.dp)) }
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
             if (subtitle != null) { Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }

@@ -203,7 +203,13 @@ fun AssociatedInfoSection(
 
                         TextButton(
                             onClick = {
-                                val updatedEntry = editState.applyAssociatedOnly(entry)
+                                val updatedAssociated = editState.applyAssociatedOnly(entry)
+                                val updatedEntry = updatedAssociated.copy(
+                                    iconCustomPath = clearRemoteIconPathWhenDomainCleared(
+                                        domain = updatedAssociated.associatedDomain,
+                                        currentPath = entry.iconCustomPath
+                                    )
+                                )
                                 onEntryUpdated(updatedEntry)
                                 editState.isEditingDomain = false
                             },
@@ -270,13 +276,19 @@ fun AssociatedInfoSection(
                             editState.editedDomain = it
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text(domainLabel) },
+                        label = { Text(associatedDomainLabel) },
                         placeholder = { Text(domainPlaceholder) },
                         singleLine = true
                     )
                     TextButton(
                         onClick = {
-                            val updatedEntry = editState.applyAssociatedOnly(entry)
+                            val updatedAssociated = editState.applyAssociatedOnly(entry)
+                            val updatedEntry = updatedAssociated.copy(
+                                iconCustomPath = clearRemoteIconPathWhenDomainCleared(
+                                    domain = updatedAssociated.associatedDomain,
+                                    currentPath = entry.iconCustomPath
+                                )
+                            )
                             onEntryUpdated(updatedEntry)
                             editState.isEditingDomain = false
                         },
@@ -302,18 +314,11 @@ fun AssociatedInfoSection(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                domainLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                            Text(
-                                text = entry.associatedDomain ?: notSet,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                            )
-                        }
+                        Text(
+                            text = entry.associatedDomain ?: notSet,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        )
                         if (entry.associatedDomain != null) {
                             IconButton(onClick = {
                                 ClipboardUtils.copy(context, entry.associatedDomain)
@@ -373,18 +378,11 @@ fun AssociatedInfoSection(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                associatedPackageLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                            Text(
-                                entry.associatedAppPackage ?: notSet,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                            )
-                        }
+                        Text(
+                            entry.associatedAppPackage ?: notSet,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        )
                         if (entry.associatedAppPackage != null) {
                             IconButton(onClick = {
                                 ClipboardUtils.copy(context, entry.associatedAppPackage)
@@ -402,4 +400,10 @@ fun AssociatedInfoSection(
             }
         }
     }
+}
+
+private fun clearRemoteIconPathWhenDomainCleared(domain: String?, currentPath: String?): String? {
+    if (currentPath.isNullOrBlank()) return currentPath
+    val isRemotePath = currentPath.startsWith("http://") || currentPath.startsWith("https://")
+    return if (domain.isNullOrBlank() && isRemotePath) null else currentPath
 }

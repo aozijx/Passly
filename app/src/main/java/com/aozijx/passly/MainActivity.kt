@@ -200,7 +200,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             showDetail = false
             showSettings = false
             if (isFlipExitAndClearStackEnabled) {
-                finishAffinity()
+                finishAndRemoveTask()
             }
         }
     }
