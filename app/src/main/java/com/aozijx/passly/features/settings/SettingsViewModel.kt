@@ -15,47 +15,92 @@ import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.features.settings.internal.BackupActionSupport
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+data class SettingsUiState(
+    val lockTimeout: Long = 60000L,
+    val isStatusBarAutoHide: Boolean = true,
+    val isTopBarCollapsible: Boolean = true,
+    val isTabBarCollapsible: Boolean = true,
+    val isSecureContentEnabled: Boolean = true,
+    val isFlipToLockEnabled: Boolean = false,
+    val isFlipExitAndClearStackEnabled: Boolean = false,
+    val cardStyle: VaultCardStyle = VaultCardStyle.BASE,
+    val isSwipeEnabled: Boolean = true,
+    val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
+    val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL
+)
+
+private data class CoreSettingsFlowState(
+    val lockTimeout: Long,
+    val isStatusBarAutoHide: Boolean,
+    val isTopBarCollapsible: Boolean,
+    val isTabBarCollapsible: Boolean,
+    val isSecureContentEnabled: Boolean
+)
+
+private data class InteractionSettingsFlowState(
+    val isFlipToLockEnabled: Boolean,
+    val isFlipExitAndClearStackEnabled: Boolean,
+    val cardStyle: VaultCardStyle,
+    val isSwipeEnabled: Boolean,
+    val swipeLeftAction: SwipeActionType
+)
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsUseCases = AppContainer.settingsUseCases
     private val backupActionSupport = BackupActionSupport()
 
-    val lockTimeout: StateFlow<Long> = settingsUseCases.lockTimeout
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60000L)
-    
-    // --- 沉浸式折叠设置 ---
-    val isStatusBarAutoHide: StateFlow<Boolean> = settingsUseCases.isStatusBarAutoHide
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-        
-    val isTopBarCollapsible: StateFlow<Boolean> = settingsUseCases.isTopBarCollapsible
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-        
-    val isTabBarCollapsible: StateFlow<Boolean> = settingsUseCases.isTabBarCollapsible
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-        
-    // 合并后的安全设置 (控制 FLAG_SECURE)
-    val isSecureContentEnabled: StateFlow<Boolean> = settingsUseCases.isSecureContentEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
-    val isFlipToLockEnabled: StateFlow<Boolean> = settingsUseCases.isFlipToLockEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    val isFlipExitAndClearStackEnabled: StateFlow<Boolean> = settingsUseCases.isFlipExitAndClearStackEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    val cardStyle: StateFlow<VaultCardStyle> = settingsUseCases.cardStyle
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), VaultCardStyle.BASE)
-
-    // --- 交互设置 ---
-    val isSwipeEnabled: StateFlow<Boolean> = settingsUseCases.isSwipeEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val swipeLeftAction: StateFlow<SwipeActionType> = settingsUseCases.swipeLeftAction
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SwipeActionType.COPY_PASSWORD)
-    val swipeRightAction: StateFlow<SwipeActionType> = settingsUseCases.swipeRightAction
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SwipeActionType.DETAIL)
+    val uiState: StateFlow<SettingsUiState> = combine(
+        combine(
+            settingsUseCases.lockTimeout,
+            settingsUseCases.isStatusBarAutoHide,
+            settingsUseCases.isTopBarCollapsible,
+            settingsUseCases.isTabBarCollapsible,
+            settingsUseCases.isSecureContentEnabled
+        ) { lockTimeout, isStatusBarAutoHide, isTopBarCollapsible, isTabBarCollapsible, isSecureContentEnabled ->
+            CoreSettingsFlowState(
+                lockTimeout = lockTimeout,
+                isStatusBarAutoHide = isStatusBarAutoHide,
+                isTopBarCollapsible = isTopBarCollapsible,
+                isTabBarCollapsible = isTabBarCollapsible,
+                isSecureContentEnabled = isSecureContentEnabled
+            )
+        },
+        combine(
+            settingsUseCases.isFlipToLockEnabled,
+            settingsUseCases.isFlipExitAndClearStackEnabled,
+            settingsUseCases.cardStyle,
+            settingsUseCases.isSwipeEnabled,
+            settingsUseCases.swipeLeftAction
+        ) { isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle, isSwipeEnabled, swipeLeftAction ->
+            InteractionSettingsFlowState(
+                isFlipToLockEnabled = isFlipToLockEnabled,
+                isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
+                cardStyle = cardStyle,
+                isSwipeEnabled = isSwipeEnabled,
+                swipeLeftAction = swipeLeftAction
+            )
+        },
+        settingsUseCases.swipeRightAction
+    ) { core, interaction, swipeRightAction ->
+        SettingsUiState(
+            lockTimeout = core.lockTimeout,
+            isStatusBarAutoHide = core.isStatusBarAutoHide,
+            isTopBarCollapsible = core.isTopBarCollapsible,
+            isTabBarCollapsible = core.isTabBarCollapsible,
+            isSecureContentEnabled = core.isSecureContentEnabled,
+            isFlipToLockEnabled = interaction.isFlipToLockEnabled,
+            isFlipExitAndClearStackEnabled = interaction.isFlipExitAndClearStackEnabled,
+            cardStyle = interaction.cardStyle,
+            isSwipeEnabled = interaction.isSwipeEnabled,
+            swipeLeftAction = interaction.swipeLeftAction,
+            swipeRightAction = swipeRightAction
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     // --- Setter 方法 ---
     fun setStatusBarAutoHide(autoHide: Boolean) = viewModelScope.launch { settingsUseCases.setStatusBarAutoHide(autoHide) }

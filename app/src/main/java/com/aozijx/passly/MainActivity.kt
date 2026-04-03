@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,13 +92,13 @@ class MainActivity : FragmentActivity(), SensorEventListener {
         requestAuthentication()
 
         setContent {
-            val isDarkModePref by viewModel.isDarkMode.collectAsState()
-            val isDynamicColorPref by viewModel.isDynamicColor.collectAsState()
+            val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
             val vaultViewModel: VaultViewModel = viewModel()
             val settingsViewModel: SettingsViewModel = viewModel()
+            val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
             
             // 应用高级安全防护设置
-            val isSecureContentEnabled by settingsViewModel.isSecureContentEnabled.collectAsStateWithLifecycle()
+            val isSecureContentEnabled = settingsUiState.isSecureContentEnabled
             
             LaunchedEffect(isSecureContentEnabled) {
                 if (isSecureContentEnabled) {
@@ -113,8 +112,8 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             }
 
             // 翻转锁定逻辑
-            val flipToLock by settingsViewModel.isFlipToLockEnabled.collectAsStateWithLifecycle()
-            val flipExitAndClearStack by settingsViewModel.isFlipExitAndClearStackEnabled.collectAsStateWithLifecycle()
+            val flipToLock = settingsUiState.isFlipToLockEnabled
+            val flipExitAndClearStack = settingsUiState.isFlipExitAndClearStackEnabled
             LaunchedEffect(flipToLock) {
                 isFlipLockEnabled = flipToLock
                 if (flipToLock) {
@@ -133,7 +132,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             }
             
             // 应用状态栏自动隐藏行为设置
-            val isStatusBarAutoHide by settingsViewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
+            val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
             LaunchedEffect(isStatusBarAutoHide) {
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.systemBarsBehavior = if (isStatusBarAutoHide) {
@@ -144,8 +143,8 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             }
 
             AppTheme(
-                darkTheme = if (isDarkModePref == true) true else null,
-                dynamicColor = isDynamicColorPref
+                darkTheme = if (mainUiState.isDarkMode == true) true else null,
+                dynamicColor = mainUiState.isDynamicColor
             ) {
                 when {
                     showDetail && detailEntry != null -> {
@@ -160,7 +159,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                     showSettings -> {
                         SettingsScreen(onBack = { showSettings = false })
                     }
-                    viewModel.isAuthorized -> {
+                    mainUiState.isAuthorized -> {
                         VaultContent(
                             activity = this,
                             mainViewModel = viewModel,

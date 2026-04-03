@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,8 +13,15 @@ import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.security.AutoLockScheduler
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+data class MainUiState(
+    val isAuthorized: Boolean = false,
+    val isDarkMode: Boolean? = null,
+    val isDynamicColor: Boolean = true
+)
 
 /**
  * 全局控制中心：负责生物识别认证、自动锁定逻辑以及全局 UI 设置。
@@ -37,6 +45,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     val isDynamicColor: StateFlow<Boolean> = settingsUseCases.isDynamicColor
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private val authorizationState: StateFlow<Boolean> =
+        snapshotFlow { isAuthorized }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), isAuthorized)
+
+    val uiState: StateFlow<MainUiState> = combine(
+        authorizationState,
+        isDarkMode,
+        isDynamicColor
+    ) { authorized, darkMode, dynamicColor ->
+        MainUiState(
+            isAuthorized = authorized,
+            isDarkMode = darkMode,
+            isDynamicColor = dynamicColor
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MainUiState())
 
     init {
         viewModelScope.launch {

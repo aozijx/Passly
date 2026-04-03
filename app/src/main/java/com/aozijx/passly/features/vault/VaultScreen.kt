@@ -92,12 +92,13 @@ fun VaultContent(
     val isSwipeEnabled by vaultPrefs.isSwipeEnabled.collectAsState(initial = true)
     val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsState(initial = SwipeActionType.DELETE)
     val swipeRightAction by vaultPrefs.swipeRightAction.collectAsState(initial = SwipeActionType.DISABLED)
+    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     
     // 沉浸式设置状态
-    val isStatusBarAutoHide by settingsViewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
-    val isTopBarCollapsible by settingsViewModel.isTopBarCollapsible.collectAsStateWithLifecycle()
-    val isTabBarCollapsible by settingsViewModel.isTabBarCollapsible.collectAsStateWithLifecycle()
-    val cardStyle by settingsViewModel.cardStyle.collectAsStateWithLifecycle()
+    val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
+    val isTopBarCollapsible = settingsUiState.isTopBarCollapsible
+    val isTabBarCollapsible = settingsUiState.isTabBarCollapsible
+    val cardStyle = settingsUiState.cardStyle
     
     var isFabVisible by remember { mutableStateOf(true) }
     val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }

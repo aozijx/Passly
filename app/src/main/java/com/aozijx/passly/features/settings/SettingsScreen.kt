@@ -73,18 +73,19 @@ fun SettingsScreen(
     onBack: () -> Unit,
     viewModel: SettingsViewModel = viewModel()
 ) {
-    val lockTimeout by viewModel.lockTimeout.collectAsStateWithLifecycle()
-    val isSwipeEnabled by viewModel.isSwipeEnabled.collectAsStateWithLifecycle()
-    val swipeLeftAction by viewModel.swipeLeftAction.collectAsStateWithLifecycle()
-    val swipeRightAction by viewModel.swipeRightAction.collectAsStateWithLifecycle()
-    
-    val isStatusBarAutoHide by viewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
-    val isTopBarCollapsible by viewModel.isTopBarCollapsible.collectAsStateWithLifecycle()
-    val isTabBarCollapsible by viewModel.isTabBarCollapsible.collectAsStateWithLifecycle()
-    val isSecureContentEnabled by viewModel.isSecureContentEnabled.collectAsStateWithLifecycle()
-    val isFlipToLockEnabled by viewModel.isFlipToLockEnabled.collectAsStateWithLifecycle()
-    val isFlipExitAndClearStackEnabled by viewModel.isFlipExitAndClearStackEnabled.collectAsStateWithLifecycle()
-    val cardStyle by viewModel.cardStyle.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val lockTimeout = uiState.lockTimeout
+    val isSwipeEnabled = uiState.isSwipeEnabled
+    val swipeLeftAction = uiState.swipeLeftAction
+    val swipeRightAction = uiState.swipeRightAction
+    val isStatusBarAutoHide = uiState.isStatusBarAutoHide
+    val isTopBarCollapsible = uiState.isTopBarCollapsible
+    val isTabBarCollapsible = uiState.isTabBarCollapsible
+    val isSecureContentEnabled = uiState.isSecureContentEnabled
+    val isFlipToLockEnabled = uiState.isFlipToLockEnabled
+    val isFlipExitAndClearStackEnabled = uiState.isFlipExitAndClearStackEnabled
+    val cardStyle = uiState.cardStyle
 
     // 预留扩展：后续新增样式时只需追加到这里
     val availableCardStyles = remember { listOf(VaultCardStyle.BASE) }

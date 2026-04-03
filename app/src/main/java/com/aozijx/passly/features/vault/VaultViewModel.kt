@@ -17,12 +17,14 @@ import com.aozijx.passly.core.designsystem.state.TotpState
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.mapper.toSummary
-import com.aozijx.passly.domain.model.FaviconResult
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.internal.VaultAutofillSupport
 import com.aozijx.passly.features.vault.internal.VaultCryptoSupport
+import com.aozijx.passly.features.vault.internal.VaultDetailStateHolder
 import com.aozijx.passly.features.vault.internal.VaultEntryFileSupport
+import com.aozijx.passly.features.vault.internal.VaultEntryLifecycleSupport
+import com.aozijx.passly.features.vault.internal.VaultSearchFilterStateHolder
 import com.aozijx.passly.features.vault.internal.VaultTotpSupport
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,18 +47,27 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val cryptoSupport = VaultCryptoSupport()
     private val totpSupport = VaultTotpSupport()
     private val entryFileSupport = VaultEntryFileSupport()
+    private val entryLifecycleSupport = VaultEntryLifecycleSupport(vaultUseCases, entryFileSupport)
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
+    private val searchFilterState = VaultSearchFilterStateHolder()
+    private val detailState = VaultDetailStateHolder()
 
-    private val _selectedCategory = MutableStateFlow<String?>(null)
-    val selectedCategory: StateFlow<String?> = _selectedCategory
+    val searchQuery: StateFlow<String> = searchFilterState.searchQuery
+    val selectedCategory: StateFlow<String?> = searchFilterState.selectedCategory
+    val selectedTab: StateFlow<VaultTab> = searchFilterState.selectedTab
 
-    private val _selectedTab = MutableStateFlow(VaultTab.ALL)
-    val selectedTab: StateFlow<VaultTab> = _selectedTab
+    var isSearchActive: Boolean
+        get() = searchFilterState.isSearchActive
+        set(value) {
+            searchFilterState.isSearchActive = value
+        }
 
-    var isSearchActive by mutableStateOf(false)
-    var isMoreMenuExpanded by mutableStateOf(false)
+    var isMoreMenuExpanded: Boolean
+        get() = searchFilterState.isMoreMenuExpanded
+        set(value) {
+            searchFilterState.isMoreMenuExpanded = value
+        }
+
     var showTOTPCode by mutableStateOf(true)
 
     // 自动填充状态
@@ -66,17 +77,36 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val _totpStates = MutableStateFlow<Map<Int, TotpState>>(emptyMap())
     val totpStates: StateFlow<Map<Int, TotpState>> = _totpStates
 
-    var addType by mutableStateOf(AddType.NONE)
-    var detailItem by mutableStateOf<VaultEntry?>(null)
-    var itemToDelete by mutableStateOf<VaultEntry?>(null)
-    var showIconPicker by mutableStateOf(false)
+    var addType: AddType
+        get() = detailState.addType
+        set(value) {
+            detailState.addType = value
+        }
+
+    var detailItem: VaultEntry?
+        get() = detailState.detailItem
+        set(value) {
+            detailState.detailItem = value
+        }
+
+    var itemToDelete: VaultEntry?
+        get() = detailState.itemToDelete
+        set(value) {
+            detailState.itemToDelete = value
+        }
+
+    var showIconPicker: Boolean
+        get() = detailState.showIconPicker
+        set(value) {
+            detailState.showIconPicker = value
+        }
 
     val availableCategories: StateFlow<List<String>> = vaultUseCases.getCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val vaultItems: StateFlow<List<VaultSummary>> =
-        combine(_searchQuery, _selectedCategory) { query, category ->
+        combine(searchFilterState.searchQuery, searchFilterState.selectedCategory) { query, category ->
             Pair(query, category)
         }.flatMapLatest { (query, category) ->
             val baseFlow = when {
@@ -170,32 +200,25 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun dismissDetail() { detailItem = null }
-    fun addItem(entry: VaultEntry) { viewModelScope.launch { vaultUseCases.insertEntry(entry); addType = AddType.NONE } }
+    fun addItem(entry: VaultEntry) {
+        viewModelScope.launch {
+            entryLifecycleSupport.addEntry(entry)
+            addType = AddType.NONE
+        }
+    }
     
     /**
      * 添加条目并自动下载 favicon（如果提供了域名）
      */
     fun addItem(entry: VaultEntry, domain: String) {
         viewModelScope.launch {
-            val insertedId = vaultUseCases.insertEntry(entry)
+            entryLifecycleSupport.addEntryWithFavicon(entry, domain)
             addType = AddType.NONE
-            
-            if (domain.isNotBlank()) {
-                val outcome = vaultUseCases.downloadFavicon(domain)
-                if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                    val updatedEntry = entry.copy(
-                        id = insertedId.toInt(),
-                        iconName = null,
-                        iconCustomPath = outcome.filePath
-                    )
-                    vaultUseCases.updateEntry(updatedEntry)
-                }
-            }
         }
     }
     fun updateVaultEntry(entry: VaultEntry) {
         viewModelScope.launch {
-            vaultUseCases.updateEntry(entry)
+            entryLifecycleSupport.updateEntry(entry)
             if (detailItem?.id == entry.id) detailItem = entry
             showIconPicker = false
             _totpStates.update { it - entry.id }
@@ -211,15 +234,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun saveCustomIcon(item: VaultEntry, uri: Uri) {
         viewModelScope.launch {
             val context = getApplication<Application>()
-            val internalPath = entryFileSupport.saveCustomIcon(context, item, uri)
-            
-            if (internalPath != null) {
-                updateVaultEntry(
-                    item.copy(
-                        iconName = null,
-                        iconCustomPath = internalPath
-                    )
-                )
+            val updated = entryLifecycleSupport.saveCustomIcon(context, item, uri)
+
+            if (updated != null) {
+                updateVaultEntry(updated)
             } else {
                 Toast.makeText(context, "图片保存失败", Toast.LENGTH_SHORT).show()
             }
@@ -233,8 +251,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
                 if (detailItem?.id == entry.id) {
                     detailItem = null
                 }
-                entryFileSupport.cleanupIcon(entry.iconCustomPath)
-                vaultUseCases.deleteEntry(entry)
+                entryLifecycleSupport.deleteEntry(entry)
                 itemToDelete = null
                 _totpStates.update { it - entry.id }
             }
@@ -247,8 +264,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             if (detailItem?.id == entry.id) {
                 detailItem = null
             }
-            entryFileSupport.cleanupIcon(entry.iconCustomPath)
-            vaultUseCases.deleteEntry(entry)
+            entryLifecycleSupport.deleteEntry(entry)
             _totpStates.update { it - entry.id }
         }
     }
@@ -257,9 +273,18 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         loadEntryById(entry.id) { quickDelete(it) }
     }
 
-    fun onSearchQueryChange(q: String) { _searchQuery.value = q }
-    fun selectTab(tab: VaultTab) { _selectedTab.value = tab }
-    fun toggleSearch(active: Boolean) { isSearchActive = active; if (!active) _searchQuery.value = "" }
+    fun onSearchQueryChange(q: String) {
+        searchFilterState.updateSearchQuery(q)
+    }
+
+    fun selectTab(tab: VaultTab) {
+        searchFilterState.updateSelectedTab(tab)
+    }
+
+    fun toggleSearch(active: Boolean) {
+        searchFilterState.toggleSearch(active)
+    }
+
     fun unlockTotp(entryId: Int, decryptedSecret: String) {
         _totpStates.update { current ->
             totpSupport.unlock(current, entryId, decryptedSecret)
