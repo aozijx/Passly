@@ -1,19 +1,15 @@
 package com.aozijx.passly.core.designsystem.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.MainViewModel
-import com.aozijx.passly.R
-import com.aozijx.passly.core.common.AddType
-import com.aozijx.passly.features.detail.TwoFADetailDialog
+import com.aozijx.passly.core.common.ui.AddType
+import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.components.AddPasswordDialog
 import com.aozijx.passly.features.vault.components.AddTwoFADialog
-import com.example.passly.features.detail.AutoFillDetailDialog
-import com.example.passly.features.detail.PasswordDetailDialog
-import com.example.passly.features.settings.SettingsViewModel
+import com.aozijx.passly.features.settings.SettingsViewModel
 
 @Composable
 fun VaultDialogs(
@@ -22,8 +18,6 @@ fun VaultDialogs(
     vaultViewModel: VaultViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
-    val categoryAutofill = stringResource(R.string.category_autofill)
-    
     // --- 详情对话框 ---
     vaultViewModel.detailItem?.let { item ->
         if (vaultViewModel.showIconPicker) {
@@ -45,32 +39,13 @@ fun VaultDialogs(
             )
         }
 
-        when {
-            item.totpSecret != null -> {
-                TwoFADetailDialog(
-                    activity = activity,
-                    item = item,
-                    vaultViewModel = vaultViewModel,
-                    mainViewModel = mainViewModel
-                )
-            }
-            item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
-                AutoFillDetailDialog(
-                    item = item,
-                    vaultViewModel = vaultViewModel,
-                    mainViewModel = mainViewModel,
-                    activity = activity
-                )
-            }
-            else -> {
-                PasswordDetailDialog(
-                    activity = activity,
-                    item = item,
-                    vaultViewModel = vaultViewModel,
-                    mainViewModel = mainViewModel
-                )
-            }
-        }
+        DetailCardDialog(
+            initialEntry = item,
+            activity = activity,
+            mainViewModel = mainViewModel,
+            vaultViewModel = vaultViewModel,
+            onDismiss = { vaultViewModel.dismissDetail() }
+        )
     }
 
     // --- 添加对话框 ---
@@ -99,3 +74,6 @@ fun VaultDialogs(
         )
     }
 }
+
+
+
