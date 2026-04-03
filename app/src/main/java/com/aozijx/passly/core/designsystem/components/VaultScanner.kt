@@ -50,12 +50,12 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.CryptoManager
-import com.aozijx.passly.core.util.ImageType
-import com.aozijx.passly.core.util.Logcat
-import com.aozijx.passly.core.util.rememberImagePicker
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.media.ImageType
+import com.aozijx.passly.core.media.rememberImagePicker
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.features.vault.ScannerViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.example.passly.features.vault.ScannerViewModel
 import java.net.URLDecoder
 
 /**
@@ -242,3 +242,6 @@ private fun parseOtpAuthUri(uriString: String): OtpAuthData? {
         null
     }
 }
+
+
+

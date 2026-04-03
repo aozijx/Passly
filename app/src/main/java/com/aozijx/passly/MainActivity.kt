@@ -42,13 +42,13 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.features.detail.page.DetailScreen
+import com.aozijx.passly.features.settings.SettingsScreen
+import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultContent
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.ui.theme.AppTheme
-import com.example.passly.features.detail.DetailScreen
-import com.example.passly.features.settings.SettingsScreen
-import com.example.passly.features.settings.SettingsViewModel
 
 class MainActivity : FragmentActivity(), SensorEventListener {
     private val viewModel: MainViewModel by viewModels()
@@ -145,7 +145,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                 when {
                     showDetail && detailEntry != null -> {
                         DetailScreen(
-                            entry = detailEntry!!,
+                            initialEntry = detailEntry!!,
                             onBack = { showDetail = false },
                             activity = this,
                             mainViewModel = viewModel,
@@ -265,3 +265,6 @@ private fun AuthorizationPlaceholder(onRetry: () -> Unit) {
         }
     }
 }
+
+
+

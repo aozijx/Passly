@@ -161,6 +161,23 @@
     <string name="hide_password">パスワード非表示</string>
     <string name="label_title_hint">タイトル（例：Google、GitHub）</string>
     <string name="label_username_hint">ユーザー名／メールアドレス</string>
+    
+    <!-- 詳細ページの新しい文字列 -->
+    <string name="vault_detail_totp_label">二要素認証コード</string>
+    <string name="vault_detail_domain_label">ウェブサイトドメインまたはアイコンURL</string>
+    <string name="vault_detail_domain_placeholder">例：google.com または https://example.com/icon.png</string>
+    <string name="vault_detail_domain_and_icon">ドメインとアイコン</string>
+    <string name="vault_detail_not_set">未設定</string>
+    <string name="vault_detail_copied">コピーしました</string>
+    <string name="vault_detail_download_icon">アイコンをダウンロード</string>
+    <string name="vault_detail_icon_download_success">アイコンのダウンロードに成功しました！</string>
+    <string name="vault_detail_icon_download_failed">アイコンのダウンロードに失敗しました</string>
+    <string name="vault_detail_login_credentials">ログイン情報</string>
+    <string name="vault_detail_username">ユーザー名</string>
+    <string name="vault_detail_password">パスワード</string>
+    <string name="vault_detail_notes">メモ</string>
+    <string name="vault_detail_add_notes">メモを追加…</string>
+    <string name="vault_detail_no_notes">メモなし</string>
 
     <!-- アイコン -->
     <string name="icon_bank">銀行</string>

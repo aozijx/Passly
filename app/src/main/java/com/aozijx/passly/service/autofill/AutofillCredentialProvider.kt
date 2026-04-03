@@ -1,8 +1,8 @@
 package com.aozijx.passly.service.autofill
 
 import com.aozijx.passly.core.crypto.CryptoManager
-import com.aozijx.passly.core.util.Logcat
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.domain.model.VaultEntry
 
 /**
  * 自动填充凭据提供器
@@ -38,3 +38,5 @@ object AutofillCredentialProvider {
         }
     }
 }
+
+

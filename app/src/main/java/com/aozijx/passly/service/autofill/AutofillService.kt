@@ -16,10 +16,13 @@ import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
 import android.widget.RemoteViews
 import com.aozijx.passly.R
+import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.crypto.CryptoManager
-import com.aozijx.passly.core.util.AutofillParser
-import com.aozijx.passly.core.util.Logcat
-import com.aozijx.passly.core.util.PackageUtils
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.platform.PackageUtils
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
+import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,26 +34,49 @@ import kotlinx.coroutines.launch
 class AutofillService : android.service.autofill.AutofillService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val tag = "PoopAutofill"
+    private val slowFillTotalMs = 250L
+    private val slowRepositoryMs = 120L
+    private val slowDatasetBuildMs = 120L
+    private val slowSaveMs = 180L
 
     override fun onFillRequest(request: FillRequest, cancellationSignal: CancellationSignal, callback: FillCallback) {
         val structure = request.fillContexts.last().structure
 
         serviceScope.launch {
             try {
+                val fillStart = System.currentTimeMillis()
+                EntryTypeStrategyRegistry.ensureRegistered()
                 val parser = AutofillParser(structure)
                 Logcat.d(tag, "onFillRequest: pkg=${parser.packageName}, domain=${parser.webDomain}")
 
                 val availableIds = listOfNotNull(parser.usernameId, parser.passwordId, parser.otpId)
+                val repositoryStart = System.currentTimeMillis()
                 val entries = AutofillRepository.findMatchingEntries(applicationContext, parser.packageName, parser.webDomain)
+                val repositoryCost = System.currentTimeMillis() - repositoryStart
+                if (repositoryCost >= slowRepositoryMs) {
+                    Logcat.w(tag, "onFillRequest repository slow: ${repositoryCost}ms, entries=${entries.size}")
+                }
+
                 val responseBuilder = FillResponse.Builder()
 
+                val buildStart = System.currentTimeMillis()
                 entries.forEach { entry ->
-                    // 核心修复：显式指定类型避免类型推断错误
-                    val decryptedUsername = try { CryptoManager.decrypt(entry.username) } catch (_: Exception) { "" }.ifBlank { "点击填充" }
+                    val strategy = resolveStrategy(entry.entryType)
+                    if (strategy != null && !strategy.supportsAutofill()) {
+                        return@forEach
+                    }
+
+                    val decryptedUsername = runCatching { CryptoManager.decrypt(entry.username) }
+                        .getOrDefault("")
+                        .trim()
+                    val strategySummary = strategy
+                        ?.let { runCatching { it.extractSummary(entry) }.getOrDefault("") }
+                        .orEmpty()
+                    val subtitle = buildDatasetSubtitle(entry, decryptedUsername, strategySummary)
 
                     val presentation = RemoteViews(packageName, R.layout.autofill_dataset_item).apply {
                         setTextViewText(R.id.title, entry.title)
-                        setTextViewText(R.id.username, if (!entry.totpSecret.isNullOrBlank()) "OTP: $decryptedUsername" else decryptedUsername)
+                        setTextViewText(R.id.username, subtitle)
                         entry.associatedAppPackage?.let { appPkg ->
                             PackageUtils.getAppIconDrawable(applicationContext, appPkg)?.let { icon ->
                                 setImageViewBitmap(R.id.icon, PackageUtils.drawableToBitmap(icon))
@@ -85,6 +111,10 @@ class AutofillService : android.service.autofill.AutofillService() {
                     }
 
                     responseBuilder.addDataset(datasetBuilder.build())
+                }
+                val buildCost = System.currentTimeMillis() - buildStart
+                if (buildCost >= slowDatasetBuildMs) {
+                    Logcat.w(tag, "onFillRequest dataset build slow: ${buildCost}ms, entries=${entries.size}")
                 }
 
                 val saveIds = listOfNotNull(parser.usernameId, parser.passwordId)
@@ -125,11 +155,37 @@ class AutofillService : android.service.autofill.AutofillService() {
                 val response = responseBuilder.build()
                 callback.onSuccess(if (entries.isNotEmpty() || saveIds.isNotEmpty()) response else null)
 
+                val totalCost = System.currentTimeMillis() - fillStart
+                if (totalCost >= slowFillTotalMs) {
+                    Logcat.w(tag, "onFillRequest slow total: ${totalCost}ms, entries=${entries.size}, saveIds=${saveIds.size}")
+                }
+
             } catch (e: Exception) {
                 Logcat.e(tag, "Fill request failed", e)
                 callback.onFailure(e.message)
             }
         }
+    }
+
+    private fun resolveStrategy(entryTypeValue: Int) = runCatching {
+        EntryTypeStrategyFactory.getStrategy(EntryType.fromValue(entryTypeValue))
+    }.getOrNull()
+
+    private fun buildDatasetSubtitle(entry: VaultEntry, decryptedUsername: String, strategySummary: String): String {
+        val infoParts = mutableListOf<String>()
+
+        if (decryptedUsername.isNotBlank()) {
+            infoParts += decryptedUsername
+        }
+        if (strategySummary.isNotBlank()) {
+            infoParts += strategySummary
+        }
+        if (infoParts.isEmpty()) {
+            infoParts += EntryType.fromValue(entry.entryType).displayName
+        }
+
+        val joined = infoParts.joinToString(" · ")
+        return if (!entry.totpSecret.isNullOrBlank()) "OTP · $joined" else joined
     }
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
@@ -158,6 +214,7 @@ class AutofillService : android.service.autofill.AutofillService() {
 
         serviceScope.launch {
             try {
+                val saveStart = System.currentTimeMillis()
                 val success = AutofillRepository.saveOrUpdateEntry(applicationContext, pkg, domain, title, username, password)
                 if (success) {
                     Logcat.i(tag, "Successfully saved credentials for $username")
@@ -166,6 +223,11 @@ class AutofillService : android.service.autofill.AutofillService() {
                     Logcat.e(tag, "Failed to save credentials")
                     callback.onFailure("Save failed in repository")
                 }
+
+                val saveCost = System.currentTimeMillis() - saveStart
+                if (saveCost >= slowSaveMs) {
+                    Logcat.w(tag, "onSaveRequest slow: ${saveCost}ms")
+                }
             } catch (e: Exception) {
                 Logcat.e(tag, "Exception during save", e)
                 callback.onFailure(e.message)
@@ -173,3 +235,5 @@ class AutofillService : android.service.autofill.AutofillService() {
         }
     }
 }
+
+

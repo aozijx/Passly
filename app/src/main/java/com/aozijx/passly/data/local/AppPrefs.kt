@@ -1,4 +1,4 @@
-package com.example.passly.data.local
+package com.aozijx.passly.data.local
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.core.common.VaultCardStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -34,6 +35,10 @@ class AppPrefs(context: Context) {
 
         // --- 传感器交互 ---
         val FLIP_TO_LOCK_KEY = booleanPreferencesKey("security_flip_to_lock")
+
+        // --- 列表卡片效果 ---
+        val TYPED_CARD_EFFECT_KEY = booleanPreferencesKey("ui_typed_card_effect") // legacy
+        val CARD_STYLE_KEY = stringPreferencesKey("ui_card_style")
     }
 
     val isStatusBarAutoHide: Flow<Boolean> = appContext.vaultDataStore.data.map { it[AUTO_HIDE_STATUS_BAR_KEY] ?: true }
@@ -41,6 +46,15 @@ class AppPrefs(context: Context) {
     val isTabBarCollapsible: Flow<Boolean> = appContext.vaultDataStore.data.map { it[COLLAPSE_TAB_BAR_KEY] ?: true }
     val isSecureContentEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[SECURE_CONTENT_KEY] ?: true }
     val isFlipToLockEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[FLIP_TO_LOCK_KEY] ?: false }
+    val cardStyle: Flow<VaultCardStyle> = appContext.vaultDataStore.data.map { prefs ->
+        val raw = prefs[CARD_STYLE_KEY]
+        if (raw != null) {
+            VaultCardStyle.fromKey(raw)
+        } else {
+            // 兼容旧版本布尔配置
+            if (prefs[TYPED_CARD_EFFECT_KEY] == true) VaultCardStyle.TYPED else VaultCardStyle.BASE
+        }
+    }
 
     // 原有设置
     val lockTimeout: Flow<Long> = appContext.vaultDataStore.data.map { it[LOCK_TIMEOUT_KEY] ?: 60000L }
@@ -60,6 +74,10 @@ class AppPrefs(context: Context) {
     suspend fun setTabBarCollapsible(collapsible: Boolean) = appContext.vaultDataStore.edit { it[COLLAPSE_TAB_BAR_KEY] = collapsible }
     suspend fun setSecureContentEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[SECURE_CONTENT_KEY] = enabled }
     suspend fun setFlipToLockEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[FLIP_TO_LOCK_KEY] = enabled }
+    suspend fun setCardStyle(style: VaultCardStyle) = appContext.vaultDataStore.edit {
+        it[CARD_STYLE_KEY] = style.key
+        it.remove(TYPED_CARD_EFFECT_KEY)
+    }
 
     suspend fun setLockTimeout(timeoutMs: Long) = appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
     suspend fun setBiometricEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }
@@ -69,3 +87,6 @@ class AppPrefs(context: Context) {
     suspend fun setSwipeLeftAction(action: SwipeActionType) = appContext.vaultDataStore.edit { it[SWIPE_LEFT_ACTION_KEY] = action.name }
     suspend fun setSwipeRightAction(action: SwipeActionType) = appContext.vaultDataStore.edit { it[SWIPE_RIGHT_ACTION_KEY] = action.name }
 }
+
+
+

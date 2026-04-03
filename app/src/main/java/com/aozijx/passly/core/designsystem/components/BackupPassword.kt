@@ -26,8 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.BackupManager
-import com.example.passly.features.settings.SettingsViewModel
+import com.aozijx.passly.core.backup.BackupManager
+import com.aozijx.passly.features.settings.SettingsViewModel
 
 /**
  * 备份/恢复密码输入对话框
@@ -160,3 +160,6 @@ fun BackupPasswordDialog(
         }
     )
 }
+
+
+

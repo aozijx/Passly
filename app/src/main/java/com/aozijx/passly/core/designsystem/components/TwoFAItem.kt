@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
 /**
@@ -33,7 +33,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
  */
 @Composable
 fun TwoFAItem(
-    entry: VaultEntry,
+    entry: VaultSummary,
     vaultViewModel: VaultViewModel,
     showCode: Boolean = true,
     onClick: () -> Unit = { vaultViewModel.showDetail(entry) }
@@ -102,3 +102,5 @@ fun TwoFAItem(
         }
     }
 }
+
+

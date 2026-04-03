@@ -14,18 +14,19 @@ import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.AppContext
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AddType
 import com.aozijx.passly.core.common.VaultTab
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.state.TotpState
-import com.aozijx.passly.core.util.Logcat
-import com.aozijx.passly.core.util.TwoFAUtils
-import com.aozijx.passly.core.util.VaultFileUtils
-import com.aozijx.passly.data.local.AppDatabase
-import com.aozijx.passly.data.model.VaultEntry
-import com.aozijx.passly.data.repository.VaultRepository
+import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.storage.VaultFileUtils
+import com.aozijx.passly.domain.mapper.toSummary
+import com.aozijx.passly.domain.model.FaviconResult
+import com.aozijx.passly.domain.model.TotpConfig
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -44,10 +46,7 @@ import kotlinx.coroutines.withContext
  */
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: VaultRepository by lazy {
-        val database = AppDatabase.getDatabase(application)
-        VaultRepository(database.vaultDao(), AppContext.get().preference)
-    }
+    private val vaultUseCases = AppContainer.vaultUseCases
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -74,21 +73,22 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     var itemToDelete by mutableStateOf<VaultEntry?>(null)
     var showIconPicker by mutableStateOf(false)
 
-    val availableCategories: StateFlow<List<String>> = repository.allCategories
+    val availableCategories: StateFlow<List<String>> = vaultUseCases.getCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val vaultItems: StateFlow<List<VaultEntry>> =
+    val vaultItems: StateFlow<List<VaultSummary>> =
         combine(_searchQuery, _selectedCategory) { query, category ->
             Pair(query, category)
         }.flatMapLatest { (query, category) ->
             val baseFlow = when {
-                query.isNotEmpty() -> repository.searchEntries(query)
-                category != null -> repository.getEntriesByCategory(category)
-                else -> repository.allEntries
+                query.isNotEmpty() -> vaultUseCases.searchEntries(query)
+                category != null -> vaultUseCases.getEntriesByCategory(category)
+                else -> vaultUseCases.observeAllEntries()
             }
             baseFlow
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.map { entries -> entries.map { it.toSummary() } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         startTotpRefresher()
@@ -166,7 +166,16 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
                             val secret = state.decryptedSecret ?: return@mapValues state
                             val period = entry.totpPeriod.coerceAtLeast(1)
                             val remaining = period - ((System.currentTimeMillis() / 1000) % period)
-                            val code = TwoFAUtils.generateTotp(secret, if (entry.totpAlgorithm == "STEAM") 5 else entry.totpDigits, entry.totpPeriod, entry.totpAlgorithm)
+                            val code = vaultUseCases.getTotpCode(
+                                TotpConfig(
+                                    secret = secret,
+                                    digits = entry.totpDigits,
+                                    period = entry.totpPeriod,
+                                    algorithm = entry.totpAlgorithm,
+                                    issuer = entry.category,
+                                    label = entry.title
+                                )
+                            )
                             state.copy(code = code, progress = remaining.toFloat() / period)
                         }
                     }
@@ -206,25 +215,62 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun autoUnlockTotp(entry: VaultEntry) {
+        autoUnlockTotp(entry.toSummary())
+    }
+
+    fun autoUnlockTotp(entry: VaultSummary) {
         if (_totpStates.value.containsKey(entry.id)) return
         val encrypted = entry.totpSecret ?: return
         try {
             val decrypted = CryptoManager.decrypt(encrypted)
-            unlockTotp(entry, decrypted)
+            unlockTotp(entry.id, decrypted)
         } catch (e: Exception) {
             Logcat.e("VaultViewModel", "Auto unlock failed", e)
         }
     }
 
     fun showDetail(entry: VaultEntry) { detailItem = entry }
+    fun showDetail(entry: VaultSummary) {
+        loadEntryById(entry.id) { detailItem = it }
+    }
+    fun loadEntryById(entryId: Int, onLoaded: (VaultEntry) -> Unit) {
+        viewModelScope.launch {
+            vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) }
+        }
+    }
     fun dismissDetail() { detailItem = null }
-    fun addItem(entry: VaultEntry) { viewModelScope.launch { repository.insert(entry); addType = AddType.NONE } }
+    fun addItem(entry: VaultEntry) { viewModelScope.launch { vaultUseCases.insertEntry(entry); addType = AddType.NONE } }
+    
+    /**
+     * 添加条目并自动下载 favicon（如果提供了域名）
+     */
+    fun addItem(entry: VaultEntry, domain: String) {
+        viewModelScope.launch {
+            val insertedId = vaultUseCases.insertEntry(entry)
+            addType = AddType.NONE
+            
+            if (domain.isNotBlank()) {
+                val outcome = vaultUseCases.downloadFavicon(domain)
+                if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                    val updatedEntry = entry.copy(
+                        id = insertedId.toInt(),
+                        iconName = null,
+                        iconCustomPath = outcome.filePath
+                    )
+                    vaultUseCases.updateEntry(updatedEntry)
+                }
+            }
+        }
+    }
     fun updateVaultEntry(entry: VaultEntry) {
         viewModelScope.launch {
-            repository.update(entry)
+            vaultUseCases.updateEntry(entry)
             if (detailItem?.id == entry.id) detailItem = entry
             showIconPicker = false
             _totpStates.update { it - entry.id }
+            if (!entry.totpSecret.isNullOrBlank()) {
+                autoUnlockTotp(entry)
+            }
         }
     }
 
@@ -262,7 +308,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
                     detailItem = null
                 }
                 entry.iconCustomPath?.let { VaultFileUtils.deleteImage(it) }
-                repository.delete(entry)
+                vaultUseCases.deleteEntry(entry)
                 itemToDelete = null
                 _totpStates.update { it - entry.id }
             }
@@ -276,14 +322,20 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
                 detailItem = null
             }
             entry.iconCustomPath?.let { VaultFileUtils.deleteImage(it) }
-            repository.delete(entry)
+            vaultUseCases.deleteEntry(entry)
             _totpStates.update { it - entry.id }
         }
     }
 
+    fun quickDelete(entry: VaultSummary) {
+        loadEntryById(entry.id) { quickDelete(it) }
+    }
+
     fun onSearchQueryChange(q: String) { _searchQuery.value = q }
     fun toggleSearch(active: Boolean) { isSearchActive = active; if (!active) _searchQuery.value = "" }
-    fun unlockTotp(entry: VaultEntry, decryptedSecret: String) {
-        _totpStates.update { it + (entry.id to TotpState("------", 1f, decryptedSecret)) }
+    fun unlockTotp(entryId: Int, decryptedSecret: String) {
+        _totpStates.update { it + (entryId to TotpState("------", 1f, decryptedSecret)) }
     }
 }
+
+

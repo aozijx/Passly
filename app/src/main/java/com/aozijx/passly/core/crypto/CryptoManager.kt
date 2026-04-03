@@ -64,3 +64,5 @@ object CryptoManager {
         return String(cipher.doFinal(encrypted))
     }
 }
+
+

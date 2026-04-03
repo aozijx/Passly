@@ -1,7 +1,8 @@
 package com.aozijx.passly
 
 import android.app.Application
-import com.example.passly.data.local.AppPrefs
+import com.aozijx.passly.data.local.AppPrefs
+import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 
 class AppContext : Application() {
     // 全局单例 VaultPrefs
@@ -15,5 +16,6 @@ class AppContext : Application() {
     override fun onCreate() {
         super.onCreate()
         _instance = this
+        EntryTypeStrategyRegistry.ensureRegistered()
     }
 }

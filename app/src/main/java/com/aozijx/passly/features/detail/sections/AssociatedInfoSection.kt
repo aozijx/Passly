@@ -35,32 +35,32 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.core.designsystem.state.VaultEditState
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.media.FaviconUtils
+import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.vault.VaultViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun AssociatedInfoSection(
+    modifier: Modifier = Modifier,
     entry: VaultEntry,
     editState: VaultEditState,
-    activity: FragmentActivity,
-    mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    onEntryUpdated: (VaultEntry) -> Unit = vaultViewModel::updateVaultEntry,
-    modifier: Modifier = Modifier
+    onEntryUpdated: (VaultEntry) -> Unit = vaultViewModel::updateVaultEntry
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isDownloadingFavicon by remember { mutableStateOf(false) }
-    var localDomain by remember(entry.associatedDomain) { mutableStateOf(entry.associatedDomain ?: "") }
+    var localDomain by remember(entry.associatedDomain) {
+        mutableStateOf(
+            entry.associatedDomain ?: ""
+        )
+    }
 
     val domainAndIconLabel = stringResource(R.string.vault_detail_domain_and_icon)
     val associatedDomainLabel = stringResource(R.string.vault_detail_associated_domain)
@@ -115,13 +115,19 @@ fun AssociatedInfoSection(
                             singleLine = true
                         )
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
                             Button(
                                 onClick = {
                                     if (localDomain.isNotBlank()) {
                                         scope.launch {
                                             isDownloadingFavicon = true
-                                            val outcome = FaviconUtils.downloadAndSaveFavicon(localDomain, context)
+                                            val outcome = FaviconUtils.downloadAndSaveFavicon(
+                                                localDomain,
+                                                context
+                                            )
                                             when (outcome.result) {
                                                 FaviconUtils.DownloadResult.SUCCESS -> {
                                                     onEntryUpdated(
@@ -135,19 +141,43 @@ fun AssociatedInfoSection(
                                                             totpAlgorithm = entry.totpAlgorithm
                                                         )
                                                     )
-                                                    Toast.makeText(context, iconDownloadSuccess, Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        iconDownloadSuccess,
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
+
                                                 FaviconUtils.DownloadResult.NETWORK_ERROR -> {
-                                                    Toast.makeText(context, iconDownloadNetworkError, Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        iconDownloadNetworkError,
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
+
                                                 FaviconUtils.DownloadResult.DECODE_ERROR -> {
-                                                    Toast.makeText(context, iconDownloadDecodeError, Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        iconDownloadDecodeError,
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
+
                                                 FaviconUtils.DownloadResult.SAVE_ERROR -> {
-                                                    Toast.makeText(context, iconDownloadSaveError, Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        iconDownloadSaveError,
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
+
                                                 FaviconUtils.DownloadResult.EMPTY_INPUT -> {
-                                                    Toast.makeText(context, iconDownloadFailed, Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        iconDownloadFailed,
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
                                             }
                                             isDownloadingFavicon = false
@@ -160,7 +190,11 @@ fun AssociatedInfoSection(
                                     CircularProgressIndicator(modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                 } else {
-                                    Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
+                                    Icon(
+                                        Icons.Default.Download,
+                                        null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
                                 Text(downloadIcon)
@@ -187,7 +221,11 @@ fun AssociatedInfoSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(domainLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                            Text(
+                                domainLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
                             Text(
                                 text = entry.associatedDomain ?: notSet,
                                 style = MaterialTheme.typography.bodyLarge,
@@ -199,7 +237,11 @@ fun AssociatedInfoSection(
                                 ClipboardUtils.copy(context, entry.associatedDomain)
                                 Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                             }) {
-                                Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
                     }
@@ -261,7 +303,11 @@ fun AssociatedInfoSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(domainLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                            Text(
+                                domainLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
                             Text(
                                 text = entry.associatedDomain ?: notSet,
                                 style = MaterialTheme.typography.bodyLarge,
@@ -273,7 +319,11 @@ fun AssociatedInfoSection(
                                 ClipboardUtils.copy(context, entry.associatedDomain)
                                 Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                             }) {
-                                Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
                     }
@@ -324,7 +374,11 @@ fun AssociatedInfoSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(associatedPackageLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                            Text(
+                                associatedPackageLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
                             Text(
                                 entry.associatedAppPackage ?: notSet,
                                 style = MaterialTheme.typography.bodyLarge,
@@ -336,7 +390,11 @@ fun AssociatedInfoSection(
                                 ClipboardUtils.copy(context, entry.associatedAppPackage)
                                 Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                             }) {
-                                Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
                     }
@@ -345,6 +403,3 @@ fun AssociatedInfoSection(
         }
     }
 }
-
-
-

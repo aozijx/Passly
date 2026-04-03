@@ -35,7 +35,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -245,3 +246,35 @@ fun handleSwipeAction(
         }
     }
 }
+
+fun handleSwipeAction(
+    actionType: SwipeActionType,
+    item: VaultSummary,
+    onAuthRequired: (onSuccess: () -> Unit) -> Unit,
+    onQuickDelete: (VaultSummary) -> Unit,
+    onCopyPassword: (decryptedPassword: String) -> Unit,
+    onDecryptPassword: (onResult: (String?) -> Unit) -> Unit,
+    onShowDetail: (VaultSummary) -> Unit
+) {
+    when (actionType) {
+        SwipeActionType.DELETE -> {
+            onAuthRequired { onQuickDelete(item) }
+        }
+        SwipeActionType.EDIT -> {
+            // TODO: implement edit action
+        }
+        SwipeActionType.DETAIL -> {
+            onShowDetail(item)
+        }
+        SwipeActionType.COPY_PASSWORD -> {
+            onDecryptPassword { decryptedPassword ->
+                decryptedPassword?.let { onCopyPassword(it) }
+            }
+        }
+        SwipeActionType.DISABLED -> {
+            // do nothing
+        }
+    }
+}
+
+

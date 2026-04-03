@@ -15,11 +15,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.ImageType
-import com.aozijx.passly.core.util.rememberImagePicker
+import com.aozijx.passly.core.media.ImageType
+import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.ui.navigation.TopBarConfig
 import com.aozijx.passly.ui.screens.components.ScannerView
-import com.example.passly.ui.screens.scanner.ScannerViewModel
+import com.aozijx.passly.ui.screens.scanner.ScannerViewModel
 
 /**
  * 通用扫码页面实现：
@@ -66,3 +66,5 @@ fun ScannerScreen(
         }
     }
 }
+
+

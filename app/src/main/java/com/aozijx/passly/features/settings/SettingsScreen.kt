@@ -1,4 +1,4 @@
-package com.example.passly.features.settings
+package com.aozijx.passly.features.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -45,6 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +60,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.core.common.VaultCardStyle
+import com.aozijx.passly.features.settings.components.CardStyleSettingsSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +78,17 @@ fun SettingsScreen(
     val isTabBarCollapsible by viewModel.isTabBarCollapsible.collectAsStateWithLifecycle()
     val isSecureContentEnabled by viewModel.isSecureContentEnabled.collectAsStateWithLifecycle()
     val isFlipToLockEnabled by viewModel.isFlipToLockEnabled.collectAsStateWithLifecycle()
+    val cardStyle by viewModel.cardStyle.collectAsStateWithLifecycle()
+
+    // 预留扩展：后续新增样式时只需追加到这里
+    val availableCardStyles = remember { listOf(VaultCardStyle.BASE) }
+    val effectiveCardStyle = if (cardStyle in availableCardStyles) cardStyle else VaultCardStyle.BASE
+
+    LaunchedEffect(cardStyle) {
+        if (cardStyle !in availableCardStyles) {
+            viewModel.setCardStyle(VaultCardStyle.BASE)
+        }
+    }
     
     var showLeftActionDialog by remember { mutableStateOf(false) }
     var showRightActionDialog by remember { mutableStateOf(false) }
@@ -189,6 +203,12 @@ fun SettingsScreen(
                 SettingsGroupTitle(text = "外观定制")
                 SettingsCard {
                     ClickableSettingItem(icon = Icons.Default.Palette, title = "个性化配色", value = "动态取色", onClick = { })
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+                    CardStyleSettingsSection(
+                        availableStyles = availableCardStyles,
+                        selectedStyle = effectiveCardStyle,
+                        onStyleSelected = { viewModel.setCardStyle(it) }
+                    )
                 }
             }
             item { Spacer(modifier = Modifier.height(32.dp)) }
@@ -272,3 +292,6 @@ fun SwipeActionSelectDialog(title: String, currentAction: SwipeActionType, onAct
         shape = RoundedCornerShape(28.dp)
     )
 }
+
+
+

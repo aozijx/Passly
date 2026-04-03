@@ -53,6 +53,7 @@ import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AddType
 import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.core.common.VaultCardStyle
 import com.aozijx.passly.core.common.VaultTab
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.base.VaultItem
@@ -62,14 +63,15 @@ import com.aozijx.passly.core.designsystem.components.VaultDialogs
 import com.aozijx.passly.core.designsystem.components.VaultFab
 import com.aozijx.passly.core.designsystem.components.VaultScanner
 import com.aozijx.passly.core.designsystem.components.VaultTopBar
+import com.aozijx.passly.core.designsystem.components.entries.TypedVaultItemRouter
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
 import com.aozijx.passly.core.designsystem.widgets.SwipeToAction
 import com.aozijx.passly.core.designsystem.widgets.createSwipeAction
 import com.aozijx.passly.core.designsystem.widgets.handleSwipeAction
-import com.aozijx.passly.core.util.ClipboardUtils
-import com.aozijx.passly.data.model.VaultEntry
-import com.example.passly.features.settings.SettingsViewModel
+import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.features.settings.SettingsViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +98,7 @@ fun VaultContent(
     val isStatusBarAutoHide by settingsViewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
     val isTopBarCollapsible by settingsViewModel.isTopBarCollapsible.collectAsStateWithLifecycle()
     val isTabBarCollapsible by settingsViewModel.isTabBarCollapsible.collectAsStateWithLifecycle()
+    val cardStyle by settingsViewModel.cardStyle.collectAsStateWithLifecycle()
     
     var isFabVisible by remember { mutableStateOf(true) }
     val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
@@ -219,7 +222,7 @@ fun VaultContent(
                                     when {
                                         !item.totpSecret.isNullOrBlank() -> {
                                             TwoFAItem(
-                                                entry = item, 
+                                                entry = item,
                                                 vaultViewModel = vaultViewModel,
                                                 showCode = vaultViewModel.showTOTPCode
                                             )
@@ -228,7 +231,11 @@ fun VaultContent(
                                             AutoFillItem(entry = item, viewModel = vaultViewModel)
                                         }
                                         else -> {
-                                            VaultItem(entry = item, viewModel = vaultViewModel)
+                                            if (cardStyle == VaultCardStyle.TYPED) {
+                                                TypedVaultItemRouter(entry = item, viewModel = vaultViewModel)
+                                            } else {
+                                                VaultItem(entry = item, viewModel = vaultViewModel)
+                                            }
                                         }
                                     }
                                 }
@@ -254,7 +261,11 @@ fun VaultContent(
                                                         callback(null)
                                                     }
                                                 },
-                                                onShowDetail = { onShowDetail(item) }
+                                                onShowDetail = {
+                                                    vaultViewModel.loadEntryById(item.id) { entry ->
+                                                        onShowDetail(entry)
+                                                    }
+                                                }
                                             )
                                         },
                                         backgroundColor = MaterialTheme.colorScheme.error,
@@ -280,7 +291,11 @@ fun VaultContent(
                                                         callback(null)
                                                     }
                                                 },
-                                                onShowDetail = { onShowDetail(item) }
+                                                onShowDetail = {
+                                                    vaultViewModel.loadEntryById(item.id) { entry ->
+                                                        onShowDetail(entry)
+                                                    }
+                                                }
                                             )
                                         },
                                         backgroundColor = MaterialTheme.colorScheme.primary,
@@ -332,3 +347,6 @@ fun VaultContent(
         }
     }
 }
+
+
+

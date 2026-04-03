@@ -53,14 +53,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.R
 import com.aozijx.passly.ui.navigation.TopBarConfig
-import com.example.passly.ui.screens.settings.components.AllRoundedShape
-import com.example.passly.ui.screens.settings.components.BottomRoundedShape
-import com.example.passly.ui.screens.settings.components.LogDetailDialog
-import com.example.passly.ui.screens.settings.components.MiddleShape
-import com.example.passly.ui.screens.settings.components.SectionTitle
-import com.example.passly.ui.screens.settings.components.SettingsClickableItem
-import com.example.passly.ui.screens.settings.components.SettingsSwitchItem
-import com.example.passly.ui.screens.settings.components.TopRoundedShape
+import com.aozijx.passly.ui.screens.settings.components.AllRoundedShape
+import com.aozijx.passly.ui.screens.settings.components.BottomRoundedShape
+import com.aozijx.passly.ui.screens.settings.components.LogDetailDialog
+import com.aozijx.passly.ui.screens.settings.components.MiddleShape
+import com.aozijx.passly.ui.screens.settings.components.SectionTitle
+import com.aozijx.passly.ui.screens.settings.components.SettingsClickableItem
+import com.aozijx.passly.ui.screens.settings.components.SettingsSwitchItem
+import com.aozijx.passly.ui.screens.settings.components.TopRoundedShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -299,3 +299,4 @@ fun SettingsScreen(
         }
     }
 }
+

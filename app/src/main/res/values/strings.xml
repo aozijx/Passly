@@ -162,6 +162,26 @@
     <string name="hide_password">隐藏密码</string>
     <string name="label_title_hint">标题 (如: Google, GitHub)</string>
     <string name="label_username_hint">账号/邮箱</string>
+    
+    <!-- 详情页新字符串 -->
+    <string name="vault_detail_totp_label">两步验证码</string>
+    <string name="vault_detail_domain_label">网站域名或图标直链</string>
+    <string name="vault_detail_domain_placeholder">例如: google.com 或 https://example.com/icon.png</string>
+    <string name="vault_detail_domain_and_icon">域名与图标</string>
+    <string name="vault_detail_not_set">未设置</string>
+    <string name="vault_detail_copied">已复制</string>
+    <string name="vault_detail_download_icon">下载图标</string>
+    <string name="vault_detail_icon_download_success">图标下载成功！</string>
+    <string name="vault_detail_icon_download_failed">图标下载失败</string>
+    <string name="vault_detail_icon_download_network_error">网络连接失败</string>
+    <string name="vault_detail_icon_download_decode_error">图标格式不支持</string>
+    <string name="vault_detail_icon_download_save_error">图标保存失败</string>
+    <string name="vault_detail_login_credentials">登录凭据</string>
+    <string name="vault_detail_username">用户名</string>
+    <string name="vault_detail_password">密码</string>
+    <string name="vault_detail_notes">备注</string>
+    <string name="vault_detail_add_notes">添加备注...</string>
+    <string name="vault_detail_no_notes">暂无备注</string>
 
     <!-- icon_ 系列 -->
     <string name="icon_bank">银行</string>
@@ -206,6 +226,46 @@
     <string name="category_autofill">自动填充</string>
     <string name="category_unfiled">未分类</string>
     <string name="category_otp">OTP</string>
+
+    <!-- WiFi 相关 -->
+    <string name="wifi_ssid">WiFi名称</string>
+    <string name="wifi_password">WiFi密码</string>
+    <string name="wifi_encryption">加密方式</string>
+    <string name="wifi_hidden">隐藏网络</string>
+    <string name="wifi_settings">WiFi 设置</string>
+    <string name="wifi_copied">WiFi信息已复制</string>
+
+    <!-- 银行卡相关 -->
+    <string name="cardholder">持卡人</string>
+    <string name="card_number">卡号</string>
+    <string name="card_cvv">安全码</string>
+    <string name="card_expiration">有效期</string>
+    <string name="card_copied">银行卡信息已复制</string>
+
+    <!-- 助记词相关 -->
+    <string name="seed_phrase">助记词</string>
+    <string name="seed_phrase_title">加密货币助记词</string>
+    <string name="seed_phrase_revealed">已显示助记词</string>
+    <string name="seed_phrase_copied">助记词已复制</string>
+    <string name="word_index_hint">点击任意位置复制</string>
+
+    <!-- SSH密钥相关 -->
+    <string name="ssh_private_key">私钥内容</string>
+    <string name="ssh_private_key_full">完整私钥</string>
+    <string name="ssh_fingerprint">密钥指纹</string>
+    <string name="ssh_default_fingerprint">未设置</string>
+    <string name="ssh_key_copied">SSH密钥已复制</string>
+    <string name="passphrase">密钥口令</string>
+    <string name="ssh_key_pin">密钥PIN</string>
+
+    <!-- 证件相关 -->
+    <string name="id_number">证件号码</string>
+    <string name="id_copied">证件信息已复制</string>
+
+    <!-- Passkey相关 -->
+    <string name="passkey_data">Passkey数据</string>
+    <string name="passkey_recovery_codes">恢复码</string>
+    <string name="hardware_key_info">硬件密钥信息</string>
 
     <!-- widget / shortcut / changelog -->
     <string name="widget_loading">加载中…</string>

@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -133,7 +132,7 @@ fun DetailCardDialog(
                     contentPadding = PaddingValues(bottom = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    TypeSpecificCardContent(
+                    typeSpecificCardContent(
                         entry = entry,
                         vaultType = vaultType,
                         currentState = currentState,
@@ -174,7 +173,7 @@ fun DetailCardDialog(
     }
 }
 
-private fun LazyListScope.TypeSpecificCardContent(
+private fun LazyListScope.typeSpecificCardContent(
     entry: VaultEntry,
     vaultType: EntryType,
     currentState: TotpState?,
@@ -199,10 +198,7 @@ private fun LazyListScope.TypeSpecificCardContent(
                     currentState = currentState,
                     isSteam = isSteam,
                     totpEditState = totpEditState,
-                    editState = editState,
                     showQrDialog = onShowQrDialog,
-                    activity = activity,
-                    mainViewModel = mainViewModel,
                     vaultViewModel = vaultViewModel,
                     onEntryUpdated = onEntryUpdated
                 )

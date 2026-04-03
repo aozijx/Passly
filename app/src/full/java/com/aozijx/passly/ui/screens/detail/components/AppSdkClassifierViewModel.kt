@@ -3,8 +3,8 @@ package com.aozijx.passly.ui.screens.detail.components
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.util.AppWithSdk
-import com.aozijx.passly.core.util.PackageUtils
+import com.aozijx.passly.core.platform.AppWithSdk
+import com.aozijx.passly.core.platform.PackageUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,3 +69,4 @@ class AppSdkClassifierViewModel : ViewModel() {
         startScan(context) // 切换后自动重新扫描
     }
 }
+

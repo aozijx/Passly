@@ -14,9 +14,9 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.BiometricHelper
-import com.aozijx.passly.core.util.Logcat
-import com.aozijx.passly.core.util.TwoFAUtils
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.security.otp.TwoFAUtils
+import com.aozijx.passly.domain.model.VaultEntry
 import kotlinx.coroutines.launch
 
 /**
@@ -126,3 +126,5 @@ class AutofillAuthActivity : FragmentActivity() {
         return if (added) builder.build() else null
     }
 }
+
+

@@ -1,4 +1,4 @@
-package com.example.passly.ui.screens.settings.components
+package com.aozijx.passly.ui.screens.settings.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth

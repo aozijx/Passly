@@ -25,20 +25,30 @@
 
 采用按功能模块划分（Package by Feature）并结合简洁架构（Clean Architecture）的思想。
 ```tree
-com.example.poop
+com.aozijx.passly
 ├── core                // 核心底层能力（跨模块通用）
-│   ├── crypto          // 加密解密核心逻辑
+│   ├── backup          // 加密备份/恢复
 │   ├── common          // 基础基类、常量
+│   ├── crypto          // 加密解密核心逻辑
 │   ├── designsystem    // 自定义 UI 组件库 (Material 3)
-│   └── util            // 纯工具类 (Backup, Notification)
+│   ├── logging         // 日志体系
+│   ├── media           // 图像/媒体能力（选择/图标等）
+│   ├── platform        // 平台能力封装（剪贴板、包信息等）
+│   ├── qr              // 二维码生成/识别
+│   ├── security
+│   │   └── otp         // TOTP / 2FA 相关
+│   └── storage         // 文件/本地存储辅助
 │
 ├── data                // 数据层（不含 UI 逻辑）
 │   ├── local           // Room 数据库, DataStore
 │   ├── repository      // 聚合数据源
 │   └── model           // 数据库实体 (Entity)
 │
-├── domain              // 领域层（业务模型和规则）
-│   └── model           // 业务模型
+├── domain              // 领域层（业务模型与业务规则）
+│   ├── model           // 业务模型（不依赖 Android）
+│   ├── policy          // 纯业务策略（无 Android 依赖）
+│   ├── repository      // 领域仓库接口
+│   └── usecase         // 业务用例
 │
 ├── features            // 功能模块层（按业务划分）
 │   ├── vault           // 保险箱主界面

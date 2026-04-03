@@ -14,7 +14,7 @@ import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.view.WindowManager
-import com.aozijx.passly.core.util.Logcat
+import com.aozijx.passly.core.logging.Logcat
 import java.net.NetworkInterface
 import java.util.Collections
 import java.util.Locale
@@ -262,3 +262,4 @@ class SystemInfoManager(private val context: Context) {
 
     private fun formatSize(bytes: Long): String = String.format(Locale.getDefault(), "%.2f GB", bytes.toDouble() / (1024 * 1024 * 1024))
 }
+

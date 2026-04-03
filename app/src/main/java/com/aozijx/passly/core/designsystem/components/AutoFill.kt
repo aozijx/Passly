@@ -24,12 +24,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun AutoFillItem(
-    entry: VaultEntry,
+    entry: VaultSummary,
     viewModel: VaultViewModel,
     onClick: () -> Unit = { viewModel.showDetail(entry) }
 ) {
@@ -85,3 +85,5 @@ fun AutoFillItem(
         }
     }
 }
+
+

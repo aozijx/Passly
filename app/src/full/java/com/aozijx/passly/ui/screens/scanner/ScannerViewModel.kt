@@ -1,11 +1,11 @@
-package com.example.passly.ui.screens.scanner
+package com.aozijx.passly.ui.screens.scanner
 
 import android.content.Context
 import android.net.Uri
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
-import com.example.passly.core.util.QrCodeUtils
+import com.aozijx.passly.core.qr.QrCodeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,3 +45,5 @@ class ScannerViewModel : ViewModel() {
         )
     }
 }
+
+

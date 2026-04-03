@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
 /**
@@ -26,9 +26,9 @@ import com.aozijx.passly.features.vault.VaultViewModel
  */
 @Composable
 fun VaultItem(
-    entry: VaultEntry,
-    viewModel: VaultViewModel,
-    onClick: () -> Unit = { viewModel.showDetail(entry) }
+    entry: VaultSummary,
+    viewModel: VaultViewModel? = null,
+    onClick: () -> Unit = { viewModel?.showDetail(entry) }
 ) {
     Card(
         onClick = onClick,
@@ -61,3 +61,5 @@ fun VaultItem(
         }
     }
 }
+
+

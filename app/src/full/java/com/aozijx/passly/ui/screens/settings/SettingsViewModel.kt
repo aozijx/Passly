@@ -13,7 +13,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.Logcat
+import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.AppPreference
 import com.aozijx.passly.i8n.LanguageOption
 import com.aozijx.passly.i8n.LocaleConfigReader

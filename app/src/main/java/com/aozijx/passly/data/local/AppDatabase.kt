@@ -10,11 +10,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.util.Logcat
-import com.aozijx.passly.data.model.VaultEntry
-import com.example.passly.data.local.Converters
-import com.example.passly.data.local.VaultDao
-import com.example.passly.data.model.VaultHistory
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.entity.VaultHistoryEntity
 import net.sqlcipher.database.SupportFactory
 import java.nio.ByteBuffer
 import java.security.KeyStore
@@ -31,7 +29,7 @@ object DatabaseConfig {
 }
 
 @Database(
-    entities = [VaultEntry::class, VaultHistory::class],
+    entities = [VaultEntryEntity::class, VaultHistoryEntity::class],
     version = DatabaseConfig.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
 )
@@ -118,3 +116,6 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+
+
+
