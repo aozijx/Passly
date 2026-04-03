@@ -277,6 +277,14 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         searchFilterState.updateSearchQuery(q)
     }
 
+    fun setSelectedCategory(category: String?) {
+        searchFilterState.updateSelectedCategory(category)
+    }
+
+    fun clearSelectedCategory() {
+        setSelectedCategory(null)
+    }
+
     fun selectTab(tab: VaultTab) {
         searchFilterState.updateSelectedTab(tab)
     }

@@ -28,6 +28,10 @@ internal class VaultSearchFilterStateHolder {
         _selectedTab.value = tab
     }
 
+    fun updateSelectedCategory(category: String?) {
+        _selectedCategory.value = category
+    }
+
     fun toggleSearch(active: Boolean) {
         isSearchActive = active
         if (!active) {

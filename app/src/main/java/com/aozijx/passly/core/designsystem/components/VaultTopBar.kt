@@ -67,7 +67,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.VaultTab
 import com.aozijx.passly.features.vault.VaultViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -150,7 +149,7 @@ fun VaultTopBar(
                         )
                         if (selectedCategory != null) {
                             IconButton(onClick = {
-                                (vaultViewModel.selectedCategory as MutableStateFlow).value = null
+                                vaultViewModel.clearSelectedCategory()
                             }) {
                                 Icon(
                                     Icons.Default.Clear,
@@ -250,8 +249,7 @@ fun VaultTopBar(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_all_categories)) },
                                     onClick = {
-                                        (vaultViewModel.selectedCategory as MutableStateFlow).value =
-                                            null; vaultViewModel.isMoreMenuExpanded = false
+                                        vaultViewModel.clearSelectedCategory(); vaultViewModel.isMoreMenuExpanded = false
                                     },
                                     trailingIcon = {
                                         if (selectedCategory == null) Icon(
@@ -264,8 +262,7 @@ fun VaultTopBar(
                                     DropdownMenuItem(
                                         text = { Text(category) },
                                         onClick = {
-                                            (vaultViewModel.selectedCategory as MutableStateFlow).value =
-                                                category; vaultViewModel.isMoreMenuExpanded = false
+                                            vaultViewModel.setSelectedCategory(category); vaultViewModel.isMoreMenuExpanded = false
                                         },
                                         trailingIcon = {
                                             if (selectedCategory == category) Icon(
@@ -313,7 +310,7 @@ fun VaultTopBar(
                 VaultTab.entries.forEach { tab ->
                     Tab(
                         selected = selectedTab == tab,
-                        onClick = { (vaultViewModel.selectedTab as MutableStateFlow).value = tab },
+                        onClick = { vaultViewModel.selectTab(tab) },
                         text = {
                             Text(
                                 stringResource(
