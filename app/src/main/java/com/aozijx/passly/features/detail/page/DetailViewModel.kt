@@ -3,11 +3,10 @@ package com.aozijx.passly.features.detail.page
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import com.aozijx.passly.features.detail.page.internal.DetailEntryAnalyzer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class DetailViewModel(application: Application) : AndroidViewModel(application) {
     private val vaultUseCases = AppContainer.vaultUseCases
+    private val entryAnalyzer = DetailEntryAnalyzer()
 
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
@@ -92,20 +92,17 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun refreshFromEntry(entry: VaultEntry, isEditingTitle: Boolean, editedTitle: String) {
-        val vaultType = EntryType.fromValue(entry.entryType)
-        val strategy = runCatching { EntryTypeStrategyFactory.getStrategy(vaultType) }.getOrNull()
-        val validationError = strategy?.validateRequiredFields(entry) ?: strategy?.validateFieldContent(entry)
-        val summary = strategy?.extractSummary(entry).orEmpty()
+        val analysis = entryAnalyzer.analyze(entry)
 
         _uiState.update {
             it.copy(
                 entry = entry,
-                vaultType = vaultType,
-                strategySummary = summary,
-                validationError = validationError,
+                vaultType = analysis.vaultType,
+                strategySummary = analysis.strategySummary,
+                validationError = analysis.validationError,
                 isEditingTitle = isEditingTitle,
                 editedTitle = editedTitle,
-                strategyReady = strategy != null
+                strategyReady = analysis.strategyReady
             )
         }
     }

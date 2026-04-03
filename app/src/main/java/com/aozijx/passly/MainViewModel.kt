@@ -9,8 +9,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.di.AppContainer
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import com.aozijx.passly.core.security.AutoLockScheduler
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -25,8 +24,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- 安全锁定逻辑 ---
     private var lockTimeMs = 60000L
-    private var lockJob: Job? = null
     private var lastInteractionTime = System.currentTimeMillis()
+    private val autoLockScheduler = AutoLockScheduler(viewModelScope) {
+        if (isAuthorized) lock()
+    }
     var isAuthorized by mutableStateOf(false)
         private set
 
@@ -72,7 +73,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun lock() {
         isAuthorized = false
-        lockJob?.cancel()
+        autoLockScheduler.cancel()
     }
 
     fun updateInteraction() {
@@ -87,11 +88,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun scheduleLockTimer() {
-        lockJob?.cancel()
-        lockJob = viewModelScope.launch {
-            delay(lockTimeMs)
-            if (isAuthorized) lock()
-        }
+        autoLockScheduler.schedule(lockTimeMs)
     }
 }
 

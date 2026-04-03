@@ -12,6 +12,7 @@ import com.aozijx.passly.core.backup.BackupManager
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.VaultCardStyle
 import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.features.settings.internal.BackupActionSupport
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsUseCases = AppContainer.settingsUseCases
+    private val backupActionSupport = BackupActionSupport()
 
     val lockTimeout: StateFlow<Long> = settingsUseCases.lockTimeout
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60000L)
@@ -99,27 +101,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val uri = backupUri ?: return
         val password = backupPassword.toCharArray()
         viewModelScope.launch {
-            val result = if (isExporting) BackupManager.exportBackup(context, uri, password)
-            else BackupManager.importBackup(context, uri, password, importMode)
-            
-            backupMessage = if (result.isSuccess) {
-                if (isExporting) "导出成功" else "导入成功"
-            } else {
-                buildBackupFailureMessage(result.exceptionOrNull())
-            }
+            backupMessage = backupActionSupport.runBackupAction(
+                context = context,
+                uri = uri,
+                password = password,
+                isExporting = isExporting,
+                importMode = importMode
+            )
             dismissBackupPasswordDialog()
-        }
-    }
-
-    private fun buildBackupFailureMessage(error: Throwable?): String {
-        val message = error?.message?.trim().orEmpty()
-        if (message.contains("密码错误")) {
-            return message
-        }
-        return if (message.isNotEmpty()) {
-            "失败: $message"
-        } else {
-            "失败: 未知错误"
         }
     }
 

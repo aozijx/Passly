@@ -2,34 +2,29 @@ package com.aozijx.passly.features.vault
 
 import android.app.Application
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
-import android.view.autofill.AutofillManager
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AddType
 import com.aozijx.passly.core.common.VaultTab
-import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.state.TotpState
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.core.storage.VaultFileUtils
 import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.FaviconResult
-import com.aozijx.passly.domain.model.TotpConfig
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
-import kotlinx.coroutines.Dispatchers
+import com.aozijx.passly.features.vault.internal.VaultAutofillSupport
+import com.aozijx.passly.features.vault.internal.VaultCryptoSupport
+import com.aozijx.passly.features.vault.internal.VaultEntryFileSupport
+import com.aozijx.passly.features.vault.internal.VaultTotpSupport
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +34,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * 保险箱主界面业务逻辑
@@ -47,6 +41,10 @@ import kotlinx.coroutines.withContext
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     private val vaultUseCases = AppContainer.vaultUseCases
+    private val autofillSupport = VaultAutofillSupport()
+    private val cryptoSupport = VaultCryptoSupport()
+    private val totpSupport = VaultTotpSupport()
+    private val entryFileSupport = VaultEntryFileSupport()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -101,17 +99,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun updateAutofillStatus() {
         val context = getApplication<Application>()
-        val afm = context.getSystemService(AutofillManager::class.java)
-        
-        // 1. 直接检查系统设置（最快最准）：当前选中的服务包名是否包含我们
-        val currentService = Settings.Secure.getString(context.contentResolver, "autofill_service")
-        val isOurServiceSelected = currentService != null && currentService.contains(context.packageName)
-        
-        // 2. 官方 API 检查（用于兼容不同系统版本）
-        val isEnabledByApi = afm != null && afm.isEnabled && afm.hasEnabledAutofillServices()
-        
-        // 只要有一项成立，就认为已开启，从而隐藏“去开启”按钮
-        isAutofillEnabled = isOurServiceSelected || isEnabledByApi
+        isAutofillEnabled = autofillSupport.isAutofillEnabled(context)
     }
 
     /**
@@ -119,33 +107,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun openAutofillSettings(context: Context) {
         isMoreMenuExpanded = false
-        
-        fun tryStartActivity(intent: Intent): Boolean {
-            return try {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-                true
-            } catch (e: Exception) {
-                Logcat.e("VaultViewModel", "Failed to start activity: ${intent.action}", e)
-                false
-            }
-        }
-
-        // 优先级 1：标准的自动填充请求
-        val standardIntent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
-            data = "package:${context.packageName}".toUri()
-        }
-
-        var started = tryStartActivity(standardIntent)
-        
+        val started = autofillSupport.openAutofillSettings(context)
         if (!started) {
-            // 优先级 2：进入“默认应用”设置 (适配鸿蒙/国产机)
-            started = tryStartActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
-        }
-        
-        if (!started) {
-            // 优先级 3：终极兜底跳转总设置
-            tryStartActivity(Intent(Settings.ACTION_SETTINGS))
             Toast.makeText(
                 context, 
                 context.getString(R.string.vault_toast_enable_autofill_manual), 
@@ -156,32 +119,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun startTotpRefresher() {
         viewModelScope.launch {
-            while (true) {
-                val currentMap = _totpStates.value
-                if (currentMap.isNotEmpty()) {
-                    val entries = vaultItems.value
-                    _totpStates.update { current ->
-                        current.mapValues { (id, state) ->
-                            val entry = entries.find { it.id == id } ?: return@mapValues state
-                            val secret = state.decryptedSecret ?: return@mapValues state
-                            val period = entry.totpPeriod.coerceAtLeast(1)
-                            val remaining = period - ((System.currentTimeMillis() / 1000) % period)
-                            val code = vaultUseCases.getTotpCode(
-                                TotpConfig(
-                                    secret = secret,
-                                    digits = entry.totpDigits,
-                                    period = entry.totpPeriod,
-                                    algorithm = entry.totpAlgorithm,
-                                    issuer = entry.category,
-                                    label = entry.title
-                                )
-                            )
-                            state.copy(code = code, progress = remaining.toFloat() / period)
-                        }
-                    }
-                }
-                delay(500)
-            }
+            totpSupport.runRefresher(
+                statesProvider = { _totpStates.value },
+                entriesProvider = { vaultItems.value },
+                updateStates = { refreshed -> _totpStates.value = refreshed },
+                codeGenerator = { config -> vaultUseCases.getTotpCode(config) }
+            )
         }
     }
 
@@ -191,10 +134,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
         onResult: (String?) -> Unit
     ) {
-        if (encryptedData.isEmpty()) { onResult(""); return }
-        authenticate(activity, "查看详情", "", null) {
-            try { onResult(CryptoManager.decrypt(encryptedData)) } catch (e: Exception) { onResult(null) }
-        }
+        cryptoSupport.decryptSingle(activity, encryptedData, authenticate, onResult)
     }
 
     fun decryptMultiple(
@@ -203,15 +143,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
         onResult: (List<String?>) -> Unit
     ) {
-        if (encryptedList.isEmpty()) { onResult(emptyList()); return }
-        authenticate(activity, "查看详情", "", null) {
-            try {
-                val results = encryptedList.map { if (it.isEmpty()) "" else CryptoManager.decrypt(it) }
-                onResult(results)
-            } catch (e: Exception) {
-                onResult(encryptedList.map { null })
-            }
-        }
+        cryptoSupport.decryptMultiple(activity, encryptedList, authenticate, onResult)
     }
 
     fun autoUnlockTotp(entry: VaultEntry) {
@@ -220,13 +152,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun autoUnlockTotp(entry: VaultSummary) {
         if (_totpStates.value.containsKey(entry.id)) return
-        val encrypted = entry.totpSecret ?: return
-        try {
-            val decrypted = CryptoManager.decrypt(encrypted)
-            unlockTotp(entry.id, decrypted)
-        } catch (e: Exception) {
-            Logcat.e("VaultViewModel", "Auto unlock failed", e)
+        val decrypted = cryptoSupport.decryptTotpSecret(entry.totpSecret)
+        if (decrypted == null) {
+            Logcat.w("VaultViewModel", "Auto unlock failed: secret decrypt returned null")
+            return
         }
+        unlockTotp(entry.id, decrypted)
     }
 
     fun showDetail(entry: VaultEntry) { detailItem = entry }
@@ -280,12 +211,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun saveCustomIcon(item: VaultEntry, uri: Uri) {
         viewModelScope.launch {
             val context = getApplication<Application>()
-            val internalPath = withContext(Dispatchers.IO) {
-                // 1. 如果旧图片存在，先删除
-                item.iconCustomPath?.let { VaultFileUtils.deleteImage(it) }
-                // 2. 将新图片拷贝到内部存储
-                VaultFileUtils.saveImageToInternalStorage(context, uri)
-            }
+            val internalPath = entryFileSupport.saveCustomIcon(context, item, uri)
             
             if (internalPath != null) {
                 updateVaultEntry(
@@ -307,7 +233,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
                 if (detailItem?.id == entry.id) {
                     detailItem = null
                 }
-                entry.iconCustomPath?.let { VaultFileUtils.deleteImage(it) }
+                entryFileSupport.cleanupIcon(entry.iconCustomPath)
                 vaultUseCases.deleteEntry(entry)
                 itemToDelete = null
                 _totpStates.update { it - entry.id }
@@ -321,7 +247,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             if (detailItem?.id == entry.id) {
                 detailItem = null
             }
-            entry.iconCustomPath?.let { VaultFileUtils.deleteImage(it) }
+            entryFileSupport.cleanupIcon(entry.iconCustomPath)
             vaultUseCases.deleteEntry(entry)
             _totpStates.update { it - entry.id }
         }
@@ -332,9 +258,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onSearchQueryChange(q: String) { _searchQuery.value = q }
+    fun selectTab(tab: VaultTab) { _selectedTab.value = tab }
     fun toggleSearch(active: Boolean) { isSearchActive = active; if (!active) _searchQuery.value = "" }
     fun unlockTotp(entryId: Int, decryptedSecret: String) {
-        _totpStates.update { it + (entryId to TotpState("------", 1f, decryptedSecret)) }
+        _totpStates.update { current ->
+            totpSupport.unlock(current, entryId, decryptedSecret)
+        }
     }
 }
 

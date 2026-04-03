@@ -72,7 +72,6 @@ import com.aozijx.passly.core.designsystem.widgets.handleSwipeAction
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.settings.SettingsViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,7 +132,7 @@ fun VaultContent(
     LaunchedEffect(pagerState.currentPage) {
         val newTab = VaultTab.entries[pagerState.currentPage]
         if (newTab != selectedTab) {
-            (vaultViewModel.selectedTab as MutableStateFlow).value = newTab
+            vaultViewModel.selectTab(newTab)
         }
     }
 
