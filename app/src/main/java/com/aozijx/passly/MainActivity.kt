@@ -59,6 +59,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
     private var sensorManager: SensorManager? = null
     private var accelerometer: Sensor? = null
     private var isFlipLockEnabled = false
+    private var isFlipExitAndClearStackEnabled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,6 +114,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
 
             // 翻转锁定逻辑
             val flipToLock by settingsViewModel.isFlipToLockEnabled.collectAsStateWithLifecycle()
+            val flipExitAndClearStack by settingsViewModel.isFlipExitAndClearStackEnabled.collectAsStateWithLifecycle()
             LaunchedEffect(flipToLock) {
                 isFlipLockEnabled = flipToLock
                 if (flipToLock) {
@@ -120,6 +122,9 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                 } else {
                     unregisterSensor()
                 }
+            }
+            LaunchedEffect(flipExitAndClearStack) {
+                isFlipExitAndClearStackEnabled = flipExitAndClearStack
             }
 
             // 自动注销传感器
@@ -195,6 +200,9 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             viewModel.lock()
             showDetail = false
             showSettings = false
+            if (isFlipExitAndClearStackEnabled) {
+                finishAffinity()
+            }
         }
     }
 

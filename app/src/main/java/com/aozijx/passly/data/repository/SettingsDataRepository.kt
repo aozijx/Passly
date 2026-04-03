@@ -21,6 +21,7 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     override val isTabBarCollapsible: Flow<Boolean> = prefs.isTabBarCollapsible
     override val isSecureContentEnabled: Flow<Boolean> = prefs.isSecureContentEnabled
     override val isFlipToLockEnabled: Flow<Boolean> = prefs.isFlipToLockEnabled
+    override val isFlipExitAndClearStackEnabled: Flow<Boolean> = prefs.isFlipExitAndClearStackEnabled
     override val cardStyle: Flow<VaultCardStyle> = prefs.cardStyle
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
@@ -60,6 +61,9 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     }
     override suspend fun setFlipToLockEnabled(enabled: Boolean) {
         prefs.setFlipToLockEnabled(enabled)
+    }
+    override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) {
+        prefs.setFlipExitAndClearStackEnabled(enabled)
     }
     override suspend fun setCardStyle(style: VaultCardStyle) {
         prefs.setCardStyle(style)

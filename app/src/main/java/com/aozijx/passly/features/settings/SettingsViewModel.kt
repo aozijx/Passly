@@ -20,6 +20,9 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsUseCases = AppContainer.settingsUseCases
+
+    val lockTimeout: StateFlow<Long> = settingsUseCases.lockTimeout
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60000L)
     
     // --- 沉浸式折叠设置 ---
     val isStatusBarAutoHide: StateFlow<Boolean> = settingsUseCases.isStatusBarAutoHide
@@ -36,6 +39,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     val isFlipToLockEnabled: StateFlow<Boolean> = settingsUseCases.isFlipToLockEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val isFlipExitAndClearStackEnabled: StateFlow<Boolean> = settingsUseCases.isFlipExitAndClearStackEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val cardStyle: StateFlow<VaultCardStyle> = settingsUseCases.cardStyle
@@ -55,6 +61,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setTabBarCollapsible(collapsible: Boolean) = viewModelScope.launch { settingsUseCases.setTabBarCollapsible(collapsible) }
     fun setSecureContentEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setSecureContentEnabled(enabled) }
     fun setFlipToLockEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setFlipToLockEnabled(enabled) }
+    fun setFlipExitAndClearStackEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setFlipExitAndClearStackEnabled(enabled) }
+    fun setLockTimeout(timeoutMs: Long) = viewModelScope.launch { settingsUseCases.setLockTimeout(timeoutMs.coerceAtLeast(5000L)) }
     fun setCardStyle(style: VaultCardStyle) = viewModelScope.launch { settingsUseCases.setCardStyle(style) }
 
     fun setSwipeEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setSwipeEnabled(enabled) }

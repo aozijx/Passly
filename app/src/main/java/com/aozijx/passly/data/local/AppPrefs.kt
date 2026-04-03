@@ -35,6 +35,7 @@ class AppPrefs(context: Context) {
 
         // --- 传感器交互 ---
         val FLIP_TO_LOCK_KEY = booleanPreferencesKey("security_flip_to_lock")
+        val FLIP_EXIT_AND_CLEAR_STACK_KEY = booleanPreferencesKey("security_flip_exit_and_clear_stack")
 
         // --- 列表卡片效果 ---
         val TYPED_CARD_EFFECT_KEY = booleanPreferencesKey("ui_typed_card_effect") // legacy
@@ -46,6 +47,7 @@ class AppPrefs(context: Context) {
     val isTabBarCollapsible: Flow<Boolean> = appContext.vaultDataStore.data.map { it[COLLAPSE_TAB_BAR_KEY] ?: true }
     val isSecureContentEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[SECURE_CONTENT_KEY] ?: true }
     val isFlipToLockEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[FLIP_TO_LOCK_KEY] ?: false }
+    val isFlipExitAndClearStackEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] ?: false }
     val cardStyle: Flow<VaultCardStyle> = appContext.vaultDataStore.data.map { prefs ->
         val raw = prefs[CARD_STYLE_KEY]
         if (raw != null) {
@@ -74,6 +76,7 @@ class AppPrefs(context: Context) {
     suspend fun setTabBarCollapsible(collapsible: Boolean) = appContext.vaultDataStore.edit { it[COLLAPSE_TAB_BAR_KEY] = collapsible }
     suspend fun setSecureContentEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[SECURE_CONTENT_KEY] = enabled }
     suspend fun setFlipToLockEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[FLIP_TO_LOCK_KEY] = enabled }
+    suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] = enabled }
     suspend fun setCardStyle(style: VaultCardStyle) = appContext.vaultDataStore.edit {
         it[CARD_STYLE_KEY] = style.key
         it.remove(TYPED_CARD_EFFECT_KEY)

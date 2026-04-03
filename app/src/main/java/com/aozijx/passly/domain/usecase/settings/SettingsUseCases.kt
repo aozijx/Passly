@@ -20,6 +20,7 @@ class SettingsUseCases(private val repository: SettingsRepository) {
     val isTabBarCollapsible: Flow<Boolean> = repository.isTabBarCollapsible
     val isSecureContentEnabled: Flow<Boolean> = repository.isSecureContentEnabled
     val isFlipToLockEnabled: Flow<Boolean> = repository.isFlipToLockEnabled
+    val isFlipExitAndClearStackEnabled: Flow<Boolean> = repository.isFlipExitAndClearStackEnabled
     val cardStyle: Flow<VaultCardStyle> = repository.cardStyle
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
@@ -36,5 +37,6 @@ class SettingsUseCases(private val repository: SettingsRepository) {
     suspend fun setTabBarCollapsible(collapsible: Boolean) = repository.setTabBarCollapsible(collapsible)
     suspend fun setSecureContentEnabled(enabled: Boolean) = repository.setSecureContentEnabled(enabled)
     suspend fun setFlipToLockEnabled(enabled: Boolean) = repository.setFlipToLockEnabled(enabled)
+    suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = repository.setFlipExitAndClearStackEnabled(enabled)
     suspend fun setCardStyle(style: VaultCardStyle) = repository.setCardStyle(style)
 }

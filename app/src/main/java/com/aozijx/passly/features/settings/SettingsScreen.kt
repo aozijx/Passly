@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.Swipe
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -37,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -56,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,6 +73,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     viewModel: SettingsViewModel = viewModel()
 ) {
+    val lockTimeout by viewModel.lockTimeout.collectAsStateWithLifecycle()
     val isSwipeEnabled by viewModel.isSwipeEnabled.collectAsStateWithLifecycle()
     val swipeLeftAction by viewModel.swipeLeftAction.collectAsStateWithLifecycle()
     val swipeRightAction by viewModel.swipeRightAction.collectAsStateWithLifecycle()
@@ -78,6 +83,7 @@ fun SettingsScreen(
     val isTabBarCollapsible by viewModel.isTabBarCollapsible.collectAsStateWithLifecycle()
     val isSecureContentEnabled by viewModel.isSecureContentEnabled.collectAsStateWithLifecycle()
     val isFlipToLockEnabled by viewModel.isFlipToLockEnabled.collectAsStateWithLifecycle()
+    val isFlipExitAndClearStackEnabled by viewModel.isFlipExitAndClearStackEnabled.collectAsStateWithLifecycle()
     val cardStyle by viewModel.cardStyle.collectAsStateWithLifecycle()
 
     // 预留扩展：后续新增样式时只需追加到这里
@@ -92,6 +98,7 @@ fun SettingsScreen(
     
     var showLeftActionDialog by remember { mutableStateOf(false) }
     var showRightActionDialog by remember { mutableStateOf(false) }
+    var showLockTimeoutDialog by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
@@ -151,6 +158,13 @@ fun SettingsScreen(
             item {
                 SettingsGroupTitle(text = "安全与隐私")
                 SettingsCard {
+                    ClickableSettingItem(
+                        icon = Icons.Default.Timer,
+                        title = "自动锁定时间",
+                        value = formatLockTimeout(lockTimeout),
+                        onClick = { showLockTimeoutDialog = true }
+                    )
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
                     SwitchSettingItem(
                         icon = Icons.Default.Security,
                         title = "高级安全防护",
@@ -166,6 +180,22 @@ fun SettingsScreen(
                         checked = isFlipToLockEnabled,
                         onCheckedChange = { viewModel.setFlipToLockEnabled(it) }
                     )
+
+                    AnimatedVisibility(
+                        visible = isFlipToLockEnabled,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column {
+                            HorizontalDivider(Modifier.padding(start = 56.dp, end = 16.dp), thickness = 0.5.dp)
+                            SwitchSettingItem(
+                                title = "翻转后退出应用并清空任务栈",
+                                subtitle = "开启后将直接退出到桌面，下次进入需重新认证",
+                                checked = isFlipExitAndClearStackEnabled,
+                                onCheckedChange = { viewModel.setFlipExitAndClearStackEnabled(it) }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -220,6 +250,16 @@ fun SettingsScreen(
     }
     if (showRightActionDialog) {
         SwipeActionSelectDialog("选择右滑动作", swipeRightAction, { viewModel.setSwipeRightAction(it); showRightActionDialog = false }, { showRightActionDialog = false })
+    }
+    if (showLockTimeoutDialog) {
+        LockTimeoutDialog(
+            currentTimeoutMs = lockTimeout,
+            onTimeoutSelected = {
+                viewModel.setLockTimeout(it)
+                showLockTimeoutDialog = false
+            },
+            onDismiss = { showLockTimeoutDialog = false }
+        )
     }
 }
 
@@ -291,6 +331,96 @@ fun SwipeActionSelectDialog(title: String, currentAction: SwipeActionType, onAct
         confirmButton = { TextButton(onClick = onDismiss) { Text("取消") } },
         shape = RoundedCornerShape(28.dp)
     )
+}
+
+@Composable
+fun LockTimeoutDialog(
+    currentTimeoutMs: Long,
+    onTimeoutSelected: (Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val presets = listOf(
+        15_000L to "15 秒",
+        30_000L to "30 秒",
+        60_000L to "1 分钟",
+        120_000L to "2 分钟",
+        300_000L to "5 分钟",
+        600_000L to "10 分钟"
+    )
+    var selectedTimeout by remember(currentTimeoutMs) { mutableStateOf(currentTimeoutMs.coerceAtLeast(5_000L)) }
+    var customSeconds by remember(currentTimeoutMs) { mutableStateOf((currentTimeoutMs / 1000L).toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("自动锁定时间") },
+        text = {
+            Column {
+                presets.forEach { (ms, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                selectedTimeout = ms
+                                customSeconds = (ms / 1000L).toString()
+                            }
+                            .padding(vertical = 2.dp, horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedTimeout == ms,
+                            onClick = {
+                                selectedTimeout = ms
+                                customSeconds = (ms / 1000L).toString()
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(label)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = customSeconds,
+                    onValueChange = { if (it.all(Char::isDigit)) customSeconds = it },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = { Text("自定义秒数（最少 5 秒）") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "当前选择: ${formatLockTimeout(selectedTimeout)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val customMs = customSeconds.toLongOrNull()?.times(1000L)
+                val timeout = if (customMs != null && customMs >= 5000L) customMs else selectedTimeout
+                onTimeoutSelected(timeout)
+            }) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+        shape = RoundedCornerShape(28.dp)
+    )
+}
+
+private fun formatLockTimeout(timeoutMs: Long): String {
+    val seconds = (timeoutMs / 1000L).coerceAtLeast(1L)
+    return when {
+        seconds < 60L -> "${seconds} 秒"
+        seconds % 60L == 0L -> "${seconds / 60L} 分钟"
+        else -> "${seconds / 60L} 分 ${seconds % 60L} 秒"
+    }
 }
 
 

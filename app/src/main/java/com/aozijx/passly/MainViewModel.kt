@@ -24,7 +24,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsUseCases = AppContainer.settingsUseCases
 
     // --- 安全锁定逻辑 ---
-    private val lockTimeMs = 60000L
+    private var lockTimeMs = 60000L
     private var lockJob: Job? = null
     private var lastInteractionTime = System.currentTimeMillis()
     var isAuthorized by mutableStateOf(false)
@@ -36,6 +36,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     val isDynamicColor: StateFlow<Boolean> = settingsUseCases.isDynamicColor
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    init {
+        viewModelScope.launch {
+            settingsUseCases.lockTimeout.collect { timeout ->
+                lockTimeMs = timeout.coerceAtLeast(5000L)
+                if (isAuthorized) {
+                    scheduleLockTimer()
+                }
+            }
+        }
+    }
 
     fun authenticate(
         activity: FragmentActivity,
@@ -66,16 +77,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateInteraction() {
         lastInteractionTime = System.currentTimeMillis()
-        lockJob?.cancel()
-        lockJob = viewModelScope.launch { 
-            delay(lockTimeMs)
-            if (isAuthorized) lock() 
-        }
+        scheduleLockTimer()
     }
 
     fun checkAndLock() {
         if (isAuthorized && System.currentTimeMillis() - lastInteractionTime >= lockTimeMs) {
             lock()
+        }
+    }
+
+    private fun scheduleLockTimer() {
+        lockJob?.cancel()
+        lockJob = viewModelScope.launch {
+            delay(lockTimeMs)
+            if (isAuthorized) lock()
         }
     }
 }

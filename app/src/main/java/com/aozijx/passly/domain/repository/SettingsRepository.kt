@@ -19,6 +19,7 @@ interface SettingsRepository {
     val isTabBarCollapsible: Flow<Boolean>
     val isSecureContentEnabled: Flow<Boolean>
     val isFlipToLockEnabled: Flow<Boolean>
+    val isFlipExitAndClearStackEnabled: Flow<Boolean>
     val cardStyle: Flow<VaultCardStyle>
 
     suspend fun setLockTimeout(timeoutMs: Long)
@@ -35,5 +36,6 @@ interface SettingsRepository {
     suspend fun setTabBarCollapsible(collapsible: Boolean)
     suspend fun setSecureContentEnabled(enabled: Boolean)
     suspend fun setFlipToLockEnabled(enabled: Boolean)
+    suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean)
     suspend fun setCardStyle(style: VaultCardStyle)
 }

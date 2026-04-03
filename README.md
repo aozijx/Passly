@@ -7,6 +7,8 @@
 - **生物识别解锁**：支持指纹及面部识别，结合系统级 KeyStore 安全存储，确保只有你能访问。
 - **高强度本地加密**：采用 AES-256 GCM 算法对每一条账号密码进行独立加密，不依赖任何第三方云服务，数据完全私有化。
 - **加密备份与恢复**：支持将保险库内容导出为高度加密的备份文件，并支持在不同设备间安全迁移。
+- **类型策略引擎**：内置 9 类条目策略（密码、TOTP、Passkey、恢复码、WiFi、银行卡、助记词、证件、SSH），统一校验与展示规则。
+- **自动填充优化**：自动填充匹配从全量加载优化为定向候选查询，并内置慢操作日志监控。
 - **隐私防截屏**：全应用开启安全窗口模式，防止恶意应用截屏或系统多任务预览泄露敏感信息。
 - **智能分类管理**：支持自定义分类，并能根据名称智能匹配图标，让你的资产井井有条。
 - **现代 UI 设计**：遵循 Material 3 规范，支持动态颜色 (Android 12+) 和深色模式。
@@ -16,7 +18,8 @@
 - **UI 框架**：Jetpack Compose (声明式 UI)
 - **数据库**：Room + SQLCipher (数据库级全磁盘加密)
 - **渲染器**：Multiplatform Markdown Renderer (Material 3)
-- **依赖注入**：原生 ViewModel + 状态管理
+- **依赖注入**：AppContainer（手写依赖注入容器）
+- **架构分层**：Entity + Domain Model + Mapper + Repository + UseCase
 - **异步处理**：Kotlin Coroutines & Flow
 - **安全组件**：AndroidX Biometric + AndroidX Security
 - **扫码能力**：CameraX + Google ML Kit Barcode Scanning
@@ -24,6 +27,7 @@
 ## 项目结构
 
 采用按功能模块划分（Package by Feature）并结合简洁架构（Clean Architecture）的思想。
+
 ```tree
 com.aozijx.passly
 ├── core                // 核心底层能力（跨模块通用）
@@ -31,6 +35,7 @@ com.aozijx.passly
 │   ├── common          // 基础基类、常量
 │   ├── crypto          // 加密解密核心逻辑
 │   ├── designsystem    // 自定义 UI 组件库 (Material 3)
+│   ├── di              // 依赖注入容器
 │   ├── logging         // 日志体系
 │   ├── media           // 图像/媒体能力（选择/图标等）
 │   ├── platform        // 平台能力封装（剪贴板、包信息等）
@@ -41,13 +46,16 @@ com.aozijx.passly
 │
 ├── data                // 数据层（不含 UI 逻辑）
 │   ├── local           // Room 数据库, DataStore
+│   ├── entity          // Room 实体
+│   ├── mapper          // Entity <-> Domain 映射
 │   ├── repository      // 聚合数据源
-│   └── model           // 数据库实体 (Entity)
+│   └── local/config    // 本地配置文件存储
 │
 ├── domain              // 领域层（业务模型与业务规则）
 │   ├── model           // 业务模型（不依赖 Android）
 │   ├── policy          // 纯业务策略（无 Android 依赖）
 │   ├── repository      // 领域仓库接口
+│   ├── strategy        // 条目策略与工厂注册
 │   └── usecase         // 业务用例
 │
 ├── features            // 功能模块层（按业务划分）
@@ -67,12 +75,14 @@ com.aozijx.passly
 ## 快速开始
 
 ### 开发环境要求
+
 - Android Studio **Otter (2024.2.2)** 或更高版本（需支持 AGP 9.0+）
 - **JDK 21** (项目采用 jvmToolchain 21)
 - Gradle 8.13+
 - Android 12.0+ (API 31+) 设备
 
 ### 构建步骤
+
 1. 克隆项目：`git clone https://github.com/aozijx/Passly.git`
 2. 使用 Android Studio 打开项目。
 3. 等待 Gradle 同步完成。
@@ -92,6 +102,7 @@ com.aozijx.passly
 ## 隐私与安全
 
 Passly 设计初衷即为“零信任”架构：
+
 - **无联网请求**：应用不包含任何上传数据的网络代码（仅支持手动获取更新日志）。
 - **零痕迹**：所有敏感数据在内存中均以加密形式存在，并在使用后立即清除。
 - **完全离线**：你的密码只属于你的手机，没有任何云端备份。
