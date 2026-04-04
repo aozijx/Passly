@@ -30,46 +30,55 @@
 
 ```tree
 com.aozijx.passly
-├── core                // 核心底层能力（跨模块通用）
-│   ├── backup          // 加密备份/恢复
-│   ├── common          // 基础基类、常量
-│   ├── crypto          // 加密解密核心逻辑
-│   ├── designsystem    // 自定义 UI 组件库 (Material 3)
-│   ├── di              // 依赖注入容器
-│   ├── logging         // 日志体系
-│   ├── media           // 图像/媒体能力（选择/图标等）
-│   ├── platform        // 平台能力封装（剪贴板、包信息等）
-│   ├── qr              // 二维码生成/识别
-│   ├── security
-│   │   └── otp         // TOTP / 2FA 相关
-│   └── storage         // 文件/本地存储辅助
+├── core                        // 跨模块基础能力
+│   ├── backup                  // 备份导入导出
+│   ├── common                  // 公共类型与常量
+│   ├── crypto                  // 加密/解密能力
+│   ├── designsystem            // 可复用 UI 组件
+│   ├── di                      // AppContainer 依赖注入
+│   ├── logging                 // 日志记录
+│   ├── media                   // 媒体与图像能力
+│   ├── platform                // 平台适配封装
+│   ├── qr                      // 二维码能力
+│   ├── security/otp            // TOTP 相关安全逻辑
+│   └── storage                 // 存储辅助
 │
-├── data                // 数据层（不含 UI 逻辑）
-│   ├── local           // Room 数据库, DataStore
-│   ├── entity          // Room 实体
-│   ├── mapper          // Entity <-> Domain 映射
-│   ├── repository      // 聚合数据源
-│   └── local/config    // 本地配置文件存储
+├── data                        // 数据层
+│   ├── entity                  // Room 实体
+│   ├── local                   // Room/DataStore 本地源
+│   ├── mapper                  // Entity <-> Domain 映射
+│   └── repository              // Repository 实现
 │
-├── domain              // 领域层（业务模型与业务规则）
-│   ├── model           // 业务模型（不依赖 Android）
-│   ├── policy          // 纯业务策略（无 Android 依赖）
-│   ├── repository      // 领域仓库接口
-│   ├── strategy        // 条目策略与工厂注册
-│   └── usecase         // 业务用例
+├── domain                      // 领域层
+│   ├── mapper                  // 领域映射
+│   ├── model                   // 纯业务模型
+│   ├── policy                  // 业务策略
+│   ├── repository              // 仓库接口
+│   ├── strategy                // 条目类型策略
+│   └── usecase                 // 用例编排
 │
-├── features            // 功能模块层（按业务划分）
-│   ├── vault           // 保险箱主界面
-│   ├── detail          // 详情页
-│   ├── settings        // 设置页
-│   └── scanner         // 扫码功能
+├── features                    // 功能层（按业务拆分）
+│   ├── detail
+│   ├── scanner
+│   ├── settings
+│   │   ├── SettingsScreen.kt
+│   │   ├── SettingsViewModel.kt
+│   │   ├── components/         // 设置子组件
+│   │   └── internal/           // 设置内部支持逻辑
+│   └── vault
+│       ├── VaultScreen.kt
+│       ├── VaultViewModel.kt
+│       ├── components/         // vault 组件与卡片渲染
+│       ├── dialogs/            // vault 对话框
+│       └── internal/           // vault 内部逻辑
 │
-├── service             // 系统级服务
-│   └── autofill        // 自动填充功能
+├── service
+│   └── autofill
+│       ├── engine/             // 匹配与填充引擎
+│       └── presentation/       // RemoteViews/展示层
 │
-└── ui                  // 全局 UI 相关
-    ├── theme           // 主题配置 (Color, Type, Theme)
-    └── NavGraph.kt     // 导航路由
+└── ui
+    └── theme                   // 全局主题
 ```
 
 ## 快速开始

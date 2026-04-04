@@ -23,6 +23,7 @@ class SettingsUseCases(private val repository: SettingsRepository) {
     val isFlipToLockEnabled: Flow<Boolean> = repository.isFlipToLockEnabled
     val isFlipExitAndClearStackEnabled: Flow<Boolean> = repository.isFlipExitAndClearStackEnabled
     val cardStyle: Flow<VaultCardStyle> = repository.cardStyle
+    val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>> = repository.cardStyleByEntryType
     val autofillUiMode: Flow<AutofillUiMode> = repository.autofillUiMode
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
@@ -41,5 +42,6 @@ class SettingsUseCases(private val repository: SettingsRepository) {
     suspend fun setFlipToLockEnabled(enabled: Boolean) = repository.setFlipToLockEnabled(enabled)
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = repository.setFlipExitAndClearStackEnabled(enabled)
     suspend fun setCardStyle(style: VaultCardStyle) = repository.setCardStyle(style)
+    suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) = repository.setCardStyleForEntryType(entryTypeValue, style)
     suspend fun setAutofillUiMode(mode: AutofillUiMode) = repository.setAutofillUiMode(mode)
 }

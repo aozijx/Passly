@@ -68,6 +68,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.ui.VaultCardStyle
 import com.aozijx.passly.features.settings.components.CardStyleSettingsSection
@@ -91,22 +92,26 @@ fun SettingsScreen(
     val isFlipToLockEnabled = uiState.isFlipToLockEnabled
     val isFlipExitAndClearStackEnabled = uiState.isFlipExitAndClearStackEnabled
     val cardStyle = uiState.cardStyle
+    val cardStyleByEntryType = uiState.cardStyleByEntryType
     val autofillUiMode = uiState.autofillUiMode
 
-    val availableCardStyles = remember { VaultCardStyle.settingsStyles }
+    val availableCardStyles = remember { VaultCardStyle.perTypeStyles }
     val effectiveCardStyle = VaultCardStyle.resolveSettingsStyle(cardStyle)
+    val passwordSelectedStyle = cardStyleByEntryType[EntryType.PASSWORD.value] ?: VaultCardStyle.DEFAULT
+    val totpSelectedStyle = cardStyleByEntryType[EntryType.TOTP.value] ?: VaultCardStyle.DEFAULT
 
     LaunchedEffect(cardStyle) {
         if (cardStyle != effectiveCardStyle) {
             viewModel.setCardStyle(effectiveCardStyle)
         }
     }
-    
+
     var showLeftActionDialog by remember { mutableStateOf(false) }
     var showRightActionDialog by remember { mutableStateOf(false) }
     var showLockTimeoutDialog by remember { mutableStateOf(false) }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior =
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -193,7 +198,10 @@ fun SettingsScreen(
                         exit = fadeOut() + shrinkVertically()
                     ) {
                         Column {
-                            HorizontalDivider(Modifier.padding(start = 56.dp, end = 16.dp), thickness = 0.5.dp)
+                            HorizontalDivider(
+                                Modifier.padding(start = 56.dp, end = 16.dp),
+                                thickness = 0.5.dp
+                            )
                             SwitchSettingItem(
                                 title = "翻转后退出应用并清空任务栈",
                                 subtitle = "开启后将直接退出到桌面，下次进入需重新认证",
@@ -224,10 +232,22 @@ fun SettingsScreen(
                         exit = fadeOut() + shrinkVertically()
                     ) {
                         Column {
-                            HorizontalDivider(Modifier.padding(start = 56.dp, end = 16.dp), thickness = 0.5.dp)
-                            ClickableSettingItem(title = "左滑快捷动作", value = swipeLeftAction.displayName, onClick = { showLeftActionDialog = true })
-                            HorizontalDivider(Modifier.padding(start = 56.dp, end = 16.dp), thickness = 0.5.dp)
-                            ClickableSettingItem(title = "右滑快捷动作", value = swipeRightAction.displayName, onClick = { showRightActionDialog = true })
+                            HorizontalDivider(
+                                Modifier.padding(start = 56.dp, end = 16.dp),
+                                thickness = 0.5.dp
+                            )
+                            ClickableSettingItem(
+                                title = "左滑快捷动作",
+                                value = swipeLeftAction.displayName,
+                                onClick = { showLeftActionDialog = true })
+                            HorizontalDivider(
+                                Modifier.padding(start = 56.dp, end = 16.dp),
+                                thickness = 0.5.dp
+                            )
+                            ClickableSettingItem(
+                                title = "右滑快捷动作",
+                                value = swipeRightAction.displayName,
+                                onClick = { showRightActionDialog = true })
                         }
                     }
 
@@ -242,16 +262,26 @@ fun SettingsScreen(
             }
 
             item { Spacer(modifier = Modifier.height(24.dp)) }
-            
+
             item {
                 SettingsGroupTitle(text = "外观定制")
                 SettingsCard {
-                    ClickableSettingItem(icon = Icons.Default.Palette, title = "个性化配色", value = "动态取色", onClick = { })
+                    ClickableSettingItem(
+                        icon = Icons.Default.Palette,
+                        title = "个性化配色",
+                        value = "动态取色",
+                        onClick = { })
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
                     CardStyleSettingsSection(
                         availableStyles = availableCardStyles,
-                        selectedStyle = effectiveCardStyle,
-                        onStyleSelected = { viewModel.setCardStyle(it) }
+                        passwordSelectedStyle = passwordSelectedStyle,
+                        totpSelectedStyle = totpSelectedStyle,
+                        onPasswordStyleSelected = {
+                            viewModel.setCardStyleForEntryType(EntryType.PASSWORD.value, it)
+                        },
+                        onTotpStyleSelected = {
+                            viewModel.setCardStyleForEntryType(EntryType.TOTP.value, it)
+                        },
                     )
                 }
             }
@@ -260,10 +290,18 @@ fun SettingsScreen(
     }
 
     if (showLeftActionDialog) {
-        SwipeActionSelectDialog("选择左滑动作", swipeLeftAction, { viewModel.setSwipeLeftAction(it); showLeftActionDialog = false }, { showLeftActionDialog = false })
+        SwipeActionSelectDialog(
+            "选择左滑动作",
+            swipeLeftAction,
+            { viewModel.setSwipeLeftAction(it); showLeftActionDialog = false },
+            { showLeftActionDialog = false })
     }
     if (showRightActionDialog) {
-        SwipeActionSelectDialog("选择右滑动作", swipeRightAction, { viewModel.setSwipeRightAction(it); showRightActionDialog = false }, { showRightActionDialog = false })
+        SwipeActionSelectDialog(
+            "选择右滑动作",
+            swipeRightAction,
+            { viewModel.setSwipeRightAction(it); showRightActionDialog = false },
+            { showRightActionDialog = false })
     }
     if (showLockTimeoutDialog) {
         LockTimeoutDialog(
@@ -292,41 +330,115 @@ fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.3f
+            )
+        ),
         content = content
     )
 }
 
 @Composable
-fun SwitchSettingItem(icon: ImageVector? = null, title: String, subtitle: String? = null, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun SwitchSettingItem(
+    icon: ImageVector? = null,
+    title: String,
+    subtitle: String? = null,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     var localChecked by remember(checked) { mutableStateOf(checked) }
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { localChecked = !localChecked; onCheckedChange(localChecked) }.padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { localChecked = !localChecked; onCheckedChange(localChecked) }
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (icon != null) { Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp)); Spacer(modifier = Modifier.width(16.dp)) }
-        else { Spacer(modifier = Modifier.width(40.dp)) }
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            ); Spacer(modifier = Modifier.width(16.dp))
+        } else {
+            Spacer(modifier = Modifier.width(40.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            if (subtitle != null) { Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         Switch(checked = localChecked, onCheckedChange = { localChecked = it; onCheckedChange(it) })
     }
 }
 
 @Composable
-fun ClickableSettingItem(icon: ImageVector? = null, title: String, value: String? = null, onClick: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (icon != null) { Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp)); Spacer(modifier = Modifier.width(16.dp)) }
-        else { Spacer(modifier = Modifier.width(40.dp)) }
-        Text(text = title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
-        if (value != null) { Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) }
-        Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.size(20.dp).padding(start = 4.dp))
+fun ClickableSettingItem(
+    icon: ImageVector? = null,
+    title: String,
+    value: String? = null,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            ); Spacer(modifier = Modifier.width(16.dp))
+        } else {
+            Spacer(modifier = Modifier.width(40.dp))
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+            fontWeight = FontWeight.Medium
+        )
+        if (value != null) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outlineVariant,
+            modifier = Modifier
+                .size(20.dp)
+                .padding(start = 4.dp)
+        )
     }
 }
 
 @Composable
-fun SwipeActionSelectDialog(title: String, currentAction: SwipeActionType, onActionSelected: (SwipeActionType) -> Unit, onDismiss: () -> Unit) {
+fun SwipeActionSelectDialog(
+    title: String,
+    currentAction: SwipeActionType,
+    onActionSelected: (SwipeActionType) -> Unit,
+    onDismiss: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -370,8 +482,20 @@ fun SwipeActionSelectDialog(title: String, currentAction: SwipeActionType, onAct
                     ) {
                         RadioButton(selected = isSelected, onClick = { onActionSelected(action) })
                         Spacer(modifier = Modifier.width(8.dp))
-                        action.icon?.let { icon -> Icon(imageVector = icon, contentDescription = null, tint = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp)); Spacer(modifier = Modifier.width(12.dp)) }
-                        Text(text = action.displayName, style = MaterialTheme.typography.bodyLarge, color = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                        action.icon?.let { icon ->
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            ); Spacer(modifier = Modifier.width(12.dp))
+                        }
+                        Text(
+                            text = action.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -396,7 +520,13 @@ fun LockTimeoutDialog(
         300_000L to "5 分钟",
         600_000L to "10 分钟"
     )
-    var selectedTimeout by remember(currentTimeoutMs) { mutableLongStateOf(currentTimeoutMs.coerceAtLeast(5_000L)) }
+    var selectedTimeout by remember(currentTimeoutMs) {
+        mutableLongStateOf(
+            currentTimeoutMs.coerceAtLeast(
+                5_000L
+            )
+        )
+    }
     var customSeconds by remember(currentTimeoutMs) { mutableStateOf((currentTimeoutMs / 1000L).toString()) }
 
     AlertDialog(
@@ -448,7 +578,8 @@ fun LockTimeoutDialog(
         confirmButton = {
             TextButton(onClick = {
                 val customMs = customSeconds.toLongOrNull()?.times(1000L)
-                val timeout = if (customMs != null && customMs >= 5000L) customMs else selectedTimeout
+                val timeout =
+                    if (customMs != null && customMs >= 5000L) customMs else selectedTimeout
                 onTimeoutSelected(timeout)
             }) {
                 Text("保存")
@@ -471,6 +602,3 @@ private fun formatLockTimeout(timeoutMs: Long): String {
         else -> "${seconds / 60L} 分 ${seconds % 60L} 秒"
     }
 }
-
-
-

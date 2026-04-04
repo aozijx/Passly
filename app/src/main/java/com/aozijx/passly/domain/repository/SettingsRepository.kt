@@ -22,6 +22,7 @@ interface SettingsRepository {
     val isFlipToLockEnabled: Flow<Boolean>
     val isFlipExitAndClearStackEnabled: Flow<Boolean>
     val cardStyle: Flow<VaultCardStyle>
+    val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>>
     val autofillUiMode: Flow<AutofillUiMode>
 
     suspend fun setLockTimeout(timeoutMs: Long)
@@ -40,5 +41,6 @@ interface SettingsRepository {
     suspend fun setFlipToLockEnabled(enabled: Boolean)
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean)
     suspend fun setCardStyle(style: VaultCardStyle)
+    suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle)
     suspend fun setAutofillUiMode(mode: AutofillUiMode)
 }

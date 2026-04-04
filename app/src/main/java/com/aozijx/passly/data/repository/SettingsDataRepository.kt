@@ -24,6 +24,7 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     override val isFlipToLockEnabled: Flow<Boolean> = prefs.isFlipToLockEnabled
     override val isFlipExitAndClearStackEnabled: Flow<Boolean> = prefs.isFlipExitAndClearStackEnabled
     override val cardStyle: Flow<VaultCardStyle> = prefs.cardStyle
+    override val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>> = prefs.cardStyleByEntryType
     override val autofillUiMode: Flow<AutofillUiMode> = prefs.autofillUiMode
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
@@ -69,6 +70,9 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     }
     override suspend fun setCardStyle(style: VaultCardStyle) {
         prefs.setCardStyle(style)
+    }
+    override suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) {
+        prefs.setCardStyleForEntryType(entryTypeValue, style)
     }
     override suspend fun setAutofillUiMode(mode: AutofillUiMode) {
         prefs.setAutofillUiMode(mode)

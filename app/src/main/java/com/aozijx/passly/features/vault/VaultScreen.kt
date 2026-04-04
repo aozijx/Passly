@@ -54,6 +54,7 @@ import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.ui.AddType
+import com.aozijx.passly.core.common.ui.VaultCardStyle
 import com.aozijx.passly.core.common.ui.VaultTab
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
@@ -96,6 +97,7 @@ fun VaultContent(
     val isTopBarCollapsible = settingsUiState.isTopBarCollapsible
     val isTabBarCollapsible = settingsUiState.isTabBarCollapsible
     val cardStyle = settingsUiState.cardStyle
+    val perTypeStyle = settingsUiState.cardStyleByEntryType
     
     var isFabVisible by remember { mutableStateOf(true) }
     val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
@@ -216,30 +218,35 @@ fun VaultContent(
                             contentPadding = PaddingValues(16.dp), 
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(filteredItems, key = { it.id }) { item -> 
+                            items(filteredItems, key = { it.id }) { item ->
+                                val perTypeStyle = perTypeStyle[item.entryType]
+                                val resolvedStyle = when {
+                                    perTypeStyle == null || perTypeStyle == VaultCardStyle.DEFAULT -> cardStyle
+                                    else -> perTypeStyle
+                                }
                                 val itemContent = @Composable {
                                     when {
                                         !item.totpSecret.isNullOrBlank() -> {
                                             VaultCardStyleRegistry.RenderVaultItem(
-                                                style = cardStyle,
+                                                style = resolvedStyle,
                                                 entry = item,
                                                 viewModel = vaultViewModel
                                             )
                                         }
-                                        cardStyle == com.aozijx.passly.core.common.ui.VaultCardStyle.PASSWORD -> {
+                                        resolvedStyle == VaultCardStyle.PASSWORD -> {
                                             VaultCardStyleRegistry.RenderVaultItem(
-                                                style = cardStyle,
+                                                style = resolvedStyle,
                                                 entry = item,
                                                 viewModel = vaultViewModel
                                             )
                                         }
-                                        cardStyle == com.aozijx.passly.core.common.ui.VaultCardStyle.BASE &&
+                                        resolvedStyle == VaultCardStyle.BASE &&
                                             (item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null) -> {
                                             AutoFillItem(entry = item, viewModel = vaultViewModel)
                                         }
                                         else -> {
                                             VaultCardStyleRegistry.RenderVaultItem(
-                                                style = cardStyle,
+                                                style = resolvedStyle,
                                                 entry = item,
                                                 viewModel = vaultViewModel
                                             )

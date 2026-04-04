@@ -18,6 +18,8 @@ class AppPrefs(context: Context) {
     private val appContext = context.applicationContext
 
     companion object {
+        const val DEFAULT_STYLE_KEY = -1
+
         val LOCK_TIMEOUT_KEY = longPreferencesKey("vault_lock_timeout")
         val BIOMETRIC_AUTH_KEY = booleanPreferencesKey("vault_biometric_auth")
         val DARK_MODE_KEY = booleanPreferencesKey("vault_dark_mode")
@@ -40,6 +42,7 @@ class AppPrefs(context: Context) {
 
         // --- 列表卡片效果 ---
         val CARD_STYLE_KEY = stringPreferencesKey("ui_card_style")
+        val CARD_STYLE_MAP_KEY = stringPreferencesKey("ui_card_style_map_v2")
 
         // --- 自动填充展示模式 ---
         val AUTOFILL_UI_MODE_KEY = stringPreferencesKey("autofill_ui_mode")
@@ -52,7 +55,15 @@ class AppPrefs(context: Context) {
     val isFlipToLockEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[FLIP_TO_LOCK_KEY] ?: false }
     val isFlipExitAndClearStackEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] ?: false }
     val cardStyle: Flow<VaultCardStyle> = appContext.vaultDataStore.data.map { prefs ->
-        VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY])
+        parseStyleMap(prefs[CARD_STYLE_MAP_KEY])[DEFAULT_STYLE_KEY]
+            ?: VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY])
+    }
+    val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>> = appContext.vaultDataStore.data.map { prefs ->
+        val parsed = parseStyleMap(prefs[CARD_STYLE_MAP_KEY]).toMutableMap()
+        if (parsed[DEFAULT_STYLE_KEY] == null) {
+            parsed[DEFAULT_STYLE_KEY] = VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY])
+        }
+        parsed.toMap()
     }
     val autofillUiMode: Flow<AutofillUiMode> = appContext.vaultDataStore.data.map { prefs ->
         AutofillUiMode.fromKey(prefs[AUTOFILL_UI_MODE_KEY])
@@ -77,7 +88,24 @@ class AppPrefs(context: Context) {
     suspend fun setSecureContentEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[SECURE_CONTENT_KEY] = enabled }
     suspend fun setFlipToLockEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[FLIP_TO_LOCK_KEY] = enabled }
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] = enabled }
-    suspend fun setCardStyle(style: VaultCardStyle) = appContext.vaultDataStore.edit { it[CARD_STYLE_KEY] = style.key }
+    suspend fun setCardStyle(style: VaultCardStyle) = appContext.vaultDataStore.edit { prefs ->
+        prefs[CARD_STYLE_KEY] = style.key
+        val map = parseStyleMap(prefs[CARD_STYLE_MAP_KEY]).toMutableMap()
+        map[DEFAULT_STYLE_KEY] = style
+        prefs[CARD_STYLE_MAP_KEY] = encodeStyleMap(map)
+    }
+    suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) = appContext.vaultDataStore.edit { prefs ->
+        val map = parseStyleMap(prefs[CARD_STYLE_MAP_KEY]).toMutableMap()
+        if (style == VaultCardStyle.DEFAULT) {
+            map.remove(entryTypeValue)
+        } else {
+            map[entryTypeValue] = style
+        }
+        if (map[DEFAULT_STYLE_KEY] == null) {
+            map[DEFAULT_STYLE_KEY] = VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY])
+        }
+        prefs[CARD_STYLE_MAP_KEY] = encodeStyleMap(map)
+    }
     suspend fun setAutofillUiMode(mode: AutofillUiMode) = appContext.vaultDataStore.edit { it[AUTOFILL_UI_MODE_KEY] = mode.key }
 
     suspend fun setLockTimeout(timeoutMs: Long) = appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
@@ -87,6 +115,24 @@ class AppPrefs(context: Context) {
     suspend fun setSwipeEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[SWIPE_ENABLED_KEY] = enabled }
     suspend fun setSwipeLeftAction(action: SwipeActionType) = appContext.vaultDataStore.edit { it[SWIPE_LEFT_ACTION_KEY] = action.name }
     suspend fun setSwipeRightAction(action: SwipeActionType) = appContext.vaultDataStore.edit { it[SWIPE_RIGHT_ACTION_KEY] = action.name }
+
+    private fun parseStyleMap(raw: String?): Map<Int, VaultCardStyle> {
+        if (raw.isNullOrBlank()) return emptyMap()
+        return raw.split(";")
+            .mapNotNull { token ->
+                val parts = token.split(":")
+                if (parts.size != 2) return@mapNotNull null
+                val key = parts[0].toIntOrNull() ?: return@mapNotNull null
+                key to VaultCardStyle.fromKey(parts[1])
+            }
+            .toMap()
+    }
+
+    private fun encodeStyleMap(map: Map<Int, VaultCardStyle>): String {
+        return map.entries
+            .sortedBy { it.key }
+            .joinToString(";") { "${it.key}:${it.value.key}" }
+    }
 }
 
 

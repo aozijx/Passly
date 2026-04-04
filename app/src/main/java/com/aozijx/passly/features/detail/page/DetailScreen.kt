@@ -194,7 +194,7 @@ fun DetailScreen(
                             detailViewModel.onEvent(DetailEvent.SaveTitle)?.let(onEntryUpdated)
                         }) {
                             Icon(Icons.Default.Check, "保存")
-                            androidx.compose.foundation.layout.Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(4.dp))
                             Text("保存")
                         }
                     } else {

@@ -29,6 +29,7 @@ data class SettingsUiState(
     val isFlipToLockEnabled: Boolean = false,
     val isFlipExitAndClearStackEnabled: Boolean = false,
     val cardStyle: VaultCardStyle = VaultCardStyle.BASE,
+    val cardStyleByEntryType: Map<Int, VaultCardStyle> = mapOf(-1 to VaultCardStyle.BASE),
     val autofillUiMode: AutofillUiMode = AutofillUiMode.SYSTEM_INLINE,
     val isSwipeEnabled: Boolean = true,
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
@@ -47,6 +48,7 @@ private data class InteractionSettingsFlowState(
     val isFlipToLockEnabled: Boolean,
     val isFlipExitAndClearStackEnabled: Boolean,
     val cardStyle: VaultCardStyle,
+    val cardStyleByEntryType: Map<Int, VaultCardStyle>,
     val autofillUiMode: AutofillUiMode,
     val isSwipeEnabled: Boolean,
     val swipeLeftAction: SwipeActionType
@@ -55,7 +57,8 @@ private data class InteractionSettingsFlowState(
 private data class SecurityAndStyleFlowState(
     val isFlipToLockEnabled: Boolean,
     val isFlipExitAndClearStackEnabled: Boolean,
-    val cardStyle: VaultCardStyle
+    val cardStyle: VaultCardStyle,
+    val cardStyleByEntryType: Map<Int, VaultCardStyle>
 )
 
 private data class AutofillAndSwipeFlowState(
@@ -88,12 +91,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         combine(
             settingsUseCases.isFlipToLockEnabled,
             settingsUseCases.isFlipExitAndClearStackEnabled,
-            settingsUseCases.cardStyle
-        ) { isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle ->
+            settingsUseCases.cardStyle,
+            settingsUseCases.cardStyleByEntryType
+        ) { isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle, cardStyleByEntryType ->
             SecurityAndStyleFlowState(
                 isFlipToLockEnabled = isFlipToLockEnabled,
                 isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
-                cardStyle = cardStyle
+                cardStyle = cardStyle,
+                cardStyleByEntryType = cardStyleByEntryType
             )
         }.combine(
             combine(
@@ -112,6 +117,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 isFlipToLockEnabled = securityAndStyle.isFlipToLockEnabled,
                 isFlipExitAndClearStackEnabled = securityAndStyle.isFlipExitAndClearStackEnabled,
                 cardStyle = securityAndStyle.cardStyle,
+                cardStyleByEntryType = securityAndStyle.cardStyleByEntryType,
                 autofillUiMode = autofillAndSwipe.autofillUiMode,
                 isSwipeEnabled = autofillAndSwipe.isSwipeEnabled,
                 swipeLeftAction = autofillAndSwipe.swipeLeftAction
@@ -128,6 +134,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isFlipToLockEnabled = interaction.isFlipToLockEnabled,
             isFlipExitAndClearStackEnabled = interaction.isFlipExitAndClearStackEnabled,
             cardStyle = interaction.cardStyle,
+            cardStyleByEntryType = interaction.cardStyleByEntryType,
             autofillUiMode = interaction.autofillUiMode,
             isSwipeEnabled = interaction.isSwipeEnabled,
             swipeLeftAction = interaction.swipeLeftAction,
@@ -144,6 +151,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setFlipExitAndClearStackEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setFlipExitAndClearStackEnabled(enabled) }
     fun setLockTimeout(timeoutMs: Long) = viewModelScope.launch { settingsUseCases.setLockTimeout(timeoutMs.coerceAtLeast(5000L)) }
     fun setCardStyle(style: VaultCardStyle) = viewModelScope.launch { settingsUseCases.setCardStyle(style) }
+    fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) = viewModelScope.launch {
+        settingsUseCases.setCardStyleForEntryType(entryTypeValue, style)
+    }
     fun toggleAutofillUiMode(currentMode: AutofillUiMode) = viewModelScope.launch {
         val nextMode = when (currentMode) {
             AutofillUiMode.SYSTEM_INLINE -> AutofillUiMode.BOTTOM_SHEET
@@ -199,6 +209,3 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun clearBackupMessage() { backupMessage = null }
 }
-
-
-

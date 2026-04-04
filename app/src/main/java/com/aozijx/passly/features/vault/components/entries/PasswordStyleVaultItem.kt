@@ -40,6 +40,7 @@ import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import com.aozijx.passly.core.common.ui.VaultCardStyleTokens
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
@@ -79,7 +80,7 @@ fun PasswordStyleVaultItem(
         else -> "受保护的登录凭据"
     }
     val imageModel = entry.iconCustomPath
-    val corner = RoundedCornerShape(16.dp)
+    val corner = RoundedCornerShape(VaultCardStyleTokens.Password.corner)
 
     var accentColor by remember(imageModel) { mutableStateOf<Color?>(null) }
     var onAccentColor by remember(imageModel) { mutableStateOf<Color?>(null) }
@@ -117,10 +118,23 @@ fun PasswordStyleVaultItem(
         }
     }
 
-    val chipBg = accentColor?.copy(alpha = 0.82f) ?: MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f)
+    val chipBg = accentColor?.copy(alpha = VaultCardStyleTokens.Password.CHIP_BG_ALPHA)
+        ?: MaterialTheme.colorScheme.primaryContainer.copy(alpha = VaultCardStyleTokens.Password.CHIP_FALLBACK_BG_ALPHA)
     val chipFg = onAccentColor ?: MaterialTheme.colorScheme.onPrimaryContainer
-    val overlayTop = (accentColor ?: MaterialTheme.colorScheme.primary).copy(alpha = if (imageModel.isNullOrBlank()) 0.20f else 0.30f)
-    val overlayBottom = MaterialTheme.colorScheme.surface.copy(alpha = if (imageModel.isNullOrBlank()) 0.88f else 0.78f)
+    val overlayTop = (accentColor ?: MaterialTheme.colorScheme.primary).copy(
+        alpha = if (imageModel.isNullOrBlank()) {
+            VaultCardStyleTokens.Password.NO_IMAGE_TOP_OVERLAY_ALPHA
+        } else {
+            VaultCardStyleTokens.Password.WITH_IMAGE_TOP_OVERLAY_ALPHA
+        }
+    )
+    val overlayBottom = MaterialTheme.colorScheme.surface.copy(
+        alpha = if (imageModel.isNullOrBlank()) {
+            VaultCardStyleTokens.Password.NO_IMAGE_BOTTOM_OVERLAY_ALPHA
+        } else {
+            VaultCardStyleTokens.Password.WITH_IMAGE_BOTTOM_OVERLAY_ALPHA
+        }
+    )
 
     Card(
         onClick = onClick,
@@ -129,7 +143,7 @@ fun PasswordStyleVaultItem(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = VaultCardStyleTokens.Password.elevation)
     ) {
         Box(modifier = Modifier.fillMaxWidth().clip(corner)) {
             if (!imageModel.isNullOrBlank()) {
@@ -139,7 +153,7 @@ fun PasswordStyleVaultItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .matchParentSize()
-                        .alpha(0.22f)
+                        .alpha(VaultCardStyleTokens.Password.IMAGE_OVERLAY_ALPHA)
                 )
             }
             Box(
@@ -154,10 +168,10 @@ fun PasswordStyleVaultItem(
             Surface(color = Color.Transparent, tonalElevation = 0.dp, modifier = Modifier.fillMaxWidth()) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(VaultCardStyleTokens.Password.contentPadding)
                 ) {
                     VaultItemIcon(item = entry)
-                    Spacer(modifier = Modifier.width(20.dp))
+                    Spacer(modifier = Modifier.width(VaultCardStyleTokens.Password.iconTextSpacing))
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -177,27 +191,32 @@ fun PasswordStyleVaultItem(
                         Text(
                             text = tertiaryText,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                alpha = VaultCardStyleTokens.Password.TERTIARY_TEXT_ALPHA
+                            ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(999.dp),
+                        shape = RoundedCornerShape(VaultCardStyleTokens.Password.chipCorner),
                         color = chipBg
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(
+                                horizontal = VaultCardStyleTokens.Password.chipHorizontalPadding,
+                                vertical = VaultCardStyleTokens.Password.chipVerticalPadding
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Key,
                                 contentDescription = null,
                                 tint = chipFg,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(VaultCardStyleTokens.Password.chipIconSize)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(VaultCardStyleTokens.Password.chipIconTextSpacing))
                             Text(
                                 text = "PASSWORD",
                                 style = MaterialTheme.typography.labelSmall,

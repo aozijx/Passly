@@ -10,6 +10,33 @@ import com.aozijx.passly.features.vault.VaultViewModel
  * Single source of truth for card-style availability and rendering.
  */
 object VaultCardStyleRegistry {
+    private val previewBaseEntry = VaultSummary(
+        id = -100,
+        title = "示例账号",
+        category = "自动填充",
+        username = "demo_user",
+        password = "demo_password",
+        associatedDomain = "example.com"
+    )
+
+    private val previewPasswordEntry = VaultSummary(
+        id = -101,
+        title = "我的邮箱",
+        category = "登录凭据",
+        username = "me@example.com",
+        password = "********",
+        associatedDomain = "example.com"
+    )
+
+    private val previewTotpEntry = VaultSummary(
+        id = -102,
+        title = "示例二步验证",
+        category = "OTP",
+        username = "totp_user",
+        password = "",
+        totpSecret = "preview_totp"
+    )
+
     @Composable
     fun RenderVaultItem(
         style: VaultCardStyle,
@@ -19,19 +46,22 @@ object VaultCardStyleRegistry {
     ) {
         if (entry.totpSecret?.isNotBlank() == true) {
             when (style) {
-                VaultCardStyle.TOTP,
-                VaultCardStyle.MIXED -> TotpStyleVaultItem(
-                    entry = entry,
-                    vaultViewModel = viewModel,
-                    showCode = viewModel.showTOTPCode,
-                    onClick = onClick
-                )
+                VaultCardStyle.TOTP -> {
+                    TotpStyleVaultItem(
+                        entry = entry,
+                        vaultViewModel = viewModel,
+                        showCode = viewModel.showTOTPCode,
+                        onClick = onClick
+                    )
+                }
 
-                else -> VaultItem(
-                    entry = entry,
-                    viewModel = viewModel,
-                    onClick = onClick
-                )
+                else -> {
+                    VaultItem(
+                        entry = entry,
+                        viewModel = viewModel,
+                        onClick = onClick
+                    )
+                }
             }
             return
         }
@@ -49,7 +79,7 @@ object VaultCardStyleRegistry {
                 onClick = onClick
             )
 
-            VaultCardStyle.MIXED -> PasswordStyleVaultItem(
+            VaultCardStyle.DEFAULT -> VaultItem(
                 entry = entry,
                 viewModel = viewModel,
                 onClick = onClick
@@ -58,6 +88,36 @@ object VaultCardStyleRegistry {
             VaultCardStyle.BASE -> VaultItem(
                 entry = entry,
                 viewModel = viewModel,
+                onClick = onClick
+            )
+        }
+    }
+
+    @Composable
+    fun RenderPreviewVaultItem(
+        style: VaultCardStyle,
+        onClick: () -> Unit
+    ) {
+        when (style) {
+            VaultCardStyle.PASSWORD -> PasswordStyleVaultItem(
+                entry = previewPasswordEntry,
+                viewModel = null,
+                onClick = onClick
+            )
+
+            VaultCardStyle.TOTP -> TotpStyleVaultItem(
+                entry = previewTotpEntry,
+                vaultViewModel = null,
+                showCode = true,
+                previewCode = "123 456",
+                previewProgress = 0.4f,
+                onClick = onClick
+            )
+
+            VaultCardStyle.DEFAULT,
+            VaultCardStyle.BASE -> VaultItem(
+                entry = previewBaseEntry,
+                viewModel = null,
                 onClick = onClick
             )
         }

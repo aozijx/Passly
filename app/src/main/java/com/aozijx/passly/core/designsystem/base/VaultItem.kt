@@ -15,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.common.ui.VaultCardStyleTokens
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
@@ -33,18 +33,20 @@ fun VaultItem(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(VaultCardStyleTokens.Base.corner),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = VaultCardStyleTokens.Base.CONTAINER_ALPHA
+            )
         )
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(VaultCardStyleTokens.Base.contentPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
             VaultItemIcon(item = entry)
 
-            Spacer(modifier = Modifier.width(20.dp))
+            Spacer(modifier = Modifier.width(VaultCardStyleTokens.Base.iconTextSpacing))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
