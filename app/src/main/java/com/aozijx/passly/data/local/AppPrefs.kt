@@ -8,7 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.VaultCardStyle
+import com.aozijx.passly.core.common.ui.VaultCardStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

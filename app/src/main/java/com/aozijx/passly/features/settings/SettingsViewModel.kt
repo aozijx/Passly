@@ -11,7 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.backup.BackupManager
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.VaultCardStyle
+import com.aozijx.passly.core.common.ui.VaultCardStyle
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.features.settings.internal.BackupActionSupport
 import kotlinx.coroutines.flow.SharingStarted

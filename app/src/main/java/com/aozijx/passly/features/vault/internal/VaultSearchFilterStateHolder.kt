@@ -3,7 +3,7 @@ package com.aozijx.passly.features.vault.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.core.common.VaultTab
+import com.aozijx.passly.core.common.ui.VaultTab
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 

@@ -36,7 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.common.VaultCardStyle
+import com.aozijx.passly.core.common.ui.VaultCardStyle
 import com.aozijx.passly.core.designsystem.components.entries.VaultCardStyleRegistry
 
 @Composable

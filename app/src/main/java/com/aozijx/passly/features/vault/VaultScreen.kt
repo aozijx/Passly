@@ -52,9 +52,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.AddType
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.VaultTab
+import com.aozijx.passly.core.common.ui.AddType
+import com.aozijx.passly.core.common.ui.VaultTab
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.components.AutoFillItem
 import com.aozijx.passly.core.designsystem.components.TwoFAItem

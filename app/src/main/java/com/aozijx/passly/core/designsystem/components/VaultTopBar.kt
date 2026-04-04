@@ -65,7 +65,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.VaultTab
+import com.aozijx.passly.core.common.ui.VaultTab
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

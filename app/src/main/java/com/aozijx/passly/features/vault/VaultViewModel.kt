@@ -11,8 +11,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.AddType
-import com.aozijx.passly.core.common.VaultTab
+import com.aozijx.passly.core.common.ui.AddType
+import com.aozijx.passly.core.common.ui.VaultTab
 import com.aozijx.passly.core.designsystem.state.TotpState
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat

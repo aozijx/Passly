@@ -6,7 +6,7 @@ import android.provider.MediaStore
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.AndroidViewModel
-import com.aozijx.passly.core.common.ImageType
+import com.aozijx.passly.core.common.ui.ImageType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

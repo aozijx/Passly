@@ -44,7 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.AddType
+import com.aozijx.passly.core.common.ui.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
