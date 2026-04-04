@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import com.aozijx.passly.service.autofill.engine.AutofillStructureParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -25,6 +26,18 @@ object AutofillRepository {
     private const val SLOW_DB_QUERY_MS = 120L
     private const val SLOW_ENTRY_MATCH_MS = 120L
     private const val SLOW_SAVE_FLOW_MS = 200L
+
+    enum class MatchType {
+        APP,
+        DOMAIN,
+        UNKNOWN
+    }
+
+    data class AutofillCandidate(
+        val entry: VaultEntry,
+        val matchType: MatchType,
+        val rank: Int
+    )
 
     suspend fun updateUsageStats(context: Context, entry: VaultEntry) = withContext(Dispatchers.IO) {
         try {
@@ -40,6 +53,14 @@ object AutofillRepository {
     }
 
     suspend fun findMatchingEntries(context: Context, packageName: String?, webDomain: String?): List<VaultEntry> = withContext(Dispatchers.IO) {
+        findMatchingCandidates(context, packageName, webDomain).map { it.entry }
+    }
+
+    suspend fun findMatchingCandidates(
+        context: Context,
+        packageName: String?,
+        webDomain: String?
+    ): List<AutofillCandidate> = withContext(Dispatchers.IO) {
         try {
             if (packageName.isNullOrBlank() && webDomain.isNullOrBlank()) {
                 return@withContext emptyList()
@@ -57,12 +78,33 @@ object AutofillRepository {
             if (queryCost >= SLOW_DB_QUERY_MS) {
                 Logcat.w(TAG, "findMatchingEntries query slow: ${queryCost}ms, candidates=${entries.size}")
             }
-            
-            entries.asSequence().filter { entry ->
-                val pkgMatch = packageName != null && entry.associatedAppPackage == packageName
-                val domainMatch = webDomain != null && entry.associatedDomain == webDomain
-                (pkgMatch || domainMatch) && supportsAutofill(entry)
-            }.take(5).toList()
+
+            val normalizedPackage = normalizePackageName(packageName)
+            val normalizedDomain = AutofillStructureParser.normalizeDomain(webDomain)
+
+            entries.asSequence()
+                .mapNotNull { entry ->
+                    if (!supportsAutofill(entry)) return@mapNotNull null
+
+                    val matchType = when {
+                        isPackageMatch(entry.associatedAppPackage, normalizedPackage) -> MatchType.APP
+                        isDomainMatch(entry.associatedDomain, normalizedDomain) -> MatchType.DOMAIN
+                        else -> MatchType.UNKNOWN
+                    }
+
+                    if (matchType == MatchType.UNKNOWN) return@mapNotNull null
+
+                    val rank = if (matchType == MatchType.APP) 0 else 1
+                    AutofillCandidate(entry = entry, matchType = matchType, rank = rank)
+                }
+                .sortedWith(
+                    compareBy<AutofillCandidate> { it.rank }
+                        .thenByDescending { it.entry.favorite }
+                        .thenByDescending { it.entry.usageCount }
+                        .thenByDescending { it.entry.updatedAt ?: it.entry.createdAt ?: 0L }
+                )
+                .take(5)
+                .toList()
         } catch (e: Exception) {
             Logcat.e(TAG, "Failed to find matching entries", e)
             emptyList()
@@ -98,11 +140,13 @@ object AutofillRepository {
             }
 
             val matchStart = System.currentTimeMillis()
+            val normalizedPackage = normalizePackageName(packageName)
+            val normalizedDomain = AutofillStructureParser.normalizeDomain(webDomain)
             val existing = candidateEntries.find { entry ->
                 if (!supportsAutofill(entry)) return@find false
 
-                val scopeMatch = (entry.associatedAppPackage == packageName && packageName != null) ||
-                                (entry.associatedDomain == webDomain && webDomain != null)
+                val scopeMatch = isPackageMatch(entry.associatedAppPackage, normalizedPackage) ||
+                    isDomainMatch(entry.associatedDomain, normalizedDomain)
                 if (scopeMatch) {
                     val decUser = try { CryptoManager.decrypt(entry.username) } catch (_: Exception) { null }
                     decUser == usernameValue
@@ -200,6 +244,23 @@ object AutofillRepository {
     private fun supportsAutofill(entry: VaultEntry): Boolean {
         val entryType = EntryType.fromValue(entry.entryType)
         return resolveStrategy(entry.entryType)?.supportsAutofill() ?: entryType.supportsAutofill()
+    }
+
+    private fun normalizePackageName(packageName: String?): String? {
+        return packageName?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
+    }
+
+    private fun isPackageMatch(entryPackage: String?, normalizedRequestPackage: String?): Boolean {
+        if (normalizedRequestPackage == null) return false
+        return entryPackage?.trim()?.lowercase() == normalizedRequestPackage
+    }
+
+    private fun isDomainMatch(entryDomain: String?, normalizedRequestDomain: String?): Boolean {
+        if (normalizedRequestDomain == null) return false
+        val normalizedEntryDomain = AutofillStructureParser.normalizeDomain(entryDomain) ?: return false
+        return normalizedEntryDomain == normalizedRequestDomain ||
+            normalizedEntryDomain.endsWith(".$normalizedRequestDomain") ||
+            normalizedRequestDomain.endsWith(".$normalizedEntryDomain")
     }
 }
 

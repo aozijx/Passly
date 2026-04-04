@@ -68,6 +68,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.components.entries.VaultCardStyleRegistry
 import com.aozijx.passly.features.settings.components.CardStyleSettingsSection
@@ -91,6 +92,7 @@ fun SettingsScreen(
     val isFlipToLockEnabled = uiState.isFlipToLockEnabled
     val isFlipExitAndClearStackEnabled = uiState.isFlipExitAndClearStackEnabled
     val cardStyle = uiState.cardStyle
+    val autofillUiMode = uiState.autofillUiMode
 
     val availableCardStyles = remember { VaultCardStyleRegistry.settingsStyles }
     val effectiveCardStyle = VaultCardStyleRegistry.resolveSettingsStyle(cardStyle)
@@ -104,6 +106,7 @@ fun SettingsScreen(
     var showLeftActionDialog by remember { mutableStateOf(false) }
     var showRightActionDialog by remember { mutableStateOf(false) }
     var showLockTimeoutDialog by remember { mutableStateOf(false) }
+    var showAutofillUiModeDialog by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
@@ -229,6 +232,14 @@ fun SettingsScreen(
                             ClickableSettingItem(title = "右滑快捷动作", value = swipeRightAction.displayName, onClick = { showRightActionDialog = true })
                         }
                     }
+
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+                    ClickableSettingItem(
+                        icon = Icons.Default.ViewDay,
+                        title = "自动填充展示",
+                        value = autofillUiMode.displayName,
+                        onClick = { showAutofillUiModeDialog = true }
+                    )
                 }
             }
 
@@ -266,6 +277,61 @@ fun SettingsScreen(
             onDismiss = { showLockTimeoutDialog = false }
         )
     }
+    if (showAutofillUiModeDialog) {
+        AutofillUiModeSelectDialog(
+            currentMode = autofillUiMode,
+            onModeSelected = {
+                viewModel.setAutofillUiMode(it)
+                showAutofillUiModeDialog = false
+            },
+            onDismiss = { showAutofillUiModeDialog = false }
+        )
+    }
+}
+
+@Composable
+fun AutofillUiModeSelectDialog(
+    currentMode: AutofillUiMode,
+    onModeSelected: (AutofillUiMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.padding(horizontal = 16.dp),
+        title = { Text("自动填充展示", style = MaterialTheme.typography.headlineSmall) },
+        text = {
+            Column(modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp)) {
+                AutofillUiMode.entries.forEach { mode ->
+                    val selected = mode == currentMode
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onModeSelected(mode) }
+                            .padding(vertical = 8.dp, horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = selected, onClick = { onModeSelected(mode) })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = mode.displayName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                            Text(
+                                text = mode.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("关闭") } },
+        shape = RoundedCornerShape(28.dp)
+    )
 }
 
 @Composable

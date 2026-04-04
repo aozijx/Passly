@@ -1,5 +1,6 @@
 package com.aozijx.passly.data.repository
 
+import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.VaultCardStyle
 import com.aozijx.passly.data.local.AppPrefs
@@ -23,6 +24,7 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     override val isFlipToLockEnabled: Flow<Boolean> = prefs.isFlipToLockEnabled
     override val isFlipExitAndClearStackEnabled: Flow<Boolean> = prefs.isFlipExitAndClearStackEnabled
     override val cardStyle: Flow<VaultCardStyle> = prefs.cardStyle
+    override val autofillUiMode: Flow<AutofillUiMode> = prefs.autofillUiMode
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         prefs.setLockTimeout(timeoutMs)
@@ -67,5 +69,8 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     }
     override suspend fun setCardStyle(style: VaultCardStyle) {
         prefs.setCardStyle(style)
+    }
+    override suspend fun setAutofillUiMode(mode: AutofillUiMode) {
+        prefs.setAutofillUiMode(mode)
     }
 }

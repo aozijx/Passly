@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.repository
 
+import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.VaultCardStyle
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +22,7 @@ interface SettingsRepository {
     val isFlipToLockEnabled: Flow<Boolean>
     val isFlipExitAndClearStackEnabled: Flow<Boolean>
     val cardStyle: Flow<VaultCardStyle>
+    val autofillUiMode: Flow<AutofillUiMode>
 
     suspend fun setLockTimeout(timeoutMs: Long)
     suspend fun setBiometricEnabled(enabled: Boolean)
@@ -38,4 +40,5 @@ interface SettingsRepository {
     suspend fun setFlipToLockEnabled(enabled: Boolean)
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean)
     suspend fun setCardStyle(style: VaultCardStyle)
+    suspend fun setAutofillUiMode(mode: AutofillUiMode)
 }

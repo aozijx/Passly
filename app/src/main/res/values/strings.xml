@@ -38,11 +38,16 @@
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">安全验证</string>
     <string name="autofill_auth_subtitle">验证身份以自动填充凭据</string>
+    <string name="autofill_auth_sheet_title">即将自动填充</string>
+    <string name="autofill_auth_sheet_subtitle">请完成身份验证后继续</string>
     <string name="autofill_save_prompt_title">保存 %s ？</string>
     <string name="autofill_save_prompt_description">是否将 %s 的账号密码保存到 Passly？</string>
     <string name="autofill_save_icon_description">应用图标</string>
     <string name="autofill_no_suggestions">Passly 暂无匹配建议</string>
     <string name="autofill_pending_verification">待验证的自动填充项</string>
+    <string name="autofill_match_app">应用匹配</string>
+    <string name="autofill_match_domain">域名匹配</string>
+    <string name="autofill_match_unknown">候选</string>
 
     <!-- 自动填充标题生成相关 -->
     <string name="autofill_title_app_fallback">应用</string>

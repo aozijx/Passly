@@ -3,16 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:foreground="@null"
-    android:gravity="center"
+    android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:padding="16dp">
 
     <!-- 应用图标：增加点击感 -->
     <ImageView
         android:id="@+id/save_icon"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_marginBottom="16dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_marginBottom="12dp"
         android:contentDescription="@string/autofill_save_icon_description"
         android:scaleType="fitCenter" />
 
@@ -21,10 +21,11 @@
         android:id="@+id/save_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:maxWidth="280dp"
         android:gravity="center"
         android:text="@string/autofill_save_prompt_title"
         android:textColor="?android:attr/textColorPrimary"
-        android:textSize="18sp"
+        android:textSize="17sp"
         android:textStyle="bold" />
 
     <!-- 描述：使用系统次要文字颜色，增加行间距 -->
@@ -32,7 +33,8 @@
         android:id="@+id/save_description"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
+        android:maxWidth="280dp"
         android:gravity="center"
         android:lineSpacingExtra="2dp"
         android:textColor="?android:attr/textColorSecondary"

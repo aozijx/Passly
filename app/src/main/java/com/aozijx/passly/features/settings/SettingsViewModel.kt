@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.backup.BackupManager
+import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.VaultCardStyle
 import com.aozijx.passly.core.di.AppContainer
@@ -28,6 +29,7 @@ data class SettingsUiState(
     val isFlipToLockEnabled: Boolean = false,
     val isFlipExitAndClearStackEnabled: Boolean = false,
     val cardStyle: VaultCardStyle = VaultCardStyle.BASE,
+    val autofillUiMode: AutofillUiMode = AutofillUiMode.SYSTEM_INLINE,
     val isSwipeEnabled: Boolean = true,
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
     val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL
@@ -45,6 +47,19 @@ private data class InteractionSettingsFlowState(
     val isFlipToLockEnabled: Boolean,
     val isFlipExitAndClearStackEnabled: Boolean,
     val cardStyle: VaultCardStyle,
+    val autofillUiMode: AutofillUiMode,
+    val isSwipeEnabled: Boolean,
+    val swipeLeftAction: SwipeActionType
+)
+
+private data class SecurityAndStyleFlowState(
+    val isFlipToLockEnabled: Boolean,
+    val isFlipExitAndClearStackEnabled: Boolean,
+    val cardStyle: VaultCardStyle
+)
+
+private data class AutofillAndSwipeFlowState(
+    val autofillUiMode: AutofillUiMode,
     val isSwipeEnabled: Boolean,
     val swipeLeftAction: SwipeActionType
 )
@@ -73,16 +88,33 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         combine(
             settingsUseCases.isFlipToLockEnabled,
             settingsUseCases.isFlipExitAndClearStackEnabled,
-            settingsUseCases.cardStyle,
-            settingsUseCases.isSwipeEnabled,
-            settingsUseCases.swipeLeftAction
-        ) { isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle, isSwipeEnabled, swipeLeftAction ->
-            InteractionSettingsFlowState(
+            settingsUseCases.cardStyle
+        ) { isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle ->
+            SecurityAndStyleFlowState(
                 isFlipToLockEnabled = isFlipToLockEnabled,
                 isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
-                cardStyle = cardStyle,
-                isSwipeEnabled = isSwipeEnabled,
-                swipeLeftAction = swipeLeftAction
+                cardStyle = cardStyle
+            )
+        }.combine(
+            combine(
+                settingsUseCases.autofillUiMode,
+                settingsUseCases.isSwipeEnabled,
+                settingsUseCases.swipeLeftAction
+            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction ->
+                AutofillAndSwipeFlowState(
+                    autofillUiMode = autofillUiMode,
+                    isSwipeEnabled = isSwipeEnabled,
+                    swipeLeftAction = swipeLeftAction
+                )
+            }
+        ) { securityAndStyle, autofillAndSwipe ->
+            InteractionSettingsFlowState(
+                isFlipToLockEnabled = securityAndStyle.isFlipToLockEnabled,
+                isFlipExitAndClearStackEnabled = securityAndStyle.isFlipExitAndClearStackEnabled,
+                cardStyle = securityAndStyle.cardStyle,
+                autofillUiMode = autofillAndSwipe.autofillUiMode,
+                isSwipeEnabled = autofillAndSwipe.isSwipeEnabled,
+                swipeLeftAction = autofillAndSwipe.swipeLeftAction
             )
         },
         settingsUseCases.swipeRightAction
@@ -96,6 +128,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isFlipToLockEnabled = interaction.isFlipToLockEnabled,
             isFlipExitAndClearStackEnabled = interaction.isFlipExitAndClearStackEnabled,
             cardStyle = interaction.cardStyle,
+            autofillUiMode = interaction.autofillUiMode,
             isSwipeEnabled = interaction.isSwipeEnabled,
             swipeLeftAction = interaction.swipeLeftAction,
             swipeRightAction = swipeRightAction
@@ -111,6 +144,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setFlipExitAndClearStackEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setFlipExitAndClearStackEnabled(enabled) }
     fun setLockTimeout(timeoutMs: Long) = viewModelScope.launch { settingsUseCases.setLockTimeout(timeoutMs.coerceAtLeast(5000L)) }
     fun setCardStyle(style: VaultCardStyle) = viewModelScope.launch { settingsUseCases.setCardStyle(style) }
+    fun setAutofillUiMode(mode: AutofillUiMode) = viewModelScope.launch { settingsUseCases.setAutofillUiMode(mode) }
 
     fun setSwipeEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setSwipeEnabled(enabled) }
     fun setSwipeLeftAction(action: SwipeActionType) = viewModelScope.launch { settingsUseCases.setSwipeLeftAction(action) }

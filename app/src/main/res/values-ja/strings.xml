@@ -38,11 +38,16 @@
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">本人確認</string>
     <string name="autofill_auth_subtitle">認証して認証情報を自動入力</string>
+    <string name="autofill_auth_sheet_title">自動入力の準備ができました</string>
+    <string name="autofill_auth_sheet_subtitle">続行するには本人確認を完了してください</string>
     <string name="autofill_save_prompt_title">%s を保存しますか？</string>
     <string name="autofill_save_prompt_description">%s のユーザー名とパスワードをPasslyに保存しますか？</string>
     <string name="autofill_save_icon_description">アプリアイコン</string>
     <string name="autofill_no_suggestions">Passlyに該当する提案はありません</string>
     <string name="autofill_pending_verification">検証待ちの自動入力項目</string>
+    <string name="autofill_match_app">アプリ一致</string>
+    <string name="autofill_match_domain">ドメイン一致</string>
+    <string name="autofill_match_unknown">候補</string>
 
     <!-- 自動入力タイトル生成 -->
     <string name="autofill_title_app_fallback">アプリ</string>

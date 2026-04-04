@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.VaultCardStyle
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +40,9 @@ class AppPrefs(context: Context) {
 
         // --- 列表卡片效果 ---
         val CARD_STYLE_KEY = stringPreferencesKey("ui_card_style")
+
+        // --- 自动填充展示模式 ---
+        val AUTOFILL_UI_MODE_KEY = stringPreferencesKey("autofill_ui_mode")
     }
 
     val isStatusBarAutoHide: Flow<Boolean> = appContext.vaultDataStore.data.map { it[AUTO_HIDE_STATUS_BAR_KEY] ?: true }
@@ -49,6 +53,9 @@ class AppPrefs(context: Context) {
     val isFlipExitAndClearStackEnabled: Flow<Boolean> = appContext.vaultDataStore.data.map { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] ?: false }
     val cardStyle: Flow<VaultCardStyle> = appContext.vaultDataStore.data.map { prefs ->
         VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY])
+    }
+    val autofillUiMode: Flow<AutofillUiMode> = appContext.vaultDataStore.data.map { prefs ->
+        AutofillUiMode.fromKey(prefs[AUTOFILL_UI_MODE_KEY])
     }
 
     // 原有设置
@@ -71,6 +78,7 @@ class AppPrefs(context: Context) {
     suspend fun setFlipToLockEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[FLIP_TO_LOCK_KEY] = enabled }
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] = enabled }
     suspend fun setCardStyle(style: VaultCardStyle) = appContext.vaultDataStore.edit { it[CARD_STYLE_KEY] = style.key }
+    suspend fun setAutofillUiMode(mode: AutofillUiMode) = appContext.vaultDataStore.edit { it[AUTOFILL_UI_MODE_KEY] = mode.key }
 
     suspend fun setLockTimeout(timeoutMs: Long) = appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
     suspend fun setBiometricEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }

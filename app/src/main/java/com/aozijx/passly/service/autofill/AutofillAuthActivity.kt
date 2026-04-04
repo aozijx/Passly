@@ -1,10 +1,13 @@
 package com.aozijx.passly.service.autofill
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.service.autofill.Dataset
 import android.service.autofill.Field
+import android.view.Gravity
+import android.view.ViewGroup
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
 import android.view.autofill.AutofillValue
@@ -13,6 +16,7 @@ import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
+import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.otp.TwoFAUtils
@@ -28,7 +32,20 @@ class AutofillAuthActivity : FragmentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))
+        if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
+            setTheme(R.style.Theme_Passly_AutofillBottomSheetAuth)
+        }
         super.onCreate(savedInstanceState)
+
+        if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
+            val metrics = resources.displayMetrics
+            val windowHeight = (metrics.heightPixels * 0.56f).toInt()
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, windowHeight)
+            window.setGravity(Gravity.BOTTOM)
+            window.setBackgroundDrawableResource(android.R.color.transparent)
+            window.decorView.setBackgroundColor(Color.TRANSPARENT)
+        }
         setResult(RESULT_CANCELED)
 
         // 核心修复：更新 VaultEntry 的引用路径并处理可空性

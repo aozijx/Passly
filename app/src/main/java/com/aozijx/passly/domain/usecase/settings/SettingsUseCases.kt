@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.usecase.settings
 
+import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.VaultCardStyle
 import com.aozijx.passly.domain.repository.SettingsRepository
@@ -22,6 +23,7 @@ class SettingsUseCases(private val repository: SettingsRepository) {
     val isFlipToLockEnabled: Flow<Boolean> = repository.isFlipToLockEnabled
     val isFlipExitAndClearStackEnabled: Flow<Boolean> = repository.isFlipExitAndClearStackEnabled
     val cardStyle: Flow<VaultCardStyle> = repository.cardStyle
+    val autofillUiMode: Flow<AutofillUiMode> = repository.autofillUiMode
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
     suspend fun setBiometricEnabled(enabled: Boolean) = repository.setBiometricEnabled(enabled)
@@ -39,4 +41,5 @@ class SettingsUseCases(private val repository: SettingsRepository) {
     suspend fun setFlipToLockEnabled(enabled: Boolean) = repository.setFlipToLockEnabled(enabled)
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = repository.setFlipExitAndClearStackEnabled(enabled)
     suspend fun setCardStyle(style: VaultCardStyle) = repository.setCardStyle(style)
+    suspend fun setAutofillUiMode(mode: AutofillUiMode) = repository.setAutofillUiMode(mode)
 }

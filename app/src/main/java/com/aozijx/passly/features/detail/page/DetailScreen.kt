@@ -432,5 +432,3 @@ private fun LazyListScope.TypeSpecificContent(
         }
     }
 }
-
-

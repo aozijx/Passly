@@ -38,11 +38,16 @@
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">Security Verification</string>
     <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>
+    <string name="autofill_auth_sheet_title">Ready to Autofill</string>
+    <string name="autofill_auth_sheet_subtitle">Complete identity verification to continue</string>
     <string name="autofill_save_prompt_title">Save %s?</string>
     <string name="autofill_save_prompt_description">Do you want to save the username and password for %s to Passly?</string>
     <string name="autofill_save_icon_description">App icon</string>
     <string name="autofill_no_suggestions">Passly has no matching suggestions</string>
     <string name="autofill_pending_verification">Pending verification for autofill</string>
+    <string name="autofill_match_app">App match</string>
+    <string name="autofill_match_domain">Domain match</string>
+    <string name="autofill_match_unknown">Candidate</string>
 
     <!-- Autofill title generation -->
     <string name="autofill_title_app_fallback">App</string>
