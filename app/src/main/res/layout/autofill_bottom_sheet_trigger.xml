@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  用于 SYSTEM_INLINE（键盘候选）模式下，系统自动填充下拉列表中每条候选项的展示行。
-  RemoteViews 限制：只能用标准 View，不能用 ConstraintLayout / Compose / MaterialTheme。
+  用于 BOTTOM_SHEET 模式下，系统自动填充下拉栏中显示的唯一一条"踏板"入口。
+  用户点击此行后，AutofillAuthActivity 会弹出半屏候选列表。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -10,13 +10,13 @@
     android:minHeight="56dp"
     android:orientation="horizontal"
     android:paddingStart="12dp"
-    android:paddingEnd="12dp"
+    android:paddingEnd="8dp"
     android:paddingTop="8dp"
     android:paddingBottom="8dp">
 
-    <!-- 账号图标 / App Logo 占位 -->
+    <!-- Passly 应用图标 -->
     <ImageView
-        android:id="@+id/item_icon"
+        android:id="@+id/trigger_icon"
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:layout_marginEnd="12dp"
@@ -31,20 +31,21 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
-        <!-- 条目标题 -->
+        <!-- 主标题：固定文案 -->
         <TextView
-            android:id="@+id/item_title"
+            android:id="@+id/trigger_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
+            android:text="@string/autofill_entry_compact_title"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <!-- 副标题：账号 · 匹配类型 -->
+        <!-- 副标题：动态"找到 N 个匹配账号 · 点击选择" -->
         <TextView
-            android:id="@+id/item_subtitle"
+            android:id="@+id/trigger_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
@@ -54,19 +55,14 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- 匹配类型徽标（"应用匹配" / "域名匹配"） -->
+    <!-- 右箭头，暗示可点击展开 -->
     <TextView
-        android:id="@+id/item_badge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:background="@drawable/autofill_badge_bg"
-        android:paddingStart="6dp"
-        android:paddingEnd="6dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="2dp"
+        android:layout_marginStart="4dp"
+        android:text="@string/autofill_chevron_right"
         android:textColor="?android:attr/textColorSecondary"
-        android:textSize="11sp" />
+        android:textSize="20sp" />
 
 </LinearLayout>
 

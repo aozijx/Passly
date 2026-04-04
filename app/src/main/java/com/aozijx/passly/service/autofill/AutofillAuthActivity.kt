@@ -1,17 +1,16 @@
 package com.aozijx.passly.service.autofill
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.service.autofill.Dataset
 import android.service.autofill.Field
-import android.view.Gravity
-import android.view.ViewGroup
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
 import android.view.autofill.AutofillValue
 import android.widget.Toast
+import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
 import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
@@ -31,35 +30,82 @@ class AutofillAuthActivity : FragmentActivity() {
         const val TAG = "AutofillAuthActivity"
     }
 
+    private var selectionInProgress = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))
-        if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
-            setTheme(R.style.Theme_Passly_AutofillBottomSheetAuth)
-        }
         super.onCreate(savedInstanceState)
-
-        if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
-            val metrics = resources.displayMetrics
-            val windowHeight = (metrics.heightPixels * 0.56f).toInt()
-            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, windowHeight)
-            window.setGravity(Gravity.BOTTOM)
-            window.setBackgroundDrawableResource(android.R.color.transparent)
-            window.decorView.setBackgroundColor(Color.TRANSPARENT)
-        }
         setResult(RESULT_CANCELED)
 
-        // 核心修复：更新 VaultEntry 的引用路径并处理可空性
-        val entry = IntentCompat.getSerializableExtra(intent, "vault_item", VaultEntry::class.java)
-        val usernameId = IntentCompat.getParcelableExtra(intent, "username_id", AutofillId::class.java)
-        val passwordId = IntentCompat.getParcelableExtra(intent, "password_id", AutofillId::class.java)
+        val usernameId =
+            IntentCompat.getParcelableExtra(intent, "username_id", AutofillId::class.java)
+        val passwordId =
+            IntentCompat.getParcelableExtra(intent, "password_id", AutofillId::class.java)
         val otpId = IntentCompat.getParcelableExtra(intent, "otp_id", AutofillId::class.java)
+        val directEntryId = intent.getIntExtra("vault_item_id", -1).takeIf { it > 0 }
+        val candidateEntryIds = intent.getIntArrayExtra("vault_item_ids")?.toList().orEmpty()
 
-        if (entry == null) {
-            Logcat.e(TAG, "Entry is null")
-            finish()
+        if (uiMode == AutofillUiMode.BOTTOM_SHEET && candidateEntryIds.isNotEmpty() && directEntryId == null) {
+            lifecycleScope.launch {
+                val candidateEntries = AutofillRepository.getEntriesByIds(applicationContext, candidateEntryIds)
+                if (candidateEntries.isEmpty()) {
+                    Logcat.e(TAG, "Candidate entries are empty after loading by IDs")
+                    finish()
+                    return@launch
+                }
+                setContent {
+                    MaterialTheme {
+                        AutofillCandidateBottomSheet(
+                            entries = candidateEntries,
+                            onCandidateSelected = { selected: VaultEntry ->
+                                if (!selectionInProgress) {
+                                    selectionInProgress = true
+                                    authenticateAndFill(
+                                        entry = selected,
+                                        usernameId = usernameId,
+                                        passwordId = passwordId,
+                                        otpId = otpId
+                                    )
+                                }
+                            },
+                            onCancel = { finish() }
+                        )
+                    }
+                }
+            }
             return
         }
 
+        lifecycleScope.launch {
+            val entry = directEntryId?.let {
+                AutofillRepository.getEntryById(applicationContext, it)
+            } ?: IntentCompat.getSerializableExtra(intent, "vault_item", VaultEntry::class.java)
+
+            if (entry == null) {
+                Logcat.e(TAG, "Entry is null")
+                finish()
+                return@launch
+            }
+
+            authenticateAndFill(
+                entry = entry,
+                usernameId = usernameId,
+                passwordId = passwordId,
+                otpId = otpId
+            )
+        }
+    }
+
+    private fun authenticateAndFill(
+        entry: VaultEntry,
+        usernameId: AutofillId?,
+        passwordId: AutofillId?,
+        otpId: AutofillId?
+    ) {
+        Logcat.d(
+            TAG,
+            "authenticateAndFill: entryId=${entry.id}, usernameId=${usernameId != null}, passwordId=${passwordId != null}, otpId=${otpId != null}"
+        )
         BiometricHelper.authenticate(
             activity = this,
             title = getString(R.string.autofill_auth_title),
@@ -92,11 +138,14 @@ class AutofillAuthActivity : FragmentActivity() {
                     setResult(RESULT_OK, Intent().apply {
                         putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset)
                     })
+                    Logcat.i(TAG, "Autofill dataset built successfully")
 
                     lifecycleScope.launch {
                         AutofillRepository.updateUsageStats(applicationContext, entry)
                     }
                 } else {
+                    Logcat.w(TAG, "Autofill dataset is null, canceling fill")
+                    Toast.makeText(this, "当前页面未识别到可填充字段", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_CANCELED)
                 }
                 finish()
@@ -104,6 +153,7 @@ class AutofillAuthActivity : FragmentActivity() {
             onError = { error ->
                 Logcat.e(TAG, "Auth failed: $error")
                 setResult(RESULT_CANCELED)
+                selectionInProgress = false
                 finish()
             }
         )
@@ -143,5 +193,3 @@ class AutofillAuthActivity : FragmentActivity() {
         return if (added) builder.build() else null
     }
 }
-
-

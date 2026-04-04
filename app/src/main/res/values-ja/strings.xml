@@ -38,8 +38,9 @@
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">本人確認</string>
     <string name="autofill_auth_subtitle">認証して認証情報を自動入力</string>
-    <string name="autofill_auth_sheet_title">自動入力の準備ができました</string>
-    <string name="autofill_auth_sheet_subtitle">続行するには本人確認を完了してください</string>
+    <string name="autofill_entry_compact_title">アカウントを選択</string>
+    <string name="autofill_candidate_sheet_title">入力するアカウントを選択</string>
+    <string name="autofill_candidate_sheet_subtitle">下の一覧から1件選んで続行してください</string>
     <string name="autofill_save_prompt_title">%s を保存しますか？</string>
     <string name="autofill_save_prompt_description">%s のユーザー名とパスワードをPasslyに保存しますか？</string>
     <string name="autofill_save_icon_description">アプリアイコン</string>
@@ -225,7 +226,7 @@
 
     <!-- カテゴリ -->
     <string name="category_autofill">自動入力</string>
-    <string name="category_unfiled">未分类</string>
+    <string name="category_unfiled">未分類</string>
     <string name="category_otp">OTP</string>
 
     <!-- ウィジェット・ショートカット -->

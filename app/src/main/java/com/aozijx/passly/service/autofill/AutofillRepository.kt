@@ -6,6 +6,7 @@ import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
+import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.model.VaultEntry
@@ -49,6 +50,30 @@ object AutofillRepository {
             dao.update(updatedEntry.toEntity())
         } catch (e: Exception) {
             Logcat.e(TAG, "Failed to update usage count for ${entry.id}", e)
+        }
+    }
+
+    suspend fun getEntryById(context: Context, entryId: Int): VaultEntry? = withContext(Dispatchers.IO) {
+        runCatching {
+            AppDatabase.getDatabase(context).vaultDao().getEntryById(entryId)?.toDomain()
+        }.getOrElse {
+            Logcat.e(TAG, "Failed to load entry by id=$entryId", it)
+            null
+        }
+    }
+
+    suspend fun getEntriesByIds(context: Context, entryIds: List<Int>): List<VaultEntry> = withContext(Dispatchers.IO) {
+        if (entryIds.isEmpty()) return@withContext emptyList()
+        runCatching {
+            val order = entryIds.withIndex().associate { it.value to it.index }
+            AppDatabase.getDatabase(context)
+                .vaultDao()
+                .getEntriesByIds(entryIds)
+                .toDomainList()
+                .sortedBy { order[it.id] ?: Int.MAX_VALUE }
+        }.getOrElse {
+            Logcat.e(TAG, "Failed to load entries by ids", it)
+            emptyList()
         }
     }
 

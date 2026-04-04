@@ -38,8 +38,9 @@
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">Security Verification</string>
     <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>
-    <string name="autofill_auth_sheet_title">Ready to Autofill</string>
-    <string name="autofill_auth_sheet_subtitle">Complete identity verification to continue</string>
+    <string name="autofill_entry_compact_title">Choose account</string>
+    <string name="autofill_candidate_sheet_title">Choose an account to fill</string>
+    <string name="autofill_candidate_sheet_subtitle">Select one account from the list below to continue</string>
     <string name="autofill_save_prompt_title">Save %s?</string>
     <string name="autofill_save_prompt_description">Do you want to save the username and password for %s to Passly?</string>
     <string name="autofill_save_icon_description">App icon</string>

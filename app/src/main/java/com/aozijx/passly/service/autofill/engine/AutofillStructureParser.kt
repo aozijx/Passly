@@ -52,8 +52,11 @@ class AutofillStructureParser(structure: AssistStructure) {
         }
 
         if (usernameId == null && (idRes.contains("user") || idRes.contains("email") || idRes.contains("phone") || idRes.contains("login") ||
-                hintText.contains("账号") || hintText.contains("手机") || hintText.contains("邮箱") ||
-                contentDesc.contains("账号") || contentDesc.contains("用户名"))) {
+                idRes.contains("account") || idRes.contains("acct") ||
+                hintText.contains("账号") || hintText.contains("账户") || hintText.contains("手机") || hintText.contains("邮箱") ||
+                hintText.contains("account") || hintText.contains("email") || hintText.contains("phone") ||
+                contentDesc.contains("账号") || contentDesc.contains("用户名") || contentDesc.contains("账户") ||
+                contentDesc.contains("account") || contentDesc.contains("email"))) {
             if (!isPwdType) usernameId = node.autofillId
         }
 

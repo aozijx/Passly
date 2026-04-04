@@ -44,7 +44,7 @@
             android:name=".service.autofill.AutofillAuthActivity"
             android:excludeFromRecents="true"
             android:exported="false"
-            android:launchMode="singleTask"
+            android:launchMode="standard"
             android:noHistory="true"
             android:theme="@style/Theme.Passly.TransparentAuth" />
 

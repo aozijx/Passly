@@ -144,7 +144,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setFlipExitAndClearStackEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setFlipExitAndClearStackEnabled(enabled) }
     fun setLockTimeout(timeoutMs: Long) = viewModelScope.launch { settingsUseCases.setLockTimeout(timeoutMs.coerceAtLeast(5000L)) }
     fun setCardStyle(style: VaultCardStyle) = viewModelScope.launch { settingsUseCases.setCardStyle(style) }
-    fun setAutofillUiMode(mode: AutofillUiMode) = viewModelScope.launch { settingsUseCases.setAutofillUiMode(mode) }
+    fun toggleAutofillUiMode(currentMode: AutofillUiMode) = viewModelScope.launch {
+        val nextMode = when (currentMode) {
+            AutofillUiMode.SYSTEM_INLINE -> AutofillUiMode.BOTTOM_SHEET
+            AutofillUiMode.BOTTOM_SHEET -> AutofillUiMode.SYSTEM_INLINE
+        }
+        settingsUseCases.setAutofillUiMode(nextMode)
+    }
 
     fun setSwipeEnabled(enabled: Boolean) = viewModelScope.launch { settingsUseCases.setSwipeEnabled(enabled) }
     fun setSwipeLeftAction(action: SwipeActionType) = viewModelScope.launch { settingsUseCases.setSwipeLeftAction(action) }

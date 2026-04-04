@@ -25,6 +25,9 @@ interface VaultDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE id = :entryId LIMIT 1")
     suspend fun getEntryById(entryId: Int): VaultEntryEntity?
 
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE id IN (:entryIds)")
+    suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntryEntity>
+
     @Query(
         """
         SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}
