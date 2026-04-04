@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.components
+﻿package com.aozijx.passly.features.vault.components.topbar
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -330,3 +330,5 @@ fun VaultTopBar(
         }
     }
 }
+
+

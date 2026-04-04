@@ -1,6 +1,7 @@
-package com.aozijx.passly.core.designsystem.components
+package com.aozijx.passly.features.scanner
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -51,6 +52,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.ui.ImageType
 import com.aozijx.passly.core.crypto.CryptoManager
+import com.aozijx.passly.core.designsystem.components.ScannerView
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.qr.ScannerViewModel
@@ -68,6 +70,9 @@ fun VaultScanner(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+
+    // 适配系统返回手势：优先关闭扫码层，而不是直接退出上层页面。
+    BackHandler(onBack = onDismiss)
 
     // 每次进入扫码页面或退出时，清除之前的扫码结果，防止隐私泄露
     DisposableEffect(Unit) {

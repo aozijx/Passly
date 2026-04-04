@@ -58,6 +58,7 @@ import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.features.detail.DetailViewModel
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.components.MetadataSection
 import com.aozijx.passly.features.detail.sections.AssociatedInfoSection

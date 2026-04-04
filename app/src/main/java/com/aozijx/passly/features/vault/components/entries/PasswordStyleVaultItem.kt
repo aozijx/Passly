@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.components.entries
+package com.aozijx.passly.features.vault.components.entries
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -77,3 +77,4 @@ fun PasswordStyleVaultItem(
         }
     }
 }
+

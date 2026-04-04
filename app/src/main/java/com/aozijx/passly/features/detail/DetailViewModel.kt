@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.detail.page
+package com.aozijx.passly.features.detail
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import com.aozijx.passly.features.detail.page.DetailEvent
+import com.aozijx.passly.features.detail.page.DetailUiState
 import com.aozijx.passly.features.detail.page.internal.DetailEntryAnalyzer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

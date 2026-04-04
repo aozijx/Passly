@@ -10,8 +10,15 @@ enum class VaultCardStyle(val key: String, val displayName: String, val descript
     PASSWORD("password", "密码卡片", "强调凭据识别的样式");
 
     companion object {
+        val settingsStyles: List<VaultCardStyle> = listOf(BASE, PASSWORD)
+        val defaultStyle: VaultCardStyle = BASE
+
         fun fromKey(key: String?): VaultCardStyle {
             return entries.firstOrNull { it.key == key } ?: BASE
+        }
+
+        fun resolveSettingsStyle(style: VaultCardStyle): VaultCardStyle {
+            return if (style in settingsStyles) style else defaultStyle
         }
     }
 }

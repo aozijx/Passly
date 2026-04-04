@@ -56,13 +56,6 @@ import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.ui.AddType
 import com.aozijx.passly.core.common.ui.VaultTab
 import com.aozijx.passly.core.crypto.CryptoManager
-import com.aozijx.passly.core.designsystem.components.AutoFillItem
-import com.aozijx.passly.core.designsystem.components.TwoFAItem
-import com.aozijx.passly.core.designsystem.components.VaultDialogs
-import com.aozijx.passly.core.designsystem.components.VaultFab
-import com.aozijx.passly.core.designsystem.components.VaultScanner
-import com.aozijx.passly.core.designsystem.components.VaultTopBar
-import com.aozijx.passly.core.designsystem.components.entries.VaultCardStyleRegistry
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
 import com.aozijx.passly.core.designsystem.widgets.SwipeToAction
@@ -70,7 +63,14 @@ import com.aozijx.passly.core.designsystem.widgets.createSwipeAction
 import com.aozijx.passly.core.designsystem.widgets.handleSwipeAction
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.features.scanner.VaultScanner
 import com.aozijx.passly.features.settings.SettingsViewModel
+import com.aozijx.passly.features.vault.components.VaultDialogs
+import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
+import com.aozijx.passly.features.vault.components.fab.VaultFab
+import com.aozijx.passly.features.vault.components.items.AutoFillItem
+import com.aozijx.passly.features.vault.components.items.TwoFAItem
+import com.aozijx.passly.features.vault.components.topbar.VaultTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

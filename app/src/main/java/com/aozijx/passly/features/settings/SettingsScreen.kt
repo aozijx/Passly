@@ -69,7 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.components.entries.VaultCardStyleRegistry
+import com.aozijx.passly.core.common.ui.VaultCardStyle
 import com.aozijx.passly.features.settings.components.CardStyleSettingsSection
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,8 +93,8 @@ fun SettingsScreen(
     val cardStyle = uiState.cardStyle
     val autofillUiMode = uiState.autofillUiMode
 
-    val availableCardStyles = remember { VaultCardStyleRegistry.settingsStyles }
-    val effectiveCardStyle = VaultCardStyleRegistry.resolveSettingsStyle(cardStyle)
+    val availableCardStyles = remember { VaultCardStyle.settingsStyles }
+    val effectiveCardStyle = VaultCardStyle.resolveSettingsStyle(cardStyle)
 
     LaunchedEffect(cardStyle) {
         if (cardStyle != effectiveCardStyle) {

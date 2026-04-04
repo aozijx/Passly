@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.components
+package com.aozijx.passly.features.vault.components
 
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
@@ -8,8 +8,9 @@ import com.aozijx.passly.core.common.ui.AddType
 import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.vault.components.AddPasswordDialog
-import com.aozijx.passly.features.vault.components.AddTwoFADialog
+import com.aozijx.passly.features.vault.dialogs.BackupPasswordDialog
+import com.aozijx.passly.features.vault.dialogs.DeleteConfirmDialog
+import com.aozijx.passly.features.vault.dialogs.IconPickerDialog
 
 @Composable
 fun VaultDialogs(
@@ -74,6 +75,7 @@ fun VaultDialogs(
         )
     }
 }
+
 
 
 
