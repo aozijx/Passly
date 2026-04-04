@@ -47,7 +47,8 @@ class AutofillAuthActivity : FragmentActivity() {
 
         if (uiMode == AutofillUiMode.BOTTOM_SHEET && candidateEntryIds.isNotEmpty() && directEntryId == null) {
             lifecycleScope.launch {
-                val candidateEntries = AutofillRepository.getEntriesByIds(applicationContext, candidateEntryIds)
+                val candidateEntries =
+                    AutofillRepository.getEntriesByIds(applicationContext, candidateEntryIds)
                 if (candidateEntries.isEmpty()) {
                     Logcat.e(TAG, "Candidate entries are empty after loading by IDs")
                     finish()

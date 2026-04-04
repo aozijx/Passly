@@ -13,7 +13,6 @@ import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
-import com.aozijx.passly.service.autofill.engine.AutofillStructureParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -40,46 +39,45 @@ object AutofillRepository {
         val rank: Int
     )
 
-    suspend fun updateUsageStats(context: Context, entry: VaultEntry) = withContext(Dispatchers.IO) {
-        try {
-            val dao = AppDatabase.getDatabase(context).vaultDao()
-            val updatedEntry = entry.copy(
-                lastUsedAt = System.currentTimeMillis(),
-                usageCount = entry.usageCount + 1
-            )
-            dao.update(updatedEntry.toEntity())
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Failed to update usage count for ${entry.id}", e)
+    suspend fun updateUsageStats(context: Context, entry: VaultEntry) =
+        withContext(Dispatchers.IO) {
+            try {
+                val dao = AppDatabase.getDatabase(context).vaultDao()
+                val updatedEntry = entry.copy(
+                    lastUsedAt = System.currentTimeMillis(),
+                    usageCount = entry.usageCount + 1
+                )
+                dao.update(updatedEntry.toEntity())
+            } catch (e: Exception) {
+                Logcat.e(TAG, "Failed to update usage count for ${entry.id}", e)
+            }
         }
-    }
 
-    suspend fun getEntryById(context: Context, entryId: Int): VaultEntry? = withContext(Dispatchers.IO) {
-        runCatching {
-            AppDatabase.getDatabase(context).vaultDao().getEntryById(entryId)?.toDomain()
-        }.getOrElse {
-            Logcat.e(TAG, "Failed to load entry by id=$entryId", it)
-            null
+    suspend fun getEntryById(context: Context, entryId: Int): VaultEntry? =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                AppDatabase.getDatabase(context).vaultDao().getEntryById(entryId)?.toDomain()
+            }.getOrElse {
+                Logcat.e(TAG, "Failed to load entry by id=$entryId", it)
+                null
+            }
         }
-    }
 
-    suspend fun getEntriesByIds(context: Context, entryIds: List<Int>): List<VaultEntry> = withContext(Dispatchers.IO) {
-        if (entryIds.isEmpty()) return@withContext emptyList()
-        runCatching {
-            val order = entryIds.withIndex().associate { it.value to it.index }
-            AppDatabase.getDatabase(context)
-                .vaultDao()
-                .getEntriesByIds(entryIds)
-                .toDomainList()
-                .sortedBy { order[it.id] ?: Int.MAX_VALUE }
-        }.getOrElse {
-            Logcat.e(TAG, "Failed to load entries by ids", it)
-            emptyList()
+    suspend fun getEntriesByIds(context: Context, entryIds: List<Int>): List<VaultEntry> =
+        withContext(Dispatchers.IO) {
+            if (entryIds.isEmpty()) return@withContext emptyList()
+            runCatching {
+                val order = entryIds.withIndex().associate { it.value to it.index }
+                AppDatabase.getDatabase(context)
+                    .vaultDao()
+                    .getEntriesByIds(entryIds)
+                    .toDomainList()
+                    .sortedBy { order[it.id] ?: Int.MAX_VALUE }
+            }.getOrElse {
+                Logcat.e(TAG, "Failed to load entries by ids", it)
+                emptyList()
+            }
         }
-    }
-
-    suspend fun findMatchingEntries(context: Context, packageName: String?, webDomain: String?): List<VaultEntry> = withContext(Dispatchers.IO) {
-        findMatchingCandidates(context, packageName, webDomain).map { it.entry }
-    }
 
     suspend fun findMatchingCandidates(
         context: Context,
@@ -101,33 +99,16 @@ object AutofillRepository {
             ).toDomainList()
             val queryCost = System.currentTimeMillis() - queryStart
             if (queryCost >= SLOW_DB_QUERY_MS) {
-                Logcat.w(TAG, "findMatchingEntries query slow: ${queryCost}ms, candidates=${entries.size}")
+                Logcat.w(
+                    TAG,
+                    "findMatchingEntries query slow: ${queryCost}ms, candidates=${entries.size}"
+                )
             }
 
-            val normalizedPackage = normalizePackageName(packageName)
-            val normalizedDomain = AutofillStructureParser.normalizeDomain(webDomain)
+            val scope = AutofillMatchingSupport.createScope(packageName, webDomain)
 
-            entries.asSequence()
-                .mapNotNull { entry ->
-                    if (!supportsAutofill(entry)) return@mapNotNull null
-
-                    val matchType = when {
-                        isPackageMatch(entry.associatedAppPackage, normalizedPackage) -> MatchType.APP
-                        isDomainMatch(entry.associatedDomain, normalizedDomain) -> MatchType.DOMAIN
-                        else -> MatchType.UNKNOWN
-                    }
-
-                    if (matchType == MatchType.UNKNOWN) return@mapNotNull null
-
-                    val rank = if (matchType == MatchType.APP) 0 else 1
-                    AutofillCandidate(entry = entry, matchType = matchType, rank = rank)
-                }
-                .sortedWith(
-                    compareBy<AutofillCandidate> { it.rank }
-                        .thenByDescending { it.entry.favorite }
-                        .thenByDescending { it.entry.usageCount }
-                        .thenByDescending { it.entry.updatedAt ?: it.entry.createdAt ?: 0L }
-                )
+            AutofillMatchingSupport
+                .buildCandidates(entries, scope, ::supportsAutofill)
                 .take(5)
                 .toList()
         } catch (e: Exception) {
@@ -151,7 +132,7 @@ object AutofillRepository {
             // 核心修复：直接使用 applicationContext 避免潜在的 Context 泄露
             val appContext = context.applicationContext
             val dao = AppDatabase.getDatabase(appContext).vaultDao()
-            
+
             // 1. 先通过包名/域名匹配现有条目
             val queryStart = System.currentTimeMillis()
             val candidateEntries = dao.findAutofillCandidates(
@@ -161,22 +142,27 @@ object AutofillRepository {
             ).toDomainList()
             val queryCost = System.currentTimeMillis() - queryStart
             if (queryCost >= SLOW_DB_QUERY_MS) {
-                Logcat.w(TAG, "saveOrUpdateEntry query slow: ${queryCost}ms, candidates=${candidateEntries.size}")
+                Logcat.w(
+                    TAG,
+                    "saveOrUpdateEntry query slow: ${queryCost}ms, candidates=${candidateEntries.size}"
+                )
             }
 
             val matchStart = System.currentTimeMillis()
-            val normalizedPackage = normalizePackageName(packageName)
-            val normalizedDomain = AutofillStructureParser.normalizeDomain(webDomain)
-            val existing = candidateEntries.find { entry ->
-                if (!supportsAutofill(entry)) return@find false
-
-                val scopeMatch = isPackageMatch(entry.associatedAppPackage, normalizedPackage) ||
-                    isDomainMatch(entry.associatedDomain, normalizedDomain)
-                if (scopeMatch) {
-                    val decUser = try { CryptoManager.decrypt(entry.username) } catch (_: Exception) { null }
-                    decUser == usernameValue
-                } else false
-            }
+            val scope = AutofillMatchingSupport.createScope(packageName, webDomain)
+            val existing = AutofillMatchingSupport.findExistingByScopeAndUsername(
+                entries = candidateEntries,
+                scope = scope,
+                usernameValue = usernameValue,
+                supportsAutofill = ::supportsAutofill,
+                decryptUsername = { entry ->
+                    try {
+                        CryptoManager.decrypt(entry.username)
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+            )
             val matchCost = System.currentTimeMillis() - matchStart
             if (matchCost >= SLOW_ENTRY_MATCH_MS) {
                 Logcat.w(TAG, "saveOrUpdateEntry username match slow: ${matchCost}ms")
@@ -184,7 +170,7 @@ object AutofillRepository {
 
             val encUser = CryptoManager.encrypt(usernameValue)
             val encPass = CryptoManager.encrypt(passwordValue)
-            
+
             if (existing != null) {
                 // 更新逻辑
                 val updatedEntry = existing.copy(
@@ -199,7 +185,9 @@ object AutofillRepository {
                     try {
                         val info = appContext.packageManager.getApplicationInfo(pkg, 0)
                         appContext.packageManager.getApplicationLabel(info).toString()
-                    } catch (_: Exception) { null }
+                    } catch (_: Exception) {
+                        null
+                    }
                 }
 
                 val title = AutofillTitlePolicy.getSmartTitle(
@@ -219,14 +207,16 @@ object AutofillRepository {
                 )
 
                 val passwordStrategy = resolveStrategy(EntryType.PASSWORD.value)
-                val fallbackCategory = appContext.getString(R.string.category_autofill).ifBlank { "自动填充" }
+                val fallbackCategory =
+                    appContext.getString(R.string.category_autofill).ifBlank { "自动填充" }
 
                 // 使用策略提供的默认值（例如建议分类）初始化自动保存条目
                 val newEntry = VaultEntry(
                     title = title,
                     username = encUser,
                     password = encPass,
-                    category = passwordStrategy?.suggestedCategory().orEmpty().ifBlank { fallbackCategory },
+                    category = passwordStrategy?.suggestedCategory().orEmpty()
+                        .ifBlank { fallbackCategory },
                     associatedAppPackage = packageName,
                     associatedDomain = webDomain,
                     entryType = EntryType.PASSWORD.value,
@@ -245,7 +235,7 @@ object AutofillRepository {
                 if (validationError != null) {
                     Logcat.w(TAG, "Autofill entry validation warning: $validationError")
                 }
-                
+
                 // 关键点：执行插入操作
                 dao.insert(finalizedEntry.toEntity())
                 Logcat.i(TAG, "Successfully saved new entry to DB: $title")
@@ -270,23 +260,4 @@ object AutofillRepository {
         val entryType = EntryType.fromValue(entry.entryType)
         return resolveStrategy(entry.entryType)?.supportsAutofill() ?: entryType.supportsAutofill()
     }
-
-    private fun normalizePackageName(packageName: String?): String? {
-        return packageName?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
-    }
-
-    private fun isPackageMatch(entryPackage: String?, normalizedRequestPackage: String?): Boolean {
-        if (normalizedRequestPackage == null) return false
-        return entryPackage?.trim()?.lowercase() == normalizedRequestPackage
-    }
-
-    private fun isDomainMatch(entryDomain: String?, normalizedRequestDomain: String?): Boolean {
-        if (normalizedRequestDomain == null) return false
-        val normalizedEntryDomain = AutofillStructureParser.normalizeDomain(entryDomain) ?: return false
-        return normalizedEntryDomain == normalizedRequestDomain ||
-            normalizedEntryDomain.endsWith(".$normalizedRequestDomain") ||
-            normalizedRequestDomain.endsWith(".$normalizedEntryDomain")
-    }
 }
-
-

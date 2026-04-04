@@ -36,10 +36,10 @@ fun AutofillCandidateBottomSheet(
     onCandidateSelected: (VaultEntry) -> Unit,
     onCancel: () -> Unit
 ) {
-
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val density = LocalDensity.current
-    val maxSheetHeight = with(density) { LocalWindowInfo.current.containerSize.height.toDp() * 0.5f }
+    val maxSheetHeight =
+        with(density) { LocalWindowInfo.current.containerSize.height.toDp() * 0.5f }
 
     BackHandler { onCancel() }
 
@@ -109,5 +109,3 @@ fun AutofillCandidateBottomSheet(
         }
     }
 }
-
-

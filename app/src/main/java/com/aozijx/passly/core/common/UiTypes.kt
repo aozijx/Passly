@@ -26,6 +26,17 @@ enum class AddType {
 }
 
 /**
+ * UI 层图片选择来源类型
+ *
+ * 用于区分图片选择后的回填目标（头像/封面/截图）。
+ */
+enum class ImageType {
+    AVATAR,
+    COVER,
+    SCREEN
+}
+
+/**
  * UI 层删除确认状态
  * 用于控制删除对话框的显示
  */

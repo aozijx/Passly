@@ -49,9 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
+import com.aozijx.passly.core.common.ImageType
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.qr.ScannerViewModel
 import com.aozijx.passly.domain.model.VaultEntry
@@ -68,7 +68,7 @@ fun VaultScanner(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     // 每次进入扫码页面或退出时，清除之前的扫码结果，防止隐私泄露
     DisposableEffect(Unit) {
         onDispose {
@@ -79,7 +79,7 @@ fun VaultScanner(
     val errorNotOtp = stringResource(R.string.vault_scanner_error_not_otp)
     val successSaveMsg = stringResource(R.string.vault_scanner_success_save)
     val scanResult by scannerViewModel.scanResult.collectAsState()
-    
+
     val scannedTotp = remember(scanResult) { parseOtpAuthUri(scanResult) }
 
     LaunchedEffect(scanResult) {
@@ -94,7 +94,9 @@ fun VaultScanner(
         scannerViewModel.decodeImage(context, uri)
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black)) {
         ScannerView(
             scanResult = scanResult,
             showResultCard = scannedTotp == null,
@@ -118,16 +120,28 @@ fun VaultScanner(
                     scannerViewModel.onBarcodeDetected(context, "")
                     pickPhoto(ImageType.SCREEN)
                 },
-                modifier = Modifier.size(56.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
             ) {
-                Icon(Icons.Default.PhotoLibrary, contentDescription = stringResource(R.string.vault_scanner_action_album), tint = Color.White)
+                Icon(
+                    Icons.Default.PhotoLibrary,
+                    contentDescription = stringResource(R.string.vault_scanner_action_album),
+                    tint = Color.White
+                )
             }
 
             IconButton(
                 onClick = onDismiss,
-                modifier = Modifier.size(56.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
             ) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_close), tint = Color.White)
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = stringResource(R.string.action_close),
+                    tint = Color.White
+                )
             }
         }
 
@@ -159,55 +173,69 @@ fun VaultScanner(
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = stringResource(R.string.vault_scanner_result_account, totp.label),
+                            text = stringResource(
+                                R.string.vault_scanner_result_account,
+                                totp.label
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { scannerViewModel.onBarcodeDetected(context, "") }, 
+                                onClick = { scannerViewModel.onBarcodeDetected(context, "") },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.filledTonalButtonColors()
                             ) {
                                 Text(stringResource(R.string.vault_scanner_action_rescan))
                             }
-                            
+
                             Button(
                                 onClick = {
-                                    val isSteam = (totp.issuer?.contains("Steam", ignoreCase = true) == true) || 
-                                                 (totp.label.contains("Steam", ignoreCase = true))
-                                    
+                                    val isSteam = (totp.issuer?.contains(
+                                        "Steam",
+                                        ignoreCase = true
+                                    ) == true) ||
+                                            (totp.label.contains("Steam", ignoreCase = true))
+
                                     try {
                                         // 核心修复：直接使用简化后的加密逻辑
                                         val encryptedSecret = CryptoManager.encrypt(totp.secret)
                                         val entry = VaultEntry(
-                                            title = totp.issuer ?: totp.label.split(":").firstOrNull() ?: "2FA",
+                                            title = totp.issuer ?: totp.label.split(":")
+                                                .firstOrNull() ?: "2FA",
                                             username = totp.label,
                                             password = "",
                                             category = "OTP",
                                             totpSecret = encryptedSecret,
                                             totpDigits = if (isSteam) 5 else (totp.digits ?: 6),
-                                            totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm ?: "SHA1"),
+                                            totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm
+                                                ?: "SHA1"),
                                             entryType = 1
                                         )
                                         vaultViewModel.addItem(entry)
-                                        Toast.makeText(context, successSaveMsg, Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, successSaveMsg, Toast.LENGTH_SHORT)
+                                            .show()
                                         onDismiss()
                                     } catch (e: Exception) {
                                         Logcat.e("VaultScanner", "Failed to encrypt/save TOTP", e)
-                                        Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT)
+                                            .show()
                                     }
                                 },
                                 modifier = Modifier.weight(2f),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.Save,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.action_save))
                             }
@@ -242,6 +270,3 @@ private fun parseOtpAuthUri(uriString: String): OtpAuthData? {
         null
     }
 }
-
-
-
