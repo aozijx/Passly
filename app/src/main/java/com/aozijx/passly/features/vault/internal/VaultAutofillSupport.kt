@@ -1,20 +1,24 @@
 package com.aozijx.passly.features.vault.internal
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import android.view.autofill.AutofillManager
 import androidx.core.net.toUri
 import com.aozijx.passly.core.logging.Logcat
 
 internal class VaultAutofillSupport {
+    private companion object {
+        const val AUTOFILL_SERVICE_CLASS = "com.aozijx.passly.service.autofill.AutofillService"
+    }
 
     fun isAutofillEnabled(context: Context): Boolean {
-        val afm = context.getSystemService(AutofillManager::class.java)
         val currentService = Settings.Secure.getString(context.contentResolver, "autofill_service")
-        val isOurServiceSelected = currentService != null && currentService.contains(context.packageName)
-        val isEnabledByApi = afm != null && afm.isEnabled && afm.hasEnabledAutofillServices()
-        return isOurServiceSelected || isEnabledByApi
+        val selected = currentService?.let { ComponentName.unflattenFromString(it) } ?: return false
+
+        // 仅当“当前应用变体 + 目标 AutofillService 类”完全匹配时，才认为本应用已启用自动填充。
+        return selected.packageName == context.packageName &&
+            selected.className == AUTOFILL_SERVICE_CLASS
     }
 
     fun openAutofillSettings(context: Context): Boolean {
