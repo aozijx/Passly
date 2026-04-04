@@ -37,9 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.VaultCardStyle
-import com.aozijx.passly.core.designsystem.base.VaultItem
-import com.aozijx.passly.core.designsystem.components.entries.PasswordStyleVaultItem
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.core.designsystem.components.entries.VaultCardStyleRegistry
 
 @Composable
 fun CardStyleSettingsSection(
@@ -145,44 +143,7 @@ private fun CardStyleOption(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            when (style) {
-                VaultCardStyle.BASE -> {
-                    VaultItem(
-                        entry = VaultSummary(
-                            id = -1,
-                            title = "示例账号",
-                            category = "自动填充",
-                            entryType = 0,
-                            username = "demo@example.com",
-                            password = "******"
-                        ),
-                        onClick = onClick
-                    )
-                }
-
-                VaultCardStyle.TYPED -> {
-                    Text(
-                        text = "该样式预览待加入",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                VaultCardStyle.PASSWORD -> {
-                    PasswordStyleVaultItem(
-                        entry = VaultSummary(
-                            id = -2,
-                            title = "我的邮箱",
-                            category = "账号密码",
-                            entryType = 0,
-                            username = "demo@example.com",
-                            password = "******",
-                            associatedDomain = "example.com"
-                        ),
-                        onClick = onClick
-                    )
-                }
-            }
+            VaultCardStyleRegistry.RenderPreview(style = style, onClick = onClick)
         }
     }
 }

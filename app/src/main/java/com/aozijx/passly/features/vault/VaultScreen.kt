@@ -54,18 +54,15 @@ import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AddType
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.VaultCardStyle
 import com.aozijx.passly.core.common.VaultTab
 import com.aozijx.passly.core.crypto.CryptoManager
-import com.aozijx.passly.core.designsystem.base.VaultItem
 import com.aozijx.passly.core.designsystem.components.AutoFillItem
 import com.aozijx.passly.core.designsystem.components.TwoFAItem
 import com.aozijx.passly.core.designsystem.components.VaultDialogs
 import com.aozijx.passly.core.designsystem.components.VaultFab
 import com.aozijx.passly.core.designsystem.components.VaultScanner
 import com.aozijx.passly.core.designsystem.components.VaultTopBar
-import com.aozijx.passly.core.designsystem.components.entries.PasswordStyleVaultItem
-import com.aozijx.passly.core.designsystem.components.entries.TypedVaultItemRouter
+import com.aozijx.passly.core.designsystem.components.entries.VaultCardStyleRegistry
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
 import com.aozijx.passly.core.designsystem.widgets.SwipeToAction
@@ -233,19 +230,11 @@ fun VaultContent(
                                             AutoFillItem(entry = item, viewModel = vaultViewModel)
                                         }
                                         else -> {
-                                            when (cardStyle) {
-                                                VaultCardStyle.TYPED -> {
-                                                    TypedVaultItemRouter(entry = item, viewModel = vaultViewModel)
-                                                }
-
-                                                VaultCardStyle.PASSWORD -> {
-                                                    PasswordStyleVaultItem(entry = item, viewModel = vaultViewModel)
-                                                }
-
-                                                VaultCardStyle.BASE -> {
-                                                    VaultItem(entry = item, viewModel = vaultViewModel)
-                                                }
-                                            }
+                                            VaultCardStyleRegistry.RenderVaultItem(
+                                                style = cardStyle,
+                                                entry = item,
+                                                viewModel = vaultViewModel
+                                            )
                                         }
                                     }
                                 }

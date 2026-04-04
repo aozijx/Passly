@@ -52,7 +52,6 @@ enum class EditMode {
  */
 enum class VaultCardStyle(val key: String, val displayName: String, val description: String) {
     BASE("base", "基础卡片", "统一简洁风格"),
-    TYPED("typed", "类型化卡片", "按类型展示增强信息"),
     PASSWORD("password", "密码卡片", "强调凭据识别的样式");
 
     companion object {

@@ -69,7 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.VaultCardStyle
+import com.aozijx.passly.core.designsystem.components.entries.VaultCardStyleRegistry
 import com.aozijx.passly.features.settings.components.CardStyleSettingsSection
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,13 +92,12 @@ fun SettingsScreen(
     val isFlipExitAndClearStackEnabled = uiState.isFlipExitAndClearStackEnabled
     val cardStyle = uiState.cardStyle
 
-    // 预留扩展：后续新增样式时只需追加到这里
-    val availableCardStyles = remember { listOf(VaultCardStyle.BASE, VaultCardStyle.PASSWORD) }
-    val effectiveCardStyle = if (cardStyle in availableCardStyles) cardStyle else VaultCardStyle.BASE
+    val availableCardStyles = remember { VaultCardStyleRegistry.settingsStyles }
+    val effectiveCardStyle = VaultCardStyleRegistry.resolveSettingsStyle(cardStyle)
 
     LaunchedEffect(cardStyle) {
-        if (cardStyle !in availableCardStyles) {
-            viewModel.setCardStyle(VaultCardStyle.BASE)
+        if (cardStyle != effectiveCardStyle) {
+            viewModel.setCardStyle(effectiveCardStyle)
         }
     }
     
