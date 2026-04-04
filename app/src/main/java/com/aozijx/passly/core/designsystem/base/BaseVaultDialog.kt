@@ -2,6 +2,7 @@ package com.aozijx.passly.core.designsystem.base
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,9 +31,13 @@ fun BaseVaultDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = androidx.compose.ui.Modifier.padding(horizontal = 16.dp),
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = androidx.compose.ui.Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 content()
             }
         },

@@ -5,6 +5,9 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -50,12 +53,14 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
@@ -88,7 +93,7 @@ fun SettingsScreen(
     val cardStyle = uiState.cardStyle
 
     // 预留扩展：后续新增样式时只需追加到这里
-    val availableCardStyles = remember { listOf(VaultCardStyle.BASE) }
+    val availableCardStyles = remember { listOf(VaultCardStyle.BASE, VaultCardStyle.PASSWORD) }
     val effectiveCardStyle = if (cardStyle in availableCardStyles) cardStyle else VaultCardStyle.BASE
 
     LaunchedEffect(cardStyle) {
@@ -316,17 +321,51 @@ fun ClickableSettingItem(icon: ImageVector? = null, title: String, value: String
 fun SwipeActionSelectDialog(title: String, currentAction: SwipeActionType, onActionSelected: (SwipeActionType) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.padding(horizontal = 16.dp),
         title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
         text = {
-            Column(modifier = Modifier.padding(top = 8.dp)) {
+            Column(modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp)) {
                 SwipeActionType.entries.forEach { action ->
                     val isSelected = action == currentAction
-                    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onActionSelected(action) }.padding(vertical = 4.dp, horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    val selectedBackground = when (action) {
+                        SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer
+                        SwipeActionType.COPY_PASSWORD -> MaterialTheme.colorScheme.secondaryContainer
+                        SwipeActionType.EDIT -> MaterialTheme.colorScheme.tertiaryContainer
+                        SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer
+                        SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                    val selectedContentColor = when (action) {
+                        SwipeActionType.DELETE -> MaterialTheme.colorScheme.onErrorContainer
+                        SwipeActionType.COPY_PASSWORD -> MaterialTheme.colorScheme.onSecondaryContainer
+                        SwipeActionType.EDIT -> MaterialTheme.colorScheme.onTertiaryContainer
+                        SwipeActionType.DETAIL -> MaterialTheme.colorScheme.onPrimaryContainer
+                        SwipeActionType.DISABLED -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                color = if (isSelected) selectedBackground else Color.Transparent,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .border(
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isSelected) selectedContentColor else MaterialTheme.colorScheme.outlineVariant
+                                ),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clickable { onActionSelected(action) }
+                            .padding(vertical = 8.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         RadioButton(selected = isSelected, onClick = { onActionSelected(action) })
                         Spacer(modifier = Modifier.width(8.dp))
-                        action.icon?.let { icon -> Icon(imageVector = icon, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp)); Spacer(modifier = Modifier.width(12.dp)) }
-                        Text(text = action.displayName, style = MaterialTheme.typography.bodyLarge, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                        action.icon?.let { icon -> Icon(imageVector = icon, contentDescription = null, tint = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp)); Spacer(modifier = Modifier.width(12.dp)) }
+                        Text(text = action.displayName, style = MaterialTheme.typography.bodyLarge, color = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         },
@@ -349,7 +388,7 @@ fun LockTimeoutDialog(
         300_000L to "5 分钟",
         600_000L to "10 分钟"
     )
-    var selectedTimeout by remember(currentTimeoutMs) { mutableStateOf(currentTimeoutMs.coerceAtLeast(5_000L)) }
+    var selectedTimeout by remember(currentTimeoutMs) { mutableLongStateOf(currentTimeoutMs.coerceAtLeast(5_000L)) }
     var customSeconds by remember(currentTimeoutMs) { mutableStateOf((currentTimeoutMs / 1000L).toString()) }
 
     AlertDialog(
@@ -419,7 +458,7 @@ fun LockTimeoutDialog(
 private fun formatLockTimeout(timeoutMs: Long): String {
     val seconds = (timeoutMs / 1000L).coerceAtLeast(1L)
     return when {
-        seconds < 60L -> "${seconds} 秒"
+        seconds < 60L -> "$seconds 秒"
         seconds % 60L == 0L -> "${seconds / 60L} 分钟"
         else -> "${seconds / 60L} 分 ${seconds % 60L} 秒"
     }

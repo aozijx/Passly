@@ -82,8 +82,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                 } else if (showSettings) {
                     showSettings = false
                 } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
+                    finish()
                 }
             }
         })

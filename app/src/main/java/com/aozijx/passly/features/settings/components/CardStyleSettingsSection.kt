@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.VaultCardStyle
 import com.aozijx.passly.core.designsystem.base.VaultItem
+import com.aozijx.passly.core.designsystem.components.entries.PasswordStyleVaultItem
 import com.aozijx.passly.domain.model.VaultSummary
 
 @Composable
@@ -155,7 +156,7 @@ private fun CardStyleOption(
                             username = "demo@example.com",
                             password = "******"
                         ),
-                        onClick = {}
+                        onClick = onClick
                     )
                 }
 
@@ -164,6 +165,21 @@ private fun CardStyleOption(
                         text = "该样式预览待加入",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                VaultCardStyle.PASSWORD -> {
+                    PasswordStyleVaultItem(
+                        entry = VaultSummary(
+                            id = -2,
+                            title = "我的邮箱",
+                            category = "账号密码",
+                            entryType = 0,
+                            username = "demo@example.com",
+                            password = "******",
+                            associatedDomain = "example.com"
+                        ),
+                        onClick = onClick
                     )
                 }
             }

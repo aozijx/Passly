@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
@@ -32,8 +34,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.state.VaultEditState
@@ -53,6 +58,7 @@ fun AssociatedInfoSection(
     onEntryUpdated: (VaultEntry) -> Unit = vaultViewModel::updateVaultEntry
 ) {
     val haptic = LocalHapticFeedback.current
+    val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isDownloadingFavicon by remember { mutableStateOf(false) }
@@ -60,6 +66,9 @@ fun AssociatedInfoSection(
         mutableStateOf(
             entry.associatedDomain ?: ""
         )
+    }
+    var localDomainInput by remember(entry.associatedDomain) {
+        mutableStateOf(TextFieldValue(entry.associatedDomain ?: ""))
     }
 
     val domainAndIconLabel = stringResource(R.string.vault_detail_domain_and_icon)
@@ -89,6 +98,7 @@ fun AssociatedInfoSection(
                                 onLongClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     localDomain = entry.associatedDomain ?: ""
+                                    localDomainInput = TextFieldValue(localDomain)
                                     editState.editedDomain = localDomain
                                     editState.isEditingDomain = true
                                 },
@@ -104,35 +114,45 @@ fun AssociatedInfoSection(
                 if (editState.isEditingDomain) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
-                            value = localDomain,
+                            value = localDomainInput,
                             onValueChange = {
-                                localDomain = it
-                                editState.editedDomain = it
+                                localDomainInput = it
+                                localDomain = it.text
+                                editState.editedDomain = it.text
                             },
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text(domainLabel) },
                             placeholder = { Text(domainPlaceholder) },
-                            singleLine = true
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    focusManager.clearFocus()
+                                }
+                            )
                         )
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+
                             Button(
                                 onClick = {
-                                    if (localDomain.isNotBlank()) {
+                                    val domainForDownload = localDomainInput.text.trim()
+                                    if (domainForDownload.isNotBlank()) {
                                         scope.launch {
                                             isDownloadingFavicon = true
                                             val outcome = FaviconUtils.downloadAndSaveFavicon(
-                                                localDomain,
+                                                domainForDownload,
                                                 context
                                             )
                                             when (outcome.result) {
                                                 FaviconUtils.DownloadResult.SUCCESS -> {
                                                     onEntryUpdated(
                                                         entry.copy(
-                                                            associatedDomain = localDomain.ifBlank { null },
+                                                            associatedDomain = domainForDownload.ifBlank { null },
                                                             iconName = null,
                                                             iconCustomPath = outcome.filePath,
                                                             totpSecret = entry.totpSecret,
@@ -184,7 +204,7 @@ fun AssociatedInfoSection(
                                         }
                                     }
                                 },
-                                enabled = localDomain.isNotBlank() && !isDownloadingFavicon
+                                enabled = localDomainInput.text.isNotBlank() && !isDownloadingFavicon
                             ) {
                                 if (isDownloadingFavicon) {
                                     CircularProgressIndicator(modifier = Modifier.size(16.dp))
@@ -199,25 +219,24 @@ fun AssociatedInfoSection(
                                 }
                                 Text(downloadIcon)
                             }
-                        }
 
-                        TextButton(
-                            onClick = {
-                                val updatedAssociated = editState.applyAssociatedOnly(entry)
-                                val updatedEntry = updatedAssociated.copy(
-                                    iconCustomPath = clearRemoteIconPathWhenDomainCleared(
-                                        domain = updatedAssociated.associatedDomain,
-                                        currentPath = entry.iconCustomPath
+                            TextButton(
+                                onClick = {
+                                    val updatedAssociated = editState.applyAssociatedOnly(entry)
+                                    val updatedEntry = updatedAssociated.copy(
+                                        iconCustomPath = clearRemoteIconPathWhenDomainCleared(
+                                            domain = updatedAssociated.associatedDomain,
+                                            currentPath = entry.iconCustomPath
+                                        )
                                     )
-                                )
-                                onEntryUpdated(updatedEntry)
-                                editState.isEditingDomain = false
-                            },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Icon(Icons.Default.Check, null)
-                            Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.action_save))
+                                    onEntryUpdated(updatedEntry)
+                                    editState.isEditingDomain = false
+                                }
+                            ) {
+                                Icon(Icons.Default.Check, null)
+                                Spacer(Modifier.width(4.dp))
+                                Text(stringResource(R.string.action_save))
+                            }
                         }
                     }
                 } else {
@@ -265,6 +284,21 @@ fun AssociatedInfoSection(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(
+                        if (!editState.isEditingDomain) {
+                            Modifier.combinedClickable(
+                                onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    localDomain = entry.associatedDomain ?: ""
+                                    editState.editedDomain = localDomain
+                                    editState.isEditingDomain = true
+                                },
+                                onClick = { }
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -301,16 +335,7 @@ fun AssociatedInfoSection(
                 } else {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .combinedClickable(
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    localDomain = entry.associatedDomain ?: ""
-                                    editState.editedDomain = localDomain
-                                    editState.isEditingDomain = true
-                                },
-                                onClick = { }
-                            ),
+                            .fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -340,6 +365,20 @@ fun AssociatedInfoSection(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(
+                        if (!editState.isEditingPackage) {
+                            Modifier.combinedClickable(
+                                onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    editState.editedPackage = entry.associatedAppPackage ?: ""
+                                    editState.isEditingPackage = true
+                                },
+                                onClick = { }
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -366,15 +405,7 @@ fun AssociatedInfoSection(
                 } else {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .combinedClickable(
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    editState.editedPackage = entry.associatedAppPackage ?: ""
-                                    editState.isEditingPackage = true
-                                },
-                                onClick = { }
-                            ),
+                            .fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

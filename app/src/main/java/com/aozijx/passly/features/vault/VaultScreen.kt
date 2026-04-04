@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -63,6 +64,7 @@ import com.aozijx.passly.core.designsystem.components.VaultDialogs
 import com.aozijx.passly.core.designsystem.components.VaultFab
 import com.aozijx.passly.core.designsystem.components.VaultScanner
 import com.aozijx.passly.core.designsystem.components.VaultTopBar
+import com.aozijx.passly.core.designsystem.components.entries.PasswordStyleVaultItem
 import com.aozijx.passly.core.designsystem.components.entries.TypedVaultItemRouter
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
@@ -231,16 +233,25 @@ fun VaultContent(
                                             AutoFillItem(entry = item, viewModel = vaultViewModel)
                                         }
                                         else -> {
-                                            if (cardStyle == VaultCardStyle.TYPED) {
-                                                TypedVaultItemRouter(entry = item, viewModel = vaultViewModel)
-                                            } else {
-                                                VaultItem(entry = item, viewModel = vaultViewModel)
+                                            when (cardStyle) {
+                                                VaultCardStyle.TYPED -> {
+                                                    TypedVaultItemRouter(entry = item, viewModel = vaultViewModel)
+                                                }
+
+                                                VaultCardStyle.PASSWORD -> {
+                                                    PasswordStyleVaultItem(entry = item, viewModel = vaultViewModel)
+                                                }
+
+                                                VaultCardStyle.BASE -> {
+                                                    VaultItem(entry = item, viewModel = vaultViewModel)
+                                                }
                                             }
                                         }
                                     }
                                 }
                                 
                                 if (isSwipeEnabled) {
+                                    val leftColors = swipeRevealColors(swipeLeftAction)
                                     val leftAction = createSwipeAction(
                                         actionType = swipeLeftAction,
                                         direction = SwipeDirection.LEFT,
@@ -273,9 +284,10 @@ fun VaultContent(
                                                 }
                                             )
                                         },
-                                        backgroundColor = MaterialTheme.colorScheme.error,
-                                        iconTint = MaterialTheme.colorScheme.onError
+                                        backgroundColor = leftColors.first,
+                                        iconTint = leftColors.second
                                     )
+                                    val rightColors = swipeRevealColors(swipeRightAction)
                                     val rightAction = createSwipeAction(
                                         actionType = swipeRightAction,
                                         direction = SwipeDirection.RIGHT,
@@ -308,8 +320,8 @@ fun VaultContent(
                                                 }
                                             )
                                         },
-                                        backgroundColor = MaterialTheme.colorScheme.primary,
-                                        iconTint = MaterialTheme.colorScheme.onPrimary
+                                        backgroundColor = rightColors.first,
+                                        iconTint = rightColors.second
                                     )
                                     val actions = listOfNotNull(leftAction, rightAction)
                                     if (actions.isNotEmpty()) {
@@ -358,5 +370,13 @@ fun VaultContent(
     }
 }
 
-
-
+@Composable
+private fun swipeRevealColors(actionType: SwipeActionType): Pair<Color, Color> {
+    return when (actionType) {
+        SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
+        SwipeActionType.COPY_PASSWORD -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+        SwipeActionType.EDIT -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+        SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+        SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+}

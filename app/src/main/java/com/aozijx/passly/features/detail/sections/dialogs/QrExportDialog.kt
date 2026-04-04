@@ -3,12 +3,12 @@ package com.aozijx.passly.features.detail.sections.dialogs
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -27,31 +27,36 @@ import com.aozijx.passly.R
 fun QrExportDialog(bitmap: Bitmap?, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.padding(horizontal = 16.dp),
         title = { Text(stringResource(R.string.vault_export_qr_title)) },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
                     stringResource(R.string.vault_export_qr_message),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
                 if (bitmap != null) {
-                    Card(modifier = Modifier.size(240.dp), shape = RoundedCornerShape(12.dp)) {
-                        Box(
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth(0.78f)
+                            .aspectRatio(1f)
+                            .sizeIn(minWidth = 168.dp, maxWidth = 216.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "QR Code",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = "QR Code",
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
+                                .padding(14.dp)
+                        )
                     }
                 }
             }
