@@ -69,7 +69,6 @@ import com.aozijx.passly.features.vault.components.VaultDialogs
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
 import com.aozijx.passly.features.vault.components.fab.VaultFab
 import com.aozijx.passly.features.vault.components.items.AutoFillItem
-import com.aozijx.passly.features.vault.components.items.TwoFAItem
 import com.aozijx.passly.features.vault.components.topbar.VaultTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,7 +85,6 @@ fun VaultContent(
     val selectedTab by vaultViewModel.selectedTab.collectAsState()
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    
     val vaultPrefs = remember { AppContext.get().preference }
     val isSwipeEnabled by vaultPrefs.isSwipeEnabled.collectAsState(initial = true)
     val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsState(initial = SwipeActionType.DELETE)
@@ -194,11 +192,13 @@ fun VaultContent(
                 ) 
             }
         ) { innerPadding ->
-            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).background(MaterialTheme.colorScheme.surface)) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { pageIndex ->
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .background(MaterialTheme.colorScheme.surface)
+            ) { pageIndex ->
                     val currentTab = VaultTab.entries[pageIndex]
                     val listState = rememberLazyListState()
                     val filteredItems = when (currentTab) {
@@ -220,13 +220,21 @@ fun VaultContent(
                                 val itemContent = @Composable {
                                     when {
                                         !item.totpSecret.isNullOrBlank() -> {
-                                            TwoFAItem(
+                                            VaultCardStyleRegistry.RenderVaultItem(
+                                                style = cardStyle,
                                                 entry = item,
-                                                vaultViewModel = vaultViewModel,
-                                                showCode = vaultViewModel.showTOTPCode
+                                                viewModel = vaultViewModel
                                             )
                                         }
-                                        item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null -> {
+                                        cardStyle == com.aozijx.passly.core.common.ui.VaultCardStyle.PASSWORD -> {
+                                            VaultCardStyleRegistry.RenderVaultItem(
+                                                style = cardStyle,
+                                                entry = item,
+                                                viewModel = vaultViewModel
+                                            )
+                                        }
+                                        cardStyle == com.aozijx.passly.core.common.ui.VaultCardStyle.BASE &&
+                                            (item.category == categoryAutofill || item.associatedDomain != null || item.associatedAppPackage != null) -> {
                                             AutoFillItem(entry = item, viewModel = vaultViewModel)
                                         }
                                         else -> {
@@ -332,13 +340,12 @@ fun VaultContent(
                     }
                 }
 
-                VaultDialogs(
-                    activity = activity,
-                    mainViewModel = mainViewModel,
-                    vaultViewModel = vaultViewModel,
-                    settingsViewModel = settingsViewModel
-                )
-            }
+            VaultDialogs(
+                activity = activity,
+                mainViewModel = mainViewModel,
+                vaultViewModel = vaultViewModel,
+                settingsViewModel = settingsViewModel
+            )
         }
 
         AnimatedVisibility(

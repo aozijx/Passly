@@ -138,6 +138,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.palette)
     ksp(libs.androidx.room.compiler)
 
     // Security & Biometric

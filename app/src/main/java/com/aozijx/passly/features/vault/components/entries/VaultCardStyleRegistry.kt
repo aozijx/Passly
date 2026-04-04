@@ -17,8 +17,39 @@ object VaultCardStyleRegistry {
         viewModel: VaultViewModel,
         onClick: () -> Unit = { viewModel.showDetail(entry) }
     ) {
+        if (entry.totpSecret?.isNotBlank() == true) {
+            when (style) {
+                VaultCardStyle.TOTP,
+                VaultCardStyle.MIXED -> TotpStyleVaultItem(
+                    entry = entry,
+                    vaultViewModel = viewModel,
+                    showCode = viewModel.showTOTPCode,
+                    onClick = onClick
+                )
+
+                else -> VaultItem(
+                    entry = entry,
+                    viewModel = viewModel,
+                    onClick = onClick
+                )
+            }
+            return
+        }
+
         when (style) {
             VaultCardStyle.PASSWORD -> PasswordStyleVaultItem(
+                entry = entry,
+                viewModel = viewModel,
+                onClick = onClick
+            )
+
+            VaultCardStyle.TOTP -> VaultItem(
+                entry = entry,
+                viewModel = viewModel,
+                onClick = onClick
+            )
+
+            VaultCardStyle.MIXED -> PasswordStyleVaultItem(
                 entry = entry,
                 viewModel = viewModel,
                 onClick = onClick
