@@ -6,19 +6,20 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/autofill_remote_item_bg"
     android:gravity="center_vertical"
-    android:minHeight="56dp"
+    android:minHeight="66dp"
     android:orientation="horizontal"
-    android:paddingStart="12dp"
+    android:paddingStart="14dp"
     android:paddingEnd="12dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
     <!-- 账号图标 / App Logo 占位 -->
     <ImageView
         android:id="@+id/item_icon"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
         android:layout_marginEnd="12dp"
         android:contentDescription="@null"
         android:scaleType="fitCenter"
@@ -39,7 +40,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="?android:attr/textColorPrimary"
-            android:textSize="14sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <!-- 副标题：账号 · 匹配类型 -->
@@ -61,12 +62,11 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:background="@drawable/autofill_badge_bg"
-        android:paddingStart="6dp"
-        android:paddingEnd="6dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="2dp"
+        android:paddingStart="7dp"
+        android:paddingEnd="7dp"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
         android:textColor="?android:attr/textColorSecondary"
         android:textSize="11sp" />
 
 </LinearLayout>
-

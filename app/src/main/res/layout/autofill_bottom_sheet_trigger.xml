@@ -6,19 +6,20 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/autofill_remote_item_bg"
     android:gravity="center_vertical"
-    android:minHeight="56dp"
+    android:minHeight="64dp"
     android:orientation="horizontal"
-    android:paddingStart="12dp"
+    android:paddingStart="14dp"
     android:paddingEnd="8dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
     <!-- Passly 应用图标 -->
     <ImageView
         android:id="@+id/trigger_icon"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
         android:layout_marginEnd="12dp"
         android:contentDescription="@null"
         android:scaleType="fitCenter"
@@ -40,7 +41,7 @@
             android:maxLines="1"
             android:text="@string/autofill_entry_compact_title"
             android:textColor="?android:attr/textColorPrimary"
-            android:textSize="14sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <!-- 副标题：动态"找到 N 个匹配账号 · 点击选择" -->
@@ -65,4 +66,3 @@
         android:textSize="20sp" />
 
 </LinearLayout>
-

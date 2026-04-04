@@ -10,7 +10,6 @@ import android.view.autofill.AutofillManager
 import android.view.autofill.AutofillValue
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
 import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
@@ -21,6 +20,7 @@ import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 
 /**
@@ -56,7 +56,7 @@ class AutofillAuthActivity : FragmentActivity() {
                     return@launch
                 }
                 setContent {
-                    MaterialTheme {
+                    AppTheme {
                         AutofillCandidateBottomSheet(
                             entries = candidateEntries,
                             onCandidateSelected = { selected: VaultEntry ->

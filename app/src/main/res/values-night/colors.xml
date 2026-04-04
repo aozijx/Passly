@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="autofill_item_background">#2C2C2E</color> <!-- 深灰色，适配深色模式 -->
+    <color name="autofill_item_outline">#48484A</color>
+</resources>
