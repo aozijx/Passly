@@ -19,8 +19,10 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.crypto.CryptoManager
+import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.PackageUtils
+import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
@@ -37,6 +39,7 @@ import kotlinx.coroutines.launch
  */
 class AutofillService : android.service.autofill.AutofillService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val autofillRepository = AppContainer.autofillServiceRepository
     private val tag = "PasslyAutofill"
     private val slowFillTotalMs = 250L
     private val slowRepositoryMs = 120L
@@ -70,8 +73,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                 }
 
                 val repositoryStart = System.currentTimeMillis()
-                val candidates = AutofillRepository.findMatchingCandidates(
-                    context = applicationContext,
+                val candidates = autofillRepository.findMatchingCandidates(
                     packageName = parser.normalizedPackageName,
                     webDomain = parser.normalizedWebDomain
                 )
@@ -124,9 +126,9 @@ class AutofillService : android.service.autofill.AutofillService() {
                             .orEmpty()
                         val subtitle = buildDatasetSubtitle(entry, decryptedUsername, strategySummary)
                         val badge = when (candidate.matchType) {
-                            AutofillRepository.MatchType.APP -> getString(R.string.autofill_match_app)
-                            AutofillRepository.MatchType.DOMAIN -> getString(R.string.autofill_match_domain)
-                            AutofillRepository.MatchType.UNKNOWN -> getString(R.string.autofill_match_unknown)
+                            AutofillMatchType.APP -> getString(R.string.autofill_match_app)
+                            AutofillMatchType.DOMAIN -> getString(R.string.autofill_match_domain)
+                            AutofillMatchType.UNKNOWN -> getString(R.string.autofill_match_unknown)
                         }
 
                         val presentation = AutofillRemoteViewFactory.createDatasetItem(
@@ -268,8 +270,12 @@ class AutofillService : android.service.autofill.AutofillService() {
         serviceScope.launch {
             try {
                 val saveStart = System.currentTimeMillis()
-                val success = AutofillRepository.saveOrUpdateEntry(
-                    applicationContext, pkg, domain, title, username, password
+                val success = autofillRepository.saveOrUpdateEntry(
+                    packageName = pkg,
+                    webDomain = domain,
+                    pageTitle = title,
+                    usernameValue = username,
+                    passwordValue = password
                 )
                 if (success) {
                     Logcat.i(tag, "Successfully saved credentials for $username")

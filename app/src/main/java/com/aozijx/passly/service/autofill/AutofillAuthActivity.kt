@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.crypto.BiometricHelper
+import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.VaultEntry
@@ -31,6 +32,7 @@ class AutofillAuthActivity : FragmentActivity() {
     }
 
     private var selectionInProgress = false
+    private val autofillRepository = AppContainer.autofillServiceRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))
@@ -47,8 +49,7 @@ class AutofillAuthActivity : FragmentActivity() {
 
         if (uiMode == AutofillUiMode.BOTTOM_SHEET && candidateEntryIds.isNotEmpty() && directEntryId == null) {
             lifecycleScope.launch {
-                val candidateEntries =
-                    AutofillRepository.getEntriesByIds(applicationContext, candidateEntryIds)
+                val candidateEntries = autofillRepository.getEntriesByIds(candidateEntryIds)
                 if (candidateEntries.isEmpty()) {
                     Logcat.e(TAG, "Candidate entries are empty after loading by IDs")
                     finish()
@@ -78,9 +79,8 @@ class AutofillAuthActivity : FragmentActivity() {
         }
 
         lifecycleScope.launch {
-            val entry = directEntryId?.let {
-                AutofillRepository.getEntryById(applicationContext, it)
-            } ?: IntentCompat.getSerializableExtra(intent, "vault_item", VaultEntry::class.java)
+            val entry = directEntryId?.let { autofillRepository.getEntryById(it) }
+                ?: IntentCompat.getSerializableExtra(intent, "vault_item", VaultEntry::class.java)
 
             if (entry == null) {
                 Logcat.e(TAG, "Entry is null")
@@ -142,7 +142,7 @@ class AutofillAuthActivity : FragmentActivity() {
                     Logcat.i(TAG, "Autofill dataset built successfully")
 
                     lifecycleScope.launch {
-                        AutofillRepository.updateUsageStats(applicationContext, entry)
+                        autofillRepository.updateUsageStats(entry)
                     }
                 } else {
                     Logcat.w(TAG, "Autofill dataset is null, canceling fill")

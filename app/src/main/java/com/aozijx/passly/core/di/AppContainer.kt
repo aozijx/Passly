@@ -3,10 +3,12 @@ package com.aozijx.passly.core.di
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.config.UserConfigFileStore
+import com.aozijx.passly.data.repository.AutofillServiceDataRepository
 import com.aozijx.passly.data.repository.FaviconDataRepository
 import com.aozijx.passly.data.repository.SettingsDataRepository
 import com.aozijx.passly.data.repository.UserConfigDataRepository
 import com.aozijx.passly.data.repository.VaultDataRepository
+import com.aozijx.passly.domain.repository.AutofillServiceRepository
 import com.aozijx.passly.domain.repository.FaviconRepository
 import com.aozijx.passly.domain.repository.SettingsRepository
 import com.aozijx.passly.domain.repository.UserConfigRepository
@@ -20,6 +22,7 @@ object AppContainer {
     private val database by lazy { AppDatabase.getDatabase(appContext) }
 
     val vaultRepository: VaultRepository by lazy { VaultDataRepository(database.vaultDao()) }
+    val autofillServiceRepository: AutofillServiceRepository by lazy { AutofillServiceDataRepository(appContext) }
     val settingsRepository: SettingsRepository by lazy { SettingsDataRepository(appContext.preference) }
     val faviconRepository: FaviconRepository by lazy { FaviconDataRepository(appContext) }
     private val userConfigStore: UserConfigFileStore by lazy { UserConfigFileStore(appContext) }
