@@ -22,7 +22,7 @@ class AppContext : Application() {
         try {
             SQLiteDatabase.loadLibs(this)
         } catch (e: UnsatisfiedLinkError) {
-            Logcat.e(TAG, "Failed to load SQLCipher native library", e)
+            Logcat.e(TAG, "Failed to load SQLCipher native library: ensure SQLCipher native binaries are packaged in the APK", e)
             throw e
         } catch (e: Exception) {
             Logcat.e(TAG, "Unexpected error while loading SQLCipher native library", e)
