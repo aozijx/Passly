@@ -16,8 +16,8 @@ class AppContext : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        SQLiteDatabase.loadLibs(this)
         _instance = this
+        SQLiteDatabase.loadLibs(this)
         EntryTypeStrategyRegistry.ensureRegistered()
     }
 }
