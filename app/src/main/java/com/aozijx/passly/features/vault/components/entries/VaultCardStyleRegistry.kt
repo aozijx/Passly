@@ -46,41 +46,47 @@ object VaultCardStyleRegistry {
         viewModel: VaultViewModel,
         onClick: () -> Unit = { viewModel.showDetail(entry) }
     ) {
-        if (entry.totpSecret?.isNotBlank() == true) {
-            when (style) {
-                VaultCardStyle.TOTP -> {
-                    TotpStyleVaultItem(
-                        entry = entry,
-                        vaultViewModel = viewModel,
-                        showCode = viewModel.showTOTPCode,
-                        onClick = onClick
-                    )
-                }
-
-                VaultCardStyle.DEFAULT, VaultCardStyle.PASSWORD -> {
+        val isTotp = entry.totpSecret?.isNotBlank() == true
+        
+        // 核心渲染分发：
+        // 1. DEFAULT 的最终落地样式由 UiTypes.resolveForEntryType 预先决策
+        // 2. 这里仅按传入的最终样式做渲染分发
+        
+        when (style) {
+            VaultCardStyle.DEFAULT -> {
+                if (isTotp) {
                     TwoFAItem(
                         entry = entry,
                         vaultViewModel = viewModel,
                         showCode = viewModel.showTOTPCode,
                         onClick = onClick
                     )
+                } else {
+                    VaultItem(entry = entry, viewModel = viewModel, onClick = onClick)
                 }
             }
-            return
-        }
 
-        when (style) {
-            VaultCardStyle.PASSWORD -> PasswordStyleVaultItem(
-                entry = entry, viewModel = viewModel, onClick = onClick
-            )
+            VaultCardStyle.PASSWORD -> {
+                PasswordStyleVaultItem(
+                    entry = entry,
+                    viewModel = viewModel,
+                    onClick = onClick
+                )
+            }
 
-            VaultCardStyle.TOTP -> VaultItem(
-                entry = entry, viewModel = viewModel, onClick = onClick
-            )
-
-            VaultCardStyle.DEFAULT -> VaultItem(
-                entry = entry, viewModel = viewModel, onClick = onClick
-            )
+            VaultCardStyle.TOTP -> {
+                if (isTotp) {
+                    TotpStyleVaultItem(
+                        entry = entry,
+                        vaultViewModel = viewModel,
+                        showCode = viewModel.showTOTPCode,
+                        onClick = onClick
+                    )
+                } else {
+                    // 非 TOTP 条目选了 TOTP 样式，回退到基础款
+                    VaultItem(entry = entry, viewModel = viewModel, onClick = onClick)
+                }
+            }
         }
     }
 
@@ -88,27 +94,11 @@ object VaultCardStyleRegistry {
     fun RenderPreviewVaultItem(
         style: VaultCardStyle, entryTypeValue: Int? = null, onClick: () -> Unit
     ) {
-        val resolvedStyle = if (entryTypeValue != null) {
-            VaultCardStyle.resolveForEntryType(style, entryTypeValue)
-        } else {
-            style
-        }
-        when (resolvedStyle) {
-            VaultCardStyle.PASSWORD -> PasswordStyleVaultItem(
-                entry = previewPasswordEntry, viewModel = null, onClick = onClick
-            )
-
-            VaultCardStyle.TOTP -> TotpStyleVaultItem(
-                entry = previewTotpEntry,
-                vaultViewModel = null,
-                showCode = true,
-                previewCode = "123 456",
-                previewProgress = 0.4f,
-                onClick = onClick
-            )
-
+        val isTotp = entryTypeValue == EntryType.TOTP.value
+        
+        when (style) {
             VaultCardStyle.DEFAULT -> {
-                if (entryTypeValue == EntryType.TOTP.value) {
+                if (isTotp) {
                     TwoFAItem(
                         entry = previewTotpEntry,
                         vaultViewModel = null,
@@ -118,10 +108,25 @@ object VaultCardStyleRegistry {
                         onClick = onClick
                     )
                 } else {
-                    VaultItem(
-                        entry = previewBaseEntry, viewModel = null, onClick = onClick
-                    )
+                    VaultItem(entry = previewBaseEntry, viewModel = null, onClick = onClick)
                 }
+            }
+
+            VaultCardStyle.PASSWORD -> {
+                PasswordStyleVaultItem(
+                    entry = previewPasswordEntry, viewModel = null, onClick = onClick
+                )
+            }
+
+            VaultCardStyle.TOTP -> {
+                TotpStyleVaultItem(
+                    entry = previewTotpEntry,
+                    vaultViewModel = null,
+                    showCode = true,
+                    previewCode = "123 456",
+                    previewProgress = 0.4f,
+                    onClick = onClick
+                )
             }
         }
     }

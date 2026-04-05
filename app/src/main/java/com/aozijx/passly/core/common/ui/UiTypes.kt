@@ -12,18 +12,33 @@ enum class VaultCardStyle(
     @field:StringRes val displayNameRes: Int,
     @field:StringRes val descriptionRes: Int
 ) {
-    DEFAULT("default", R.string.settings_card_style_default_name, R.string.settings_card_style_default_desc),
-    PASSWORD("password", R.string.settings_card_style_password_name, R.string.settings_card_style_password_desc),
+    DEFAULT(
+        "default",
+        R.string.settings_card_style_default_name,
+        R.string.settings_card_style_default_desc
+    ),
+    PASSWORD(
+        "password",
+        R.string.settings_card_style_password_name,
+        R.string.settings_card_style_password_desc
+    ),
     TOTP("totp", R.string.settings_card_style_totp_name, R.string.settings_card_style_totp_desc);
 
     companion object {
-        val settingsStyles: List<VaultCardStyle> = listOf(PASSWORD, TOTP)
-        val perTypeStyles: List<VaultCardStyle> = listOf(DEFAULT, PASSWORD, TOTP)
-        val globalDefaultStyle: VaultCardStyle = PASSWORD
+        data class StyleConfig(
+            val settingsStyles: List<VaultCardStyle>,
+            val perTypeStyles: List<VaultCardStyle>,
+            val globalDefaultStyle: VaultCardStyle
+        )
+
+        val styleConfig = StyleConfig(
+            settingsStyles = listOf(PASSWORD, TOTP),
+            perTypeStyles = listOf(DEFAULT, PASSWORD, TOTP),
+            globalDefaultStyle = PASSWORD
+        )
 
         data class TypeStylePolicy(
-            val defaultStyle: VaultCardStyle,
-            val selectableStyles: List<VaultCardStyle>
+            val defaultStyle: VaultCardStyle, val selectableStyles: List<VaultCardStyle>
         )
 
         data class SettingsGroupSpec(
@@ -38,13 +53,11 @@ enum class VaultCardStyle(
         private val typeStylePolicyMap: Map<EntryType, TypeStylePolicy> =
             EntryType.entries.associateWith {
                 TypeStylePolicy(
-                    defaultStyle = PASSWORD,
-                    selectableStyles = listOf(DEFAULT, PASSWORD)
+                    defaultStyle = DEFAULT, selectableStyles = listOf(DEFAULT, PASSWORD)
                 )
             } + mapOf(
                 EntryType.TOTP to TypeStylePolicy(
-                    defaultStyle = DEFAULT,
-                    selectableStyles = listOf(DEFAULT, TOTP)
+                    defaultStyle = DEFAULT, selectableStyles = listOf(DEFAULT, TOTP)
                 )
             )
 
@@ -53,13 +66,14 @@ enum class VaultCardStyle(
             EntryType.TOTP to R.string.settings_card_style_group_totp
         )
 
-        val settingsGroupSpecs: List<SettingsGroupSpec> = settingsGroupTitleByType.map { (entryType, titleRes) ->
-            SettingsGroupSpec(
-                titleRes = titleRes,
-                entryType = entryType,
-                styleCandidates = policyFor(entryType).selectableStyles
-            )
-        }
+        val settingsGroupSpecs: List<SettingsGroupSpec> =
+            settingsGroupTitleByType.map { (entryType, titleRes) ->
+                SettingsGroupSpec(
+                    titleRes = titleRes,
+                    entryType = entryType,
+                    styleCandidates = policyFor(entryType).selectableStyles
+                )
+            }
 
         fun fromKey(key: String?): VaultCardStyle {
             val normalizedKey = key?.trim()?.lowercase()
@@ -71,17 +85,23 @@ enum class VaultCardStyle(
         }
 
         fun normalizeGlobalStyle(style: VaultCardStyle): VaultCardStyle {
-            return if (style in settingsStyles) style else globalDefaultStyle
+            return if (style in styleConfig.settingsStyles) style else styleConfig.globalDefaultStyle
         }
 
-        fun resolveForEntryType(selectedStyle: VaultCardStyle, entryTypeValue: Int): VaultCardStyle {
+        fun resolveForEntryType(
+            selectedStyle: VaultCardStyle, entryTypeValue: Int
+        ): VaultCardStyle {
             val policy = policyFor(EntryType.fromValue(entryTypeValue))
             val normalizedSelectedStyle = if (selectedStyle in policy.selectableStyles) {
                 selectedStyle
             } else {
                 DEFAULT
             }
-            return if (normalizedSelectedStyle == DEFAULT) policy.defaultStyle else normalizedSelectedStyle
+            return if (normalizedSelectedStyle == DEFAULT) {
+                policy.defaultStyle
+            } else {
+                normalizedSelectedStyle
+            }
         }
     }
 }

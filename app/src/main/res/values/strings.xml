@@ -381,7 +381,7 @@
     <string name="settings_card_style_group_collapsed_label">展开</string>
     <string name="settings_card_style_group_password">密码分组</string>
     <string name="settings_card_style_group_totp">TOTP 分组</string>
-    <string name="settings_card_style_default_name">跟随该分类默认（密码/TOTP）</string>
+    <string name="settings_card_style_default_name">默认样式</string>
     <string name="settings_card_style_default_desc">该分类默认样式</string>
     <string name="settings_card_style_password_name">密码卡片</string>
     <string name="settings_card_style_password_desc">强调凭据识别的样式</string>

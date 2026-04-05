@@ -335,7 +335,7 @@
     <string name="settings_card_style_group_collapsed_label">Expand</string>
     <string name="settings_card_style_group_password">Password group</string>
     <string name="settings_card_style_group_totp">TOTP group</string>
-    <string name="settings_card_style_default_name">Follow this category default (Password/TOTP)</string>
+    <string name="settings_card_style_default_name">default style</string>
     <string name="settings_card_style_default_desc">Uses this category\'s default style</string>
     <string name="settings_card_style_password_name">Password card</string>
     <string name="settings_card_style_password_desc">Style emphasizing credential recognition</string>

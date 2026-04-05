@@ -335,8 +335,8 @@
     <string name="settings_card_style_group_collapsed_label">展開</string>
     <string name="settings_card_style_group_password">パスワードグループ</string>
     <string name="settings_card_style_group_totp">TOTPグループ</string>
-    <string name="settings_card_style_default_name">この分類の既定に従う（Password/TOTP）</string>
-    <string name="settings_card_style_default_desc">この分類の既定スタイルを使用</string>
+    <string name="settings_card_style_default_name">分類の既定</string>
+    <string name="settings_card_style_default_desc">各分類の推奨スタイルを自動的に使用します</string>
     <string name="settings_card_style_password_name">パスワードカード</string>
     <string name="settings_card_style_password_desc">認証情報を識別しやすいスタイル</string>
     <string name="settings_card_style_totp_name">TOTPカード</string>

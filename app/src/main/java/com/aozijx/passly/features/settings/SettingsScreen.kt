@@ -70,7 +70,7 @@ fun SettingsScreen(
     val backupDirectoryUri = uiState.backupDirectoryUri
     val lastBackupExportFileName = uiState.lastBackupExportFileName
 
-    val availableCardStyles = remember { VaultCardStyle.perTypeStyles }
+    val availableCardStyles = remember { VaultCardStyle.styleConfig.perTypeStyles }
     val effectiveCardStyle = VaultCardStyle.normalizeGlobalStyle(cardStyle)
     val passwordSelectedStyle =
         cardStyleByEntryType[EntryType.PASSWORD.value] ?: VaultCardStyle.DEFAULT
