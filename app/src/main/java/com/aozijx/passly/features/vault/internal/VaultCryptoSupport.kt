@@ -8,12 +8,6 @@ internal typealias AuthenticateAction =
 
 internal class VaultCryptoSupport {
 
-    fun decryptSilently(encryptedData: String?): String? {
-        if (encryptedData == null) return null
-        if (encryptedData.isEmpty()) return ""
-        return runCatching { CryptoManager.decrypt(encryptedData) }.getOrNull()
-    }
-
     fun decryptSingle(
         activity: FragmentActivity,
         encryptedData: String,
@@ -51,7 +45,10 @@ internal class VaultCryptoSupport {
         }
     }
 
+    // Restricted usage: only for TOTP auto-refresh/preview flow.
     fun decryptTotpSecret(encrypted: String?): String? {
-        return decryptSilently(encrypted)
+        if (encrypted == null) return null
+        if (encrypted.isEmpty()) return ""
+        return runCatching { CryptoManager.decrypt(encrypted) }.getOrNull()
     }
 }

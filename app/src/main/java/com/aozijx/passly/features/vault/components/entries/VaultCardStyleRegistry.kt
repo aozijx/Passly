@@ -17,7 +17,6 @@ object VaultCardStyleRegistry {
         title = "示例账号",
         category = "自动填充",
         username = "demo_user",
-        password = "demo_password",
         associatedDomain = "example.com"
     )
 
@@ -26,7 +25,6 @@ object VaultCardStyleRegistry {
         title = "我的邮箱",
         category = "登录凭据",
         username = "me@example.com",
-        password = "********",
         associatedDomain = "example.com"
     )
 
@@ -35,7 +33,6 @@ object VaultCardStyleRegistry {
         title = "示例二步验证",
         category = "OTP",
         username = "totp_user",
-        password = "",
         totpSecret = "preview_totp"
     )
 

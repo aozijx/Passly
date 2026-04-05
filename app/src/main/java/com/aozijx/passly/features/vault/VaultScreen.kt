@@ -57,7 +57,6 @@ import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.ui.AddType
 import com.aozijx.passly.core.common.ui.VaultCardStyle
 import com.aozijx.passly.core.common.ui.VaultTab
-import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
 import com.aozijx.passly.core.designsystem.widgets.SwipeToAction
@@ -289,12 +288,15 @@ fun VaultContent(
                                                 ).show()
                                             },
                                             onDecryptPassword = { callback ->
-                                                try {
-                                                    val decrypted =
-                                                        CryptoManager.decrypt(item.password)
-                                                    callback(decrypted)
-                                                } catch (e: Exception) {
-                                                    callback(null)
+                                                vaultViewModel.loadEntryById(item.id) { fullEntry ->
+                                                    vaultViewModel.decryptSingle(
+                                                        activity = activity,
+                                                        encryptedData = fullEntry.password,
+                                                        authenticate = { act, title, subtitle, _, onSuccess ->
+                                                            mainViewModel.authenticate(act, title, subtitle, null, onSuccess)
+                                                        },
+                                                        onResult = { callback(it) }
+                                                    )
                                                 }
                                             },
                                             onShowDetail = {
@@ -336,12 +338,15 @@ fun VaultContent(
                                                 ).show()
                                             },
                                             onDecryptPassword = { callback ->
-                                                try {
-                                                    val decrypted =
-                                                        CryptoManager.decrypt(item.password)
-                                                    callback(decrypted)
-                                                } catch (e: Exception) {
-                                                    callback(null)
+                                                vaultViewModel.loadEntryById(item.id) { fullEntry ->
+                                                    vaultViewModel.decryptSingle(
+                                                        activity = activity,
+                                                        encryptedData = fullEntry.password,
+                                                        authenticate = { act, title, subtitle, _, onSuccess ->
+                                                            mainViewModel.authenticate(act, title, subtitle, null, onSuccess)
+                                                        },
+                                                        onResult = { callback(it) }
+                                                    )
                                                 }
                                             },
                                             onShowDetail = {

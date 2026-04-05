@@ -115,15 +115,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             detailState.shouldStartTotpEdit = value
         }
 
-    val prefilledUsername: String?
-        get() = detailState.prefilledUsername
-
-    val prefilledPassword: String?
-        get() = detailState.prefilledPassword
-
-    val prefilledTotpSecret: String?
-        get() = detailState.prefilledTotpSecret
-
     val availableCategories: StateFlow<List<String>> = vaultUseCases.getCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -220,9 +211,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private fun clearDetailLaunchState() {
         shouldStartDetailInEditMode = false
         shouldStartTotpEdit = false
-        detailState.prefilledUsername = null
-        detailState.prefilledPassword = null
-        detailState.prefilledTotpSecret = null
     }
 
     fun consumeDetailLaunchState() {
@@ -238,14 +226,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         clearDetailLaunchState()
         shouldStartDetailInEditMode = true
 
-        if (entry.totpSecret.isNullOrBlank()) {
-            shouldStartTotpEdit = false
-            detailState.prefilledUsername = cryptoSupport.decryptSilently(entry.username)
-            detailState.prefilledPassword = cryptoSupport.decryptSilently(entry.password)
-        } else {
-            shouldStartTotpEdit = true
-            detailState.prefilledTotpSecret = cryptoSupport.decryptTotpSecret(entry.totpSecret)
-        }
+        // Do not pre-decrypt secrets on entering edit mode.
+        shouldStartTotpEdit = !entry.totpSecret.isNullOrBlank()
 
         detailItem = entry
     }

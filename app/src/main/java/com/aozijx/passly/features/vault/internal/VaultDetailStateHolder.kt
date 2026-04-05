@@ -13,7 +13,4 @@ internal class VaultDetailStateHolder {
     var showIconPicker by mutableStateOf(false)
     var shouldStartDetailInEditMode by mutableStateOf(false)
     var shouldStartTotpEdit by mutableStateOf(false)
-    var prefilledUsername by mutableStateOf<String?>(null)
-    var prefilledPassword by mutableStateOf<String?>(null)
-    var prefilledTotpSecret by mutableStateOf<String?>(null)
 }

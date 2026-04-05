@@ -19,7 +19,7 @@ interface VaultDao {
 
     @Query(
         """
-        SELECT id, title, category, entryType, username, password,
+        SELECT id, title, category, entryType, username,
                iconName, iconCustomPath, associatedAppPackage, associatedDomain,
                totpSecret, totpPeriod, totpDigits, totpAlgorithm,
                favorite, createdAt, updatedAt
@@ -37,7 +37,7 @@ interface VaultDao {
 
     @Query(
         """
-        SELECT id, title, category, entryType, username, password,
+        SELECT id, title, category, entryType, username,
                iconName, iconCustomPath, associatedAppPackage, associatedDomain,
                totpSecret, totpPeriod, totpDigits, totpAlgorithm,
                favorite, createdAt, updatedAt
@@ -101,7 +101,7 @@ interface VaultDao {
 
     @Query(
         """
-        SELECT id, title, category, entryType, username, password,
+        SELECT id, title, category, entryType, username,
                iconName, iconCustomPath, associatedAppPackage, associatedDomain,
                totpSecret, totpPeriod, totpDigits, totpAlgorithm,
                favorite, createdAt, updatedAt
@@ -149,6 +149,8 @@ interface VaultDao {
     @Query("DELETE FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId")
     suspend fun clearHistoryByEntryId(entryId: Int)
 }
+
+
 
 
 
