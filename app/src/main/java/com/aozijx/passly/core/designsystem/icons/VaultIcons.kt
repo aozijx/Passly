@@ -58,6 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.R
+import com.aozijx.passly.core.media.toLocalIconImageModel
 import com.aozijx.passly.core.platform.rememberAppIconPainter
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
@@ -168,16 +169,11 @@ private fun VaultItemIcon(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
-    if (!info.iconCustomPath.isNullOrEmpty()) {
-        val imageModel = remember(info.iconCustomPath) {
-            if (info.iconCustomPath.startsWith("http://") || info.iconCustomPath.startsWith("https://")) {
-                info.iconCustomPath
-            } else {
-                "file://${info.iconCustomPath}"
-            }
-        }
+    val localImageModel = remember(info.iconCustomPath) { toLocalIconImageModel(info.iconCustomPath) }
+
+    if (localImageModel != null) {
         AsyncImage(
-            model = imageModel,
+            model = localImageModel,
             contentDescription = null,
             modifier = modifier.size(36.dp).clip(CircleShape),
             contentScale = ContentScale.Crop

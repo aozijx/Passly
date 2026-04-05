@@ -42,6 +42,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.aozijx.passly.core.common.ui.VaultCardStyleTokens
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
+import com.aozijx.passly.core.media.toLocalIconImageModel
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
@@ -79,7 +80,7 @@ fun PasswordStyleVaultItem(
         !entry.associatedDomain.isNullOrBlank() || !entry.associatedAppPackage.isNullOrBlank() -> "自动填充凭据"
         else -> "受保护的登录凭据"
     }
-    val imageModel = entry.iconCustomPath
+    val imageModel = remember(entry.iconCustomPath) { toLocalIconImageModel(entry.iconCustomPath) }
     val corner = RoundedCornerShape(VaultCardStyleTokens.Password.corner)
 
     var accentColor by remember(imageModel) { mutableStateOf<Color?>(null) }

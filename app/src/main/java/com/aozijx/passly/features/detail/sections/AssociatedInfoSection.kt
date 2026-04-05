@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.core.media.FaviconUtils
+import com.aozijx.passly.core.media.isRemoteIconPath
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.detail.components.InfoGroupCard
@@ -435,6 +436,5 @@ fun AssociatedInfoSection(
 
 private fun clearRemoteIconPathWhenDomainCleared(domain: String?, currentPath: String?): String? {
     if (currentPath.isNullOrBlank()) return currentPath
-    val isRemotePath = currentPath.startsWith("http://") || currentPath.startsWith("https://")
-    return if (domain.isNullOrBlank() && isRemotePath) null else currentPath
+    return if (domain.isNullOrBlank() && isRemoteIconPath(currentPath)) null else currentPath
 }

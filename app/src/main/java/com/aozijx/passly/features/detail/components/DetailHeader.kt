@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
+import com.aozijx.passly.core.media.toLocalIconImageModel
 import com.aozijx.passly.domain.model.VaultEntry
 
 @Composable
@@ -43,17 +44,12 @@ fun DetailHeader(
     trailingText: String? = null
 ) {
     val context = LocalContext.current
-    val hasCustomPath = !item.iconCustomPath.isNullOrEmpty()
+    val localImageModel = remember(item.iconCustomPath) { toLocalIconImageModel(item.iconCustomPath) }
+    val hasCustomPath = localImageModel != null
 
     Column(modifier = Modifier.fillMaxWidth()) {
         if (hasCustomPath) {
-            val imageModel = remember(item.iconCustomPath) {
-                if (item.iconCustomPath.startsWith("http://") || item.iconCustomPath.startsWith("https://")) {
-                    item.iconCustomPath
-                } else {
-                    "file://${item.iconCustomPath}"
-                }
-            }
+            val imageModel = localImageModel
             // 自定义封面模式
             Box(
                 modifier = Modifier
@@ -156,6 +152,3 @@ fun DetailHeader(
         }
     }
 }
-
-
-

@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.FaviconUtils
+import com.aozijx.passly.core.media.isRemoteIconPath
 import com.aozijx.passly.data.local.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -109,7 +110,7 @@ internal class BackupImportIconSyncSupport {
     private fun resolveDownloadSource(domain: String?, currentPath: String?): String? {
         val trimmedPath = currentPath?.trim().orEmpty()
         val trimmedDomain = domain?.trim().orEmpty()
-        val isRemotePath = trimmedPath.startsWith("http://") || trimmedPath.startsWith("https://")
+        val isRemotePath = isRemoteIconPath(trimmedPath)
 
         if (isRemotePath) return trimmedPath
 
@@ -121,4 +122,3 @@ internal class BackupImportIconSyncSupport {
         return trimmedDomain.takeIf { it.isNotBlank() }
     }
 }
-
