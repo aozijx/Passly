@@ -3,6 +3,7 @@ package com.aozijx.passly.features.settings.internal
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.backup.BackupManager
+import com.aozijx.passly.service.backup.BackupImportIconSyncForegroundService
 
 internal class BackupActionSupport {
 
@@ -20,7 +21,12 @@ internal class BackupActionSupport {
         }
 
         return if (result.isSuccess) {
-            if (isExporting) "导出成功" else "导入成功"
+            if (isExporting) {
+                "导出成功"
+            } else {
+                BackupImportIconSyncForegroundService.start(context)
+                "导入成功（图标将在后台自动同步）"
+            }
         } else {
             buildFailureMessage(result.exceptionOrNull())
         }

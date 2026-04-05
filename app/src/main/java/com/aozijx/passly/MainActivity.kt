@@ -1,15 +1,18 @@
 package com.aozijx.passly
 
+import android.Manifest
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,6 +62,12 @@ class MainActivity : FragmentActivity(), SensorEventListener {
     private var accelerometer: Sensor? = null
     private var isFlipLockEnabled = false
     private var isFlipExitAndClearStackEnabled = false
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (!granted) {
+                Toast.makeText(this, "通知权限未开启，后台同步进度将不可见", Toast.LENGTH_SHORT).show()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +98,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
 
         // 初始验证
         requestAuthentication()
+        requestNotificationPermissionIfNeeded()
 
         setContent {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -218,6 +228,12 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                 Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()
             }
         )
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) return
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     override fun onUserInteraction() {

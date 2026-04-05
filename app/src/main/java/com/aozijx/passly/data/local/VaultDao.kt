@@ -31,6 +31,22 @@ interface VaultDao {
     @Query(
         """
         SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}
+        WHERE iconCustomPath LIKE 'http://%' OR iconCustomPath LIKE 'https://%'
+        """
+    )
+    suspend fun getEntriesWithRemoteIconPath(): List<VaultEntryEntity>
+
+    @Query(
+        """
+        SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}
+        WHERE associatedDomain IS NOT NULL AND associatedDomain != ''
+        """
+    )
+    suspend fun getEntriesForIconResync(): List<VaultEntryEntity>
+
+    @Query(
+        """
+        SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}
         WHERE (
             (:packageName IS NOT NULL AND associatedAppPackage = :packageName)
             OR (:webDomain IS NOT NULL AND associatedDomain = :webDomain)
