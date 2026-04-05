@@ -13,7 +13,7 @@ import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.SecureRandom
@@ -101,7 +101,7 @@ abstract class AppDatabase : RoomDatabase() {
             return INSTANCE ?: synchronized(this) {
                 try {
                     val passphrase = getDatabasePassphrase(context)
-                    val factory = SupportFactory(passphrase)
+                    val factory = SupportOpenHelperFactory(passphrase)
                     val instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DatabaseConfig.DATABASE_NAME)
                         .openHelperFactory(factory)
                         .fallbackToDestructiveMigration(true)
@@ -116,4 +116,3 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
-
