@@ -58,8 +58,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.rememberAppIconPainter
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.core.media.toLocalIconImageModel
+import com.aozijx.passly.core.platform.rememberAppIconPainter
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 
 /**
  * 集中管理所有可选图标映射
@@ -128,16 +130,57 @@ fun VaultItemIcon(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
-    if (!item.iconCustomPath.isNullOrEmpty()) {
+    VaultItemIcon(info = item.toIconInfo(), modifier = modifier, tint = tint)
+}
+
+@Composable
+fun VaultItemIcon(
+    item: VaultSummary,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
+) {
+    VaultItemIcon(info = item.toIconInfo(), modifier = modifier, tint = tint)
+}
+
+private data class VaultIconInfo(
+    val iconName: String?,
+    val iconCustomPath: String?,
+    val associatedAppPackage: String?,
+    val category: String
+)
+
+private fun VaultEntry.toIconInfo(): VaultIconInfo = VaultIconInfo(
+    iconName = iconName,
+    iconCustomPath = iconCustomPath,
+    associatedAppPackage = associatedAppPackage,
+    category = category
+)
+
+private fun VaultSummary.toIconInfo(): VaultIconInfo = VaultIconInfo(
+    iconName = iconName,
+    iconCustomPath = iconCustomPath,
+    associatedAppPackage = associatedAppPackage,
+    category = category
+)
+
+@Composable
+private fun VaultItemIcon(
+    info: VaultIconInfo,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
+) {
+    val localImageModel = remember(info.iconCustomPath) { toLocalIconImageModel(info.iconCustomPath) }
+
+    if (localImageModel != null) {
         AsyncImage(
-            model = item.iconCustomPath,
+            model = localImageModel,
             contentDescription = null,
             modifier = modifier.size(36.dp).clip(CircleShape),
             contentScale = ContentScale.Crop
         )
-    } else if (!item.associatedAppPackage.isNullOrEmpty()) {
+    } else if (!info.associatedAppPackage.isNullOrEmpty()) {
         val iconPainter = rememberAppIconPainter(
-            packageName = item.associatedAppPackage
+            packageName = info.associatedAppPackage
         )
         if (iconPainter != null) {
             Image(
@@ -147,10 +190,10 @@ fun VaultItemIcon(
                 contentScale = ContentScale.Fit
             )
         } else {
-            FallbackIcon(modifier, tint, item)
+            FallbackIcon(modifier, tint, info)
         }
     } else {
-        FallbackIcon(modifier, tint, item)
+        FallbackIcon(modifier, tint, info)
     }
 }
 
@@ -158,18 +201,18 @@ fun VaultItemIcon(
 private fun FallbackIcon(
     modifier: Modifier,
     tint: Color,
-    item: VaultEntry? = null
+    info: VaultIconInfo? = null
 ) {
     val context = LocalContext.current
-    val icon = remember(item?.iconName, item?.category) {
-        if (item != null) {
-            val resId = item.iconName?.toIntOrNull()
+    val icon = remember(info?.iconName, info?.category) {
+        if (info != null) {
+            val resId = info.iconName?.toIntOrNull()
             if (resId != null) {
                 VaultIcons.getIconByRes(resId)
-            } else if (!item.iconName.isNullOrEmpty()) {
-                VaultIcons.getIconByName(item.iconName)
+            } else if (!info.iconName.isNullOrEmpty()) {
+                VaultIcons.getIconByName(info.iconName)
             } else {
-                getCategoryIcon(context, item.category)
+                getCategoryIcon(context, info.category)
             }
         } else {
             Icons.Default.Key
@@ -216,3 +259,5 @@ fun getCategoryIcon(context: Context, category: String): ImageVector {
         else -> Icons.Default.Key
     }
 }
+
+

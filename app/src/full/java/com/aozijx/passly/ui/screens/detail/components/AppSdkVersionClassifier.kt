@@ -51,8 +51,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.core.util.AppWithSdk
-import com.aozijx.passly.core.util.rememberAppIconPainter
+import com.aozijx.passly.core.platform.AppWithSdk
+import com.aozijx.passly.core.platform.rememberAppIconPainter
 import com.aozijx.passly.ui.navigation.TopBarConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -314,3 +314,4 @@ private fun getAndroidVersionName(sdkVersion: Int): String {
         else -> "API $sdkVersion"
     }
 }
+

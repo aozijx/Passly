@@ -1,4 +1,4 @@
-package com.example.passly.data.local
+package com.aozijx.passly.data.local
 
 import androidx.room.TypeConverter
 
@@ -26,3 +26,6 @@ class Converters {
         return value?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
     }
 }
+
+
+

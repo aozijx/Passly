@@ -38,11 +38,17 @@
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">Security Verification</string>
     <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>
+    <string name="autofill_entry_compact_title">Choose account</string>
+    <string name="autofill_candidate_sheet_title">Choose an account to fill</string>
+    <string name="autofill_candidate_sheet_subtitle">Select one account from the list below to continue</string>
     <string name="autofill_save_prompt_title">Save %s?</string>
     <string name="autofill_save_prompt_description">Do you want to save the username and password for %s to Passly?</string>
     <string name="autofill_save_icon_description">App icon</string>
     <string name="autofill_no_suggestions">Passly has no matching suggestions</string>
     <string name="autofill_pending_verification">Pending verification for autofill</string>
+    <string name="autofill_match_app">App match</string>
+    <string name="autofill_match_domain">Domain match</string>
+    <string name="autofill_match_unknown">Candidate</string>
 
     <!-- Autofill title generation -->
     <string name="autofill_title_app_fallback">App</string>
@@ -161,6 +167,23 @@
     <string name="hide_password">Hide password</string>
     <string name="label_title_hint">Title (e.g. Google, GitHub)</string>
     <string name="label_username_hint">Username / Email</string>
+    
+    <!-- Detail page new strings -->
+    <string name="vault_detail_totp_label">Two-Factor Code</string>
+    <string name="vault_detail_domain_label">Website Domain or Icon URL</string>
+    <string name="vault_detail_domain_placeholder">e.g. google.com or https://example.com/icon.png</string>
+    <string name="vault_detail_domain_and_icon">Domain &amp; Icon</string>
+    <string name="vault_detail_not_set">Not set</string>
+    <string name="vault_detail_copied">Copied</string>
+    <string name="vault_detail_download_icon">Download Icon</string>
+    <string name="vault_detail_icon_download_success">Icon downloaded successfully!</string>
+    <string name="vault_detail_icon_download_failed">Icon download failed</string>
+    <string name="vault_detail_login_credentials">Login Credentials</string>
+    <string name="vault_detail_username">Username</string>
+    <string name="vault_detail_password">Password</string>
+    <string name="vault_detail_notes">Notes</string>
+    <string name="vault_detail_add_notes">Add notes…</string>
+    <string name="vault_detail_no_notes">No notes</string>
 
     <!-- Icons (translated to English meanings) -->
     <string name="icon_bank">Bank</string>
@@ -303,5 +326,20 @@
         <item>security</item>
         <item>permission</item>
     </string-array>
+
+    <!-- Settings: Vault card style -->
+    <string name="settings_card_style_section_title">Vault card style</string>
+    <string name="settings_card_style_section_expanded_hint">Preview expanded</string>
+    <string name="settings_card_style_section_collapsed_hint">Tap to preview and switch</string>
+    <string name="settings_card_style_group_expanded_label">Collapse</string>
+    <string name="settings_card_style_group_collapsed_label">Expand</string>
+    <string name="settings_card_style_group_password">Password group</string>
+    <string name="settings_card_style_group_totp">TOTP group</string>
+    <string name="settings_card_style_default_name">default style</string>
+    <string name="settings_card_style_default_desc">Uses this category\'s default style</string>
+    <string name="settings_card_style_password_name">Password card</string>
+    <string name="settings_card_style_password_desc">Style emphasizing credential recognition</string>
+    <string name="settings_card_style_totp_name">TOTP card</string>
+    <string name="settings_card_style_totp_desc">Highlights dynamic code and progress ring</string>
 
 </resources>

@@ -3,7 +3,7 @@ package com.aozijx.passly.core.designsystem.state
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 
 /**
  * TOTP 实时显示状态
@@ -21,6 +21,7 @@ class TotpAddState {
     var title by mutableStateOf("")
     var username by mutableStateOf("")
     var category by mutableStateOf("")
+    var domain by mutableStateOf("")
 
     // TOTP 核心配置
     var secret by mutableStateOf("")
@@ -51,3 +52,5 @@ class TotpEditState(entry: VaultEntry, initialSecret: String) {
         digits = "5"
     }
 }
+
+

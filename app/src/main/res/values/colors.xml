@@ -29,4 +29,7 @@
     <color name="background_dark">#1A1C1E</color>
     <color name="surface_variant_dark">#42474E</color>
     <color name="outline_dark">#8C9199</color>
+    <!-- 其他颜色... -->
+    <color name="autofill_item_background">#F2F2F7</color> <!-- 浅灰蓝色，与纯白区分 -->
+    <color name="autofill_item_outline">#E5E5EA</color>
 </resources>

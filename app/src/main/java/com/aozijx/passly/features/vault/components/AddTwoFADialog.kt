@@ -18,16 +18,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.AddType
+import com.aozijx.passly.core.common.ui.AddType
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
 import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.VaultTextField
 import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
 import com.aozijx.passly.core.designsystem.state.TotpAddState
-import com.aozijx.passly.core.util.ClipboardUtils
-import com.aozijx.passly.core.util.Logcat
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel
 import java.net.URLDecoder
 
@@ -58,6 +58,8 @@ fun AddTwoFADialog(
             state.title = issuer ?: label.split(":").firstOrNull() ?: ""
             state.username = label
             state.secret = secret
+            // 尝试从 issuer 提取域名（如果 issuer 是域名的话）
+            state.domain = issuer ?: ""
 
             if ((issuer ?: label).contains("Steam", ignoreCase = true)) {
                 state.algorithm = "STEAM"
@@ -91,9 +93,10 @@ fun AddTwoFADialog(
                     totpDigits = state.digits.toIntOrNull() ?: 6,
                     totpPeriod = state.period.toIntOrNull() ?: 30,
                     totpAlgorithm = state.algorithm,
+                    associatedDomain = state.domain.ifBlank { null },
                     entryType = 1
                 )
-                viewModel.addItem(entry)
+                viewModel.addItem(entry, state.domain)
                 viewModel.addType = AddType.NONE
             } catch (e: Exception) {
                 Logcat.e("AddTwoFA", "Failed to encrypt/save", e)
@@ -144,3 +147,5 @@ fun AddTwoFADialog(
         }
     }
 }
+
+

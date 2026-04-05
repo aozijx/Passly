@@ -9,7 +9,7 @@ coreKtx = "1.18.0"
 lifecycleRuntimeKtx = "2.10.0"
 room = "2.8.4"
 navigationCompose = "2.9.7"
-datastorePreferences = "1.2.0"
+datastorePreferences = "1.2.1"
 coreSplashscreen = "1.2.0"
 glanceAppwidget = "1.1.1"
 exifinterface = "1.4.2"
@@ -17,7 +17,7 @@ exifinterface = "1.4.2"
 # UI & Material Design
 composeBom = "2026.03.00"
 activityCompose = "1.13.0"
-foundation = "1.10.4"
+foundation = "1.10.6"
 materialIcons = "1.7.8"
 coil = "2.7.0"
 markdown-renderer = "0.39.2"
@@ -25,13 +25,13 @@ markdown-renderer = "0.39.2"
 # Security & Data Protection
 biometric = "1.2.0-alpha05"
 securityCrypto = "1.1.0"
-sqlcipher = "4.5.4"
+sqlcipher = "4.14.1"
 # 不要升级，版本需要和 room 匹配
-sqlite = "2.2.0"
+sqlite = "2.6.2"
 
 # Camera & Barcode Scanning
 barcodeScanningBundled = "17.3.0"  # 内置版
-cameraxVersion = "1.5.3"
+cameraxVersion = "1.6.0"
 zxing = "3.5.4"
 
 # Testing
@@ -39,6 +39,7 @@ junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 appcompat = "1.7.1"
+palette = "1.0.0"
 
 [libraries]
 # Android Core
@@ -79,7 +80,7 @@ androidx-biometric = { group = "androidx.biometric", name = "biometric", version
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 
 # SQLCipher & SQLite
-sqlcipher = { module = "net.zetetic:android-database-sqlcipher", version.ref = "sqlcipher" }
+sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 
 # Data Persistence & Widgets
@@ -108,6 +109,7 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-palette = { group = "androidx.palette", name = "palette", version.ref = "palette" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

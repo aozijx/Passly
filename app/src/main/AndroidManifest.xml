@@ -7,6 +7,11 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Android 14+ 前台服务数据同步类型权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission
@@ -28,7 +33,6 @@
         android:theme="@style/AppTheme"
         tools:targetApi="33">
 
-        <!-- Vault 版本的入口 -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -38,16 +42,14 @@
             </intent-filter>
         </activity>
 
-        <!-- 自动填充的透明验证界面 -->
         <activity
             android:name=".service.autofill.AutofillAuthActivity"
             android:excludeFromRecents="true"
             android:exported="false"
-            android:launchMode="singleTask"
+            android:launchMode="standard"
             android:noHistory="true"
             android:theme="@style/Theme.Passly.TransparentAuth" />
 
-        <!-- 自动填充服务 -->
         <service
             android:name=".service.autofill.AutofillService"
             android:exported="true"
@@ -61,6 +63,12 @@
                 android:resource="@xml/autofill_service_config" />
         </service>
 
+        <!-- 修复：声明前台服务类型为 dataSync -->
+        <service
+            android:name=".service.backup.BackupImportIconSyncForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"
@@ -68,7 +76,6 @@
             <intent-filter>
                 <action android:name="androidx.appcompat.app.AppLocalesMetadataHolderService" />
             </intent-filter>
-            <!-- 核心修复：必须在 Service 内部添加此元数据以防止 NPE -->
             <meta-data
                 android:name="autoStoreLocales"
                 android:value="true" />

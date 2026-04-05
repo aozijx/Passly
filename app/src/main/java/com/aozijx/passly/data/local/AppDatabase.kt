@@ -10,12 +10,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.util.Logcat
-import com.aozijx.passly.data.model.VaultEntry
-import com.example.passly.data.local.Converters
-import com.example.passly.data.local.VaultDao
-import com.example.passly.data.model.VaultHistory
-import net.sqlcipher.database.SupportFactory
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.entity.VaultHistoryEntity
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.SecureRandom
@@ -31,7 +29,7 @@ object DatabaseConfig {
 }
 
 @Database(
-    entities = [VaultEntry::class, VaultHistory::class],
+    entities = [VaultEntryEntity::class, VaultHistoryEntity::class],
     version = DatabaseConfig.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
 )
@@ -103,7 +101,7 @@ abstract class AppDatabase : RoomDatabase() {
             return INSTANCE ?: synchronized(this) {
                 try {
                     val passphrase = getDatabasePassphrase(context)
-                    val factory = SupportFactory(passphrase)
+                    val factory = SupportOpenHelperFactory(passphrase)
                     val instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DatabaseConfig.DATABASE_NAME)
                         .openHelperFactory(factory)
                         .fallbackToDestructiveMigration(true)

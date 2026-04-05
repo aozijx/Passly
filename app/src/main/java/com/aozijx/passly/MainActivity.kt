@@ -1,15 +1,18 @@
 package com.aozijx.passly
 
+import android.Manifest
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,13 +44,13 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.features.detail.page.DetailScreen
+import com.aozijx.passly.features.settings.SettingsScreen
+import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultContent
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.ui.theme.AppTheme
-import com.example.passly.features.detail.DetailScreen
-import com.example.passly.features.settings.SettingsScreen
-import com.example.passly.features.settings.SettingsViewModel
 
 class MainActivity : FragmentActivity(), SensorEventListener {
     private val viewModel: MainViewModel by viewModels()
@@ -59,6 +61,13 @@ class MainActivity : FragmentActivity(), SensorEventListener {
     private var sensorManager: SensorManager? = null
     private var accelerometer: Sensor? = null
     private var isFlipLockEnabled = false
+    private var isFlipExitAndClearStackEnabled = false
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (!granted) {
+                Toast.makeText(this, "通知权限未开启，后台同步进度将不可见", Toast.LENGTH_SHORT).show()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,23 +91,23 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                 } else if (showSettings) {
                     showSettings = false
                 } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
+                    finish()
                 }
             }
         })
 
         // 初始验证
         requestAuthentication()
+        requestNotificationPermissionIfNeeded()
 
         setContent {
-            val isDarkModePref by viewModel.isDarkMode.collectAsState()
-            val isDynamicColorPref by viewModel.isDynamicColor.collectAsState()
+            val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
             val vaultViewModel: VaultViewModel = viewModel()
             val settingsViewModel: SettingsViewModel = viewModel()
+            val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
             
             // 应用高级安全防护设置
-            val isSecureContentEnabled by settingsViewModel.isSecureContentEnabled.collectAsStateWithLifecycle()
+            val isSecureContentEnabled = settingsUiState.isSecureContentEnabled
             
             LaunchedEffect(isSecureContentEnabled) {
                 if (isSecureContentEnabled) {
@@ -112,7 +121,8 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             }
 
             // 翻转锁定逻辑
-            val flipToLock by settingsViewModel.isFlipToLockEnabled.collectAsStateWithLifecycle()
+            val flipToLock = settingsUiState.isFlipToLockEnabled
+            val flipExitAndClearStack = settingsUiState.isFlipExitAndClearStackEnabled
             LaunchedEffect(flipToLock) {
                 isFlipLockEnabled = flipToLock
                 if (flipToLock) {
@@ -121,6 +131,9 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                     unregisterSensor()
                 }
             }
+            LaunchedEffect(flipExitAndClearStack) {
+                isFlipExitAndClearStackEnabled = flipExitAndClearStack
+            }
 
             // 自动注销传感器
             DisposableEffect(Unit) {
@@ -128,7 +141,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             }
             
             // 应用状态栏自动隐藏行为设置
-            val isStatusBarAutoHide by settingsViewModel.isStatusBarAutoHide.collectAsStateWithLifecycle()
+            val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
             LaunchedEffect(isStatusBarAutoHide) {
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.systemBarsBehavior = if (isStatusBarAutoHide) {
@@ -139,13 +152,13 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             }
 
             AppTheme(
-                darkTheme = if (isDarkModePref == true) true else null,
-                dynamicColor = isDynamicColorPref
+                darkTheme = if (mainUiState.isDarkMode == true) true else null,
+                dynamicColor = mainUiState.isDynamicColor
             ) {
                 when {
                     showDetail && detailEntry != null -> {
                         DetailScreen(
-                            entry = detailEntry!!,
+                            initialEntry = detailEntry!!,
                             onBack = { showDetail = false },
                             activity = this,
                             mainViewModel = viewModel,
@@ -155,7 +168,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                     showSettings -> {
                         SettingsScreen(onBack = { showSettings = false })
                     }
-                    viewModel.isAuthorized -> {
+                    mainUiState.isAuthorized -> {
                         VaultContent(
                             activity = this,
                             mainViewModel = viewModel,
@@ -195,6 +208,9 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             viewModel.lock()
             showDetail = false
             showSettings = false
+            if (isFlipExitAndClearStackEnabled) {
+                finishAndRemoveTask()
+            }
         }
     }
 
@@ -212,6 +228,12 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                 Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()
             }
         )
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) return
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     override fun onUserInteraction() {
@@ -265,3 +287,6 @@ private fun AuthorizationPlaceholder(onRetry: () -> Unit) {
         }
     }
 }
+
+
+

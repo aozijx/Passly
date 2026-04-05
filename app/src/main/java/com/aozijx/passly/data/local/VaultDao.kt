@@ -1,4 +1,4 @@
-package com.example.passly.data.local
+package com.aozijx.passly.data.local
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -7,21 +7,63 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import com.aozijx.passly.data.local.DatabaseConfig
-import com.aozijx.passly.data.model.VaultEntry
-import com.example.passly.data.model.VaultHistory
+import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.entity.VaultHistoryEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VaultDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} ORDER BY favorite DESC, usageCount DESC, createdAt DESC")
-    fun getAllEntries(): Flow<List<VaultEntry>>
+    fun getAllEntries(): Flow<List<VaultEntryEntity>>
 
     @Query("SELECT DISTINCT category FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE category IS NOT NULL AND category != ''")
     fun getAllCategories(): Flow<List<String>>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE category = :category ORDER BY createdAt DESC")
-    fun getEntriesByCategory(category: String): Flow<List<VaultEntry>>
+    fun getEntriesByCategory(category: String): Flow<List<VaultEntryEntity>>
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE id = :entryId LIMIT 1")
+    suspend fun getEntryById(entryId: Int): VaultEntryEntity?
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE id IN (:entryIds)")
+    suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntryEntity>
+
+    @Query(
+        """
+        SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}
+        WHERE iconCustomPath LIKE 'http://%' OR iconCustomPath LIKE 'https://%'
+        """
+    )
+    suspend fun getEntriesWithRemoteIconPath(): List<VaultEntryEntity>
+
+    @Query(
+        """
+        SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}
+        WHERE associatedDomain IS NOT NULL AND associatedDomain != ''
+        """
+    )
+    suspend fun getEntriesForIconResync(): List<VaultEntryEntity>
+
+    @Query(
+        """
+        SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}
+        WHERE (
+            (:packageName IS NOT NULL AND associatedAppPackage = :packageName)
+            OR (:webDomain IS NOT NULL AND associatedDomain = :webDomain)
+        )
+        ORDER BY
+            CASE WHEN (:packageName IS NOT NULL AND associatedAppPackage = :packageName) THEN 0 ELSE 1 END,
+            favorite DESC,
+            usageCount DESC,
+            IFNULL(updatedAt, createdAt) DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun findAutofillCandidates(
+        packageName: String?,
+        webDomain: String?,
+        limit: Int
+    ): List<VaultEntryEntity>
 
     @Query("""
         SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} 
@@ -29,40 +71,43 @@ interface VaultDao {
         OR category LIKE '%' || :query || '%' 
         OR tags LIKE '%' || :query || '%'
     """)
-    fun searchEntries(query: String): Flow<List<VaultEntry>>
+    fun searchEntries(query: String): Flow<List<VaultEntryEntity>>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId ORDER BY changedAt DESC")
-    fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistory>>
+    fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistoryEntity>>
 
     @Transaction
-    suspend fun updateWithHistory(entry: VaultEntry, history: VaultHistory) {
+    suspend fun updateWithHistory(entry: VaultEntryEntity, history: VaultHistoryEntity) {
         update(entry.copy(updatedAt = System.currentTimeMillis()))
         insertHistory(history)
     }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertInternal(entry: VaultEntry)
+    suspend fun insertInternal(entry: VaultEntryEntity): Long
 
-    suspend fun insert(entry: VaultEntry) {
+    suspend fun insert(entry: VaultEntryEntity): Long {
         val now = System.currentTimeMillis()
-        insertInternal(entry.copy(createdAt = entry.createdAt ?: now, updatedAt = now))
+        return insertInternal(entry.copy(createdAt = entry.createdAt ?: now, updatedAt = now))
     }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(entries: List<VaultEntry>)
+    suspend fun insertAll(entries: List<VaultEntryEntity>)
 
     @Update
-    suspend fun update(entry: VaultEntry)
+    suspend fun update(entry: VaultEntryEntity)
 
     @Delete
-    suspend fun delete(entry: VaultEntry)
+    suspend fun delete(entry: VaultEntryEntity)
 
     @Query("DELETE FROM ${DatabaseConfig.TABLE_ENTRIES}")
     suspend fun deleteAll()
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertHistory(history: VaultHistory)
+    suspend fun insertHistory(history: VaultHistoryEntity)
     
     @Query("DELETE FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId")
     suspend fun clearHistoryByEntryId(entryId: Int)
 }
+
+
+

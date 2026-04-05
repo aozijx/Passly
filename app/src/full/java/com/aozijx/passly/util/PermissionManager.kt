@@ -11,7 +11,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.aozijx.passly.core.util.Logcat
+import com.aozijx.passly.core.logging.Logcat
 import java.lang.ref.WeakReference
 
 /**
@@ -109,3 +109,4 @@ class PermissionManager private constructor() : DefaultLifecycleObserver {
         onResult = null
     }
 }
+

@@ -1,4 +1,4 @@
-package com.example.passly.features.settings
+package com.aozijx.passly.features.settings
 
 import android.app.Application
 import android.content.Context
@@ -8,53 +8,192 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.AppContext
+import com.aozijx.passly.core.backup.BackupExportStorageSupport
+import com.aozijx.passly.core.backup.BackupManager
+import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.util.BackupManager
+import com.aozijx.passly.core.common.ui.VaultCardStyle
+import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.features.settings.internal.BackupActionSupport
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+data class SettingsUiState(
+    val lockTimeout: Long = 60000L,
+    val isStatusBarAutoHide: Boolean = true,
+    val isTopBarCollapsible: Boolean = true,
+    val isTabBarCollapsible: Boolean = true,
+    val isSecureContentEnabled: Boolean = true,
+    val isFlipToLockEnabled: Boolean = false,
+    val isFlipExitAndClearStackEnabled: Boolean = false,
+    val cardStyle: VaultCardStyle = VaultCardStyle.styleConfig.globalDefaultStyle,
+    val cardStyleByEntryType: Map<Int, VaultCardStyle> = mapOf(-1 to VaultCardStyle.styleConfig.globalDefaultStyle),
+    val autofillUiMode: AutofillUiMode = AutofillUiMode.SYSTEM_INLINE,
+    val isSwipeEnabled: Boolean = true,
+    val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
+    val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
+    val backupDirectoryUri: String? = null,
+    val lastBackupExportFileName: String? = null
+)
+
+private data class CoreSettingsFlowState(
+    val lockTimeout: Long,
+    val isStatusBarAutoHide: Boolean,
+    val isTopBarCollapsible: Boolean,
+    val isTabBarCollapsible: Boolean,
+    val isSecureContentEnabled: Boolean
+)
+
+private data class InteractionSettingsFlowState(
+    val isFlipToLockEnabled: Boolean,
+    val isFlipExitAndClearStackEnabled: Boolean,
+    val cardStyle: VaultCardStyle,
+    val cardStyleByEntryType: Map<Int, VaultCardStyle>,
+    val autofillUiMode: AutofillUiMode,
+    val isSwipeEnabled: Boolean,
+    val swipeLeftAction: SwipeActionType
+)
+
+private data class SecurityAndStyleFlowState(
+    val isFlipToLockEnabled: Boolean,
+    val isFlipExitAndClearStackEnabled: Boolean,
+    val cardStyle: VaultCardStyle,
+    val cardStyleByEntryType: Map<Int, VaultCardStyle>
+)
+
+private data class AutofillAndSwipeFlowState(
+    val autofillUiMode: AutofillUiMode,
+    val isSwipeEnabled: Boolean,
+    val swipeLeftAction: SwipeActionType
+)
+
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val prefs = AppContext.get().preference
-    
-    // --- 沉浸式折叠设置 ---
-    val isStatusBarAutoHide: StateFlow<Boolean> = prefs.isStatusBarAutoHide
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-        
-    val isTopBarCollapsible: StateFlow<Boolean> = prefs.isTopBarCollapsible
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-        
-    val isTabBarCollapsible: StateFlow<Boolean> = prefs.isTabBarCollapsible
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-        
-    // 合并后的安全设置 (控制 FLAG_SECURE)
-    val isSecureContentEnabled: StateFlow<Boolean> = prefs.isSecureContentEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    private val settingsUseCases = AppContainer.settingsUseCases
+    private val backupActionSupport = BackupActionSupport()
 
-    val isFlipToLockEnabled: StateFlow<Boolean> = prefs.isFlipToLockEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    // --- 交互设置 ---
-    val isSwipeEnabled: StateFlow<Boolean> = prefs.isSwipeEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val swipeLeftAction: StateFlow<SwipeActionType> = prefs.swipeLeftAction
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SwipeActionType.COPY_PASSWORD)
-    val swipeRightAction: StateFlow<SwipeActionType> = prefs.swipeRightAction
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SwipeActionType.DETAIL)
+    val uiState: StateFlow<SettingsUiState> = combine(
+        combine(
+        settingsUseCases.lockTimeout,
+        settingsUseCases.isStatusBarAutoHide,
+        settingsUseCases.isTopBarCollapsible,
+        settingsUseCases.isTabBarCollapsible,
+        settingsUseCases.isSecureContentEnabled
+    ) { lockTimeout, isStatusBarAutoHide, isTopBarCollapsible, isTabBarCollapsible, isSecureContentEnabled ->
+        CoreSettingsFlowState(
+            lockTimeout = lockTimeout,
+            isStatusBarAutoHide = isStatusBarAutoHide,
+            isTopBarCollapsible = isTopBarCollapsible,
+            isTabBarCollapsible = isTabBarCollapsible,
+            isSecureContentEnabled = isSecureContentEnabled
+        )
+    },
+        combine(
+            settingsUseCases.isFlipToLockEnabled,
+            settingsUseCases.isFlipExitAndClearStackEnabled,
+            settingsUseCases.cardStyle,
+            settingsUseCases.cardStyleByEntryType
+        ) { isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle, cardStyleByEntryType ->
+            SecurityAndStyleFlowState(
+                isFlipToLockEnabled = isFlipToLockEnabled,
+                isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
+                cardStyle = cardStyle,
+                cardStyleByEntryType = cardStyleByEntryType
+            )
+        }.combine(
+            combine(
+            settingsUseCases.autofillUiMode,
+            settingsUseCases.isSwipeEnabled,
+            settingsUseCases.swipeLeftAction
+        ) { autofillUiMode, isSwipeEnabled, swipeLeftAction ->
+            AutofillAndSwipeFlowState(
+                autofillUiMode = autofillUiMode,
+                isSwipeEnabled = isSwipeEnabled,
+                swipeLeftAction = swipeLeftAction
+            )
+        }) { securityAndStyle, autofillAndSwipe ->
+            InteractionSettingsFlowState(
+                isFlipToLockEnabled = securityAndStyle.isFlipToLockEnabled,
+                isFlipExitAndClearStackEnabled = securityAndStyle.isFlipExitAndClearStackEnabled,
+                cardStyle = securityAndStyle.cardStyle,
+                cardStyleByEntryType = securityAndStyle.cardStyleByEntryType,
+                autofillUiMode = autofillAndSwipe.autofillUiMode,
+                isSwipeEnabled = autofillAndSwipe.isSwipeEnabled,
+                swipeLeftAction = autofillAndSwipe.swipeLeftAction
+            )
+        },
+        settingsUseCases.swipeRightAction,
+        settingsUseCases.backupDirectoryUri,
+        settingsUseCases.lastBackupExportFileName
+    ) { core, interaction, swipeRightAction, backupDirectoryUri, lastBackupExportFileName ->
+        SettingsUiState(
+            lockTimeout = core.lockTimeout,
+            isStatusBarAutoHide = core.isStatusBarAutoHide,
+            isTopBarCollapsible = core.isTopBarCollapsible,
+            isTabBarCollapsible = core.isTabBarCollapsible,
+            isSecureContentEnabled = core.isSecureContentEnabled,
+            isFlipToLockEnabled = interaction.isFlipToLockEnabled,
+            isFlipExitAndClearStackEnabled = interaction.isFlipExitAndClearStackEnabled,
+            cardStyle = interaction.cardStyle,
+            cardStyleByEntryType = interaction.cardStyleByEntryType,
+            autofillUiMode = interaction.autofillUiMode,
+            isSwipeEnabled = interaction.isSwipeEnabled,
+            swipeLeftAction = interaction.swipeLeftAction,
+            swipeRightAction = swipeRightAction,
+            backupDirectoryUri = backupDirectoryUri,
+            lastBackupExportFileName = lastBackupExportFileName
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     // --- Setter 方法 ---
-    fun setStatusBarAutoHide(autoHide: Boolean) = viewModelScope.launch { prefs.setStatusBarAutoHide(autoHide) }
-    fun setTopBarCollapsible(collapsible: Boolean) = viewModelScope.launch { prefs.setTopBarCollapsible(collapsible) }
-    fun setTabBarCollapsible(collapsible: Boolean) = viewModelScope.launch { prefs.setTabBarCollapsible(collapsible) }
-    fun setSecureContentEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setSecureContentEnabled(enabled) }
-    fun setFlipToLockEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setFlipToLockEnabled(enabled) }
+    fun setStatusBarAutoHide(autoHide: Boolean) =
+        viewModelScope.launch { settingsUseCases.setStatusBarAutoHide(autoHide) }
 
-    fun setSwipeEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setSwipeEnabled(enabled) }
-    fun setSwipeLeftAction(action: SwipeActionType) = viewModelScope.launch { prefs.setSwipeLeftAction(action) }
-    fun setSwipeRightAction(action: SwipeActionType) = viewModelScope.launch { prefs.setSwipeRightAction(action) }
+    fun setTopBarCollapsible(collapsible: Boolean) =
+        viewModelScope.launch { settingsUseCases.setTopBarCollapsible(collapsible) }
+
+    fun setTabBarCollapsible(collapsible: Boolean) =
+        viewModelScope.launch { settingsUseCases.setTabBarCollapsible(collapsible) }
+
+    fun setSecureContentEnabled(enabled: Boolean) =
+        viewModelScope.launch { settingsUseCases.setSecureContentEnabled(enabled) }
+
+    fun setFlipToLockEnabled(enabled: Boolean) =
+        viewModelScope.launch { settingsUseCases.setFlipToLockEnabled(enabled) }
+
+    fun setFlipExitAndClearStackEnabled(enabled: Boolean) =
+        viewModelScope.launch { settingsUseCases.setFlipExitAndClearStackEnabled(enabled) }
+
+    fun setLockTimeout(timeoutMs: Long) =
+        viewModelScope.launch { settingsUseCases.setLockTimeout(timeoutMs.coerceAtLeast(5000L)) }
+
+    fun setCardStyle(style: VaultCardStyle) =
+        viewModelScope.launch { settingsUseCases.setCardStyle(style) }
+
+    fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) =
+        viewModelScope.launch {
+            settingsUseCases.setCardStyleForEntryType(entryTypeValue, style)
+        }
+
+    fun toggleAutofillUiMode(currentMode: AutofillUiMode) = viewModelScope.launch {
+        val nextMode = when (currentMode) {
+            AutofillUiMode.SYSTEM_INLINE -> AutofillUiMode.BOTTOM_SHEET
+            AutofillUiMode.BOTTOM_SHEET -> AutofillUiMode.SYSTEM_INLINE
+        }
+        settingsUseCases.setAutofillUiMode(nextMode)
+    }
+
+    fun setSwipeEnabled(enabled: Boolean) =
+        viewModelScope.launch { settingsUseCases.setSwipeEnabled(enabled) }
+
+    fun setSwipeLeftAction(action: SwipeActionType) =
+        viewModelScope.launch { settingsUseCases.setSwipeLeftAction(action) }
+
+    fun setSwipeRightAction(action: SwipeActionType) =
+        viewModelScope.launch { settingsUseCases.setSwipeRightAction(action) }
 
     // --- 备份/恢复相关逻辑 ---
     var backupMessage by mutableStateOf<String?>(null); private set
@@ -63,17 +202,42 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     var backupUri by mutableStateOf<Uri?>(null)
     var backupPassword by mutableStateOf("")
     var importMode by mutableStateOf(BackupManager.ImportMode.OVERWRITE)
+    var backupExportFallbackFileName by mutableStateOf<String?>(null)
+        private set
 
-    fun startExport(uri: Uri) {
+    private var pendingExportFileName: String? = null
+    private var pendingExportAllowFallback: Boolean = false
+
+    fun startExport(uri: Uri, fileNameHint: String? = null, allowFallback: Boolean = false) {
         backupUri = uri
         isExporting = true
         showBackupPasswordDialog = true
+        pendingExportFileName = fileNameHint
+        pendingExportAllowFallback = allowFallback
     }
 
     fun startImport(uri: Uri) {
         backupUri = uri
         isExporting = false
         showBackupPasswordDialog = true
+        pendingExportFileName = null
+        pendingExportAllowFallback = false
+    }
+
+    fun nextBackupFileName(): String = BackupExportStorageSupport.buildBackupFileName()
+
+    fun tryStartExportInConfiguredDirectory(context: Context, directoryUri: String?): Boolean {
+        if (directoryUri.isNullOrBlank()) return false
+        val target = BackupExportStorageSupport.createTimestampExportTarget(context, directoryUri)
+            .getOrElse {
+                return false
+            }
+        startExport(target.fileUri, fileNameHint = target.fileName, allowFallback = true)
+        return true
+    }
+
+    fun consumeBackupExportFallbackFileName() {
+        backupExportFallbackFileName = null
     }
 
     fun dismissBackupPasswordDialog() {
@@ -85,17 +249,52 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun processBackupAction(context: Context) {
         val uri = backupUri ?: return
         val password = backupPassword.toCharArray()
+        val exportingNow = isExporting
+        val exportFileName = pendingExportFileName
+        val allowFallback = pendingExportAllowFallback
         viewModelScope.launch {
-            val result = if (isExporting) BackupManager.exportBackup(context, uri, password)
-            else BackupManager.importBackup(context, uri, password, importMode)
-            
-            backupMessage = if (result.isSuccess) "导出成功" else "导入成功"
-            if (!result.isSuccess) {
-                backupMessage = "失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+            val resultMessage = backupActionSupport.runBackupAction(
+                context = context,
+                uri = uri,
+                password = password,
+                isExporting = exportingNow,
+                importMode = importMode
+            )
+            if (exportingNow) {
+                if (!resultMessage.startsWith("失败") && !exportFileName.isNullOrBlank()) {
+                    settingsUseCases.setLastBackupExportFileName(exportFileName)
+                } else if (allowFallback) {
+                    backupExportFallbackFileName = exportFileName ?: nextBackupFileName()
+                }
             }
+            backupMessage = resultMessage
             dismissBackupPasswordDialog()
+            pendingExportFileName = null
+            pendingExportAllowFallback = false
         }
     }
 
-    fun clearBackupMessage() { backupMessage = null }
+    fun clearBackupMessage() {
+        backupMessage = null
+    }
+
+    // --- 备份路径设置 ---
+    fun setBackupDirectoryUri(uri: String) =
+        viewModelScope.launch { settingsUseCases.setBackupDirectoryUri(uri) }
+
+    fun clearBackupDirectoryUri() =
+        viewModelScope.launch { settingsUseCases.clearBackupDirectoryUri() }
+
+    fun testBackupDirectoryWritePermission(context: Context, directoryUri: String?) {
+        if (directoryUri.isNullOrBlank()) {
+            backupMessage = "请先设置备份目录"
+            return
+        }
+        val result = BackupExportStorageSupport.testWritePermission(context, directoryUri)
+        backupMessage = if (result.isSuccess) {
+            "目录写入权限正常"
+        } else {
+            "目录写入测试失败，请重新选择目录"
+        }
+    }
 }

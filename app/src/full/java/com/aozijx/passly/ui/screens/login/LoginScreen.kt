@@ -1,4 +1,4 @@
-package com.example.passly.ui.screens.login
+package com.aozijx.passly.ui.screens.login
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -146,3 +146,4 @@ fun LoginScreen(onBack: () -> Unit) {
         }
     }
 }
+

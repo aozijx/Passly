@@ -16,3 +16,5 @@ class PasswordAddState {
 
     val isValid: Boolean get() = title.isNotBlank() && password.isNotBlank()
 }
+
+

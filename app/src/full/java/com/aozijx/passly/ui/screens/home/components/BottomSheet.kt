@@ -1,4 +1,4 @@
-package com.example.passly.ui.screens.home.components
+package com.aozijx.passly.ui.screens.home.components
 
 import android.Manifest
 import android.content.ClipData
@@ -238,3 +238,4 @@ fun ReadClipboardButton() {
         }
     }
 }
+

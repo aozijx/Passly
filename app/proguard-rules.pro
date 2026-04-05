@@ -5,8 +5,7 @@
 -keep class * extends androidx.room.RoomDatabase
 
 # SQLCipher / SQLite 相关规则
--keep class net.sqlcipher.** { *; }
--keep class net.sqlcipher.database.** { *; }
+-keep class net.zetetic.database.sqlcipher.** { *; }
 -keep class androidx.sqlite.db.SupportSQLite* { *; }
 
 # --- ML Kit / Firebase 依赖注入系统修复 ---

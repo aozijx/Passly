@@ -1,4 +1,4 @@
-package com.example.passly.ui.screens.settings.components
+package com.aozijx.passly.ui.screens.settings.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState

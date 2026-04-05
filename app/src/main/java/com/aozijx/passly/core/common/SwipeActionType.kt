@@ -49,3 +49,5 @@ data class SwipeConfig(
     val leftAction: SwipeActionType = SwipeActionType.DELETE,
     val rightAction: SwipeActionType = SwipeActionType.DISABLED
 )
+
+

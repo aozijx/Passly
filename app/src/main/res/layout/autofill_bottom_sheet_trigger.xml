@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  用于 BOTTOM_SHEET 模式下，系统自动填充下拉栏中显示的唯一一条"踏板"入口。
+  用户点击此行后，AutofillAuthActivity 会弹出半屏候选列表。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/autofill_remote_item_bg"
+    android:gravity="center_vertical"
+    android:minHeight="64dp"
+    android:orientation="horizontal"
+    android:paddingStart="14dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
+
+    <!-- Passly 应用图标 -->
+    <ImageView
+        android:id="@+id/trigger_icon"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:layout_marginEnd="12dp"
+        android:contentDescription="@null"
+        android:scaleType="fitCenter"
+        android:src="@mipmap/launcher_logo" />
+
+    <!-- 中间文字列 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- 主标题：固定文案 -->
+        <TextView
+            android:id="@+id/trigger_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/autofill_entry_compact_title"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <!-- 副标题：动态"找到 N 个匹配账号 · 点击选择" -->
+        <TextView
+            android:id="@+id/trigger_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- 右箭头，暗示可点击展开 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="@string/autofill_chevron_right"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="20sp" />
+
+</LinearLayout>

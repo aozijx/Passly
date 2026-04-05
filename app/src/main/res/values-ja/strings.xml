@@ -38,11 +38,17 @@
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">本人確認</string>
     <string name="autofill_auth_subtitle">認証して認証情報を自動入力</string>
+    <string name="autofill_entry_compact_title">アカウントを選択</string>
+    <string name="autofill_candidate_sheet_title">入力するアカウントを選択</string>
+    <string name="autofill_candidate_sheet_subtitle">下の一覧から1件選んで続行してください</string>
     <string name="autofill_save_prompt_title">%s を保存しますか？</string>
     <string name="autofill_save_prompt_description">%s のユーザー名とパスワードをPasslyに保存しますか？</string>
     <string name="autofill_save_icon_description">アプリアイコン</string>
     <string name="autofill_no_suggestions">Passlyに該当する提案はありません</string>
     <string name="autofill_pending_verification">検証待ちの自動入力項目</string>
+    <string name="autofill_match_app">アプリ一致</string>
+    <string name="autofill_match_domain">ドメイン一致</string>
+    <string name="autofill_match_unknown">候補</string>
 
     <!-- 自動入力タイトル生成 -->
     <string name="autofill_title_app_fallback">アプリ</string>
@@ -161,6 +167,23 @@
     <string name="hide_password">パスワード非表示</string>
     <string name="label_title_hint">タイトル（例：Google、GitHub）</string>
     <string name="label_username_hint">ユーザー名／メールアドレス</string>
+    
+    <!-- 詳細ページの新しい文字列 -->
+    <string name="vault_detail_totp_label">二要素認証コード</string>
+    <string name="vault_detail_domain_label">ウェブサイトドメインまたはアイコンURL</string>
+    <string name="vault_detail_domain_placeholder">例：google.com または https://example.com/icon.png</string>
+    <string name="vault_detail_domain_and_icon">ドメインとアイコン</string>
+    <string name="vault_detail_not_set">未設定</string>
+    <string name="vault_detail_copied">コピーしました</string>
+    <string name="vault_detail_download_icon">アイコンをダウンロード</string>
+    <string name="vault_detail_icon_download_success">アイコンのダウンロードに成功しました！</string>
+    <string name="vault_detail_icon_download_failed">アイコンのダウンロードに失敗しました</string>
+    <string name="vault_detail_login_credentials">ログイン情報</string>
+    <string name="vault_detail_username">ユーザー名</string>
+    <string name="vault_detail_password">パスワード</string>
+    <string name="vault_detail_notes">メモ</string>
+    <string name="vault_detail_add_notes">メモを追加…</string>
+    <string name="vault_detail_no_notes">メモなし</string>
 
     <!-- アイコン -->
     <string name="icon_bank">銀行</string>
@@ -203,7 +226,7 @@
 
     <!-- カテゴリ -->
     <string name="category_autofill">自動入力</string>
-    <string name="category_unfiled">未分类</string>
+    <string name="category_unfiled">未分類</string>
     <string name="category_otp">OTP</string>
 
     <!-- ウィジェット・ショートカット -->
@@ -303,5 +326,20 @@
         <item>セキュリティ</item>
         <item>権限</item>
     </string-array>
+
+    <!-- 設定: カードスタイル -->
+    <string name="settings_card_style_section_title">一覧カードスタイル</string>
+    <string name="settings_card_style_section_expanded_hint">プレビューを展開中</string>
+    <string name="settings_card_style_section_collapsed_hint">タップしてプレビューと切替</string>
+    <string name="settings_card_style_group_expanded_label">折りたたむ</string>
+    <string name="settings_card_style_group_collapsed_label">展開</string>
+    <string name="settings_card_style_group_password">パスワードグループ</string>
+    <string name="settings_card_style_group_totp">TOTPグループ</string>
+    <string name="settings_card_style_default_name">分類の既定</string>
+    <string name="settings_card_style_default_desc">各分類の推奨スタイルを自動的に使用します</string>
+    <string name="settings_card_style_password_name">パスワードカード</string>
+    <string name="settings_card_style_password_desc">認証情報を識別しやすいスタイル</string>
+    <string name="settings_card_style_totp_name">TOTPカード</string>
+    <string name="settings_card_style_totp_desc">動的コードと進捗リングを強調</string>
 
 </resources>

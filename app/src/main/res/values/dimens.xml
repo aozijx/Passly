@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 自动填充条目的圆角 -->
+    <dimen name="autofill_item_corner_radius">16dp</dimen>
+
+    <!-- 自动填充徽标的圆角 -->
+    <dimen name="autofill_badge_corner_radius">8dp</dimen>
+
+    <!-- 你也可以在这里定义其他公共圆角，方便全局修改 -->
+    <dimen name="common_card_corner_radius">12dp</dimen>
+    <dimen name="common_button_corner_radius">100dp</dimen>
+</resources>

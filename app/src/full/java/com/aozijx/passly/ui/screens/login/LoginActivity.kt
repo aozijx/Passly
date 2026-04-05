@@ -9,7 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.aozijx.passly.data.AppPreference
 import com.aozijx.passly.ui.theme.AppTheme
-import com.example.passly.ui.screens.login.LoginScreen
+import com.aozijx.passly.ui.screens.login.LoginScreen
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,3 +34,4 @@ class LoginActivity : ComponentActivity() {
         }
     }
 }
+

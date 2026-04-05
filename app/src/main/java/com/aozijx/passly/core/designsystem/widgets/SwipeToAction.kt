@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.data.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -218,30 +218,22 @@ fun createSwipeAction(
 
 fun handleSwipeAction(
     actionType: SwipeActionType,
-    item: VaultEntry,
+    item: VaultSummary,
     onAuthRequired: (onSuccess: () -> Unit) -> Unit,
-    onQuickDelete: (VaultEntry) -> Unit,
+    onQuickDelete: (VaultSummary) -> Unit,
     onCopyPassword: (decryptedPassword: String) -> Unit,
     onDecryptPassword: (onResult: (String?) -> Unit) -> Unit,
-    onShowDetail: (VaultEntry) -> Unit
+    onShowDetail: (VaultSummary) -> Unit,
+    onShowEditDetail: (VaultSummary) -> Unit
 ) {
     when (actionType) {
-        SwipeActionType.DELETE -> {
-            onAuthRequired { onQuickDelete(item) }
+        SwipeActionType.DELETE -> onAuthRequired { onQuickDelete(item) }
+        SwipeActionType.EDIT -> onAuthRequired { onShowEditDetail(item) }
+        SwipeActionType.DETAIL -> onShowDetail(item)
+        SwipeActionType.COPY_PASSWORD -> onDecryptPassword { decryptedPassword ->
+            decryptedPassword?.let { onCopyPassword(it) }
         }
-        SwipeActionType.EDIT -> {
-            // TODO: implement edit action
-        }
-        SwipeActionType.DETAIL -> {
-            onShowDetail(item)
-        }
-        SwipeActionType.COPY_PASSWORD -> {
-            onDecryptPassword { decryptedPassword ->
-                decryptedPassword?.let { onCopyPassword(it) }
-            }
-        }
-        SwipeActionType.DISABLED -> {
-            // do nothing
-        }
+        SwipeActionType.DISABLED -> Unit
     }
 }
+

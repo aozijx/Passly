@@ -38,11 +38,21 @@
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">安全验证</string>
     <string name="autofill_auth_subtitle">验证身份以自动填充凭据</string>
+    <string name="autofill_entry_compact_title">选择账号</string>
+    <string name="autofill_candidate_sheet_title">选择要填充的账号</string>
+    <string name="autofill_candidate_sheet_subtitle">从下方列表中选择一个账号继续</string>
     <string name="autofill_save_prompt_title">保存 %s ？</string>
     <string name="autofill_save_prompt_description">是否将 %s 的账号密码保存到 Passly？</string>
     <string name="autofill_save_icon_description">应用图标</string>
     <string name="autofill_no_suggestions">Passly 暂无匹配建议</string>
     <string name="autofill_pending_verification">待验证的自动填充项</string>
+    <string name="autofill_match_app">应用匹配</string>
+    <string name="autofill_match_domain">域名匹配</string>
+    <string name="autofill_match_unknown">候选</string>
+    <string name="autofill_chevron_right" translatable="false">›</string>
+    <plurals name="autofill_trigger_count">
+        <item quantity="other">找到 %d 个匹配账号 · 点击选择</item>
+    </plurals>
 
     <!-- 自动填充标题生成相关 -->
     <string name="autofill_title_app_fallback">应用</string>
@@ -162,6 +172,26 @@
     <string name="hide_password">隐藏密码</string>
     <string name="label_title_hint">标题 (如: Google, GitHub)</string>
     <string name="label_username_hint">账号/邮箱</string>
+    
+    <!-- 详情页新字符串 -->
+    <string name="vault_detail_totp_label">两步验证码</string>
+    <string name="vault_detail_domain_label">网站域名或图标直链</string>
+    <string name="vault_detail_domain_placeholder">例如: google.com 或 https://example.com/icon.png</string>
+    <string name="vault_detail_domain_and_icon">域名与图标</string>
+    <string name="vault_detail_not_set">未设置</string>
+    <string name="vault_detail_copied">已复制</string>
+    <string name="vault_detail_download_icon">下载图标</string>
+    <string name="vault_detail_icon_download_success">图标下载成功！</string>
+    <string name="vault_detail_icon_download_failed">图标下载失败</string>
+    <string name="vault_detail_icon_download_network_error">网络连接失败</string>
+    <string name="vault_detail_icon_download_decode_error">图标格式不支持</string>
+    <string name="vault_detail_icon_download_save_error">图标保存失败</string>
+    <string name="vault_detail_login_credentials">登录凭据</string>
+    <string name="vault_detail_username">用户名</string>
+    <string name="vault_detail_password">密码</string>
+    <string name="vault_detail_notes">备注</string>
+    <string name="vault_detail_add_notes">添加备注...</string>
+    <string name="vault_detail_no_notes">暂无备注</string>
 
     <!-- icon_ 系列 -->
     <string name="icon_bank">银行</string>
@@ -206,6 +236,46 @@
     <string name="category_autofill">自动填充</string>
     <string name="category_unfiled">未分类</string>
     <string name="category_otp">OTP</string>
+
+    <!-- WiFi 相关 -->
+    <string name="wifi_ssid">WiFi名称</string>
+    <string name="wifi_password">WiFi密码</string>
+    <string name="wifi_encryption">加密方式</string>
+    <string name="wifi_hidden">隐藏网络</string>
+    <string name="wifi_settings">WiFi 设置</string>
+    <string name="wifi_copied">WiFi信息已复制</string>
+
+    <!-- 银行卡相关 -->
+    <string name="cardholder">持卡人</string>
+    <string name="card_number">卡号</string>
+    <string name="card_cvv">安全码</string>
+    <string name="card_expiration">有效期</string>
+    <string name="card_copied">银行卡信息已复制</string>
+
+    <!-- 助记词相关 -->
+    <string name="seed_phrase">助记词</string>
+    <string name="seed_phrase_title">加密货币助记词</string>
+    <string name="seed_phrase_revealed">已显示助记词</string>
+    <string name="seed_phrase_copied">助记词已复制</string>
+    <string name="word_index_hint">点击任意位置复制</string>
+
+    <!-- SSH密钥相关 -->
+    <string name="ssh_private_key">私钥内容</string>
+    <string name="ssh_private_key_full">完整私钥</string>
+    <string name="ssh_fingerprint">密钥指纹</string>
+    <string name="ssh_default_fingerprint">未设置</string>
+    <string name="ssh_key_copied">SSH密钥已复制</string>
+    <string name="passphrase">密钥口令</string>
+    <string name="ssh_key_pin">密钥PIN</string>
+
+    <!-- 证件相关 -->
+    <string name="id_number">证件号码</string>
+    <string name="id_copied">证件信息已复制</string>
+
+    <!-- Passkey相关 -->
+    <string name="passkey_data">Passkey数据</string>
+    <string name="passkey_recovery_codes">恢复码</string>
+    <string name="hardware_key_info">硬件密钥信息</string>
 
     <!-- widget / shortcut / changelog -->
     <string name="widget_loading">加载中…</string>
@@ -302,5 +372,20 @@
         <item>安全</item>
         <item>权限</item>
     </string-array>
+
+    <!-- 设置: 列表卡片样式 -->
+    <string name="settings_card_style_section_title">列表卡片样式</string>
+    <string name="settings_card_style_section_expanded_hint">已展开预览</string>
+    <string name="settings_card_style_section_collapsed_hint">点击展开预览与切换</string>
+    <string name="settings_card_style_group_expanded_label">收起</string>
+    <string name="settings_card_style_group_collapsed_label">展开</string>
+    <string name="settings_card_style_group_password">密码分组</string>
+    <string name="settings_card_style_group_totp">TOTP 分组</string>
+    <string name="settings_card_style_default_name">默认样式</string>
+    <string name="settings_card_style_default_desc">该分类默认样式</string>
+    <string name="settings_card_style_password_name">密码卡片</string>
+    <string name="settings_card_style_password_desc">强调凭据识别的样式</string>
+    <string name="settings_card_style_totp_name">TOTP卡片</string>
+    <string name="settings_card_style_totp_desc">突出动态验证码与进度环</string>
 
 </resources>

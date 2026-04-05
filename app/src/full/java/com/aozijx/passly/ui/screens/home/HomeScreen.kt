@@ -65,9 +65,9 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.aozijx.passly.core.util.Logcat
+import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.ui.navigation.TopBarConfig
-import com.example.passly.ui.screens.home.components.BottomSheetDemo
+import com.aozijx.passly.ui.screens.home.components.BottomSheetDemo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -447,3 +447,5 @@ fun ShimmerEffectCard(modifier: Modifier) {
         }
     }
 }
+
+

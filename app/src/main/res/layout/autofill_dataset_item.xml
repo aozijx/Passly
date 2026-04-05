@@ -1,47 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  用于 SYSTEM_INLINE（键盘候选）模式下，系统自动填充下拉列表中每条候选项的展示行。
+  RemoteViews 限制：只能用标准 View，不能用 ConstraintLayout / Compose / MaterialTheme。
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:background="@drawable/autofill_remote_item_bg"
     android:gravity="center_vertical"
-    android:paddingHorizontal="12dp"
-    android:paddingVertical="8dp"
-    android:minHeight="48dp"
-    android:background="?android:attr/selectableItemBackground">
+    android:minHeight="66dp"
+    android:orientation="horizontal"
+    android:paddingStart="14dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
+    <!-- 账号图标 / App Logo 占位 -->
     <ImageView
-        android:id="@+id/icon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_marginEnd="10dp"
+        android:id="@+id/item_icon"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:layout_marginEnd="12dp"
+        android:contentDescription="@null"
         android:scaleType="fitCenter"
-        android:src="@android:drawable/ic_lock_lock"
-        android:contentDescription="@string/AutoFill_icon" />
+        android:src="@mipmap/launcher_logo" />
 
+    <!-- 中间文字列 -->
     <LinearLayout
         android:layout_width="0dp"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
         android:orientation="vertical">
 
+        <!-- 条目标题 -->
         <TextView
-            android:id="@+id/title"
+            android:id="@+id/item_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:maxLines="1"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
 
+        <!-- 副标题：账号 · 匹配类型 -->
         <TextView
-            android:id="@+id/username"
+            android:id="@+id/item_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:maxLines="1"
+            android:layout_marginTop="2dp"
             android:ellipsize="end"
-            android:textColor="?android:attr/textColorSecondary" />
-
+            android:maxLines="1"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="12sp" />
     </LinearLayout>
+
+    <!-- 匹配类型徽标（"应用匹配" / "域名匹配"） -->
+    <TextView
+        android:id="@+id/item_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/autofill_badge_bg"
+        android:paddingStart="7dp"
+        android:paddingEnd="7dp"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="11sp" />
+
 </LinearLayout>

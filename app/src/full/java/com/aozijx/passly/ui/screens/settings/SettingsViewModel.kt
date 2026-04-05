@@ -13,7 +13,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.Logcat
+import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.AppPreference
 import com.aozijx.passly.i8n.LanguageOption
 import com.aozijx.passly.i8n.LocaleConfigReader
@@ -55,6 +55,30 @@ data class SettingsUiState(
     val changelogUrl: String = ""
 )
 
+private data class DisplaySettingsFlowState(
+    val isDarkMode: Boolean,
+    val isDynamicColor: Boolean,
+    val isNotificationsEnabled: Boolean,
+    val language: String,
+    val cacheSize: String
+)
+
+private data class LogSettingsFlowState(
+    val showPermissionGuide: Boolean,
+    val logContent: String?,
+    val isLogLoading: Boolean,
+    val logError: String?,
+    val logTitle: String,
+    val exportStatus: ExportStatus?
+)
+
+private data class LogPrimaryFlowState(
+    val showPermissionGuide: Boolean,
+    val logContent: String?,
+    val isLogLoading: Boolean,
+    val logError: String?
+)
+
 sealed class ExportStatus {
     object Loading : ExportStatus()
     data class Success(val intent: Intent) : ExportStatus()
@@ -75,30 +99,61 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var versionTapCount = 0
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        preference.isDarkMode,
-        preference.isDynamicColor,
-        preference.isNotificationsEnabled,
-        preference.language,
-        _cacheSize,
-        _showPermissionGuide,
-        _logContent,
-        _isLogLoading,
-        _logError,
-        _logTitle,
-        _exportStatus
-    ) { args ->
+        combine(
+            preference.isDarkMode,
+            preference.isDynamicColor,
+            preference.isNotificationsEnabled,
+            preference.language,
+            _cacheSize
+        ) { isDarkMode, isDynamicColor, isNotificationsEnabled, language, cacheSize ->
+            DisplaySettingsFlowState(
+                isDarkMode = isDarkMode,
+                isDynamicColor = isDynamicColor,
+                isNotificationsEnabled = isNotificationsEnabled,
+                language = language,
+                cacheSize = cacheSize
+            )
+        },
+        combine(
+            combine(
+                _showPermissionGuide,
+                _logContent,
+                _isLogLoading,
+                _logError
+            ) { showPermissionGuide, logContent, isLogLoading, logError ->
+                LogPrimaryFlowState(
+                    showPermissionGuide = showPermissionGuide,
+                    logContent = logContent,
+                    isLogLoading = isLogLoading,
+                    logError = logError
+                )
+            },
+            combine(_logTitle, _exportStatus) { logTitle, exportStatus ->
+                Pair(logTitle, exportStatus)
+            }
+        ) { primary, secondary ->
+            LogSettingsFlowState(
+                showPermissionGuide = primary.showPermissionGuide,
+                logContent = primary.logContent,
+                isLogLoading = primary.isLogLoading,
+                logError = primary.logError,
+                logTitle = secondary.first,
+                exportStatus = secondary.second
+            )
+        }
+    ) { display, logs ->
         SettingsUiState(
-            isDarkMode = args[0] as Boolean,
-            isDynamicColor = args[1] as Boolean,
-            isNotificationsEnabled = args[2] as Boolean,
-            language = args[3] as String,
-            cacheSize = args[4] as String,
-            showPermissionGuide = args[5] as Boolean,
-            logContent = args[6] as String?,
-            isLogLoading = args[7] as Boolean,
-            logError = args[8] as String?,
-            logTitle = args[9] as String,
-            exportStatus = args[10] as ExportStatus?,
+            isDarkMode = display.isDarkMode,
+            isDynamicColor = display.isDynamicColor,
+            isNotificationsEnabled = display.isNotificationsEnabled,
+            language = display.language,
+            cacheSize = display.cacheSize,
+            showPermissionGuide = logs.showPermissionGuide,
+            logContent = logs.logContent,
+            isLogLoading = logs.isLogLoading,
+            logError = logs.logError,
+            logTitle = logs.logTitle,
+            exportStatus = logs.exportStatus,
             languages = LocaleConfigReader.getSupportedLanguages(getApplication()),
             changelogUrl = getApplication<Application>().getString(R.string.changelog)
         )
