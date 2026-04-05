@@ -9,7 +9,7 @@ coreKtx = "1.18.0"
 lifecycleRuntimeKtx = "2.10.0"
 room = "2.8.4"
 navigationCompose = "2.9.7"
-datastorePreferences = "1.2.0"
+datastorePreferences = "1.2.1"
 coreSplashscreen = "1.2.0"
 glanceAppwidget = "1.1.1"
 exifinterface = "1.4.2"
@@ -17,7 +17,7 @@ exifinterface = "1.4.2"
 # UI & Material Design
 composeBom = "2026.03.00"
 activityCompose = "1.13.0"
-foundation = "1.10.4"
+foundation = "1.10.6"
 materialIcons = "1.7.8"
 coil = "2.7.0"
 markdown-renderer = "0.39.2"
@@ -25,13 +25,13 @@ markdown-renderer = "0.39.2"
 # Security & Data Protection
 biometric = "1.2.0-alpha05"
 securityCrypto = "1.1.0"
-sqlcipher = "4.5.4"
+sqlcipher = "4.14.1"
 # 不要升级，版本需要和 room 匹配
-sqlite = "2.2.0"
+sqlite = "2.6.2"
 
 # Camera & Barcode Scanning
 barcodeScanningBundled = "17.3.0"  # 内置版
-cameraxVersion = "1.5.3"
+cameraxVersion = "1.6.0"
 zxing = "3.5.4"
 
 # Testing

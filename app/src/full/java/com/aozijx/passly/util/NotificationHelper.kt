@@ -36,7 +36,9 @@ class NotificationHelper(private val context: Context) {
 
     private fun createNotificationChannel() {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.deleteNotificationChannel(channelId)
+        // 建议不要在 init 中删除渠道，除非有特殊版本迁移需求
+        // notificationManager.deleteNotificationChannel(channelId)
+        
         val channelName = "状态栏弹窗渠道"
         val channelDescription = "用于显示状态栏弹窗的通知渠道"
         val importance = NotificationManager.IMPORTANCE_HIGH
@@ -48,7 +50,6 @@ class NotificationHelper(private val context: Context) {
             enableVibration(true)
             vibrationPattern = longArrayOf(0, 1000, 1000, 1000)
             setSound(defaultSoundUri, null)
-            setImportance(importance)
             setShowBadge(true)
         }
         notificationManager.createNotificationChannel(channel)
@@ -81,7 +82,6 @@ class NotificationHelper(private val context: Context) {
             .build()
 
         // 2. 构建并发送摘要通知（Summary）
-        // 修复：为摘要通知也添加显式的 PendingIntent
         val summaryNotification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.launcher_logo)
             .setContentTitle("收到多条通知")
@@ -90,7 +90,7 @@ class NotificationHelper(private val context: Context) {
             .setGroup(groupKey)
             .setGroupSummary(true)
             .setAutoCancel(true)
-            .setContentIntent(pendingIntent) // 修复点：必须显式设置 Intent
+            .setContentIntent(pendingIntent) 
             .build()
 
         notificationManager.notify(uniqueId, notification)
@@ -98,18 +98,21 @@ class NotificationHelper(private val context: Context) {
     }
 
     private fun createPendingIntent(): PendingIntent {
-        // 使用显式 Intent 指定目标 Activity，防止 Intent 被劫持修改
+        // 安全修复：显式指定包名和目标类，彻底消除隐式 Intent 风险
         val intent = Intent(context, FullActivity::class.java).apply {
+            `package` = context.packageName // 明确指定包名
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
 
         return PendingIntent.getActivity(
             context,
-            0,
+            uniqueRequestCode(), // 使用唯一的 requestCode 防止 Intent 重复
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
+
+    private fun uniqueRequestCode(): Int = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
 
     /**
      * 取消所有通知（包括堆叠的组）
