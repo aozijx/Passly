@@ -113,6 +113,26 @@
     <string name="vault_backup_auth_subtitle_import">認証してデータをインポート・復号化</string>
     <string name="loading_export">バックアップを出力中…</string>
     <string name="loading_import">バックアップを復元中…</string>
+    <string name="backup_action_export_success">エクスポートに成功しました</string>
+    <string name="backup_action_import_success">インポートに成功しました（アイコンはバックグラウンドで同期されます）</string>
+    <string name="backup_error_with_reason">操作に失敗しました：%s</string>
+    <string name="backup_error_unknown">操作に失敗しました：不明なエラー</string>
+    <string name="backup_error_password_incorrect">バックアップパスワードが正しくありません。再度お試しください。</string>
+    <string name="backup_error_invalid_file">このファイルは有効な Passly バックアップではありません</string>
+    <string name="backup_error_incompatible_version">バックアップのバージョンに互換性がありません。現在の形式のみ対応しています。</string>
+    <string name="backup_error_corrupted">バックアップファイルが破損しているか、形式が正しくありません</string>
+    <string name="backup_error_create_file_failed">バックアップファイルを作成できませんでした</string>
+    <string name="backup_export_failed_cleanup_done">エクスポートに失敗したため、無効なファイルを自動削除しました</string>
+    <string name="backup_directory_set_first">先にバックアップ保存先を設定してください</string>
+    <string name="backup_directory_permission_ok">保存先ディレクトリへの書き込み権限は正常です</string>
+    <string name="backup_directory_permission_failed">保存先ディレクトリの書き込みテストに失敗しました。再選択してください。</string>
+    <string name="backup_import_mode_title">インポートモード</string>
+    <string name="backup_import_mode_overwrite_title">既存データを上書き</string>
+    <string name="backup_import_mode_overwrite_desc">既存データをすべて削除してからバックアップ内容をインポートします</string>
+    <string name="backup_import_mode_append_title">新規データを追加</string>
+    <string name="backup_import_mode_append_desc">既存データを保持し、バックアップ内容をデータベースに追加します</string>
+    <string name="backup_include_media_title">メディアファイルを含める</string>
+    <string name="backup_include_media_desc">カスタムアイコンと添付画像をバックアップします</string>
 
     <!-- 詳細と編集 -->
     <string name="vault_add_password_title">パスワードを追加</string>

@@ -3,13 +3,17 @@ package com.aozijx.passly.features.settings
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.core.backup.BackupManager
+import com.aozijx.passly.core.backup.BackupImportMode
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.ui.VaultCardStyle
@@ -201,12 +205,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     var showBackupPasswordDialog by mutableStateOf(false)
     var backupUri by mutableStateOf<Uri?>(null)
     var backupPassword by mutableStateOf("")
-    var importMode by mutableStateOf(BackupManager.ImportMode.OVERWRITE)
+    var importMode by mutableStateOf(BackupImportMode.OVERWRITE)
+    var includeImagesInBackup by mutableStateOf(true) // 新增：是否包含图片
     var backupExportFallbackFileName by mutableStateOf<String?>(null)
         private set
 
     private var pendingExportFileName: String? = null
     private var pendingExportAllowFallback: Boolean = false
+
+    private fun text(@StringRes resId: Int, vararg args: Any): String {
+        return getApplication<Application>().getString(resId, *args)
+    }
 
     fun startExport(uri: Uri, fileNameHint: String? = null, allowFallback: Boolean = false) {
         backupUri = uri
@@ -226,13 +235,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun nextBackupFileName(): String = BackupExportStorageSupport.buildBackupFileName()
 
-    fun tryStartExportInConfiguredDirectory(context: Context, directoryUri: String?): Boolean {
+    fun tryStartExportInConfiguredDirectory(directoryUri: String?): Boolean {
         if (directoryUri.isNullOrBlank()) return false
-        val target = BackupExportStorageSupport.createTimestampExportTarget(context, directoryUri)
-            .getOrElse {
-                return false
-            }
-        startExport(target.fileUri, fileNameHint = target.fileName, allowFallback = true)
+        // 核心修改：不再在这里创建文件，而是直接开始流程，传入目录 URI
+        startExport(directoryUri.toUri(), fileNameHint = nextBackupFileName(), allowFallback = true)
         return true
     }
 
@@ -247,30 +253,64 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun processBackupAction(context: Context) {
-        val uri = backupUri ?: return
+        val targetUri = backupUri ?: return
         val password = backupPassword.toCharArray()
         val exportingNow = isExporting
         val exportFileName = pendingExportFileName
         val allowFallback = pendingExportAllowFallback
+        val includeImages = includeImagesInBackup
+
         viewModelScope.launch {
-            val resultMessage = backupActionSupport.runBackupAction(
-                context = context,
-                uri = uri,
-                password = password,
-                isExporting = exportingNow,
-                importMode = importMode
-            )
-            if (exportingNow) {
-                if (!resultMessage.startsWith("失败") && !exportFileName.isNullOrBlank()) {
-                    settingsUseCases.setLastBackupExportFileName(exportFileName)
-                } else if (allowFallback) {
-                    backupExportFallbackFileName = exportFileName ?: nextBackupFileName()
+            try {
+                // 如果是导出，且传入的是目录，则现在创建正式文件
+                val finalUri = if (exportingNow && allowFallback) {
+                    val createResult = BackupExportStorageSupport.createNamedExportTarget(
+                        context, targetUri.toString(), exportFileName ?: nextBackupFileName()
+                    )
+                    if (createResult.isFailure) {
+                        backupMessage = text(R.string.backup_error_create_file_failed)
+                        return@launch
+                    }
+                    createResult.getOrThrow().fileUri
+                } else {
+                    targetUri
                 }
+
+                val outcome = backupActionSupport.runBackupAction(
+                    context = context,
+                    uri = finalUri,
+                    password = password,
+                    isExporting = exportingNow,
+                    importMode = importMode,
+                    includeImages = includeImages
+                )
+
+                // 如果导出失败，且是我们刚刚创建的文件，尝试清理掉这个空文件
+                if (exportingNow && outcome.isFailure && finalUri != targetUri) {
+                    val deleted = BackupExportStorageSupport.deleteDocument(context, finalUri)
+                    if (deleted) {
+                        Toast.makeText(
+                            context,
+                            text(R.string.backup_export_failed_cleanup_done),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                if (exportingNow) {
+                    if (!outcome.isFailure && !exportFileName.isNullOrBlank()) {
+                        settingsUseCases.setLastBackupExportFileName(exportFileName)
+                    } else if (allowFallback) {
+                        backupExportFallbackFileName = exportFileName ?: nextBackupFileName()
+                    }
+                }
+                backupMessage = outcome.message
+                dismissBackupPasswordDialog()
+                pendingExportFileName = null
+                pendingExportAllowFallback = false
+            } finally {
+                password.fill('\u0000')
             }
-            backupMessage = resultMessage
-            dismissBackupPasswordDialog()
-            pendingExportFileName = null
-            pendingExportAllowFallback = false
         }
     }
 
@@ -287,14 +327,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun testBackupDirectoryWritePermission(context: Context, directoryUri: String?) {
         if (directoryUri.isNullOrBlank()) {
-            backupMessage = "请先设置备份目录"
+            backupMessage = text(R.string.backup_directory_set_first)
             return
         }
         val result = BackupExportStorageSupport.testWritePermission(context, directoryUri)
         backupMessage = if (result.isSuccess) {
-            "目录写入权限正常"
+            text(R.string.backup_directory_permission_ok)
         } else {
-            "目录写入测试失败，请重新选择目录"
+            text(R.string.backup_directory_permission_failed)
         }
     }
 }

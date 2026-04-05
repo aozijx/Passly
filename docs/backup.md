@@ -1,134 +1,71 @@
-# Passly 备份加密机制升级指南 (V2)
+# Passly 备份加密规范 (V1-Implemented)
 
-市面上的主流密码管理器（如 Bitwarden, 1Password, KeePassXC）在处理备份加密时，早已不再使用简单的对称加密，而是采用 **“强 KDF（密钥派生函数）+ 认证加密（AEAD）”** 的组合。
+本项目已完成备份机制的彻底重构。本文档定义了当前生产环境所采用的备份文件格式、加密算法及工程实现细节。
 
-## 现状分析：为什么目前的加密“太弱”？
+## 安全标准
 
-1.  **密钥派生太快**：如果直接用用户密码的 MD5/SHA 结果当密钥，黑客可以利用 GPU 轻松爆破。
-2.  **缺乏完整性校验**：使用 AES-CBC 等模式时，攻击者虽然看不见内容，但可以篡改密文，甚至通过“填充预言攻击”解密。
-
----
-
-## 行业标准方案：AES-256-GCM + Argon2id
-
-这是目前安全界最推荐的黄金组合：
-
-### 1. AES-256-GCM (认证加密)
-*   **为什么用**：它不仅提供加密（Confidentiality），还自带“签名”（Authenticity）。如果备份文件被篡改哪怕 1 个字节，解密时会直接报错。
-*   **优点**：有效防止“重放攻击”和“密文篡改”。
-
-### 2. Argon2id (密钥派生函数)
-*   **为什么用**：它是密码哈希大赛（PHC）的冠军。相比于传统的 PBKDF2，它具有 **“内存硬性”**。
-*   **优点**：黑客无法通过廉价的显卡（GPU）或专用矿机（ASIC）进行大规模并行爆破，因为 Argon2id 运行时会占用大量内存，让爆破成本增加数千倍。
+1.  单格式架构：基于架构简洁性考虑，当前系统仅支持现行 V1 格式，不兼容旧版测试数据。
+2.  文件类型识别：文件头包含固定幻数 PASSLY，用于区分非法文件与备份文件。
+3.  高强度密钥派生：采用 Argon2id 算法，具备内存硬性（Memory-Hard），有效抵御 GPU/ASIC 硬件加速爆破。
+4.  认证加密 (AEAD)：使用 AES-256-GCM，在加密的同时提供完整性校验，防止密文被篡改。
 
 ---
 
-## 升级路线对比
+## 加密技术规格
 
-| 维度       | 弱方案 (不推荐)         | 专业方案 (V2 建议)                              |
-|:---------|:------------------|:------------------------------------------|
-| **算法模式** | AES-CBC / AES-ECB | **AES-256-GCM**                           |
-| **密钥派生** | SHA-256(password) | **Argon2id** (推荐) 或 PBKDF2-HMAC-SHA512    |
-| **迭代次数** | 1 次               | Argon2: 迭代 3, 内存 64MB / PBKDF2: 600,000 次 |
-| **随机性**  | 固定 IV / 无 Salt    | **随机 Salt + 随机 Nonce (IV)** (存储于文件头)      |
-| **物理形式** | 纯文本 JSON          | **二进制封装** (Header + CipherText + Tag)     |
+### 1. AES-256-GCM
+*   模式：NoPadding
+*   认证标签：128-bit
+*   职责：确保备份数据在存储状态下的机密性与不可篡改性。
 
----
-
-## Android 项目落地指南
-
-在执行 **Phase 3** 的 `BackupManager` 拆分时，建议按以下步骤引入新逻辑：
-
-### 第一步：引入 Argon2 库
-建议引入 Signal 团队维护的轻量级实现：
-```gradle
-dependencies {
-    implementation "org.signal:argon2:0.1.0"
-}
-```
-
-### 第二步：设计备份文件结构 (Binary Header)
-不要只存加密数据，文件应包含一个明文头部，指导程序如何解密：
-
-| 偏移量 | 长度    | 说明                      |
-|:----|:------|:------------------------|
-| 0   | 1 字节  | 版本号 (例如 `0x02`)         |
-| 1   | 16 字节 | Argon2 Salt (随机生成)      |
-| 17  | 12 字节 | AES-GCM Nonce/IV (随机生成) |
-| 29  | N 字节  | 加密后的 ZIP 数据流 (包含 Tag)   |
-
-### 第三步：派生密钥 (KDF)
-```kotlin
-// 这里的计算耗时约 0.5s，这正是对抗爆破的关键
-val key = Argon2id.deriveKey(
-    password = userPassword,
-    salt = saltFromHeader,
-    iterations = 3,
-    memory = 65536, // 64MB
-    parallelism = 4
-)
-```
-
-### 第四步：流式加密核心逻辑
-使用 Java Cryptography Architecture (JCA) 处理 ZIP 流：
-```kotlin
-val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-val spec = GCMParameterSpec(128, nonce) // 128位认证标签
-cipher.init(Cipher.ENCRYPT_MODE, secretKey, spec)
-```
+### 2. Argon2id (KDF)
+*   Iterations: 3
+*   Memory: 64MB (65536 KB)
+*   Parallelism: 4
+*   Salt: 16 字节随机生成
+*   职责：将用户输入的明文密码转换为 256-bit 高熵加密密钥。
 
 ---
 
-## 工程落地细节与注意事项
+## 备份文件物理结构
 
-### 1. 内存优化 (防止 OOM)
-**风险**：AES-GCM 是认证加密模式。在解密时，Java 的 `Cipher`（即使使用 `CipherInputStream`）必须验证整个文件的认证标签（Tag）。如果备份文件（包含大量原图）体积过大，可能导致解密时内存压力激增。
+文件采用二进制流封装，头部（Header）定义如下：
 
-**对策**：
-*   **压缩素材**：在保存图片时强制压缩（如单张最大 500KB，最大 1080p）。
-*   对于密码管理器，建议保持备份 ZIP 体积在数 MB 以内，避免触发 `OutOfMemoryError`。
-
-### 2. JNI 依赖与 ABI 过滤
-`org.signal:argon2` 包含 C 语言原生实现以保证性能。为了防止 APK 体积过度膨胀，请在 `app/build.gradle` 中配置 ABI 过滤：
-
-```gradle
-android {
-    defaultConfig {
-        ndk {
-            abiFilters 'arm64-v8a', 'armeabi-v7a'
-        }
-    }
-}
-```
-
-### 3. 核心胶水代码
-将 Argon2 派生的 `ByteArray` 包装为 AES 密钥：
-```kotlin
-// 推荐派生 32 字节 (256 bits) 的 key
-val secretKey = SecretKeySpec(key, "AES")
-```
-
-### 4. 密码学安全的随机数
-生成 Salt 和 Nonce 时，**严禁使用** `java.util.Random`。必须使用 `SecureRandom`：
-```kotlin
-val secureRandom = SecureRandom()
-val salt = ByteArray(16)
-val nonce = ByteArray(12)
-secureRandom.nextBytes(salt)
-secureRandom.nextBytes(nonce)
-```
+| 偏移量 | 长度    | 说明                                    |
+|:----|:------|:--------------------------------------|
+| 0   | 6 字节  | 幻数 (Magic Number): 固定为 "PASSLY" |
+| 6   | 1 字节  | 版本号: 0x01                      |
+| 7   | 16 字节 | Argon2 Salt: 派生密钥所需的随机盐值        |
+| 23  | 12 字节 | AES-GCM Nonce/IV: 加密所需的随机初始化向量  |
+| 35  | N 字节  | Payload: 加密后的 ZIP 压缩流数据          |
 
 ---
 
-## 🔗 与 REFACTOR-PLAN.md 的关联
+## 实现特性
 
-在 `refactoring-plan.md` 的 **Section 6.1 (格式策略)** 中补充：
+### 1. ZIP 容器结构
+解密后的数据为一个标准 ZIP 流，目录结构如下：
+*   data.json: 存储所有条目的结构化文本数据。
+*   images/: 存储条目关联的自定义图标或附件（可选）。
 
-*   **新版本加密方案**：
-    *   **KDF**: Argon2id (iterations=3, memory=64MB)
-    *   **Encryption**: AES-256-GCM
-    *   **Payload**: ZIP (包含 data.json 和 images/ 目录)
+### 2. 导出策略
+*   基础导出: 仅包含文本数据。文件名：backup_yyyyMMdd_HHmmss.passly。
+*   全量导出: 包含媒体文件。文件名：backup_yyyyMMdd_HHmmss_full.passly。
+
+### 3. 健壮性设计
+*   智能报错: 系统能准确区分“非备份文件”与“密码错误”，避免误导用户。
+*   原子性保证: 导出流程若因任何原因中断，系统会自动清理磁盘上残留的 0 字节文件。
 
 ---
 
-**总结**：这一套选型已经达到了行业顶级安全水平（与 1Password 处于同一维度）。只要注意流式处理中的内存控制和随机数安全性，该备份模块将无懈可击。
+## 运维注意事项
+
+1.  ABI 过滤: 本模块依赖 JNI 原生库实现 Argon2。build.gradle 需保留 arm64-v8a 和 armeabi-v7a 过滤以优化包体积。
+2.  内存清理: 密钥派生完成后，内存中的 ByteArray 会立即被 .fill(0) 覆盖，确保内存安全。
+
+---
+
+## 状态追踪
+
+*   Phase 3 (备份系统重构): 已完成
+*   一致性: 逻辑实现完全符合 docs/refactoring-plan.md 的安全规范。

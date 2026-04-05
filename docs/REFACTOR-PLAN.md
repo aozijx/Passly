@@ -1,4 +1,4 @@
-# Passly 重构执行手册（优化版）
+# Passly 重构执行手册（进度同步版）
 
 > 目标：在不破坏现有可用性的前提下，完成一次“安全优先、可渐进落地”的结构与能力升级。
 
@@ -9,14 +9,21 @@
 1. 先做 `0.1` 的前置核对，再开始对应 Phase。
 2. 每完成一个 Phase，必须跑编译 + 关键手测。
 3. 所有高风险改动都要有回滚路径（1-2 步可执行）。
-4. 任何涉及 DB 或备份格式的改动，必须保留向后兼容策略。
+4. 任何涉及 DB 的改动，必须保留向后兼容策略；备份按“当前单格式策略”执行。
 
 ### 0.1 前置核对清单
 
 - [ ] 确认当前数据库版本号（`DatabaseConfig.VERSION`）与线上已发布版本一致。
-- [ ] 确认当前备份版本与导入兼容逻辑（V1 是否仍在使用）。
+- [ ] 确认当前备份格式版本号与实现一致（历史格式默认不兼容）。
 - [ ] 确认是否已有未提交的并行改动，避免迁移脚本冲突。
 - [ ] 准备至少一份真实旧数据样本用于迁移验证。
+
+### 0.2 当前状态快照（2026-04-06）
+
+- 已完成：`P1` 数据层对齐主链（`VaultSummary` 脱敏、`VaultDao` 查询收敛、`AppDatabase` 迁移链固定到 `VERSION = 3`）。
+- 已完成：`P2` 安全链路收敛（详情与列表入口统一认证解密、移除通用静默解密路径）。
+- 进行中：`P3` 备份升级（新备份实现已落地雏形，正在补齐导入导出一致性与错误处理）。
+- 已完成：Argon2 备份加密接入（当前实现：`com.lambdapioneer.argon2kt:argon2kt`）与 `ImportMode` 全量解耦。
 
 ---
 
@@ -27,7 +34,7 @@
 1. 认证再解锁（敏感字段按需解密）。
 2. 数据库迁移链收敛（新增字段、保持兼容）。
 3. 自定义图片从 DB BLOB 迁移为磁盘路径存储。
-4. 备份格式升级（支持 ZIP 及可选字段导出，保持旧版本导入能力）。
+4. 备份格式升级（支持 ZIP 及可选字段导出，采用当前单格式导入导出）。
 
 ### 1.2 不在本次范围（Out of Scope）
 
@@ -54,7 +61,7 @@
 ### 2.3 备份目标
 
 - 支持新备份格式（ZIP 载荷 + 加密封装）。
-- 保持旧备份导入兼容（按版本分流解析）。
+- 仅支持当前备份格式（历史格式不兼容，导入时明确提示）。
 - 支持按字段组/条目范围导出。
 
 ---
@@ -77,9 +84,9 @@
 
 ### 3.3 实施清单
 
-- [ ] `VaultEntryEntity.kt`：新增字段，保留兼容字段并标记废弃。
-- [ ] `VaultEntry.kt`：与领域模型对齐新增字段。
-- [ ] `VaultEntryMapper.kt`：补齐双向映射。
+- [x] `VaultEntryEntity.kt`：新增字段已对齐，兼容字段保留。
+- [x] `VaultEntry.kt`：领域模型新增字段已对齐。
+- [x] `VaultEntryMapper.kt`：双向映射已补齐。
 - [x] `VaultSummary.kt`：已移除 `password`。
 - [x] `VaultDao.kt`：summary 查询已去掉 `password` 选择列。
 - [x] `AppDatabase.kt`：已收敛为 `VERSION = 3` + `MIGRATION_1_2` + `MIGRATION_2_3`。
@@ -163,7 +170,13 @@ val migrationXY = object : Migration(X, Y) {
 ### 6.1 格式策略
 
 - 新版本：加密载荷内为 ZIP（`data.json` + `images/`）。
-- 兼容策略：按版本字节分流，保留 V1 导入。
+- 兼容策略：仅接受当前版本头；历史版本直接拒绝并提示不兼容。
+
+当前状态：
+
+- 新备份架构已拆分为独立实现（便于后续删除旧实现）。
+- 已收敛为单一路径导入当前格式，不再维护历史版本分流。
+- 文档与代码统一口径：历史备份默认不兼容。
 
 ### 6.2 `ExportConfig`（建议）
 
@@ -185,20 +198,37 @@ data class ExportConfig(
 
 ### 6.4 验收清单
 
-- [ ] V2 可正常导出/导入。
-- [ ] V1 旧备份可导入。
+- [ ] 当前格式可正常导出/导入。
+- [ ] 历史格式导入会给出明确不兼容提示。
 - [ ] 勾选排除某字段组时，导出 JSON 不含对应字段。
+
+### 6.5 下一步执行清单（代码落地）
+
+- [x] `gradle/libs.versions.toml`：已接入 Argon2 依赖（当前实现：`com.lambdapioneer.argon2kt:argon2kt`）。
+- [x] `app/build.gradle.kts`：已接入 Argon2 依赖并用于备份密钥派生。
+- [x] `app/src/main/java/com/aozijx/passly/core/backup/BackupManager.kt`：已收敛为单一路径导入当前格式，分流残留已清理。
+- [x] `app/src/main/java/com/aozijx/passly/features/settings/internal/BackupActionSupport.kt`：已仅依赖新导入模式类型，且提示文案已统一。
+- [x] `app/src/main/java/com/aozijx/passly/features/settings/SettingsViewModel.kt`：已切换新导入模式类型，备份提示文案已资源化。
+- [x] `app/src/main/java/com/aozijx/passly/features/vault/dialogs/BackupPasswordDialog.kt`：已切换新导入模式类型，导入/导出文案已资源化。
+
+完成定义（DoD）：
+
+- [x] 全仓搜索无 UI/Feature 层对 `BackupManager.ImportMode` 的直接引用。
+- [x] 备份导入在版本头不匹配时返回可观测错误（非崩溃）。
+- [ ] 新导出与导入均只使用当前格式，历史格式不再作为兼容目标。
+
+备注：`core/designsystem/components/BackupPassword.kt` 在当前仓库中不存在，相关耦合清理已在 `BackupPasswordDialog.kt` 落地。
 
 ---
 
 ## 7. 分阶段执行计划
 
-| Phase | 目标      | 关键任务                                         | 风险等级 |
-|-------|---------|----------------------------------------------|------|
-| P1    | 数据层对齐   | Entity/Domain/Mapper/Summary/DAO + Migration | 中    |
-| P2    | 安全链路统一  | 认证再解锁，移除静默解密通路                               | 中    |
-| P3    | 备份升级    | ZIP 载荷、V1/V2 兼容、字段过滤导出                       | 高    |
-| P4    | UI 适配收尾 | 新字段输入展示、导出配置对话框                              | 中    |
+| Phase | 目标      | 关键任务                                         | 风险等级 | 状态 |
+|-------|---------|----------------------------------------------|------|------|
+| P1    | 数据层对齐   | Entity/Domain/Mapper/Summary/DAO + Migration | 中    | 已完成 |
+| P2    | 安全链路统一  | 认证再解锁，移除静默解密通路                               | 中    | 已完成 |
+| P3    | 备份升级    | ZIP 载荷、当前格式稳定性、字段过滤导出                     | 高    | 进行中 |
+| P4    | UI 适配收尾 | 新字段输入展示、导出配置对话框                              | 中    | 待开始 |
 
 ### 每个 Phase 的完成定义（DoD）
 
@@ -215,7 +245,7 @@ data class ExportConfig(
 |--------|--------------|-------------------|----------------------|
 | 迁移失败   | 冷启动崩溃/迁移异常日志 | 停止发布，锁定版本         | 保留版本号，追加修复 Migration |
 | 敏感字段泄露 | 列表/日志出现明文    | 立即下线相关入口          | 回滚到前一认证链路稳定版本        |
-| 备份不兼容  | 旧备份导入失败      | 临时启用 V1-only 导入诊断 | 恢复旧解析器并补充兼容分支        |
+| 备份不兼容  | 历史备份导入失败      | 明确提示格式不兼容并中止导入 | 提供格式转换工具或维持单格式策略     |
 | 图片丢失   | 导入后 icon 不显示 | 启用路径归一化修复任务       | 回退到旧路径解析逻辑           |
 
 ---
@@ -225,7 +255,7 @@ data class ExportConfig(
 - `VaultDao.kt`：summary 查询列是否仍包含 `password`。
 - `VaultViewModel.kt` / `VaultScreen.kt` / `DetailScreen.kt`：是否存在绕过认证的解密调用。
 - `VaultCryptoSupport.kt`：是否仍暴露可泛用的静默解密 API。
-- `BackupManager.kt`：V1/V2 分流是否完整，异常映射是否清晰。
+- `BackupManager.kt`：单一路径导入是否清晰，异常映射是否清晰。
 - `AppDatabase.kt`：迁移链是否仅保留 `MIGRATION_1_2` 与 `MIGRATION_2_3`（`VERSION = 3`）。
 
 ---
@@ -284,10 +314,10 @@ Set-Location "D:\MyApplication\Passly"
 
 ### Phase 1 完成判定
 
-- [ ] `:app:compileFullDebugKotlin` 通过。
+- [x] `:app:compileFullDebugKotlin` 通过（历史阶段验证已多次通过）。
 - [ ] 旧数据样本迁移成功。
 - [ ] 列表、搜索、分类、详情链路手测通过。
-- [ ] 敏感字段查看必须认证。
+- [x] 敏感字段查看必须认证。
 
 ---
 
@@ -312,7 +342,7 @@ Set-Location "D:\MyApplication\Passly"
 - [ ] 列表/搜索/分类/详情流程正常
 - [ ] 敏感字段查看需认证，认证失败不返回明文
 - [ ] 无静默解密绕过路径（代码搜索已确认）
-- [ ] 如涉及备份：V1 可导入，V2 可导入/导出
+- [ ] 如涉及备份：当前格式可导入/导出，历史格式不兼容提示准确
 
 ## 风险与回滚
 - 风险点：
@@ -341,13 +371,13 @@ Set-Location "D:\MyApplication\Passly"
 
 ### Week 2（兼容与体验）
 
-- `D6-D7`：备份 V2（ZIP）实现 + V1 兼容导入。
+- `D6-D7`：备份当前格式（ZIP）实现稳定化（不做历史兼容）。
 - `D7-D8`：可选字段导出能力接入（`ExportConfig`）。
 - `D9`：图片路径归一化与跨设备导入验证。
 - `D10`：收尾 PR、补文档、发布前回归。
 
 ### 里程碑门禁
 
-- [ ] M1（Week 1 结束）：迁移 + 安全链路全绿。
-- [ ] M2（Week 2 中段）：备份 V1/V2 双兼容全绿。
+- [x] M1（Week 1 结束）：迁移 + 安全链路全绿。
+- [ ] M2（Week 2 中段）：备份当前格式导入/导出全绿（进行中）。
 - [ ] M3（Week 2 结束）：主流程回归 + 发布材料齐全。

@@ -113,6 +113,26 @@
     <string name="vault_backup_auth_subtitle_import">Please verify identity to import and decrypt data</string>
     <string name="loading_export">Exporting backup…</string>
     <string name="loading_import">Importing backup…</string>
+    <string name="backup_action_export_success">Export successful</string>
+    <string name="backup_action_import_success">Import successful (icons will sync in background)</string>
+    <string name="backup_error_with_reason">Operation failed: %s</string>
+    <string name="backup_error_unknown">Operation failed: Unknown error</string>
+    <string name="backup_error_password_incorrect">Incorrect backup password. Please try again.</string>
+    <string name="backup_error_invalid_file">This file is not a valid Passly backup</string>
+    <string name="backup_error_incompatible_version">Backup version is incompatible. Only the current format is supported.</string>
+    <string name="backup_error_corrupted">Backup file is corrupted or has an invalid format</string>
+    <string name="backup_error_create_file_failed">Unable to create backup file</string>
+    <string name="backup_export_failed_cleanup_done">Export failed. Invalid file has been removed automatically.</string>
+    <string name="backup_directory_set_first">Please set a backup directory first</string>
+    <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
+    <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
+    <string name="backup_import_mode_title">Import mode</string>
+    <string name="backup_import_mode_overwrite_title">Overwrite existing data</string>
+    <string name="backup_import_mode_overwrite_desc">Delete all existing data, then import backup content</string>
+    <string name="backup_import_mode_append_title">Append new data</string>
+    <string name="backup_import_mode_append_desc">Keep existing data and append backup content into the database</string>
+    <string name="backup_include_media_title">Include media files</string>
+    <string name="backup_include_media_desc">Back up custom icons and attachment images</string>
 
     <!-- Detail additions -->
     <string name="vault_add_password_title">Add Password</string>

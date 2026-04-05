@@ -199,7 +199,7 @@ fun VaultContent(
                     onExportClick = {
                         val startedFromConfiguredDirectory =
                             settingsViewModel.tryStartExportInConfiguredDirectory(
-                                context, backupDirectoryUri
+                                backupDirectoryUri
                             )
                         if (!startedFromConfiguredDirectory) {
                             val manualFileName = settingsViewModel.nextBackupFileName()
