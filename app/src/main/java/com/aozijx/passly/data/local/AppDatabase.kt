@@ -13,7 +13,7 @@ import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportFactory
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.SecureRandom
@@ -116,6 +116,5 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
-
 
 
