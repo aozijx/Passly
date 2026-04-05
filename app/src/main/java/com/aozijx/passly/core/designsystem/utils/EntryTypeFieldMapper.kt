@@ -56,7 +56,7 @@ object EntryTypeFieldMapper {
         return when (vaultType) {
             EntryType.PASSWORD -> setOf("password", "totpSecret")
             EntryType.WIFI -> setOf("password")
-            EntryType.BANK_CARD -> setOf("password", "cardCvv", "paymentPin")
+            EntryType.BANK_CARD -> setOf("password", "cardCvv", "paymentPin", "securityAnswer")
             EntryType.ID_CARD -> setOf("idNumber")
             EntryType.SSH_KEY -> setOf("sshPrivateKey")
             EntryType.SEED_PHRASE -> setOf("cryptoSeedPhrase")

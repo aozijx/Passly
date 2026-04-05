@@ -154,7 +154,7 @@ class BankCardEntryStrategy : EntryTypeStrategy {
     }
 
     override fun getSensitiveFields(): Set<String> {
-        return setOf("password", "username", "cardCvv", "cardExpiration", "paymentPin")
+        return setOf("password", "username", "cardCvv", "cardExpiration", "paymentPin", "securityAnswer")
     }
 
     override fun extractSummary(entry: VaultEntry): String {

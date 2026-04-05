@@ -108,6 +108,9 @@ object BackupManager {
         writer.name("cardExpiration").value(entry.cardExpiration?.let { decryptField(it) })
         writer.name("idNumber").value(entry.idNumber?.let { decryptField(it) })
         writer.name("paymentPin").value(entry.paymentPin?.let { decryptField(it) })
+        writer.name("paymentPlatform").value(entry.paymentPlatform)
+        writer.name("securityQuestion").value(entry.securityQuestion)
+        writer.name("securityAnswer").value(entry.securityAnswer?.let { decryptField(it) })
         writer.name("sshPrivateKey").value(entry.sshPrivateKey?.let { decryptField(it) })
         writer.name("cryptoSeedPhrase").value(entry.cryptoSeedPhrase?.let { decryptField(it) })
         writer.name("entryType").value(entry.entryType.toLong())
@@ -193,6 +196,7 @@ object BackupManager {
             cardExpiration = encryptIfNotNull(entry.cardExpiration),
             idNumber = encryptIfNotNull(entry.idNumber),
             paymentPin = encryptIfNotNull(entry.paymentPin),
+            securityAnswer = encryptIfNotNull(entry.securityAnswer),
             sshPrivateKey = encryptIfNotNull(entry.sshPrivateKey),
             cryptoSeedPhrase = encryptIfNotNull(entry.cryptoSeedPhrase),
             customFieldsJson = encryptIfNotNull(entry.customFieldsJson)
@@ -246,7 +250,9 @@ object BackupManager {
         var passkeyDataJson: String? = null; var recoveryCodes: String? = null; var hardwareKeyInfo: String? = null
         var wifiEncryptionType: String? = "WPA"; var wifiIsHidden = false
         var cardCvv: String? = null; var cardExpiration: String? = null; var idNumber: String? = null
-        var paymentPin: String? = null; var sshPrivateKey: String? = null; var cryptoSeedPhrase: String? = null
+        var paymentPin: String? = null; var paymentPlatform: String? = null
+        var securityQuestion: String? = null; var securityAnswer: String? = null
+        var sshPrivateKey: String? = null; var cryptoSeedPhrase: String? = null
         var entryType = 0; var associatedAppPackage: String? = null; var associatedDomain: String? = null
         var uriList: List<String>? = null; var matchType = 0; var customFieldsJson: String? = null
         var autoSubmit = false; var encryptedImageData: ByteArray? = null; var strengthScore: Float? = null
@@ -276,6 +282,9 @@ object BackupManager {
                 "cardExpiration" -> cardExpiration = reader.nextNullableString()
                 "idNumber" -> idNumber = reader.nextNullableString()
                 "paymentPin" -> paymentPin = reader.nextNullableString()
+                "paymentPlatform" -> paymentPlatform = reader.nextNullableString()
+                "securityQuestion" -> securityQuestion = reader.nextNullableString()
+                "securityAnswer" -> securityAnswer = reader.nextNullableString()
                 "sshPrivateKey" -> sshPrivateKey = reader.nextNullableString()
                 "cryptoSeedPhrase" -> cryptoSeedPhrase = reader.nextNullableString()
                 "entryType" -> entryType = reader.nextInt()
@@ -309,7 +318,9 @@ object BackupManager {
             recoveryCodes = recoveryCodes, hardwareKeyInfo = hardwareKeyInfo,
             wifiEncryptionType = wifiEncryptionType, wifiIsHidden = wifiIsHidden,
             cardCvv = cardCvv, cardExpiration = cardExpiration, idNumber = idNumber,
-            paymentPin = paymentPin, sshPrivateKey = sshPrivateKey,
+            paymentPin = paymentPin, paymentPlatform = paymentPlatform,
+            securityQuestion = securityQuestion, securityAnswer = securityAnswer,
+            sshPrivateKey = sshPrivateKey,
             cryptoSeedPhrase = cryptoSeedPhrase, entryType = entryType,
             associatedAppPackage = associatedAppPackage, associatedDomain = associatedDomain,
             uriList = uriList, matchType = matchType, customFieldsJson = customFieldsJson,

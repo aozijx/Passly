@@ -62,6 +62,8 @@ fun BankCardSection(
     var revealedCardNumber by remember { mutableStateOf<String?>(null) }
     var revealedCvv by remember { mutableStateOf<String?>(null) }
     var revealedCardholder by remember { mutableStateOf<String?>(null) }
+    var revealedPaymentPin by remember { mutableStateOf<String?>(null) }
+    var revealedSecurityAnswer by remember { mutableStateOf<String?>(null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (editState.isEditingUsername) {
@@ -238,6 +240,91 @@ fun BankCardSection(
                 onCopy = {
                     ClipboardUtils.copy(context, entry.cardExpiration)
                     Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                },
+                onEdit = {}
+            )
+        }
+
+        // --- 支付密码 ---
+        if (entry.paymentPin != null) {
+            DetailItem(
+                label = stringResource(R.string.payment_pin),
+                value = revealedPaymentPin ?: stringResource(R.string.label_hidden_mask),
+                isRevealed = revealedPaymentPin != null,
+                onCopy = {
+                    val pin = revealedPaymentPin
+                    if (pin != null) {
+                        ClipboardUtils.copy(context, pin)
+                        Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                    } else {
+                        vaultViewModel.decryptSingle(
+                            activity,
+                            entry.paymentPin,
+                            mainViewModel::authenticate
+                        ) { decrypted ->
+                            decrypted?.let {
+                                ClipboardUtils.copy(context, it)
+                                Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                                revealedPaymentPin = it
+                            }
+                        }
+                    }
+                },
+                onEdit = {}
+            )
+        }
+
+        // --- 支付渠道 ---
+        if (!entry.paymentPlatform.isNullOrBlank()) {
+            DetailItem(
+                label = stringResource(R.string.payment_platform),
+                value = entry.paymentPlatform,
+                isRevealed = true,
+                onCopy = {
+                    ClipboardUtils.copy(context, entry.paymentPlatform)
+                    Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                },
+                onEdit = {}
+            )
+        }
+
+        // --- 密保问题与答案 ---
+        if (!entry.securityQuestion.isNullOrBlank()) {
+            DetailItem(
+                label = stringResource(R.string.security_question),
+                value = entry.securityQuestion,
+                isRevealed = true,
+                onCopy = {
+                    ClipboardUtils.copy(context, entry.securityQuestion)
+                    Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                },
+                onEdit = {}
+            )
+        }
+
+        if (entry.securityAnswer != null) {
+            DetailItem(
+                label = stringResource(R.string.security_answer),
+                value = revealedSecurityAnswer ?: stringResource(R.string.label_hidden_mask),
+                isRevealed = revealedSecurityAnswer != null,
+                onCopy = {
+                    val answer = revealedSecurityAnswer
+                    if (answer != null) {
+                        ClipboardUtils.copy(context, answer)
+                        Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                    } else {
+                        vaultViewModel.decryptSingle(
+                            activity,
+                            entry.securityAnswer,
+                            mainViewModel::authenticate
+                        ) { decrypted ->
+                            decrypted?.let {
+                                ClipboardUtils.copy(context, it)
+                                Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                                revealedSecurityAnswer = it
+                            }
+                        }
+                    }
                 },
                 onEdit = {}
             )

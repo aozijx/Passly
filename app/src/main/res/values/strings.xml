@@ -251,6 +251,10 @@
     <string name="card_cvv">安全码</string>
     <string name="card_expiration">有效期</string>
     <string name="card_copied">银行卡信息已复制</string>
+    <string name="payment_pin">支付密码</string>
+    <string name="payment_platform">支付渠道</string>
+    <string name="security_question">密保问题</string>
+    <string name="security_answer">密保答案</string>
 
     <!-- 助记词相关 -->
     <string name="seed_phrase">助记词</string>

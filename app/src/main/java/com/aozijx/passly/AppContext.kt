@@ -2,12 +2,18 @@ package com.aozijx.passly
 
 import android.app.Application
 import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.AppPrefs
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class AppContext : Application() {
     // 全局单例 VaultPrefs
     val preference: AppPrefs by lazy { AppPrefs(this) }
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
         private const val TAG = "AppContext"
@@ -25,5 +31,10 @@ class AppContext : Application() {
             throw e
         }
         EntryTypeStrategyRegistry.ensureRegistered()
+        // Pre-warm SQLCipher open/keying to reduce first vault screen latency.
+        appScope.launch {
+            runCatching { AppDatabase.preWarm(this@AppContext) }
+                .onFailure { Logcat.e(TAG, "Database prewarm failed", it) }
+        }
     }
 }

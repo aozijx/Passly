@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.data.local.DatabaseConfig
 import java.io.Serializable
@@ -9,7 +10,15 @@ import java.io.Serializable
  * 主表：保险库条目 (v5 深度扩展版)
  * 核心设计：支持结构化存储多种安全凭据，所有敏感字段均预留加密存储空间。
  */
-@Entity(tableName = DatabaseConfig.TABLE_ENTRIES)
+@Entity(
+    tableName = DatabaseConfig.TABLE_ENTRIES,
+    indices = [
+        Index(value = ["favorite", "usageCount", "createdAt"]),
+        Index(value = ["category"]),
+        Index(value = ["createdAt"]),
+        Index(value = ["usageCount"])
+    ]
+)
 data class VaultEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,           // 标题（如：谷歌、招行、公司WiFi）
@@ -42,8 +51,15 @@ data class VaultEntryEntity(
     val cardExpiration: String? = null,  // 加密后的有效期 (MM/YY)
     val idNumber: String? = null,        // 加密后的证件号码 (身份证/护照)
 
+    // --- 支付与金融 ---
+    val paymentPin: String? = null,         // 加密后的支付专用 PIN / 6位数字
+    val paymentPlatform: String? = null,    // 支付渠道标识 (如 "Alipay", "WeChat", "PayPal"，用于 UI 图标匹配)
+
+    // --- 密保与恢复 ---
+    val securityQuestion: String? = null,   // 安全问题 (如：您母亲的姓名)
+    val securityAnswer: String? = null,     // 加密后的安全问题答案
+
     // --- 技术凭据管理 ---
-    val paymentPin: String? = null,      // 加密后的支付专用 PIN
     val sshPrivateKey: String? = null,   // 加密后的 SSH 私钥内容
     val cryptoSeedPhrase: String? = null,// 加密后的区块链助记词 (12/24词)
 
@@ -100,6 +116,9 @@ data class VaultEntryEntity(
         if (cardExpiration != other.cardExpiration) return false
         if (idNumber != other.idNumber) return false
         if (paymentPin != other.paymentPin) return false
+        if (paymentPlatform != other.paymentPlatform) return false
+        if (securityQuestion != other.securityQuestion) return false
+        if (securityAnswer != other.securityAnswer) return false
         if (sshPrivateKey != other.sshPrivateKey) return false
         if (cryptoSeedPhrase != other.cryptoSeedPhrase) return false
         if (entryType != other.entryType) return false
@@ -146,6 +165,9 @@ data class VaultEntryEntity(
         result = 31 * result + (cardExpiration?.hashCode() ?: 0)
         result = 31 * result + (idNumber?.hashCode() ?: 0)
         result = 31 * result + (paymentPin?.hashCode() ?: 0)
+        result = 31 * result + (paymentPlatform?.hashCode() ?: 0)
+        result = 31 * result + (securityQuestion?.hashCode() ?: 0)
+        result = 31 * result + (securityAnswer?.hashCode() ?: 0)
         result = 31 * result + (sshPrivateKey?.hashCode() ?: 0)
         result = 31 * result + (cryptoSeedPhrase?.hashCode() ?: 0)
         result = 31 * result + entryType

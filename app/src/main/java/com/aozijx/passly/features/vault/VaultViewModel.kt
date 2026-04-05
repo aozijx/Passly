@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -76,6 +76,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _totpStates = MutableStateFlow<Map<Int, TotpState>>(emptyMap())
     val totpStates: StateFlow<Map<Int, TotpState>> = _totpStates
+    private val _isVaultItemsLoading = MutableStateFlow(true)
+    val isVaultItemsLoading: StateFlow<Boolean> = _isVaultItemsLoading
 
     var addType: AddType
         get() = detailState.addType
@@ -131,12 +133,16 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             Pair(query, category)
         }.flatMapLatest { (query, category) ->
             val baseFlow = when {
-                query.isNotEmpty() -> vaultUseCases.searchEntries(query)
-                category != null -> vaultUseCases.getEntriesByCategory(category)
-                else -> vaultUseCases.observeAllEntries()
+                query.isNotEmpty() -> vaultUseCases.searchEntrySummaries(query)
+                category != null -> vaultUseCases.getEntrySummariesByCategory(category)
+                else -> vaultUseCases.observeAllEntrySummaries()
             }
             baseFlow
-        }.map { entries -> entries.map { it.toSummary() } }
+        }.onEach {
+            if (_isVaultItemsLoading.value) {
+                _isVaultItemsLoading.value = false
+            }
+        }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -80,6 +83,7 @@ fun VaultContent(
     onShowDetail: (VaultEntry) -> Unit = {}
 ) {
     val items by vaultViewModel.vaultItems.collectAsState()
+    val isVaultItemsLoading by vaultViewModel.isVaultItemsLoading.collectAsState()
     val selectedTab by vaultViewModel.selectedTab.collectAsState()
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -237,7 +241,9 @@ fun VaultContent(
                     VaultTab.TOTP -> items.filter { !it.totpSecret.isNullOrBlank() }
                 }
 
-                if (filteredItems.isEmpty()) {
+                if (isVaultItemsLoading) {
+                    VaultListSkeleton()
+                } else if (filteredItems.isEmpty()) {
                     EmptyVaultPlaceholder()
                 } else {
                     LazyColumn(
@@ -398,6 +404,33 @@ fun VaultContent(
                     vaultViewModel = vaultViewModel,
                     onDismiss = { vaultViewModel.addType = AddType.NONE })
             }
+        }
+    }
+}
+
+@Composable
+private fun VaultListSkeleton() {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(6) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                )
+            ) {}
+        }
+        item {
+            Spacer(
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .height(80.dp)
+            )
         }
     }
 }

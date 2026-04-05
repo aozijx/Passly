@@ -49,6 +49,9 @@ object EntryTypeResolver {
                 FieldLabel("有效期", FieldKey.CARD_EXPIRATION),
                 FieldLabel("CVV", FieldKey.CARD_CVV),
                 FieldLabel("支付密码", FieldKey.PAYMENT_PIN),
+                FieldLabel("支付渠道", FieldKey.PAYMENT_PLATFORM),
+                FieldLabel("密保问题", FieldKey.SECURITY_QUESTION),
+                FieldLabel("密保答案", FieldKey.SECURITY_ANSWER),
                 FieldLabel("备注", FieldKey.NOTES)
             )
             
@@ -101,6 +104,9 @@ object EntryTypeResolver {
             FieldKey.CARD_EXPIRATION -> entry.cardExpiration
             FieldKey.CARD_CVV -> entry.cardCvv
             FieldKey.PAYMENT_PIN -> entry.paymentPin
+            FieldKey.PAYMENT_PLATFORM -> entry.paymentPlatform
+            FieldKey.SECURITY_QUESTION -> entry.securityQuestion
+            FieldKey.SECURITY_ANSWER -> entry.securityAnswer
             FieldKey.SEED_PHRASE -> entry.cryptoSeedPhrase
             FieldKey.ID_NUMBER -> entry.idNumber
             FieldKey.SSH_KEY -> entry.sshPrivateKey
@@ -157,6 +163,9 @@ enum class FieldKey {
     CARD_EXPIRATION,
     CARD_CVV,
     PAYMENT_PIN,
+    PAYMENT_PLATFORM,
+    SECURITY_QUESTION,
+    SECURITY_ANSWER,
     SEED_PHRASE,
     ID_NUMBER,
     SSH_KEY

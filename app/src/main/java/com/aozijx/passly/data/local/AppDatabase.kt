@@ -9,6 +9,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.entity.VaultEntryEntity
@@ -25,7 +27,7 @@ object DatabaseConfig {
     const val DATABASE_NAME = "vault_database"
     const val TABLE_ENTRIES = "vault_entries"
     const val TABLE_HISTORY = "vault_history"
-    const val VERSION = 1
+    const val VERSION = 3
 }
 
 @Database(
@@ -97,6 +99,29 @@ abstract class AppDatabase : RoomDatabase() {
             return newPassphrase
         }
 
+        /**
+         * Migration 1 → 2: add performance indices to vault_entries.
+         */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_${DatabaseConfig.TABLE_ENTRIES}_favorite_usageCount_createdAt` ON `${DatabaseConfig.TABLE_ENTRIES}` (`favorite`, `usageCount`, `createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_${DatabaseConfig.TABLE_ENTRIES}_category` ON `${DatabaseConfig.TABLE_ENTRIES}` (`category`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_${DatabaseConfig.TABLE_ENTRIES}_createdAt` ON `${DatabaseConfig.TABLE_ENTRIES}` (`createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_${DatabaseConfig.TABLE_ENTRIES}_usageCount` ON `${DatabaseConfig.TABLE_ENTRIES}` (`usageCount`)")
+            }
+        }
+
+        /**
+         * Migration 2 → 3: add paymentPlatform, securityQuestion, securityAnswer columns.
+         */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `${DatabaseConfig.TABLE_ENTRIES}` ADD COLUMN `paymentPlatform` TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE `${DatabaseConfig.TABLE_ENTRIES}` ADD COLUMN `securityQuestion` TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE `${DatabaseConfig.TABLE_ENTRIES}` ADD COLUMN `securityAnswer` TEXT DEFAULT NULL")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 try {
@@ -104,6 +129,7 @@ abstract class AppDatabase : RoomDatabase() {
                     val factory = SupportOpenHelperFactory(passphrase)
                     val instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DatabaseConfig.DATABASE_NAME)
                         .openHelperFactory(factory)
+                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                         .fallbackToDestructiveMigration(true)
                         .build()
                     INSTANCE = instance
@@ -113,6 +139,10 @@ abstract class AppDatabase : RoomDatabase() {
                     throw e
                 }
             }
+        }
+
+        fun preWarm(context: Context) {
+            getDatabase(context)
         }
     }
 }

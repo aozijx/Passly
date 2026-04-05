@@ -9,6 +9,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
+import com.aozijx.passly.domain.model.VaultSummary
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -16,11 +17,36 @@ interface VaultDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} ORDER BY favorite DESC, usageCount DESC, createdAt DESC")
     fun getAllEntries(): Flow<List<VaultEntryEntity>>
 
+    @Query(
+        """
+        SELECT id, title, category, entryType, username, password,
+               iconName, iconCustomPath, associatedAppPackage, associatedDomain,
+               totpSecret, totpPeriod, totpDigits, totpAlgorithm,
+               favorite, createdAt, updatedAt
+        FROM ${DatabaseConfig.TABLE_ENTRIES}
+        ORDER BY favorite DESC, usageCount DESC, createdAt DESC
+        """
+    )
+    fun getAllEntrySummaries(): Flow<List<VaultSummary>>
+
     @Query("SELECT DISTINCT category FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE category IS NOT NULL AND category != ''")
     fun getAllCategories(): Flow<List<String>>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE category = :category ORDER BY createdAt DESC")
     fun getEntriesByCategory(category: String): Flow<List<VaultEntryEntity>>
+
+    @Query(
+        """
+        SELECT id, title, category, entryType, username, password,
+               iconName, iconCustomPath, associatedAppPackage, associatedDomain,
+               totpSecret, totpPeriod, totpDigits, totpAlgorithm,
+               favorite, createdAt, updatedAt
+        FROM ${DatabaseConfig.TABLE_ENTRIES}
+        WHERE category = :category
+        ORDER BY createdAt DESC
+        """
+    )
+    fun getEntrySummariesByCategory(category: String): Flow<List<VaultSummary>>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE id = :entryId LIMIT 1")
     suspend fun getEntryById(entryId: Int): VaultEntryEntity?
@@ -72,6 +98,21 @@ interface VaultDao {
         OR tags LIKE '%' || :query || '%'
     """)
     fun searchEntries(query: String): Flow<List<VaultEntryEntity>>
+
+    @Query(
+        """
+        SELECT id, title, category, entryType, username, password,
+               iconName, iconCustomPath, associatedAppPackage, associatedDomain,
+               totpSecret, totpPeriod, totpDigits, totpAlgorithm,
+               favorite, createdAt, updatedAt
+        FROM ${DatabaseConfig.TABLE_ENTRIES}
+        WHERE title LIKE '%' || :query || '%'
+           OR category LIKE '%' || :query || '%'
+           OR tags LIKE '%' || :query || '%'
+        ORDER BY favorite DESC, usageCount DESC, createdAt DESC
+        """
+    )
+    fun searchEntrySummaries(query: String): Flow<List<VaultSummary>>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId ORDER BY changedAt DESC")
     fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistoryEntity>>
