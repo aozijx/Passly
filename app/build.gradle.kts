@@ -25,8 +25,8 @@ android {
         applicationId = "com.aozijx.passly"
         minSdk = 31
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.3.2"
+        versionCode = 8
+        versionName = "0.3.3"
         flavorDimensions += listOf("scope")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
