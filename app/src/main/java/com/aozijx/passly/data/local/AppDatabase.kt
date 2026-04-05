@@ -130,7 +130,6 @@ abstract class AppDatabase : RoomDatabase() {
                     val instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DatabaseConfig.DATABASE_NAME)
                         .openHelperFactory(factory)
                         .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                        .fallbackToDestructiveMigration(true)
                         .build()
                     INSTANCE = instance
                     instance

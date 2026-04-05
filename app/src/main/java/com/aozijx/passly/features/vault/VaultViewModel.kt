@@ -232,10 +232,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         detailItem = entry
     }
 
-    fun showDetailForEdit(entry: VaultSummary) {
-        loadEntryById(entry.id) { showDetailForEdit(it) }
-    }
-
     fun showDetail(entry: VaultSummary) {
         loadEntryById(entry.id) { showDetail(it) }
     }

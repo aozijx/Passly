@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository
 import android.content.Context
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
@@ -159,11 +160,7 @@ class AutofillServiceDataRepository(
                     isDomainMatch(entry.associatedDomain, normalizedDomain)
                 if (!scopeMatch) return@find false
 
-                val decUser = try {
-                    CryptoManager.decrypt(entry.username)
-                } catch (_: Exception) {
-                    null
-                }
+                val decUser = CryptoAccess.decryptOrNull(entry.username)
                 decUser == usernameValue
             }
             val matchCost = System.currentTimeMillis() - matchStart

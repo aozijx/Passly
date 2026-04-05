@@ -25,7 +25,7 @@
 ### 1.1 本次重构范围（In Scope）
 
 1. 认证再解锁（敏感字段按需解密）。
-2. 数据库单次迁移（新增字段、保持兼容）。
+2. 数据库迁移链收敛（新增字段、保持兼容）。
 3. 自定义图片从 DB BLOB 迁移为磁盘路径存储。
 4. 备份格式升级（支持 ZIP 及可选字段导出，保持旧版本导入能力）。
 
@@ -47,7 +47,7 @@
 
 ### 2.2 数据目标
 
-- 通过一次可回放的 Migration 完成字段升级。
+- 迁移链保持可回放（`MIGRATION_1_2` + `MIGRATION_2_3`）。
 - 迁移过程中不依赖 destructive migration。
 - 旧数据可升级，关键字段不丢失。
 
@@ -59,9 +59,9 @@
 
 ---
 
-## 3. 数据库与模型重构（单次迁移）
+## 3. 数据库与模型重构（迁移链收敛）
 
-> 说明：文档示例使用 `2 -> 3`。若当前代码已是 `3`，请顺延为 `3 -> 4`，原则不变。
+> 说明：当前版本固定为 `3`，不新增 `3 -> 4`。本阶段以迁移链一致性与安全性收敛为主。
 
 ### 3.1 迁移策略
 
@@ -80,9 +80,9 @@
 - [ ] `VaultEntryEntity.kt`：新增字段，保留兼容字段并标记废弃。
 - [ ] `VaultEntry.kt`：与领域模型对齐新增字段。
 - [ ] `VaultEntryMapper.kt`：补齐双向映射。
-- [ ] `VaultSummary.kt`：移除 `password`。
-- [ ] `VaultDao.kt`：所有 summary 查询去掉 `password` 选择列。
-- [ ] `AppDatabase.kt`：注册迁移，移除 destructive 依赖路径。
+- [x] `VaultSummary.kt`：已移除 `password`。
+- [x] `VaultDao.kt`：summary 查询已去掉 `password` 选择列。
+- [x] `AppDatabase.kt`：已收敛为 `VERSION = 3` + `MIGRATION_1_2` + `MIGRATION_2_3`。
 
 ### 3.4 迁移模板（示意）
 
@@ -112,20 +112,23 @@ val migrationXY = object : Migration(X, Y) {
    - 删除或限制通用 `decryptSilently()`。
    - 仅保留认证链路解密接口。
    - TOTP 场景使用专用解密方法（命名体现用途）。
+   - 当前状态：已完成（通用静默解密已收敛）。
 
-2. `showDetailForEdit()`
+2. `showDetailForEdit()` + `DetailScreen`
    - 不再预填解密结果。
    - 编辑页默认掩码；点击显示后走认证。
+   - 当前状态：已完成（弹窗详情与全屏详情双入口已对齐）。
 
 3. `VaultScreen` 滑动动作
    - 所有密码复制/编辑入口统一走 ViewModel 认证解密链路。
+   - 当前状态：已完成。
 
 ### 4.3 验收清单
 
-- [ ] 列表初次加载无密码解密行为。
-- [ ] 详情查看敏感字段时出现认证弹窗。
-- [ ] 认证失败时不返回明文。
-- [ ] 无“静默解密”绕过路径（代码搜索验证）。
+- [x] 列表初次加载无密码解密行为。
+- [x] 详情查看敏感字段时出现认证弹窗。
+- [x] 认证失败时不返回明文。
+- [x] 无“静默解密”绕过路径（代码搜索验证）。
 
 ---
 
@@ -220,10 +223,10 @@ data class ExportConfig(
 ## 9. 关键代码关注点（评审时必查）
 
 - `VaultDao.kt`：summary 查询列是否仍包含 `password`。
-- `VaultViewModel.kt` / `VaultScreen.kt`：是否存在绕过认证的解密调用。
+- `VaultViewModel.kt` / `VaultScreen.kt` / `DetailScreen.kt`：是否存在绕过认证的解密调用。
 - `VaultCryptoSupport.kt`：是否仍暴露可泛用的静默解密 API。
 - `BackupManager.kt`：V1/V2 分流是否完整，异常映射是否清晰。
-- `AppDatabase.kt`：是否仍依赖 destructive migration 作为主路径。
+- `AppDatabase.kt`：迁移链是否仅保留 `MIGRATION_1_2` 与 `MIGRATION_2_3`（`VERSION = 3`）。
 
 ---
 
@@ -266,17 +269,18 @@ Set-Location "D:\MyApplication\Passly"
 
 > 说明：`Owner` 与 `ETA` 先用占位，开工前在周会中补齐。
 
-| 文件                                                                                  | 主要改动点                                 | 验收方式                    | 风险 | Owner             | ETA     |
-|-------------------------------------------------------------------------------------|---------------------------------------|-------------------------|----|-------------------|---------|
-| `app/src/main/java/com/aozijx/passly/data/entity/VaultEntryEntity.kt`               | 新增业务字段；兼容字段标注废弃；保证默认值可迁移              | 编译通过；Room schema 变更符合预期 | 中  | `@data-owner`     | `D1`    |
-| `app/src/main/java/com/aozijx/passly/domain/model/VaultEntry.kt`                    | 领域模型字段与 Entity 对齐                     | 编译通过；详情页字段不崩溃           | 低  | `@domain-owner`   | `D1`    |
-| `app/src/main/java/com/aozijx/passly/data/mapper/VaultEntryMapper.kt`               | `toDomain()`/`toEntity()` 补齐映射        | 单测或手测：新增字段读写一致          | 中  | `@data-owner`     | `D1-D2` |
-| `app/src/main/java/com/aozijx/passly/domain/model/VaultSummary.kt`                  | 移除 `password` 等永久敏感字段                 | 列表仍正常展示；无密码字段依赖报错       | 中  | `@security-owner` | `D2`    |
-| `app/src/main/java/com/aozijx/passly/data/local/VaultDao.kt`                        | Summary 查询去掉 `password` 列；保持排序/筛选逻辑   | 列表加载正常；搜索/分类正常          | 中  | `@data-owner`     | `D2`    |
-| `app/src/main/java/com/aozijx/passly/data/local/AppDatabase.kt`                     | 注册 `MIGRATION_X_Y`；不走 destructive 主路径 | 冷启动迁移通过；旧数据可读           | 高  | `@data-owner`     | `D2-D3` |
-| `app/src/main/java/com/aozijx/passly/features/vault/VaultViewModel.kt`              | 修复 Summary 脱敏后的调用链（避免隐式依赖）            | 列表/详情流转正常；无空指针          | 中  | `@feature-owner`  | `D3`    |
-| `app/src/main/java/com/aozijx/passly/features/vault/VaultScreen.kt`                 | 交互入口改走认证解密链路（不直解）                     | 复制/编辑敏感值均触发认证           | 高  | `@security-owner` | `D3-D4` |
-| `app/src/main/java/com/aozijx/passly/features/vault/internal/VaultCryptoSupport.kt` | 删除/限制通用静默解密 API；保留 TOTP 专用接口          | 代码搜索无绕过入口；认证失败不返明文      | 高  | `@security-owner` | `D4`    |
+| 文件                                                                                  | 主要改动点                                                    | 验收方式                    | 风险 | Owner             | ETA     |
+|-------------------------------------------------------------------------------------|----------------------------------------------------------|-------------------------|----|-------------------|---------|
+| `app/src/main/java/com/aozijx/passly/data/entity/VaultEntryEntity.kt`               | 新增业务字段；兼容字段标注废弃；保证默认值可迁移                                 | 编译通过；Room schema 变更符合预期 | 中  | `@data-owner`     | `D1`    |
+| `app/src/main/java/com/aozijx/passly/domain/model/VaultEntry.kt`                    | 领域模型字段与 Entity 对齐                                        | 编译通过；详情页字段不崩溃           | 低  | `@domain-owner`   | `D1`    |
+| `app/src/main/java/com/aozijx/passly/data/mapper/VaultEntryMapper.kt`               | `toDomain()`/`toEntity()` 补齐映射                           | 单测或手测：新增字段读写一致          | 中  | `@data-owner`     | `D1-D2` |
+| `app/src/main/java/com/aozijx/passly/domain/model/VaultSummary.kt`                  | 移除 `password` 等永久敏感字段                                    | 列表仍正常展示；无密码字段依赖报错       | 中  | `@security-owner` | `D2`    |
+| `app/src/main/java/com/aozijx/passly/data/local/VaultDao.kt`                        | Summary 查询去掉 `password` 列；保持排序/筛选逻辑                      | 列表加载正常；搜索/分类正常          | 中  | `@data-owner`     | `D2`    |
+| `app/src/main/java/com/aozijx/passly/data/local/AppDatabase.kt`                     | 注册并校验 `MIGRATION_1_2` + `MIGRATION_2_3`；保持 `VERSION = 3` | 冷启动迁移通过；旧数据可读           | 高  | `@data-owner`     | `D2-D3` |
+| `app/src/main/java/com/aozijx/passly/features/vault/VaultViewModel.kt`              | 修复 Summary 脱敏后的调用链（避免隐式依赖）                               | 列表/详情流转正常；无空指针          | 中  | `@feature-owner`  | `D3`    |
+| `app/src/main/java/com/aozijx/passly/features/detail/page/DetailScreen.kt`          | 全屏详情入口对齐无预解密策略                                           | 双入口编辑行为一致；需认证后解密        | 中  | `@feature-owner`  | `D3`    |
+| `app/src/main/java/com/aozijx/passly/features/vault/VaultScreen.kt`                 | 交互入口改走认证解密链路（不直解）                                        | 复制/编辑敏感值均触发认证           | 高  | `@security-owner` | `D3-D4` |
+| `app/src/main/java/com/aozijx/passly/features/vault/internal/VaultCryptoSupport.kt` | 删除/限制通用静默解密 API；保留 TOTP 专用接口                             | 代码搜索无绕过入口；认证失败不返明文      | 高  | `@security-owner` | `D4`    |
 
 ### Phase 1 完成判定
 

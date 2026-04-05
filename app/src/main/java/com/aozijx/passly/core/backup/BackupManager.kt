@@ -7,6 +7,7 @@ import android.util.JsonReader
 import android.util.JsonToken
 import android.util.JsonWriter
 import androidx.room.withTransaction
+import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.entity.VaultEntryEntity
@@ -148,13 +149,12 @@ object BackupManager {
 
     private fun decryptField(encryptedText: String): String {
         if (encryptedText.isEmpty()) return ""
-        return try {
-            // 核心修复：直接使用重构后的解密逻辑
-            CryptoManager.decrypt(encryptedText)
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Field decryption failed during backup", e)
-            ""
+        val decrypted = CryptoAccess.decryptOrNull(encryptedText)
+        if (decrypted == null) {
+            Logcat.e(TAG, "Field decryption failed during backup")
+            return ""
         }
+        return decrypted
     }
 
     suspend fun importBackup(

@@ -121,10 +121,24 @@ fun DetailScreen(
         }
     }
 
-    val authRevealTitle = stringResource(R.string.vault_auth_decrypt_title)
-    val authRevealSubtitle = stringResource(R.string.vault_auth_reveal_subtitle)
     val authQrTitle = stringResource(R.string.vault_auth_qr_title)
     val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
+
+    LaunchedEffect(entry.id, vaultViewModel.shouldStartDetailInEditMode, vaultViewModel.shouldStartTotpEdit) {
+        if (!vaultViewModel.shouldStartDetailInEditMode) return@LaunchedEffect
+
+        if (vaultViewModel.shouldStartTotpEdit) {
+            totpEditState.isEditing = true
+        } else {
+            if (entry.username.isNotEmpty()) {
+                editState.isEditingUsername = true
+            } else if (entry.password.isNotEmpty()) {
+                editState.isEditingPassword = true
+            }
+        }
+
+        vaultViewModel.consumeDetailLaunchState()
+    }
 
     DisposableEffect(Unit) {
         onDispose {
