@@ -4,7 +4,6 @@ import android.app.Application
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppPrefs
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
-import net.zetetic.database.sqlcipher.SQLiteDatabase
 
 class AppContext : Application() {
     // 全局单例 VaultPrefs
@@ -20,7 +19,7 @@ class AppContext : Application() {
         super.onCreate()
         _instance = this
         try {
-            SQLiteDatabase.loadLibs(this)
+            System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
             Logcat.e(TAG, "Failed to load SQLCipher native library. Verify build.gradle SQLCipher dependency and target ABI .so files are packaged in the APK", e)
             throw e
