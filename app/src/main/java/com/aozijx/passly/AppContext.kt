@@ -3,6 +3,7 @@ package com.aozijx.passly
 import android.app.Application
 import com.aozijx.passly.data.local.AppPrefs
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import net.zetetic.database.sqlcipher.SQLiteDatabase
 
 class AppContext : Application() {
     // 全局单例 VaultPrefs
@@ -15,6 +16,7 @@ class AppContext : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        SQLiteDatabase.loadLibs(this)
         _instance = this
         EntryTypeStrategyRegistry.ensureRegistered()
     }
