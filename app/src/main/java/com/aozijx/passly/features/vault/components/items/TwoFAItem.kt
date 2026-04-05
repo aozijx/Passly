@@ -16,12 +16,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
@@ -34,17 +34,18 @@ import com.aozijx.passly.features.vault.VaultViewModel
 @Composable
 fun TwoFAItem(
     entry: VaultSummary,
-    vaultViewModel: VaultViewModel,
+    vaultViewModel: VaultViewModel?,
     showCode: Boolean = true,
-    onClick: () -> Unit = { vaultViewModel.showDetail(entry) }
+    previewCode: String? = null,
+    previewProgress: Float? = null,
+    onClick: () -> Unit = { vaultViewModel?.showDetail(entry) }
 ) {
-    val totpStates by vaultViewModel.totpStates.collectAsState()
-    val currentState = totpStates[entry.id]
-    
+    val currentState = vaultViewModel?.totpStates?.collectAsState()?.value?.get(entry.id)
+
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
-    
-    LaunchedEffect(entry.id) {
-        vaultViewModel.autoUnlockTotp(entry)
+
+    LaunchedEffect(entry.id, vaultViewModel) {
+        vaultViewModel?.autoUnlockTotp(entry)
     }
 
     Card(
@@ -56,8 +57,7 @@ fun TwoFAItem(
         )
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically
         ) {
             VaultItemIcon(item = entry)
 
@@ -65,28 +65,40 @@ fun TwoFAItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    entry.title,
+                    text = entry.title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = entry.category,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            
+
             CircularProgressIndicator(
-                progress = { currentState?.progress ?: 0f },
+                progress = { previewProgress ?: currentState?.progress ?: 0f },
                 modifier = Modifier.size(24.dp),
                 strokeWidth = 3.dp,
-                color = if ((currentState?.progress ?: 1f) < 0.2f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                color = if ((previewProgress ?: currentState?.progress ?: 1f) < 0.2f) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             )
 
             if (showCode) {
                 Text(
-                    text = if (isSteam) (currentState?.code ?: "------") else (currentState?.code?.chunked(3)?.joinToString(" ") ?: "------"),
+                    text = if (isSteam) {
+                        previewCode ?: currentState?.code ?: "------"
+                    } else {
+                        previewCode ?: currentState?.code?.chunked(3)?.joinToString(" ") ?: "------"
+                    },
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.ExtraBold,
@@ -94,15 +106,11 @@ fun TwoFAItem(
                         fontSize = 18.sp
                     ),
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier.padding(start = 12.dp)
                 )
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
             }
         }
     }
 }
-
-
-
-

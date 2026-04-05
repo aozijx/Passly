@@ -71,7 +71,7 @@ fun SettingsScreen(
     val lastBackupExportFileName = uiState.lastBackupExportFileName
 
     val availableCardStyles = remember { VaultCardStyle.perTypeStyles }
-    val effectiveCardStyle = VaultCardStyle.resolveSettingsStyle(cardStyle)
+    val effectiveCardStyle = VaultCardStyle.normalizeGlobalStyle(cardStyle)
     val passwordSelectedStyle =
         cardStyleByEntryType[EntryType.PASSWORD.value] ?: VaultCardStyle.DEFAULT
     val totpSelectedStyle = cardStyleByEntryType[EntryType.TOTP.value] ?: VaultCardStyle.DEFAULT

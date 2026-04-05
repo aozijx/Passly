@@ -1,10 +1,12 @@
 package com.aozijx.passly.features.vault.components.entries
 
 import androidx.compose.runtime.Composable
+import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.common.ui.VaultCardStyle
 import com.aozijx.passly.core.designsystem.base.VaultItem
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
+import com.aozijx.passly.features.vault.components.items.TwoFAItem
 
 /**
  * Single source of truth for card-style availability and rendering.
@@ -55,10 +57,11 @@ object VaultCardStyleRegistry {
                     )
                 }
 
-                else -> {
-                    VaultItem(
+                VaultCardStyle.DEFAULT, VaultCardStyle.PASSWORD -> {
+                    TwoFAItem(
                         entry = entry,
-                        viewModel = viewModel,
+                        vaultViewModel = viewModel,
+                        showCode = viewModel.showTOTPCode,
                         onClick = onClick
                     )
                 }
@@ -68,41 +71,31 @@ object VaultCardStyleRegistry {
 
         when (style) {
             VaultCardStyle.PASSWORD -> PasswordStyleVaultItem(
-                entry = entry,
-                viewModel = viewModel,
-                onClick = onClick
+                entry = entry, viewModel = viewModel, onClick = onClick
             )
 
             VaultCardStyle.TOTP -> VaultItem(
-                entry = entry,
-                viewModel = viewModel,
-                onClick = onClick
+                entry = entry, viewModel = viewModel, onClick = onClick
             )
 
             VaultCardStyle.DEFAULT -> VaultItem(
-                entry = entry,
-                viewModel = viewModel,
-                onClick = onClick
-            )
-
-            VaultCardStyle.BASE -> VaultItem(
-                entry = entry,
-                viewModel = viewModel,
-                onClick = onClick
+                entry = entry, viewModel = viewModel, onClick = onClick
             )
         }
     }
 
     @Composable
     fun RenderPreviewVaultItem(
-        style: VaultCardStyle,
-        onClick: () -> Unit
+        style: VaultCardStyle, entryTypeValue: Int? = null, onClick: () -> Unit
     ) {
-        when (style) {
+        val resolvedStyle = if (entryTypeValue != null) {
+            VaultCardStyle.resolveForEntryType(style, entryTypeValue)
+        } else {
+            style
+        }
+        when (resolvedStyle) {
             VaultCardStyle.PASSWORD -> PasswordStyleVaultItem(
-                entry = previewPasswordEntry,
-                viewModel = null,
-                onClick = onClick
+                entry = previewPasswordEntry, viewModel = null, onClick = onClick
             )
 
             VaultCardStyle.TOTP -> TotpStyleVaultItem(
@@ -114,12 +107,22 @@ object VaultCardStyleRegistry {
                 onClick = onClick
             )
 
-            VaultCardStyle.DEFAULT,
-            VaultCardStyle.BASE -> VaultItem(
-                entry = previewBaseEntry,
-                viewModel = null,
-                onClick = onClick
-            )
+            VaultCardStyle.DEFAULT -> {
+                if (entryTypeValue == EntryType.TOTP.value) {
+                    TwoFAItem(
+                        entry = previewTotpEntry,
+                        vaultViewModel = null,
+                        showCode = true,
+                        previewCode = "123 456",
+                        previewProgress = 0.4f,
+                        onClick = onClick
+                    )
+                } else {
+                    VaultItem(
+                        entry = previewBaseEntry, viewModel = null, onClick = onClick
+                    )
+                }
+            }
         }
     }
 

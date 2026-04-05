@@ -327,4 +327,19 @@
         <item>permission</item>
     </string-array>
 
+    <!-- Settings: Vault card style -->
+    <string name="settings_card_style_section_title">Vault card style</string>
+    <string name="settings_card_style_section_expanded_hint">Preview expanded</string>
+    <string name="settings_card_style_section_collapsed_hint">Tap to preview and switch</string>
+    <string name="settings_card_style_group_expanded_label">Collapse</string>
+    <string name="settings_card_style_group_collapsed_label">Expand</string>
+    <string name="settings_card_style_group_password">Password group</string>
+    <string name="settings_card_style_group_totp">TOTP group</string>
+    <string name="settings_card_style_default_name">Follow this category default (Password/TOTP)</string>
+    <string name="settings_card_style_default_desc">Uses this category\'s default style</string>
+    <string name="settings_card_style_password_name">Password card</string>
+    <string name="settings_card_style_password_desc">Style emphasizing credential recognition</string>
+    <string name="settings_card_style_totp_name">TOTP card</string>
+    <string name="settings_card_style_totp_desc">Highlights dynamic code and progress ring</string>
+
 </resources>

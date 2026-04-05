@@ -29,15 +29,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
+import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.common.ui.VaultCardStyle
-import com.aozijx.passly.features.settings.internal.CardStyleGroupDefinition
-import com.aozijx.passly.features.settings.internal.CardStyleSettingsConfig
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
 
 @Composable
@@ -49,12 +52,17 @@ fun CardStyleSettingsSection(
     onTotpStyleSelected: (VaultCardStyle) -> Unit
 ) {
     val expandedState = rememberSaveable { mutableStateOf(false) }
-    val passwordExpandedState = rememberSaveable { mutableStateOf(false) }
-    val totpExpandedState = rememberSaveable { mutableStateOf(false) }
-    val passwordGroupDefinition = CardStyleSettingsConfig.PASSWORD_GROUP
-    val totpGroupDefinition = CardStyleSettingsConfig.TOTP_GROUP
-    val passwordStyles = passwordGroupDefinition.styleCandidates.filter { it in availableStyles }
-    val totpStyles = totpGroupDefinition.styleCandidates.filter { it in availableStyles }
+    var expandedGroupTypes by rememberSaveable { mutableStateOf(setOf<Int>()) }
+    val selectedStyleByType = mapOf(
+        EntryType.PASSWORD.value to passwordSelectedStyle, EntryType.TOTP.value to totpSelectedStyle
+    )
+    val onStyleSelectedByType = mapOf(
+        EntryType.PASSWORD.value to onPasswordStyleSelected,
+        EntryType.TOTP.value to onTotpStyleSelected
+    )
+    val groups = VaultCardStyle.settingsGroupSpecs.map { spec ->
+        spec to spec.styleCandidates.filter { it in availableStyles }
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -72,15 +80,15 @@ fun CardStyleSettingsSection(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = CardStyleSettingsConfig.SECTION_TITLE,
+                    text = stringResource(R.string.settings_card_style_section_title),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = if (expandedState.value) {
-                        CardStyleSettingsConfig.SECTION_EXPANDED_HINT
+                        stringResource(R.string.settings_card_style_section_expanded_hint)
                     } else {
-                        CardStyleSettingsConfig.SECTION_COLLAPSED_HINT
+                        stringResource(R.string.settings_card_style_section_collapsed_hint)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -104,22 +112,27 @@ fun CardStyleSettingsSection(
                     .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CardStyleGroup(
-                    definition = passwordGroupDefinition,
-                    styles = passwordStyles,
-                    selectedStyle = passwordSelectedStyle,
-                    expanded = passwordExpandedState.value,
-                    onToggle = { passwordExpandedState.value = !passwordExpandedState.value },
-                    onStyleSelected = onPasswordStyleSelected
-                )
-                CardStyleGroup(
-                    definition = totpGroupDefinition,
-                    styles = totpStyles,
-                    selectedStyle = totpSelectedStyle,
-                    expanded = totpExpandedState.value,
-                    onToggle = { totpExpandedState.value = !totpExpandedState.value },
-                    onStyleSelected = onTotpStyleSelected
-                )
+                groups.forEach { (spec, styles) ->
+                    val onStyleSelected =
+                        onStyleSelectedByType[spec.entryTypeValue] ?: return@forEach
+                    val selectedStyle =
+                        selectedStyleByType[spec.entryTypeValue] ?: VaultCardStyle.DEFAULT
+                    val expanded = spec.entryTypeValue in expandedGroupTypes
+                    CardStyleGroup(
+                        spec = spec,
+                        styles = styles,
+                        selectedStyle = selectedStyle,
+                        expanded = expanded,
+                        onToggle = {
+                            expandedGroupTypes = if (expanded) {
+                                expandedGroupTypes - spec.entryTypeValue
+                            } else {
+                                expandedGroupTypes + spec.entryTypeValue
+                            }
+                        },
+                        onStyleSelected = onStyleSelected
+                    )
+                }
             }
         }
     }
@@ -127,7 +140,7 @@ fun CardStyleSettingsSection(
 
 @Composable
 private fun CardStyleGroup(
-    definition: CardStyleGroupDefinition,
+    spec: VaultCardStyle.Companion.SettingsGroupSpec,
     styles: List<VaultCardStyle>,
     selectedStyle: VaultCardStyle,
     expanded: Boolean,
@@ -135,12 +148,13 @@ private fun CardStyleGroup(
     onStyleSelected: (VaultCardStyle) -> Unit
 ) {
     StyleGroup(
-        title = definition.title, expanded = expanded, onToggle = onToggle
+        title = stringResource(spec.titleRes), expanded = expanded, onToggle = onToggle
     ) {
         styles.forEach { style ->
             CardStyleOption(
                 style = style,
                 selected = style == selectedStyle,
+                entryTypeValue = spec.entryTypeValue,
                 onClick = { onStyleSelected(style) })
         }
     }
@@ -200,9 +214,9 @@ private fun GroupHeaderButton(
             )
             Text(
                 text = if (expanded) {
-                    CardStyleSettingsConfig.GROUP_EXPANDED_LABEL
+                    stringResource(R.string.settings_card_style_group_expanded_label)
                 } else {
-                    CardStyleSettingsConfig.GROUP_COLLAPSED_LABEL
+                    stringResource(R.string.settings_card_style_group_collapsed_label)
                 },
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -220,7 +234,7 @@ private fun GroupHeaderButton(
 
 @Composable
 private fun CardStyleOption(
-    style: VaultCardStyle, selected: Boolean, onClick: () -> Unit
+    style: VaultCardStyle, selected: Boolean, entryTypeValue: Int, onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
@@ -235,12 +249,12 @@ private fun CardStyleOption(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = style.displayName,
+                        text = stringResource(style.displayNameRes),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = style.description,
+                        text = stringResource(style.descriptionRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -249,7 +263,9 @@ private fun CardStyleOption(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            VaultCardStyleRegistry.RenderPreviewVaultItem(style = style, onClick = onClick)
+            VaultCardStyleRegistry.RenderPreviewVaultItem(
+                style = style, entryTypeValue = entryTypeValue, onClick = onClick
+            )
         }
     }
 }

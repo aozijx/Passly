@@ -373,4 +373,19 @@
         <item>权限</item>
     </string-array>
 
+    <!-- 设置: 列表卡片样式 -->
+    <string name="settings_card_style_section_title">列表卡片样式</string>
+    <string name="settings_card_style_section_expanded_hint">已展开预览</string>
+    <string name="settings_card_style_section_collapsed_hint">点击展开预览与切换</string>
+    <string name="settings_card_style_group_expanded_label">收起</string>
+    <string name="settings_card_style_group_collapsed_label">展开</string>
+    <string name="settings_card_style_group_password">密码分组</string>
+    <string name="settings_card_style_group_totp">TOTP 分组</string>
+    <string name="settings_card_style_default_name">跟随该分类默认（密码/TOTP）</string>
+    <string name="settings_card_style_default_desc">该分类默认样式</string>
+    <string name="settings_card_style_password_name">密码卡片</string>
+    <string name="settings_card_style_password_desc">强调凭据识别的样式</string>
+    <string name="settings_card_style_totp_name">TOTP卡片</string>
+    <string name="settings_card_style_totp_desc">突出动态验证码与进度环</string>
+
 </resources>

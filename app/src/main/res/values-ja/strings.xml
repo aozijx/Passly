@@ -327,4 +327,19 @@
         <item>権限</item>
     </string-array>
 
+    <!-- 設定: カードスタイル -->
+    <string name="settings_card_style_section_title">一覧カードスタイル</string>
+    <string name="settings_card_style_section_expanded_hint">プレビューを展開中</string>
+    <string name="settings_card_style_section_collapsed_hint">タップしてプレビューと切替</string>
+    <string name="settings_card_style_group_expanded_label">折りたたむ</string>
+    <string name="settings_card_style_group_collapsed_label">展開</string>
+    <string name="settings_card_style_group_password">パスワードグループ</string>
+    <string name="settings_card_style_group_totp">TOTPグループ</string>
+    <string name="settings_card_style_default_name">この分類の既定に従う（Password/TOTP）</string>
+    <string name="settings_card_style_default_desc">この分類の既定スタイルを使用</string>
+    <string name="settings_card_style_password_name">パスワードカード</string>
+    <string name="settings_card_style_password_desc">認証情報を識別しやすいスタイル</string>
+    <string name="settings_card_style_totp_name">TOTPカード</string>
+    <string name="settings_card_style_totp_desc">動的コードと進捗リングを強調</string>
+
 </resources>
