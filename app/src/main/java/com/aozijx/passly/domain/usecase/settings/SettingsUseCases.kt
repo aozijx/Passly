@@ -25,6 +25,8 @@ class SettingsUseCases(private val repository: SettingsRepository) {
     val cardStyle: Flow<VaultCardStyle> = repository.cardStyle
     val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>> = repository.cardStyleByEntryType
     val autofillUiMode: Flow<AutofillUiMode> = repository.autofillUiMode
+    val backupDirectoryUri: Flow<String?> = repository.backupDirectoryUri
+    val lastBackupExportFileName: Flow<String?> = repository.lastBackupExportFileName
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
     suspend fun setBiometricEnabled(enabled: Boolean) = repository.setBiometricEnabled(enabled)
@@ -44,4 +46,7 @@ class SettingsUseCases(private val repository: SettingsRepository) {
     suspend fun setCardStyle(style: VaultCardStyle) = repository.setCardStyle(style)
     suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) = repository.setCardStyleForEntryType(entryTypeValue, style)
     suspend fun setAutofillUiMode(mode: AutofillUiMode) = repository.setAutofillUiMode(mode)
+    suspend fun setBackupDirectoryUri(uri: String) = repository.setBackupDirectoryUri(uri)
+    suspend fun clearBackupDirectoryUri() = repository.clearBackupDirectoryUri()
+    suspend fun setLastBackupExportFileName(fileName: String) = repository.setLastBackupExportFileName(fileName)
 }

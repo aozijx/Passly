@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.settings.components
+package com.aozijx.passly.features.settings.components.sections
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -40,15 +40,6 @@ import com.aozijx.passly.features.settings.internal.CardStyleGroupDefinition
 import com.aozijx.passly.features.settings.internal.CardStyleSettingsConfig
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
 
-private data class StyleGroupItem(
-    val definition: CardStyleGroupDefinition,
-    val styles: List<VaultCardStyle>,
-    val selectedStyle: VaultCardStyle,
-    val expanded: Boolean,
-    val onToggle: () -> Unit,
-    val onStyleSelected: (VaultCardStyle) -> Unit
-)
-
 @Composable
 fun CardStyleSettingsSection(
     availableStyles: List<VaultCardStyle>,
@@ -62,24 +53,8 @@ fun CardStyleSettingsSection(
     val totpExpandedState = rememberSaveable { mutableStateOf(false) }
     val passwordGroupDefinition = CardStyleSettingsConfig.PASSWORD_GROUP
     val totpGroupDefinition = CardStyleSettingsConfig.TOTP_GROUP
-    val groups = listOf(
-        StyleGroupItem(
-            definition = passwordGroupDefinition,
-            styles = passwordGroupDefinition.styleCandidates.filter { it in availableStyles },
-            selectedStyle = passwordSelectedStyle,
-            expanded = passwordExpandedState.value,
-            onToggle = { passwordExpandedState.value = !passwordExpandedState.value },
-            onStyleSelected = onPasswordStyleSelected
-        ),
-        StyleGroupItem(
-            definition = totpGroupDefinition,
-            styles = totpGroupDefinition.styleCandidates.filter { it in availableStyles },
-            selectedStyle = totpSelectedStyle,
-            expanded = totpExpandedState.value,
-            onToggle = { totpExpandedState.value = !totpExpandedState.value },
-            onStyleSelected = onTotpStyleSelected
-        )
-    )
+    val passwordStyles = passwordGroupDefinition.styleCandidates.filter { it in availableStyles }
+    val totpStyles = totpGroupDefinition.styleCandidates.filter { it in availableStyles }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -87,8 +62,7 @@ fun CardStyleSettingsSection(
                 .fillMaxWidth()
                 .clickable { expandedState.value = !expandedState.value }
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+            verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.ViewDay,
                 contentDescription = null,
@@ -130,22 +104,44 @@ fun CardStyleSettingsSection(
                     .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                groups.forEach { group ->
-                    StyleGroup(
-                        title = group.definition.title,
-                        expanded = group.expanded,
-                        onToggle = group.onToggle
-                    ) {
-                        group.styles.forEach { style ->
-                            CardStyleOption(
-                                style = style,
-                                selected = style == group.selectedStyle,
-                                onClick = { group.onStyleSelected(style) }
-                            )
-                        }
-                    }
-                }
+                CardStyleGroup(
+                    definition = passwordGroupDefinition,
+                    styles = passwordStyles,
+                    selectedStyle = passwordSelectedStyle,
+                    expanded = passwordExpandedState.value,
+                    onToggle = { passwordExpandedState.value = !passwordExpandedState.value },
+                    onStyleSelected = onPasswordStyleSelected
+                )
+                CardStyleGroup(
+                    definition = totpGroupDefinition,
+                    styles = totpStyles,
+                    selectedStyle = totpSelectedStyle,
+                    expanded = totpExpandedState.value,
+                    onToggle = { totpExpandedState.value = !totpExpandedState.value },
+                    onStyleSelected = onTotpStyleSelected
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun CardStyleGroup(
+    definition: CardStyleGroupDefinition,
+    styles: List<VaultCardStyle>,
+    selectedStyle: VaultCardStyle,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onStyleSelected: (VaultCardStyle) -> Unit
+) {
+    StyleGroup(
+        title = definition.title, expanded = expanded, onToggle = onToggle
+    ) {
+        styles.forEach { style ->
+            CardStyleOption(
+                style = style,
+                selected = style == selectedStyle,
+                onClick = { onStyleSelected(style) })
         }
     }
 }
@@ -159,9 +155,7 @@ private fun StyleGroup(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         GroupHeaderButton(
-            title = title,
-            expanded = expanded,
-            onClick = onToggle
+            title = title, expanded = expanded, onClick = onToggle
         )
         AnimatedVisibility(
             visible = expanded,
@@ -175,17 +169,14 @@ private fun StyleGroup(
 
 @Composable
 private fun GroupHeaderButton(
-    title: String,
-    expanded: Boolean,
-    onClick: () -> Unit
+    title: String, expanded: Boolean, onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(
-            1.dp,
-            if (expanded) {
+            1.dp, if (expanded) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
             } else {
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
@@ -229,9 +220,7 @@ private fun GroupHeaderButton(
 
 @Composable
 private fun CardStyleOption(
-    style: VaultCardStyle,
-    selected: Boolean,
-    onClick: () -> Unit
+    style: VaultCardStyle, selected: Boolean, onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
@@ -260,12 +249,7 @@ private fun CardStyleOption(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            SettingsCardStylePreview(style = style, onClick = onClick)
+            VaultCardStyleRegistry.RenderPreviewVaultItem(style = style, onClick = onClick)
         }
     }
-}
-
-@Composable
-private fun SettingsCardStylePreview(style: VaultCardStyle, onClick: () -> Unit) {
-    VaultCardStyleRegistry.RenderPreviewVaultItem(style = style, onClick = onClick)
 }

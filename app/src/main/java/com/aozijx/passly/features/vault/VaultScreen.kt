@@ -91,6 +91,7 @@ fun VaultContent(
     val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsState(initial = SwipeActionType.DELETE)
     val swipeRightAction by vaultPrefs.swipeRightAction.collectAsState(initial = SwipeActionType.DISABLED)
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val backupDirectoryUri = settingsUiState.backupDirectoryUri
     
     // 沉浸式设置状态
     val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
@@ -154,8 +155,12 @@ fun VaultContent(
         }
     }
 
-    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { 
-        it?.let { settingsViewModel.startExport(it) } 
+    var pendingManualExportFileName by remember { mutableStateOf<String?>(null) }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
+        it?.let { selectedUri ->
+            settingsViewModel.startExport(selectedUri, fileNameHint = pendingManualExportFileName)
+        }
+        pendingManualExportFileName = null
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { 
         it?.let { settingsViewModel.startImport(it) } 
@@ -166,6 +171,13 @@ fun VaultContent(
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             settingsViewModel.clearBackupMessage()
         }
+    }
+
+    LaunchedEffect(settingsViewModel.backupExportFallbackFileName) {
+        val fallbackName = settingsViewModel.backupExportFallbackFileName ?: return@LaunchedEffect
+        pendingManualExportFileName = fallbackName
+        exportLauncher.launch(fallbackName)
+        settingsViewModel.consumeBackupExportFallbackFileName()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -179,7 +191,15 @@ fun VaultContent(
                 VaultTopBar(
                     vaultViewModel = vaultViewModel,
                     scrollBehavior = scrollBehavior,
-                    onExportClick = { exportLauncher.launch("vault_backup_${System.currentTimeMillis()}.poop") },
+                    onExportClick = {
+                        val startedFromConfiguredDirectory =
+                            settingsViewModel.tryStartExportInConfiguredDirectory(context, backupDirectoryUri)
+                        if (!startedFromConfiguredDirectory) {
+                            val manualFileName = settingsViewModel.nextBackupFileName()
+                            pendingManualExportFileName = manualFileName
+                            exportLauncher.launch(manualFileName)
+                        }
+                    },
                     onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
                     onSettingsClick = onSettingsClick,
                     isTopBarCollapsible = isTopBarCollapsible,

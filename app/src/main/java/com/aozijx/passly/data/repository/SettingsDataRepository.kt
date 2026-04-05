@@ -26,6 +26,8 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     override val cardStyle: Flow<VaultCardStyle> = prefs.cardStyle
     override val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>> = prefs.cardStyleByEntryType
     override val autofillUiMode: Flow<AutofillUiMode> = prefs.autofillUiMode
+    override val backupDirectoryUri: Flow<String?> = prefs.backupDirectoryUri
+    override val lastBackupExportFileName: Flow<String?> = prefs.lastBackupExportFileName
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         prefs.setLockTimeout(timeoutMs)
@@ -76,5 +78,14 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     }
     override suspend fun setAutofillUiMode(mode: AutofillUiMode) {
         prefs.setAutofillUiMode(mode)
+    }
+    override suspend fun setBackupDirectoryUri(uri: String) {
+        prefs.setBackupDirectoryUri(uri)
+    }
+    override suspend fun clearBackupDirectoryUri() {
+        prefs.clearBackupDirectoryUri()
+    }
+    override suspend fun setLastBackupExportFileName(fileName: String) {
+        prefs.setLastBackupExportFileName(fileName)
     }
 }

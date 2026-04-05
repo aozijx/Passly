@@ -25,10 +25,6 @@ internal class BackupImportIconSyncSupport {
         private const val TAG = "BackupIconSync"
     }
 
-    suspend fun syncRemoteIcons(context: Context): BackupImportIconSyncResult = withContext(Dispatchers.IO) {
-        syncRemoteIcons(context, onProgress = null)
-    }
-
     suspend fun syncRemoteIcons(
         context: Context,
         onProgress: ((processed: Int, total: Int, success: Int, failed: Int) -> Unit)?

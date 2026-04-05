@@ -49,7 +49,6 @@ fun DetailHeader(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         if (hasCustomPath) {
-            val imageModel = localImageModel
             // 自定义封面模式
             Box(
                 modifier = Modifier
@@ -61,7 +60,7 @@ fun DetailHeader(
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(imageModel)
+                        .data(localImageModel)
                         .crossfade(true)
                         .build(),
                     contentDescription = null,

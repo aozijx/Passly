@@ -46,6 +46,8 @@ class AppPrefs(context: Context) {
 
         // --- 自动填充展示模式 ---
         val AUTOFILL_UI_MODE_KEY = stringPreferencesKey("autofill_ui_mode")
+        val BACKUP_DIRECTORY_URI_KEY = stringPreferencesKey("backup_directory_uri")
+        val LAST_BACKUP_EXPORT_FILE_NAME_KEY = stringPreferencesKey("last_backup_export_file_name")
     }
 
     val isStatusBarAutoHide: Flow<Boolean> = appContext.vaultDataStore.data.map { it[AUTO_HIDE_STATUS_BAR_KEY] ?: true }
@@ -67,6 +69,12 @@ class AppPrefs(context: Context) {
     }
     val autofillUiMode: Flow<AutofillUiMode> = appContext.vaultDataStore.data.map { prefs ->
         AutofillUiMode.fromKey(prefs[AUTOFILL_UI_MODE_KEY])
+    }
+    val backupDirectoryUri: Flow<String?> = appContext.vaultDataStore.data.map { prefs ->
+        prefs[BACKUP_DIRECTORY_URI_KEY]
+    }
+    val lastBackupExportFileName: Flow<String?> = appContext.vaultDataStore.data.map { prefs ->
+        prefs[LAST_BACKUP_EXPORT_FILE_NAME_KEY]
     }
 
     // 原有设置
@@ -107,6 +115,11 @@ class AppPrefs(context: Context) {
         prefs[CARD_STYLE_MAP_KEY] = encodeStyleMap(map)
     }
     suspend fun setAutofillUiMode(mode: AutofillUiMode) = appContext.vaultDataStore.edit { it[AUTOFILL_UI_MODE_KEY] = mode.key }
+    suspend fun setBackupDirectoryUri(uri: String) = appContext.vaultDataStore.edit { it[BACKUP_DIRECTORY_URI_KEY] = uri }
+    suspend fun clearBackupDirectoryUri() = appContext.vaultDataStore.edit { it.remove(BACKUP_DIRECTORY_URI_KEY) }
+    suspend fun setLastBackupExportFileName(fileName: String) = appContext.vaultDataStore.edit {
+        it[LAST_BACKUP_EXPORT_FILE_NAME_KEY] = fileName
+    }
 
     suspend fun setLockTimeout(timeoutMs: Long) = appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
     suspend fun setBiometricEnabled(enabled: Boolean) = appContext.vaultDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }

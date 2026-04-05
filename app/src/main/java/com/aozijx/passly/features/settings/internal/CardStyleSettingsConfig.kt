@@ -6,8 +6,7 @@ import com.aozijx.passly.core.common.ui.VaultCardStyle.PASSWORD
 import com.aozijx.passly.core.common.ui.VaultCardStyle.TOTP
 
 internal data class CardStyleGroupDefinition(
-    val title: String,
-    val styleCandidates: List<VaultCardStyle>
+    val title: String, val styleCandidates: List<VaultCardStyle>
 )
 
 internal object CardStyleSettingsConfig {
@@ -18,12 +17,10 @@ internal object CardStyleSettingsConfig {
     const val GROUP_COLLAPSED_LABEL = "展开"
 
     val PASSWORD_GROUP = CardStyleGroupDefinition(
-        title = "密码分组",
-        styleCandidates = listOf(DEFAULT, PASSWORD)
+        title = "密码分组", styleCandidates = listOf(DEFAULT, PASSWORD)
     )
 
     val TOTP_GROUP = CardStyleGroupDefinition(
-        title = "TOTP 分组",
-        styleCandidates = listOf(DEFAULT, TOTP)
+        title = "TOTP 分组", styleCandidates = listOf(DEFAULT, TOTP)
     )
 }

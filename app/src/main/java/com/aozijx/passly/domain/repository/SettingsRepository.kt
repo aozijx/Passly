@@ -24,6 +24,8 @@ interface SettingsRepository {
     val cardStyle: Flow<VaultCardStyle>
     val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>>
     val autofillUiMode: Flow<AutofillUiMode>
+    val backupDirectoryUri: Flow<String?>
+    val lastBackupExportFileName: Flow<String?>
 
     suspend fun setLockTimeout(timeoutMs: Long)
     suspend fun setBiometricEnabled(enabled: Boolean)
@@ -43,4 +45,7 @@ interface SettingsRepository {
     suspend fun setCardStyle(style: VaultCardStyle)
     suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle)
     suspend fun setAutofillUiMode(mode: AutofillUiMode)
+    suspend fun setBackupDirectoryUri(uri: String)
+    suspend fun clearBackupDirectoryUri()
+    suspend fun setLastBackupExportFileName(fileName: String)
 }
