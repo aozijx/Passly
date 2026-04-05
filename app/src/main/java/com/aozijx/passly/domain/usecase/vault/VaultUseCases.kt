@@ -18,6 +18,9 @@ import com.aozijx.passly.domain.usecase.vault.impl.SearchEntriesUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.SearchEntrySummariesUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.UpdateEntryUseCase
 
+/**
+ * 门面类，聚合所有仓库相关的用例实现
+ */
 class VaultUseCases(
     repository: VaultRepository,
     faviconRepository: FaviconRepository
