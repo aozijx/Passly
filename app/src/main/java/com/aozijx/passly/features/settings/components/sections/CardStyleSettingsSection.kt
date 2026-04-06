@@ -40,7 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.common.ui.VaultCardStyle
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
 
 @Composable

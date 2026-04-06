@@ -65,7 +65,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.ui.VaultTab
+import com.aozijx.passly.core.designsystem.model.VaultTab
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -141,8 +141,7 @@ fun VaultTopBar(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = if (selectedCategory != null) stringResource(
-                                R.string.vault_title_category,
-                                selectedCategory!!
+                                R.string.vault_title_category, selectedCategory!!
                             )
                             else stringResource(R.string.vault_title_default),
                             fontWeight = FontWeight.Bold
@@ -180,14 +179,12 @@ fun VaultTopBar(
                         }
                         DropdownMenu(
                             expanded = vaultViewModel.isMoreMenuExpanded,
-                            onDismissRequest = { vaultViewModel.isMoreMenuExpanded = false }
-                        ) {
+                            onDismissRequest = { vaultViewModel.isMoreMenuExpanded = false }) {
                             if (!showCategorySubMenu) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_filter)) },
                                     onClick = { showCategorySubMenu = true },
-                                    leadingIcon = { Icon(Icons.Default.FilterList, null) }
-                                )
+                                    leadingIcon = { Icon(Icons.Default.FilterList, null) })
                                 DropdownMenuItem(
                                     text = { Text(stringResource(if (vaultViewModel.showTOTPCode) R.string.vault_menu_hide_totp else R.string.vault_menu_show_totp)) },
                                     onClick = {
@@ -200,16 +197,14 @@ fun VaultTopBar(
                                             if (vaultViewModel.showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                             null
                                         )
-                                    }
-                                )
+                                    })
 
                                 // 如果未开启自动填充，显示开启按钮
                                 if (!vaultViewModel.isAutofillEnabled) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
                                         onClick = { vaultViewModel.openAutofillSettings(context) },
-                                        leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
-                                    )
+                                        leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) })
                                 }
 
                                 HorizontalDivider()
@@ -218,59 +213,49 @@ fun VaultTopBar(
                                     onClick = {
                                         vaultViewModel.isMoreMenuExpanded = false; onSettingsClick()
                                     },
-                                    leadingIcon = { Icon(Icons.Default.Settings, null) }
-                                )
+                                    leadingIcon = { Icon(Icons.Default.Settings, null) })
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_export)) },
                                     onClick = {
                                         vaultViewModel.isMoreMenuExpanded = false; onExportClick()
                                     },
-                                    leadingIcon = { Icon(Icons.Default.FileUpload, null) }
-                                )
+                                    leadingIcon = { Icon(Icons.Default.FileUpload, null) })
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_import)) },
                                     onClick = {
                                         vaultViewModel.isMoreMenuExpanded = false; onImportClick()
                                     },
-                                    leadingIcon = { Icon(Icons.Default.FileDownload, null) }
-                                )
+                                    leadingIcon = { Icon(Icons.Default.FileDownload, null) })
                             } else {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_back)) },
                                     onClick = { showCategorySubMenu = false },
                                     leadingIcon = {
                                         Icon(
-                                            Icons.AutoMirrored.Filled.ArrowBack,
-                                            null
+                                            Icons.AutoMirrored.Filled.ArrowBack, null
                                         )
-                                    }
-                                )
+                                    })
                                 HorizontalDivider()
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_all_categories)) },
                                     onClick = {
-                                        vaultViewModel.clearSelectedCategory(); vaultViewModel.isMoreMenuExpanded = false
+                                        vaultViewModel.clearSelectedCategory(); vaultViewModel.isMoreMenuExpanded =
+                                        false
                                     },
                                     trailingIcon = {
                                         if (selectedCategory == null) Icon(
-                                            Icons.Default.Check,
-                                            null
+                                            Icons.Default.Check, null
                                         )
-                                    }
-                                )
+                                    })
                                 availableCategories.forEach { category ->
-                                    DropdownMenuItem(
-                                        text = { Text(category) },
-                                        onClick = {
-                                            vaultViewModel.setSelectedCategory(category); vaultViewModel.isMoreMenuExpanded = false
-                                        },
-                                        trailingIcon = {
-                                            if (selectedCategory == category) Icon(
-                                                Icons.Default.Check,
-                                                null
-                                            )
-                                        }
-                                    )
+                                    DropdownMenuItem(text = { Text(category) }, onClick = {
+                                        vaultViewModel.setSelectedCategory(category); vaultViewModel.isMoreMenuExpanded =
+                                        false
+                                    }, trailingIcon = {
+                                        if (selectedCategory == category) Icon(
+                                            Icons.Default.Check, null
+                                        )
+                                    })
                                 }
                             }
                         }
@@ -292,8 +277,7 @@ fun VaultTopBar(
 
         // 分类标签栏
         AnimatedVisibility(
-            visible = !vaultViewModel.isSearchActive && selectedCategory == null &&
-                    (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+            visible = !vaultViewModel.isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
@@ -305,8 +289,7 @@ fun VaultTopBar(
                         Modifier.tabIndicatorOffset(selectedTab.ordinal),
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
-            ) {
+                }) {
                 VaultTab.entries.forEach { tab ->
                     Tab(
                         selected = selectedTab == tab,
@@ -323,8 +306,7 @@ fun VaultTopBar(
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
                             )
-                        }
-                    )
+                        })
                 }
             }
         }

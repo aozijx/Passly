@@ -16,7 +16,7 @@ import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.backup.BackupImportMode
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.ui.VaultCardStyle
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.features.settings.internal.BackupActionSupport
 import kotlinx.coroutines.flow.SharingStarted

@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.MainViewModel
-import com.aozijx.passly.core.common.ui.AddType
+import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
@@ -14,7 +14,7 @@ import com.aozijx.passly.features.vault.dialogs.IconPickerDialog
 
 @Composable
 fun VaultDialogs(
-    activity: FragmentActivity, 
+    activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel()
@@ -29,15 +29,13 @@ fun VaultDialogs(
                 onIconSelected = { name ->
                     vaultViewModel.updateVaultEntry(
                         item.copy(
-                            iconName = name,
-                            iconCustomPath = null
+                            iconName = name, iconCustomPath = null
                         )
                     )
                 },
                 onCustomImageSelected = { uri ->
                     vaultViewModel.saveCustomIcon(item, uri)
-                }
-            )
+                })
         }
 
         DetailCardDialog(
@@ -45,15 +43,14 @@ fun VaultDialogs(
             activity = activity,
             mainViewModel = mainViewModel,
             vaultViewModel = vaultViewModel,
-            onDismiss = { vaultViewModel.dismissDetail() }
-        )
+            onDismiss = { vaultViewModel.dismissDetail() })
     }
 
     // --- 添加对话框 ---
     when (vaultViewModel.addType) {
         AddType.PASSWORD -> AddPasswordDialog(viewModel = vaultViewModel)
         AddType.TOTP -> AddTwoFADialog(viewModel = vaultViewModel)
-        else -> {} 
+        else -> {}
     }
 
     // --- 全局确认/反馈对话框 ---
@@ -63,8 +60,7 @@ fun VaultDialogs(
             item = item,
             mainViewModel = mainViewModel,
             onConfirm = { vaultViewModel.confirmDelete() },
-            onDismiss = { vaultViewModel.itemToDelete = null }
-        )
+            onDismiss = { vaultViewModel.itemToDelete = null })
     }
 
     if (settingsViewModel.showBackupPasswordDialog) {

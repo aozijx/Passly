@@ -1,11 +1,11 @@
-package com.aozijx.passly.core.common.ui
+package com.aozijx.passly.core.designsystem.model
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 
 /**
- * 列表卡片样式
+ * 列表卡片样式定义
  */
 enum class VaultCardStyle(
     val key: String,

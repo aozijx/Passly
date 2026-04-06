@@ -31,8 +31,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import com.aozijx.passly.core.common.ui.VaultCardStyleTokens
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
+import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
@@ -56,10 +56,10 @@ fun TotpStyleVaultItem(
     val totpStatesState = vaultViewModel?.totpStates?.collectAsState()
     val currentState = totpStatesState?.value?.get(entry.id)
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
-    
+
     val targetProgress = previewProgress ?: (currentState?.progress ?: 0f)
     val progress by animateFloatAsState(targetValue = targetProgress, label = "TotpProgress")
-    
+
     val shownCode = previewCode ?: run {
         val rawCode = currentState?.code
         if (rawCode == null) TotpBehaviorTokens.FALLBACK_CODE
@@ -75,8 +75,7 @@ fun TotpStyleVaultItem(
 
     val progressColor by animateColorAsState(
         targetValue = if (progress < TotpBehaviorTokens.LOW_PROGRESS_THRESHOLD) MaterialTheme.colorScheme.error
-                      else MaterialTheme.colorScheme.primary,
-        label = "ProgressColor"
+        else MaterialTheme.colorScheme.primary, label = "ProgressColor"
     )
 
     LaunchedEffect(entry.id, vaultViewModel) {
@@ -104,8 +103,7 @@ fun TotpStyleVaultItem(
                         colors = listOf(
                             MaterialTheme.colorScheme.surfaceVariant.copy(
                                 alpha = VaultCardStyleTokens.Totp.SURFACE_GRADIENT_TOP_ALPHA
-                            ),
-                            MaterialTheme.colorScheme.surface
+                            ), MaterialTheme.colorScheme.surface
                         )
                     )
                 )
@@ -124,8 +122,7 @@ fun TotpStyleVaultItem(
                                 alpha = VaultCardStyleTokens.Totp.ICON_CONTAINER_ALPHA
                             ),
                             shape = RoundedCornerShape(VaultCardStyleTokens.Totp.iconContainerCorner)
-                        ),
-                    contentAlignment = Alignment.Center
+                        ), contentAlignment = Alignment.Center
                 ) {
                     VaultItemIcon(item = entry)
                 }
@@ -155,16 +152,14 @@ fun TotpStyleVaultItem(
                 ) {
                     if (showCode) {
                         Text(
-                            text = shownCode,
-                            style = MaterialTheme.typography.titleLarge.copy(
+                            text = shownCode, style = MaterialTheme.typography.titleLarge.copy(
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = VaultCardStyleTokens.Totp.codeLetterSpacing,
                                 fontSize = VaultCardStyleTokens.Totp.codeFontSize
-                            ),
-                            color = MaterialTheme.colorScheme.primary
+                            ), color = MaterialTheme.colorScheme.primary
                         )
-                        
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(VaultCardStyleTokens.Totp.progressRowSpacing)

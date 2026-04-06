@@ -11,7 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import com.aozijx.passly.core.common.ui.ImageType
+import com.aozijx.passly.core.designsystem.model.ImageType
 
 /**
  * 封装的照片选择工具
@@ -33,8 +33,7 @@ fun rememberImagePicker(
 
     val pickMediaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> handleUriResult(uri) }
-    )
+        onResult = { uri -> handleUriResult(uri) })
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -54,8 +53,7 @@ fun rememberImagePicker(
             )
         } else {
             val intent = Intent(
-                Intent.ACTION_PICK,
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI
             ).apply {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }

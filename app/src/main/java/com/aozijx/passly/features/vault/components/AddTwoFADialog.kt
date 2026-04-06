@@ -18,11 +18,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.ui.AddType
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
 import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.VaultTextField
+import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
 import com.aozijx.passly.core.designsystem.state.TotpAddState
 import com.aozijx.passly.core.logging.Logcat
@@ -38,7 +38,7 @@ fun AddTwoFADialog(
     val context = LocalContext.current
     val state = remember { TotpAddState() }
     val algorithms = listOf("SHA1", "SHA256", "SHA512", "STEAM")
-    
+
     val uriParsedMsg = stringResource(R.string.vault_2fa_uri_parsed)
     val uriParseFailedMsg = stringResource(R.string.vault_2fa_uri_parse_failed)
     val otpCategory = stringResource(R.string.category_otp)
@@ -102,8 +102,7 @@ fun AddTwoFADialog(
                 Logcat.e("AddTwoFA", "Failed to encrypt/save", e)
                 Toast.makeText(context, "加密保存失败", Toast.LENGTH_SHORT).show()
             }
-        }
-    ) {
+        }) {
         VaultTextField(
             value = state.title,
             onValueChange = { state.title = it },
@@ -119,8 +118,7 @@ fun AddTwoFADialog(
                     Icon(Icons.Default.ContentPaste, null, modifier = Modifier.padding(end = 4.dp))
                     Text(stringResource(R.string.action_paste))
                 }
-            }
-        )
+            })
 
         CategoryDropdown(
             selectedCategory = state.category,
@@ -138,8 +136,7 @@ fun AddTwoFADialog(
                 digits = state.digits,
                 onDigitsChange = { state.digits = it },
                 algorithm = state.algorithm,
-                onAlgorithmChange = { state.algorithm = it }
-            )
+                onAlgorithmChange = { state.algorithm = it })
         } else {
             TextButton(onClick = { state.showAdvanced = true }) {
                 Text(stringResource(R.string.action_advanced_config))

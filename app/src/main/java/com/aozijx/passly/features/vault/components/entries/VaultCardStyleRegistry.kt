@@ -2,8 +2,8 @@ package com.aozijx.passly.features.vault.components.entries
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.common.ui.VaultCardStyle
 import com.aozijx.passly.core.designsystem.base.VaultItem
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.components.items.TwoFAItem
@@ -44,11 +44,11 @@ object VaultCardStyleRegistry {
         onClick: () -> Unit = { viewModel.showDetail(entry) }
     ) {
         val isTotp = entry.totpSecret?.isNotBlank() == true
-        
+
         // 核心渲染分发：
         // 1. DEFAULT 的最终落地样式由 UiTypes.resolveForEntryType 预先决策
         // 2. 这里仅按传入的最终样式做渲染分发
-        
+
         when (style) {
             VaultCardStyle.DEFAULT -> {
                 if (isTotp) {
@@ -65,9 +65,7 @@ object VaultCardStyleRegistry {
 
             VaultCardStyle.PASSWORD -> {
                 PasswordStyleVaultItem(
-                    entry = entry,
-                    viewModel = viewModel,
-                    onClick = onClick
+                    entry = entry, viewModel = viewModel, onClick = onClick
                 )
             }
 
@@ -92,7 +90,7 @@ object VaultCardStyleRegistry {
         style: VaultCardStyle, entryTypeValue: Int? = null, onClick: () -> Unit
     ) {
         val isTotp = entryTypeValue == EntryType.TOTP.value
-        
+
         when (style) {
             VaultCardStyle.DEFAULT -> {
                 if (isTotp) {
@@ -127,5 +125,4 @@ object VaultCardStyleRegistry {
             }
         }
     }
-
 }

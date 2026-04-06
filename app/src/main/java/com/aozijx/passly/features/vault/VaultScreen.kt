@@ -54,9 +54,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.ui.AddType
-import com.aozijx.passly.core.common.ui.VaultCardStyle
-import com.aozijx.passly.core.common.ui.VaultTab
+import com.aozijx.passly.core.designsystem.model.AddType
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.core.designsystem.model.VaultTab
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
 import com.aozijx.passly.core.designsystem.widgets.SwipeToAction
@@ -293,10 +293,15 @@ fun VaultContent(
                                                         activity = activity,
                                                         encryptedData = fullEntry.password,
                                                         authenticate = { act, title, subtitle, _, onSuccess ->
-                                                            mainViewModel.authenticate(act, title, subtitle, null, onSuccess)
+                                                            mainViewModel.authenticate(
+                                                                act,
+                                                                title,
+                                                                subtitle,
+                                                                null,
+                                                                onSuccess
+                                                            )
                                                         },
-                                                        onResult = { callback(it) }
-                                                    )
+                                                        onResult = { callback(it) })
                                                 }
                                             },
                                             onShowDetail = {
@@ -343,10 +348,15 @@ fun VaultContent(
                                                         activity = activity,
                                                         encryptedData = fullEntry.password,
                                                         authenticate = { act, title, subtitle, _, onSuccess ->
-                                                            mainViewModel.authenticate(act, title, subtitle, null, onSuccess)
+                                                            mainViewModel.authenticate(
+                                                                act,
+                                                                title,
+                                                                subtitle,
+                                                                null,
+                                                                onSuccess
+                                                            )
                                                         },
-                                                        onResult = { callback(it) }
-                                                    )
+                                                        onResult = { callback(it) })
                                                 }
                                             },
                                             onShowDetail = {
@@ -424,8 +434,7 @@ private fun VaultListSkeleton() {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(72.dp),
-                colors = CardDefaults.cardColors(
+                    .height(72.dp), colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                 )
             ) {}

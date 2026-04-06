@@ -15,8 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import com.aozijx.passly.core.common.ui.VaultCardStyleTokens
 import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
+import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 

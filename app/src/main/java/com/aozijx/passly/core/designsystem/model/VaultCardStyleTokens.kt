@@ -1,11 +1,10 @@
-package com.aozijx.passly.core.common.ui
+package com.aozijx.passly.core.designsystem.model
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
  * Shared visual tokens for vault list cards.
- * Update values here to adjust card shape/spacing/size consistently.
  */
 object VaultCardStyleTokens {
 

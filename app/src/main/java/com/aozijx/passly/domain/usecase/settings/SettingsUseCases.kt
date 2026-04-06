@@ -2,7 +2,7 @@ package com.aozijx.passly.domain.usecase.settings
 
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.ui.VaultCardStyle
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import kotlinx.coroutines.flow.Flow
 
 class SettingsUseCases(private val repository: com.aozijx.passly.domain.repository.config.SettingsRepository) {
@@ -34,18 +34,30 @@ class SettingsUseCases(private val repository: com.aozijx.passly.domain.reposito
 
     suspend fun setSwipeEnabled(enabled: Boolean) = repository.setSwipeEnabled(enabled)
     suspend fun setSwipeLeftAction(action: SwipeActionType) = repository.setSwipeLeftAction(action)
-    suspend fun setSwipeRightAction(action: SwipeActionType) = repository.setSwipeRightAction(action)
+    suspend fun setSwipeRightAction(action: SwipeActionType) =
+        repository.setSwipeRightAction(action)
 
     suspend fun setStatusBarAutoHide(autoHide: Boolean) = repository.setStatusBarAutoHide(autoHide)
-    suspend fun setTopBarCollapsible(collapsible: Boolean) = repository.setTopBarCollapsible(collapsible)
-    suspend fun setTabBarCollapsible(collapsible: Boolean) = repository.setTabBarCollapsible(collapsible)
-    suspend fun setSecureContentEnabled(enabled: Boolean) = repository.setSecureContentEnabled(enabled)
+    suspend fun setTopBarCollapsible(collapsible: Boolean) =
+        repository.setTopBarCollapsible(collapsible)
+
+    suspend fun setTabBarCollapsible(collapsible: Boolean) =
+        repository.setTabBarCollapsible(collapsible)
+
+    suspend fun setSecureContentEnabled(enabled: Boolean) =
+        repository.setSecureContentEnabled(enabled)
+
     suspend fun setFlipToLockEnabled(enabled: Boolean) = repository.setFlipToLockEnabled(enabled)
-    suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) = repository.setFlipExitAndClearStackEnabled(enabled)
+    suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) =
+        repository.setFlipExitAndClearStackEnabled(enabled)
+
     suspend fun setCardStyle(style: VaultCardStyle) = repository.setCardStyle(style)
-    suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) = repository.setCardStyleForEntryType(entryTypeValue, style)
+    suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) =
+        repository.setCardStyleForEntryType(entryTypeValue, style)
+
     suspend fun setAutofillUiMode(mode: AutofillUiMode) = repository.setAutofillUiMode(mode)
     suspend fun setBackupDirectoryUri(uri: String) = repository.setBackupDirectoryUri(uri)
     suspend fun clearBackupDirectoryUri() = repository.clearBackupDirectoryUri()
-    suspend fun setLastBackupExportFileName(fileName: String) = repository.setLastBackupExportFileName(fileName)
+    suspend fun setLastBackupExportFileName(fileName: String) =
+        repository.setLastBackupExportFileName(fileName)
 }
