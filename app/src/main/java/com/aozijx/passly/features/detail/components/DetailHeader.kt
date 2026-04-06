@@ -44,7 +44,8 @@ fun DetailHeader(
     trailingText: String? = null
 ) {
     val context = LocalContext.current
-    val localImageModel = remember(item.iconCustomPath) { toLocalIconImageModel(item.iconCustomPath) }
+    val localImageModel =
+        remember(item.iconCustomPath) { toLocalIconImageModel(item.iconCustomPath) }
     val hasCustomPath = localImageModel != null
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -59,9 +60,7 @@ fun DetailHeader(
                     .clickable(onClick = onIconClick)
             ) {
                 AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(localImageModel)
-                        .crossfade(true)
+                    model = ImageRequest.Builder(context).data(localImageModel).crossfade(true)
                         .build(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
@@ -91,8 +90,7 @@ fun DetailHeader(
             }
             Spacer(Modifier.height(12.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = item.title,
@@ -112,8 +110,7 @@ fun DetailHeader(
         } else {
             // 默认图标模式
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     onClick = onIconClick,

@@ -22,13 +22,11 @@ fun InfoGroupCard(title: String, content: @Composable ColumnScope.() -> Unit) {
             modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
         )
         Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-            shape = MaterialTheme.shapes.large,
-            content = content
+            modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                    alpha = 0.3f
+                )
+            ), shape = MaterialTheme.shapes.large, content = content
         )
     }
 }
-
-
-

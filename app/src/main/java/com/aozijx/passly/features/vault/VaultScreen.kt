@@ -53,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.MainViewModel
+import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
@@ -64,6 +65,7 @@ import com.aozijx.passly.core.designsystem.widgets.createSwipeAction
 import com.aozijx.passly.core.designsystem.widgets.handleSwipeAction
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.scanner.VaultScanner
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.components.VaultDialogs
@@ -93,6 +95,7 @@ fun VaultContent(
     val swipeRightAction by vaultPrefs.swipeRightAction.collectAsState(initial = SwipeActionType.DISABLED)
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val backupDirectoryUri = settingsUiState.backupDirectoryUri
+    val totpStates by vaultViewModel.totpStates.collectAsState()
 
     // 沉浸式设置状态
     val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
@@ -102,6 +105,59 @@ fun VaultContent(
 
     var isFabVisible by remember { mutableStateOf(true) }
     val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
+
+    // 处理复制逻辑的通用函数
+    val performCopy: (String, VaultSummary) -> Unit = { field, item ->
+        val entryType = EntryType.fromValue(item.entryType)
+
+        when (field) {
+            "password" -> {
+                // 如果是 TOTP 类型的卡片，复制验证码
+                if (entryType == EntryType.TOTP) {
+                    totpStates[item.id]?.let { state ->
+                        if (state.code.isNotEmpty() && !state.code.contains("-")) {
+                            ClipboardUtils.copy(activity, state.code)
+                            Toast.makeText(context, "验证码已复制", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    // 其他类型（密码、WiFi、银行卡等）复制解密后的核心内容
+                    vaultViewModel.loadEntryById(item.id) { fullEntry ->
+                        vaultViewModel.decryptSingle(
+                            activity = activity,
+                            encryptedData = fullEntry.password,
+                            authenticate = { act, title, subtitle, _, onSuccess ->
+                                mainViewModel.authenticate(act, title, subtitle, null, onSuccess)
+                            },
+                            onResult = { decrypted ->
+                                decrypted?.let {
+                                    ClipboardUtils.copy(activity, it)
+                                    val label = when (entryType) {
+                                        EntryType.WIFI -> "WiFi密码"
+                                        EntryType.BANK_CARD -> "卡号"
+                                        EntryType.SEED_PHRASE -> "助记词"
+                                        EntryType.SSH_KEY -> "私钥"
+                                        else -> "密码"
+                                    }
+                                    Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT)
+                                        .show()
+                                }
+                            })
+                    }
+                }
+            }
+
+            "username" -> {
+                ClipboardUtils.copy(activity, item.username)
+                val label = when (entryType) {
+                    EntryType.WIFI -> "SSID"
+                    EntryType.BANK_CARD -> "持卡人"
+                    else -> "账号"
+                }
+                Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     // 处理快捷方式进入扫码的逻辑
     LaunchedEffect(Unit) {
@@ -271,8 +327,8 @@ fun VaultContent(
                                     direction = SwipeDirection.LEFT,
                                     onAction = {
                                         handleSwipeAction(
-                                            swipeLeftAction,
-                                            item,
+                                            actionType = swipeLeftAction,
+                                            item = item,
                                             onAuthRequired = { onSuccess ->
                                                 mainViewModel.authenticate(
                                                     activity,
@@ -283,29 +339,7 @@ fun VaultContent(
                                                 )
                                             },
                                             onQuickDelete = { vaultViewModel.quickDelete(it) },
-                                            onCopyPassword = { password ->
-                                                ClipboardUtils.copy(activity, password)
-                                                Toast.makeText(
-                                                    context, "已复制", Toast.LENGTH_SHORT
-                                                ).show()
-                                            },
-                                            onDecryptPassword = { callback ->
-                                                vaultViewModel.loadEntryById(item.id) { fullEntry ->
-                                                    vaultViewModel.decryptSingle(
-                                                        activity = activity,
-                                                        encryptedData = fullEntry.password,
-                                                        authenticate = { act, title, subtitle, _, onSuccess ->
-                                                            mainViewModel.authenticate(
-                                                                act,
-                                                                title,
-                                                                subtitle,
-                                                                null,
-                                                                onSuccess
-                                                            )
-                                                        },
-                                                        onResult = { callback(it) })
-                                                }
-                                            },
+                                            onCopy = { field -> performCopy(field, item) },
                                             onShowDetail = {
                                                 vaultViewModel.loadEntryById(item.id) { entry ->
                                                     onShowDetail(entry)
@@ -326,8 +360,8 @@ fun VaultContent(
                                     direction = SwipeDirection.RIGHT,
                                     onAction = {
                                         handleSwipeAction(
-                                            swipeRightAction,
-                                            item,
+                                            actionType = swipeRightAction,
+                                            item = item,
                                             onAuthRequired = { onSuccess ->
                                                 mainViewModel.authenticate(
                                                     activity,
@@ -338,29 +372,7 @@ fun VaultContent(
                                                 )
                                             },
                                             onQuickDelete = { vaultViewModel.quickDelete(it) },
-                                            onCopyPassword = { password ->
-                                                ClipboardUtils.copy(activity, password)
-                                                Toast.makeText(
-                                                    context, "已复制", Toast.LENGTH_SHORT
-                                                ).show()
-                                            },
-                                            onDecryptPassword = { callback ->
-                                                vaultViewModel.loadEntryById(item.id) { fullEntry ->
-                                                    vaultViewModel.decryptSingle(
-                                                        activity = activity,
-                                                        encryptedData = fullEntry.password,
-                                                        authenticate = { act, title, subtitle, _, onSuccess ->
-                                                            mainViewModel.authenticate(
-                                                                act,
-                                                                title,
-                                                                subtitle,
-                                                                null,
-                                                                onSuccess
-                                                            )
-                                                        },
-                                                        onResult = { callback(it) })
-                                                }
-                                            },
+                                            onCopy = { field -> performCopy(field, item) },
                                             onShowDetail = {
                                                 vaultViewModel.loadEntryById(item.id) { entry ->
                                                     onShowDetail(entry)
@@ -455,7 +467,7 @@ private fun VaultListSkeleton() {
 private fun swipeRevealColors(actionType: SwipeActionType): Pair<Color, Color> {
     return when (actionType) {
         SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
-        SwipeActionType.COPY_PASSWORD -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+        SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
         SwipeActionType.EDIT -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
         SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
         SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant

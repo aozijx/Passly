@@ -28,11 +28,6 @@ fun MetadataSection(entry: VaultEntry) {
 @Composable
 fun MetadataText(text: String) {
     Text(
-        text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.outline
+        text, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline
     )
 }
-
-
-

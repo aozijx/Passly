@@ -49,8 +49,7 @@ data class SwipeAction(
 )
 
 enum class SwipeDirection {
-    LEFT,
-    RIGHT
+    LEFT, RIGHT
 }
 
 @Composable
@@ -101,13 +100,11 @@ fun SwipeToAction(
             scope.launch {
                 val dampingFactor = 1f
                 val newOffset = (offset.value + delta * dampingFactor).coerceIn(
-                    -componentWidthPx.floatValue,
-                    componentWidthPx.floatValue
+                    -componentWidthPx.floatValue, componentWidthPx.floatValue
                 )
                 offset.snapTo(newOffset)
             }
-        }
-    )
+        })
 
     LaunchedEffect(isActive) {
         if (!isActive && offset.value != 0f) {
@@ -115,14 +112,12 @@ fun SwipeToAction(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .onSizeChanged { size ->
-                componentWidthPx.floatValue = size.width.toFloat()
-            }
-            .clip(RoundedCornerShape(cornerRadius))
-    ) {
+    Box(modifier = modifier
+        .fillMaxWidth()
+        .onSizeChanged { size ->
+            componentWidthPx.floatValue = size.width.toFloat()
+        }
+        .clip(RoundedCornerShape(cornerRadius))) {
         if (currentAction != null) {
             Box(
                 modifier = Modifier
@@ -160,8 +155,7 @@ fun SwipeToAction(
                             val scale = 0.8f + (swipeFraction * 0.4f).coerceAtMost(0.4f)
                             scaleX = scale
                             scaleY = scale
-                        }
-                )
+                        })
             }
         }
 
@@ -188,8 +182,7 @@ fun SwipeToAction(
                                 offset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                             }
                         }
-                    }
-                ),
+                    }),
             shape = RoundedCornerShape(cornerRadius),
             tonalElevation = 2.dp,
             shadowElevation = 2.dp
@@ -221,19 +214,26 @@ fun handleSwipeAction(
     item: VaultSummary,
     onAuthRequired: (onSuccess: () -> Unit) -> Unit,
     onQuickDelete: (VaultSummary) -> Unit,
-    onCopyPassword: (decryptedPassword: String) -> Unit,
-    onDecryptPassword: (onResult: (String?) -> Unit) -> Unit,
     onShowDetail: (VaultSummary) -> Unit,
-    onShowEditDetail: (VaultSummary) -> Unit
+    onShowEditDetail: (VaultSummary) -> Unit,
+    onCopy: (String) -> Unit
 ) {
-    when (actionType) {
-        SwipeActionType.DELETE -> onAuthRequired { onQuickDelete(item) }
-        SwipeActionType.EDIT -> onAuthRequired { onShowEditDetail(item) }
-        SwipeActionType.DETAIL -> onShowDetail(item)
-        SwipeActionType.COPY_PASSWORD -> onDecryptPassword { decryptedPassword ->
-            decryptedPassword?.let { onCopyPassword(it) }
+    if (actionType == SwipeActionType.DISABLED) return
+
+    // 定义一个执行动作的辅助函数
+    val performAction = {
+        when (actionType) {
+            SwipeActionType.DELETE -> onQuickDelete(item)
+            SwipeActionType.EDIT -> onShowEditDetail(item)
+            SwipeActionType.DETAIL -> onShowDetail(item)
+            else -> actionType.copyField?.let { onCopy(it) }
         }
-        SwipeActionType.DISABLED -> Unit
+    }
+
+    // 根据枚举中的属性配置，自动决定是否需要生物识别验证
+    if (actionType.requiresConfirm) {
+        onAuthRequired { performAction() }
+    } else {
+        performAction()
     }
 }
-
