@@ -123,6 +123,17 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                 }
             }
 
+            // 处理顶部菜单明文导出成功提示
+            LaunchedEffect(viewModel.plainBackupFile) {
+                viewModel.plainBackupFile?.let { file ->
+                    Toast.makeText(
+                        context,
+                        "明文 JSON 备份已导出至: ${file.absolutePath}，请妥善保管",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+
             // 数据库错误弹窗
             if (mainUiState.databaseError != null) {
                 PlainExportDialog(
@@ -215,6 +226,15 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                                 vaultViewModel = vaultViewModel,
                                 settingsViewModel = settingsViewModel,
                                 onSettingsClick = { showSettings = true },
+                                onPlainExportClick = {
+                                    viewModel.authenticate(
+                                        activity = this,
+                                        title = getString(R.string.vault_backup_auth_title),
+                                        subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export)
+                                    ) {
+                                        viewModel.exportPlainBackup(this)
+                                    }
+                                },
                                 onShowDetail = { entry ->
                                     detailEntry = entry
                                     showDetail = true

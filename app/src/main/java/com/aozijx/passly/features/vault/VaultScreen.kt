@@ -53,7 +53,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.MainViewModel
-import com.aozijx.passly.R
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
@@ -80,6 +79,7 @@ fun VaultContent(
     vaultViewModel: VaultViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel(),
     onSettingsClick: () -> Unit = {},
+    onPlainExportClick: () -> Unit = {},
     onShowDetail: (VaultEntry) -> Unit = {}
 ) {
     val items by vaultViewModel.vaultItems.collectAsState()
@@ -93,9 +93,6 @@ fun VaultContent(
     val swipeRightAction by vaultPrefs.swipeRightAction.collectAsState(initial = SwipeActionType.DISABLED)
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val backupDirectoryUri = settingsUiState.backupDirectoryUri
-    val exportAuthTitle = androidx.compose.ui.res.stringResource(R.string.vault_backup_auth_title)
-    val plainExportAuthSubtitle =
-        androidx.compose.ui.res.stringResource(R.string.vault_backup_auth_subtitle_plain_export)
 
     // 沉浸式设置状态
     val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
@@ -211,23 +208,7 @@ fun VaultContent(
                             exportLauncher.launch(manualFileName)
                         }
                     },
-                    onPlainExportClick = {
-                        mainViewModel.authenticate(
-                            activity = activity,
-                            title = exportAuthTitle,
-                            subtitle = plainExportAuthSubtitle
-                        ) {
-                            val startedFromConfiguredDirectory =
-                                settingsViewModel.tryStartExportInConfiguredDirectory(
-                                    backupDirectoryUri
-                                )
-                            if (!startedFromConfiguredDirectory) {
-                                val manualFileName = settingsViewModel.nextBackupFileName()
-                                pendingManualExportFileName = manualFileName
-                                exportLauncher.launch(manualFileName)
-                            }
-                        }
-                    },
+                    onPlainJsonExportClick = onPlainExportClick,
                     onImportClick = {
                         importLauncher.launch(
                             arrayOf(

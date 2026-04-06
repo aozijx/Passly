@@ -14,7 +14,7 @@ import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 /**
- * 紧急备份导出：当 Room 迁移失败时，使用原始 SQL 强制提取数据。
+ * 明文 JSON 导出：支持数据库迁移失败时的紧急导出，也支持顶部菜单的手动明文导出。
  */
 object EmergencyBackupExporter {
 
@@ -22,6 +22,20 @@ object EmergencyBackupExporter {
     private val BOOLEAN_COLUMNS = setOf("wifiIsHidden", "autoSubmit", "favorite")
 
     fun exportOnFailure(context: Context): Result<File> {
+        return exportPlainJson(
+            context = context, fileNamePrefix = "Passly_Emergency_Backup"
+        )
+    }
+
+    fun exportPlainBackup(context: Context): Result<File> {
+        return exportPlainJson(
+            context = context, fileNamePrefix = "Passly_Plain_Backup"
+        )
+    }
+
+    private fun exportPlainJson(
+        context: Context, fileNamePrefix: String
+    ): Result<File> {
         var db: SQLiteDatabase? = null
         return try {
             val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
@@ -35,8 +49,11 @@ object EmergencyBackupExporter {
 
             val downloadsDir =
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            if (!downloadsDir.exists()) {
+                downloadsDir.mkdirs()
+            }
             val backupFile = File(
-                downloadsDir, "Passly_Emergency_Backup_${System.currentTimeMillis()}.json"
+                downloadsDir, "${fileNamePrefix}_${System.currentTimeMillis()}.json"
             )
 
             val output = FileOutputStream(backupFile)

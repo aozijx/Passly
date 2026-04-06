@@ -51,30 +51,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var emergencyBackupFile by mutableStateOf<File?>(null)
         private set
 
+    var plainBackupFile by mutableStateOf<File?>(null)
+        private set
+
     // --- 全局 UI 状态 ---
     val isDarkMode: StateFlow<Boolean?> = settingsUseCases.isDarkMode.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            null
-        )
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
 
     val isDynamicColor: StateFlow<Boolean> = settingsUseCases.isDynamicColor.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            true
-        )
+        viewModelScope, SharingStarted.WhileSubscribed(5000), true
+    )
 
     private val authorizationState: StateFlow<Boolean> = snapshotFlow { isAuthorized }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            isAuthorized
-        )
+        viewModelScope, SharingStarted.WhileSubscribed(5000), isAuthorized
+    )
 
     private val dbErrorState: StateFlow<Throwable?> = snapshotFlow { databaseError }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            databaseError
-        )
+        viewModelScope, SharingStarted.WhileSubscribed(5000), databaseError
+    )
 
     val uiState: StateFlow<MainUiState> = combine(
         authorizationState, isDarkMode, isDynamicColor, dbErrorState
@@ -109,6 +104,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             EmergencyBackupExporter.exportOnFailure(context).onSuccess { file ->
                 emergencyBackupFile = file
+            }
+        }
+    }
+
+    fun exportPlainBackup(context: Context) {
+        viewModelScope.launch {
+            EmergencyBackupExporter.exportPlainBackup(context).onSuccess { file ->
+                plainBackupFile = file
             }
         }
     }

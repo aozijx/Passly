@@ -76,7 +76,7 @@ fun VaultTopBar(
     vaultViewModel: VaultViewModel,
     scrollBehavior: TopAppBarScrollBehavior,
     onExportClick: () -> Unit,
-    onPlainExportClick: () -> Unit,
+    onPlainJsonExportClick: () -> Unit,
     onImportClick: () -> Unit,
     onSettingsClick: () -> Unit = {},
     isStatusBarAutoHide: Boolean = false,
@@ -287,7 +287,7 @@ fun VaultTopBar(
         if (showPlainExportDialog) {
             PlainExportDialog(type = PlainExportDialogType.NormalExport, onExportBackup = {
                 showPlainExportDialog = false
-                onPlainExportClick()
+                onPlainJsonExportClick()
             }, onResetOrCancel = { showPlainExportDialog = false })
         }
         // 分类标签栏
