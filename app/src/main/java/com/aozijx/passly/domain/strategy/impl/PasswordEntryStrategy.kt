@@ -1,11 +1,11 @@
 package com.aozijx.passly.domain.strategy.impl
 
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.FieldDefinition
+import com.aozijx.passly.domain.model.FieldGroup
+import com.aozijx.passly.domain.model.FieldType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
-import com.aozijx.passly.domain.strategy.FieldDefinition
-import com.aozijx.passly.domain.strategy.FieldGroup
-import com.aozijx.passly.domain.strategy.FieldType
 
 /**
  * 密码类型的业务策略实现
@@ -46,28 +46,29 @@ class PasswordEntryStrategy : EntryTypeStrategy {
         )
     }
 
-    // UI 表现层相关
-    fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
+    // UI 表现层相关：重写接口方法
+    override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
         return listOf(
             FieldGroup(
-                title = "基本信息",
-                fields = listOf(
+                title = "基本信息", fields = listOf(
                     FieldDefinition("title", "标题", isRequired = true),
                     FieldDefinition("username", "用户名", isRequired = true),
-                    FieldDefinition("password", "密码", isSensitive = true, isRequired = true, fieldType = FieldType.PASSWORD),
+                    FieldDefinition(
+                        "password",
+                        "密码",
+                        isSensitive = true,
+                        isRequired = true,
+                        fieldType = FieldType.PASSWORD
+                    ),
                     FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
                 )
-            ),
-            FieldGroup(
-                title = "额外信息",
-                fields = listOf(
+            ), FieldGroup(
+                title = "额外信息", fields = listOf(
                     FieldDefinition("uriList", "网址", fieldType = FieldType.URL),
                     FieldDefinition("notes", "备注", fieldType = FieldType.TEXTAREA)
                 )
-            ),
-            FieldGroup(
-                title = "安全设置",
-                fields = listOf(
+            ), FieldGroup(
+                title = "安全设置", fields = listOf(
                     FieldDefinition("favorite", "收藏", fieldType = FieldType.TOGGLE)
                 )
             )

@@ -1,6 +1,9 @@
 package com.aozijx.passly.domain.strategy.impl
 
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.FieldDefinition
+import com.aozijx.passly.domain.model.FieldGroup
+import com.aozijx.passly.domain.model.FieldType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
@@ -36,5 +39,28 @@ class TotpEntryStrategy : EntryTypeStrategy {
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
         return entry.copy(category = suggestedCategory())
+    }
+
+    override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
+        return listOf(
+            FieldGroup(
+                title = "基本信息", fields = listOf(
+                    FieldDefinition("title", "标题", isRequired = true),
+                    FieldDefinition("totpSecret", "密钥", isSensitive = true, isRequired = true),
+                    FieldDefinition("username", "账户名"),
+                    FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
+                )
+            ), FieldGroup(
+                title = "算法设置", fields = listOf(
+                    FieldDefinition("totpDigits", "位数", fieldType = FieldType.SELECT),
+                    FieldDefinition("totpPeriod", "更新周期 (s)", fieldType = FieldType.SELECT),
+                    FieldDefinition("totpAlgorithm", "算法", fieldType = FieldType.SELECT)
+                )
+            ), FieldGroup(
+                title = "其他", fields = listOf(
+                    FieldDefinition("notes", "备注", fieldType = FieldType.TEXTAREA)
+                )
+            )
+        )
     }
 }

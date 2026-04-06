@@ -54,7 +54,7 @@ internal object BackupVSerializer {
         writer.name("passkeyDataJson").value(entry.passkeyDataJson)
         writer.name("recoveryCodes").value(entry.recoveryCodes)
         writer.name("hardwareKeyInfo").value(entry.hardwareKeyInfo)
-        writer.name("wifiEncryptionType").value(entry.wifiEncryptionType)
+        writer.name("wifiEncryptionType").value(entry.wifiSecurityType)
         writer.name("wifiIsHidden").value(entry.wifiIsHidden)
         writer.name("cardCvv").value(entry.cardCvv)
         writer.name("cardExpiration").value(entry.cardExpiration)
@@ -108,7 +108,7 @@ internal object BackupVSerializer {
         var passkeyDataJson: String? = null
         var recoveryCodes: String? = null
         var hardwareKeyInfo: String? = null
-        var wifiEncryptionType: String? = "WPA"
+        var wifiSecurityType: String? = "WPA"
         var wifiIsHidden = false
         var cardCvv: String? = null
         var cardExpiration: String? = null
@@ -152,7 +152,7 @@ internal object BackupVSerializer {
                 "passkeyDataJson" -> passkeyDataJson = reader.nextNullableString()
                 "recoveryCodes" -> recoveryCodes = reader.nextNullableString()
                 "hardwareKeyInfo" -> hardwareKeyInfo = reader.nextNullableString()
-                "wifiEncryptionType" -> wifiEncryptionType = reader.nextNullableString()
+                "wifiEncryptionType" -> wifiSecurityType = reader.nextNullableString()
                 "wifiIsHidden" -> wifiIsHidden = reader.nextBoolean()
                 "cardCvv" -> cardCvv = reader.nextNullableString()
                 "cardExpiration" -> cardExpiration = reader.nextNullableString()
@@ -198,7 +198,7 @@ internal object BackupVSerializer {
             passkeyDataJson = passkeyDataJson,
             recoveryCodes = recoveryCodes,
             hardwareKeyInfo = hardwareKeyInfo,
-            wifiEncryptionType = wifiEncryptionType,
+            wifiSecurityType = wifiSecurityType,
             wifiIsHidden = wifiIsHidden,
             cardCvv = cardCvv,
             cardExpiration = cardExpiration,

@@ -29,7 +29,7 @@ data class VaultEntry(
     val hardwareKeyInfo: String? = null, // 关联的硬件密钥备注 (如 "YubiKey 5C")
 
     // --- WiFi 特化配置 ---
-    val wifiEncryptionType: String? = "WPA", // WiFi 加密协议 (WPA, WEP, nopass)
+    val wifiSecurityType: String? = "WPA", // WiFi 安全协议 (WPA/WPA2, WPA3, WEP, nopass)
     val wifiIsHidden: Boolean = false,       // 是否为隐藏 SSID
 
     // --- 金融与证件加固 ---
@@ -57,8 +57,8 @@ data class VaultEntry(
     val entryType: Int = 0,
 
     // --- Autofill 自动填充引擎数据 ---
-    val associatedAppPackage: String? = null, // 关联的 Android 包名
-    val associatedDomain: String? = null,     // 关联的 Web 域名
+    val associatedAppPackage: String? = null, // 关联 of Android 包名
+    val associatedDomain: String? = null,     // 关联 of Web 域名
     val uriList: List<String>? = null,        // 多 URI 匹配列表 (自动应用 Converters)
     val matchType: Int = 0,                   // 匹配规则 (0:精确, 1:主机名, 2:根域名)
     val customFieldsJson: String? = null,     // 加密后的自定义键值对 (JSON)

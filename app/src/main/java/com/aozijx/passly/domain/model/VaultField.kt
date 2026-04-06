@@ -1,15 +1,33 @@
 package com.aozijx.passly.domain.model
 
 /**
- * 字段键：定义保险库条目中支持的所有逻辑字段
+ * 字段逻辑键定义
  */
 enum class FieldKey {
-    USERNAME, PASSWORD, NOTES, URIS, TOTP_SECRET, TOTP_PERIOD, TOTP_DIGITS, TOTP_ALGORITHM, PASSKEY_DATA, RECOVERY_CODES, HARDWARE_INFO, WIFI_ENCRYPTION, WIFI_HIDDEN, CARD_EXPIRATION, CARD_CVV, PAYMENT_PIN, PAYMENT_PLATFORM, SECURITY_QUESTION, SECURITY_ANSWER, SEED_PHRASE, ID_NUMBER, SSH_KEY
+    TITLE, USERNAME, PASSWORD, NOTES, URIS, TOTP_SECRET, TOTP_PERIOD, TOTP_DIGITS, TOTP_ALGORITHM, PASSKEY_DATA, RECOVERY_CODES, HARDWARE_INFO, WIFI_SECURITY, WIFI_HIDDEN, CARD_EXPIRATION, CARD_CVV, ID_NUMBER, PAYMENT_PIN, PAYMENT_PLATFORM, SECURITY_QUESTION, SECURITY_ANSWER, SSH_KEY, SEED_PHRASE
 }
 
 /**
- * 字段标签：将逻辑键与 UI 显示文本关联
+ * 字段类型定义
  */
-data class FieldLabel(
-    val label: String, val key: FieldKey
+enum class FieldType {
+    TEXT, PASSWORD, URL, TEXTAREA, SELECT, TOGGLE, PIN
+}
+
+/**
+ * 字段定义数据类
+ */
+data class FieldDefinition(
+    val key: String,
+    val label: String,
+    val isSensitive: Boolean = false,
+    val isRequired: Boolean = false,
+    val fieldType: FieldType = FieldType.TEXT
+)
+
+/**
+ * 字段分组数据类
+ */
+data class FieldGroup(
+    val title: String, val fields: List<FieldDefinition>
 )

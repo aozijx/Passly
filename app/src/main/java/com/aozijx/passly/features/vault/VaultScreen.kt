@@ -8,12 +8,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,7 +18,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Card
@@ -33,7 +29,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,14 +41,11 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.MainViewModel
-import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
@@ -66,6 +58,7 @@ import com.aozijx.passly.core.designsystem.widgets.handleSwipeAction
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.features.scanner.VaultScanner
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.components.VaultDialogs
@@ -84,107 +77,33 @@ fun VaultContent(
     onPlainExportClick: () -> Unit = {},
     onShowDetail: (VaultEntry) -> Unit = {}
 ) {
-    val items by vaultViewModel.vaultItems.collectAsState()
-    val isVaultItemsLoading by vaultViewModel.isVaultItemsLoading.collectAsState()
-    val selectedTab by vaultViewModel.selectedTab.collectAsState()
+    // 1. 优化：感知生命周期的状态订阅 (Lifecycle-aware)
+    val items by vaultViewModel.vaultItems.collectAsStateWithLifecycle()
+    val isVaultItemsLoading by vaultViewModel.isVaultItemsLoading.collectAsStateWithLifecycle()
+    val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
+    val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val vaultPrefs = remember { AppContext.get().preference }
-    val isSwipeEnabled by vaultPrefs.isSwipeEnabled.collectAsState(initial = true)
-    val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsState(initial = SwipeActionType.DELETE)
-    val swipeRightAction by vaultPrefs.swipeRightAction.collectAsState(initial = SwipeActionType.DISABLED)
+
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-    val backupDirectoryUri = settingsUiState.backupDirectoryUri
-    val totpStates by vaultViewModel.totpStates.collectAsState()
+    val vaultPrefs = remember { AppContext.get().preference }
 
-    // 沉浸式设置状态
-    val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
-    val isTopBarCollapsible = settingsUiState.isTopBarCollapsible
-    val isTabBarCollapsible = settingsUiState.isTabBarCollapsible
-    val perTypeStyleMap = settingsUiState.cardStyleByEntryType
+    // 修复：collectAsStateWithLifecycle 不接受 initial 参数，应在 Flow 定义处指定
+    val isSwipeEnabled by vaultPrefs.isSwipeEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsStateWithLifecycle(initialValue = SwipeActionType.DELETE)
+    val swipeRightAction by vaultPrefs.swipeRightAction.collectAsStateWithLifecycle(initialValue = SwipeActionType.DISABLED)
 
-    var isFabVisible by remember { mutableStateOf(true) }
     val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
+    var isFabVisible by remember { mutableStateOf(true) }
 
-    // 处理复制逻辑的通用函数
-    val performCopy: (String, VaultSummary) -> Unit = { field, item ->
-        val entryType = EntryType.fromValue(item.entryType)
-
-        when (field) {
-            "password" -> {
-                // 如果是 TOTP 类型的卡片，复制验证码
-                if (entryType == EntryType.TOTP) {
-                    totpStates[item.id]?.let { state ->
-                        if (state.code.isNotEmpty() && !state.code.contains("-")) {
-                            ClipboardUtils.copy(activity, state.code)
-                            Toast.makeText(context, "验证码已复制", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                } else {
-                    // 其他类型（密码、WiFi、银行卡等）复制解密后的核心内容
-                    vaultViewModel.loadEntryById(item.id) { fullEntry ->
-                        vaultViewModel.decryptSingle(
-                            activity = activity,
-                            encryptedData = fullEntry.password,
-                            authenticate = { act, title, subtitle, _, onSuccess ->
-                                mainViewModel.authenticate(act, title, subtitle, null, onSuccess)
-                            },
-                            onResult = { decrypted ->
-                                decrypted?.let {
-                                    ClipboardUtils.copy(activity, it)
-                                    val label = when (entryType) {
-                                        EntryType.WIFI -> "WiFi密码"
-                                        EntryType.BANK_CARD -> "卡号"
-                                        EntryType.SEED_PHRASE -> "助记词"
-                                        EntryType.SSH_KEY -> "私钥"
-                                        else -> "密码"
-                                    }
-                                    Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT)
-                                        .show()
-                                }
-                            })
-                    }
-                }
-            }
-
-            "username" -> {
-                ClipboardUtils.copy(activity, item.username)
-                val label = when (entryType) {
-                    EntryType.WIFI -> "SSID"
-                    EntryType.BANK_CARD -> "持卡人"
-                    else -> "账号"
-                }
-                Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    // 处理快捷方式进入扫码的逻辑
-    LaunchedEffect(Unit) {
-        val intent = activity.intent
-        if (intent?.getBooleanExtra("START_SCAN", false) == true) {
-            vaultViewModel.addType = AddType.SCAN
-            // 消费掉这个标志，防止旋转屏幕等操作再次触发
-            intent.removeExtra("START_SCAN")
-        }
-    }
-
-    val fabScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (available.y < -1) isFabVisible = false else if (available.y > 1) isFabVisible =
-                    true
-                return Offset.Zero
-            }
-        }
-    }
-
+    // 1. 同步 ViewModel 状态到 Pager (解决点击切换)
     LaunchedEffect(selectedTab) {
         if (pagerState.currentPage != selectedTab.ordinal) {
-            pagerState.scrollToPage(selectedTab.ordinal)
+            pagerState.animateScrollToPage(selectedTab.ordinal)
         }
     }
 
+    // 2. 同步 Pager 滑动到 ViewModel (解决左右滑动)
     LaunchedEffect(pagerState.currentPage) {
         val newTab = VaultTab.entries[pagerState.currentPage]
         if (newTab != selectedTab) {
@@ -192,273 +111,178 @@ fun VaultContent(
         }
     }
 
-    // 处理状态栏隐藏逻辑
-    LaunchedEffect(scrollBehavior.state.collapsedFraction, isStatusBarAutoHide) {
-        if (!isStatusBarAutoHide) {
-            val window = activity.window
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.show(WindowInsetsCompat.Type.statusBars())
-            return@LaunchedEffect
-        }
-        val window = activity.window
-        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        // 增加阈值并添加平滑处理，防止频繁切换导致手势冲突
-        if (scrollBehavior.state.collapsedFraction > 0.6f) {
-            insetsController.hide(WindowInsetsCompat.Type.statusBars())
-        } else if (scrollBehavior.state.collapsedFraction < 0.4f) {
-            insetsController.show(WindowInsetsCompat.Type.statusBars())
+    // 通用复制逻辑
+    val performCopy: (String, VaultSummary) -> Unit = { field, item ->
+        val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
+        val label = strategy.getCopyLabel(field)
+
+        if (field == "password" && !item.totpSecret.isNullOrBlank()) {
+            totpStates[item.id]?.let { state ->
+                if (state.code.isNotEmpty() && !state.code.contains("-")) {
+                    ClipboardUtils.copy(activity, state.code)
+                    Toast.makeText(context, "验证码已复制", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            // 通用字段复制逻辑（涉及解密的自动处理）
+            val isSensitive = field == "password"
+            if (isSensitive) {
+                vaultViewModel.loadEntryById(item.id) { fullEntry ->
+                    vaultViewModel.decryptSingle(
+                        activity = activity,
+                        encryptedData = fullEntry.password,
+                        authenticate = { act, t, s, _, ok -> mainViewModel.authenticate(act, t, s, null, ok) },
+                        onResult = { decrypted ->
+                            decrypted?.let {
+                                ClipboardUtils.copy(activity, it)
+                                Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
+                            }
+                        })
+                }
+            } else {
+                ClipboardUtils.copy(activity, item.username)
+                Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
+    // 优化滑动逻辑：将左右滑动合并为一个执行闭包
+    val onSwipeTriggered: (SwipeActionType, VaultSummary) -> Unit = { action, item ->
+        handleSwipeAction(
+            actionType = action,
+            item = item,
+            onAuthRequired = { ok -> mainViewModel.authenticate(activity, "安全验证", item.title, null, ok) },
+            onQuickDelete = { vaultViewModel.quickDelete(it) },
+            onCopy = { field -> performCopy(field, item) },
+            onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } },
+            onShowEditDetail = { vaultViewModel.loadEntryById(item.id) { vaultViewModel.showDetailForEdit(it) } }
+        )
+    }
+
     var pendingManualExportFileName by remember { mutableStateOf<String?>(null) }
-    val exportLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
-            it?.let { selectedUri ->
-                settingsViewModel.startExport(
-                    selectedUri, fileNameHint = pendingManualExportFileName
-                )
-            }
-            pendingManualExportFileName = null
-        }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
+        it?.let { selectedUri -> settingsViewModel.startExport(selectedUri, fileNameHint = pendingManualExportFileName) }
+        pendingManualExportFileName = null
+    }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
         it?.let { settingsViewModel.startImport(it) }
     }
 
-    LaunchedEffect(settingsViewModel.backupMessage) {
-        settingsViewModel.backupMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            settingsViewModel.clearBackupMessage()
+    // 实现 FAB 的滑动隐藏显示逻辑
+    val fabScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                // y < -1 表示向上滑动，隐藏 FAB；y > 1 表示向下滑动，显示 FAB
+                if (available.y < -1f) isFabVisible = false
+                else if (available.y > 1f) isFabVisible = true
+                return Offset.Zero
+            }
         }
     }
 
-    LaunchedEffect(settingsViewModel.backupExportFallbackFileName) {
-        val fallbackName = settingsViewModel.backupExportFallbackFileName ?: return@LaunchedEffect
-        pendingManualExportFileName = fallbackName
-        exportLauncher.launch(fallbackName)
-        settingsViewModel.consumeBackupExportFallbackFileName()
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            // 核心修复：只有在至少有一个组件需要折叠时，才挂载 scrollBehavior 的 nestedScrollConnection
-            modifier = Modifier
-                .then(
-                    if (isTopBarCollapsible || isTabBarCollapsible || isStatusBarAutoHide) Modifier.nestedScroll(
-                        scrollBehavior.nestedScrollConnection
-                    ) else Modifier
-                )
-                .nestedScroll(fabScrollConnection),
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            topBar = {
-                VaultTopBar(
-                    vaultViewModel = vaultViewModel,
-                    scrollBehavior = scrollBehavior,
-                    onExportClick = {
-                        val startedFromConfiguredDirectory =
-                            settingsViewModel.tryStartExportInConfiguredDirectory(
-                                backupDirectoryUri
-                            )
-                        if (!startedFromConfiguredDirectory) {
-                            val manualFileName = settingsViewModel.nextBackupFileName()
-                            pendingManualExportFileName = manualFileName
-                            exportLauncher.launch(manualFileName)
-                        }
-                    },
-                    onPlainJsonExportClick = onPlainExportClick,
-                    onImportClick = {
-                        importLauncher.launch(
-                            arrayOf(
-                                "application/octet-stream", "*/*"
-                            )
-                        )
-                    },
-                    onSettingsClick = onSettingsClick,
-                    isTopBarCollapsible = isTopBarCollapsible,
-                    isTabBarCollapsible = isTabBarCollapsible,
-                    isStatusBarAutoHide = isStatusBarAutoHide
-                )
-            },
-            floatingActionButton = {
-                VaultFab(
-                    viewModel = vaultViewModel, isVisible = isFabVisible
-                )
-            }) { innerPadding ->
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(MaterialTheme.colorScheme.surface)
-            ) { pageIndex ->
-                val currentTab = VaultTab.entries[pageIndex]
-                val listState = rememberLazyListState()
-                val filteredItems = when (currentTab) {
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
+            .nestedScroll(fabScrollConnection), // 必须挂载 Connection
+        topBar = {
+            VaultTopBar(
+                vaultViewModel = vaultViewModel,
+                scrollBehavior = scrollBehavior,
+                onExportClick = {
+                    val started = settingsViewModel.tryStartExportInConfiguredDirectory(settingsUiState.backupDirectoryUri)
+                    if (!started) {
+                        val manualFileName = settingsViewModel.nextBackupFileName()
+                        pendingManualExportFileName = manualFileName
+                        exportLauncher.launch(manualFileName)
+                    }
+                },
+                onPlainJsonExportClick = onPlainExportClick,
+                onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
+                onSettingsClick = onSettingsClick,
+                isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide,
+                isTopBarCollapsible = settingsUiState.isTopBarCollapsible,
+                isTabBarCollapsible = settingsUiState.isTabBarCollapsible
+            )
+        },
+        floatingActionButton = { 
+            VaultFab(viewModel = vaultViewModel, isVisible = isFabVisible) 
+        }
+    ) { innerPadding ->
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.padding(innerPadding).fillMaxSize()
+        ) { pageIndex ->
+            // 4. 实时同步过滤内容：必须基于当前页面的 pageIndex
+            val currentTab = VaultTab.entries[pageIndex]
+            val displayItems = remember(items, currentTab) {
+                when (currentTab) {
                     VaultTab.ALL -> items
                     VaultTab.PASSWORDS -> items.filter { it.totpSecret.isNullOrBlank() }
                     VaultTab.TOTP -> items.filter { !it.totpSecret.isNullOrBlank() }
                 }
+            }
 
-                if (isVaultItemsLoading) {
-                    VaultListSkeleton()
-                } else if (filteredItems.isEmpty()) {
-                    EmptyVaultPlaceholder()
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(filteredItems, key = { it.id }) { item ->
-                            val selectedStyle =
-                                perTypeStyleMap[item.entryType] ?: VaultCardStyle.DEFAULT
-                            val resolvedStyle =
-                                VaultCardStyle.resolveForEntryType(selectedStyle, item.entryType)
-                            val itemContent = @Composable {
-                                VaultCardStyleRegistry.RenderVaultItem(
-                                    style = resolvedStyle, entry = item, viewModel = vaultViewModel
-                                )
-                            }
-
-                            if (isSwipeEnabled) {
-                                val leftColors = swipeRevealColors(swipeLeftAction)
-                                val leftAction = createSwipeAction(
-                                    actionType = swipeLeftAction,
-                                    direction = SwipeDirection.LEFT,
-                                    onAction = {
-                                        handleSwipeAction(
-                                            actionType = swipeLeftAction,
-                                            item = item,
-                                            onAuthRequired = { onSuccess ->
-                                                mainViewModel.authenticate(
-                                                    activity,
-                                                    "确认验证",
-                                                    item.title,
-                                                    null,
-                                                    onSuccess
-                                                )
-                                            },
-                                            onQuickDelete = { vaultViewModel.quickDelete(it) },
-                                            onCopy = { field -> performCopy(field, item) },
-                                            onShowDetail = {
-                                                vaultViewModel.loadEntryById(item.id) { entry ->
-                                                    onShowDetail(entry)
-                                                }
-                                            },
-                                            onShowEditDetail = {
-                                                vaultViewModel.loadEntryById(item.id) { entry ->
-                                                    vaultViewModel.showDetailForEdit(entry)
-                                                }
-                                            })
-                                    },
-                                    backgroundColor = leftColors.first,
-                                    iconTint = leftColors.second
-                                )
-                                val rightColors = swipeRevealColors(swipeRightAction)
-                                val rightAction = createSwipeAction(
-                                    actionType = swipeRightAction,
-                                    direction = SwipeDirection.RIGHT,
-                                    onAction = {
-                                        handleSwipeAction(
-                                            actionType = swipeRightAction,
-                                            item = item,
-                                            onAuthRequired = { onSuccess ->
-                                                mainViewModel.authenticate(
-                                                    activity,
-                                                    "确认验证",
-                                                    item.title,
-                                                    null,
-                                                    onSuccess
-                                                )
-                                            },
-                                            onQuickDelete = { vaultViewModel.quickDelete(it) },
-                                            onCopy = { field -> performCopy(field, item) },
-                                            onShowDetail = {
-                                                vaultViewModel.loadEntryById(item.id) { entry ->
-                                                    onShowDetail(entry)
-                                                }
-                                            },
-                                            onShowEditDetail = {
-                                                vaultViewModel.loadEntryById(item.id) { entry ->
-                                                    vaultViewModel.showDetailForEdit(entry)
-                                                }
-                                            })
-                                    },
-                                    backgroundColor = rightColors.first,
-                                    iconTint = rightColors.second
-                                )
-                                val actions = listOfNotNull(leftAction, rightAction)
-                                if (actions.isNotEmpty()) {
-                                    SwipeToAction(
-                                        actions = actions,
-                                        isActive = vaultViewModel.itemToDelete?.id != item.id
-                                    ) {
-                                        itemContent()
-                                    }
-                                } else {
-                                    itemContent()
-                                }
-                            } else {
-                                itemContent()
-                            }
-                        }
-                        item {
-                            Spacer(
-                                modifier = Modifier
-                                    .navigationBarsPadding()
-                                    .height(80.dp)
+            if (isVaultItemsLoading) {
+                VaultListSkeleton()
+            } else if (displayItems.isEmpty()) {
+                EmptyVaultPlaceholder()
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(displayItems, key = { it.id }) { item ->
+                        val itemContent = @Composable {
+                            VaultCardStyleRegistry.RenderVaultItem(
+                                style = VaultCardStyle.resolveForEntryType(settingsUiState.cardStyleByEntryType[item.entryType] ?: VaultCardStyle.DEFAULT, item.entryType),
+                                entry = item,
+                                viewModel = vaultViewModel
                             )
                         }
+
+                        if (isSwipeEnabled) {
+                            val leftColors = swipeRevealColors(swipeLeftAction)
+                            val rightColors = swipeRevealColors(swipeRightAction)
+
+                            SwipeToAction(
+                                actions = listOfNotNull(
+                                    createSwipeAction(swipeLeftAction, SwipeDirection.LEFT, { onSwipeTriggered(swipeLeftAction, item) }, leftColors.first, leftColors.second),
+                                    createSwipeAction(swipeRightAction, SwipeDirection.RIGHT, { onSwipeTriggered(swipeRightAction, item) }, rightColors.first, rightColors.second)
+                                ),
+                                isActive = vaultViewModel.itemToDelete?.id != item.id
+                            ) {
+                                itemContent()
+                            }
+                        } else {
+                            itemContent()
+                        }
+                    }
+                    item {
+                        Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp))
                     }
                 }
             }
-
-            VaultDialogs(
-                activity = activity,
-                mainViewModel = mainViewModel,
-                vaultViewModel = vaultViewModel,
-                settingsViewModel = settingsViewModel
-            )
         }
 
-        AnimatedVisibility(
-            visible = vaultViewModel.addType == AddType.SCAN,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
-            ) {
-                VaultScanner(
-                    vaultViewModel = vaultViewModel,
-                    onDismiss = { vaultViewModel.addType = AddType.NONE })
-            }
-        }
+        VaultDialogs(
+            activity = activity,
+            mainViewModel = mainViewModel,
+            vaultViewModel = vaultViewModel,
+            settingsViewModel = settingsViewModel
+        )
     }
-}
 
-@Composable
-private fun VaultListSkeleton() {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    AnimatedVisibility(
+        visible = vaultViewModel.addType == AddType.SCAN,
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
     ) {
-        items(6) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(72.dp), colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                )
-            ) {}
-        }
-        item {
-            Spacer(
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .height(80.dp)
-            )
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            VaultScanner(
+                vaultViewModel = vaultViewModel,
+                onDismiss = { vaultViewModel.addType = AddType.NONE })
         }
     }
 }
@@ -471,5 +295,24 @@ private fun swipeRevealColors(actionType: SwipeActionType): Pair<Color, Color> {
         SwipeActionType.EDIT -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
         SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
         SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+}
+
+@Composable
+private fun VaultListSkeleton() {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(6) {
+            Card(
+                modifier = Modifier.fillMaxWidth().height(72.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            ) {}
+        }
+        item {
+            Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp))
+        }
     }
 }

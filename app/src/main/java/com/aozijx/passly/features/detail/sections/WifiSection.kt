@@ -133,7 +133,7 @@ fun WifiSection(
                 ) {
                     Text(wifiEncryptionLabel, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        entry.wifiEncryptionType ?: "WPA",
+                        entry.wifiSecurityType ?: "WPA",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary
                     )

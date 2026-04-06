@@ -44,7 +44,7 @@ data class VaultEntryEntity(
     val hardwareKeyInfo: String? = null,  // 关联的硬件密钥备注 (如 "YubiKey 5C")
 
     // --- WiFi 特化配置 ---
-    val wifiEncryptionType: String? = "WPA", // WiFi 加密协议 (WPA, WEP, nopass)
+    val wifiSecurityType: String? = "WPA", // WiFi 加密协议 (WPA, WEP, nopass)
     val wifiIsHidden: Boolean = false,       // 是否为隐藏 SSID
 
     // --- 金融与证件加固 ---
