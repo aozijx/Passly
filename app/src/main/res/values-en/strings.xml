@@ -105,11 +105,12 @@
     <string name="vault_backup_title_export">Set backup password</string>
     <string name="vault_backup_title_import">Enter backup password</string>
     <string name="vault_backup_message_export">Please set a password to encrypt the backup file. You will need this password to restore.</string>
-    <string name="vault_backup_message_import">Please enter the password to decrypt the backup file.</string>
+    <string name="vault_backup_message_import">Please enter the password to decrypt the backup file. For emergency backup (.json), you can leave the password empty and continue.</string>
     <string name="vault_backup_success">Backup/Restore successful</string>
     <string name="vault_backup_failed">Backup/Restore failed: %s</string>
     <string name="vault_backup_auth_title">Backup Security Verification</string>
     <string name="vault_backup_auth_subtitle_export">Please verify identity to export encrypted backup</string>
+    <string name="vault_backup_auth_subtitle_plain_export">Please verify identity to export plain JSON backup</string>
     <string name="vault_backup_auth_subtitle_import">Please verify identity to import and decrypt data</string>
     <string name="loading_export">Exporting backup…</string>
     <string name="loading_import">Importing backup…</string>

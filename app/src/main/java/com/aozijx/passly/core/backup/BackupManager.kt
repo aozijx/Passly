@@ -32,7 +32,7 @@ object BackupManager {
     private const val TAG = "BackupManager"
     private val MAGIC_NUMBER = "PASSLY".toByteArray(StandardCharsets.UTF_8)
     private const val BACKUP_VERSION = 1
-    
+
     private const val SALT_LENGTH = 16
     private const val IV_LENGTH = 12
     private const val KEY_LENGTH_BITS = 256
@@ -124,25 +124,28 @@ object BackupManager {
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             context.contentResolver.openInputStream(uri)?.use { input ->
-                // 1. 校验幻数
+                // 1. 先探测是否为加密 PASSLY 备份头；否则尝试紧急明文 JSON 导入
                 val readMagic = ByteArray(MAGIC_NUMBER.size)
-                readFullyOrThrow(input, readMagic, "magic number")
-                if (!readMagic.contentEquals(MAGIC_NUMBER)) {
-                    throw IllegalArgumentException("该文件不是有效的 Passly 备份文件")
-                }
+                val readCount = input.read(readMagic)
+                val isCurrentEncryptedFormat =
+                    readCount == MAGIC_NUMBER.size && readMagic.contentEquals(MAGIC_NUMBER)
 
-                // 2. 读取版本（仅支持当前格式）
-                val version = readSingleByteOrThrow(input)
-                if (version != BACKUP_VERSION) {
-                    throw IllegalStateException("不支持的备份版本: $version（仅支持当前版本）")
+                if (isCurrentEncryptedFormat) {
+                    // 2. 读取版本（仅支持当前格式）
+                    val version = readSingleByteOrThrow(input)
+                    if (version != BACKUP_VERSION) {
+                        throw IllegalStateException("不支持的备份版本: $version（仅支持当前版本）")
+                    }
+                    importCurrentFormat(
+                        encryptedInput = input,
+                        password = password,
+                        mode = mode,
+                        dataSource = dataSource,
+                        imageStore = imageStore
+                    )
+                } else {
+                    importEmergencyJsonFormat(context, uri, mode, dataSource)
                 }
-                importCurrentFormat(
-                    encryptedInput = input,
-                    password = password,
-                    mode = mode,
-                    dataSource = dataSource,
-                    imageStore = imageStore
-                )
             } ?: throw IllegalStateException("InputStream 为 null")
 
             Logcat.i(TAG, "备份导入成功")
@@ -154,6 +157,21 @@ object BackupManager {
         }
     }
 
+    private suspend fun importEmergencyJsonFormat(
+        context: Context, uri: Uri, mode: BackupImportMode, dataSource: BackupDataSource
+    ) {
+        val plainEntries = context.contentResolver.openInputStream(uri)?.use { plainInput ->
+            BackupVSerializer.readEntries(plainInput)
+        } ?: throw IllegalStateException("InputStream 为 null")
+
+        if (plainEntries.isEmpty()) {
+            throw IllegalArgumentException("紧急备份内容为空")
+        }
+
+        // 紧急导出来自数据库原始值，敏感字段通常已是密文，直接落库避免二次加密。
+        dataSource.writeEntries(plainEntries, mode)
+    }
+
     private fun mapImportFailure(error: Exception): Exception {
         if (error is IllegalArgumentException) return error
         if (error is IllegalStateException && error.message?.contains("不支持的备份版本") == true) {
@@ -162,7 +180,10 @@ object BackupManager {
 
         var current: Throwable? = error
         while (current != null) {
-            if (current is AEADBadTagException || current.message?.contains("BAD_DECRYPT") == true || current.message?.contains("tag mismatch") == true) {
+            if (current is AEADBadTagException || current.message?.contains("BAD_DECRYPT") == true || current.message?.contains(
+                    "tag mismatch"
+                ) == true
+            ) {
                 return Exception("备份密码错误，请核对后重试", error)
             }
             current = current.cause
@@ -199,6 +220,7 @@ object BackupManager {
                         name == DATA_ENTRY_NAME -> {
                             plainEntries = BackupVSerializer.readEntries(zip)
                         }
+
                         name.startsWith(IMAGE_ENTRY_PREFIX) -> {
                             val fileName = name.substringAfterLast('/')
                             val restored = imageStore.saveFromBackup(fileName, zip)

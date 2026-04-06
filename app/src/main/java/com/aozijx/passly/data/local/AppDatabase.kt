@@ -33,8 +33,16 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        @Volatile
+        var initializationError: Throwable? = null
+            private set
+
         fun getDatabase(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
+            INSTANCE?.let { return it }
+
+            return synchronized(this) {
+                INSTANCE?.let { return@synchronized it }
+
                 try {
                     val passphrase = DatabasePassphraseManager.getPassphrase(context)
                     val factory = SupportOpenHelperFactory(passphrase)
@@ -48,12 +56,32 @@ abstract class AppDatabase : RoomDatabase() {
                         .addMigrations(*Migrations.getAll())
                         .build()
 
+                    // 仅探测，不让探测的异常直接杀掉 getDatabase
+                    runCatching { instance.openHelper.writableDatabase }
+                        .onFailure { error ->
+                            Logcat.e(TAG, "Database probe failed, recording error", error)
+                            initializationError = wrapError(error)
+                        }
+                    
                     INSTANCE = instance
                     instance
                 } catch (e: Exception) {
-                    Logcat.e(TAG, "Critical error opening database", e)
-                    throw e
+                    Logcat.e(TAG, "Critical database setup failure", e)
+                    val wrapped = wrapError(e)
+                    initializationError = wrapped
+                    throw wrapped
                 }
+            }
+        }
+
+        private fun wrapError(e: Throwable): DatabaseException {
+            return when {
+                e.message?.contains("Migration", ignoreCase = true) == true ->
+                    DatabaseException.MigrationFailedException(e.message ?: "未知迁移错误", e)
+                e.message?.contains("passphrase", ignoreCase = true) == true ->
+                    DatabaseException.InvalidPassphraseException(e.message ?: "密钥错误")
+                else ->
+                    DatabaseException.InitializationException(e.message ?: "初始化失败", e)
             }
         }
 

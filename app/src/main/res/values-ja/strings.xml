@@ -105,11 +105,12 @@
     <string name="vault_backup_title_export">バックアップ用パスワード設定</string>
     <string name="vault_backup_title_import">バックアップ用パスワード入力</string>
     <string name="vault_backup_message_export">バックアップファイルを暗号化するパスワードを設定してください。復元時に必要です。</string>
-    <string name="vault_backup_message_import">バックアップファイルを復号化するパスワードを入力してください。</string>
+    <string name="vault_backup_message_import">バックアップファイルを復号化するパスワードを入力してください。緊急バックアップ（.json）をインポートする場合は、パスワードを空欄のまま続行できます。</string>
     <string name="vault_backup_success">バックアップ/復元成功</string>
     <string name="vault_backup_failed">バックアップ/復元失敗：%s</string>
     <string name="vault_backup_auth_title">バックアップ本人確認</string>
     <string name="vault_backup_auth_subtitle_export">認証して暗号化バックアップをエクスポート</string>
+    <string name="vault_backup_auth_subtitle_plain_export">認証して平文 JSON バックアップをエクスポート</string>
     <string name="vault_backup_auth_subtitle_import">認証してデータをインポート・復号化</string>
     <string name="loading_export">バックアップを出力中…</string>
     <string name="loading_import">バックアップを復元中…</string>

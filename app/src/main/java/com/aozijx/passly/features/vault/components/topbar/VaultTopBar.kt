@@ -65,6 +65,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
+import com.aozijx.passly.core.designsystem.components.PlainExportDialog
+import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
 import com.aozijx.passly.core.designsystem.model.VaultTab
 import com.aozijx.passly.features.vault.VaultViewModel
 
@@ -74,6 +76,7 @@ fun VaultTopBar(
     vaultViewModel: VaultViewModel,
     scrollBehavior: TopAppBarScrollBehavior,
     onExportClick: () -> Unit,
+    onPlainExportClick: () -> Unit,
     onImportClick: () -> Unit,
     onSettingsClick: () -> Unit = {},
     isStatusBarAutoHide: Boolean = false,
@@ -89,6 +92,7 @@ fun VaultTopBar(
     val focusManager = LocalFocusManager.current
 
     var showCategorySubMenu by remember { mutableStateOf(false) }
+    var showPlainExportDialog by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     // 回到页面时自动通过 ViewModel 刷新状态
@@ -214,12 +218,17 @@ fun VaultTopBar(
                                         vaultViewModel.isMoreMenuExpanded = false; onSettingsClick()
                                     },
                                     leadingIcon = { Icon(Icons.Default.Settings, null) })
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.vault_menu_export)) },
+                                CustomExportMenuItem(
+                                    text = stringResource(R.string.vault_menu_export),
+                                    leadingIcon = { Icon(Icons.Default.FileUpload, null) },
                                     onClick = {
-                                        vaultViewModel.isMoreMenuExpanded = false; onExportClick()
+                                        vaultViewModel.isMoreMenuExpanded = false
+                                        onExportClick()
                                     },
-                                    leadingIcon = { Icon(Icons.Default.FileUpload, null) })
+                                    onLongClick = {
+                                        vaultViewModel.isMoreMenuExpanded = false
+                                        showPlainExportDialog = true
+                                    })
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.vault_menu_import)) },
                                     onClick = {
@@ -275,6 +284,12 @@ fun VaultTopBar(
             )
         )
 
+        if (showPlainExportDialog) {
+            PlainExportDialog(type = PlainExportDialogType.NormalExport, onExportBackup = {
+                showPlainExportDialog = false
+                onPlainExportClick()
+            }, onResetOrCancel = { showPlainExportDialog = false })
+        }
         // 分类标签栏
         AnimatedVisibility(
             visible = !vaultViewModel.isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
@@ -312,5 +327,3 @@ fun VaultTopBar(
         }
     }
 }
-
-

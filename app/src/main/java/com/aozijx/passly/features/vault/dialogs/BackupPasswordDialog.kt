@@ -186,16 +186,18 @@ fun BackupPasswordDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (settingsViewModel.backupPassword.isNotEmpty()) {
-                        val authSubtitle =
-                            if (settingsViewModel.isExporting) authSubtitleExport else authSubtitleImport
-                        mainViewModel.authenticate(
-                            activity = activity, title = authTitle, subtitle = authSubtitle
-                        ) {
-                            settingsViewModel.processBackupAction(context)
-                        }
-                    }
-                }) {
+                    val canProceed = settingsViewModel.isExporting
+                        .let { isExport -> if (isExport) settingsViewModel.backupPassword.isNotEmpty() else true }
+                    if (canProceed) {
+                         val authSubtitle =
+                             if (settingsViewModel.isExporting) authSubtitleExport else authSubtitleImport
+                         mainViewModel.authenticate(
+                             activity = activity, title = authTitle, subtitle = authSubtitle
+                         ) {
+                             settingsViewModel.processBackupAction(context)
+                         }
+                     }
+                 }) {
                 Text(confirmText)
             }
         },

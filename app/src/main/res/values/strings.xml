@@ -109,11 +109,12 @@
     <string name="vault_backup_title_export">设置备份密码</string>
     <string name="vault_backup_title_import">输入备份密码</string>
     <string name="vault_backup_message_export">请设置一个密码来加密备份文件。恢复时需要此密码。</string>
-    <string name="vault_backup_message_import">请输入备份文件的密码以解密数据。</string>
+    <string name="vault_backup_message_import">请输入备份文件的密码以解密数据。若导入紧急备份（.json），可留空密码继续。</string>
     <string name="vault_backup_success">备份/恢复成功</string>
     <string name="vault_backup_failed">备份/恢复失败: %s</string>
     <string name="vault_backup_auth_title">备份安全验证</string>
     <string name="vault_backup_auth_subtitle_export">请验证身份以导出加密备份</string>
+    <string name="vault_backup_auth_subtitle_plain_export">请验证身份以导出明文 JSON 备份</string>
     <string name="vault_backup_auth_subtitle_import">请验证身份以导入并解密数据</string>
     <string name="loading_export">正在导出备份…</string>
     <string name="loading_import">正在导入备份…</string>
