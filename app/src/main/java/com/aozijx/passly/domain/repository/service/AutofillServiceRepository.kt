@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.repository
+package com.aozijx.passly.domain.repository.service
 
 import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.VaultEntry
@@ -16,4 +16,3 @@ interface AutofillServiceRepository {
         passwordValue: String
     ): Boolean
 }
-

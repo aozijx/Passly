@@ -1,13 +1,16 @@
 package com.aozijx.passly.core.designsystem.utils
 
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.FieldKey
+import com.aozijx.passly.domain.model.FieldLabel
 import com.aozijx.passly.domain.model.VaultEntry
 
 /**
  * 根据 entryType 动态确定应该显示哪些字段及其标签
+ * 逻辑层：将领域模型中的 FieldKey 与业务展示逻辑关联
  */
 object EntryTypeResolver {
-    
+
     /**
      * 获取条目类型对应的字段显示配置
      */
@@ -19,7 +22,7 @@ object EntryTypeResolver {
                 FieldLabel("网址", FieldKey.URIS),
                 FieldLabel("备注", FieldKey.NOTES)
             )
-            
+
             EntryType.TOTP -> listOf(
                 FieldLabel("密钥", FieldKey.TOTP_SECRET),
                 FieldLabel("周期", FieldKey.TOTP_PERIOD),
@@ -27,14 +30,14 @@ object EntryTypeResolver {
                 FieldLabel("算法", FieldKey.TOTP_ALGORITHM),
                 FieldLabel("备注", FieldKey.NOTES)
             )
-            
+
             EntryType.PASSKEY -> listOf(
                 FieldLabel("Passkey数据", FieldKey.PASSKEY_DATA),
                 FieldLabel("恢复码", FieldKey.RECOVERY_CODES),
                 FieldLabel("硬件密钥", FieldKey.HARDWARE_INFO),
                 FieldLabel("备注", FieldKey.NOTES)
             )
-            
+
             EntryType.WIFI -> listOf(
                 FieldLabel("SSID", FieldKey.USERNAME),
                 FieldLabel("密码", FieldKey.PASSWORD),
@@ -42,7 +45,7 @@ object EntryTypeResolver {
                 FieldLabel("隐藏SSID", FieldKey.WIFI_HIDDEN),
                 FieldLabel("备注", FieldKey.NOTES)
             )
-            
+
             EntryType.BANK_CARD -> listOf(
                 FieldLabel("持卡人", FieldKey.USERNAME),
                 FieldLabel("卡号", FieldKey.PASSWORD),
@@ -54,27 +57,27 @@ object EntryTypeResolver {
                 FieldLabel("密保答案", FieldKey.SECURITY_ANSWER),
                 FieldLabel("备注", FieldKey.NOTES)
             )
-            
+
             EntryType.SEED_PHRASE -> listOf(
                 FieldLabel("助记词", FieldKey.SEED_PHRASE),
                 FieldLabel("密码", FieldKey.PASSWORD),
                 FieldLabel("备注", FieldKey.NOTES)
             )
-            
+
             EntryType.ID_CARD -> listOf(
                 FieldLabel("证件号", FieldKey.ID_NUMBER),
                 FieldLabel("持有人", FieldKey.USERNAME),
                 FieldLabel("有效期", FieldKey.CARD_EXPIRATION),
                 FieldLabel("备注", FieldKey.NOTES)
             )
-            
+
             EntryType.SSH_KEY -> listOf(
                 FieldLabel("私钥", FieldKey.SSH_KEY),
                 FieldLabel("用户名", FieldKey.USERNAME),
                 FieldLabel("主机", FieldKey.URIS),
                 FieldLabel("备注", FieldKey.NOTES)
             )
-            
+
             EntryType.RECOVERY_CODE -> listOf(
                 FieldLabel("恢复码", FieldKey.RECOVERY_CODES),
                 FieldLabel("所属账户", FieldKey.USERNAME),
@@ -82,7 +85,7 @@ object EntryTypeResolver {
             )
         }
     }
-    
+
     /**
      * 从条目中提取特定字段的值
      */
@@ -112,7 +115,7 @@ object EntryTypeResolver {
             FieldKey.SSH_KEY -> entry.sshPrivateKey
         }
     }
-    
+
     /**
      * 获取主要显示字段（用于列表摘要）
      */
@@ -126,7 +129,7 @@ object EntryTypeResolver {
             EntryType.TOTP -> FieldKey.TOTP_SECRET
         }
     }
-    
+
     /**
      * 获取次要显示字段（用于列表摘要）
      */
@@ -139,34 +142,4 @@ object EntryTypeResolver {
             else -> null
         }
     }
-}
-
-data class FieldLabel(
-    val label: String,
-    val key: FieldKey
-)
-
-enum class FieldKey {
-    USERNAME,
-    PASSWORD,
-    NOTES,
-    URIS,
-    TOTP_SECRET,
-    TOTP_PERIOD,
-    TOTP_DIGITS,
-    TOTP_ALGORITHM,
-    PASSKEY_DATA,
-    RECOVERY_CODES,
-    HARDWARE_INFO,
-    WIFI_ENCRYPTION,
-    WIFI_HIDDEN,
-    CARD_EXPIRATION,
-    CARD_CVV,
-    PAYMENT_PIN,
-    PAYMENT_PLATFORM,
-    SECURITY_QUESTION,
-    SECURITY_ANSWER,
-    SEED_PHRASE,
-    ID_NUMBER,
-    SSH_KEY
 }

@@ -1,6 +1,5 @@
 package com.aozijx.passly.core.backup
 
-import android.util.Base64
 import android.util.JsonReader
 import android.util.JsonToken
 import android.util.JsonWriter
@@ -78,9 +77,6 @@ internal object BackupVSerializer {
         writer.name("matchType").value(entry.matchType.toLong())
         writer.name("customFieldsJson").value(entry.customFieldsJson)
         writer.name("autoSubmit").value(entry.autoSubmit)
-        writer.name("encryptedImageData").value(entry.encryptedImageData?.let {
-            Base64.encodeToString(it, Base64.NO_WRAP)
-        })
         writer.name("strengthScore").value(entry.strengthScore?.toDouble())
         writer.name("lastUsedAt").value(entry.lastUsedAt)
         writer.name("usageCount").value(entry.usageCount.toLong())
@@ -98,20 +94,46 @@ internal object BackupVSerializer {
     }
 
     private fun readEntry(reader: JsonReader): VaultEntryEntity {
-        var title = ""; var username = ""; var password = ""; var category = ""
-        var notes: String? = null; var iconName: String? = null; var iconCustomPath: String? = null; var totpSecret: String? = null
-        var totpPeriod = 30; var totpDigits = 6; var totpAlgorithm = "SHA1"
-        var passkeyDataJson: String? = null; var recoveryCodes: String? = null; var hardwareKeyInfo: String? = null
-        var wifiEncryptionType: String? = "WPA"; var wifiIsHidden = false
-        var cardCvv: String? = null; var cardExpiration: String? = null; var idNumber: String? = null
-        var paymentPin: String? = null; var paymentPlatform: String? = null
-        var securityQuestion: String? = null; var securityAnswer: String? = null
-        var sshPrivateKey: String? = null; var cryptoSeedPhrase: String? = null
-        var entryType = 0; var associatedAppPackage: String? = null; var associatedDomain: String? = null
-        var uriList: List<String>? = null; var matchType = 0; var customFieldsJson: String? = null
-        var autoSubmit = false; var encryptedImageData: ByteArray? = null; var strengthScore: Float? = null
-        var lastUsedAt: Long? = null; var usageCount = 0; var favorite = false; var tags: List<String>? = null
-        var createdAt: Long? = System.currentTimeMillis(); var updatedAt: Long? = null; var expiresAt: Long? = null
+        var title = ""
+        var username = ""
+        var password = ""
+        var category = ""
+        var notes: String? = null
+        var iconName: String? = null
+        var iconCustomPath: String? = null
+        var totpSecret: String? = null
+        var totpPeriod = 30
+        var totpDigits = 6
+        var totpAlgorithm = "SHA1"
+        var passkeyDataJson: String? = null
+        var recoveryCodes: String? = null
+        var hardwareKeyInfo: String? = null
+        var wifiEncryptionType: String? = "WPA"
+        var wifiIsHidden = false
+        var cardCvv: String? = null
+        var cardExpiration: String? = null
+        var idNumber: String? = null
+        var paymentPin: String? = null
+        var paymentPlatform: String? = null
+        var securityQuestion: String? = null
+        var securityAnswer: String? = null
+        var sshPrivateKey: String? = null
+        var cryptoSeedPhrase: String? = null
+        var entryType = 0
+        var associatedAppPackage: String? = null
+        var associatedDomain: String? = null
+        var uriList: List<String>? = null
+        var matchType = 0
+        var customFieldsJson: String? = null
+        var autoSubmit = false
+        var strengthScore: Float? = null
+        var lastUsedAt: Long? = null
+        var usageCount = 0
+        var favorite = false
+        var tags: List<String>? = null
+        var createdAt: Long? = System.currentTimeMillis()
+        var updatedAt: Long? = null
+        var expiresAt: Long? = null
 
         reader.beginObject()
         while (reader.hasNext()) {
@@ -148,9 +170,6 @@ internal object BackupVSerializer {
                 "matchType" -> matchType = reader.nextInt()
                 "customFieldsJson" -> customFieldsJson = reader.nextNullableString()
                 "autoSubmit" -> autoSubmit = reader.nextBoolean()
-                "encryptedImageData" -> encryptedImageData = reader.nextNullableString()?.let {
-                    if (it.isEmpty()) null else Base64.decode(it, Base64.NO_WRAP)
-                }
                 "strengthScore" -> strengthScore = reader.nextNullableDouble()?.toFloat()
                 "lastUsedAt" -> lastUsedAt = reader.nextNullableLong()
                 "usageCount" -> usageCount = reader.nextInt()
@@ -165,28 +184,60 @@ internal object BackupVSerializer {
         reader.endObject()
 
         return VaultEntryEntity(
-            title = title, username = username, password = password, category = category,
-            notes = notes, iconName = iconName, iconCustomPath = iconCustomPath,
-            totpSecret = totpSecret, totpPeriod = totpPeriod, totpDigits = totpDigits,
-            totpAlgorithm = totpAlgorithm, passkeyDataJson = passkeyDataJson,
-            recoveryCodes = recoveryCodes, hardwareKeyInfo = hardwareKeyInfo,
-            wifiEncryptionType = wifiEncryptionType, wifiIsHidden = wifiIsHidden,
-            cardCvv = cardCvv, cardExpiration = cardExpiration, idNumber = idNumber,
-            paymentPin = paymentPin, paymentPlatform = paymentPlatform,
-            securityQuestion = securityQuestion, securityAnswer = securityAnswer,
+            title = title,
+            username = username,
+            password = password,
+            category = category,
+            notes = notes,
+            iconName = iconName,
+            iconCustomPath = iconCustomPath,
+            totpSecret = totpSecret,
+            totpPeriod = totpPeriod,
+            totpDigits = totpDigits,
+            totpAlgorithm = totpAlgorithm,
+            passkeyDataJson = passkeyDataJson,
+            recoveryCodes = recoveryCodes,
+            hardwareKeyInfo = hardwareKeyInfo,
+            wifiEncryptionType = wifiEncryptionType,
+            wifiIsHidden = wifiIsHidden,
+            cardCvv = cardCvv,
+            cardExpiration = cardExpiration,
+            idNumber = idNumber,
+            paymentPin = paymentPin,
+            paymentPlatform = paymentPlatform,
+            securityQuestion = securityQuestion,
+            securityAnswer = securityAnswer,
             sshPrivateKey = sshPrivateKey,
-            cryptoSeedPhrase = cryptoSeedPhrase, entryType = entryType,
-            associatedAppPackage = associatedAppPackage, associatedDomain = associatedDomain,
-            uriList = uriList, matchType = matchType, customFieldsJson = customFieldsJson,
-            autoSubmit = autoSubmit, encryptedImageData = encryptedImageData, strengthScore = strengthScore, lastUsedAt = lastUsedAt,
-            usageCount = usageCount, favorite = favorite, tags = tags, createdAt = createdAt,
-            updatedAt = updatedAt, expiresAt = expiresAt
+            cryptoSeedPhrase = cryptoSeedPhrase,
+            entryType = entryType,
+            associatedAppPackage = associatedAppPackage,
+            associatedDomain = associatedDomain,
+            uriList = uriList,
+            matchType = matchType,
+            customFieldsJson = customFieldsJson,
+            autoSubmit = autoSubmit,
+            strengthScore = strengthScore,
+            lastUsedAt = lastUsedAt,
+            usageCount = usageCount,
+            favorite = favorite,
+            tags = tags,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            expiresAt = expiresAt
         )
     }
 
-    private fun JsonReader.nextNullableString(): String? = if (peek() == JsonToken.NULL) { skipValue(); null } else nextString()
-    private fun JsonReader.nextNullableDouble(): Double? = if (peek() == JsonToken.NULL) { skipValue(); null } else nextDouble()
-    private fun JsonReader.nextNullableLong(): Long? = if (peek() == JsonToken.NULL) { skipValue(); null } else nextLong()
+    private fun JsonReader.nextNullableString(): String? = if (peek() == JsonToken.NULL) {
+        skipValue(); null
+    } else nextString()
+
+    private fun JsonReader.nextNullableDouble(): Double? = if (peek() == JsonToken.NULL) {
+        skipValue(); null
+    } else nextDouble()
+
+    private fun JsonReader.nextNullableLong(): Long? = if (peek() == JsonToken.NULL) {
+        skipValue(); null
+    } else nextLong()
 
     private fun JsonReader.nextStringList(): List<String>? {
         if (peek() == JsonToken.NULL) {

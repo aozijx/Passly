@@ -1,7 +1,10 @@
 package com.aozijx.passly.domain.usecase.vault
 
-import com.aozijx.passly.domain.repository.FaviconRepository
-import com.aozijx.passly.domain.repository.VaultRepository
+import com.aozijx.passly.domain.repository.vault.FaviconRepository
+import com.aozijx.passly.domain.repository.vault.HistoryRepository
+import com.aozijx.passly.domain.repository.vault.OtpRepository
+import com.aozijx.passly.domain.repository.vault.VaultRepository
+import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.domain.usecase.vault.impl.DeleteAllEntriesUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.DeleteEntryUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.DownloadFaviconUseCase
@@ -22,22 +25,25 @@ import com.aozijx.passly.domain.usecase.vault.impl.UpdateEntryUseCase
  * 门面类，聚合所有仓库相关的用例实现
  */
 class VaultUseCases(
-    repository: VaultRepository,
+    vaultRepository: VaultRepository,
+    vaultSearchRepository: VaultSearchRepository,
+    historyRepository: HistoryRepository,
+    otpRepository: OtpRepository,
     faviconRepository: FaviconRepository
 ) {
-    val observeAllEntries = ObserveAllEntriesUseCase(repository)
-    val observeAllEntrySummaries = ObserveAllEntrySummariesUseCase(repository)
-    val getEntriesByCategory = GetEntriesByCategoryUseCase(repository)
-    val getEntrySummariesByCategory = GetEntrySummariesByCategoryUseCase(repository)
-    val searchEntries = SearchEntriesUseCase(repository)
-    val searchEntrySummaries = SearchEntrySummariesUseCase(repository)
-    val getCategories = GetCategoriesUseCase(repository)
-    val getHistoryByEntryId = GetHistoryByEntryIdUseCase(repository)
-    val getEntryById = GetEntryByIdUseCase(repository)
-    val insertEntry = InsertEntryUseCase(repository)
-    val updateEntry = UpdateEntryUseCase(repository)
-    val deleteEntry = DeleteEntryUseCase(repository)
-    val deleteAllEntries = DeleteAllEntriesUseCase(repository)
-    val getTotpCode = GetTotpCodeUseCase()
+    val observeAllEntries = ObserveAllEntriesUseCase(vaultRepository)
+    val observeAllEntrySummaries = ObserveAllEntrySummariesUseCase(vaultSearchRepository)
+    val getEntriesByCategory = GetEntriesByCategoryUseCase(vaultSearchRepository)
+    val getEntrySummariesByCategory = GetEntrySummariesByCategoryUseCase(vaultSearchRepository)
+    val searchEntries = SearchEntriesUseCase(vaultSearchRepository)
+    val searchEntrySummaries = SearchEntrySummariesUseCase(vaultSearchRepository)
+    val getCategories = GetCategoriesUseCase(vaultSearchRepository)
+    val getHistoryByEntryId = GetHistoryByEntryIdUseCase(historyRepository)
+    val getEntryById = GetEntryByIdUseCase(vaultRepository)
+    val insertEntry = InsertEntryUseCase(vaultRepository)
+    val updateEntry = UpdateEntryUseCase(vaultRepository)
+    val deleteEntry = DeleteEntryUseCase(vaultRepository)
+    val deleteAllEntries = DeleteAllEntriesUseCase(vaultRepository)
+    val getTotpCode = GetTotpCodeUseCase(otpRepository)
     val downloadFavicon = DownloadFaviconUseCase(faviconRepository)
 }

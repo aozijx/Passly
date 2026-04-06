@@ -1,12 +1,13 @@
-package com.aozijx.passly.domain.repository
+package com.aozijx.passly.domain.repository.vault
 
 import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.model.VaultSummary
 import kotlinx.coroutines.flow.Flow
 
-interface VaultRepository {
-    val allEntries: Flow<List<VaultEntry>>
+/**
+ * 搜索与查询仓库：专门负责列表展示、分类过滤及摘要查询 (Read-Only 优化)
+ */
+interface VaultSearchRepository {
     val allEntrySummaries: Flow<List<VaultSummary>>
     val allCategories: Flow<List<String>>
 
@@ -14,11 +15,4 @@ interface VaultRepository {
     fun getEntrySummariesByCategory(category: String): Flow<List<VaultSummary>>
     fun searchEntries(query: String): Flow<List<VaultEntry>>
     fun searchEntrySummaries(query: String): Flow<List<VaultSummary>>
-    fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistory>>
-    suspend fun getEntryById(entryId: Int): VaultEntry?
-
-    suspend fun insert(entry: VaultEntry): Long
-    suspend fun update(entry: VaultEntry)
-    suspend fun delete(entry: VaultEntry)
-    suspend fun deleteAll()
 }

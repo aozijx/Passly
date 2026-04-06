@@ -67,7 +67,7 @@ com.aozijx.passly/
 - [x] 提取口令管理：DatabasePassphraseManager 已接管 KeyStore 加密逻辑。
 - [x] 提取迁移逻辑：Migrations.kt 已独立，支持 MIGRATION_1_2, 2_3。
 - [x] 瘦身 AppDatabase：单例构建逻辑清晰，不再包含业务常量。
-- [ ] 拆分 VaultDao：将条目 CRUD 与历史记录操作彻底分离。
+- [x] 拆分 VaultDao：将条目 CRUD 与历史记录操作彻底分离。
 - [x] 认证链路收敛：详情页与列表滑动动作已统一走 ViewModel 认证加解密流程。
 
 ### Phase 3 — 备份系统重构 (安全与健壮性升级)
@@ -82,10 +82,10 @@ com.aozijx.passly/
 ### Phase 4 — 资源磁盘化与 UI 整理 (进行中)
 
 - [x] 图片备份适配：BackupManager 已支持从磁盘路径读取图片并打包。
-- [ ] 移除 DB BLOB：确保新条目保存图标时仅存相对路径，不再写入数据库 BLOB 列。
+- [x] 移除 DB BLOB：确保新条目保存图标时仅存相对路径，不再写入数据库 BLOB 列。
 - [ ] UI 模型归类：将 core/common/ui 下的 VaultCardStyle 等移入 designsystem/model。
-- [ ] 枚举解耦：将 FieldKey 和 FieldLabel 从 EntryTypeResolver 中提取到领域模型。
-- [ ] DI 模块化：将 AppContainer 逻辑拆分为 DataModule 和 DomainModule。
+- [x] 枚举解耦：将 FieldKey 和 FieldLabel 从 EntryTypeResolver 中提取到领域模型。
+- [x] DI 模块化：将 AppContainer 逻辑拆分为 DataModule 和 DomainModule。
 
 ---
 

@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.usecase.vault.impl
 
 import com.aozijx.passly.domain.model.FaviconOutcome
-import com.aozijx.passly.domain.repository.FaviconRepository
+import com.aozijx.passly.domain.repository.vault.FaviconRepository
 
 class DownloadFaviconUseCase(
     private val repository: FaviconRepository

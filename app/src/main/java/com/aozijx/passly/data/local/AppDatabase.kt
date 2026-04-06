@@ -10,6 +10,9 @@ import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
+import com.aozijx.passly.data.local.config.DatabaseConfig
+import com.aozijx.passly.data.local.dao.VaultEntryDao
+import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.local.migration.Migrations
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
@@ -21,7 +24,8 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun vaultDao(): VaultDao
+    abstract fun vaultEntryDao(): VaultEntryDao
+    abstract fun vaultHistoryDao(): VaultHistoryDao
 
     companion object {
         private const val TAG = "AppDatabase"
@@ -32,18 +36,16 @@ abstract class AppDatabase : RoomDatabase() {
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 try {
-                    // 1. 获取加密口令
                     val passphrase = DatabasePassphraseManager.getPassphrase(context)
                     val factory = SupportOpenHelperFactory(passphrase)
 
-                    // 2. 构建数据库实例
                     val instance = Room.databaseBuilder(
                         context.applicationContext,
                         AppDatabase::class.java,
                         DatabaseConfig.DATABASE_NAME
                     )
                         .openHelperFactory(factory)
-                        .addMigrations(*Migrations.getAll()) // 应用所有迁移
+                        .addMigrations(*Migrations.getAll())
                         .build()
 
                     INSTANCE = instance

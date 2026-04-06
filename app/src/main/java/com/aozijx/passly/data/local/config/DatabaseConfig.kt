@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.local
+package com.aozijx.passly.data.local.config
 
 /**
  * 数据库全局配置常量

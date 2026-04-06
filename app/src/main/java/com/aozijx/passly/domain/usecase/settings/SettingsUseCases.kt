@@ -3,10 +3,9 @@ package com.aozijx.passly.domain.usecase.settings
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.common.ui.VaultCardStyle
-import com.aozijx.passly.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 
-class SettingsUseCases(private val repository: SettingsRepository) {
+class SettingsUseCases(private val repository: com.aozijx.passly.domain.repository.config.SettingsRepository) {
     val lockTimeout: Flow<Long> = repository.lockTimeout
     val isBiometricEnabled: Flow<Boolean> = repository.isBiometricEnabled
     val isDarkMode: Flow<Boolean?> = repository.isDarkMode

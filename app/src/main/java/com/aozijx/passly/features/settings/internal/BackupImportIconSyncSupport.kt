@@ -40,7 +40,7 @@ internal class BackupImportIconSyncSupport {
             )
         }
 
-        val dao = AppDatabase.getDatabase(appContext).vaultDao()
+        val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
         val targets = dao.getEntriesForIconResync()
 
         if (targets.isEmpty()) {

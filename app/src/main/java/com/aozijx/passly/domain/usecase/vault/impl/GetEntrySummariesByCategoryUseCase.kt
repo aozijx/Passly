@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.usecase.vault.impl
 
 import com.aozijx.passly.domain.model.VaultSummary
-import com.aozijx.passly.domain.repository.VaultRepository
+import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import kotlinx.coroutines.flow.Flow
 
-class GetEntrySummariesByCategoryUseCase(private val repository: VaultRepository) {
+class GetEntrySummariesByCategoryUseCase(private val repository: VaultSearchRepository) {
     operator fun invoke(category: String): Flow<List<VaultSummary>> = repository.getEntrySummariesByCategory(category)
 }

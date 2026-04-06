@@ -1,13 +1,14 @@
 package com.aozijx.passly.domain.usecase.vault.impl
 
-import com.aozijx.passly.core.security.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.TotpConfig
+import com.aozijx.passly.domain.repository.vault.OtpRepository
 
-class GetTotpCodeUseCase {
-    operator fun invoke(config: TotpConfig): String {
-        val normalizedDigits = if (config.algorithm.uppercase() == "STEAM") 5 else config.digits
-        return TwoFAUtils.generateTotp(config.secret, normalizedDigits, config.period, config.algorithm)
-    }
+/**
+ * 获取 TOTP 验证码用例
+ * 将 OTP 计算逻辑委托给 OtpRepository 实现依赖倒置
+ */
+class GetTotpCodeUseCase(private val repository: OtpRepository) {
+    operator fun invoke(config: TotpConfig): String = repository.generateTotp(config)
 
     operator fun invoke(
         secret: String,

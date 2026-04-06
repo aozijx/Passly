@@ -12,16 +12,16 @@ class BackupRoomDataSource(context: Context) : BackupDataSource {
     private val appContext = context.applicationContext
 
     override suspend fun readAllEntries(): List<VaultEntryEntity> {
-        return AppDatabase.getDatabase(appContext).vaultDao().getAllEntries().first()
+        return AppDatabase.getDatabase(appContext).vaultEntryDao().getAllEntries().first()
     }
 
     override suspend fun writeEntries(entries: List<VaultEntryEntity>, mode: BackupImportMode) {
         val db = AppDatabase.getDatabase(appContext)
         db.withTransaction {
             if (mode == BackupImportMode.OVERWRITE) {
-                db.vaultDao().deleteAll()
+                db.vaultEntryDao().deleteAll()
             }
-            db.vaultDao().insertAll(entries)
+            db.vaultEntryDao().insertAll(entries)
         }
     }
 }

@@ -2,7 +2,7 @@ package com.aozijx.passly.data.local.migration
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.data.local.config.DatabaseConfig
 
 /**
  * 数据库版本迁移定义
