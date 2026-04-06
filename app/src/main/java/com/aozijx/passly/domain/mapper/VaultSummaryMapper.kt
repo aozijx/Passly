@@ -9,7 +9,6 @@ fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     category = category,
     entryType = entryType,
     username = username,
-    password = password,
     iconName = iconName,
     iconCustomPath = iconCustomPath,
     associatedAppPackage = associatedAppPackage,
@@ -22,5 +21,3 @@ fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     createdAt = createdAt,
     updatedAt = updatedAt
 )
-
-fun List<VaultEntry>.toSummaryList(): List<VaultSummary> = map { it.toSummary() }

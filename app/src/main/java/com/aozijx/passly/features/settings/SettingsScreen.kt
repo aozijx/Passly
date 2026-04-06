@@ -37,7 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.common.ui.VaultCardStyle
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.features.settings.components.dialogs.LockTimeoutDialog
 import com.aozijx.passly.features.settings.components.dialogs.SwipeActionSelectDialog
 import com.aozijx.passly.features.settings.components.sections.AppearanceCustomizationSettingsSection

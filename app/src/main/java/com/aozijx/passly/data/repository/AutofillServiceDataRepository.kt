@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository
 import android.content.Context
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
@@ -13,7 +14,7 @@ import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
-import com.aozijx.passly.domain.repository.AutofillServiceRepository
+import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.service.autofill.engine.AutofillStructureParser
@@ -37,7 +38,7 @@ class AutofillServiceDataRepository(
 
     override suspend fun updateUsageStats(entry: VaultEntry) = withContext(Dispatchers.IO) {
         try {
-            val dao = AppDatabase.getDatabase(appContext).vaultDao()
+            val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
             val updatedEntry = entry.copy(
                 lastUsedAt = System.currentTimeMillis(),
                 usageCount = entry.usageCount + 1
@@ -50,7 +51,7 @@ class AutofillServiceDataRepository(
 
     override suspend fun getEntryById(entryId: Int): VaultEntry? = withContext(Dispatchers.IO) {
         runCatching {
-            AppDatabase.getDatabase(appContext).vaultDao().getEntryById(entryId)?.toDomain()
+            AppDatabase.getDatabase(appContext).vaultEntryDao().getEntryById(entryId)?.toDomain()
         }.getOrElse {
             Logcat.e(TAG, "Failed to load entry by id=$entryId", it)
             null
@@ -62,7 +63,7 @@ class AutofillServiceDataRepository(
         runCatching {
             val order = entryIds.withIndex().associate { it.value to it.index }
             AppDatabase.getDatabase(appContext)
-                .vaultDao()
+                .vaultEntryDao()
                 .getEntriesByIds(entryIds)
                 .toDomainList()
                 .sortedBy { order[it.id] ?: Int.MAX_VALUE }
@@ -82,7 +83,7 @@ class AutofillServiceDataRepository(
             }
 
             EntryTypeStrategyRegistry.ensureRegistered()
-            val dao = AppDatabase.getDatabase(appContext).vaultDao()
+            val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
             val queryStart = System.currentTimeMillis()
             val entries = dao.findAutofillCandidates(
                 packageName = packageName,
@@ -136,7 +137,7 @@ class AutofillServiceDataRepository(
         try {
             val saveStart = System.currentTimeMillis()
             EntryTypeStrategyRegistry.ensureRegistered()
-            val dao = AppDatabase.getDatabase(appContext).vaultDao()
+            val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
 
             val queryStart = System.currentTimeMillis()
             val candidateEntries = dao.findAutofillCandidates(
@@ -159,11 +160,7 @@ class AutofillServiceDataRepository(
                     isDomainMatch(entry.associatedDomain, normalizedDomain)
                 if (!scopeMatch) return@find false
 
-                val decUser = try {
-                    CryptoManager.decrypt(entry.username)
-                } catch (_: Exception) {
-                    null
-                }
+                val decUser = CryptoAccess.decryptOrNull(entry.username)
                 decUser == usernameValue
             }
             val matchCost = System.currentTimeMillis() - matchStart
@@ -275,4 +272,3 @@ class AutofillServiceDataRepository(
             normalizedRequestDomain.endsWith(".$normalizedEntryDomain")
     }
 }
-

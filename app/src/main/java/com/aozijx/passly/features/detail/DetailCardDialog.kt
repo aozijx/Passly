@@ -84,7 +84,6 @@ fun DetailCardDialog(
     val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
 
     val onEntryUpdated: (VaultEntry) -> Unit = { updated ->
-        currentEntry = updated
         vaultViewModel.updateVaultEntry(updated)
     }
 
@@ -92,30 +91,13 @@ fun DetailCardDialog(
         if (!vaultViewModel.shouldStartDetailInEditMode) return@LaunchedEffect
 
         if (vaultViewModel.shouldStartTotpEdit) {
-            vaultViewModel.prefilledTotpSecret?.let { prefilled ->
-                totpEditState.secret = prefilled
-            }
             totpEditState.isEditing = true
         } else {
-            val usernamePrefill = vaultViewModel.prefilledUsername
-            val passwordPrefill = vaultViewModel.prefilledPassword
-
-            when {
-                usernamePrefill != null -> {
-                    revealedUsername = usernamePrefill
-                    editState.editedUsername = usernamePrefill
-                    editState.isEditingUsername = true
-                    if (!entry.password.isEmpty() && passwordPrefill != null) {
-                        revealedPassword = passwordPrefill
-                        editState.editedPassword = passwordPrefill
-                    }
-                }
-
-                !entry.password.isEmpty() && passwordPrefill != null -> {
-                    revealedPassword = passwordPrefill
-                    editState.editedPassword = passwordPrefill
-                    editState.isEditingPassword = true
-                }
+            // Open edit mode without pre-decrypting credentials.
+            if (!entry.username.isEmpty()) {
+                editState.isEditingUsername = true
+            } else if (!entry.password.isEmpty()) {
+                editState.isEditingPassword = true
             }
         }
 

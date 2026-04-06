@@ -11,8 +11,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.ui.AddType
-import com.aozijx.passly.core.common.ui.VaultTab
+import com.aozijx.passly.core.designsystem.model.AddType
+import com.aozijx.passly.core.designsystem.model.VaultTab
 import com.aozijx.passly.core.designsystem.state.TotpState
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
@@ -115,35 +115,26 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             detailState.shouldStartTotpEdit = value
         }
 
-    val prefilledUsername: String?
-        get() = detailState.prefilledUsername
-
-    val prefilledPassword: String?
-        get() = detailState.prefilledPassword
-
-    val prefilledTotpSecret: String?
-        get() = detailState.prefilledTotpSecret
-
     val availableCategories: StateFlow<List<String>> = vaultUseCases.getCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val vaultItems: StateFlow<List<VaultSummary>> =
-        combine(searchFilterState.searchQuery, searchFilterState.selectedCategory) { query, category ->
-            Pair(query, category)
-        }.flatMapLatest { (query, category) ->
-            val baseFlow = when {
-                query.isNotEmpty() -> vaultUseCases.searchEntrySummaries(query)
-                category != null -> vaultUseCases.getEntrySummariesByCategory(category)
-                else -> vaultUseCases.observeAllEntrySummaries()
-            }
-            baseFlow
-        }.onEach {
-            if (_isVaultItemsLoading.value) {
-                _isVaultItemsLoading.value = false
-            }
+    val vaultItems: StateFlow<List<VaultSummary>> = combine(
+        searchFilterState.searchQuery, searchFilterState.selectedCategory
+    ) { query, category ->
+        Pair(query, category)
+    }.flatMapLatest { (query, category) ->
+        val baseFlow = when {
+            query.isNotEmpty() -> vaultUseCases.searchEntrySummaries(query)
+            category != null -> vaultUseCases.getEntrySummariesByCategory(category)
+            else -> vaultUseCases.observeAllEntrySummaries()
         }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        baseFlow
+    }.onEach {
+        if (_isVaultItemsLoading.value) {
+            _isVaultItemsLoading.value = false
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         startTotpRefresher()
@@ -167,8 +158,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         val started = autofillSupport.openAutofillSettings(context)
         if (!started) {
             Toast.makeText(
-                context, 
-                context.getString(R.string.vault_toast_enable_autofill_manual), 
+                context,
+                context.getString(R.string.vault_toast_enable_autofill_manual),
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -180,8 +171,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
                 statesProvider = { _totpStates.value },
                 entriesProvider = { vaultItems.value },
                 updateStates = { refreshed -> _totpStates.value = refreshed },
-                codeGenerator = { config -> vaultUseCases.getTotpCode(config) }
-            )
+                codeGenerator = { config -> vaultUseCases.getTotpCode(config) })
         }
     }
 
@@ -220,9 +210,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private fun clearDetailLaunchState() {
         shouldStartDetailInEditMode = false
         shouldStartTotpEdit = false
-        detailState.prefilledUsername = null
-        detailState.prefilledPassword = null
-        detailState.prefilledTotpSecret = null
     }
 
     fun consumeDetailLaunchState() {
@@ -238,41 +225,34 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         clearDetailLaunchState()
         shouldStartDetailInEditMode = true
 
-        if (entry.totpSecret.isNullOrBlank()) {
-            shouldStartTotpEdit = false
-            detailState.prefilledUsername = cryptoSupport.decryptSilently(entry.username)
-            detailState.prefilledPassword = cryptoSupport.decryptSilently(entry.password)
-        } else {
-            shouldStartTotpEdit = true
-            detailState.prefilledTotpSecret = cryptoSupport.decryptTotpSecret(entry.totpSecret)
-        }
+        // Do not pre-decrypt secrets on entering edit mode.
+        shouldStartTotpEdit = !entry.totpSecret.isNullOrBlank()
 
         detailItem = entry
-    }
-
-    fun showDetailForEdit(entry: VaultSummary) {
-        loadEntryById(entry.id) { showDetailForEdit(it) }
     }
 
     fun showDetail(entry: VaultSummary) {
         loadEntryById(entry.id) { showDetail(it) }
     }
+
     fun loadEntryById(entryId: Int, onLoaded: (VaultEntry) -> Unit) {
         viewModelScope.launch {
             vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) }
         }
     }
+
     fun dismissDetail() {
         detailItem = null
         clearDetailLaunchState()
     }
+
     fun addItem(entry: VaultEntry) {
         viewModelScope.launch {
             entryLifecycleSupport.addEntry(entry)
             addType = AddType.NONE
         }
     }
-    
+
     /**
      * 添加条目并自动下载 favicon（如果提供了域名）
      */
@@ -282,6 +262,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             addType = AddType.NONE
         }
     }
+
     fun updateVaultEntry(entry: VaultEntry) {
         viewModelScope.launch {
             entryLifecycleSupport.updateEntry(entry)

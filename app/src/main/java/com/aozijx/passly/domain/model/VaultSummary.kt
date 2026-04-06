@@ -10,7 +10,6 @@ data class VaultSummary(
     val category: String,
     val entryType: Int = 0,
     val username: String,
-    val password: String,
     val iconName: String? = null,
     val iconCustomPath: String? = null,
     val associatedAppPackage: String? = null,

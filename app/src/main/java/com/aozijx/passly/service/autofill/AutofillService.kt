@@ -18,7 +18,7 @@ import com.aozijx.passly.AppContext
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.crypto.CryptoManager
+import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.PackageUtils
@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
  */
 class AutofillService : android.service.autofill.AutofillService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val autofillRepository = AppContainer.autofillServiceRepository
+    private val autofillRepository = AppContainer.autofillUseCases
     private val tag = "PasslyAutofill"
     private val slowFillTotalMs = 250L
     private val slowRepositoryMs = 120L
@@ -119,8 +119,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                         val strategy = resolveStrategy(entry.entryType)
                         if (strategy != null && !strategy.supportsAutofill()) return@forEach
 
-                        val decryptedUsername = runCatching { CryptoManager.decrypt(entry.username) }
-                            .getOrDefault("").trim()
+                        val decryptedUsername = (CryptoAccess.decryptOrNull(entry.username) ?: "").trim()
                         val strategySummary = strategy
                             ?.let { runCatching { it.extractSummary(entry) }.getOrDefault("") }
                             .orEmpty()

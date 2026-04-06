@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.usecase.userconfig
 
 import com.aozijx.passly.domain.model.UserConfig
-import com.aozijx.passly.domain.repository.UserConfigRepository
+import com.aozijx.passly.domain.repository.config.UserConfigRepository
 import kotlinx.coroutines.flow.Flow
 
 class UserConfigUseCases(private val repository: UserConfigRepository) {

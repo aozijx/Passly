@@ -1,18 +1,12 @@
 package com.aozijx.passly.features.vault.internal
 
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.core.crypto.CryptoManager
+import com.aozijx.passly.core.crypto.CryptoAccess
 
 internal typealias AuthenticateAction =
     (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit
 
 internal class VaultCryptoSupport {
-
-    fun decryptSilently(encryptedData: String?): String? {
-        if (encryptedData == null) return null
-        if (encryptedData.isEmpty()) return ""
-        return runCatching { CryptoManager.decrypt(encryptedData) }.getOrNull()
-    }
 
     fun decryptSingle(
         activity: FragmentActivity,
@@ -26,7 +20,7 @@ internal class VaultCryptoSupport {
         }
 
         authenticate(activity, "查看详情", "", null) {
-            onResult(runCatching { CryptoManager.decrypt(encryptedData) }.getOrNull())
+            onResult(CryptoAccess.decryptOrNull(encryptedData))
         }
     }
 
@@ -42,16 +36,13 @@ internal class VaultCryptoSupport {
         }
 
         authenticate(activity, "查看详情", "", null) {
-            val results = runCatching {
-                encryptedList.map { if (it.isEmpty()) "" else CryptoManager.decrypt(it) }
-            }.getOrElse {
-                encryptedList.map { null }
-            }
+            val results = encryptedList.map { CryptoAccess.decryptOrNull(it) }
             onResult(results)
         }
     }
 
+    // Restricted usage: only for TOTP auto-refresh/preview flow.
     fun decryptTotpSecret(encrypted: String?): String? {
-        return decryptSilently(encrypted)
+        return CryptoAccess.decryptOrNull(encrypted)
     }
 }

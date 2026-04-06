@@ -44,13 +44,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.ui.AddType
+import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun VaultFab(
-    viewModel: VaultViewModel,
-    isVisible: Boolean = true
+    viewModel: VaultViewModel, isVisible: Boolean = true
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
@@ -80,8 +79,7 @@ fun VaultFab(
             AnimatedVisibility(
                 visible = showFabMenu,
                 enter = fadeIn() + slideInHorizontally { fullWidth -> fullWidth },
-                exit = fadeOut() + slideOutHorizontally { fullWidth -> fullWidth }
-            ) {
+                exit = fadeOut() + slideOutHorizontally { fullWidth -> fullWidth }) {
                 Column(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -92,24 +90,21 @@ fun VaultFab(
                         onClick = {
                             showFabMenu = false
                             viewModel.addType = AddType.SCAN
-                        }
-                    )
+                        })
                     FabMenuItem(
                         label = stringResource(R.string.vault_fab_2fa),
                         icon = Icons.Default.Pin,
                         onClick = {
                             showFabMenu = false
                             viewModel.addType = AddType.TOTP
-                        }
-                    )
+                        })
                     FabMenuItem(
                         label = stringResource(R.string.vault_fab_password),
                         icon = Icons.Default.Key,
                         onClick = {
                             showFabMenu = false
                             viewModel.addType = AddType.PASSWORD
-                        }
-                    )
+                        })
                 }
             }
 
@@ -132,9 +127,7 @@ fun VaultFab(
 
 @Composable
 fun FabMenuItem(
-    label: String,
-    icon: ImageVector,
-    onClick: () -> Unit
+    label: String, icon: ImageVector, onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,

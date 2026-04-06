@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.data.local.config.DatabaseConfig
 import java.io.Serializable
 
 /**
