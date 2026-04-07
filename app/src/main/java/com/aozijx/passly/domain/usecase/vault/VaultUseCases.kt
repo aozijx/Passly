@@ -8,17 +8,12 @@ import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.domain.usecase.vault.impl.DeleteAllEntriesUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.DeleteEntryUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.DownloadFaviconUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.GetCategoriesUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.GetEntriesByCategoryUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.GetEntryByIdUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.GetEntrySummariesByCategoryUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.GetHistoryByEntryIdUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.GetTotpCodeUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.InsertEntryUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.ObserveAllEntriesUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.ObserveAllEntrySummariesUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.SearchEntriesUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.SearchEntrySummariesUseCase
+import com.aozijx.passly.domain.usecase.vault.impl.ObserveCategoriesByFilterUseCase
+import com.aozijx.passly.domain.usecase.vault.impl.ObserveEntrySummariesByDemandUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.UpdateEntryUseCase
 
 /**
@@ -31,13 +26,8 @@ class VaultUseCases(
     otpRepository: OtpRepository,
     faviconRepository: FaviconRepository
 ) {
-    val observeAllEntries = ObserveAllEntriesUseCase(vaultRepository)
-    val observeAllEntrySummaries = ObserveAllEntrySummariesUseCase(vaultSearchRepository)
-    val getEntriesByCategory = GetEntriesByCategoryUseCase(vaultSearchRepository)
-    val getEntrySummariesByCategory = GetEntrySummariesByCategoryUseCase(vaultSearchRepository)
-    val searchEntries = SearchEntriesUseCase(vaultSearchRepository)
-    val searchEntrySummaries = SearchEntrySummariesUseCase(vaultSearchRepository)
-    val getCategories = GetCategoriesUseCase(vaultSearchRepository)
+    val observeEntrySummariesByDemand = ObserveEntrySummariesByDemandUseCase(vaultSearchRepository)
+    val getCategoriesByFilter = ObserveCategoriesByFilterUseCase(vaultSearchRepository)
     val getHistoryByEntryId = GetHistoryByEntryIdUseCase(historyRepository)
     val getEntryById = GetEntryByIdUseCase(vaultRepository)
     val insertEntry = InsertEntryUseCase(vaultRepository)

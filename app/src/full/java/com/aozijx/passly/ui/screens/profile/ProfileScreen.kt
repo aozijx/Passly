@@ -49,7 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.ui.ImageType
+import com.aozijx.passly.core.designsystem.model.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.ui.navigation.Screen
 import com.aozijx.passly.ui.navigation.TopBarConfig

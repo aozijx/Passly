@@ -212,16 +212,8 @@ fun VaultContent(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.padding(innerPadding).fillMaxSize()
-        ) { pageIndex ->
-            // 4. 实时同步过滤内容：必须基于当前页面的 pageIndex
-            val currentTab = VaultTab.entries[pageIndex]
-            val displayItems = remember(items, currentTab) {
-                when (currentTab) {
-                    VaultTab.ALL -> items
-                    VaultTab.PASSWORDS -> items.filter { it.totpSecret.isNullOrBlank() }
-                    VaultTab.TOTP -> items.filter { !it.totpSecret.isNullOrBlank() }
-                }
-            }
+        ) { _ ->
+            val displayItems = items
 
             if (isVaultItemsLoading) {
                 VaultListSkeleton()
