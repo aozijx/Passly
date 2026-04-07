@@ -1,5 +1,6 @@
-package com.aozijx.passly.domain.model
+package com.aozijx.passly.domain.model.core
 
+import com.aozijx.passly.domain.model.icon.VaultIconable
 import java.io.Serializable
 
 /**
@@ -10,12 +11,12 @@ data class VaultEntry(
     val title: String,            // 标题（如：谷歌、招行、公司WiFi）
     val username: String,         // 加密后的用户名或 WiFi SSID
     val password: String,         // 加密后的主密码
-    val category: String,         // 分类名称（用于 UI 分组）
+    override val category: String,         // 分类名称（用于 UI 分组）
     val notes: String? = null,    // 加密后的备注/详细笔记
 
     // --- 视觉识别 ---
-    val iconName: String? = null,        // 预设图标标识符
-    val iconCustomPath: String? = null,  // 自定义图标/背景图的本地文件路径
+    override val iconName: String? = null,        // 预设图标标识符
+    override val iconCustomPath: String? = null,  // 自定义图标/背景图的本地文件路径
 
     // --- 动态验证 (TOTP) ---
     val totpSecret: String? = null,      // 加密后的 Base32 密钥
@@ -57,8 +58,8 @@ data class VaultEntry(
     val entryType: Int = 0,
 
     // --- Autofill 自动填充引擎数据 ---
-    val associatedAppPackage: String? = null, // 关联 of Android 包名
-    val associatedDomain: String? = null,     // 关联 of Web 域名
+    override val associatedAppPackage: String? = null, // 关联 of Android 包名
+    override val associatedDomain: String? = null,     // 关联 of Web 域名
     val uriList: List<String>? = null,        // 多 URI 匹配列表 (自动应用 Converters)
     val matchType: Int = 0,                   // 匹配规则 (0:精确, 1:主机名, 2:根域名)
     val customFieldsJson: String? = null,     // 加密后的自定义键值对 (JSON)
@@ -75,4 +76,4 @@ data class VaultEntry(
     val createdAt: Long? = System.currentTimeMillis(),
     val updatedAt: Long? = null,
     val expiresAt: Long? = null      // 凭据到期时间 (提醒更换密码)
-) : Serializable
+) : VaultIconable, Serializable

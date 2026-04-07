@@ -1,18 +1,15 @@
-package com.aozijx.passly.features.vault.components.topbar
+package com.aozijx.passly.features.vault.components.topbar.compoents
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -43,11 +40,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 
@@ -72,7 +71,6 @@ fun VaultDropdownMenu(
     var isCategorySearchVisible by remember { mutableStateOf(false) }
     val categoryFocusRequester = remember { FocusRequester() }
 
-    // 重置子菜单状态
     LaunchedEffect(expanded) {
         if (!expanded) {
             showCategorySubMenu = false
@@ -81,11 +79,8 @@ fun VaultDropdownMenu(
         }
     }
 
-    // 自动聚焦逻辑
     LaunchedEffect(isCategorySearchVisible) {
-        if (isCategorySearchVisible) {
-            categoryFocusRequester.requestFocus()
-        }
+        if (isCategorySearchVisible) categoryFocusRequester.requestFocus()
     }
 
     val filteredCategories = remember(availableCategories, categorySearchQuery) {
@@ -97,27 +92,20 @@ fun VaultDropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
         modifier = Modifier
-            .widthIn(min = 140.dp)
+            .widthIn(min = 150.dp)
             .animateContentSize()
     ) {
-        // 使用 AnimatedContent 实现线性滑动过渡
         AnimatedContent(
             targetState = showCategorySubMenu, transitionSpec = {
                 val transition = if (targetState) {
-                    // 进入子菜单：从右推入
-                    (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                        slideOutHorizontally { width -> -width } + fadeOut())
+                    (slideInHorizontally { it } + fadeIn()) togetherWith (slideOutHorizontally { -it } + fadeOut())
                 } else {
-                    // 返回主菜单：向左向右拉出
-                    (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                        slideOutHorizontally { width -> width } + fadeOut())
+                    (slideInHorizontally { -it } + fadeIn()) togetherWith (slideOutHorizontally { it } + fadeOut())
                 }
                 transition.using(SizeTransform(clip = false))
             }, label = "MenuPageTransition"
         ) { isSubMenu ->
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 if (!isSubMenu) {
                     // --- 主菜单内容 ---
                     DropdownMenuItem(
@@ -126,53 +114,32 @@ fun VaultDropdownMenu(
                         leadingIcon = { Icon(Icons.Default.FilterList, null) })
                     DropdownMenuItem(
                         text = { Text(stringResource(if (showTOTPCode) R.string.vault_menu_hide_totp else R.string.vault_menu_show_totp)) },
-                        onClick = {
-                            onToggleTotpVisibility()
-                            onDismissRequest()
-                        },
+                        onClick = { onToggleTotpVisibility(); onDismissRequest() },
                         leadingIcon = {
                             Icon(
                                 if (showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 null
                             )
                         })
-
                     if (!isAutofillEnabled) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
-                            onClick = {
-                                onEnableAutofillClick()
-                                onDismissRequest()
-                            },
+                            onClick = { onEnableAutofillClick(); onDismissRequest() },
                             leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) })
                     }
-
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.action_settings)) },
-                        onClick = {
-                            onDismissRequest()
-                            onSettingsClick()
-                        },
+                        onClick = { onDismissRequest(); onSettingsClick() },
                         leadingIcon = { Icon(Icons.Default.Settings, null) })
                     CustomExportMenuItem(
                         text = stringResource(R.string.vault_menu_export),
                         leadingIcon = { Icon(Icons.Default.FileUpload, null) },
-                        onClick = {
-                            onDismissRequest()
-                            onExportClick()
-                        },
-                        onLongClick = {
-                            onDismissRequest()
-                            onOpenPlainExport()
-                        })
+                        onClick = { onDismissRequest(); onExportClick() },
+                        onLongClick = { onDismissRequest(); onOpenPlainExport() })
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.vault_menu_import)) },
-                        onClick = {
-                            onDismissRequest()
-                            onImportClick()
-                        },
+                        onClick = { onDismissRequest(); onImportClick() },
                         leadingIcon = { Icon(Icons.Default.FileDownload, null) })
                 } else {
                     // --- 分类子菜单内容 ---
@@ -180,11 +147,8 @@ fun VaultDropdownMenu(
                         text = { Text(stringResource(R.string.action_back)) },
                         onClick = {
                             if (isCategorySearchVisible) {
-                                isCategorySearchVisible = false
-                                categorySearchQuery = ""
-                            } else {
-                                showCategorySubMenu = false
-                            }
+                                isCategorySearchVisible = false; categorySearchQuery = ""
+                            } else showCategorySubMenu = false
                         },
                         leadingIcon = {
                             Icon(
@@ -193,11 +157,7 @@ fun VaultDropdownMenu(
                             )
                         })
 
-                    AnimatedVisibility(
-                        visible = isCategorySearchVisible,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
+                    AnimatedVisibility(visible = isCategorySearchVisible) {
                         OutlinedTextField(
                             value = categorySearchQuery,
                             onValueChange = { categorySearchQuery = it },
@@ -216,10 +176,8 @@ fun VaultDropdownMenu(
                                 )
                             },
                             singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyMedium,
                             shape = MaterialTheme.shapes.medium,
                             colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
                                     alpha = 0.3f
                                 )
@@ -236,61 +194,39 @@ fun VaultDropdownMenu(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
+                    // 渲染“全部分类”项
+                    val isAllSelected = selectedCategory == null
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.vault_menu_all_categories)) },
-                        onClick = {
-                            onCategorySelected(null)
-                            onDismissRequest()
-                        },
+                        text = {
+                        Text(
+                            text = stringResource(R.string.vault_menu_all_categories),
+                            color = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                        onClick = { onCategorySelected(null); onDismissRequest() },
                         modifier = Modifier
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                            .then(
-                                if (selectedCategory == null) {
-                                    Modifier.background(
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        shape = MaterialTheme.shapes.small
-                                    )
-                                } else Modifier
-                            )
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(if (isAllSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
                     )
 
                     filteredCategories.forEach { category ->
+                        val isSelected = selectedCategory == category
                         DropdownMenuItem(
                             text = {
-                                Text(
-                                    category,
-                                    color = if (selectedCategory == category) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurface
-                                )
-                            }, onClick = {
-                                onCategorySelected(category)
-                                onDismissRequest()
-                            }, modifier = Modifier
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                                .then(
-                                    if (selectedCategory == category) {
-                                        Modifier.background(
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = MaterialTheme.shapes.small
-                                        )
-                                    } else Modifier
-                                )
-                        )
-                    }
-
-                    if (filteredCategories.isEmpty() && categorySearchQuery.isNotEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
                             Text(
-                                "无匹配分类",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = category,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
-                        }
+                        },
+                            onClick = { onCategorySelected(category); onDismissRequest() },
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                        )
                     }
                 }
             }

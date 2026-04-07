@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.usecase.vault.impl
 
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 
 class InsertEntryUseCase(private val repository: VaultRepository) {

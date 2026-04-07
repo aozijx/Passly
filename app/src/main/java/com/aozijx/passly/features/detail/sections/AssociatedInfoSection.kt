@@ -14,12 +14,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -43,9 +41,8 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.core.media.FaviconUtils
-import com.aozijx.passly.core.media.isRemoteIconPath
-import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.vault.VaultViewModel
 import kotlinx.coroutines.launch
@@ -78,7 +75,6 @@ fun AssociatedInfoSection(
     val domainLabel = stringResource(R.string.vault_detail_domain_label)
     val domainPlaceholder = stringResource(R.string.vault_detail_domain_placeholder)
     val notSet = stringResource(R.string.vault_detail_not_set)
-    val copied = stringResource(R.string.vault_detail_copied)
     val downloadIcon = stringResource(R.string.vault_detail_download_icon)
     val iconDownloadSuccess = stringResource(R.string.vault_detail_icon_download_success)
     val iconDownloadFailed = stringResource(R.string.vault_detail_icon_download_failed)
@@ -258,18 +254,6 @@ fun AssociatedInfoSection(
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                             )
                         }
-                        if (entry.associatedDomain != null) {
-                            IconButton(onClick = {
-                                ClipboardUtils.copy(context, entry.associatedDomain)
-                                Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                            }) {
-                                Icon(
-                                    Icons.Default.ContentCopy,
-                                    null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -345,18 +329,6 @@ fun AssociatedInfoSection(
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                         )
-                        if (entry.associatedDomain != null) {
-                            IconButton(onClick = {
-                                ClipboardUtils.copy(context, entry.associatedDomain)
-                                Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                            }) {
-                                Icon(
-                                    Icons.Default.ContentCopy,
-                                    null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -415,18 +387,6 @@ fun AssociatedInfoSection(
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                         )
-                        if (entry.associatedAppPackage != null) {
-                            IconButton(onClick = {
-                                ClipboardUtils.copy(context, entry.associatedAppPackage)
-                                Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                            }) {
-                                Icon(
-                                    Icons.Default.ContentCopy,
-                                    null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
                     }
                 }
             }

@@ -5,7 +5,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.FaviconUtils
-import com.aozijx.passly.core.media.isRemoteIconPath
+import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
 import com.aozijx.passly.data.local.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

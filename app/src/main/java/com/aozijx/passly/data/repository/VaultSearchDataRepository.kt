@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository
 
 import com.aozijx.passly.data.local.dao.VaultEntryDao
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import kotlinx.coroutines.flow.Flow
 

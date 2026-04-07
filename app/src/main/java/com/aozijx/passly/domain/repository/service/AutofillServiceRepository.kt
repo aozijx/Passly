@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.repository.service
 
 import com.aozijx.passly.domain.model.AutofillCandidate
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 interface AutofillServiceRepository {
     suspend fun updateUsageStats(entry: VaultEntry)

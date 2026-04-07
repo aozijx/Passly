@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.model
+package com.aozijx.passly.domain.model.core
 
 import java.io.Serializable
 

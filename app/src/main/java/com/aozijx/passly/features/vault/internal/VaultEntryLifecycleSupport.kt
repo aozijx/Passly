@@ -2,9 +2,13 @@ package com.aozijx.passly.features.vault.internal
 
 import android.content.Context
 import android.net.Uri
-import com.aozijx.passly.domain.model.FaviconResult
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.icon.FaviconResult
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 internal class VaultEntryLifecycleSupport(
     private val vaultUseCases: VaultUseCases,
@@ -27,6 +31,25 @@ internal class VaultEntryLifecycleSupport(
             )
             vaultUseCases.updateEntry(updatedEntry)
         }
+    }
+
+    /**
+     * 批量自动更新缺失的图标（针对 VaultSummary 列表）
+     */
+    fun autoUpdateMissingIcons(summaries: List<VaultSummary>, scope: CoroutineScope) {
+        summaries.filter { !it.associatedDomain.isNullOrBlank() && it.iconCustomPath.isNullOrBlank() }
+            .forEach { summary ->
+                scope.launch(Dispatchers.IO) {
+                    val outcome = vaultUseCases.downloadFavicon(summary.associatedDomain!!)
+                    if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                        // 获取完整实体并更新
+                        vaultUseCases.getEntryById(summary.id)?.let { entry ->
+                            val updated = entry.copy(iconCustomPath = outcome.filePath)
+                            vaultUseCases.updateEntry(updated)
+                        }
+                    }
+                }
+            }
     }
 
     suspend fun updateEntry(entry: VaultEntry) {

@@ -9,7 +9,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 @Composable
 fun DeleteConfirmDialog(

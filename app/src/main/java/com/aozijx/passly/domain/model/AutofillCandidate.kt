@@ -1,5 +1,7 @@
 package com.aozijx.passly.domain.model
 
+import com.aozijx.passly.domain.model.core.VaultEntry
+
 enum class AutofillMatchType {
     APP,
     DOMAIN,

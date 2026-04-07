@@ -1,11 +1,14 @@
 package com.aozijx.passly.features.vault.components.entries
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.base.VaultItem
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
+import com.aozijx.passly.features.vault.components.items.AutoFillItem
 import com.aozijx.passly.features.vault.components.items.TwoFAItem
 
 /**
@@ -44,6 +47,7 @@ object VaultCardStyleRegistry {
         onClick: () -> Unit = { viewModel.showDetail(entry) }
     ) {
         val isTotp = entry.totpSecret?.isNotBlank() == true
+        val isAutofill = entry.category == stringResource(R.string.category_autofill)
 
         // 核心渲染分发：
         // 1. DEFAULT 的最终落地样式由 UiTypes.resolveForEntryType 预先决策
@@ -51,15 +55,25 @@ object VaultCardStyleRegistry {
 
         when (style) {
             VaultCardStyle.DEFAULT -> {
-                if (isTotp) {
-                    TwoFAItem(
-                        entry = entry,
-                        vaultViewModel = viewModel,
-                        showCode = viewModel.showTOTPCode,
-                        onClick = onClick
-                    )
-                } else {
-                    VaultItem(entry = entry, viewModel = viewModel, onClick = onClick)
+                when {
+                    isTotp -> {
+                        TwoFAItem(
+                            entry = entry,
+                            vaultViewModel = viewModel,
+                            showCode = viewModel.showTOTPCode,
+                            onClick = onClick
+                        )
+                    }
+                    isAutofill -> {
+                        AutoFillItem(
+                            entry = entry,
+                            viewModel = viewModel,
+                            onClick = onClick
+                        )
+                    }
+                    else -> {
+                        VaultItem(entry = entry, viewModel = viewModel, onClick = onClick)
+                    }
                 }
             }
 

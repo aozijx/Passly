@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.repository.vault
 
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import kotlinx.coroutines.flow.Flow
 
 /**

@@ -31,7 +31,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.vault.VaultViewModel

@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.vault.components.topbar
+package com.aozijx.passly.features.vault.components.topbar.compoents
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -16,9 +16,7 @@ import com.aozijx.passly.core.designsystem.model.VaultTab
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTabRow(
-    selectedTab: VaultTab,
-    onTabSelected: (VaultTab) -> Unit,
-    modifier: Modifier = Modifier
+    selectedTab: VaultTab, onTabSelected: (VaultTab) -> Unit, modifier: Modifier = Modifier
 ) {
     SecondaryTabRow(
         selectedTabIndex = selectedTab.ordinal,
@@ -32,23 +30,19 @@ fun VaultTabRow(
         modifier = modifier
     ) {
         VaultTab.entries.forEach { tab ->
-            Tab(
-                selected = selectedTab == tab,
-                onClick = { onTabSelected(tab) },
-                text = {
-                    Text(
-                        text = stringResource(
-                            when (tab) {
-                                VaultTab.ALL -> R.string.vault_tab_all
-                                VaultTab.PASSWORDS -> R.string.vault_tab_passwords
-                                VaultTab.TOTP -> R.string.vault_tab_totp
-                            }
-                        ),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
-            )
+            Tab(selected = selectedTab == tab, onClick = { onTabSelected(tab) }, text = {
+                Text(
+                    text = stringResource(
+                        when (tab) {
+                            VaultTab.ALL -> R.string.vault_tab_all
+                            VaultTab.PASSWORDS -> R.string.vault_tab_passwords
+                            VaultTab.TOTP -> R.string.vault_tab_totp
+                        }
+                    ),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                )
+            })
         }
     }
 }

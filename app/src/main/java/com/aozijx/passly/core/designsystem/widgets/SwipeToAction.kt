@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt

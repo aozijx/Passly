@@ -3,7 +3,7 @@ package com.aozijx.passly.service.autofill.presentation
 import android.content.Context
 import android.widget.RemoteViews
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 object AutofillRemoteViewFactory {
 

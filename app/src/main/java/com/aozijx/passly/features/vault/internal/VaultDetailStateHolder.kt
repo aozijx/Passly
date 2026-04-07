@@ -4,7 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.core.designsystem.model.AddType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 internal class VaultDetailStateHolder {
     var addType by mutableStateOf(AddType.NONE)

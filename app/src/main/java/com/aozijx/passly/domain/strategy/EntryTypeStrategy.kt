@@ -3,7 +3,7 @@ package com.aozijx.passly.domain.strategy
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.domain.model.FieldGroup
 import com.aozijx.passly.domain.model.FieldKey
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 /**
  * 条目类型策略基类

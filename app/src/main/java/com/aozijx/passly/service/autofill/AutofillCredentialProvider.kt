@@ -2,7 +2,7 @@ package com.aozijx.passly.service.autofill
 
 import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 /**
  * 自动填充凭据提供器

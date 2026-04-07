@@ -17,8 +17,8 @@ import com.aozijx.passly.core.designsystem.state.TotpState
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.mapper.toSummary
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.features.vault.internal.VaultAutofillSupport
 import com.aozijx.passly.features.vault.internal.VaultCryptoSupport
@@ -135,10 +135,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         debouncedSearchQuery = searchFilterState.debouncedSearchQuery, // 1. 使用去抖动的搜索流
         normalizedSelectedCategory = searchFilterState.normalizedSelectedCategory, // 2. 使用标准化的分类流
         distinctSelectedTab = searchFilterState.distinctSelectedTab // 3. 使用去重的 Tab 流
-    ).onEach {
+    ).onEach { items ->
         if (_isVaultItemsLoading.value) {
             _isVaultItemsLoading.value = false
         }
+        // 自动运行：当列表更新时，检查并自动补充缺失图标
+        entryLifecycleSupport.autoUpdateMissingIcons(items, viewModelScope)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

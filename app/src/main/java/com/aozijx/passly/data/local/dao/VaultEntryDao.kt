@@ -8,7 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.local.config.DatabaseConfig
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import kotlinx.coroutines.flow.Flow
 
 @Dao

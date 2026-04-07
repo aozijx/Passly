@@ -56,7 +56,7 @@ import com.aozijx.passly.core.designsystem.model.ImageType
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.qr.ScannerViewModel
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel
 import java.net.URLDecoder
 

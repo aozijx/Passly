@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.repository.vault
 
-import com.aozijx.passly.domain.model.VaultHistory
+import com.aozijx.passly.domain.model.core.VaultHistory
 import kotlinx.coroutines.flow.Flow
 
 interface HistoryRepository {

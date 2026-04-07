@@ -88,6 +88,7 @@ fun IconPickerDialog(
                     item {
                         Box(
                             modifier = Modifier
+                                .size(52.dp)
                                 .aspectRatio(1f)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(
@@ -158,6 +159,3 @@ private fun IconItem(
         }
     }
 }
-
-
-

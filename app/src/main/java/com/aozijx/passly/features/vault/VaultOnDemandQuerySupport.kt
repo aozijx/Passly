@@ -1,7 +1,7 @@
 package com.aozijx.passly.features.vault
 
 import com.aozijx.passly.core.designsystem.model.VaultTab
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import kotlinx.coroutines.ExperimentalCoroutinesApi

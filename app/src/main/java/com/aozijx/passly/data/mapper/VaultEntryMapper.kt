@@ -2,8 +2,8 @@ package com.aozijx.passly.data.mapper
 
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultHistory
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 
 fun VaultEntryEntity.toDomain(): VaultEntry = VaultEntry(
     id = id,
