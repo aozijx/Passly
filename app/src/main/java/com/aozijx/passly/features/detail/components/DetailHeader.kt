@@ -32,9 +32,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
-import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.core.designsystem.base.VaultItemIcon
+import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.icon.VaultIconInfo
 
 @Composable
 fun DetailHeader(
@@ -44,7 +45,9 @@ fun DetailHeader(
     trailingText: String? = null
 ) {
     val context = LocalContext.current
-    val localImageModel = remember(item.iconCustomPath) { toLocalIconImageModel(item.iconCustomPath) }
+    // 增加 item.updatedAt 作为 key，确保当文件内容更新（即便路径没变）时也能刷新
+    val localImageModel =
+        remember(item.iconCustomPath, item.updatedAt) { toLocalIconImageModel(item.iconCustomPath) }
     val hasCustomPath = localImageModel != null
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -61,6 +64,8 @@ fun DetailHeader(
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(localImageModel)
+                        .memoryCacheKey("${localImageModel}_${item.updatedAt}")
+                        .diskCacheKey("${localImageModel}_${item.updatedAt}")
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
@@ -91,8 +96,7 @@ fun DetailHeader(
             }
             Spacer(Modifier.height(12.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = item.title,
@@ -112,8 +116,7 @@ fun DetailHeader(
         } else {
             // 默认图标模式
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     onClick = onIconClick,
@@ -123,7 +126,13 @@ fun DetailHeader(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         VaultItemIcon(
-                            item = item,
+                            VaultIconInfo(
+                                iconName = item.iconName,
+                                iconCustomPath = item.iconCustomPath,
+                                associatedDomain = item.associatedDomain,
+                                associatedAppPackage = item.associatedAppPackage,
+                                category = item.category
+                            ),
                             modifier = Modifier.size(28.dp),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )

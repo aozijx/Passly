@@ -1,7 +1,7 @@
 package com.aozijx.passly.features.detail.page.internal
 
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 
 internal data class DetailEntryAnalysis(

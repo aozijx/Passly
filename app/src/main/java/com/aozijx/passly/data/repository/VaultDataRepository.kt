@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toEntity
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

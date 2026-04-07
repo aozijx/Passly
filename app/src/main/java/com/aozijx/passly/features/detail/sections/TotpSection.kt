@@ -10,8 +10,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.state.TotpEditState
+import com.aozijx.passly.core.designsystem.state.TotpState
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.components.TotpCodeCard
 import com.aozijx.passly.features.detail.sections.dialogs.EditTotpSection
@@ -21,7 +22,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
 fun TotpSection(
     modifier: Modifier = Modifier,
     entry: VaultEntry,
-    currentState: com.aozijx.passly.core.designsystem.state.TotpState?,
+    currentState: TotpState?,
     isSteam: Boolean,
     totpEditState: TotpEditState,
     showQrDialog: () -> Unit,
@@ -55,6 +56,3 @@ fun TotpSection(
         }
     }
 }
-
-
-

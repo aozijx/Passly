@@ -1,7 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.FieldDefinition
+import com.aozijx.passly.domain.model.FieldGroup
+import com.aozijx.passly.domain.model.FieldType
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
@@ -42,6 +45,28 @@ class SeedPhraseEntryStrategy : EntryTypeStrategy {
         return entry.copy(
             category = suggestedCategory(),
             notes = entry.notes ?: "备份好这个助记词，永远不要分享给任何人"
+        )
+    }
+
+    override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
+        return listOf(
+            FieldGroup(
+                title = "钱包信息", fields = listOf(
+                    FieldDefinition("title", "名称", isRequired = true), FieldDefinition(
+                        "cryptoSeedPhrase",
+                        "助记词",
+                        isSensitive = true,
+                        isRequired = true,
+                        fieldType = FieldType.TEXTAREA
+                    ), FieldDefinition(
+                        "password", "钱包密码", isSensitive = true, fieldType = FieldType.PASSWORD
+                    ), FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
+                )
+            ), FieldGroup(
+                title = "其他", fields = listOf(
+                    FieldDefinition("notes", "备注", fieldType = FieldType.TEXTAREA)
+                )
+            )
         )
     }
 }

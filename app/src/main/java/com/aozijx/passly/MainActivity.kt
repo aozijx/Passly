@@ -48,7 +48,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.designsystem.components.PlainExportDialog
 import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
 import com.aozijx.passly.data.local.config.DatabaseConfig
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.page.DetailScreen
 import com.aozijx.passly.features.settings.SettingsScreen
 import com.aozijx.passly.features.settings.SettingsViewModel

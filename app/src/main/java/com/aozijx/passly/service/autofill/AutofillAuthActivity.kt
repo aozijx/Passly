@@ -19,7 +19,7 @@ import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.otp.TwoFAUtils
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 

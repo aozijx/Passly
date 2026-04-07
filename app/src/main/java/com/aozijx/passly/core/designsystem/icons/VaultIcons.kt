@@ -1,9 +1,6 @@
 package com.aozijx.passly.core.designsystem.icons
 
 import android.content.Context
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalance
@@ -45,23 +42,8 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.aozijx.passly.R
-import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.core.platform.rememberAppIconPainter
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultSummary
 
 /**
  * 集中管理所有可选图标映射
@@ -118,123 +100,19 @@ object VaultIcons {
             Icons.Default.Key
         }
     }
-    
+
     fun getIconByRes(resId: Int?): ImageVector {
         return allIcons[resId] ?: Icons.Default.Key
     }
 }
 
-@Composable
-fun VaultItemIcon(
-    item: VaultEntry,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
-) {
-    VaultItemIcon(info = item.toIconInfo(), modifier = modifier, tint = tint)
-}
-
-@Composable
-fun VaultItemIcon(
-    item: VaultSummary,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
-) {
-    VaultItemIcon(info = item.toIconInfo(), modifier = modifier, tint = tint)
-}
-
-private data class VaultIconInfo(
-    val iconName: String?,
-    val iconCustomPath: String?,
-    val associatedAppPackage: String?,
-    val category: String
-)
-
-private fun VaultEntry.toIconInfo(): VaultIconInfo = VaultIconInfo(
-    iconName = iconName,
-    iconCustomPath = iconCustomPath,
-    associatedAppPackage = associatedAppPackage,
-    category = category
-)
-
-private fun VaultSummary.toIconInfo(): VaultIconInfo = VaultIconInfo(
-    iconName = iconName,
-    iconCustomPath = iconCustomPath,
-    associatedAppPackage = associatedAppPackage,
-    category = category
-)
-
-@Composable
-private fun VaultItemIcon(
-    info: VaultIconInfo,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
-) {
-    val localImageModel = remember(info.iconCustomPath) { toLocalIconImageModel(info.iconCustomPath) }
-
-    if (localImageModel != null) {
-        AsyncImage(
-            model = localImageModel,
-            contentDescription = null,
-            modifier = modifier.size(36.dp).clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
-    } else if (!info.associatedAppPackage.isNullOrEmpty()) {
-        val iconPainter = rememberAppIconPainter(
-            packageName = info.associatedAppPackage
-        )
-        if (iconPainter != null) {
-            Image(
-                painter = iconPainter,
-                contentDescription = null,
-                modifier = modifier.size(36.dp).clip(CircleShape),
-                contentScale = ContentScale.Fit
-            )
-        } else {
-            FallbackIcon(modifier, tint, info)
-        }
-    } else {
-        FallbackIcon(modifier, tint, info)
-    }
-}
-
-@Composable
-private fun FallbackIcon(
-    modifier: Modifier,
-    tint: Color,
-    info: VaultIconInfo? = null
-) {
-    val context = LocalContext.current
-    val icon = remember(info?.iconName, info?.category) {
-        if (info != null) {
-            val resId = info.iconName?.toIntOrNull()
-            if (resId != null) {
-                VaultIcons.getIconByRes(resId)
-            } else if (!info.iconName.isNullOrEmpty()) {
-                VaultIcons.getIconByName(info.iconName)
-            } else {
-                getCategoryIcon(context, info.category)
-            }
-        } else {
-            Icons.Default.Key
-        }
-    }
-    Icon(
-        imageVector = icon,
-        contentDescription = null,
-        tint = tint,
-        modifier = modifier.size(24.dp)
-    )
-}
-
 /**
  * 类别到图标的语义映射
- * 优化：从资源加载关键词，支持多语言动态匹配
  */
 fun getCategoryIcon(context: Context, category: String): ImageVector {
     val input = category.trim()
     val res = context.resources
-    
-    // 定义匹配辅助函数
+
     fun isMatch(arrayId: Int): Boolean = res.getStringArray(arrayId).contains(input)
 
     return when {
@@ -259,5 +137,3 @@ fun getCategoryIcon(context: Context, category: String): ImageVector {
         else -> Icons.Default.Key
     }
 }
-
-

@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.model
+package com.aozijx.passly.domain.model.icon
 
 enum class FaviconResult {
     SUCCESS,

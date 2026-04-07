@@ -3,7 +3,7 @@ package com.aozijx.passly.core.security.otp
 import android.util.Base64
 import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import java.nio.ByteBuffer
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec

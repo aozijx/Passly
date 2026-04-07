@@ -1,7 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.FieldDefinition
+import com.aozijx.passly.domain.model.FieldGroup
+import com.aozijx.passly.domain.model.FieldType
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
@@ -37,8 +40,41 @@ class SshKeyEntryStrategy : EntryTypeStrategy {
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
         return entry.copy(
-            category = suggestedCategory(),
-            notes = entry.notes ?: "SSH 连接凭据"
+            category = suggestedCategory(), notes = entry.notes ?: "SSH 连接凭据"
+        )
+    }
+
+    override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
+        return listOf(
+            FieldGroup(
+                title = "基本信息", fields = listOf(
+                    FieldDefinition("title", "名称", isRequired = true),
+                    FieldDefinition("username", "用户名"),
+                    FieldDefinition(
+                        "sshPrivateKey",
+                        "SSH 私钥",
+                        isSensitive = true,
+                        isRequired = true,
+                        fieldType = FieldType.TEXTAREA
+                    ),
+                    FieldDefinition(
+                        "password",
+                        "密钥口令 (Passphrase)",
+                        isSensitive = true,
+                        fieldType = FieldType.PASSWORD
+                    ),
+                    FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
+                )
+            ), FieldGroup(
+                title = "连接详情", fields = listOf(
+                    FieldDefinition("uriList", "主机/地址", fieldType = FieldType.URL),
+                    FieldDefinition("sshPublicKey", "SSH 公钥", fieldType = FieldType.TEXTAREA)
+                )
+            ), FieldGroup(
+                title = "其他", fields = listOf(
+                    FieldDefinition("notes", "备注", fieldType = FieldType.TEXTAREA)
+                )
+            )
         )
     }
 }

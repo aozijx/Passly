@@ -31,8 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.core.designsystem.base.VaultItemIcon
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.icon.VaultIconInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,7 +117,13 @@ private fun CandidateItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             VaultItemIcon(
-                item = entry,
+                info = VaultIconInfo(
+                    iconName = entry.iconName,
+                    iconCustomPath = entry.iconCustomPath,
+                    associatedDomain = entry.associatedDomain,
+                    associatedAppPackage = entry.associatedAppPackage,
+                    category = entry.category
+                ),
                 modifier = Modifier.size(32.dp)
             )
 

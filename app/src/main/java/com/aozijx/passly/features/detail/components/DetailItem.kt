@@ -26,11 +26,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun DetailItem(
-    label: String,
-    value: String,
-    isRevealed: Boolean,
-    onCopy: () -> Unit,
-    onEdit: () -> Unit
+    label: String, value: String, isRevealed: Boolean, onCopy: () -> Unit, onEdit: () -> Unit
 ) {
     Surface(
         onClick = { if (isRevealed) onEdit() else onCopy() },
@@ -73,10 +69,7 @@ fun DetailItem(
 
 @Composable
 fun EditTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    onSave: () -> Unit
+    value: String, onValueChange: (String) -> Unit, label: String, onSave: () -> Unit
 ) {
     OutlinedTextField(
         value = value,
@@ -92,6 +85,3 @@ fun EditTextField(
         singleLine = true
     )
 }
-
-
-

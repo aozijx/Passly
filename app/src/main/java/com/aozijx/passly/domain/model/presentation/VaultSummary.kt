@@ -1,4 +1,6 @@
-package com.aozijx.passly.domain.model
+package com.aozijx.passly.domain.model.presentation
+
+import com.aozijx.passly.domain.model.icon.VaultIconable
 
 /**
  * 列表展示用的轻量模型（不依赖 Room）。
@@ -7,13 +9,13 @@ package com.aozijx.passly.domain.model
 data class VaultSummary(
     val id: Int,
     val title: String,
-    val category: String,
+    override val category: String,
     val entryType: Int = 0,
     val username: String,
-    val iconName: String? = null,
-    val iconCustomPath: String? = null,
-    val associatedAppPackage: String? = null,
-    val associatedDomain: String? = null,
+    override val iconName: String? = null,
+    override val iconCustomPath: String? = null,
+    override val associatedAppPackage: String? = null,
+    override val associatedDomain: String? = null,
     val totpSecret: String? = null,
     val totpPeriod: Int = 30,
     val totpDigits: Int = 6,
@@ -21,4 +23,4 @@ data class VaultSummary(
     val favorite: Boolean = false,
     val createdAt: Long? = null,
     val updatedAt: Long? = null
-)
+) : VaultIconable

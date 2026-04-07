@@ -40,8 +40,7 @@ fun TotpCodeCard(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -52,7 +51,12 @@ fun TotpCodeCard(
             )
             if (onQrClick != null) {
                 IconButton(onClick = onQrClick, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.QrCode, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.Default.QrCode,
+                        null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
@@ -63,7 +67,11 @@ fun TotpCodeCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (onCodeClick != null) Modifier.clickable(onClick = onCodeClick) else Modifier),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                    alpha = 0.2f
+                )
+            ),
             shape = RoundedCornerShape(12.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
         ) {
@@ -72,29 +80,28 @@ fun TotpCodeCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val displayText = if (isSteam) (currentState?.code ?: "------") else (currentState?.code?.chunked(3)?.joinToString(" ") ?: "------")
+                val displayText =
+                    if (isSteam) (currentState?.code ?: "------") else (currentState?.code?.chunked(
+                        3
+                    )?.joinToString(" ") ?: "------")
                 Text(
-                    text = displayText,
-                    style = MaterialTheme.typography.headlineMedium.copy(
+                    text = displayText, style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = if (isSteam) 4.sp else 2.sp,
                         fontFamily = FontFamily.Monospace
-                    ),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
+                    ), color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(24.dp))
                 CircularProgressIndicator(
                     progress = { currentState?.progress ?: 0f },
                     modifier = Modifier.size(28.dp),
                     strokeWidth = 4.dp,
-                    color = if ((currentState?.progress ?: 1f) < 0.2f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    color = if ((currentState?.progress
+                            ?: 1f) < 0.2f
+                    ) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 )
             }
         }
     }
 }
-
-
-

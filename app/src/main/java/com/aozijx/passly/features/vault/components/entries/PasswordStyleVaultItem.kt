@@ -40,10 +40,11 @@ import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
+import com.aozijx.passly.core.designsystem.base.VaultItemIcon
 import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
-import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
+import com.aozijx.passly.domain.model.icon.VaultIconInfo
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
 private object PasswordCardPaletteCache {
@@ -173,7 +174,15 @@ fun PasswordStyleVaultItem(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(VaultCardStyleTokens.Password.contentPadding)
                 ) {
-                    VaultItemIcon(item = entry)
+                    VaultItemIcon(
+                        VaultIconInfo(
+                            iconName = entry.iconName,
+                            iconCustomPath = entry.iconCustomPath,
+                            associatedDomain = entry.associatedDomain,
+                            associatedAppPackage = entry.associatedAppPackage,
+                            category = entry.category
+                        )
+                    )
                     Spacer(modifier = Modifier.width(VaultCardStyleTokens.Password.iconTextSpacing))
 
                     Column(modifier = Modifier.weight(1f)) {

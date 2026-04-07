@@ -4,7 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.di.AppContainer
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.icon.FaviconResult
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.features.detail.page.DetailEvent
 import com.aozijx.passly.features.detail.page.DetailUiState
@@ -29,9 +30,13 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
     fun onEvent(event: DetailEvent): VaultEntry? {
         return when (event) {
             is DetailEvent.Initialize -> {
+                // --- 修复点：立即同步刷新状态，防止一闪而过的旧数据 ---
+                refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
+                
                 viewModelScope.launch {
                     val latest = vaultUseCases.getEntryById(event.initialEntry.id) ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
+                    autoDownloadFavicon(latest)
                 }
                 null
             }
@@ -89,6 +94,20 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                 val updated = current.copy(favorite = !current.favorite)
                 refreshFromEntry(updated, _uiState.value.isEditingTitle, _uiState.value.editedTitle)
                 updated
+            }
+        }
+    }
+
+    private fun autoDownloadFavicon(entry: VaultEntry) {
+        val domain = entry.associatedDomain
+        if (!domain.isNullOrBlank() && entry.iconCustomPath.isNullOrBlank()) {
+            viewModelScope.launch {
+                val outcome = vaultUseCases.downloadFavicon(domain)
+                if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                    val updatedEntry = entry.copy(iconCustomPath = outcome.filePath)
+                    vaultUseCases.updateEntry(updatedEntry)
+                    refreshFromEntry(updatedEntry, _uiState.value.isEditingTitle, _uiState.value.editedTitle)
+                }
             }
         }
     }

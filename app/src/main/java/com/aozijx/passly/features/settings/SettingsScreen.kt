@@ -215,19 +215,19 @@ fun SettingsScreen(
         }
     }
 
-    if (showLeftActionDialog) {
-        SwipeActionSelectDialog(
-            "选择左滑动作",
-            swipeLeftAction,
-            { viewModel.setSwipeLeftAction(it); showLeftActionDialog = false },
-            { showLeftActionDialog = false })
-    }
     if (showRightActionDialog) {
         SwipeActionSelectDialog(
             "选择右滑动作",
             swipeRightAction,
             { viewModel.setSwipeRightAction(it); showRightActionDialog = false },
             { showRightActionDialog = false })
+    }
+    if (showLeftActionDialog) {
+        SwipeActionSelectDialog(
+            "选择左滑动作",
+            swipeLeftAction,
+            { viewModel.setSwipeLeftAction(it); showLeftActionDialog = false },
+            { showLeftActionDialog = false })
     }
     if (showLockTimeoutDialog) {
         LockTimeoutDialog(currentTimeoutMs = lockTimeout, onTimeoutSelected = {

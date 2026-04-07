@@ -12,7 +12,7 @@ import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.AutofillMatchType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
