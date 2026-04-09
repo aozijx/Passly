@@ -42,14 +42,16 @@ fun SwipeActionSelectDialog(
                     val isSelected = action == currentAction
                     val selectedBackground = when (action) {
                         SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer
-                        SwipeActionType.COPY_PASSWORD -> MaterialTheme.colorScheme.secondaryContainer
+                        SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer
+
                         SwipeActionType.EDIT -> MaterialTheme.colorScheme.tertiaryContainer
                         SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer
                         SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant
                     }
                     val selectedContentColor = when (action) {
                         SwipeActionType.DELETE -> MaterialTheme.colorScheme.onErrorContainer
-                        SwipeActionType.COPY_PASSWORD -> MaterialTheme.colorScheme.onSecondaryContainer
+                        SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.onSecondaryContainer
+
                         SwipeActionType.EDIT -> MaterialTheme.colorScheme.onTertiaryContainer
                         SwipeActionType.DETAIL -> MaterialTheme.colorScheme.onPrimaryContainer
                         SwipeActionType.DISABLED -> MaterialTheme.colorScheme.onSurfaceVariant

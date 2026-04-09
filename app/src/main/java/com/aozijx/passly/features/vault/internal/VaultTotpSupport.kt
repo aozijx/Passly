@@ -2,7 +2,7 @@ package com.aozijx.passly.features.vault.internal
 
 import com.aozijx.passly.core.designsystem.state.TotpState
 import com.aozijx.passly.domain.model.TotpConfig
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import kotlinx.coroutines.delay
 
 internal class VaultTotpSupport {

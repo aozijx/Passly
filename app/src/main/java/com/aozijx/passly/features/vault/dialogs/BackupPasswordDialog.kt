@@ -11,10 +11,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.backup.BackupManager
+import com.aozijx.passly.core.backup.BackupImportMode
 import com.aozijx.passly.features.settings.SettingsViewModel
 
 /**
@@ -34,9 +35,7 @@ import com.aozijx.passly.features.settings.SettingsViewModel
  */
 @Composable
 fun BackupPasswordDialog(
-    activity: FragmentActivity, 
-    mainViewModel: MainViewModel,
-    settingsViewModel: SettingsViewModel
+    activity: FragmentActivity, mainViewModel: MainViewModel, settingsViewModel: SettingsViewModel
 ) {
     val context = LocalContext.current
     val authTitle = stringResource(R.string.vault_backup_auth_title)
@@ -48,6 +47,7 @@ fun BackupPasswordDialog(
 
     AlertDialog(
         onDismissRequest = { settingsViewModel.dismissBackupPasswordDialog() },
+        modifier = Modifier.padding(horizontal = 24.dp),
         title = {
             Text(
                 if (settingsViewModel.isExporting) stringResource(R.string.vault_backup_title_export)
@@ -55,101 +55,149 @@ fun BackupPasswordDialog(
             )
         },
         text = {
-            Column {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // 1. 导入模式选择 (仅在导入时显示)
+                if (!settingsViewModel.isExporting) {
+                    Text(
+                        text = stringResource(R.string.backup_import_mode_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = settingsViewModel.importMode == BackupImportMode.OVERWRITE,
+                                    onClick = {
+                                        settingsViewModel.importMode = BackupImportMode.OVERWRITE
+                                    },
+                                    role = Role.RadioButton
+                                )
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = settingsViewModel.importMode == BackupImportMode.OVERWRITE,
+                                onClick = {
+                                    settingsViewModel.importMode = BackupImportMode.OVERWRITE
+                                })
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.backup_import_mode_overwrite_title),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    text = stringResource(R.string.backup_import_mode_overwrite_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = settingsViewModel.importMode == BackupImportMode.APPEND,
+                                    onClick = {
+                                        settingsViewModel.importMode = BackupImportMode.APPEND
+                                    },
+                                    role = Role.RadioButton
+                                )
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = settingsViewModel.importMode == BackupImportMode.APPEND,
+                                onClick = {
+                                    settingsViewModel.importMode = BackupImportMode.APPEND
+                                })
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.backup_import_mode_append_title),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    text = stringResource(R.string.backup_import_mode_append_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // 2. 导出选项：是否包含图片 (仅在导出时显示)
+                if (settingsViewModel.isExporting) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.backup_include_media_title),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.backup_include_media_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                        Switch(
+                            checked = settingsViewModel.includeImagesInBackup,
+                            onCheckedChange = { settingsViewModel.includeImagesInBackup = it })
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // 3. 提示文本
                 Text(
                     text = if (settingsViewModel.isExporting) stringResource(R.string.vault_backup_message_export)
                     else stringResource(R.string.vault_backup_message_import),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 4. 密码输入框
+                OutlinedTextField(
                     value = settingsViewModel.backupPassword,
                     onValueChange = { settingsViewModel.backupPassword = it },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
-                    label = { Text(passwordLabel) }
+                    label = { Text(passwordLabel) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
                 )
-                
-                if (!settingsViewModel.isExporting) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "导入模式",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = settingsViewModel.importMode == BackupManager.ImportMode.OVERWRITE,
-                                    onClick = { settingsViewModel.importMode = BackupManager.ImportMode.OVERWRITE },
-                                    role = Role.RadioButton
-                                )
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = settingsViewModel.importMode == BackupManager.ImportMode.OVERWRITE,
-                                onClick = { settingsViewModel.importMode = BackupManager.ImportMode.OVERWRITE }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(text = "覆盖现有数据", style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    text = "删除所有现有数据，然后导入备份内容",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                            }
-                        }
-                        
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = settingsViewModel.importMode == BackupManager.ImportMode.APPEND,
-                                    onClick = { settingsViewModel.importMode = BackupManager.ImportMode.APPEND },
-                                    role = Role.RadioButton
-                                )
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = settingsViewModel.importMode == BackupManager.ImportMode.APPEND,
-                                onClick = { settingsViewModel.importMode = BackupManager.ImportMode.APPEND }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(text = "追加新数据", style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    text = "保留现有数据，将备份内容追加到数据库中",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                            }
-                        }
-                    }
-                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (settingsViewModel.backupPassword.isNotEmpty()) {
-                        val authSubtitle = if (settingsViewModel.isExporting) authSubtitleExport else authSubtitleImport
-                        mainViewModel.authenticate(
-                            activity = activity,
-                            title = authTitle,
-                            subtitle = authSubtitle
-                        ) {
-                            settingsViewModel.processBackupAction(context)
-                        }
-                    }
-                }
-            ) {
+                    val canProceed = settingsViewModel.isExporting
+                        .let { isExport -> if (isExport) settingsViewModel.backupPassword.isNotEmpty() else true }
+                    if (canProceed) {
+                         val authSubtitle =
+                             if (settingsViewModel.isExporting) authSubtitleExport else authSubtitleImport
+                         mainViewModel.authenticate(
+                             activity = activity, title = authTitle, subtitle = authSubtitle
+                         ) {
+                             settingsViewModel.processBackupAction(context)
+                         }
+                     }
+                 }) {
                 Text(confirmText)
             }
         },
@@ -157,10 +205,5 @@ fun BackupPasswordDialog(
             TextButton(onClick = { settingsViewModel.dismissBackupPasswordDialog() }) {
                 Text(cancelText)
             }
-        }
-    )
+        })
 }
-
-
-
-

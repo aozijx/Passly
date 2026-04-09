@@ -50,13 +50,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.ui.ImageType
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.components.ScannerView
+import com.aozijx.passly.core.designsystem.model.ImageType
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.qr.ScannerViewModel
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel
 import java.net.URLDecoder
 
@@ -99,9 +99,11 @@ fun VaultScanner(
         scannerViewModel.decodeImage(context, uri)
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Black)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
         ScannerView(
             scanResult = scanResult,
             showResultCard = scannedTotp == null,
@@ -109,8 +111,7 @@ fun VaultScanner(
                 if (scannedTotp != null) return@ScannerView
                 scannerViewModel.onBarcodeDetected(context, barcode)
             },
-            onPermissionDenied = { onDismiss() }
-        )
+            onPermissionDenied = { onDismiss() })
 
         Row(
             modifier = Modifier
@@ -179,8 +180,7 @@ fun VaultScanner(
                         )
                         Text(
                             text = stringResource(
-                                R.string.vault_scanner_result_account,
-                                totp.label
+                                R.string.vault_scanner_result_account, totp.label
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
@@ -203,10 +203,8 @@ fun VaultScanner(
                             Button(
                                 onClick = {
                                     val isSteam = (totp.issuer?.contains(
-                                        "Steam",
-                                        ignoreCase = true
-                                    ) == true) ||
-                                            (totp.label.contains("Steam", ignoreCase = true))
+                                        "Steam", ignoreCase = true
+                                    ) == true) || (totp.label.contains("Steam", ignoreCase = true))
 
                                     try {
                                         // 核心修复：直接使用简化后的加密逻辑
@@ -232,9 +230,7 @@ fun VaultScanner(
                                         Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT)
                                             .show()
                                     }
-                                },
-                                modifier = Modifier.weight(2f),
-                                shape = RoundedCornerShape(8.dp)
+                                }, modifier = Modifier.weight(2f), shape = RoundedCornerShape(8.dp)
                             ) {
                                 Icon(
                                     Icons.Default.Save,

@@ -40,10 +40,11 @@ import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.aozijx.passly.core.common.ui.VaultCardStyleTokens
-import com.aozijx.passly.core.designsystem.icons.VaultItemIcon
-import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.core.designsystem.base.VaultItemIcon
+import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
+import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
+import com.aozijx.passly.domain.model.icon.VaultIconInfo
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
 private object PasswordCardPaletteCache {
@@ -98,17 +99,13 @@ fun PasswordStyleVaultItem(
         }
 
         runCatching {
-            val request = ImageRequest.Builder(context)
-                .data(imageModel)
-                .allowHardware(false)
-                .build()
+            val request =
+                ImageRequest.Builder(context).data(imageModel).allowHardware(false).build()
             val result = context.imageLoader.execute(request)
             (result as? SuccessResult)?.drawable?.toBitmap()
         }.getOrNull()?.let { bitmap ->
             val palette = Palette.from(bitmap).clearFilters().generate()
-            val swatch = palette.vibrantSwatch
-                ?: palette.dominantSwatch
-                ?: palette.mutedSwatch
+            val swatch = palette.vibrantSwatch ?: palette.dominantSwatch ?: palette.mutedSwatch
             swatch?.let {
                 val accent = Color(it.rgb)
                 val onAccent = Color(it.bodyTextColor)
@@ -146,7 +143,11 @@ fun PasswordStyleVaultItem(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = VaultCardStyleTokens.Password.elevation)
     ) {
-        Box(modifier = Modifier.fillMaxWidth().clip(corner)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(corner)
+        ) {
             if (!imageModel.isNullOrBlank()) {
                 AsyncImage(
                     model = imageModel,
@@ -166,12 +167,22 @@ fun PasswordStyleVaultItem(
                         )
                     )
             )
-            Surface(color = Color.Transparent, tonalElevation = 0.dp, modifier = Modifier.fillMaxWidth()) {
+            Surface(
+                color = Color.Transparent, tonalElevation = 0.dp, modifier = Modifier.fillMaxWidth()
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(VaultCardStyleTokens.Password.contentPadding)
                 ) {
-                    VaultItemIcon(item = entry)
+                    VaultItemIcon(
+                        VaultIconInfo(
+                            iconName = entry.iconName,
+                            iconCustomPath = entry.iconCustomPath,
+                            associatedDomain = entry.associatedDomain,
+                            associatedAppPackage = entry.associatedAppPackage,
+                            category = entry.category
+                        )
+                    )
                     Spacer(modifier = Modifier.width(VaultCardStyleTokens.Password.iconTextSpacing))
 
                     Column(modifier = Modifier.weight(1f)) {
@@ -231,4 +242,3 @@ fun PasswordStyleVaultItem(
         }
     }
 }
-

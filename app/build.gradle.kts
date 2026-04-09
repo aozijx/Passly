@@ -171,6 +171,9 @@ dependencies {
     // Markdown
     implementation(libs.markdown.renderer)
 
+    // Security KDF
+    implementation(libs.argon2kt)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

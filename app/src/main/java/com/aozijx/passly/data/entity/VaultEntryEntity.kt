@@ -1,15 +1,25 @@
 package com.aozijx.passly.data.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.data.local.config.DatabaseConfig
 import java.io.Serializable
 
 /**
- * 主表：保险库条目 (v5 深度扩展版)
+ * 主表：保险库条目 (v5 深度扩展版 - 移除 BLOB 存储)
  * 核心设计：支持结构化存储多种安全凭据，所有敏感字段均预留加密存储空间。
+ * 备注：图标等大文件不再存储在数据库 BLOB 中，统一通过 iconCustomPath 引用本地文件系统。
  */
-@Entity(tableName = DatabaseConfig.TABLE_ENTRIES)
+@Entity(
+    tableName = DatabaseConfig.TABLE_ENTRIES,
+    indices = [
+        Index(value = ["favorite", "usageCount", "createdAt"]),
+        Index(value = ["category"]),
+        Index(value = ["createdAt"]),
+        Index(value = ["usageCount"])
+    ]
+)
 data class VaultEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,           // 标题（如：谷歌、招行、公司WiFi）
@@ -34,7 +44,7 @@ data class VaultEntryEntity(
     val hardwareKeyInfo: String? = null,  // 关联的硬件密钥备注 (如 "YubiKey 5C")
 
     // --- WiFi 特化配置 ---
-    val wifiEncryptionType: String? = "WPA", // WiFi 加密协议 (WPA, WEP, nopass)
+    val wifiSecurityType: String? = "WPA", // WiFi 加密协议 (WPA, WEP, nopass)
     val wifiIsHidden: Boolean = false,       // 是否为隐藏 SSID
 
     // --- 金融与证件加固 ---
@@ -42,8 +52,15 @@ data class VaultEntryEntity(
     val cardExpiration: String? = null,  // 加密后的有效期 (MM/YY)
     val idNumber: String? = null,        // 加密后的证件号码 (身份证/护照)
 
+    // --- 支付与金融 ---
+    val paymentPin: String? = null,         // 加密后的支付专用 PIN / 6位数字
+    val paymentPlatform: String? = null,    // 支付渠道标识 (如 "Alipay", "WeChat", "PayPal"，用于 UI 图标匹配)
+
+    // --- 密保与恢复 ---
+    val securityQuestion: String? = null,   // 安全问题 (如：您母亲的姓名)
+    val securityAnswer: String? = null,     // 加密后的安全问题答案
+
     // --- 技术凭据管理 ---
-    val paymentPin: String? = null,      // 加密后的支付专用 PIN
     val sshPrivateKey: String? = null,   // 加密后的 SSH 私钥内容
     val cryptoSeedPhrase: String? = null,// 加密后的区块链助记词 (12/24词)
 
@@ -63,7 +80,6 @@ data class VaultEntryEntity(
     val autoSubmit: Boolean = false,          // 填充后是否尝试自动提交
 
     // --- 安全审计与多媒体 ---
-    val encryptedImageData: ByteArray? = null, // 加密后的二进制图片数据 (证件照/保密图)
     val strengthScore: Float? = null,          // 密码强度评分 (0.0 - 1.0)
     val lastUsedAt: Long? = null,              // 最后一次填充/查看的时间戳
     val usageCount: Int = 0,                   // 累计使用次数
@@ -74,96 +90,4 @@ data class VaultEntryEntity(
     val createdAt: Long? = System.currentTimeMillis(),
     val updatedAt: Long? = null,
     val expiresAt: Long? = null                // 凭据到期时间 (提醒更换密码)
-) : Serializable {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        other as VaultEntryEntity
-        if (id != other.id) return false
-        if (title != other.title) return false
-        if (username != other.username) return false
-        if (password != other.password) return false
-        if (category != other.category) return false
-        if (notes != other.notes) return false
-        if (iconName != other.iconName) return false
-        if (iconCustomPath != other.iconCustomPath) return false
-        if (totpSecret != other.totpSecret) return false
-        if (totpPeriod != other.totpPeriod) return false
-        if (totpDigits != other.totpDigits) return false
-        if (totpAlgorithm != other.totpAlgorithm) return false
-        if (passkeyDataJson != other.passkeyDataJson) return false
-        if (recoveryCodes != other.recoveryCodes) return false
-        if (hardwareKeyInfo != other.hardwareKeyInfo) return false
-        if (wifiEncryptionType != other.wifiEncryptionType) return false
-        if (wifiIsHidden != other.wifiIsHidden) return false
-        if (cardCvv != other.cardCvv) return false
-        if (cardExpiration != other.cardExpiration) return false
-        if (idNumber != other.idNumber) return false
-        if (paymentPin != other.paymentPin) return false
-        if (sshPrivateKey != other.sshPrivateKey) return false
-        if (cryptoSeedPhrase != other.cryptoSeedPhrase) return false
-        if (entryType != other.entryType) return false
-        if (associatedAppPackage != other.associatedAppPackage) return false
-        if (associatedDomain != other.associatedDomain) return false
-        if (uriList != other.uriList) return false
-        if (matchType != other.matchType) return false
-        if (customFieldsJson != other.customFieldsJson) return false
-        if (autoSubmit != other.autoSubmit) return false
-        if (encryptedImageData != null) {
-            if (other.encryptedImageData == null) return false
-            if (!encryptedImageData.contentEquals(other.encryptedImageData)) return false
-        } else if (other.encryptedImageData != null) return false
-        if (strengthScore != other.strengthScore) return false
-        if (lastUsedAt != other.lastUsedAt) return false
-        if (usageCount != other.usageCount) return false
-        if (favorite != other.favorite) return false
-        if (tags != other.tags) return false
-        if (createdAt != other.createdAt) return false
-        if (updatedAt != other.updatedAt) return false
-        if (expiresAt != other.expiresAt) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = id
-        result = 31 * result + title.hashCode()
-        result = 31 * result + username.hashCode()
-        result = 31 * result + password.hashCode()
-        result = 31 * result + category.hashCode()
-        result = 31 * result + (notes?.hashCode() ?: 0)
-        result = 31 * result + (iconName?.hashCode() ?: 0)
-        result = 31 * result + (iconCustomPath?.hashCode() ?: 0)
-        result = 31 * result + (totpSecret?.hashCode() ?: 0)
-        result = 31 * result + totpPeriod
-        result = 31 * result + totpDigits
-        result = 31 * result + totpAlgorithm.hashCode()
-        result = 31 * result + (passkeyDataJson?.hashCode() ?: 0)
-        result = 31 * result + (recoveryCodes?.hashCode() ?: 0)
-        result = 31 * result + (hardwareKeyInfo?.hashCode() ?: 0)
-        result = 31 * result + (wifiEncryptionType?.hashCode() ?: 0)
-        result = 31 * result + wifiIsHidden.hashCode()
-        result = 31 * result + (cardCvv?.hashCode() ?: 0)
-        result = 31 * result + (cardExpiration?.hashCode() ?: 0)
-        result = 31 * result + (idNumber?.hashCode() ?: 0)
-        result = 31 * result + (paymentPin?.hashCode() ?: 0)
-        result = 31 * result + (sshPrivateKey?.hashCode() ?: 0)
-        result = 31 * result + (cryptoSeedPhrase?.hashCode() ?: 0)
-        result = 31 * result + entryType
-        result = 31 * result + (associatedAppPackage?.hashCode() ?: 0)
-        result = 31 * result + (associatedDomain?.hashCode() ?: 0)
-        result = 31 * result + (uriList?.hashCode() ?: 0)
-        result = 31 * result + matchType
-        result = 31 * result + (customFieldsJson?.hashCode() ?: 0)
-        result = 31 * result + autoSubmit.hashCode()
-        result = 31 * result + (encryptedImageData?.contentHashCode() ?: 0)
-        result = 31 * result + (strengthScore?.hashCode() ?: 0)
-        result = 31 * result + (lastUsedAt?.hashCode() ?: 0)
-        result = 31 * result + usageCount
-        result = 31 * result + favorite.hashCode()
-        result = 31 * result + (tags?.hashCode() ?: 0)
-        result = 31 * result + (createdAt?.hashCode() ?: 0)
-        result = 31 * result + (updatedAt?.hashCode() ?: 0)
-        result = 31 * result + (expiresAt?.hashCode() ?: 0)
-        return result
-    }
-}
+) : Serializable

@@ -2,8 +2,8 @@ package com.aozijx.passly.data.mapper
 
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultHistory
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 
 fun VaultEntryEntity.toDomain(): VaultEntry = VaultEntry(
     id = id,
@@ -21,12 +21,15 @@ fun VaultEntryEntity.toDomain(): VaultEntry = VaultEntry(
     passkeyDataJson = passkeyDataJson,
     recoveryCodes = recoveryCodes,
     hardwareKeyInfo = hardwareKeyInfo,
-    wifiEncryptionType = wifiEncryptionType,
+    wifiSecurityType = wifiSecurityType,
     wifiIsHidden = wifiIsHidden,
     cardCvv = cardCvv,
     cardExpiration = cardExpiration,
     idNumber = idNumber,
     paymentPin = paymentPin,
+    paymentPlatform = paymentPlatform,
+    securityQuestion = securityQuestion,
+    securityAnswer = securityAnswer,
     sshPrivateKey = sshPrivateKey,
     cryptoSeedPhrase = cryptoSeedPhrase,
     entryType = entryType,
@@ -36,7 +39,6 @@ fun VaultEntryEntity.toDomain(): VaultEntry = VaultEntry(
     matchType = matchType,
     customFieldsJson = customFieldsJson,
     autoSubmit = autoSubmit,
-    encryptedImageData = encryptedImageData,
     strengthScore = strengthScore,
     lastUsedAt = lastUsedAt,
     usageCount = usageCount,
@@ -63,12 +65,15 @@ fun VaultEntry.toEntity(): VaultEntryEntity = VaultEntryEntity(
     passkeyDataJson = passkeyDataJson,
     recoveryCodes = recoveryCodes,
     hardwareKeyInfo = hardwareKeyInfo,
-    wifiEncryptionType = wifiEncryptionType,
+    wifiSecurityType = wifiSecurityType,
     wifiIsHidden = wifiIsHidden,
     cardCvv = cardCvv,
     cardExpiration = cardExpiration,
     idNumber = idNumber,
     paymentPin = paymentPin,
+    paymentPlatform = paymentPlatform,
+    securityQuestion = securityQuestion,
+    securityAnswer = securityAnswer,
     sshPrivateKey = sshPrivateKey,
     cryptoSeedPhrase = cryptoSeedPhrase,
     entryType = entryType,
@@ -78,7 +83,6 @@ fun VaultEntry.toEntity(): VaultEntryEntity = VaultEntryEntity(
     matchType = matchType,
     customFieldsJson = customFieldsJson,
     autoSubmit = autoSubmit,
-    encryptedImageData = encryptedImageData,
     strengthScore = strengthScore,
     lastUsedAt = lastUsedAt,
     usageCount = usageCount,

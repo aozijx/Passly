@@ -31,8 +31,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.ui.ImageType
 import com.aozijx.passly.core.designsystem.icons.VaultIcons
+import com.aozijx.passly.core.designsystem.model.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 
 @Composable
@@ -47,91 +47,83 @@ fun IconPickerDialog(
         onCustomImageSelected(uri)
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
+    AlertDialog(onDismissRequest = onDismiss, title = {
+        Text(
+            text = stringResource(R.string.icon_picker_title),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+    }, text = {
+        Column {
             Text(
-                text = stringResource(R.string.icon_picker_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                text = stringResource(R.string.icon_picker_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 16.dp)
             )
-        },
-        text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.icon_picker_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
 
-                Box(modifier = Modifier.height(300.dp)) {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(56.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // 选项 1：恢复默认（自动映射）
-                        item {
-                            IconItem(
-                                name = null,
-                                isSelected = currentIconName == null && currentCustomPath == null,
-                                onClick = { onIconSelected(null) }
-                            )
-                        }
+            Box(modifier = Modifier.height(300.dp)) {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(56.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 选项 1：恢复默认（自动映射）
+                    item {
+                        IconItem(
+                            name = null,
+                            isSelected = currentIconName == null && currentCustomPath == null,
+                            onClick = { onIconSelected(null) })
+                    }
 
-                        // 渲染所有预设图标
-                        items(VaultIcons.allIcons.keys.toList()) { resId ->
-                            IconItem(
-                                name = resId,
-                                isSelected = currentIconName == resId.toString() && currentCustomPath == null,
-                                onClick = { onIconSelected(resId.toString()) }
-                            )
-                        }
+                    // 渲染所有预设图标
+                    items(VaultIcons.allIcons.keys.toList()) { resId ->
+                        IconItem(
+                            name = resId,
+                            isSelected = currentIconName == resId.toString() && currentCustomPath == null,
+                            onClick = { onIconSelected(resId.toString()) })
+                    }
 
-                        // 选项 2：添加自定义图片
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .aspectRatio(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        if (currentCustomPath != null) MaterialTheme.colorScheme.primaryContainer
-                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                    )
-                                    .border(
-                                        width = 1.dp,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-                                    .clickable { pickPhoto(ImageType.AVATAR) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AddAPhoto,
-                                    contentDescription = stringResource(R.string.icon_picker_action_add_photo),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
+                    // 选项 2：添加自定义图片
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (currentCustomPath != null) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                                 )
-                            }
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable { pickPhoto(ImageType.AVATAR) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = stringResource(R.string.icon_picker_action_add_photo),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
         }
-    )
+    }, confirmButton = {
+        TextButton(onClick = onDismiss) {
+            Text(stringResource(R.string.action_cancel))
+        }
+    })
 }
 
 @Composable
 private fun IconItem(
-    name: Int?,
-    isSelected: Boolean,
-    onClick: () -> Unit
+    name: Int?, isSelected: Boolean, onClick: () -> Unit
 ) {
     val bgColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer
@@ -156,8 +148,7 @@ private fun IconItem(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(CircleShape),
-            contentAlignment = Alignment.Center
+                .clip(CircleShape), contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = VaultIcons.getIconByRes(name),
@@ -168,6 +159,3 @@ private fun IconItem(
         }
     }
 }
-
-
-

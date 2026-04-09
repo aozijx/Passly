@@ -37,7 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.common.ui.VaultCardStyle
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.features.settings.components.dialogs.LockTimeoutDialog
 import com.aozijx.passly.features.settings.components.dialogs.SwipeActionSelectDialog
 import com.aozijx.passly.features.settings.components.sections.AppearanceCustomizationSettingsSection
@@ -215,19 +215,19 @@ fun SettingsScreen(
         }
     }
 
-    if (showLeftActionDialog) {
-        SwipeActionSelectDialog(
-            "选择左滑动作",
-            swipeLeftAction,
-            { viewModel.setSwipeLeftAction(it); showLeftActionDialog = false },
-            { showLeftActionDialog = false })
-    }
     if (showRightActionDialog) {
         SwipeActionSelectDialog(
             "选择右滑动作",
             swipeRightAction,
             { viewModel.setSwipeRightAction(it); showRightActionDialog = false },
             { showRightActionDialog = false })
+    }
+    if (showLeftActionDialog) {
+        SwipeActionSelectDialog(
+            "选择左滑动作",
+            swipeLeftAction,
+            { viewModel.setSwipeLeftAction(it); showLeftActionDialog = false },
+            { showLeftActionDialog = false })
     }
     if (showLockTimeoutDialog) {
         LockTimeoutDialog(currentTimeoutMs = lockTimeout, onTimeoutSelected = {

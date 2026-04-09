@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository
 
 import com.aozijx.passly.data.local.config.UserConfigFileStore
 import com.aozijx.passly.domain.model.UserConfig
-import com.aozijx.passly.domain.repository.UserConfigRepository
+import com.aozijx.passly.domain.repository.config.UserConfigRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

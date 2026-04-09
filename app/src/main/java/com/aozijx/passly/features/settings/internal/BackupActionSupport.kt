@@ -2,8 +2,14 @@ package com.aozijx.passly.features.settings.internal
 
 import android.content.Context
 import android.net.Uri
+import com.aozijx.passly.R
+import com.aozijx.passly.core.backup.BackupImportMode
 import com.aozijx.passly.core.backup.BackupManager
 import com.aozijx.passly.service.backup.BackupImportIconSyncForegroundService
+
+internal data class BackupActionOutcome(
+    val message: String, val isFailure: Boolean
+)
 
 internal class BackupActionSupport {
 
@@ -12,35 +18,44 @@ internal class BackupActionSupport {
         uri: Uri,
         password: CharArray,
         isExporting: Boolean,
-        importMode: BackupManager.ImportMode
-    ): String {
+        importMode: BackupImportMode,
+        includeImages: Boolean // 新增参数
+    ): BackupActionOutcome {
         val result = if (isExporting) {
-            BackupManager.exportBackup(context, uri, password)
+            BackupManager.exportBackup(context, uri, password, includeImages)
         } else {
             BackupManager.importBackup(context, uri, password, importMode)
         }
 
         return if (result.isSuccess) {
             if (isExporting) {
-                "导出成功"
+                BackupActionOutcome(
+                    message = context.getString(R.string.backup_action_export_success),
+                    isFailure = false
+                )
             } else {
                 BackupImportIconSyncForegroundService.start(context)
-                "导入成功（图标将在后台自动同步）"
+                BackupActionOutcome(
+                    message = context.getString(R.string.backup_action_import_success),
+                    isFailure = false
+                )
             }
         } else {
-            buildFailureMessage(result.exceptionOrNull())
+            BackupActionOutcome(
+                message = buildFailureMessage(context, result.exceptionOrNull()), isFailure = true
+            )
         }
     }
 
-    private fun buildFailureMessage(error: Throwable?): String {
+    private fun buildFailureMessage(context: Context, error: Throwable?): String {
         val message = error?.message?.trim().orEmpty()
-        if (message.contains("密码错误")) {
-            return message
-        }
-        return if (message.isNotEmpty()) {
-            "失败: $message"
-        } else {
-            "失败: 未知错误"
+        return when {
+            message.contains("密码错误") -> context.getString(R.string.backup_error_password_incorrect)
+            message.contains("不是有效的 Passly 备份文件") -> context.getString(R.string.backup_error_invalid_file)
+            message.contains("不支持的备份版本") -> context.getString(R.string.backup_error_incompatible_version)
+            message.contains("文件损坏") || message.contains("data.json") -> context.getString(R.string.backup_error_corrupted)
+            message.isNotEmpty() -> context.getString(R.string.backup_error_with_reason, message)
+            else -> context.getString(R.string.backup_error_unknown)
         }
     }
 }

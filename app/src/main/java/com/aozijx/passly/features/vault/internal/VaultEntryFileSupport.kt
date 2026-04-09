@@ -3,7 +3,7 @@ package com.aozijx.passly.features.vault.internal
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.storage.VaultFileUtils
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

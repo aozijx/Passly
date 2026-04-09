@@ -1,48 +1,32 @@
 package com.aozijx.passly.data.repository
 
-import com.aozijx.passly.data.local.VaultDao
+import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toEntity
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultHistory
-import com.aozijx.passly.domain.repository.VaultRepository
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.repository.vault.VaultRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class VaultDataRepository(private val dao: VaultDao) : VaultRepository {
-    override val allEntries: Flow<List<VaultEntry>> = dao.getAllEntries().map { entities ->
+class VaultDataRepository(
+    private val entryDao: VaultEntryDao
+) : VaultRepository {
+    override val allEntries: Flow<List<VaultEntry>> = entryDao.getAllEntries().map { entities ->
         entities.map { it.toDomain() }
     }
 
-    override val allCategories: Flow<List<String>> = dao.getAllCategories()
-
-    override fun getEntriesByCategory(category: String): Flow<List<VaultEntry>> = 
-        dao.getEntriesByCategory(category).map { entities ->
-            entities.map { it.toDomain() }
-        }
-
-    override fun searchEntries(query: String): Flow<List<VaultEntry>> = 
-        dao.searchEntries(query).map { entities ->
-            entities.map { it.toDomain() }
-        }
-
-    override fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistory>> = 
-        dao.getHistoryByEntryId(entryId).map { entities ->
-            entities.map { it.toDomain() }
-        }
-
     override suspend fun getEntryById(entryId: Int): VaultEntry? = 
-        dao.getEntryById(entryId)?.toDomain()
+        entryDao.getEntryById(entryId)?.toDomain()
 
     override suspend fun insert(entry: VaultEntry): Long = 
-        dao.insert(entry.toEntity())
+        entryDao.insert(entry.toEntity())
 
     override suspend fun update(entry: VaultEntry) = 
-        dao.update(entry.toEntity())
+        entryDao.update(entry.toEntity())
 
     override suspend fun delete(entry: VaultEntry) = 
-        dao.delete(entry.toEntity())
+        entryDao.delete(entry.toEntity())
 
     override suspend fun deleteAll() = 
-        dao.deleteAll()
+        entryDao.deleteAll()
 }

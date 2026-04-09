@@ -3,9 +3,14 @@ package com.aozijx.passly.features.vault.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.core.common.ui.VaultTab
+import com.aozijx.passly.core.designsystem.model.VaultTab
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 internal class VaultSearchFilterStateHolder {
     private val _searchQuery = MutableStateFlow("")
@@ -16,6 +21,17 @@ internal class VaultSearchFilterStateHolder {
 
     private val _selectedTab = MutableStateFlow(VaultTab.ALL)
     val selectedTab: StateFlow<VaultTab> = _selectedTab
+
+    @OptIn(FlowPreview::class)
+    val debouncedSearchQuery: Flow<String> =
+        _searchQuery.map { it.trim() }.debounce(250).distinctUntilChanged()
+
+    val normalizedSelectedCategory: Flow<String?> =
+        _selectedCategory.map { it?.trim()?.takeIf { category -> category.isNotEmpty() } }
+            .distinctUntilChanged()
+
+    val distinctSelectedTab: Flow<VaultTab> = _selectedTab
+
 
     var isSearchActive by mutableStateOf(false)
     var isMoreMenuExpanded by mutableStateOf(false)

@@ -36,8 +36,7 @@ fun TotpConfigForm(
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // 更新周期 (通常为 30s)
             OutlinedTextField(
@@ -68,5 +67,3 @@ fun TotpConfigForm(
         }
     }
 }
-
-

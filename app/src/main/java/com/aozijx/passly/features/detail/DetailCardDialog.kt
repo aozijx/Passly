@@ -16,7 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
@@ -37,7 +38,7 @@ import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.security.otp.TotpUtils
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailHeader
 import com.aozijx.passly.features.detail.sections.CredentialSection
 import com.aozijx.passly.features.detail.sections.TotpSection
@@ -54,10 +55,9 @@ fun DetailCardDialog(
 ) {
     val context = LocalContext.current
 
-    var currentEntry by remember(initialEntry) { mutableStateOf(initialEntry) }
-    LaunchedEffect(initialEntry) {
-        currentEntry = initialEntry
-    }
+    // 核心修复：不要使用 remember(initialEntry) 锁死状态
+    // 而是监听来自 ViewModel 的最新 detailItem，确保图标保存后 UI 能感知到
+    val currentEntry by remember { derivedStateOf { vaultViewModel.detailItem ?: initialEntry } }
 
     val entry = currentEntry
     val vaultType = remember(entry.entryType) { EntryType.fromValue(entry.entryType) }
@@ -66,7 +66,7 @@ fun DetailCardDialog(
     var revealedUsername by remember { mutableStateOf<String?>(null) }
     var revealedPassword by remember { mutableStateOf<String?>(null) }
 
-    val totpStates by vaultViewModel.totpStates.collectAsState()
+    val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
     val currentState = totpStates[entry.id]
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
     val totpEditState = remember(entry, currentState?.decryptedSecret) {
@@ -84,7 +84,6 @@ fun DetailCardDialog(
     val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
 
     val onEntryUpdated: (VaultEntry) -> Unit = { updated ->
-        currentEntry = updated
         vaultViewModel.updateVaultEntry(updated)
     }
 
@@ -92,33 +91,14 @@ fun DetailCardDialog(
         if (!vaultViewModel.shouldStartDetailInEditMode) return@LaunchedEffect
 
         if (vaultViewModel.shouldStartTotpEdit) {
-            vaultViewModel.prefilledTotpSecret?.let { prefilled ->
-                totpEditState.secret = prefilled
-            }
             totpEditState.isEditing = true
         } else {
-            val usernamePrefill = vaultViewModel.prefilledUsername
-            val passwordPrefill = vaultViewModel.prefilledPassword
-
-            when {
-                usernamePrefill != null -> {
-                    revealedUsername = usernamePrefill
-                    editState.editedUsername = usernamePrefill
-                    editState.isEditingUsername = true
-                    if (!entry.password.isEmpty() && passwordPrefill != null) {
-                        revealedPassword = passwordPrefill
-                        editState.editedPassword = passwordPrefill
-                    }
-                }
-
-                !entry.password.isEmpty() && passwordPrefill != null -> {
-                    revealedPassword = passwordPrefill
-                    editState.editedPassword = passwordPrefill
-                    editState.isEditingPassword = true
-                }
+            if (entry.username.isNotEmpty()) {
+                editState.isEditingUsername = true
+            } else if (entry.password.isNotEmpty()) {
+                editState.isEditingPassword = true
             }
         }
-
         vaultViewModel.consumeDetailLaunchState()
     }
 

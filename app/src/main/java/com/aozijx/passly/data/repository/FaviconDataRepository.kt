@@ -2,9 +2,9 @@ package com.aozijx.passly.data.repository
 
 import android.content.Context
 import com.aozijx.passly.core.media.FaviconUtils
-import com.aozijx.passly.domain.model.FaviconOutcome
-import com.aozijx.passly.domain.model.FaviconResult
-import com.aozijx.passly.domain.repository.FaviconRepository
+import com.aozijx.passly.domain.model.icon.FaviconOutcome
+import com.aozijx.passly.domain.model.icon.FaviconResult
+import com.aozijx.passly.domain.repository.vault.FaviconRepository
 
 class FaviconDataRepository(
     private val appContext: Context

@@ -1,8 +1,8 @@
 package com.aozijx.passly.service.autofill
 
-import com.aozijx.passly.core.crypto.CryptoManager
+import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 /**
  * 自动填充凭据提供器
@@ -23,9 +23,8 @@ object AutofillCredentialProvider {
         Logcat.d(TAG, "Attempting decryption for item: ${item.title} (ID: ${item.id})")
 
         return try {
-            // 直接调用重构后的解密逻辑，内部已处理 IV 提取和 Tag 校验
-            val username = CryptoManager.decrypt(item.username)
-            val password = CryptoManager.decrypt(item.password)
+            val username = CryptoAccess.decryptOrNull(item.username) ?: return null
+            val password = CryptoAccess.decryptOrNull(item.password) ?: return null
 
             if (username.isBlank() && password.isBlank()) {
                 null
@@ -38,5 +37,3 @@ object AutofillCredentialProvider {
         }
     }
 }
-
-

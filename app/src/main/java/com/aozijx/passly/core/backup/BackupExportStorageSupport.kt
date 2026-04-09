@@ -18,9 +18,12 @@ object BackupExportStorageSupport {
         val fileUri: Uri, val fileName: String, val directoryTreeUri: Uri
     )
 
-    fun buildBackupFileName(timestamp: Long = System.currentTimeMillis()): String {
+    fun buildBackupFileName(
+        timestamp: Long = System.currentTimeMillis(), isFull: Boolean = false
+    ): String {
         val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-        return "backup_${formatter.format(Date(timestamp))}.passly"
+        val suffix = if (isFull) "_full" else ""
+        return "backup_${formatter.format(Date(timestamp))}$suffix.passly"
     }
 
     fun defaultDocumentsTreeUri(): Uri = DocumentsContract.buildTreeDocumentUri(
@@ -50,18 +53,25 @@ object BackupExportStorageSupport {
                 ?: error("无法构建应用目录树 URI")
         }
 
-    fun createTimestampExportTarget(
-        context: Context, directoryTreeUri: String
+    fun createNamedExportTarget(
+        context: Context, directoryTreeUri: String, fileName: String
     ): Result<ExportTarget> = runCatching {
         val treeUri = directoryTreeUri.toUri()
         val resolver = context.contentResolver
         val docId = DocumentsContract.getTreeDocumentId(treeUri)
         val parentDocUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
-        val fileName = buildBackupFileName()
         val fileUri =
             DocumentsContract.createDocument(resolver, parentDocUri, BACKUP_FILE_MIME, fileName)
                 ?: error("无法创建备份文件")
         ExportTarget(fileUri = fileUri, fileName = fileName, directoryTreeUri = treeUri)
+    }
+
+    fun deleteDocument(context: Context, uri: Uri): Boolean {
+        return try {
+            DocumentsContract.deleteDocument(context.contentResolver, uri)
+        } catch (e: Exception) {
+            false
+        }
     }
 
     fun testWritePermission(context: Context, directoryTreeUri: String): Result<String> =
@@ -117,4 +127,3 @@ object BackupExportStorageSupport {
         return null
     }
 }
-

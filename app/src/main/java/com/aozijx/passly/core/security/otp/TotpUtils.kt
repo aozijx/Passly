@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.security.otp
 
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import java.net.URLEncoder
 
 object TotpUtils {

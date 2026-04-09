@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.state.VaultEditState
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.vault.VaultViewModel
 

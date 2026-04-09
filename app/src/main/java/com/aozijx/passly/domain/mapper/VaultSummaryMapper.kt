@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.mapper
 
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultSummary
+import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.presentation.VaultSummary
 
 fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     id = id,
@@ -9,7 +9,6 @@ fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     category = category,
     entryType = entryType,
     username = username,
-    password = password,
     iconName = iconName,
     iconCustomPath = iconCustomPath,
     associatedAppPackage = associatedAppPackage,
@@ -22,5 +21,3 @@ fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     createdAt = createdAt,
     updatedAt = updatedAt
 )
-
-fun List<VaultEntry>.toSummaryList(): List<VaultSummary> = map { it.toSummary() }

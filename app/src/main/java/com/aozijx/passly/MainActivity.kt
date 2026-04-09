@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -44,13 +45,17 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.core.designsystem.components.PlainExportDialog
+import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
+import com.aozijx.passly.data.local.config.DatabaseConfig
+import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.page.DetailScreen
 import com.aozijx.passly.features.settings.SettingsScreen
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultContent
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.ui.theme.AppTheme
+import kotlin.system.exitProcess
 
 class MainActivity : FragmentActivity(), SensorEventListener {
     private val viewModel: MainViewModel by viewModels()
@@ -65,7 +70,8 @@ class MainActivity : FragmentActivity(), SensorEventListener {
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (!granted) {
-                Toast.makeText(this, "通知权限未开启，后台同步进度将不可见", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "通知权限未开启，后台同步进度将不可见", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
 
@@ -97,93 +103,155 @@ class MainActivity : FragmentActivity(), SensorEventListener {
         })
 
         // 初始验证
-        requestAuthentication()
+        if (viewModel.uiState.value.databaseError == null) {
+            requestAuthentication()
+        }
         requestNotificationPermissionIfNeeded()
 
         setContent {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
-            val vaultViewModel: VaultViewModel = viewModel()
-            val settingsViewModel: SettingsViewModel = viewModel()
-            val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-            
-            // 应用高级安全防护设置
-            val isSecureContentEnabled = settingsUiState.isSecureContentEnabled
-            
-            LaunchedEffect(isSecureContentEnabled) {
-                if (isSecureContentEnabled) {
-                    window.setFlags(
-                        WindowManager.LayoutParams.FLAG_SECURE,
-                        WindowManager.LayoutParams.FLAG_SECURE
-                    )
-                } else {
-                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            val context = LocalContext.current
+
+            // 处理紧急备份成功提示
+            LaunchedEffect(viewModel.emergencyBackupFile) {
+                viewModel.emergencyBackupFile?.let { file ->
+                    Toast.makeText(
+                        context,
+                        "紧急备份(明文 JSON)已导出至: ${file.absolutePath}，请立即妥善保管",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
 
-            // 翻转锁定逻辑
-            val flipToLock = settingsUiState.isFlipToLockEnabled
-            val flipExitAndClearStack = settingsUiState.isFlipExitAndClearStackEnabled
-            LaunchedEffect(flipToLock) {
-                isFlipLockEnabled = flipToLock
-                if (flipToLock) {
-                    registerSensor()
-                } else {
-                    unregisterSensor()
+            // 处理顶部菜单明文导出成功提示
+            LaunchedEffect(viewModel.plainBackupFile) {
+                viewModel.plainBackupFile?.let { file ->
+                    Toast.makeText(
+                        context,
+                        "明文 JSON 备份已导出至: ${file.absolutePath}，请妥善保管",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-            }
-            LaunchedEffect(flipExitAndClearStack) {
-                isFlipExitAndClearStackEnabled = flipExitAndClearStack
             }
 
-            // 自动注销传感器
-            DisposableEffect(Unit) {
-                onDispose { unregisterSensor() }
-            }
-            
-            // 应用状态栏自动隐藏行为设置
-            val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
-            LaunchedEffect(isStatusBarAutoHide) {
-                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-                insetsController.systemBarsBehavior = if (isStatusBarAutoHide) {
-                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                } else {
-                    WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
-                }
+            // 数据库错误弹窗
+            if (mainUiState.databaseError != null) {
+                PlainExportDialog(
+                    type = PlainExportDialogType.DatabaseError,
+                    onExportBackup = { viewModel.exportEmergencyBackup(context) },
+                    onResetOrCancel = {
+                        context.deleteDatabase(DatabaseConfig.DATABASE_NAME)
+                        Toast.makeText(context, "数据库已清除，请重启应用", Toast.LENGTH_SHORT)
+                            .show()
+                        finishAffinity()
+                        exitProcess(0)
+                    })
             }
 
             AppTheme(
                 darkTheme = if (mainUiState.isDarkMode == true) true else null,
                 dynamicColor = mainUiState.isDynamicColor
             ) {
-                when {
-                    showDetail && detailEntry != null -> {
-                        DetailScreen(
-                            initialEntry = detailEntry!!,
-                            onBack = { showDetail = false },
-                            activity = this,
-                            mainViewModel = viewModel,
-                            vaultViewModel = vaultViewModel
-                        )
+                // 只有在没有数据库错误时才渲染业务界面
+                if (mainUiState.databaseError == null) {
+                    val vaultViewModel: VaultViewModel = viewModel()
+                    val settingsViewModel: SettingsViewModel = viewModel()
+                    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+                    // 应用高级安全防护设置
+                    val isSecureContentEnabled = settingsUiState.isSecureContentEnabled
+
+                    LaunchedEffect(isSecureContentEnabled) {
+                        if (isSecureContentEnabled) {
+                            window.setFlags(
+                                WindowManager.LayoutParams.FLAG_SECURE,
+                                WindowManager.LayoutParams.FLAG_SECURE
+                            )
+                        } else {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        }
                     }
-                    showSettings -> {
-                        SettingsScreen(onBack = { showSettings = false })
+
+                    // 翻转锁定逻辑
+                    val flipToLock = settingsUiState.isFlipToLockEnabled
+                    val flipExitAndClearStack = settingsUiState.isFlipExitAndClearStackEnabled
+                    LaunchedEffect(flipToLock) {
+                        isFlipLockEnabled = flipToLock
+                        if (flipToLock) {
+                            registerSensor()
+                        } else {
+                            unregisterSensor()
+                        }
                     }
-                    mainUiState.isAuthorized -> {
-                        VaultContent(
-                            activity = this,
-                            mainViewModel = viewModel,
-                            vaultViewModel = vaultViewModel,
-                            settingsViewModel = settingsViewModel,
-                            onSettingsClick = { showSettings = true },
-                            onShowDetail = { entry -> 
-                                detailEntry = entry
-                                showDetail = true
-                            }
-                        )
+                    LaunchedEffect(flipExitAndClearStack) {
+                        isFlipExitAndClearStackEnabled = flipExitAndClearStack
                     }
-                    else -> {
-                        AuthorizationPlaceholder { requestAuthentication() }
+
+                    // 自动注销传感器
+                    DisposableEffect(Unit) {
+                        onDispose { unregisterSensor() }
                     }
+
+                    // 应用状态栏自动隐藏行为设置
+                    val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
+                    LaunchedEffect(isStatusBarAutoHide) {
+                        val insetsController =
+                            WindowCompat.getInsetsController(window, window.decorView)
+                        insetsController.systemBarsBehavior = if (isStatusBarAutoHide) {
+                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        } else {
+                            WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                        }
+                    }
+
+                    when {
+                        showDetail && detailEntry != null -> {
+                            DetailScreen(
+                                initialEntry = detailEntry!!,
+                                onBack = { showDetail = false },
+                                activity = this,
+                                mainViewModel = viewModel,
+                                vaultViewModel = vaultViewModel
+                            )
+                        }
+
+                        showSettings -> {
+                            SettingsScreen(onBack = { showSettings = false })
+                        }
+
+                        mainUiState.isAuthorized -> {
+                            VaultContent(
+                                activity = this,
+                                mainViewModel = viewModel,
+                                vaultViewModel = vaultViewModel,
+                                settingsViewModel = settingsViewModel,
+                                onSettingsClick = { showSettings = true },
+                                onPlainExportClick = {
+                                    viewModel.authenticate(
+                                        activity = this,
+                                        title = getString(R.string.vault_backup_auth_title),
+                                        subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export)
+                                    ) {
+                                        viewModel.exportPlainBackup(this)
+                                    }
+                                },
+                                onShowDetail = { entry ->
+                                    detailEntry = entry
+                                    showDetail = true
+                                })
+                        }
+
+                        else -> {
+                            AuthorizationPlaceholder { requestAuthentication() }
+                        }
+                    }
+                } else {
+                    // 数据库错误时的背景占位
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surface)
+                    )
                 }
             }
         }
@@ -201,7 +269,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (!isFlipLockEnabled || event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
-        
+
         val z = event.values[2]
         // Z 轴负值表示屏幕朝下，通常 -9.8 左右是完全平放。这里取 -8.0 作为触发阈值。
         if (z < -8.5f && viewModel.isAuthorized) {
@@ -225,9 +293,9 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                 viewModel.authorize()
             },
             onError = { _ ->
-                Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT).show()
-            }
-        )
+                Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT)
+                    .show()
+            })
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -263,8 +331,7 @@ private fun AuthorizationPlaceholder(onRetry: () -> Unit) {
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onRetry
-            ),
-        contentAlignment = Alignment.Center
+            ), contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
@@ -287,6 +354,3 @@ private fun AuthorizationPlaceholder(onRetry: () -> Unit) {
         }
     }
 }
-
-
-

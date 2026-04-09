@@ -1,7 +1,7 @@
 package com.aozijx.passly.features.detail.page
 
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 data class DetailUiState(
     val entry: VaultEntry? = null,

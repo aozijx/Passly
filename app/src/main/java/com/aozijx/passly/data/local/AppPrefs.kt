@@ -8,7 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.common.ui.VaultCardStyle
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -187,11 +187,11 @@ class AppPrefs(context: Context) {
     private fun parseStyleMap(raw: String?): Map<Int, VaultCardStyle> {
         if (raw.isNullOrBlank()) return emptyMap()
         return raw.split(";").mapNotNull { token ->
-                val parts = token.split(":")
-                if (parts.size != 2) return@mapNotNull null
-                val key = parts[0].toIntOrNull() ?: return@mapNotNull null
-                key to VaultCardStyle.fromKey(parts[1])
-            }.toMap()
+            val parts = token.split(":")
+            if (parts.size != 2) return@mapNotNull null
+            val key = parts[0].toIntOrNull() ?: return@mapNotNull null
+            key to VaultCardStyle.fromKey(parts[1])
+        }.toMap()
     }
 
     private fun encodeStyleMap(map: Map<Int, VaultCardStyle>): String {

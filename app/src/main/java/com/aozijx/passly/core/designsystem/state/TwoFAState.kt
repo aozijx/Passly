@@ -3,7 +3,7 @@ package com.aozijx.passly.core.designsystem.state
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultEntry
 
 /**
  * TOTP 实时显示状态
