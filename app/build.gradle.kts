@@ -144,7 +144,6 @@ dependencies {
 
     // Security & Biometric
     implementation(libs.androidx.biometric)
-    implementation(libs.androidx.security.crypto)
 
     // SQLCipher & SQLite
     implementation(libs.sqlcipher)

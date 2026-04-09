@@ -20,13 +20,11 @@ activityCompose = "1.13.0"
 foundation = "1.10.6"
 materialIcons = "1.7.8"
 coil = "2.7.0"
-markdown-renderer = "0.39.2"
+markdown-renderer = "0.40.2"
 
 # Security & Data Protection
 biometric = "1.2.0-alpha05"
-securityCrypto = "1.1.0"
 sqlcipher = "4.14.1"
-# 不要升级，版本需要和 room 匹配
 sqlite = "2.6.2"
 
 # Camera & Barcode Scanning
@@ -77,7 +75,6 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 
 # Security & Biometric
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
-androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 
 # SQLCipher & SQLite
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
