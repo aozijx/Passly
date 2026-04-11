@@ -1,10 +1,6 @@
 package com.aozijx.passly
 
 import android.Manifest
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -51,24 +47,33 @@ import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.local.config.DatabaseConfig
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.page.DetailScreen
+import com.aozijx.passly.features.main.MainSensorController
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.main.contract.MainEffect
+import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.settings.SettingsScreen
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultContent
 import com.aozijx.passly.features.vault.VaultViewModel
 import kotlin.system.exitProcess
 
-class MainActivity : FragmentActivity(), SensorEventListener {
+class MainActivity : FragmentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private var showSettings by mutableStateOf(false)
     private var showDetail by mutableStateOf(false)
     private var detailEntry by mutableStateOf<VaultEntry?>(null)
 
-    private var sensorManager: SensorManager? = null
-    private var accelerometer: Sensor? = null
-    private var isFlipLockEnabled = false
-    private var isFlipExitAndClearStackEnabled = false
+    private val sensorController by lazy {
+        MainSensorController(this) {
+            if (viewModel.isAuthorized) {
+                viewModel.handleIntent(MainIntent.Lock)
+                showDetail = false
+                showSettings = false
+                if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
+            }
+        }
+    }
+
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (!granted) {
@@ -80,8 +85,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        sensorController.initialize()
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -145,7 +149,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             if (mainUiState.databaseError != null) {
                 PlainExportDialog(
                     type = PlainExportDialogType.DatabaseError,
-                    onExportBackup = { viewModel.exportEmergencyBackup(context) },
+                    onExportBackup = { viewModel.handleIntent(MainIntent.ExportEmergencyBackup(context)) },
                     onResetOrCancel = {
                         context.deleteDatabase(DatabaseConfig.DATABASE_NAME)
                         Toast.makeText(context, "数据库已清除，请重启应用", Toast.LENGTH_SHORT)
@@ -239,7 +243,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
                                         title = getString(R.string.vault_backup_auth_title),
                                         subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export)
                                     ) {
-                                        viewModel.exportPlainBackup(this)
+                                        viewModel.handleIntent(MainIntent.ExportPlainBackup(this))
                                     }
                                 },
                                 onShowDetail = { entry ->
@@ -280,7 +284,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
         val z = event.values[2]
         // Z 轴负值表示屏幕朝下，通常 -9.8 左右是完全平放。这里取 -8.0 作为触发阈值。
         if (z < -8.5f && viewModel.isAuthorized) {
-            viewModel.lock()
+            viewModel.handleIntent(MainIntent.Lock)
             showDetail = false
             showSettings = false
             if (isFlipExitAndClearStackEnabled) {
@@ -311,12 +315,12 @@ class MainActivity : FragmentActivity(), SensorEventListener {
 
     override fun onUserInteraction() {
         super.onUserInteraction()
-        viewModel.updateInteraction()
+        viewModel.handleIntent(MainIntent.UpdateInteraction)
     }
 
     override fun onResume() {
         super.onResume()
-        viewModel.checkAndLock()
+        viewModel.handleIntent(MainIntent.CheckAndLock)
         if (isFlipLockEnabled) registerSensor()
     }
 

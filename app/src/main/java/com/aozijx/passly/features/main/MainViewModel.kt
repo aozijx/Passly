@@ -17,7 +17,6 @@ import com.aozijx.passly.features.main.internal.MainDatabaseInitializer
 import com.aozijx.passly.features.main.internal.MainValidationResult
 import com.aozijx.passly.features.main.internal.MainValidationSupport
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -45,7 +44,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _effects = MutableSharedFlow<MainEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<MainEffect> = _effects.asSharedFlow()
-    val effect: Flow<MainEffect> = effects
 
     init {
         observeSettings()
