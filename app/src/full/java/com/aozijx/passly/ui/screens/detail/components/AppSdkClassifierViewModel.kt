@@ -3,7 +3,7 @@ package com.aozijx.passly.ui.screens.detail.components
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.platform.AppWithSdk
+import com.aozijx.passly.core.platform.AppMetadata
 import com.aozijx.passly.core.platform.PackageUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,8 +15,9 @@ import kotlinx.coroutines.withContext
 
 // UI State for the screen
 data class AppSdkClassifierUiState(
-    val sdkAppMap: Map<Int, List<AppWithSdk>> = emptyMap(),
+    val sdkAppMap: Map<Int, List<AppMetadata>> = emptyMap(),
     val isLoading: Boolean = false,
+    val isCompleted: Boolean = false,
     val loadStatus: String = "等待扫描...",
     val expandedSdks: Set<Int> = emptySet(),
     val hasPermission: Boolean = true,
@@ -31,7 +32,7 @@ class AppSdkClassifierViewModel : ViewModel() {
         if (_uiState.value.isLoading) return
 
         val includeSystem = _uiState.value.includeSystemApps
-        _uiState.update { it.copy(isLoading = true, loadStatus = "正在深度扫描架构信息...") }
+        _uiState.update { it.copy(isLoading = true, isCompleted = false, loadStatus = "正在深度扫描架构信息...") }
 
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -46,6 +47,7 @@ class AppSdkClassifierViewModel : ViewModel() {
                 it.copy(
                     sdkAppMap = newMap,
                     isLoading = false,
+                    isCompleted = true,
                     loadStatus = "扫描完成: 共 ${result.size} 个应用"
                 )
             }
@@ -69,4 +71,3 @@ class AppSdkClassifierViewModel : ViewModel() {
         startScan(context) // 切换后自动重新扫描
     }
 }
-

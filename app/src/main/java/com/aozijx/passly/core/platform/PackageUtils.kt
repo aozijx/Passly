@@ -98,6 +98,28 @@ object PackageUtils {
             "Unknown"
         }
     }
+    /**
+     * 获取所有已安装的应用
+     */
+    fun getAllInstalledApps(context: Context, includeSystem: Boolean = false): List<AppMetadata> {
+        val pm = context.packageManager
+        val packages = pm.getInstalledPackages(0)
+
+        return packages.mapNotNull { pkg ->
+            val appInfo = pkg.applicationInfo ?: return@mapNotNull null
+
+            val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+            if (!includeSystem && isSystem) return@mapNotNull null
+
+            AppMetadata(
+                packageName = pkg.packageName,
+                appName = appInfo.loadLabel(pm).toString(),
+                targetSdk = appInfo.targetSdkVersion,
+                versionName = pkg.versionName ?: "N/A",
+                architecture = getAppArchitecture(appInfo)
+            )
+        }
+    }
 }
 
 /**
