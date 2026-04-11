@@ -8,7 +8,6 @@ import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.aozijx.passly.core.logging.Logcat
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -156,7 +155,7 @@ object FaviconUtils {
         return clean
     }
 
-    private fun downloadFaviconWithCoil(urlString: String, context: Context): Bitmap? {
+    private suspend fun downloadFaviconWithCoil(urlString: String, context: Context): Bitmap? {
         return try {
             val imageLoader = ImageLoader.Builder(context)
                 .components {
@@ -169,9 +168,7 @@ object FaviconUtils {
                 .addHeader("User-Agent", "Mozilla/5.0")
                 .build()
 
-            val result = runBlocking {
-                imageLoader.execute(request)
-            }
+            val result = imageLoader.execute(request)
 
             val drawable = result.drawable
             drawable?.toBitmap()
