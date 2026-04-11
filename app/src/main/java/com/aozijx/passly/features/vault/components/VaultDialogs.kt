@@ -67,7 +67,7 @@ fun VaultDialogs(
             onDismiss = { vaultViewModel.itemToDelete = null })
     }
 
-    if (settingsViewModel.showBackupPasswordDialog) {
+    if (settingsViewModel.backup.showBackupPasswordDialog) {
         BackupPasswordDialog(
             activity = activity,
             mainViewModel = mainViewModel,

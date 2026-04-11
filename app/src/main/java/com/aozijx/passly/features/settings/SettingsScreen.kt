@@ -82,10 +82,10 @@ fun SettingsScreen(
             viewModel.setCardStyle(effectiveCardStyle)
         }
     }
-    LaunchedEffect(viewModel.backupMessage) {
-        viewModel.backupMessage?.let {
+    LaunchedEffect(viewModel.backup.backupMessage) {
+        viewModel.backup.backupMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            viewModel.clearBackupMessage()
+            viewModel.backup.clearBackupMessage()
         }
     }
 
