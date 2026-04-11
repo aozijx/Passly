@@ -39,9 +39,8 @@ fun DetailTopBar(
     entry: VaultEntry,
     uiState: DetailUiState,
     scrollBehavior: TopAppBarScrollBehavior,
-    onEvent: (DetailEvent) -> VaultEntry?,
+    onEvent: (DetailEvent) -> Unit,
     onBack: () -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit,
     onInteraction: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
@@ -91,7 +90,7 @@ fun DetailTopBar(
             if (uiState.isEditingTitle) {
                 TextButton(onClick = {
                     onInteraction()
-                    onEvent(DetailEvent.SaveTitle)?.let { onEntryUpdated(it) }
+                    onEvent(DetailEvent.SaveTitle)
                 }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Check, "保存")
@@ -102,7 +101,7 @@ fun DetailTopBar(
             } else {
                 IconButton(onClick = {
                     onInteraction()
-                    onEvent(DetailEvent.ToggleFavorite)?.let { onEntryUpdated(it) }
+                    onEvent(DetailEvent.ToggleFavorite)
                 }) {
                     Icon(
                         imageVector = if (entry.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,

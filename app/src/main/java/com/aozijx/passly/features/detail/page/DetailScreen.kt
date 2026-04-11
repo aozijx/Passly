@@ -34,6 +34,7 @@ import com.aozijx.passly.features.detail.components.DetailScrollableContent
 import com.aozijx.passly.features.detail.components.DetailTopBar
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.features.vault.VaultViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,6 +117,14 @@ fun DetailScreen(
         vaultViewModel.updateVaultEntry(updated)
     }
 
+    LaunchedEffect(detailViewModel) {
+        detailViewModel.effects.collectLatest { effect ->
+            when (effect) {
+                is DetailEffect.EntryUpdated -> onEntryUpdated(effect.entry)
+            }
+        }
+    }
+
     Scaffold(
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -130,7 +139,6 @@ fun DetailScreen(
                 scrollBehavior = scrollBehavior,
                 onEvent = detailViewModel::onEvent,
                 onBack = onBack,
-                onEntryUpdated = onEntryUpdated,
                 onInteraction = { mainViewModel.updateInteraction() }
             )
         }

@@ -24,3 +24,7 @@ sealed interface DetailEvent {
     object SaveTitle : DetailEvent
     object ToggleFavorite : DetailEvent
 }
+
+sealed interface DetailEffect {
+    data class EntryUpdated(val entry: VaultEntry) : DetailEffect
+}
