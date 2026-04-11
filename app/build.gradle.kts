@@ -42,6 +42,10 @@ android {
                 storePassword = localProperties.getProperty("signing.store.password")
                 keyAlias = localProperties.getProperty("signing.key.alias")
                 keyPassword = localProperties.getProperty("signing.key.password")
+
+                // 显式启用签名方案 (v2 和 v3)
+                enableV2Signing = true   // 启用 APK 签名方案 v2 (默认 true，显式写出)
+                enableV3Signing = true    // 启用 APK 签名方案 v3
             } else {
                 // 如果没有签名配置（如在 CI/CodeQL 环境中），回退到 debug 签名以保证编译通过
                 initWith(getByName("debug"))
