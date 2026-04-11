@@ -1,10 +1,11 @@
-package com.aozijx.passly.core.qr
+package com.aozijx.passly.features.scanner
 
 import android.content.Context
 import android.net.Uri
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
+import com.aozijx.passly.core.qr.QrCodeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

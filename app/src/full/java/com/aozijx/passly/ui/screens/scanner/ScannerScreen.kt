@@ -17,7 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.model.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
-import com.aozijx.passly.core.qr.ScannerViewModel
+import com.aozijx.passly.features.scanner.ScannerViewModel
 import com.aozijx.passly.ui.navigation.TopBarConfig
 import com.aozijx.passly.ui.screens.components.ScannerView
 
