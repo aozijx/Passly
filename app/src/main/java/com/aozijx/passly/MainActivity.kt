@@ -52,6 +52,7 @@ import com.aozijx.passly.data.local.config.DatabaseConfig
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.page.DetailScreen
 import com.aozijx.passly.features.main.MainViewModel
+import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.settings.SettingsScreen
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultContent
@@ -103,35 +104,40 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             }
         })
 
-        // 初始验证
-        if (viewModel.uiState.value.databaseError == null) {
-            requestAuthentication()
-        }
         requestNotificationPermissionIfNeeded()
 
         setContent {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
             val context = LocalContext.current
 
-            // 处理紧急备份成功提示
-            LaunchedEffect(mainUiState.emergencyBackupFile) {
-                mainUiState.emergencyBackupFile?.let { file ->
-                    Toast.makeText(
-                        context,
-                        "紧急备份(明文 JSON)已导出至: ${file.absolutePath}，请立即妥善保管",
-                        Toast.LENGTH_LONG
-                    ).show()
+            // 状态驱动认证：DB 就绪且未授权时触发
+            LaunchedEffect(
+                mainUiState.isDatabaseInitializing,
+                mainUiState.databaseError,
+                mainUiState.isAuthorized
+            ) {
+                if (!mainUiState.isDatabaseInitializing
+                    && mainUiState.databaseError == null
+                    && !mainUiState.isAuthorized
+                ) {
+                    requestAuthentication()
                 }
             }
 
-            // 处理顶部菜单明文导出成功提示
-            LaunchedEffect(mainUiState.plainBackupFile) {
-                mainUiState.plainBackupFile?.let { file ->
-                    Toast.makeText(
-                        context,
-                        "明文 JSON 备份已导出至: ${file.absolutePath}，请妥善保管",
-                        Toast.LENGTH_LONG
-                    ).show()
+            // 收集 MainViewModel 单次事件
+            LaunchedEffect(Unit) {
+                viewModel.effects.collect { effect ->
+                    when (effect) {
+                        is MainEffect.ShowToast ->
+                            Toast.makeText(this@MainActivity, effect.message, Toast.LENGTH_SHORT).show()
+                        is MainEffect.ShowError ->
+                            Toast.makeText(this@MainActivity, effect.error, Toast.LENGTH_LONG).show()
+                        MainEffect.LockedByTimeout -> {
+                            showDetail = false
+                            showSettings = false
+                        }
+                        MainEffect.NavigateToVault -> { /* uiState.isAuthorized 已驱动 UI 分支 */ }
+                    }
                 }
             }
 
