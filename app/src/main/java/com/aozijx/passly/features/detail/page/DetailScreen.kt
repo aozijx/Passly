@@ -32,6 +32,8 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.DetailViewModel
 import com.aozijx.passly.features.detail.components.DetailScrollableContent
 import com.aozijx.passly.features.detail.components.DetailTopBar
+import com.aozijx.passly.features.detail.contract.DetailEffect
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.features.vault.VaultViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -109,15 +111,11 @@ fun DetailScreen(
         }
     }
 
-    val onEntryUpdated: (VaultEntry) -> Unit = { updated ->
-        detailViewModel.onEvent(DetailEvent.SyncEntry(updated))
-        vaultViewModel.updateVaultEntry(updated)
-    }
-
     LaunchedEffect(detailViewModel) {
         detailViewModel.effects.collectLatest { effect ->
             when (effect) {
-                is DetailEffect.EntryUpdated -> onEntryUpdated(effect.entry)
+                is DetailEffect.EntryUpdated -> vaultViewModel.updateVaultEntry(effect.entry)
+                DetailEffect.IconPickerRequested -> vaultViewModel.showDetailIconPicker()
             }
         }
     }
@@ -166,7 +164,7 @@ fun DetailScreen(
             activity = activity,
             mainViewModel = mainViewModel,
             vaultViewModel = vaultViewModel,
-            onEntryUpdated = onEntryUpdated,
+            onEvent = detailViewModel::onEvent,
             onInteraction = { mainViewModel.updateInteraction() }
         )
     }

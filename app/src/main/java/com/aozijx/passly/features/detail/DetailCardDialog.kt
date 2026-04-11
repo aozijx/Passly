@@ -29,6 +29,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
@@ -40,11 +41,14 @@ import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailHeader
+import com.aozijx.passly.features.detail.contract.DetailEffect
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.sections.CredentialSection
 import com.aozijx.passly.features.detail.sections.TotpSection
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.features.vault.VaultViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun DetailCardDialog(
@@ -56,12 +60,24 @@ fun DetailCardDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val detailViewModel: DetailViewModel = viewModel()
+    val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
 
     // 核心修复：不要使用 remember(initialEntry) 锁死状态
-    // 而是监听来自 ViewModel 的最新 detailRequest，确保图标保存后 UI 能感知到
-    val currentEntry by remember { derivedStateOf { vaultViewModel.detailRequest?.entry ?: initialEntry } }
+    // 而是监听来自 ViewModel 的最新 detail 协调状态，确保图标保存后 UI 能感知到
+    val currentEntry by remember {
+        derivedStateOf { vaultViewModel.detailCoordinatorState.request?.entry ?: initialEntry }
+    }
 
-    val entry = currentEntry
+    LaunchedEffect(initialEntry.id) {
+        detailViewModel.onEvent(DetailEvent.Initialize(initialEntry))
+    }
+
+    LaunchedEffect(currentEntry) {
+        detailViewModel.onEvent(DetailEvent.SyncEntry(currentEntry))
+    }
+
+    val entry = detailUiState.entry ?: currentEntry
     val vaultType = remember(entry.entryType) { EntryType.fromValue(entry.entryType) }
     val editState = remember(entry) { VaultEditState(entry) }
 
@@ -85,8 +101,13 @@ fun DetailCardDialog(
     val authQrTitle = stringResource(R.string.vault_auth_qr_title)
     val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
 
-    val onEntryUpdated: (VaultEntry) -> Unit = { updated ->
-        vaultViewModel.updateVaultEntry(updated)
+    LaunchedEffect(detailViewModel) {
+        detailViewModel.effects.collectLatest { effect ->
+            when (effect) {
+                is DetailEffect.EntryUpdated -> vaultViewModel.updateVaultEntry(effect.entry)
+                DetailEffect.IconPickerRequested -> vaultViewModel.showDetailIconPicker()
+            }
+        }
     }
 
     LaunchedEffect(entry.id, launchMode) {
@@ -131,7 +152,7 @@ fun DetailCardDialog(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     DetailHeader(
                         item = entry,
-                        onIconClick = { vaultViewModel.showIconPicker = true },
+                        onIconClick = { detailViewModel.onEvent(DetailEvent.ShowIconPicker) },
                         trailingText = entry.category
                     )
                 }
@@ -172,7 +193,7 @@ fun DetailCardDialog(
                         activity = activity,
                         mainViewModel = mainViewModel,
                         vaultViewModel = vaultViewModel,
-                        onEntryUpdated = onEntryUpdated
+                        onEvent = detailViewModel::onEvent
                     )
                 }
             }
@@ -203,7 +224,7 @@ private fun LazyListScope.typeSpecificCardContent(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEvent: (DetailEvent) -> Unit
 ) {
     item {
         when (vaultType) {
@@ -215,7 +236,7 @@ private fun LazyListScope.typeSpecificCardContent(
                     totpEditState = totpEditState,
                     showQrDialog = onShowQrDialog,
                     vaultViewModel = vaultViewModel,
-                    onEntryUpdated = onEntryUpdated
+                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                 )
             }
 
@@ -230,7 +251,7 @@ private fun LazyListScope.typeSpecificCardContent(
                     revealedPassword = revealedPassword,
                     onUsernameRevealed = onUsernameRevealed,
                     onPasswordRevealed = onPasswordRevealed,
-                    onEntryUpdated = onEntryUpdated
+                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                 )
             }
         }

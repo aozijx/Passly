@@ -20,6 +20,7 @@ import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
+import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.page.DetailOpenRequest
 import com.aozijx.passly.features.vault.internal.VaultAutofillSupport
@@ -88,11 +89,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             detailState.addType = value
         }
 
-    var detailRequest: DetailOpenRequest?
-        get() = detailState.detailRequest
-        set(value) {
-            detailState.detailRequest = value
-        }
+    internal val detailCoordinatorState: VaultDetailCoordinatorState
+        get() = detailState.detailCoordinatorState
 
     var itemToDelete: VaultEntry?
         get() = detailState.itemToDelete
@@ -100,11 +98,9 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             detailState.itemToDelete = value
         }
 
-    var showIconPicker: Boolean
-        get() = detailState.showIconPicker
-        set(value) {
-            detailState.showIconPicker = value
-        }
+    private fun updateDetailCoordinator(transform: (VaultDetailCoordinatorState) -> VaultDetailCoordinatorState) {
+        detailState.detailCoordinatorState = transform(detailState.detailCoordinatorState)
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val availableCategories: StateFlow<List<String>> =
@@ -196,7 +192,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun showDetail(entry: VaultEntry) {
-        detailRequest = DetailOpenRequest(entry = entry, launchMode = DetailLaunchMode.VIEW)
+        updateDetailCoordinator {
+            it.copy(
+                request = DetailOpenRequest(entry = entry, launchMode = DetailLaunchMode.VIEW),
+                isIconPickerVisible = false
+            )
+        }
     }
 
     fun showDetailForEdit(entry: VaultEntry) {
@@ -205,7 +206,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             DetailLaunchMode.EDIT_TOTP
         }
-        detailRequest = DetailOpenRequest(entry = entry, launchMode = launchMode)
+        updateDetailCoordinator {
+            it.copy(
+                request = DetailOpenRequest(entry = entry, launchMode = launchMode),
+                isIconPickerVisible = false
+            )
+        }
     }
 
     fun showDetail(entry: VaultSummary) = loadEntryById(entry.id) { showDetail(it) }
@@ -217,7 +223,17 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun dismissDetail() {
-        detailRequest = null
+        updateDetailCoordinator {
+            it.copy(request = null, isIconPickerVisible = false)
+        }
+    }
+
+    fun showDetailIconPicker() {
+        updateDetailCoordinator { it.copy(isIconPickerVisible = true) }
+    }
+
+    fun hideDetailIconPicker() {
+        updateDetailCoordinator { it.copy(isIconPickerVisible = false) }
     }
 
     fun addItem(entry: VaultEntry) {
@@ -237,10 +253,14 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun updateVaultEntry(entry: VaultEntry) {
         viewModelScope.launch {
             entryLifecycleSupport.updateEntry(entry)
-            if (detailRequest?.entry?.id == entry.id) {
-                detailRequest = detailRequest?.copy(entry = entry)
+            updateDetailCoordinator { current ->
+                val request = current.request
+                if (request?.entry?.id == entry.id) {
+                    current.copy(request = request.copy(entry = entry), isIconPickerVisible = false)
+                } else {
+                    current.copy(isIconPickerVisible = false)
+                }
             }
-            showIconPicker = false
             _totpStates.update { it - entry.id }
             if (!entry.totpSecret.isNullOrBlank()) autoUnlockTotp(entry)
         }
@@ -259,7 +279,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun confirmDelete() {
         itemToDelete?.let { entry ->
             viewModelScope.launch {
-                if (detailRequest?.entry?.id == entry.id) dismissDetail()
+                if (detailCoordinatorState.request?.entry?.id == entry.id) dismissDetail()
                 entryLifecycleSupport.deleteEntry(entry)
                 itemToDelete = null
                 _totpStates.update { it - entry.id }
@@ -269,7 +289,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun quickDelete(entry: VaultEntry) {
         viewModelScope.launch {
-            if (detailRequest?.entry?.id == entry.id) dismissDetail()
+            if (detailCoordinatorState.request?.entry?.id == entry.id) dismissDetail()
             entryLifecycleSupport.deleteEntry(entry)
             _totpStates.update { it - entry.id }
         }

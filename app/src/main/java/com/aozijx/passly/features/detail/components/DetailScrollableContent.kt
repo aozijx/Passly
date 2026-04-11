@@ -21,6 +21,7 @@ import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.state.TotpEditState
 import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.features.detail.sections.BankCardSection
 import com.aozijx.passly.features.detail.sections.CategoryItem
@@ -52,7 +53,7 @@ fun DetailScrollableContent(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    onEntryUpdated: (VaultEntry) -> Unit,
+    onEvent: (DetailEvent) -> Unit,
     onInteraction: () -> Unit
 ) {
     LazyColumn(
@@ -81,7 +82,7 @@ fun DetailScrollableContent(
                         revealedPassword = revealedPassword,
                         onUsernameRevealed = onUsernameRevealed,
                         onPasswordRevealed = onPasswordRevealed,
-                        onEntryUpdated = onEntryUpdated
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
             }
@@ -96,7 +97,7 @@ fun DetailScrollableContent(
                         totpEditState = totpEditState,
                         showQrDialog = onShowQrDialog,
                         vaultViewModel = vaultViewModel,
-                        onEntryUpdated = onEntryUpdated
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
             }
@@ -111,7 +112,7 @@ fun DetailScrollableContent(
                         onPasswordRevealed = onPasswordRevealed,
                         vaultViewModel = vaultViewModel,
                         mainViewModel = mainViewModel,
-                        onEntryUpdated = onEntryUpdated
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
             }
@@ -124,7 +125,7 @@ fun DetailScrollableContent(
                         editState = editState,
                         vaultViewModel = vaultViewModel,
                         mainViewModel = mainViewModel,
-                        onEntryUpdated = onEntryUpdated
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
             }
@@ -139,7 +140,7 @@ fun DetailScrollableContent(
                         onPasswordRevealed = onPasswordRevealed,
                         vaultViewModel = vaultViewModel,
                         mainViewModel = mainViewModel,
-                        onEntryUpdated = onEntryUpdated
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
             }
@@ -154,7 +155,7 @@ fun DetailScrollableContent(
                         onPasswordRevealed = onPasswordRevealed,
                         vaultViewModel = vaultViewModel,
                         mainViewModel = mainViewModel,
-                        onEntryUpdated = onEntryUpdated
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
             }
@@ -200,7 +201,7 @@ fun DetailScrollableContent(
                     viewModel = vaultViewModel,
                     entry = entry,
                     editState = editState,
-                    onEntryUpdated = onEntryUpdated
+                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                 )
             }
         }
@@ -210,7 +211,7 @@ fun DetailScrollableContent(
                 entry = entry,
                 editState = editState,
                 vaultViewModel = vaultViewModel,
-                onEntryUpdated = onEntryUpdated
+                onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
             )
         }
 
@@ -219,7 +220,7 @@ fun DetailScrollableContent(
                 entry = entry,
                 editState = editState,
                 viewModel = vaultViewModel,
-                onEntryUpdated = onEntryUpdated
+                onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
             )
         }
 

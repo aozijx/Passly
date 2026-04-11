@@ -7,9 +7,9 @@ import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.icon.FaviconResult
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
-import com.aozijx.passly.features.detail.page.DetailEffect
-import com.aozijx.passly.features.detail.page.DetailEvent
-import com.aozijx.passly.features.detail.page.DetailUiState
+import com.aozijx.passly.features.detail.contract.DetailEffect
+import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.contract.DetailUiState
 import com.aozijx.passly.features.detail.page.internal.DetailEntryAnalyzer
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,6 +50,20 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                 refreshFromEntry(event.entry, _uiState.value.isEditingTitle, editedTitle)
             }
 
+            is DetailEvent.CommitEntryUpdate -> {
+                val editedTitle = if (_uiState.value.isEditingTitle) {
+                    _uiState.value.editedTitle
+                } else {
+                    event.entry.title
+                }
+                refreshFromEntry(event.entry, _uiState.value.isEditingTitle, editedTitle)
+                emitEntryUpdated(event.entry)
+            }
+
+            DetailEvent.ShowIconPicker -> {
+                _effects.tryEmit(DetailEffect.IconPickerRequested)
+            }
+
             DetailEvent.StartTitleEdit -> {
                 _uiState.update {
                     val currentTitle = it.entry?.title.orEmpty()
@@ -82,19 +96,21 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     }
                 } else {
-                    val updated = current.copy(title = newTitle)
-                    refreshFromEntry(updated, isEditingTitle = false, editedTitle = updated.title)
-                    emitEntryUpdated(updated)
+                    commitEntryUpdate(current.copy(title = newTitle), isEditingTitle = false)
                 }
             }
 
             DetailEvent.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
-                val updated = current.copy(favorite = !current.favorite)
-                refreshFromEntry(updated, _uiState.value.isEditingTitle, _uiState.value.editedTitle)
-                emitEntryUpdated(updated)
+                commitEntryUpdate(current.copy(favorite = !current.favorite))
             }
         }
+    }
+
+    private fun commitEntryUpdate(entry: VaultEntry, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
+        val editedTitle = if (isEditingTitle) _uiState.value.editedTitle else entry.title
+        refreshFromEntry(entry, isEditingTitle = isEditingTitle, editedTitle = editedTitle)
+        emitEntryUpdated(entry)
     }
 
     private fun emitEntryUpdated(entry: VaultEntry) {

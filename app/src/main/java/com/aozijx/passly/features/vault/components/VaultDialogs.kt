@@ -19,12 +19,14 @@ fun VaultDialogs(
     vaultViewModel: VaultViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
+    val detailCoordinator = vaultViewModel.detailCoordinatorState
+
     // --- 详情对话框 ---
-    vaultViewModel.detailRequest?.let { request ->
+    detailCoordinator.request?.let { request ->
         val item = request.entry
-        if (vaultViewModel.showIconPicker) {
+        if (detailCoordinator.isIconPickerVisible) {
             IconPickerDialog(
-                onDismiss = { vaultViewModel.showIconPicker = false },
+                onDismiss = { vaultViewModel.hideDetailIconPicker() },
                 currentIconName = item.iconName,
                 currentCustomPath = item.iconCustomPath,
                 onIconSelected = { name ->
