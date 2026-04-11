@@ -40,6 +40,7 @@ import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailHeader
+import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.sections.CredentialSection
 import com.aozijx.passly.features.detail.sections.TotpSection
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
@@ -48,6 +49,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
 @Composable
 fun DetailCardDialog(
     initialEntry: VaultEntry,
+    launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
@@ -56,8 +58,8 @@ fun DetailCardDialog(
     val context = LocalContext.current
 
     // 核心修复：不要使用 remember(initialEntry) 锁死状态
-    // 而是监听来自 ViewModel 的最新 detailItem，确保图标保存后 UI 能感知到
-    val currentEntry by remember { derivedStateOf { vaultViewModel.detailItem ?: initialEntry } }
+    // 而是监听来自 ViewModel 的最新 detailRequest，确保图标保存后 UI 能感知到
+    val currentEntry by remember { derivedStateOf { vaultViewModel.detailRequest?.entry ?: initialEntry } }
 
     val entry = currentEntry
     val vaultType = remember(entry.entryType) { EntryType.fromValue(entry.entryType) }
@@ -87,10 +89,10 @@ fun DetailCardDialog(
         vaultViewModel.updateVaultEntry(updated)
     }
 
-    LaunchedEffect(entry.id, vaultViewModel.shouldStartDetailInEditMode, vaultViewModel.shouldStartTotpEdit) {
-        if (!vaultViewModel.shouldStartDetailInEditMode) return@LaunchedEffect
+    LaunchedEffect(entry.id, launchMode) {
+        if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
 
-        if (vaultViewModel.shouldStartTotpEdit) {
+        if (launchMode == DetailLaunchMode.EDIT_TOTP) {
             totpEditState.isEditing = true
         } else {
             if (entry.username.isNotEmpty()) {
@@ -99,7 +101,6 @@ fun DetailCardDialog(
                 editState.isEditingPassword = true
             }
         }
-        vaultViewModel.consumeDetailLaunchState()
     }
 
     DisposableEffect(Unit) {

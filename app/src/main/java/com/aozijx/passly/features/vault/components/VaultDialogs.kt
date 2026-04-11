@@ -20,7 +20,8 @@ fun VaultDialogs(
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
     // --- 详情对话框 ---
-    vaultViewModel.detailItem?.let { item ->
+    vaultViewModel.detailRequest?.let { request ->
+        val item = request.entry
         if (vaultViewModel.showIconPicker) {
             IconPickerDialog(
                 onDismiss = { vaultViewModel.showIconPicker = false },
@@ -40,6 +41,7 @@ fun VaultDialogs(
 
         DetailCardDialog(
             initialEntry = item,
+            launchMode = request.launchMode,
             activity = activity,
             mainViewModel = mainViewModel,
             vaultViewModel = vaultViewModel,

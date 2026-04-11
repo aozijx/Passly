@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun DetailScreen(
     initialEntry: VaultEntry,
+    launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onBack: () -> Unit,
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
@@ -86,12 +87,10 @@ fun DetailScreen(
     val authQrTitle = stringResource(R.string.vault_auth_qr_title)
     val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
 
-    LaunchedEffect(
-        entry.id, vaultViewModel.shouldStartDetailInEditMode, vaultViewModel.shouldStartTotpEdit
-    ) {
-        if (!vaultViewModel.shouldStartDetailInEditMode) return@LaunchedEffect
+    LaunchedEffect(entry.id, launchMode) {
+        if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
 
-        if (vaultViewModel.shouldStartTotpEdit) {
+        if (launchMode == DetailLaunchMode.EDIT_TOTP) {
             totpEditState.isEditing = true
         } else {
             if (entry.username.isNotEmpty()) {
@@ -100,8 +99,6 @@ fun DetailScreen(
                 editState.isEditingPassword = true
             }
         }
-
-        vaultViewModel.consumeDetailLaunchState()
     }
 
     DisposableEffect(Unit) {

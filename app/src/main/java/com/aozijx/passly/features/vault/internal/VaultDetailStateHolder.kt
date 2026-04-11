@@ -5,12 +5,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.detail.page.DetailOpenRequest
 
 internal class VaultDetailStateHolder {
     var addType by mutableStateOf(AddType.NONE)
-    var detailItem by mutableStateOf<VaultEntry?>(null)
+    var detailRequest by mutableStateOf<DetailOpenRequest?>(null)
     var itemToDelete by mutableStateOf<VaultEntry?>(null)
     var showIconPicker by mutableStateOf(false)
-    var shouldStartDetailInEditMode by mutableStateOf(false)
-    var shouldStartTotpEdit by mutableStateOf(false)
 }

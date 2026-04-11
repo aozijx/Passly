@@ -20,6 +20,8 @@ import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
+import com.aozijx.passly.features.detail.page.DetailLaunchMode
+import com.aozijx.passly.features.detail.page.DetailOpenRequest
 import com.aozijx.passly.features.vault.internal.VaultAutofillSupport
 import com.aozijx.passly.features.vault.internal.VaultCryptoSupport
 import com.aozijx.passly.features.vault.internal.VaultDetailStateHolder
@@ -86,10 +88,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             detailState.addType = value
         }
 
-    var detailItem: VaultEntry?
-        get() = detailState.detailItem
+    var detailRequest: DetailOpenRequest?
+        get() = detailState.detailRequest
         set(value) {
-            detailState.detailItem = value
+            detailState.detailRequest = value
         }
 
     var itemToDelete: VaultEntry?
@@ -102,18 +104,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         get() = detailState.showIconPicker
         set(value) {
             detailState.showIconPicker = value
-        }
-
-    var shouldStartDetailInEditMode: Boolean
-        get() = detailState.shouldStartDetailInEditMode
-        private set(value) {
-            detailState.shouldStartDetailInEditMode = value
-        }
-
-    var shouldStartTotpEdit: Boolean
-        get() = detailState.shouldStartTotpEdit
-        private set(value) {
-            detailState.shouldStartTotpEdit = value
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -205,23 +195,17 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         unlockTotp(entry.id, decrypted)
     }
 
-    private fun clearDetailLaunchState() {
-        shouldStartDetailInEditMode = false
-        shouldStartTotpEdit = false
-    }
-
-    fun consumeDetailLaunchState() = clearDetailLaunchState()
-
     fun showDetail(entry: VaultEntry) {
-        clearDetailLaunchState()
-        detailItem = entry
+        detailRequest = DetailOpenRequest(entry = entry, launchMode = DetailLaunchMode.VIEW)
     }
 
     fun showDetailForEdit(entry: VaultEntry) {
-        clearDetailLaunchState()
-        shouldStartDetailInEditMode = true
-        shouldStartTotpEdit = !entry.totpSecret.isNullOrBlank()
-        detailItem = entry
+        val launchMode = if (entry.totpSecret.isNullOrBlank()) {
+            DetailLaunchMode.EDIT_FIELDS
+        } else {
+            DetailLaunchMode.EDIT_TOTP
+        }
+        detailRequest = DetailOpenRequest(entry = entry, launchMode = launchMode)
     }
 
     fun showDetail(entry: VaultSummary) = loadEntryById(entry.id) { showDetail(it) }
@@ -233,8 +217,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun dismissDetail() {
-        detailItem = null
-        clearDetailLaunchState()
+        detailRequest = null
     }
 
     fun addItem(entry: VaultEntry) {
@@ -254,7 +237,9 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun updateVaultEntry(entry: VaultEntry) {
         viewModelScope.launch {
             entryLifecycleSupport.updateEntry(entry)
-            if (detailItem?.id == entry.id) detailItem = entry
+            if (detailRequest?.entry?.id == entry.id) {
+                detailRequest = detailRequest?.copy(entry = entry)
+            }
             showIconPicker = false
             _totpStates.update { it - entry.id }
             if (!entry.totpSecret.isNullOrBlank()) autoUnlockTotp(entry)
@@ -274,7 +259,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun confirmDelete() {
         itemToDelete?.let { entry ->
             viewModelScope.launch {
-                if (detailItem?.id == entry.id) dismissDetail()
+                if (detailRequest?.entry?.id == entry.id) dismissDetail()
                 entryLifecycleSupport.deleteEntry(entry)
                 itemToDelete = null
                 _totpStates.update { it - entry.id }
@@ -284,7 +269,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     fun quickDelete(entry: VaultEntry) {
         viewModelScope.launch {
-            if (detailItem?.id == entry.id) dismissDetail()
+            if (detailRequest?.entry?.id == entry.id) dismissDetail()
             entryLifecycleSupport.deleteEntry(entry)
             _totpStates.update { it - entry.id }
         }
