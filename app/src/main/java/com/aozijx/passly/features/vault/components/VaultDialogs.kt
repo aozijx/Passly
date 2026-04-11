@@ -64,7 +64,7 @@ fun VaultDialogs(
             item = item,
             mainViewModel = mainViewModel,
             onConfirm = { vaultViewModel.confirmDelete() },
-            onDismiss = { vaultViewModel.itemToDelete = null })
+            onDismiss = { vaultViewModel.setItemToDelete(null) })
     }
 
     if (settingsViewModel.backup.showBackupPasswordDialog) {

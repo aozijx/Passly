@@ -89,21 +89,21 @@ fun VaultFab(
                         icon = Icons.Default.QrCodeScanner,
                         onClick = {
                             showFabMenu = false
-                            viewModel.addType = AddType.SCAN
+                            viewModel.setAddType(AddType.SCAN)
                         })
                     FabMenuItem(
                         label = stringResource(R.string.vault_fab_2fa),
                         icon = Icons.Default.Pin,
                         onClick = {
                             showFabMenu = false
-                            viewModel.addType = AddType.TOTP
+                            viewModel.setAddType(AddType.TOTP)
                         })
                     FabMenuItem(
                         label = stringResource(R.string.vault_fab_password),
                         icon = Icons.Default.Key,
                         onClick = {
                             showFabMenu = false
-                            viewModel.addType = AddType.PASSWORD
+                            viewModel.setAddType(AddType.PASSWORD)
                         })
                 }
             }

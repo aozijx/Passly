@@ -186,11 +186,11 @@ fun VaultContent(
     // 导出/导入 Launcher
     var pendingManualExportFileName by remember { mutableStateOf<String?>(null) }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
-        it?.let { selectedUri -> settingsViewModel.startExport(selectedUri, fileNameHint = pendingManualExportFileName) }
+        it?.let { selectedUri -> settingsViewModel.backup.startExport(selectedUri, fileNameHint = pendingManualExportFileName) }
         pendingManualExportFileName = null
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { settingsViewModel.startImport(it) }
+        it?.let { settingsViewModel.backup.startImport(it) }
     }
 
     // FAB 滑动隐藏/显示
@@ -219,9 +219,9 @@ fun VaultContent(
                 vaultViewModel = vaultViewModel,
                 scrollBehavior = scrollBehavior,
                 onExportClick = {
-                    val started = settingsViewModel.tryStartExportInConfiguredDirectory(settingsUiState.backupDirectoryUri)
+                    val started = settingsViewModel.backup.tryStartExportInConfiguredDirectory(settingsUiState.backupDirectoryUri)
                     if (!started) {
-                        val manualFileName = settingsViewModel.nextBackupFileName()
+                        val manualFileName = settingsViewModel.backup.nextBackupFileName()
                         pendingManualExportFileName = manualFileName
                         exportLauncher.launch(manualFileName)
                     }
@@ -315,7 +315,7 @@ fun VaultContent(
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             VaultScanner(
                 vaultViewModel = vaultViewModel,
-                onDismiss = { vaultViewModel.addType = AddType.NONE }
+                onDismiss = { vaultViewModel.setAddType(AddType.NONE) }
             )
         }
     }

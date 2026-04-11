@@ -34,7 +34,9 @@ internal class VaultSearchFilterStateHolder {
 
 
     var isSearchActive by mutableStateOf(false)
+        private set
     var isMoreMenuExpanded by mutableStateOf(false)
+        private set
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
@@ -53,5 +55,9 @@ internal class VaultSearchFilterStateHolder {
         if (!active) {
             _searchQuery.value = ""
         }
+    }
+
+    fun expandMoreMenu(expanded: Boolean) {
+        isMoreMenuExpanded = expanded
     }
 }

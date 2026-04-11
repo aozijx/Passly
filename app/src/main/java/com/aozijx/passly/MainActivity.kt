@@ -63,7 +63,16 @@ class MainActivity : FragmentActivity() {
     private var showDetail by mutableStateOf(false)
     private var detailEntry by mutableStateOf<VaultEntry?>(null)
 
-    private lateinit var sensorController: MainSensorController
+    private val sensorController: MainSensorController by lazy {
+        MainSensorController(this) {
+            if (viewModel.isAuthorized) {
+                viewModel.handleIntent(MainIntent.Lock)
+                showDetail = false
+                showSettings = false
+                if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
+            }
+        }
+    }
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -76,14 +85,6 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        sensorController = MainSensorController(this) {
-            if (viewModel.isAuthorized) {
-                viewModel.handleIntent(MainIntent.Lock)
-                showDetail = false
-                showSettings = false
-                if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
-            }
-        }
         sensorController.initialize()
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -289,12 +290,12 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.handleIntent(MainIntent.CheckAndLock)
-        if (::sensorController.isInitialized && sensorController.isFlipLockEnabled) sensorController.register()
+        if (sensorController.isFlipLockEnabled) sensorController.register()
     }
 
     override fun onPause() {
         super.onPause()
-        if (::sensorController.isInitialized && sensorController.isFlipLockEnabled) sensorController.unregister()
+        if (sensorController.isFlipLockEnabled) sensorController.unregister()
     }
 }
 

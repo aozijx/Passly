@@ -79,7 +79,7 @@ fun AddTwoFADialog(
 
     BaseVaultDialog(
         title = stringResource(R.string.vault_add_2fa_title),
-        onDismiss = { viewModel.addType = AddType.NONE },
+        onDismiss = { viewModel.setAddType(AddType.NONE) },
         confirmEnabled = state.isValid,
         onConfirm = {
             try {
@@ -97,7 +97,7 @@ fun AddTwoFADialog(
                     entryType = 1
                 )
                 viewModel.addItem(entry, state.domain)
-                viewModel.addType = AddType.NONE
+                viewModel.setAddType(AddType.NONE)
             } catch (e: Exception) {
                 Logcat.e("AddTwoFA", "Failed to encrypt/save", e)
                 Toast.makeText(context, "加密保存失败", Toast.LENGTH_SHORT).show()

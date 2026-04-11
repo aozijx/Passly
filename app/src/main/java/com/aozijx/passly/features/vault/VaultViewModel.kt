@@ -61,17 +61,13 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     val selectedCategory: StateFlow<String?> = searchFilterState.selectedCategory
     val selectedTab: StateFlow<VaultTab> = searchFilterState.selectedTab
 
-    var isSearchActive: Boolean
+    val isSearchActive: Boolean
         get() = searchFilterState.isSearchActive
-        set(value) {
-            searchFilterState.isSearchActive = value
-        }
 
-    var isMoreMenuExpanded: Boolean
+    val isMoreMenuExpanded: Boolean
         get() = searchFilterState.isMoreMenuExpanded
-        set(value) {
-            searchFilterState.isMoreMenuExpanded = value
-        }
+
+    fun expandMoreMenu(expanded: Boolean) = searchFilterState.expandMoreMenu(expanded)
 
     var showTOTPCode by mutableStateOf(true)
 
@@ -83,20 +79,22 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val _isVaultItemsLoading = MutableStateFlow(true)
     val isVaultItemsLoading: StateFlow<Boolean> = _isVaultItemsLoading
 
-    var addType: AddType
+    val addType: AddType
         get() = detailState.addType
-        set(value) {
-            detailState.addType = value
-        }
+
+    fun setAddType(type: AddType) {
+        detailState.addType = type
+    }
 
     internal val detailCoordinatorState: VaultDetailCoordinatorState
         get() = detailState.detailCoordinatorState
 
-    var itemToDelete: VaultEntry?
+    val itemToDelete: VaultEntry?
         get() = detailState.itemToDelete
-        set(value) {
-            detailState.itemToDelete = value
-        }
+
+    fun setItemToDelete(entry: VaultEntry?) {
+        detailState.itemToDelete = entry
+    }
 
     private fun updateDetailCoordinator(transform: (VaultDetailCoordinatorState) -> VaultDetailCoordinatorState) {
         detailState.detailCoordinatorState = transform(detailState.detailCoordinatorState)
@@ -140,7 +138,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun openAutofillSettings(context: Context) {
-        isMoreMenuExpanded = false
+        expandMoreMenu(false)
         val started = autofillSupport.openAutofillSettings(context)
         if (!started) {
             Toast.makeText(
@@ -239,14 +237,14 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun addItem(entry: VaultEntry) {
         viewModelScope.launch {
             entryLifecycleSupport.addEntry(entry)
-            addType = AddType.NONE
+            setAddType(AddType.NONE)
         }
     }
 
     fun addItem(entry: VaultEntry, domain: String) {
         viewModelScope.launch {
             entryLifecycleSupport.addEntryWithFavicon(entry, domain)
-            addType = AddType.NONE
+            setAddType(AddType.NONE)
         }
     }
 
@@ -281,7 +279,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 if (detailCoordinatorState.request?.entry?.id == entry.id) dismissDetail()
                 entryLifecycleSupport.deleteEntry(entry)
-                itemToDelete = null
+                setItemToDelete(null)
                 _totpStates.update { it - entry.id }
             }
         }

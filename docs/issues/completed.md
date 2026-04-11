@@ -2,6 +2,77 @@
 
 ---
 
+## 2026-04-12 — 阶段 B 核心重构（P1）
+
+### P1-05 — Main Contract handleIntent 接入
+
+- **文件**: `MainActivity.kt`, `MainViewModel.kt`
+- **改动**:
+  - 删除 `MainViewModel` 中未使用的 `effect: Flow<MainEffect>` 别名（同时移除无用 `Flow` import）。
+  - `MainActivity` 中所有直接 VM 方法调用统一改为 `handleIntent`：
+    - `viewModel.lock()` → `handleIntent(MainIntent.Lock)`（onSensorChanged）
+    - `viewModel.updateInteraction()` → `handleIntent(MainIntent.UpdateInteraction)`（onUserInteraction）
+    - `viewModel.checkAndLock()` → `handleIntent(MainIntent.CheckAndLock)`（onResume）
+    - `viewModel.exportEmergencyBackup(ctx)` → `handleIntent(MainIntent.ExportEmergencyBackup(ctx))`
+    - `viewModel.exportPlainBackup(this)` → `handleIntent(MainIntent.ExportPlainBackup(this))`
+  - `viewModel.authenticate(...)` 保留直接调用（含复杂回调参数，不适合通过 Intent 传递）。
+- **关联**: `REFACTORING_TODOS.md` P1-05
+
+---
+
+### P1-01 — MainActivity 瘦身（提取 MainSensorController）
+
+- **新增文件**: `app/src/main/java/com/aozijx/passly/features/main/MainSensorController.kt`
+  - 实现 `SensorEventListener`，封装加速度计注册/注销与翻转触发逻辑。
+  - `isFlipLockEnabled`、`isFlipExitAndClearStackEnabled` 状态移至控制器。
+  - `onFlipLock` 回调由 `MainActivity` 传入，触发 lock + UI 折叠 + 可选退栈。
+- **修改**: `MainActivity.kt`
+  - 移除 `SensorEventListener` 接口实现。
+  - 移除 `sensorManager`、`accelerometer`、`isFlipLockEnabled`、`isFlipExitAndClearStackEnabled` 4 个字段。
+  - 移除 `registerSensor()`、`unregisterSensor()`、`onSensorChanged()`、`onAccuracyChanged()` 4 个方法。
+  - 改为 `private val sensorController by lazy { MainSensorController(...) }`，所有传感器操作委托给控制器。
+  - 移除 5 条 sensor 相关 import。
+- **关联**: `REFACTORING_TODOS.md` P1-01
+
+---
+
+### P1-03 — SettingsViewModel 备份逻辑拆分（提取 SettingsBackupCoordinator）
+
+- **新增文件**: `app/src/main/java/com/aozijx/passly/features/settings/SettingsBackupCoordinator.kt`
+  - 持有全部备份交互状态（8 个 `mutableStateOf` 字段：`backupMessage`、`isExporting`、`showBackupPasswordDialog`、`backupUri`、`backupPassword`、`importMode`、`includeImagesInBackup`、`backupExportFallbackFileName`）。
+  - 持有全部备份业务方法：`startExport`、`startImport`、`processBackupAction`、`dismissBackupPasswordDialog`、`clearBackupMessage`、`testBackupDirectoryWritePermission` 等。
+- **修改**: `SettingsViewModel.kt`（328 行 → 195 行）
+  - 备份相关 import、字段、方法全部移除。
+  - 新增 `val backup = SettingsBackupCoordinator(...)` 公开属性。
+  - `testBackupDirectoryWritePermission` 改为单行委托。
+- **更新调用方**:
+  - `SettingsScreen.kt`：`viewModel.backupMessage` → `viewModel.backup.backupMessage`
+  - `VaultDialogs.kt`：`settingsViewModel.showBackupPasswordDialog` → `.backup.showBackupPasswordDialog`
+  - `BackupPasswordDialog.kt`：所有 `settingsViewModel.xxx` → `settingsViewModel.backup.xxx`（13 处）
+  - `VaultScreen.kt`：`startExport`、`startImport`、`tryStartExportInConfiguredDirectory`、`nextBackupFileName` → `.backup.xxx`
+- **关联**: `REFACTORING_TODOS.md` P1-03
+
+---
+
+### P1-04 — StateHolder 可变状态治理
+
+- **修改**: `VaultSearchFilterStateHolder.kt`
+  - `isSearchActive`、`isMoreMenuExpanded` 加 `private set`，禁止外部直接赋值。
+  - 新增 `expandMoreMenu(expanded: Boolean)` 方法。
+- **修改**: `VaultDetailStateHolder.kt`
+  - `addType`、`detailCoordinatorState`、`itemToDelete` 改为 `internal set`（仅 `VaultViewModel` 可赋值）。
+- **修改**: `VaultViewModel.kt`
+  - `var isSearchActive`/`var isMoreMenuExpanded` 改为 `val`（只读），移除无用 setter。
+  - 新增 `expandMoreMenu(Boolean)`、`setAddType(AddType)`、`setItemToDelete(VaultEntry?)` 方法。
+  - 内部 `isMoreMenuExpanded = false` 改为 `expandMoreMenu(false)`。
+- **更新调用方**（6 个文件）:
+  - `AddPassword.kt`、`AddTwoFADialog.kt`、`VaultFab.kt`、`VaultScreen.kt`：`viewModel.addType = X` → `viewModel.setAddType(X)`
+  - `VaultDialogs.kt`：`vaultViewModel.itemToDelete = null` → `vaultViewModel.setItemToDelete(null)`
+  - `VaultTopBar.kt`：`vaultViewModel.isMoreMenuExpanded = true/false` → `vaultViewModel.expandMoreMenu(true/false)`
+- **关联**: `REFACTORING_TODOS.md` P1-04
+
+---
+
 ## 2026-04-12 — 阶段 A 止血（P0/P1/P3）
 
 ### P0-01 — MainEffect 接入

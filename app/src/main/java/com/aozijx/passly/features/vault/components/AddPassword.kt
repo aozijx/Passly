@@ -26,7 +26,7 @@ fun AddPasswordDialog(
 
     BaseVaultDialog(
         title = stringResource(R.string.vault_add_password_title),
-        onDismiss = { viewModel.addType = AddType.NONE },
+        onDismiss = { viewModel.setAddType(AddType.NONE) },
         confirmEnabled = state.isValid,
         onConfirm = {
             val encUser = CryptoManager.encrypt(state.username)

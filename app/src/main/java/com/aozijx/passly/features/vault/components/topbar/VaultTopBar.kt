@@ -132,7 +132,7 @@ fun VaultTopBar(
             actions = {
                 if (!vaultViewModel.isSearchActive) {
                     Box {
-                        IconButton(onClick = { vaultViewModel.isMoreMenuExpanded = true }) {
+                        IconButton(onClick = { vaultViewModel.expandMoreMenu(true) }) {
                             Icon(
                                 Icons.Default.MoreVert,
                                 contentDescription = stringResource(R.string.action_more)
@@ -140,7 +140,7 @@ fun VaultTopBar(
                         }
                         VaultDropdownMenu(
                             expanded = vaultViewModel.isMoreMenuExpanded,
-                            onDismissRequest = { vaultViewModel.isMoreMenuExpanded = false },
+                            onDismissRequest = { vaultViewModel.expandMoreMenu(false) },
                             showTOTPCode = vaultViewModel.showTOTPCode,
                             onToggleTotpVisibility = {
                                 vaultViewModel.showTOTPCode = !vaultViewModel.showTOTPCode
