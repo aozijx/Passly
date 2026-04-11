@@ -63,16 +63,7 @@ class MainActivity : FragmentActivity() {
     private var showDetail by mutableStateOf(false)
     private var detailEntry by mutableStateOf<VaultEntry?>(null)
 
-    private val sensorController by lazy {
-        MainSensorController(this) {
-            if (viewModel.isAuthorized) {
-                viewModel.handleIntent(MainIntent.Lock)
-                showDetail = false
-                showSettings = false
-                if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
-            }
-        }
-    }
+    private lateinit var sensorController: MainSensorController
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -85,6 +76,14 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        sensorController = MainSensorController(this) {
+            if (viewModel.isAuthorized) {
+                viewModel.handleIntent(MainIntent.Lock)
+                showDetail = false
+                showSettings = false
+                if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
+            }
+        }
         sensorController.initialize()
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -187,20 +186,16 @@ class MainActivity : FragmentActivity() {
                     val flipToLock = settingsUiState.isFlipToLockEnabled
                     val flipExitAndClearStack = settingsUiState.isFlipExitAndClearStackEnabled
                     LaunchedEffect(flipToLock) {
-                        isFlipLockEnabled = flipToLock
-                        if (flipToLock) {
-                            registerSensor()
-                        } else {
-                            unregisterSensor()
-                        }
+                        sensorController.isFlipLockEnabled = flipToLock
+                        if (flipToLock) sensorController.register() else sensorController.unregister()
                     }
                     LaunchedEffect(flipExitAndClearStack) {
-                        isFlipExitAndClearStackEnabled = flipExitAndClearStack
+                        sensorController.isFlipExitAndClearStackEnabled = flipExitAndClearStack
                     }
 
                     // 自动注销传感器
                     DisposableEffect(Unit) {
-                        onDispose { unregisterSensor() }
+                        onDispose { sensorController.unregister() }
                     }
 
                     // 应用状态栏自动隐藏行为设置
@@ -268,33 +263,6 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    private fun registerSensor() {
-        accelerometer?.let {
-            sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
-        }
-    }
-
-    private fun unregisterSensor() {
-        sensorManager?.unregisterListener(this)
-    }
-
-    override fun onSensorChanged(event: SensorEvent?) {
-        if (!isFlipLockEnabled || event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
-
-        val z = event.values[2]
-        // Z 轴负值表示屏幕朝下，通常 -9.8 左右是完全平放。这里取 -8.0 作为触发阈值。
-        if (z < -8.5f && viewModel.isAuthorized) {
-            viewModel.handleIntent(MainIntent.Lock)
-            showDetail = false
-            showSettings = false
-            if (isFlipExitAndClearStackEnabled) {
-                finishAndRemoveTask()
-            }
-        }
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-
     private fun requestAuthentication() {
         viewModel.authenticate(
             activity = this,
@@ -321,12 +289,12 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.handleIntent(MainIntent.CheckAndLock)
-        if (isFlipLockEnabled) registerSensor()
+        if (::sensorController.isInitialized && sensorController.isFlipLockEnabled) sensorController.register()
     }
 
     override fun onPause() {
         super.onPause()
-        if (isFlipLockEnabled) unregisterSensor()
+        if (::sensorController.isInitialized && sensorController.isFlipLockEnabled) sensorController.unregister()
     }
 }
 
