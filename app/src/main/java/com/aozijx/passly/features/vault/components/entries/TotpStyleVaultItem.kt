@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.aozijx.passly.core.designsystem.base.VaultItemIcon
 import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
-import com.aozijx.passly.domain.model.icon.VaultIconInfo
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
@@ -125,15 +124,7 @@ fun TotpStyleVaultItem(
                             shape = RoundedCornerShape(VaultCardStyleTokens.Totp.iconContainerCorner)
                         ), contentAlignment = Alignment.Center
                 ) {
-                    VaultItemIcon(
-                        VaultIconInfo(
-                            iconName = entry.iconName,
-                            iconCustomPath = entry.iconCustomPath,
-                            associatedDomain = entry.associatedDomain,
-                            associatedAppPackage = entry.associatedAppPackage,
-                            category = entry.category
-                        )
-                    )
+                    VaultItemIcon(Modifier, entry)
                 }
 
                 // 信息区域

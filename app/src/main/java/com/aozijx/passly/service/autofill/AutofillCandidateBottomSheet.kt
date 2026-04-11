@@ -33,14 +33,11 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.base.VaultItemIcon
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.icon.VaultIconInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutofillCandidateBottomSheet(
-    entries: List<VaultEntry>,
-    onCandidateSelected: (VaultEntry) -> Unit,
-    onCancel: () -> Unit
+    entries: List<VaultEntry>, onCandidateSelected: (VaultEntry) -> Unit, onCancel: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
@@ -49,8 +46,7 @@ fun AutofillCandidateBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onCancel,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
+        dragHandle = { BottomSheetDefaults.DragHandle() }) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -83,9 +79,7 @@ fun AutofillCandidateBottomSheet(
                 ) {
                     items(entries, key = { it.id }) { entry ->
                         CandidateItem(
-                            entry = entry,
-                            onClick = { onCandidateSelected(entry) }
-                        )
+                            entry = entry, onClick = { onCandidateSelected(entry) })
                     }
                 }
             }
@@ -95,8 +89,7 @@ fun AutofillCandidateBottomSheet(
 
 @Composable
 private fun CandidateItem(
-    entry: VaultEntry,
-    onClick: () -> Unit
+    entry: VaultEntry, onClick: () -> Unit
 ) {
     // 调用 AutofillCredentialProvider 进行解密以获取明文用户名
     val decryptedUsername = remember(entry) {
@@ -117,14 +110,7 @@ private fun CandidateItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             VaultItemIcon(
-                info = VaultIconInfo(
-                    iconName = entry.iconName,
-                    iconCustomPath = entry.iconCustomPath,
-                    associatedDomain = entry.associatedDomain,
-                    associatedAppPackage = entry.associatedAppPackage,
-                    category = entry.category
-                ),
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(32.dp), entry
             )
 
             Spacer(modifier = Modifier.width(12.dp))

@@ -43,7 +43,6 @@ import coil.request.SuccessResult
 import com.aozijx.passly.core.designsystem.base.VaultItemIcon
 import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
-import com.aozijx.passly.domain.model.icon.VaultIconInfo
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
@@ -174,15 +173,7 @@ fun PasswordStyleVaultItem(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(VaultCardStyleTokens.Password.contentPadding)
                 ) {
-                    VaultItemIcon(
-                        VaultIconInfo(
-                            iconName = entry.iconName,
-                            iconCustomPath = entry.iconCustomPath,
-                            associatedDomain = entry.associatedDomain,
-                            associatedAppPackage = entry.associatedAppPackage,
-                            category = entry.category
-                        )
-                    )
+                    VaultItemIcon(Modifier, entry)
                     Spacer(modifier = Modifier.width(VaultCardStyleTokens.Password.iconTextSpacing))
 
                     Column(modifier = Modifier.weight(1f)) {

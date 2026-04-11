@@ -14,6 +14,7 @@ import android.service.autofill.Presentations
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
+import androidx.compose.ui.graphics.asAndroidBitmap
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
@@ -180,12 +181,18 @@ class AutofillService : android.service.autofill.AutofillService() {
                         saveIds.toTypedArray()
                     )
 
-                    val appData = parser.packageName?.let { pkg ->
-                        PackageUtils.getAppLabelAndIcon(applicationContext, pkg)
+                    val pkgName = parser.packageName
+                    val appMetadata = pkgName?.let {
+                        PackageUtils.getAppMetadata(applicationContext, it)
                     }
-                    val appLabel = appData?.first ?: parser.webDomain
-                        ?: getString(R.string.autofill_title_app_fallback)
-                    val iconBitmap = appData?.second?.let { PackageUtils.drawableToBitmap(it) }
+
+                    val appLabel = appMetadata?.appName ?: parser.webDomain
+                    ?: getString(R.string.autofill_title_app_fallback)
+
+                    // 直接获取 Compose 的 ImageBitmap 并转为 Android Bitmap
+                    val iconBitmap = pkgName?.let {
+                        PackageUtils.loadIcon(applicationContext, it)
+                    }?.asAndroidBitmap()
 
                     if (iconBitmap != null) {
                         val customDescription = CustomDescription.Builder(
@@ -277,7 +284,6 @@ class AutofillService : android.service.autofill.AutofillService() {
                     passwordValue = password
                 )
                 if (success) {
-                    Logcat.i(tag, "Successfully saved credentials for $username")
                     callback.onSuccess()
                 } else {
                     Logcat.e(tag, "Failed to save credentials")

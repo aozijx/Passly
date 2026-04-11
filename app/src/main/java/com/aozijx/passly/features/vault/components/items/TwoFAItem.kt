@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.core.designsystem.base.VaultItemIcon
-import com.aozijx.passly.domain.model.icon.VaultIconInfo
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
@@ -61,13 +60,7 @@ fun TwoFAItem(
             modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically
         ) {
             VaultItemIcon(
-                info = VaultIconInfo(
-                    iconName = entry.iconName,
-                    iconCustomPath = entry.iconCustomPath,
-                    associatedDomain = entry.associatedDomain,
-                    associatedAppPackage = entry.associatedAppPackage,
-                    category = entry.category
-                ),
+                Modifier, entry
             )
 
             Spacer(modifier = Modifier.width(20.dp))

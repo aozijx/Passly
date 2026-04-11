@@ -35,7 +35,6 @@ import coil.request.ImageRequest
 import com.aozijx.passly.core.designsystem.base.VaultItemIcon
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.icon.VaultIconInfo
 
 @Composable
 fun DetailHeader(
@@ -62,11 +61,9 @@ fun DetailHeader(
                     .clickable(onClick = onIconClick)
             ) {
                 AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(localImageModel)
+                    model = ImageRequest.Builder(context).data(localImageModel)
                         .memoryCacheKey("${localImageModel}_${item.updatedAt}")
-                        .diskCacheKey("${localImageModel}_${item.updatedAt}")
-                        .crossfade(true)
+                        .diskCacheKey("${localImageModel}_${item.updatedAt}").crossfade(true)
                         .build(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
@@ -126,15 +123,7 @@ fun DetailHeader(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         VaultItemIcon(
-                            VaultIconInfo(
-                                iconName = item.iconName,
-                                iconCustomPath = item.iconCustomPath,
-                                associatedDomain = item.associatedDomain,
-                                associatedAppPackage = item.associatedAppPackage,
-                                category = item.category
-                            ),
-                            modifier = Modifier.size(28.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            modifier = Modifier.size(28.dp), item
                         )
                     }
                 }

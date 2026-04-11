@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
-import com.aozijx.passly.domain.model.icon.VaultIconInfo
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
@@ -45,13 +44,8 @@ fun VaultItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             VaultItemIcon(
-                info = VaultIconInfo(
-                    iconName = entry.iconName,
-                    iconCustomPath = entry.iconCustomPath,
-                    associatedDomain = entry.associatedDomain,
-                    associatedAppPackage = entry.associatedAppPackage,
-                    category = entry.category
-                )
+                Modifier,
+                entry,
             )
 
             Spacer(modifier = Modifier.width(VaultCardStyleTokens.Base.iconTextSpacing))
@@ -71,5 +65,3 @@ fun VaultItem(
         }
     }
 }
-
-
