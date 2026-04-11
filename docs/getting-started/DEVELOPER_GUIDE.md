@@ -152,7 +152,7 @@ UI 事件 -> ViewModel -> UseCase -> Repository 接口 -> Data Repository 实现
 
 - 样式分发：`features/vault/components/entries/VaultCardStyleRegistry.kt`
 - 样式实现：`PasswordStyleVaultItem.kt`、`TotpStyleVaultItem.kt`、`core/designsystem/base/VaultItem.kt`
-- 统一样式 token：`core/common/ui/VaultCardStyleTokens.kt`
+- 统一样式 token：`core/designsystem/model/VaultCardStyleTokens.kt`
 - 设置页配置：`features/settings/internal/CardStyleSettingsConfig.kt`
 
 ---
@@ -161,7 +161,7 @@ UI 事件 -> ViewModel -> UseCase -> Repository 接口 -> Data Repository 实现
 
 为了让"圆角、间距、背景 alpha、字体尺寸"等可集中调优，已引入统一 token：
 
-- `core/common/ui/VaultCardStyleTokens.kt`
+- `core/designsystem/model/VaultCardStyleTokens.kt`
 
 建议规则：
 

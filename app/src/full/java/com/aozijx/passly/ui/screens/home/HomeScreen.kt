@@ -77,12 +77,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
-    TopBarConfig(
-        title = "首页", centerTitle = true, actions = {
-            IconButton(onClick = { /* TODO */ }) {
-                Icon(Icons.Default.Notifications, contentDescription = "通知")
-            }
-        })
+    TopBarConfig(title = "首页", centerTitle = true)
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

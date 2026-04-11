@@ -17,13 +17,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,11 +51,7 @@ fun DetailScreen(navController: NavHostController) {
 
     TopBarConfig(
         title = "设备详情",
-        centerTitle = true, actions = {
-            IconButton(onClick = { /* TODO: viewModel.onSearchClick() */ }) {
-                Icon(Icons.Default.Search, contentDescription = "搜索")
-            }
-        }
+        centerTitle = true
     )
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {

@@ -221,7 +221,7 @@ Passly 的产品定位是本地隐私保险库，核心价值来自"用户数据
 
 ### Related
 
-- `core/common/ui/VaultCardStyleTokens.kt`
+- `core/designsystem/model/VaultCardStyleTokens.kt`
 - `features/vault/components/entries/VaultCardStyleRegistry.kt`
 
 ---

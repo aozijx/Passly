@@ -127,7 +127,7 @@ Set-Location "D:\MyApplication\Passly"
 
 关键文件：
 
-- `core/common/ui/VaultCardStyleTokens.kt`
+- `core/designsystem/model/VaultCardStyleTokens.kt`
 - `core/designsystem/base/VaultItem.kt`
 - `features/vault/components/entries/PasswordStyleVaultItem.kt`
 - `features/vault/components/entries/TotpStyleVaultItem.kt`

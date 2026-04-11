@@ -42,9 +42,9 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.components.PlainExportDialog
 import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.vault.components.topbar.compoents.VaultDropdownMenu
-import com.aozijx.passly.features.vault.components.topbar.compoents.VaultSearchBar
-import com.aozijx.passly.features.vault.components.topbar.compoents.VaultTabRow
+import com.aozijx.passly.features.vault.components.topbar.components.VaultDropdownMenu
+import com.aozijx.passly.features.vault.components.topbar.components.VaultSearchBar
+import com.aozijx.passly.features.vault.components.topbar.components.VaultTabRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
