@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.theme
+package com.aozijx.passly.core.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
@@ -81,5 +81,3 @@ object AppColor {
         outline = md_theme_dark_outline
     )
 }
-
-

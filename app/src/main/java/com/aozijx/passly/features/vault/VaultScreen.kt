@@ -48,7 +48,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.AppContext
-import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
@@ -62,6 +61,7 @@ import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
+import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.scanner.VaultScanner
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.components.VaultDialogs
@@ -72,8 +72,8 @@ import com.aozijx.passly.features.vault.components.topbar.VaultTopBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultContent(
-    activity: FragmentActivity,
     mainViewModel: MainViewModel,
+    activity: FragmentActivity,
     vaultViewModel: VaultViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel(),
     onSettingsClick: () -> Unit = {},

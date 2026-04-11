@@ -7,8 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.AppPreference
-import com.aozijx.passly.ui.theme.AppTheme
 import com.aozijx.passly.ui.screens.login.LoginScreen
 
 class LoginActivity : ComponentActivity() {

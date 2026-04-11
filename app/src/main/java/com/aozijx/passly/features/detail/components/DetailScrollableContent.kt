@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.state.TotpEditState
@@ -34,6 +33,7 @@ import com.aozijx.passly.features.detail.sections.SeedPhraseSection
 import com.aozijx.passly.features.detail.sections.SshKeySection
 import com.aozijx.passly.features.detail.sections.TotpSection
 import com.aozijx.passly.features.detail.sections.WifiSection
+import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable

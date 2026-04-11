@@ -47,14 +47,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.designsystem.components.PlainExportDialog
 import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
+import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.local.config.DatabaseConfig
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.page.DetailScreen
+import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsScreen
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultContent
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.ui.theme.AppTheme
 import kotlin.system.exitProcess
 
 class MainActivity : FragmentActivity(), SensorEventListener {
@@ -113,8 +114,8 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             val context = LocalContext.current
 
             // 处理紧急备份成功提示
-            LaunchedEffect(viewModel.emergencyBackupFile) {
-                viewModel.emergencyBackupFile?.let { file ->
+            LaunchedEffect(mainUiState.emergencyBackupFile) {
+                mainUiState.emergencyBackupFile?.let { file ->
                     Toast.makeText(
                         context,
                         "紧急备份(明文 JSON)已导出至: ${file.absolutePath}，请立即妥善保管",
@@ -124,8 +125,8 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             }
 
             // 处理顶部菜单明文导出成功提示
-            LaunchedEffect(viewModel.plainBackupFile) {
-                viewModel.plainBackupFile?.let { file ->
+            LaunchedEffect(mainUiState.plainBackupFile) {
+                mainUiState.plainBackupFile?.let { file ->
                     Toast.makeText(
                         context,
                         "明文 JSON 备份已导出至: ${file.absolutePath}，请妥善保管",
@@ -289,9 +290,7 @@ class MainActivity : FragmentActivity(), SensorEventListener {
             activity = this,
             title = getString(R.string.vault_auth_decrypt_title),
             subtitle = getString(R.string.vault_auth_subtitle),
-            onSuccess = {
-                viewModel.authorize()
-            },
+            onSuccess = {},
             onError = { _ ->
                 Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT)
                     .show()

@@ -30,7 +30,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.state.TotpEditState
@@ -47,6 +46,7 @@ import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.sections.CredentialSection
 import com.aozijx.passly.features.detail.sections.TotpSection
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
+import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
 import kotlinx.coroutines.flow.collectLatest
 

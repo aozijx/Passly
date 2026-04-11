@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.theme
+package com.aozijx.passly.core.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,5 +44,3 @@ fun AppTheme(
         content = content
     )
 }
-
-

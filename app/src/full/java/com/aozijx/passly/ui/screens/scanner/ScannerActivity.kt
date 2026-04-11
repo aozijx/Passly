@@ -3,7 +3,7 @@ package com.aozijx.passly.ui.screens.scanner
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.aozijx.passly.ui.theme.AppTheme
+import com.aozijx.passly.core.theme.AppTheme
 
 
 class ScannerActivity : ComponentActivity() {

@@ -25,9 +25,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.MainViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupImportMode
+import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsViewModel
 
 /**

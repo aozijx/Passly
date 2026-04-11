@@ -7,10 +7,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.lifecycleScope
+import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.AppPreference
 import com.aozijx.passly.ui.navigation.NavGraph
 import com.aozijx.passly.ui.navigation.Screen
-import com.aozijx.passly.ui.theme.AppTheme
 import com.aozijx.passly.util.PermissionManager
 import com.aozijx.passly.util.ShortcutManager
 import kotlinx.coroutines.launch
