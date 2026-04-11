@@ -1,13 +1,13 @@
 # Passly 改动操作手册（Change Playbook）
 
-本文档是 `docs/DEVELOPER_GUIDE.md` 的执行版补充，面向以下场景：
+本文档是 `getting-started/DEVELOPER_GUIDE.md` 的执行版补充，面向以下场景：
 
 - 你准备改数据库结构
 - 你准备改备份格式/导入导出
 - 你准备改 Vault 卡片样式
 - 你准备改 Autofill 引擎/服务
 
-目标：**给出可直接执行的步骤、风险提醒、验证与回滚方案**。
+目标：**给出可以直接执行的步骤、风险提醒、验证与回滚方案**。
 
 ---
 
@@ -16,9 +16,9 @@
 每次改动前，请先完成以下固定动作：
 
 1. 选择对应章节（数据库 / 备份 / 卡片样式 / Autofill）。
-2. 按章节中的“改动步骤”执行，不要跳步。
-3. 在 PR 描述粘贴章节中的“验证清单”并逐条勾选。
-4. 若出现异常，按“回滚建议”优先止损。
+2. 按章节中的"改动步骤"执行，不要跳步。
+3. 在 PR 描述粘贴章节中的"验证清单"并逐条勾选。
+4. 若出现异常，按"回滚建议"优先止损。
 
 通用本地编译命令：
 
@@ -29,12 +29,12 @@ Set-Location "D:\MyApplication\Passly"
 
 ### 0.1 执行准入（DoD）
 
-以下条件满足后，才视为该类改动“完成”：
+以下条件满足后，才视为该类改动"完成"：
 
-- 已完成对应章节“验证清单”全部项。
+- 已完成对应章节"验证清单"全部项。
 - PR 已附关键证据（命令输出/截图/日志）。
 - 已明确回滚路径，且可在 1-2 步内执行。
-- 如触发架构决策变化，已同步更新 `docs/ARCHITECTURE_DECISIONS.md`。
+- 如触发架构决策变化，已同步更新 `architecture/ARCHITECTURE_DECISIONS.md`。
 
 ---
 
@@ -44,10 +44,10 @@ Set-Location "D:\MyApplication\Passly"
 
 关键文件：
 
-- `app/src/main/java/com/aozijx/passly/data/local/AppDatabase.kt`
-- `app/src/main/java/com/aozijx/passly/data/entity/` 下实体
-- `app/src/main/java/com/aozijx/passly/data/mapper/VaultEntryMapper.kt`
-- `app/src/main/java/com/aozijx/passly/core/backup/BackupManager.kt`（联动）
+- `data/local/AppDatabase.kt`
+- `data/entity/` 下实体
+- `data/mapper/VaultEntryMapper.kt`
+- `core/backup/BackupManager.kt`（联动）
 
 ### 1.1 改动步骤
 
@@ -62,7 +62,7 @@ Set-Location "D:\MyApplication\Passly"
 
 - 旧数据迁移失败导致启动崩溃。
 - 可空性变化导致 NPE 或业务逻辑偏差。
-- mapper 漏改导致字段“看似存在但 UI 不生效”。
+- mapper 漏改导致字段"看似存在但 UI 不生效"。
 - 数据库改了但备份格式未适配，导入失败。
 
 ### 1.3 验证清单
@@ -87,9 +87,9 @@ Set-Location "D:\MyApplication\Passly"
 
 关键文件：
 
-- `app/src/main/java/com/aozijx/passly/core/backup/BackupManager.kt`
-- `app/src/main/java/com/aozijx/passly/data/mapper/VaultEntryMapper.kt`
-- `app/src/main/java/com/aozijx/passly/data/local/AppDatabase.kt`（联动）
+- `core/backup/BackupManager.kt`
+- `data/mapper/VaultEntryMapper.kt`
+- `data/local/AppDatabase.kt`（联动）
 
 ### 2.1 改动步骤
 
@@ -117,7 +117,7 @@ Set-Location "D:\MyApplication\Passly"
 
 1. 不删除旧导入路径，临时保留旧分支解析器。
 2. 格式升级失败时，优先恢复读取兼容而非强推新格式。
-3. 线上异常时提供“只读导入诊断”能力（日志+提示）。
+3. 线上异常时提供"只读导入诊断"能力（日志 + 提示）。
 
 ---
 
@@ -127,12 +127,12 @@ Set-Location "D:\MyApplication\Passly"
 
 关键文件：
 
-- `app/src/main/java/com/aozijx/passly/core/common/ui/VaultCardStyleTokens.kt`
-- `app/src/main/java/com/aozijx/passly/core/designsystem/base/VaultItem.kt`
-- `app/src/main/java/com/aozijx/passly/features/vault/components/entries/PasswordStyleVaultItem.kt`
-- `app/src/main/java/com/aozijx/passly/features/vault/components/entries/TotpStyleVaultItem.kt`
-- `app/src/main/java/com/aozijx/passly/features/vault/components/entries/VaultCardStyleRegistry.kt`
-- `app/src/main/java/com/aozijx/passly/features/settings/components/CardStyleSettingsSection.kt`
+- `core/common/ui/VaultCardStyleTokens.kt`
+- `core/designsystem/base/VaultItem.kt`
+- `features/vault/components/entries/PasswordStyleVaultItem.kt`
+- `features/vault/components/entries/TotpStyleVaultItem.kt`
+- `features/vault/components/entries/VaultCardStyleRegistry.kt`
+- `features/settings/components/CardStyleSettingsSection.kt`
 
 ### 3.1 改动步骤
 
@@ -169,9 +169,9 @@ Set-Location "D:\MyApplication\Passly"
 
 关键文件（按模块）：
 
-- `app/src/main/java/com/aozijx/passly/service/autofill/`
-- `app/src/main/java/com/aozijx/passly/service/autofill/engine/`
-- `app/src/main/java/com/aozijx/passly/service/autofill/presentation/`
+- `service/autofill/`
+- `service/autofill/engine/`
+- `service/autofill/presentation/`
 
 ### 4.1 改动步骤
 
@@ -184,7 +184,7 @@ Set-Location "D:\MyApplication\Passly"
 
 - 匹配变慢导致 Autofill 体验劣化。
 - 匹配过宽导致候选泄漏风险。
-- 仅改展示层导致“看起来正确，实际匹配错误”。
+- 仅改展示层导致"看起来正确，实际匹配错误"。
 
 ### 4.3 验证清单
 
@@ -198,7 +198,7 @@ Set-Location "D:\MyApplication\Passly"
 
 1. 优先回滚匹配规则变更，保留日志增强代码。
 2. 若表现层异常，先恢复旧 presentation 组装逻辑。
-3. 对线上问题优先“降低风险面”而不是“扩展功能”。
+3. 对线上问题优先"降低风险面"而不是"扩展功能"。
 
 ---
 

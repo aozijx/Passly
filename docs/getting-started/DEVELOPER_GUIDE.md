@@ -1,4 +1,4 @@
-# Passly 开发者项目文档
+# Passly 开发者指南
 
 本文档面向 **新加入开发者** 和 **准备做功能改造/重构的同学**，目标是：
 
@@ -13,24 +13,24 @@
 
 | 文档 | 作用 | 什么时候看 |
 | --- | --- | --- |
-| `docs/INDEX.md` | 文档统一导航入口 | 不确定先读哪份文档时 |
+| `INDEX.md` | 文档统一导航入口 | 不确定先读哪份文档时 |
 | `README.md` | 项目入口与最小上手信息 | 第一次进入项目时 |
-| `docs/PROJECT_STRUCTURE.md` | 目录结构与模块职责速查 | 需要快速定位代码落点时 |
-| `docs/DEVELOPER_GUIDE.md` | 架构认知、模块定位、常见开发路径 | 准备开始开发或重构前 |
-| `docs/ARCHITECTURE_DECISIONS.md` | 关键技术决策与“为什么这样做” | 设计方案评审、跨模块改动前 |
-| `docs/CHANGE_PLAYBOOK.md` | 高风险改动执行清单（步骤/验证/回滚） | 准备提交数据库/备份/样式/Autofill改动时 |
+| `PROJECT_STRUCTURE.md` | 目录结构与模块职责速查 | 需要快速定位代码落点时 |
+| `DEVELOPER_GUIDE.md` | 架构认知、模块定位、常见开发路径 | 准备开始开发或重构前 |
+| `ARCHITECTURE_DECISIONS.md` | 关键技术决策与"为什么这样做" | 设计方案评审、跨模块改动前 |
+| `CHANGE_PLAYBOOK.md` | 高风险改动执行清单（步骤/验证/回滚） | 准备提交数据库/备份/样式/Autofill 改动时 |
 
-推荐顺序：`README.md` -> `docs/INDEX.md` -> `docs/DEVELOPER_GUIDE.md` -> `docs/ARCHITECTURE_DECISIONS.md` -> `docs/CHANGE_PLAYBOOK.md`
+推荐顺序：`README.md` -> `INDEX.md` -> `DEVELOPER_GUIDE.md` -> `ARCHITECTURE_DECISIONS.md` -> `CHANGE_PLAYBOOK.md`
 
 ---
 
 ## 文档更新基线
 
-当代码改动影响“架构决策”或“执行步骤”时，文档同步遵循：
+当代码改动影响"架构决策"或"执行步骤"时，文档同步遵循：
 
-1. 先判断是否触发 ADR 变更（`docs/ARCHITECTURE_DECISIONS.md`）。
-2. 再更新执行清单（`docs/CHANGE_PLAYBOOK.md`）。
-3. 最后检查导航与入口是否需要调整（`docs/INDEX.md` / `README.md`）。
+1. 先判断是否触发 ADR 变更（`ARCHITECTURE_DECISIONS.md`）。
+2. 再更新执行清单（`CHANGE_PLAYBOOK.md`）。
+3. 最后检查导航与入口是否需要调整（`INDEX.md` / `README.md`）。
 
 PR 建议至少包含以下一项文档更新：
 
@@ -105,7 +105,7 @@ UI 事件 -> ViewModel -> UseCase -> Repository 接口 -> Data Repository 实现
 
 项目不使用 Hilt/Dagger，统一由 `AppContainer` 手工构建：
 
-- `app/src/main/java/com/aozijx/passly/core/di/AppContainer.kt`
+- `core/di/AppContainer.kt`
 
 新增全局依赖时请优先在该处集中接线，避免散落构造。
 
@@ -114,15 +114,15 @@ UI 事件 -> ViewModel -> UseCase -> Repository 接口 -> Data Repository 实现
 ## 4. 关键文件导航（建议阅读顺序）
 
 1. `README.md`
-2. `AGENTS.md`
-3. `app/src/main/java/com/aozijx/passly/core/di/AppContainer.kt`
-4. `app/src/main/java/com/aozijx/passly/data/local/AppDatabase.kt`
-5. `app/src/main/java/com/aozijx/passly/core/crypto/CryptoManager.kt`
-6. `app/src/main/java/com/aozijx/passly/core/backup/BackupManager.kt`
-7. `app/src/main/java/com/aozijx/passly/features/vault/VaultViewModel.kt`
-8. `app/src/main/java/com/aozijx/passly/domain/strategy/EntryTypeStrategyRegistry.kt`
-9. `app/src/main/java/com/aozijx/passly/data/mapper/VaultEntryMapper.kt`
-10. `app/src/main/java/com/aozijx/passly/service/autofill/` 下关键文件
+2. `INDEX.md`
+3. `core/di/AppContainer.kt`
+4. `data/local/AppDatabase.kt`
+5. `core/crypto/CryptoManager.kt`
+6. `core/backup/BackupManager.kt`
+7. `features/vault/VaultViewModel.kt`
+8. `domain/strategy/EntryTypeStrategyRegistry.kt`
+9. `data/mapper/VaultEntryMapper.kt`
+10. `service/autofill/` 下关键文件
 
 ---
 
@@ -159,9 +159,9 @@ UI 事件 -> ViewModel -> UseCase -> Repository 接口 -> Data Repository 实现
 
 ## 6. UI 样式系统（重点，最近重构过）
 
-为了让“圆角、间距、背景 alpha、字体尺寸”等可集中调优，已引入统一 token：
+为了让"圆角、间距、背景 alpha、字体尺寸"等可集中调优，已引入统一 token：
 
-- `app/src/main/java/com/aozijx/passly/core/common/ui/VaultCardStyleTokens.kt`
+- `core/common/ui/VaultCardStyleTokens.kt`
 
 建议规则：
 
@@ -169,7 +169,7 @@ UI 事件 -> ViewModel -> UseCase -> Repository 接口 -> Data Repository 实现
 2. **样式特有参数** 放 `Password` / `Totp`
 3. **行为常量**（如阈值、状态标签）保留在对应组件本地，不混入纯样式 token
 
-这样后续你要统一“更圆”“更紧凑”“深色背景更柔和”时，只改 token 文件即可。
+这样后续你要统一"更圆""更紧凑""深色背景更柔和"时，只改 token 文件即可。
 
 ---
 
@@ -177,7 +177,7 @@ UI 事件 -> ViewModel -> UseCase -> Repository 接口 -> Data Repository 实现
 
 入口 ViewModel：
 
-- `app/src/main/java/com/aozijx/passly/features/detail/DetailViewModel.kt`
+- `features/detail/DetailViewModel.kt`
 
 职责：
 
@@ -195,13 +195,13 @@ UI 事件 -> ViewModel -> UseCase -> Repository 接口 -> Data Repository 实现
 
 ## 8. 安全与高风险改动红线
 
-以下改动必须做“联动审查”：
+以下改动必须做"联动审查"：
 
 1. **加密存储逻辑**：`CryptoManager`、数据库 passphrase、备份格式
 2. **数据库 schema**：migration + 历史数据兼容
 3. **备份格式版本**：导入导出向后兼容策略
 4. **Autofill 查询/匹配**：性能阈值与隐私边界
-5. **新增网络能力**：与项目“离线优先”原则冲突，需专项评估
+5. **新增网络能力**：与项目"离线优先"原则冲突，需专项评估
 
 ---
 
@@ -263,7 +263,7 @@ Set-Location "D:\MyApplication\Passly"
 ## 12. 新人 30 分钟上手路径
 
 1. 阅读 `README.md`
-2. 阅读 `AGENTS.md`
+2. 阅读 `INDEX.md`
 3. 打开 `AppContainer.kt` 了解依赖组织
 4. 跑 `:app:compileFullDebugKotlin`
 5. 看 `VaultViewModel.kt` + `DetailViewModel.kt`
@@ -275,16 +275,8 @@ Set-Location "D:\MyApplication\Passly"
 ## 13. 代码风格与改动建议
 
 - 小步改动，单点验证
-- 先抽“通用配置/常量”，再改逻辑
+- 先抽"通用配置/常量"，再改逻辑
 - 谨慎修改高风险模块（加密、备份、数据库、autofill）
 - 尽量让 UI 组件无业务副作用
-
----
-
-## 14. 后续可继续完善（建议）
-
-1. 增加最小化回归清单模板（发版前执行）
-2. 增加术语表（中英对照，降低沟通成本）
-3. 增加“新功能开发模板”（需求 -> 设计 -> 落地 -> 验证）
 
 ---

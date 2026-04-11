@@ -1,6 +1,7 @@
 package com.aozijx.passly.core.di
 
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
+import com.aozijx.passly.domain.usecase.detail.DetailUseCases
 import com.aozijx.passly.domain.usecase.settings.SettingsUseCases
 import com.aozijx.passly.domain.usecase.userconfig.UserConfigUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
@@ -13,8 +14,14 @@ object DomainModule {
         VaultUseCases(
             vaultRepository = DataModule.vaultRepository,
             vaultSearchRepository = DataModule.vaultSearchRepository,
-            historyRepository = DataModule.historyRepository,
             otpRepository = DataModule.otpRepository,
+            faviconRepository = DataModule.faviconRepository
+        )
+    }
+
+    val detailUseCases: DetailUseCases by lazy {
+        DetailUseCases(
+            vaultRepository = DataModule.vaultRepository,
             faviconRepository = DataModule.faviconRepository
         )
     }

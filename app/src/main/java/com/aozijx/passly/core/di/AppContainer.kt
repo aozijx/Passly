@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
+import com.aozijx.passly.domain.usecase.detail.DetailUseCases
 import com.aozijx.passly.domain.usecase.settings.SettingsUseCases
 import com.aozijx.passly.domain.usecase.userconfig.UserConfigUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
@@ -29,6 +30,7 @@ object AppContainer {
 
     // --- Domain 模块暴露 ---
     val vaultUseCases: VaultUseCases get() = DomainModule.vaultUseCases
+    val detailUseCases: DetailUseCases get() = DomainModule.detailUseCases
     val settingsUseCases: SettingsUseCases get() = DomainModule.settingsUseCases
     val userConfigUseCases: UserConfigUseCases get() = DomainModule.userConfigUseCases
     val autofillUseCases: AutofillUseCases get() = DomainModule.autofillUseCases

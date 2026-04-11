@@ -4,10 +4,10 @@
 
 ## 导航
 
-- 文档索引：`docs/INDEX.md`
-- 开发者指南：`docs/DEVELOPER_GUIDE.md`
-- 改动操作手册：`docs/CHANGE_PLAYBOOK.md`
-- 架构决策记录：`docs/ARCHITECTURE_DECISIONS.md`
+- 文档索引：`INDEX.md`
+- 开发者指南：`DEVELOPER_GUIDE.md`
+- 改动操作手册：`CHANGE_PLAYBOOK.md`
+- 架构决策记录：`ARCHITECTURE_DECISIONS.md`
 
 ---
 
@@ -46,6 +46,11 @@ com.aozijx.passly
 │
 ├── features                    // 功能层（按业务拆分）
 │   ├── detail
+│   │   ├── DetailScreen.kt
+│   │   ├── DetailViewModel.kt
+│   │   ├── contract/           // MVI 契约
+│   │   ├── internal/           // 内部支持逻辑
+│   │   └── sections/           // 按类型分段的 UI
 │   ├── scanner
 │   ├── settings
 │   │   ├── SettingsScreen.kt
@@ -78,4 +83,3 @@ com.aozijx.passly
 - `features`：按业务拆分的 UI 与交互入口。
 - `service`：系统服务能力（如 Autofill）及其引擎。
 - `ui`：全局主题与 UI 基础配置。
-

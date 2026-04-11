@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class DetailViewModel(application: Application) : AndroidViewModel(application) {
-    private val vaultUseCases = AppContainer.vaultUseCases
+    private val detailUseCases = AppContainer.detailUseCases
     private val entryAnalyzer = DetailEntryAnalyzer()
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -30,11 +30,10 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
     fun onEvent(event: DetailEvent): VaultEntry? {
         return when (event) {
             is DetailEvent.Initialize -> {
-                // --- 修复点：立即同步刷新状态，防止一闪而过的旧数据 ---
                 refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
                 
                 viewModelScope.launch {
-                    val latest = vaultUseCases.getEntryById(event.initialEntry.id) ?: event.initialEntry
+                    val latest = detailUseCases.getEntryById(event.initialEntry.id) ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
                     autoDownloadFavicon(latest)
                 }
@@ -102,10 +101,10 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
         val domain = entry.associatedDomain
         if (!domain.isNullOrBlank() && entry.iconCustomPath.isNullOrBlank()) {
             viewModelScope.launch {
-                val outcome = vaultUseCases.downloadFavicon(domain)
+                val outcome = detailUseCases.downloadFavicon(domain)
                 if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                     val updatedEntry = entry.copy(iconCustomPath = outcome.filePath)
-                    vaultUseCases.updateEntry(updatedEntry)
+                    detailUseCases.updateEntry(updatedEntry)
                     refreshFromEntry(updatedEntry, _uiState.value.isEditingTitle, _uiState.value.editedTitle)
                 }
             }
