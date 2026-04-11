@@ -32,10 +32,6 @@ data class MainUiState(
  * 全局控制中心：负责生物识别认证、自动锁定逻辑以及全局 UI 设置。
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
-    private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
-
     // --- 安全锁定逻辑 ---
     private var lockTimeMs = 60000L
     private var lastInteractionTime = System.currentTimeMillis()
@@ -56,13 +52,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     // --- 全局 UI 状态 ---
-    val isDarkMode: StateFlow<Boolean?> = systemSettingsUseCases.isDarkMode.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), null
-    )
-
-    val isDynamicColor: StateFlow<Boolean> = systemSettingsUseCases.isDynamicColor.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), true
-    )
+    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
+    private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
 
     private val authorizationState: StateFlow<Boolean> = snapshotFlow { isAuthorized }.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), isAuthorized
@@ -73,7 +64,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     val uiState: StateFlow<MainUiState> = combine(
-        authorizationState, isDarkMode, isDynamicColor, dbErrorState
+        authorizationState,
+        systemSettingsUseCases.isDarkMode,
+        systemSettingsUseCases.isDynamicColor,
+        dbErrorState
     ) { authorized, darkMode, dynamicColor, dbError ->
         MainUiState(
             isAuthorized = authorized,

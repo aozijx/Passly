@@ -1,9 +1,9 @@
-package com.aozijx.passly.domain.usecase.settings
+package com.aozijx.passly.domain.usecase.settings.system
 
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
-import com.aozijx.passly.domain.repository.config.SettingsRepository
+import com.aozijx.passly.domain.repository.settings.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 
 /**

@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository
+package com.aozijx.passly.data.repository.history
 
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.mapper.toDomainHistoryList

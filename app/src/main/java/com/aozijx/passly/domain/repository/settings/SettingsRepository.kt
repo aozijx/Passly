@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.repository.config
+package com.aozijx.passly.domain.repository.settings
 
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType

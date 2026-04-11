@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository
+package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.mapper.toDomain

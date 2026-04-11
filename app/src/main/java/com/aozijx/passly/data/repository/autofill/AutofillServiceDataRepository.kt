@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository
+package com.aozijx.passly.data.repository.autofill
 
 import android.content.Context
 import com.aozijx.passly.R

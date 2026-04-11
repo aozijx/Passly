@@ -1,6 +1,6 @@
-package com.aozijx.passly.domain.usecase.settings
+package com.aozijx.passly.domain.usecase.settings.security
 
-import com.aozijx.passly.domain.repository.config.SettingsRepository
+import com.aozijx.passly.domain.repository.settings.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 
 /**

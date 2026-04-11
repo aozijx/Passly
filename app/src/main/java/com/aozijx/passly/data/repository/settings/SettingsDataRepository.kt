@@ -1,10 +1,10 @@
-package com.aozijx.passly.data.repository
+package com.aozijx.passly.data.repository.settings
 
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.data.local.AppPrefs
-import com.aozijx.passly.domain.repository.config.SettingsRepository
+import com.aozijx.passly.domain.repository.settings.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 
 class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {

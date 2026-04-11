@@ -6,5 +6,5 @@ package com.aozijx.passly.core.di
 object AppContainer {
 
     // --- 聚合领域层模块 ---
-    val domain: DomainModule by lazy { DomainModule() }
+    internal val domain by lazy { DomainModule() }
 }

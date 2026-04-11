@@ -3,17 +3,17 @@ package com.aozijx.passly.core.di
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.config.UserConfigFileStore
-import com.aozijx.passly.data.repository.AutofillServiceDataRepository
-import com.aozijx.passly.data.repository.FaviconDataRepository
-import com.aozijx.passly.data.repository.HistoryDataRepository
-import com.aozijx.passly.data.repository.OtpDataRepository
-import com.aozijx.passly.data.repository.SettingsDataRepository
-import com.aozijx.passly.data.repository.UserConfigDataRepository
-import com.aozijx.passly.data.repository.VaultDataRepository
-import com.aozijx.passly.data.repository.VaultSearchDataRepository
-import com.aozijx.passly.domain.repository.config.SettingsRepository
-import com.aozijx.passly.domain.repository.config.UserConfigRepository
+import com.aozijx.passly.data.repository.autofill.AutofillServiceDataRepository
+import com.aozijx.passly.data.repository.favicon.FaviconDataRepository
+import com.aozijx.passly.data.repository.history.HistoryDataRepository
+import com.aozijx.passly.data.repository.otp.OtpDataRepository
+import com.aozijx.passly.data.repository.settings.SettingsDataRepository
+import com.aozijx.passly.data.repository.settings.UserConfigDataRepository
+import com.aozijx.passly.data.repository.vault.VaultDataRepository
+import com.aozijx.passly.data.repository.vault.VaultSearchDataRepository
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
+import com.aozijx.passly.domain.repository.settings.SettingsRepository
+import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
@@ -27,39 +27,39 @@ object DataModule {
     private val appContext = AppContext.get()
     private val database by lazy { AppDatabase.getDatabase(appContext) }
 
-    val vaultRepository: VaultRepository by lazy {
+    internal val vaultRepository: VaultRepository by lazy {
         VaultDataRepository(database.vaultEntryDao())
     }
 
-    val vaultSearchRepository: VaultSearchRepository by lazy {
+    internal val vaultSearchRepository: VaultSearchRepository by lazy {
         VaultSearchDataRepository(database.vaultEntryDao())
     }
 
-    val historyRepository: HistoryRepository by lazy {
+    internal val historyRepository: HistoryRepository by lazy {
         HistoryDataRepository(database.vaultHistoryDao())
     }
 
-    val otpRepository: OtpRepository by lazy {
+    internal val otpRepository: OtpRepository by lazy {
         OtpDataRepository()
     }
 
-    val autofillServiceRepository: AutofillServiceRepository by lazy {
+    internal val autofillServiceRepository: AutofillServiceRepository by lazy {
         AutofillServiceDataRepository(appContext)
     }
 
-    val settingsRepository: SettingsRepository by lazy {
+    internal val settingsRepository: SettingsRepository by lazy {
         SettingsDataRepository(appContext.preference)
     }
 
-    val faviconRepository: FaviconRepository by lazy {
+    internal val faviconRepository: FaviconRepository by lazy {
         FaviconDataRepository(appContext)
     }
 
-    private val userConfigStore: UserConfigFileStore by lazy {
+    private val userConfigStore by lazy {
         UserConfigFileStore(appContext)
     }
 
-    val userConfigRepository: UserConfigRepository by lazy {
+    internal val userConfigRepository: UserConfigRepository by lazy {
         UserConfigDataRepository(userConfigStore)
     }
 }

@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.repository.config
+package com.aozijx.passly.domain.repository.userconfig
 
 import com.aozijx.passly.domain.model.UserConfig
 import kotlinx.coroutines.flow.Flow
