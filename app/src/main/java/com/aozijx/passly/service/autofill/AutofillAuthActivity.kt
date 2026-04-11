@@ -32,7 +32,7 @@ class AutofillAuthActivity : FragmentActivity() {
     }
 
     private var selectionInProgress = false
-    private val autofillRepository = AppContainer.autofillUseCases
+    private val autofillRepository = AppContainer.domain.autofillUseCases
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))

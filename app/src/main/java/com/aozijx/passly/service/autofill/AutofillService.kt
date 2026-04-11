@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
  */
 class AutofillService : android.service.autofill.AutofillService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val autofillRepository = AppContainer.autofillUseCases
+    private val autofillRepository = AppContainer.domain.autofillUseCases
     private val tag = "PasslyAutofill"
     private val slowFillTotalMs = 250L
     private val slowRepositoryMs = 120L

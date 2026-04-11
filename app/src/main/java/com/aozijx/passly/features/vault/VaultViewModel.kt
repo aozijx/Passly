@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
  */
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val vaultUseCases = AppContainer.vaultUseCases
+    private val vaultUseCases = AppContainer.domain.vaultUseCases
     private val autofillSupport = VaultAutofillSupport()
     private val cryptoSupport = VaultCryptoSupport()
     private val totpSupport = VaultTotpSupport()

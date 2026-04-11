@@ -33,7 +33,8 @@ data class MainUiState(
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val settingsUseCases = AppContainer.settingsUseCases
+    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
+    private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
 
     // --- 安全锁定逻辑 ---
     private var lockTimeMs = 60000L
@@ -55,11 +56,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     // --- 全局 UI 状态 ---
-    val isDarkMode: StateFlow<Boolean?> = settingsUseCases.isDarkMode.stateIn(
+    val isDarkMode: StateFlow<Boolean?> = systemSettingsUseCases.isDarkMode.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
 
-    val isDynamicColor: StateFlow<Boolean> = settingsUseCases.isDynamicColor.stateIn(
+    val isDynamicColor: StateFlow<Boolean> = systemSettingsUseCases.isDynamicColor.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), true
     )
 
@@ -85,7 +86,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         checkDatabaseStatus()
         viewModelScope.launch {
-            settingsUseCases.lockTimeout.collect { timeout ->
+            securitySettingsUseCases.lockTimeout.collect { timeout ->
                 lockTimeMs = timeout.coerceAtLeast(5000L)
                 if (isAuthorized) {
                     scheduleLockTimer()

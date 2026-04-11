@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class DetailViewModel(application: Application) : AndroidViewModel(application) {
-    private val detailUseCases = AppContainer.detailUseCases
+    private val detailUseCases = AppContainer.domain.detailUseCases
     private val entryAnalyzer = DetailEntryAnalyzer()
 
     private val _uiState = MutableStateFlow(DetailUiState())
