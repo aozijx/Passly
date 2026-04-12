@@ -2,9 +2,11 @@ package com.aozijx.passly.features.main
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.di.AppContainer
@@ -68,7 +70,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MainIntent.CheckAndLock -> autoLockCoordinator.checkNow(isAuthorized)
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             is MainIntent.ExportEmergencyBackup -> exportEmergencyBackup(intent.context)
-            is MainIntent.ExportPlainBackup -> exportPlainBackup(intent.context)
+            is MainIntent.ExportPlainBackup -> exportPlainBackup(intent.context, intent.dirUri)
+            is MainIntent.ExportPlainBackupToUri -> exportPlainBackupToUri(intent.context, intent.uri)
         }
     }
 
@@ -190,25 +193,50 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun exportPlainBackup(context: Context) {
+    fun exportPlainBackup(context: Context, dirUri: String? = null) {
+        if (!isAuthorized) {
+            emitEffect(MainEffect.ShowError("请先完成解锁验证后再导出明文备份"))
+            return
+        }
+
+        val fileName = "Passly_Plain_Backup_${System.currentTimeMillis()}.json"
+        if (!dirUri.isNullOrBlank()) {
+            // 优先写入用户配置的 SAF 目录
+            viewModelScope.launch {
+                val targetResult = withContext(Dispatchers.IO) {
+                    BackupExportStorageSupport.createNamedExportTarget(
+                        context.applicationContext, dirUri, fileName
+                    )
+                }
+                targetResult.fold(
+                    onSuccess = { target -> exportPlainBackupToUri(context, target.fileUri) },
+                    onFailure = {
+                        // 目录不可写，回退到文件选择器
+                        emitEffect(MainEffect.ShowPlainExportPicker(fileName))
+                    }
+                )
+            }
+        } else {
+            // 未配置目录，通知 UI 弹出文件选择器
+            emitEffect(MainEffect.ShowPlainExportPicker(fileName))
+        }
+    }
+
+    fun exportPlainBackupToUri(context: Context, uri: Uri) {
         if (!isAuthorized) {
             emitEffect(MainEffect.ShowError("请先完成解锁验证后再导出明文备份"))
             return
         }
 
         viewModelScope.launch {
-            val exportResult = withContext(Dispatchers.IO) {
-                EmergencyBackupExporter.exportPlainBackup(context.applicationContext)
+            val result = withContext(Dispatchers.IO) {
+                EmergencyBackupExporter.exportPlainBackupToUri(context.applicationContext, uri)
             }
-
-            exportResult.fold(
-                onSuccess = { file ->
-                    _uiState.update { it.copy(plainBackupFile = file) }
-                    emitEffect(MainEffect.ShowToast("普通备份已导出: ${file.name}"))
-                },
+            result.fold(
+                onSuccess = { emitEffect(MainEffect.ShowToast("明文备份已导出")) },
                 onFailure = { e ->
                     val message = validationSupport.sanitizeMessage(e.message)
-                    emitEffect(MainEffect.ShowError("普通备份导出失败: $message"))
+                    emitEffect(MainEffect.ShowError("明文备份导出失败: $message"))
                 }
             )
         }

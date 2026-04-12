@@ -3,8 +3,10 @@ package com.aozijx.passly
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,7 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -92,6 +96,13 @@ class MainActivity : FragmentActivity() {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
             val context = LocalContext.current
 
+            // 明文导出：文件选择器（配置目录不可用时的回退）
+            val plainExportPickerLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.CreateDocument("application/json")
+            ) { uri ->
+                uri?.let { viewModel.handleIntent(MainIntent.ExportPlainBackupToUri(context, it)) }
+            }
+
             // 状态驱动认证：DB 就绪且未授权时触发
             LaunchedEffect(
                 mainUiState.isDatabaseInitializing,
@@ -114,6 +125,8 @@ class MainActivity : FragmentActivity() {
                             Toast.makeText(this@MainActivity, effect.message, Toast.LENGTH_SHORT).show()
                         is MainEffect.ShowError ->
                             Toast.makeText(this@MainActivity, effect.error, Toast.LENGTH_LONG).show()
+                        is MainEffect.ShowPlainExportPicker ->
+                            plainExportPickerLauncher.launch(effect.fileName)
                         // 锁定/解锁由 isAuthorized 分支驱动，NavHost 重建后自动回到 Vault 起始页
                         MainEffect.LockedByTimeout, MainEffect.NavigateToVault -> Unit
                     }
@@ -187,6 +200,7 @@ class MainActivity : FragmentActivity() {
                     }
 
                     if (mainUiState.isAuthorized) {
+                        var showPlainExportRiskDialog by remember { mutableStateOf(false) }
                         val navController = rememberNavController()
                         PasslyNavHost(
                             navController = navController,
@@ -194,16 +208,30 @@ class MainActivity : FragmentActivity() {
                             mainViewModel = viewModel,
                             vaultViewModel = vaultViewModel,
                             settingsViewModel = settingsViewModel,
-                            onPlainExportClick = {
-                                viewModel.authenticate(
-                                    activity = this,
-                                    title = getString(R.string.vault_backup_auth_title),
-                                    subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export)
-                                ) {
-                                    viewModel.handleIntent(MainIntent.ExportPlainBackup(this))
-                                }
-                            }
+                            onPlainExportClick = { showPlainExportRiskDialog = true }
                         )
+
+                        if (showPlainExportRiskDialog) {
+                            PlainExportDialog(
+                                type = PlainExportDialogType.NormalExport,
+                                onExportBackup = {
+                                    showPlainExportRiskDialog = false
+                                    viewModel.authenticate(
+                                        activity = this@MainActivity,
+                                        title = getString(R.string.vault_backup_auth_title),
+                                        subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export)
+                                    ) {
+                                        viewModel.handleIntent(
+                                            MainIntent.ExportPlainBackup(
+                                                context,
+                                                settingsUiState.backupDirectoryUri
+                                            )
+                                        )
+                                    }
+                                },
+                                onResetOrCancel = { showPlainExportRiskDialog = false }
+                            )
+                        }
                     } else {
                         AuthorizationPlaceholder { requestAuthentication() }
                     }
