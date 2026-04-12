@@ -5,7 +5,6 @@ import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,9 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,34 +38,28 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.core.designsystem.components.PlainExportDialog
 import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
+import com.aozijx.passly.core.navigation.PasslyNavHost
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.local.config.DatabaseConfig
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.detail.page.DetailScreen
 import com.aozijx.passly.features.main.MainSensorController
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
-import com.aozijx.passly.features.settings.SettingsScreen
 import com.aozijx.passly.features.settings.SettingsViewModel
-import com.aozijx.passly.features.vault.VaultContent
 import com.aozijx.passly.features.vault.VaultViewModel
 import kotlin.system.exitProcess
 
 class MainActivity : FragmentActivity() {
     private val viewModel: MainViewModel by viewModels()
-    private var showSettings by mutableStateOf(false)
-    private var showDetail by mutableStateOf(false)
-    private var detailEntry by mutableStateOf<VaultEntry?>(null)
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
             if (viewModel.isAuthorized) {
                 viewModel.handleIntent(MainIntent.Lock)
-                showDetail = false
-                showSettings = false
+                // NavHost 被 isAuthorized=false 驱动自动卸载，无需手动清理导航栈
                 if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
             }
         }
@@ -94,19 +85,6 @@ class MainActivity : FragmentActivity() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-
-        // 添加返回按钮回调
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (showDetail) {
-                    showDetail = false
-                } else if (showSettings) {
-                    showSettings = false
-                } else {
-                    finish()
-                }
-            }
-        })
 
         requestNotificationPermissionIfNeeded()
 
@@ -136,11 +114,8 @@ class MainActivity : FragmentActivity() {
                             Toast.makeText(this@MainActivity, effect.message, Toast.LENGTH_SHORT).show()
                         is MainEffect.ShowError ->
                             Toast.makeText(this@MainActivity, effect.error, Toast.LENGTH_LONG).show()
-                        MainEffect.LockedByTimeout -> {
-                            showDetail = false
-                            showSettings = false
-                        }
-                        MainEffect.NavigateToVault -> { /* uiState.isAuthorized 已驱动 UI 分支 */ }
+                        // 锁定/解锁由 isAuthorized 分支驱动，NavHost 重建后自动回到 Vault 起始页
+                        MainEffect.LockedByTimeout, MainEffect.NavigateToVault -> Unit
                     }
                 }
             }
@@ -211,46 +186,26 @@ class MainActivity : FragmentActivity() {
                         }
                     }
 
-                    when {
-                        showDetail && detailEntry != null -> {
-                            DetailScreen(
-                                initialEntry = detailEntry!!,
-                                onBack = { showDetail = false },
-                                activity = this,
-                                mainViewModel = viewModel,
-                                vaultViewModel = vaultViewModel
-                            )
-                        }
-
-                        showSettings -> {
-                            SettingsScreen(onBack = { showSettings = false })
-                        }
-
-                        mainUiState.isAuthorized -> {
-                            VaultContent(
-                                activity = this,
-                                mainViewModel = viewModel,
-                                vaultViewModel = vaultViewModel,
-                                settingsViewModel = settingsViewModel,
-                                onSettingsClick = { showSettings = true },
-                                onPlainExportClick = {
-                                    viewModel.authenticate(
-                                        activity = this,
-                                        title = getString(R.string.vault_backup_auth_title),
-                                        subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export)
-                                    ) {
-                                        viewModel.handleIntent(MainIntent.ExportPlainBackup(this))
-                                    }
-                                },
-                                onShowDetail = { entry ->
-                                    detailEntry = entry
-                                    showDetail = true
-                                })
-                        }
-
-                        else -> {
-                            AuthorizationPlaceholder { requestAuthentication() }
-                        }
+                    if (mainUiState.isAuthorized) {
+                        val navController = rememberNavController()
+                        PasslyNavHost(
+                            navController = navController,
+                            activity = this,
+                            mainViewModel = viewModel,
+                            vaultViewModel = vaultViewModel,
+                            settingsViewModel = settingsViewModel,
+                            onPlainExportClick = {
+                                viewModel.authenticate(
+                                    activity = this,
+                                    title = getString(R.string.vault_backup_auth_title),
+                                    subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export)
+                                ) {
+                                    viewModel.handleIntent(MainIntent.ExportPlainBackup(this))
+                                }
+                            }
+                        )
+                    } else {
+                        AuthorizationPlaceholder { requestAuthentication() }
                     }
                 } else {
                     // 数据库错误时的背景占位
