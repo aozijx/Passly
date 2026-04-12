@@ -35,6 +35,7 @@ import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.features.main.MainViewModel
+import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.vault.VaultViewModel
 import kotlinx.coroutines.flow.collectLatest
 
@@ -55,7 +56,7 @@ fun DetailScreen(
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        mainViewModel.updateInteraction()
+        mainViewModel.handleIntent(MainIntent.UpdateInteraction)
     }
 
     // --- 解决闪烁：由 ViewModel 的同步重置逻辑和这里的 LaunchedEffect 共同保障 ---
@@ -126,7 +127,7 @@ fun DetailScreen(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = { mainViewModel.updateInteraction() }),
+                onClick = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }),
         topBar = {
             DetailTopBar(
                 entry = entry,
@@ -134,7 +135,7 @@ fun DetailScreen(
                 scrollBehavior = scrollBehavior,
                 onEvent = detailViewModel::onEvent,
                 onBack = onBack,
-                onInteraction = { mainViewModel.updateInteraction() }
+                onInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
             )
         }
     ) { padding ->
@@ -165,7 +166,7 @@ fun DetailScreen(
             mainViewModel = mainViewModel,
             vaultViewModel = vaultViewModel,
             onEvent = detailViewModel::onEvent,
-            onInteraction = { mainViewModel.updateInteraction() }
+            onInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
         )
     }
 

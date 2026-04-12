@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.di.AppContainer
-import com.aozijx.passly.core.security.AutoLockScheduler
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.main.contract.MainUiState
@@ -34,8 +33,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val validationSupport = MainValidationSupport()
     private val databaseInitializer = MainDatabaseInitializer()
+    
+    // Coordinator 现在内部封装了 Scheduler，直接传递 scope 即可
     private val autoLockCoordinator = MainAutoLockCoordinator(
-        scheduler = AutoLockScheduler(viewModelScope, ::onAutoLockTimeout),
+        scope = viewModelScope,
         validationSupport = validationSupport
     )
 
@@ -48,6 +49,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         observeSettings()
         initializeDatabase()
+        observeAutoLock()
     }
 
     fun handleIntent(intent: MainIntent) {
@@ -62,8 +64,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
             MainIntent.Authorize -> authorize()
             MainIntent.Lock -> lock()
-            MainIntent.UpdateInteraction -> updateInteraction()
-            MainIntent.CheckAndLock -> checkAndLock()
+            MainIntent.UpdateInteraction -> autoLockCoordinator.onInteraction(isAuthorized)
+            MainIntent.CheckAndLock -> autoLockCoordinator.checkNow(isAuthorized)
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             is MainIntent.ExportEmergencyBackup -> exportEmergencyBackup(intent.context)
             is MainIntent.ExportPlainBackup -> exportPlainBackup(intent.context)
@@ -116,23 +118,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun lock() {
-        if (!_uiState.value.isAuthorized) {
+        if (!isAuthorized) {
             autoLockCoordinator.onLocked()
             return
         }
-
         _uiState.update { it.copy(isAuthorized = false) }
         autoLockCoordinator.onLocked()
     }
 
-    fun updateInteraction() {
-        autoLockCoordinator.onInteraction(_uiState.value.isAuthorized)
+    private fun observeAutoLock() {
+        viewModelScope.launch {
+            autoLockCoordinator.shouldLock.collect {
+                if (isAuthorized) {
+                    lock()
+                    emitEffect(MainEffect.LockedByTimeout)
+                }
+            }
+        }
     }
 
-    fun checkAndLock() {
-        val decision = autoLockCoordinator.checkNow(_uiState.value.isAuthorized)
-        if (decision.shouldLockNow) {
-            lockByTimeout()
+    private fun observeSettings() {
+        viewModelScope.launch {
+            systemSettingsUseCases.isDarkMode.collect { isDarkMode ->
+                _uiState.update { it.copy(isDarkMode = isDarkMode) }
+            }
+        }
+
+        viewModelScope.launch {
+            systemSettingsUseCases.isDynamicColor.collect { isDynamicColor ->
+                _uiState.update { it.copy(isDynamicColor = isDynamicColor) }
+            }
+        }
+
+        viewModelScope.launch {
+            securitySettingsUseCases.lockTimeout.collect { lockTimeout ->
+                val decision = autoLockCoordinator.applyTimeout(lockTimeout, isAuthorized)
+                _uiState.update {
+                    it.copy(
+                        lockTimeoutMs = decision.timeoutMs,
+                        validationMessage = if (decision.timeoutAdjusted) {
+                            "自动锁定时长过小，已自动调整为 5 秒"
+                        } else {
+                            it.validationMessage
+                        }
+                    )
+                }
+
+                if (decision.timeoutAdjusted) {
+                    emitEffect(MainEffect.ShowToast("自动锁定时长已调整为最短 5 秒"))
+                }
+            }
         }
     }
 
@@ -156,7 +191,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun exportPlainBackup(context: Context) {
-        if (!_uiState.value.isAuthorized) {
+        if (!isAuthorized) {
             emitEffect(MainEffect.ShowError("请先完成解锁验证后再导出明文备份"))
             return
         }
@@ -179,45 +214,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun observeSettings() {
-        viewModelScope.launch {
-            systemSettingsUseCases.isDarkMode.collect { isDarkMode ->
-                _uiState.update { it.copy(isDarkMode = isDarkMode) }
-            }
-        }
-
-        viewModelScope.launch {
-            systemSettingsUseCases.isDynamicColor.collect { isDynamicColor ->
-                _uiState.update { it.copy(isDynamicColor = isDynamicColor) }
-            }
-        }
-
-        viewModelScope.launch {
-            securitySettingsUseCases.lockTimeout.collect { lockTimeout ->
-                val decision =
-                    autoLockCoordinator.applyTimeout(lockTimeout, isAuthorized = _uiState.value.isAuthorized)
-                _uiState.update {
-                    it.copy(
-                        lockTimeoutMs = decision.timeoutMs,
-                        validationMessage = if (decision.timeoutAdjusted) {
-                            "自动锁定时长过小，已自动调整为 5 秒"
-                        } else {
-                            it.validationMessage
-                        }
-                    )
-                }
-
-                if (decision.timeoutAdjusted) {
-                    emitEffect(MainEffect.ShowToast("自动锁定时长已调整为最短 5 秒"))
-                }
-
-                if (decision.shouldLockNow) {
-                    lockByTimeout()
-                }
-            }
-        }
-    }
-
     private fun initializeDatabase() {
         viewModelScope.launch {
             _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
@@ -233,16 +229,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 emitEffect(MainEffect.ShowError(validationSupport.formatDatabaseError(error)))
             }
         }
-    }
-
-    private fun onAutoLockTimeout() {
-        lockByTimeout()
-    }
-
-    private fun lockByTimeout() {
-        if (!_uiState.value.isAuthorized) return
-        lock()
-        emitEffect(MainEffect.LockedByTimeout)
     }
 
     private fun emitEffect(effect: MainEffect) {
