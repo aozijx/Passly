@@ -4,10 +4,16 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import com.aozijx.passly.core.logging.Logcat
 
 internal class VaultAutofillSupport {
+    var isEnabled by mutableStateOf(false)
+        internal set
+
     private companion object {
         const val AUTOFILL_SERVICE_CLASS = "com.aozijx.passly.service.autofill.AutofillService"
     }

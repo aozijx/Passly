@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-04-12 — 阶段 B 核心重构（P1）续
+
+### P1-02 — VaultViewModel 拆分第一阶段（提取内部协调器）
+
+- **新增文件**: `app/src/main/java/com/aozijx/passly/features/vault/internal/VaultDetailCoordinator.kt`
+  - 封装 `VaultDetailStateHolder`（私有持有）。
+  - 对外暴露只读属性：`addType`、`itemToDelete`、`coordinatorState`。
+  - 提供方法：`setAddType`、`setItemToDelete`、`showDetail`、`showDetailForEdit`、`dismissDetail`、`showIconPicker`、`hideIconPicker`、`updateEntry`、`isViewingEntry`。
+  - 私有 `update(transform)` 统一驱动 `VaultDetailCoordinatorState` 变更。
+- **新增文件**: `app/src/main/java/com/aozijx/passly/features/vault/internal/VaultTotpCoordinator.kt`
+  - 构造参数：`scope: CoroutineScope`、`codeGenerator`、`decryptSecret`。
+  - 持有 `_states: MutableStateFlow<Map<Int, TotpState>>`，暴露 `states: StateFlow`。
+  - 包装 `VaultTotpSupport`（内部持有，保留纯逻辑分离）。
+  - 方法：`start(entriesProvider)`、`unlock`、`autoUnlock`、`removeEntry`。
+- **修改**: `VaultAutofillSupport.kt`
+  - 新增 `var isEnabled by mutableStateOf(false) internal set`，将自动填充启用态移入支持类自身。
+- **修改**: `VaultViewModel.kt`（311 行 → 195 行）
+  - 移除 `_totpStates`、`totpSupport`、`detailState`、`updateDetailCoordinator` 等直接状态持有与私有工具方法。
+  - 以 `detailCoordinator`、`totpCoordinator` 替代，Init 块改为 `totpCoordinator.start { vaultItems.value }`。
+  - `isAutofillEnabled` 改为 `autofillSupport.isEnabled` 代理；`updateAutofillStatus` 写入 `autofillSupport.isEnabled`。
+  - 修复 P1-04 遗留编译 bug：`addItem` 中 `addType = AddType.NONE` × 2 → `setAddType(AddType.NONE)`；`confirmDelete` 中 `itemToDelete = null` → `detailCoordinator.setItemToDelete(null)`。
+  - 所有 detail/TOTP 方法改为单行委托；公共 API 签名完全向后兼容。
+- **关联**: `REFACTORING_TODOS.md` P1-02
+
+---
+
 ## 2026-04-12 — 阶段 B 核心重构（P1）
 
 ### P1-05 — Main Contract handleIntent 接入
