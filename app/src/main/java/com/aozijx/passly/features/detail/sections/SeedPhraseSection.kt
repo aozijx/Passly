@@ -34,8 +34,8 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.detail.EntryEditState
 import com.aozijx.passly.features.detail.components.DetailItem
+import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
 

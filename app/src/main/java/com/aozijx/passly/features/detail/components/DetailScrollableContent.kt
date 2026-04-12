@@ -18,9 +18,9 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.detail.EntryEditState
-import com.aozijx.passly.features.detail.TotpEditState
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.internal.EntryEditState
+import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.features.detail.sections.BankCardSection
 import com.aozijx.passly.features.detail.sections.CategoryItem

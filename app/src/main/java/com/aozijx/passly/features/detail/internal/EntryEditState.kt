@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.detail
+package com.aozijx.passly.features.detail.internal
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

@@ -12,9 +12,9 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.detail.TotpEditState
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.components.TotpCodeCard
+import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.dialogs.EditTotpSection
 import com.aozijx.passly.features.vault.VaultViewModel
 

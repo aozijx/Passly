@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import android.service.autofill.Dataset
 import android.service.autofill.Field
+import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
 import android.view.autofill.AutofillValue
@@ -66,7 +67,8 @@ class AutofillAuthActivity : FragmentActivity() {
                                         entry = selected,
                                         usernameId = usernameId,
                                         passwordId = passwordId,
-                                        otpId = otpId
+                                        otpId = otpId,
+                                        uiMode = uiMode
                                     )
                                 }
                             },
@@ -92,7 +94,8 @@ class AutofillAuthActivity : FragmentActivity() {
                 entry = entry,
                 usernameId = usernameId,
                 passwordId = passwordId,
-                otpId = otpId
+                otpId = otpId,
+                uiMode = uiMode
             )
         }
     }
@@ -101,11 +104,12 @@ class AutofillAuthActivity : FragmentActivity() {
         entry: VaultEntry,
         usernameId: AutofillId?,
         passwordId: AutofillId?,
-        otpId: AutofillId?
+        otpId: AutofillId?,
+        uiMode: AutofillUiMode
     ) {
         Logcat.d(
             TAG,
-            "authenticateAndFill: entryId=${entry.id}, usernameId=${usernameId != null}, passwordId=${passwordId != null}, otpId=${otpId != null}"
+            "authenticateAndFill: entryId=${entry.id}, usernameId=${usernameId != null}, passwordId=${passwordId != null}, otpId=${otpId != null}, uiMode=$uiMode"
         )
         BiometricHelper.authenticate(
             activity = this,
@@ -136,10 +140,19 @@ class AutofillAuthActivity : FragmentActivity() {
                 )
 
                 if (dataset != null) {
-                    setResult(RESULT_OK, Intent().apply {
-                        putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset)
-                    })
-                    Logcat.i(TAG, "Autofill dataset built successfully")
+                    // FillResponse-level auth (BOTTOM_SHEET) requires a FillResponse back;
+                    // Dataset-level auth (SYSTEM_INLINE) requires a Dataset back.
+                    val resultIntent = Intent()
+                    if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
+                        resultIntent.putExtra(
+                            AutofillManager.EXTRA_AUTHENTICATION_RESULT,
+                            FillResponse.Builder().addDataset(dataset).build()
+                        )
+                    } else {
+                        resultIntent.putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset)
+                    }
+                    setResult(RESULT_OK, resultIntent)
+                    Logcat.i(TAG, "Autofill result built successfully (uiMode=$uiMode)")
 
                     lifecycleScope.launch {
                         autofillRepository.updateUsageStats(entry)

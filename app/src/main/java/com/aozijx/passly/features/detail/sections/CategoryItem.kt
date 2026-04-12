@@ -35,7 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.detail.EntryEditState
+import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
