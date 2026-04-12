@@ -82,6 +82,7 @@
     <string name="vault_menu_show_totp">Show codes</string>
     <string name="vault_menu_enable_autofill">Enable autofill</string>
     <string name="vault_toast_enable_autofill_manual">Please enable autofill in system settings</string>
+    <string name="vault_toast_save_icon_failed">Failed to save icon</string>
     <string name="vault_menu_export">Export backup</string>
     <string name="vault_menu_import">Import backup</string>
     <string name="vault_menu_all_categories">All categories</string>

@@ -5,7 +5,7 @@ import com.aozijx.passly.domain.model.TotpConfig
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import kotlinx.coroutines.delay
 
-internal class VaultTotpSupport {
+internal class TotpHelper {
 
     suspend fun runRefresher(
         statesProvider: () -> Map<Int, TotpState>,
@@ -17,12 +17,7 @@ internal class VaultTotpSupport {
         while (true) {
             val current = statesProvider()
             if (current.isNotEmpty()) {
-                val refreshed = refreshStates(
-                    current = current,
-                    entries = entriesProvider(),
-                    codeGenerator = codeGenerator
-                )
-                updateStates(refreshed)
+                updateStates(refreshStates(current, entriesProvider(), codeGenerator))
             }
             delay(intervalMs)
         }
@@ -35,11 +30,9 @@ internal class VaultTotpSupport {
         nowSeconds: Long = System.currentTimeMillis() / 1000
     ): Map<Int, TotpState> {
         if (current.isEmpty()) return current
-
         return current.mapValues { (id, state) ->
             val entry = entries.find { it.id == id } ?: return@mapValues state
             val secret = state.decryptedSecret ?: return@mapValues state
-
             val period = entry.totpPeriod.coerceAtLeast(1)
             val remaining = period - (nowSeconds % period)
             val code = codeGenerator(
@@ -52,7 +45,6 @@ internal class VaultTotpSupport {
                     label = entry.title
                 )
             )
-
             state.copy(code = code, progress = remaining.toFloat() / period)
         }
     }
@@ -61,7 +53,5 @@ internal class VaultTotpSupport {
         current: Map<Int, TotpState>,
         entryId: Int,
         decryptedSecret: String
-    ): Map<Int, TotpState> {
-        return current + (entryId to TotpState("------", 1f, decryptedSecret))
-    }
+    ): Map<Int, TotpState> = current + (entryId to TotpState("------", 1f, decryptedSecret))
 }

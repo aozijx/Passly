@@ -86,6 +86,7 @@
     <string name="vault_menu_show_totp">显示验证码</string>
     <string name="vault_menu_enable_autofill">开启自动填充</string>
     <string name="vault_toast_enable_autofill_manual">请在系统设置中开启自动填充</string>
+    <string name="vault_toast_save_icon_failed">图片保存失败</string>
     <string name="vault_menu_export">导出备份</string>
     <string name="vault_menu_import">导入恢复</string>
     <string name="vault_menu_all_categories">全部分类</string>

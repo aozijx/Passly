@@ -20,13 +20,13 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
-import com.aozijx.passly.features.vault.internal.VaultAutofillSupport
-import com.aozijx.passly.features.vault.internal.VaultCryptoSupport
-import com.aozijx.passly.features.vault.internal.VaultDetailCoordinator
-import com.aozijx.passly.features.vault.internal.VaultEntryFileSupport
-import com.aozijx.passly.features.vault.internal.VaultEntryLifecycleSupport
-import com.aozijx.passly.features.vault.internal.VaultSearchFilterStateHolder
-import com.aozijx.passly.features.vault.internal.VaultTotpCoordinator
+import com.aozijx.passly.features.vault.internal.AutofillCoordinator
+import com.aozijx.passly.features.vault.internal.CryptoHelper
+import com.aozijx.passly.features.vault.internal.DetailCoordinator
+import com.aozijx.passly.features.vault.internal.EntryIconHelper
+import com.aozijx.passly.features.vault.internal.EntryManager
+import com.aozijx.passly.features.vault.internal.SearchFilterState
+import com.aozijx.passly.features.vault.internal.TotpCoordinator
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -42,47 +42,47 @@ import kotlinx.coroutines.launch
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     private val vaultUseCases = AppContainer.domain.vaultUseCases
-    private val autofillSupport = VaultAutofillSupport()
-    private val cryptoSupport = VaultCryptoSupport()
-    private val entryFileSupport = VaultEntryFileSupport()
-    private val entryLifecycleSupport = VaultEntryLifecycleSupport(vaultUseCases, entryFileSupport)
-    private val onDemandQuerySupport = VaultOnDemandQuerySupport(vaultUseCases)
-    private val searchFilterState = VaultSearchFilterStateHolder()
-    private val detailCoordinator = VaultDetailCoordinator()
-    private val totpCoordinator = VaultTotpCoordinator(
+    private val autofill = AutofillCoordinator()
+    private val crypto = CryptoHelper()
+    private val iconHelper = EntryIconHelper()
+    private val entryManager = EntryManager(vaultUseCases, iconHelper)
+    private val queryCoordinator = VaultQueryCoordinator(vaultUseCases)
+    private val searchFilter = SearchFilterState()
+    private val detail = DetailCoordinator()
+    private val totp = TotpCoordinator(
         scope = viewModelScope,
         codeGenerator = { config -> vaultUseCases.getTotpCode(config) },
-        decryptSecret = { encrypted -> cryptoSupport.decryptTotpSecret(encrypted) }
+        decryptSecret = { encrypted -> crypto.decryptTotpSecret(encrypted) }
     )
 
     // --- Search / Filter ---
-    val searchQuery: StateFlow<String> = searchFilterState.searchQuery
-    val selectedCategory: StateFlow<String?> = searchFilterState.selectedCategory
-    val selectedTab: StateFlow<VaultTab> = searchFilterState.selectedTab
-    val isSearchActive: Boolean get() = searchFilterState.isSearchActive
-    val isMoreMenuExpanded: Boolean get() = searchFilterState.isMoreMenuExpanded
-    fun expandMoreMenu(expanded: Boolean) = searchFilterState.expandMoreMenu(expanded)
+    val searchQuery: StateFlow<String> = searchFilter.searchQuery
+    val selectedCategory: StateFlow<String?> = searchFilter.selectedCategory
+    val selectedTab: StateFlow<VaultTab> = searchFilter.selectedTab
+    val isSearchActive: Boolean get() = searchFilter.isSearchActive
+    val isMoreMenuExpanded: Boolean get() = searchFilter.isMoreMenuExpanded
+    fun expandMoreMenu(expanded: Boolean) = searchFilter.expandMoreMenu(expanded)
 
     // --- Display state ---
     var showTOTPCode by mutableStateOf(true)
-    val isAutofillEnabled: Boolean get() = autofillSupport.isEnabled
+    val isAutofillEnabled: Boolean get() = autofill.isEnabled
 
     // --- TOTP & loading state ---
-    val totpStates: StateFlow<Map<Int, TotpState>> = totpCoordinator.states
+    val totpStates: StateFlow<Map<Int, TotpState>> = totp.states
     private val _isVaultItemsLoading = MutableStateFlow(true)
     val isVaultItemsLoading: StateFlow<Boolean> = _isVaultItemsLoading
 
     // --- Detail / Add / Delete state ---
-    val addType: AddType get() = detailCoordinator.addType
-    fun setAddType(type: AddType) = detailCoordinator.setAddType(type)
-    internal val detailCoordinatorState: VaultDetailCoordinatorState get() = detailCoordinator.coordinatorState
-    val itemToDelete: VaultEntry? get() = detailCoordinator.itemToDelete
-    fun setItemToDelete(entry: VaultEntry?) = detailCoordinator.setItemToDelete(entry)
+    val addType: AddType get() = detail.addType
+    fun setAddType(type: AddType) = detail.setAddType(type)
+    internal val detailCoordinatorState: VaultDetailCoordinatorState get() = detail.coordinatorState
+    val itemToDelete: VaultEntry? get() = detail.itemToDelete
+    fun setItemToDelete(entry: VaultEntry?) = detail.setItemToDelete(entry)
 
     // --- Data flows ---
     @OptIn(ExperimentalCoroutinesApi::class)
     val availableCategories: StateFlow<List<String>> =
-        searchFilterState.selectedTab.flatMapLatest { tab ->
+        searchFilter.selectedTab.flatMapLatest { tab ->
             val entryFilter = when (tab) {
                 VaultTab.PASSWORDS -> VaultSearchRepository.EntryFilter.PASSWORD_ONLY
                 VaultTab.TOTP -> VaultSearchRepository.EntryFilter.TOTP_ONLY
@@ -95,34 +95,27 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
      * 核心优化：使用处理后的流（去抖动、标准化、去重）来驱动数据库查询
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val vaultItems: StateFlow<List<VaultSummary>> = onDemandQuerySupport.observeVaultItems(
-        debouncedSearchQuery = searchFilterState.debouncedSearchQuery,
-        normalizedSelectedCategory = searchFilterState.normalizedSelectedCategory,
-        distinctSelectedTab = searchFilterState.distinctSelectedTab
+    val vaultItems: StateFlow<List<VaultSummary>> = queryCoordinator.observeItems(
+        debouncedSearchQuery = searchFilter.debouncedSearchQuery,
+        normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
+        distinctSelectedTab = searchFilter.distinctSelectedTab
     ).onEach { items ->
         if (_isVaultItemsLoading.value) _isVaultItemsLoading.value = false
-        entryLifecycleSupport.autoUpdateMissingIcons(items, viewModelScope)
+        entryManager.downloadMissingIcons(items, viewModelScope)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        totpCoordinator.start { vaultItems.value }
-        updateAutofillStatus()
+        totp.start { vaultItems.value }
+        autofill.refreshStatus(getApplication())
     }
 
     // --- Autofill ---
-    fun updateAutofillStatus() {
-        autofillSupport.isEnabled = autofillSupport.isAutofillEnabled(getApplication())
-    }
+    fun updateAutofillStatus() = autofill.refreshStatus(getApplication())
 
     fun openAutofillSettings(context: Context) {
         expandMoreMenu(false)
-        val started = autofillSupport.openAutofillSettings(context)
-        if (!started) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.vault_toast_enable_autofill_manual),
-                Toast.LENGTH_LONG
-            ).show()
+        if (!autofill.openSettings(context)) {
+            Toast.makeText(context, R.string.vault_toast_enable_autofill_manual, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -132,89 +125,89 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         encryptedData: String,
         authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
         onResult: (String?) -> Unit
-    ) = cryptoSupport.decryptSingle(activity, encryptedData, authenticate, onResult)
+    ) = crypto.decryptSingle(activity, encryptedData, authenticate, onResult)
 
     fun decryptMultiple(
         activity: FragmentActivity,
         encryptedList: List<String>,
         authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
         onResult: (List<String?>) -> Unit
-    ) = cryptoSupport.decryptMultiple(activity, encryptedList, authenticate, onResult)
+    ) = crypto.decryptMultiple(activity, encryptedList, authenticate, onResult)
 
     // --- TOTP ---
-    fun autoUnlockTotp(entry: VaultEntry) = totpCoordinator.autoUnlock(entry.toSummary())
-    fun autoUnlockTotp(entry: VaultSummary) = totpCoordinator.autoUnlock(entry)
-    fun unlockTotp(entryId: Int, decryptedSecret: String) = totpCoordinator.unlock(entryId, decryptedSecret)
+    fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry.toSummary())
+    fun autoUnlockTotp(entry: VaultSummary) = totp.autoUnlock(entry)
+    fun unlockTotp(entryId: Int, decryptedSecret: String) = totp.unlock(entryId, decryptedSecret)
 
     // --- Detail management ---
-    fun showDetail(entry: VaultEntry) = detailCoordinator.showDetail(entry)
-    fun showDetailForEdit(entry: VaultEntry) = detailCoordinator.showDetailForEdit(entry)
+    fun showDetail(entry: VaultEntry) = detail.showDetail(entry)
+    fun showDetailForEdit(entry: VaultEntry) = detail.showDetailForEdit(entry)
     fun showDetail(entry: VaultSummary) = loadEntryById(entry.id) { showDetail(it) }
     fun loadEntryById(entryId: Int, onLoaded: (VaultEntry) -> Unit) {
         viewModelScope.launch { vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) } }
     }
-    fun dismissDetail() = detailCoordinator.dismissDetail()
-    fun showDetailIconPicker() = detailCoordinator.showIconPicker()
-    fun hideDetailIconPicker() = detailCoordinator.hideIconPicker()
+    fun dismissDetail() = detail.dismissDetail()
+    fun showDetailIconPicker() = detail.showIconPicker()
+    fun hideDetailIconPicker() = detail.hideIconPicker()
 
     // --- Entry CRUD ---
     fun addItem(entry: VaultEntry) {
         viewModelScope.launch {
-            entryLifecycleSupport.addEntry(entry)
+            entryManager.addEntry(entry)
             setAddType(AddType.NONE)
         }
     }
 
     fun addItem(entry: VaultEntry, domain: String) {
         viewModelScope.launch {
-            entryLifecycleSupport.addEntryWithFavicon(entry, domain)
+            entryManager.addEntryWithFavicon(entry, domain)
             setAddType(AddType.NONE)
         }
     }
 
     fun updateVaultEntry(entry: VaultEntry) {
         viewModelScope.launch {
-            entryLifecycleSupport.updateEntry(entry)
-            detailCoordinator.updateEntry(entry)
-            totpCoordinator.removeEntry(entry.id)
-            if (!entry.totpSecret.isNullOrBlank()) totpCoordinator.autoUnlock(entry.toSummary())
+            entryManager.updateEntry(entry)
+            detail.updateEntry(entry)
+            totp.removeEntry(entry.id)
+            if (!entry.totpSecret.isNullOrBlank()) totp.autoUnlock(entry.toSummary())
         }
     }
 
     fun saveCustomIcon(item: VaultEntry, uri: Uri) {
         viewModelScope.launch {
             val context = getApplication<Application>()
-            val updated = entryLifecycleSupport.saveCustomIcon(context, item, uri)
+            val updated = entryManager.saveCustomIcon(context, item, uri)
             if (updated != null) updateVaultEntry(updated)
-            else Toast.makeText(context, "图片保存失败", Toast.LENGTH_SHORT).show()
+            else Toast.makeText(context, R.string.vault_toast_save_icon_failed, Toast.LENGTH_SHORT).show()
         }
     }
 
     fun confirmDelete() {
-        detailCoordinator.itemToDelete?.let { entry ->
+        detail.itemToDelete?.let { entry ->
             viewModelScope.launch {
-                if (detailCoordinator.isViewingEntry(entry.id)) detailCoordinator.dismissDetail()
-                entryLifecycleSupport.deleteEntry(entry)
-                detailCoordinator.setItemToDelete(null)
-                totpCoordinator.removeEntry(entry.id)
+                if (detail.isViewingEntry(entry.id)) detail.dismissDetail()
+                entryManager.deleteEntry(entry)
+                detail.setItemToDelete(null)
+                totp.removeEntry(entry.id)
             }
         }
     }
 
     fun quickDelete(entry: VaultEntry) {
         viewModelScope.launch {
-            if (detailCoordinator.isViewingEntry(entry.id)) detailCoordinator.dismissDetail()
-            entryLifecycleSupport.deleteEntry(entry)
-            totpCoordinator.removeEntry(entry.id)
+            if (detail.isViewingEntry(entry.id)) detail.dismissDetail()
+            entryManager.deleteEntry(entry)
+            totp.removeEntry(entry.id)
         }
     }
 
     fun quickDelete(entry: VaultSummary) = loadEntryById(entry.id) { quickDelete(it) }
 
     // --- Search / Filter ---
-    fun onSearchQueryChange(q: String) = searchFilterState.updateSearchQuery(q)
-    fun setSelectedCategory(category: String?) = searchFilterState.updateSelectedCategory(category)
+    fun onSearchQueryChange(q: String) = searchFilter.updateSearchQuery(q)
+    fun setSelectedCategory(category: String?) = searchFilter.updateSelectedCategory(category)
     fun clearSelectedCategory() = setSelectedCategory(null)
-    fun selectTab(tab: VaultTab) = searchFilterState.updateSelectedTab(tab)
-    fun toggleSearch(active: Boolean) = searchFilterState.toggleSearch(active)
+    fun selectTab(tab: VaultTab) = searchFilter.updateSelectedTab(tab)
+    fun toggleSearch(active: Boolean) = searchFilter.toggleSearch(active)
 }

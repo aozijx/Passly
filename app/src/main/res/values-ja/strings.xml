@@ -82,6 +82,7 @@
     <string name="vault_menu_show_totp">コードを表示</string>
     <string name="vault_menu_enable_autofill">自動入力を有効化</string>
     <string name="vault_toast_enable_autofill_manual">システム設定で自動入力を有効にしてください</string>
+    <string name="vault_toast_save_icon_failed">アイコンの保存に失敗しました</string>
     <string name="vault_menu_export">バックアップ出力</string>
     <string name="vault_menu_import">バックアップ復元</string>
     <string name="vault_menu_all_categories">全分類</string>

@@ -2,12 +2,45 @@
 
 ---
 
+## 2026-04-12 — 命名规范重构（Rename Sweep）
+
+### 内部类重命名（vault/internal + vault/）
+
+- **目标**：消除模糊 `XxxSupport` / `XxxStateHolder` 后缀，统一命名约定：
+  - `-Coordinator`：持有状态 + 协调多项逻辑
+  - `-Helper`：无状态纯工具
+  - `-State`：纯 Compose 状态持有
+- **重命名映射**：
+
+  | 旧名 | 新名 | 文件位置 |
+  |------|------|---------|
+  | `VaultAutofillSupport` | `AutofillCoordinator` | `vault/internal/` |
+  | `VaultCryptoSupport` | `CryptoHelper` | `vault/internal/` |
+  | `VaultDetailCoordinator`（P1-02 中间产物） | `DetailCoordinator` | `vault/internal/` |
+  | `VaultDetailStateHolder` | `DetailState` | `vault/internal/` |
+  | `VaultEntryFileSupport` | `EntryIconHelper` | `vault/internal/` |
+  | `VaultEntryLifecycleSupport` | `EntryManager` | `vault/internal/` |
+  | `VaultSearchFilterStateHolder` | `SearchFilterState` | `vault/internal/` |
+  | `VaultTotpCoordinator`（P1-02 中间产物） | `TotpCoordinator` | `vault/internal/` |
+  | `VaultTotpSupport` | `TotpHelper` | `vault/internal/` |
+  | `VaultOnDemandQuerySupport` | `VaultQueryCoordinator` | `vault/` |
+
+- **同步变化**：
+  - `AutofillCoordinator` 将 `isAutofillEnabled()` 判断内联为 `refreshStatus(context)`，方法命名更直观。
+  - `EntryManager` 将 `autoUpdateMissingIcons()` 改名为 `downloadMissingIcons()`，意图更清晰。
+  - `VaultViewModel` 私有持有名同步简化：`autofillSupport` → `autofill`，`cryptoSupport` → `crypto`，`searchFilterState` → `searchFilter` 等。
+  - `Toast.makeText` 调用改为直接传 `R.string.xxx` 资源 ID，移除冗余 `context.getString()`。
+  - 新增 `R.string.vault_toast_save_icon_failed` 至三个 locale 的 `strings.xml`，替换原硬编码中文。
+- **旧文件**：全部删除，无残留。
+
+---
+
 ## 2026-04-12 — 阶段 B 核心重构（P1）续
 
 ### P1-02 — VaultViewModel 拆分第一阶段（提取内部协调器）
 
-- **新增文件**: `app/src/main/java/com/aozijx/passly/features/vault/internal/VaultDetailCoordinator.kt`
-  - 封装 `VaultDetailStateHolder`（私有持有）。
+- **新增文件**: `app/src/main/java/com/aozijx/passly/features/vault/internal/DetailCoordinator.kt`（已按命名规范重命名）
+  - 封装 `DetailState`（私有持有）。
   - 对外暴露只读属性：`addType`、`itemToDelete`、`coordinatorState`。
   - 提供方法：`setAddType`、`setItemToDelete`、`showDetail`、`showDetailForEdit`、`dismissDetail`、`showIconPicker`、`hideIconPicker`、`updateEntry`、`isViewingEntry`。
   - 私有 `update(transform)` 统一驱动 `VaultDetailCoordinatorState` 变更。

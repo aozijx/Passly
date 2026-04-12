@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal class VaultEntryFileSupport {
+internal class EntryIconHelper {
 
     suspend fun saveCustomIcon(context: Context, item: VaultEntry, uri: Uri): String? {
         return withContext(Dispatchers.IO) {

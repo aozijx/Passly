@@ -10,18 +10,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-internal class VaultTotpCoordinator(
+internal class TotpCoordinator(
     private val scope: CoroutineScope,
     private val codeGenerator: (TotpConfig) -> String,
     private val decryptSecret: (String?) -> String?
 ) {
-    private val support = VaultTotpSupport()
+    private val helper = TotpHelper()
     private val _states = MutableStateFlow<Map<Int, TotpState>>(emptyMap())
     val states: StateFlow<Map<Int, TotpState>> = _states
 
     fun start(entriesProvider: () -> List<VaultSummary>) {
         scope.launch {
-            support.runRefresher(
+            helper.runRefresher(
                 statesProvider = { _states.value },
                 entriesProvider = entriesProvider,
                 updateStates = { _states.value = it },
@@ -31,14 +31,14 @@ internal class VaultTotpCoordinator(
     }
 
     fun unlock(entryId: Int, decryptedSecret: String) {
-        _states.update { support.unlock(it, entryId, decryptedSecret) }
+        _states.update { helper.unlock(it, entryId, decryptedSecret) }
     }
 
     fun autoUnlock(entry: VaultSummary) {
         if (_states.value.containsKey(entry.id)) return
         val decrypted = decryptSecret(entry.totpSecret)
         if (decrypted == null) {
-            Logcat.w("VaultTotpCoordinator", "Auto unlock failed: secret decrypt returned null")
+            Logcat.w("TotpCoordinator", "Auto unlock failed: secret decrypt returned null")
             return
         }
         unlock(entry.id, decrypted)

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
-internal class VaultSearchFilterStateHolder {
+internal class SearchFilterState {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
@@ -32,32 +32,19 @@ internal class VaultSearchFilterStateHolder {
 
     val distinctSelectedTab: Flow<VaultTab> = _selectedTab
 
-
     var isSearchActive by mutableStateOf(false)
         private set
     var isMoreMenuExpanded by mutableStateOf(false)
         private set
 
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun updateSelectedTab(tab: VaultTab) {
-        _selectedTab.value = tab
-    }
-
-    fun updateSelectedCategory(category: String?) {
-        _selectedCategory.value = category
-    }
+    fun updateSearchQuery(query: String) { _searchQuery.value = query }
+    fun updateSelectedTab(tab: VaultTab) { _selectedTab.value = tab }
+    fun updateSelectedCategory(category: String?) { _selectedCategory.value = category }
 
     fun toggleSearch(active: Boolean) {
         isSearchActive = active
-        if (!active) {
-            _searchQuery.value = ""
-        }
+        if (!active) _searchQuery.value = ""
     }
 
-    fun expandMoreMenu(expanded: Boolean) {
-        isMoreMenuExpanded = expanded
-    }
+    fun expandMoreMenu(expanded: Boolean) { isMoreMenuExpanded = expanded }
 }

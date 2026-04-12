@@ -6,8 +6,8 @@ import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.page.DetailOpenRequest
 
-internal class VaultDetailCoordinator {
-    private val state = VaultDetailStateHolder()
+internal class DetailCoordinator {
+    private val state = DetailState()
 
     val addType: AddType get() = state.addType
     val itemToDelete: VaultEntry? get() = state.itemToDelete
@@ -44,9 +44,7 @@ internal class VaultDetailCoordinator {
     }
 
     fun dismissDetail() = update { it.copy(request = null, isIconPickerVisible = false) }
-
     fun showIconPicker() = update { it.copy(isIconPickerVisible = true) }
-
     fun hideIconPicker() = update { it.copy(isIconPickerVisible = false) }
 
     fun updateEntry(entry: VaultEntry) {

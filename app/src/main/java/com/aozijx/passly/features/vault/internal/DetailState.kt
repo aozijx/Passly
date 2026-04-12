@@ -2,14 +2,12 @@ package com.aozijx.passly.features.vault.internal
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 
-
-internal class VaultDetailStateHolder {
+internal class DetailState {
     var addType by mutableStateOf(AddType.NONE)
         internal set
     var detailCoordinatorState by mutableStateOf(VaultDetailCoordinatorState())

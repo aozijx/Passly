@@ -10,25 +10,23 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 
-internal class VaultOnDemandQuerySupport(
+internal class VaultQueryCoordinator(
     private val vaultUseCases: VaultUseCases
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeVaultItems(
+    fun observeItems(
         debouncedSearchQuery: Flow<String>,
         normalizedSelectedCategory: Flow<String?>,
         distinctSelectedTab: Flow<VaultTab>
     ): Flow<List<VaultSummary>> = combine(
         debouncedSearchQuery, normalizedSelectedCategory, distinctSelectedTab
     ) { query, category, tab ->
-        VaultQueryParams(
-            query = query, category = category, filter = tab.toEntryFilter()
-        )
+        QueryParams(query = query, category = category, filter = tab.toEntryFilter())
     }.distinctUntilChanged().flatMapLatest { params ->
-            vaultUseCases.observeEntrySummariesByDemand(
-                query = params.query, category = params.category, filter = params.filter
-            )
-        }
+        vaultUseCases.observeEntrySummariesByDemand(
+            query = params.query, category = params.category, filter = params.filter
+        )
+    }
 
     private fun VaultTab.toEntryFilter(): VaultSearchRepository.EntryFilter = when (this) {
         VaultTab.ALL -> VaultSearchRepository.EntryFilter.ALL
@@ -36,7 +34,9 @@ internal class VaultOnDemandQuerySupport(
         VaultTab.TOTP -> VaultSearchRepository.EntryFilter.TOTP_ONLY
     }
 
-    private data class VaultQueryParams(
-        val query: String, val category: String?, val filter: VaultSearchRepository.EntryFilter
+    private data class QueryParams(
+        val query: String,
+        val category: String?,
+        val filter: VaultSearchRepository.EntryFilter
     )
 }
