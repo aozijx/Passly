@@ -63,8 +63,6 @@ fun DetailCardDialog(
     val detailViewModel: DetailViewModel = viewModel()
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
 
-    // 核心修复：不要使用 remember(initialEntry) 锁死状态
-    // 而是监听来自 ViewModel 的最新 detail 协调状态，确保图标保存后 UI 能感知到
     val currentEntry by remember {
         derivedStateOf { vaultViewModel.detailCoordinatorState.request?.entry ?: initialEntry }
     }
@@ -235,7 +233,7 @@ private fun LazyListScope.typeSpecificCardContent(
                     isSteam = isSteam,
                     totpEditState = totpEditState,
                     showQrDialog = onShowQrDialog,
-                    vaultViewModel = vaultViewModel,
+                    onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                 )
             }
@@ -244,8 +242,10 @@ private fun LazyListScope.typeSpecificCardContent(
                 CredentialSection(
                     activity = activity,
                     item = entry,
-                    vaultViewModel = vaultViewModel,
-                    mainViewModel = mainViewModel,
+                    onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
+                    onAuthenticate = { act, title, subtitle, onSuccess ->
+                        mainViewModel.authenticate(act, title, subtitle, onSuccess = onSuccess)
+                    },
                     editState = editState,
                     revealedUsername = revealedUsername,
                     revealedPassword = revealedPassword,

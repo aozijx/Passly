@@ -19,14 +19,13 @@ import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.internal.TotpEditState
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun EditTotpSection(
     item: VaultEntry,
-    vaultViewModel: VaultViewModel,
     editState: TotpEditState,
-    onEntryUpdated: (VaultEntry) -> Unit = vaultViewModel::updateVaultEntry
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onEntryUpdated: (VaultEntry) -> Unit
 ) {
     LaunchedEffect(editState.secret) {
         if (editState.secret.contains("Steam", ignoreCase = true)) {
@@ -35,7 +34,11 @@ fun EditTotpSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(16.dp)) {
-        Text(stringResource(R.string.vault_edit_totp_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(
+            stringResource(R.string.vault_edit_totp_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary
+        )
         TotpConfigForm(
             secret = editState.secret, onSecretChange = { editState.secret = it },
             period = editState.period, onPeriodChange = { editState.period = it },
@@ -43,22 +46,28 @@ fun EditTotpSection(
             algorithm = editState.algorithm, onAlgorithmChange = { editState.algorithm = it }
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = { editState.isEditing = false }) { Text(stringResource(R.string.action_cancel)) }
+            TextButton(onClick = { editState.isEditing = false }) {
+                Text(stringResource(R.string.action_cancel))
+            }
             Button(onClick = {
                 if (editState.secret.isNotBlank()) {
                     try {
                         val encrypted = CryptoManager.encrypt(editState.secret.trim())
-                        onEntryUpdated(item.copy(
-                            totpSecret = encrypted,
-                            totpPeriod = editState.period.toIntOrNull() ?: 30,
-                            totpDigits = editState.digits.toIntOrNull() ?: 6,
-                            totpAlgorithm = editState.algorithm
-                        ))
+                        onEntryUpdated(
+                            item.copy(
+                                totpSecret = encrypted,
+                                totpPeriod = editState.period.toIntOrNull() ?: 30,
+                                totpDigits = editState.digits.toIntOrNull() ?: 6,
+                                totpAlgorithm = editState.algorithm
+                            )
+                        )
                         editState.isEditing = false
                     } catch (e: Exception) {
                     }
                 }
-            }) { Text(stringResource(R.string.action_save)) }
+            }) {
+                Text(stringResource(R.string.action_save))
+            }
         }
     }
 }

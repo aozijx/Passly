@@ -104,6 +104,14 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                 val current = _uiState.value.entry ?: return
                 commitEntryUpdate(current.copy(favorite = !current.favorite))
             }
+
+            is DetailEvent.SetRevealedUsername -> {
+                _uiState.update { it.copy(revealedUsername = event.value) }
+            }
+
+            is DetailEvent.SetRevealedPassword -> {
+                _uiState.update { it.copy(revealedPassword = event.value) }
+            }
         }
     }
 

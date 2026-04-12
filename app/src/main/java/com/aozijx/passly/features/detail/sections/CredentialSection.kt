@@ -25,21 +25,19 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.EditTextField
 import com.aozijx.passly.features.detail.internal.EntryEditState
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun CredentialSection(
     activity: FragmentActivity,
     item: VaultEntry,
-    vaultViewModel: VaultViewModel,
-    mainViewModel: MainViewModel,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     editState: EntryEditState,
     revealedUsername: String?,
     revealedPassword: String?,
     onUsernameRevealed: (String?) -> Unit,
     onPasswordRevealed: (String?) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit = vaultViewModel::updateVaultEntry
+    onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -52,20 +50,24 @@ fun CredentialSection(
             onEditToggle = { editState.isEditingUsername = it },
             onValueChange = { editState.editedUsername = it },
             onCopy = {
-                if (revealedUsername != null) ClipboardUtils.copy(context, revealedUsername)
-                else vaultViewModel.decryptSingle(
-                    activity,
-                    item.username,
-                    mainViewModel::authenticate
-                ) {
-                    it?.let { ClipboardUtils.copy(context, it) }
+                if (revealedUsername != null) {
+                    ClipboardUtils.copy(context, revealedUsername)
+                } else {
+                    onAuthenticate(activity, "解密信息", "验证身份以复制账号", {
+                        // 此处解密逻辑由调用方在 View 层或注入的辅助工具处理
+                        // 在当前架构下，我们将使用 CryptoManager 直接尝试（如果已通过验证）
+                        try {
+                            val decrypted = CryptoManager.decrypt(item.username)
+                            ClipboardUtils.copy(context, decrypted)
+                            onUsernameRevealed(decrypted)
+                        } catch (e: Exception) {
+                            // 处理解密失败
+                        }
+                    })
                 }
             },
             onSave = { newValue ->
-                saveEncrypted(
-                    newValue,
-                    revealedUsername,
-                    { editState.isEditingUsername = false }) { encrypted ->
+                saveEncrypted(newValue, revealedUsername, { editState.isEditingUsername = false }) { encrypted ->
                     onEntryUpdated(item.copy(username = encrypted))
                     onUsernameRevealed(newValue)
                 }
@@ -82,20 +84,21 @@ fun CredentialSection(
                 onEditToggle = { editState.isEditingPassword = it },
                 onValueChange = { editState.editedPassword = it },
                 onCopy = {
-                    if (revealedPassword != null) ClipboardUtils.copy(context, revealedPassword)
-                    else vaultViewModel.decryptSingle(
-                        activity,
-                        item.password,
-                        mainViewModel::authenticate
-                    ) {
-                        it?.let { ClipboardUtils.copy(context, it) }
+                    if (revealedPassword != null) {
+                        ClipboardUtils.copy(context, revealedPassword)
+                    } else {
+                        onAuthenticate(activity, "解密信息", "验证身份以复制密码", {
+                            try {
+                                val decrypted = CryptoManager.decrypt(item.password)
+                                ClipboardUtils.copy(context, decrypted)
+                                onPasswordRevealed(decrypted)
+                            } catch (e: Exception) {
+                            }
+                        })
                     }
                 },
                 onSave = { newValue ->
-                    saveEncrypted(
-                        newValue,
-                        revealedPassword,
-                        { editState.isEditingPassword = false }) { encrypted ->
+                    saveEncrypted(newValue, revealedPassword, { editState.isEditingPassword = false }) { encrypted ->
                         onEntryUpdated(item.copy(password = encrypted))
                         onPasswordRevealed(newValue)
                     }
@@ -106,26 +109,17 @@ fun CredentialSection(
         if (revealedUsername == null || revealedPassword == null) {
             Button(
                 onClick = {
-                    val fieldsToDecrypt = mutableListOf<String>()
-                    if (revealedUsername == null && item.username.isNotEmpty()) {
-                        fieldsToDecrypt.add(item.username)
-                    }
-                    if (revealedPassword == null && item.password.isNotEmpty()) {
-                        fieldsToDecrypt.add(item.password)
-                    }
-                    vaultViewModel.decryptMultiple(
-                        activity,
-                        fieldsToDecrypt,
-                        mainViewModel::authenticate
-                    ) { results ->
-                        var resultIndex = 0
-                        if (revealedUsername == null && item.username.isNotEmpty()) {
-                            onUsernameRevealed(results.getOrNull(resultIndex++))
+                    onAuthenticate(activity, "解密信息", "验证身份以查看完整条目", {
+                        try {
+                            if (revealedUsername == null && item.username.isNotEmpty()) {
+                                onUsernameRevealed(CryptoManager.decrypt(item.username))
+                            }
+                            if (revealedPassword == null && item.password.isNotEmpty()) {
+                                onPasswordRevealed(CryptoManager.decrypt(item.password))
+                            }
+                        } catch (e: Exception) {
                         }
-                        if (revealedPassword == null && item.password.isNotEmpty()) {
-                            onPasswordRevealed(results.getOrNull(resultIndex))
-                        }
-                    }
+                    })
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)
@@ -157,7 +151,7 @@ private fun CredentialRow(
                 label = stringResource(R.string.label_edit_field, label),
                 onSave = { onSave(editedValue) }
             )
-            if (editedValue != (revealedValue ?: "")) {
+            if (revealedValue != null && editedValue != revealedValue) {
                 Text(
                     stringResource(R.string.vault_edit_modified_hint),
                     style = MaterialTheme.typography.labelSmall,
@@ -193,6 +187,7 @@ private fun saveEncrypted(
             onSuccess(encrypted)
             onClose()
         } catch (e: Exception) {
+            onClose()
         }
     }
 }

@@ -8,7 +8,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,54 +17,57 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.detail.DetailViewModel
 import com.aozijx.passly.features.detail.components.DetailScrollableContent
 import com.aozijx.passly.features.detail.components.DetailTopBar
-import com.aozijx.passly.features.detail.contract.DetailEffect
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.contract.DetailUiState
 import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.main.contract.MainIntent
-import com.aozijx.passly.features.vault.VaultViewModel
-import kotlinx.coroutines.flow.collectLatest
 
+/**
+ * 详情页 UI 组件 (Stateless)
+ *
+ * 采用状态平铺模式，不直接持有 ViewModel，方便测试和预览。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     initialEntry: VaultEntry,
+    uiState: DetailUiState,
+    totpStates: Map<Int, TotpState>,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onBack: () -> Unit,
-    activity: FragmentActivity,
-    mainViewModel: MainViewModel,
-    vaultViewModel: VaultViewModel
+    onEvent: (DetailEvent) -> Unit,
+    onUpdateInteraction: () -> Unit,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onShowIconPicker: () -> Unit,
+    onAutoUnlockTotp: (VaultEntry) -> Unit,
+    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    activity: FragmentActivity
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    val detailViewModel: DetailViewModel = viewModel()
-    val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
-
+    // 初始进入和交互更新
     LaunchedEffect(Unit) {
-        mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+        onUpdateInteraction()
     }
 
-    // --- 解决闪烁：由 ViewModel 的同步重置逻辑和这里的 LaunchedEffect 共同保障 ---
+    // 页面数据初始化
     LaunchedEffect(initialEntry.id) {
-        detailViewModel.onEvent(DetailEvent.Initialize(initialEntry))
+        onEvent(DetailEvent.Initialize(initialEntry))
     }
 
-    val entry = detailUiState.entry ?: initialEntry
-    val vaultType = detailUiState.vaultType
+    val entry = uiState.entry ?: initialEntry
+    val vaultType = uiState.vaultType
     val editState = remember(entry) { EntryEditState(entry) }
 
     val revealedUsernameState = remember { mutableStateOf<String?>(null) }
@@ -73,7 +75,6 @@ fun DetailScreen(
     val revealedUsername = revealedUsernameState.value
     val revealedPassword = revealedPasswordState.value
 
-    val totpStates by vaultViewModel.totpStates.collectAsState()
     val currentState = totpStates[entry.id]
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
     val totpEditState = remember(entry, currentState?.decryptedSecret) {
@@ -81,15 +82,17 @@ fun DetailScreen(
     }
     var showQrDialog by remember { mutableStateOf(false) }
 
+    // TOTP 自动解锁
     LaunchedEffect(entry.id) {
         if (vaultType == EntryType.TOTP) {
-            vaultViewModel.autoUnlockTotp(entry)
+            onAutoUnlockTotp(entry)
         }
     }
 
     val authQrTitle = stringResource(R.string.vault_auth_qr_title)
     val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
 
+    // 处理外部启动模式（如编辑 TOTP）
     LaunchedEffect(entry.id, launchMode) {
         if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
 
@@ -112,34 +115,25 @@ fun DetailScreen(
         }
     }
 
-    LaunchedEffect(detailViewModel) {
-        detailViewModel.effects.collectLatest { effect ->
-            when (effect) {
-                is DetailEffect.EntryUpdated -> vaultViewModel.updateVaultEntry(effect.entry)
-                DetailEffect.IconPickerRequested -> vaultViewModel.showDetailIconPicker()
-            }
-        }
-    }
-
     Scaffold(
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }),
+                onClick = onUpdateInteraction
+            ),
         topBar = {
             DetailTopBar(
                 entry = entry,
-                uiState = detailUiState,
+                uiState = uiState,
                 scrollBehavior = scrollBehavior,
-                onEvent = detailViewModel::onEvent,
+                onEvent = onEvent,
                 onBack = onBack,
-                onInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
+                onInteraction = onUpdateInteraction
             )
         }
     ) { padding ->
-        // --- 解耦后的滚动列表主体 ---
         DetailScrollableContent(
             padding = padding,
             entry = entry,
@@ -153,20 +147,21 @@ fun DetailScreen(
             onUsernameRevealed = { revealedUsernameState.value = it },
             onPasswordRevealed = { revealedPasswordState.value = it },
             onShowQrDialog = {
-                mainViewModel.authenticate(
-                    activity = activity,
-                    title = authQrTitle,
-                    subtitle = authQrSubtitle,
-                    onSuccess = {
-                        totpEditState.isEditing = false
-                        showQrDialog = true
-                    })
+                onAuthenticate(
+                    activity,
+                    authQrTitle,
+                    authQrSubtitle
+                ) {
+                    totpEditState.isEditing = false
+                    showQrDialog = true
+                }
             },
-            activity = activity,
-            mainViewModel = mainViewModel,
-            vaultViewModel = vaultViewModel,
-            onEvent = detailViewModel::onEvent,
-            onInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
+            onEvent = onEvent,
+            onInteraction = onUpdateInteraction,
+            onUpdateVaultEntry = onUpdateVaultEntry,
+            onShowIconPicker = onShowIconPicker,
+            onAuthenticate = onAuthenticate,
+            activity = activity
         )
     }
 
