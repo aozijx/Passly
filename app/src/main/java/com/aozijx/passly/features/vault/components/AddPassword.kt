@@ -12,9 +12,8 @@ import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
 import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.PasswordInput
 import com.aozijx.passly.core.designsystem.fields.VaultTextField
-import com.aozijx.passly.core.designsystem.model.AddType
-import com.aozijx.passly.core.designsystem.state.PasswordAddState
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.vault.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable

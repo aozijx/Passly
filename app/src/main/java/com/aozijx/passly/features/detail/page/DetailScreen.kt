@@ -22,13 +22,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.designsystem.state.TotpEditState
-import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.DetailViewModel
+import com.aozijx.passly.features.detail.EntryEditState
+import com.aozijx.passly.features.detail.TotpEditState
 import com.aozijx.passly.features.detail.components.DetailScrollableContent
 import com.aozijx.passly.features.detail.components.DetailTopBar
 import com.aozijx.passly.features.detail.contract.DetailEffect
@@ -65,7 +65,7 @@ fun DetailScreen(
 
     val entry = detailUiState.entry ?: initialEntry
     val vaultType = detailUiState.vaultType
-    val editState = remember(entry) { VaultEditState(entry) }
+    val editState = remember(entry) { EntryEditState(entry) }
 
     val revealedUsernameState = remember { mutableStateOf<String?>(null) }
     val revealedPasswordState = remember { mutableStateOf<String?>(null) }

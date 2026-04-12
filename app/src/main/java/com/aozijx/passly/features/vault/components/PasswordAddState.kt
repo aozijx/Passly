@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.state
+package com.aozijx.passly.features.vault.components
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,5 +16,3 @@ class PasswordAddState {
 
     val isValid: Boolean get() = title.isNotBlank() && password.isNotBlank()
 }
-
-

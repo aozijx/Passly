@@ -49,9 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
-import com.aozijx.passly.core.designsystem.model.VaultTab
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
 import com.aozijx.passly.core.designsystem.widgets.SwipeToAction

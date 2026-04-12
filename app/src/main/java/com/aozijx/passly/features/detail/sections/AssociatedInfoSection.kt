@@ -39,10 +39,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.detail.EntryEditState
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.vault.VaultViewModel
 import kotlinx.coroutines.launch
@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 fun AssociatedInfoSection(
     modifier: Modifier = Modifier,
     entry: VaultEntry,
-    editState: VaultEditState,
+    editState: EntryEditState,
     vaultViewModel: VaultViewModel,
     onEntryUpdated: (VaultEntry) -> Unit = vaultViewModel::updateVaultEntry
 ) {

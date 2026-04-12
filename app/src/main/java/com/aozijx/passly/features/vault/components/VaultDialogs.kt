@@ -3,10 +3,10 @@ package com.aozijx.passly.features.vault.components
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsViewModel
+import com.aozijx.passly.features.vault.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.dialogs.BackupPasswordDialog
 import com.aozijx.passly.features.vault.dialogs.DeleteConfirmDialog

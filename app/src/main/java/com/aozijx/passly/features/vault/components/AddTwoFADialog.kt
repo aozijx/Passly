@@ -22,12 +22,11 @@ import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
 import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.VaultTextField
-import com.aozijx.passly.core.designsystem.model.AddType
 import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
-import com.aozijx.passly.core.designsystem.state.TotpAddState
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.vault.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
 import java.net.URLDecoder
 
@@ -144,5 +143,3 @@ fun AddTwoFADialog(
         }
     }
 }
-
-

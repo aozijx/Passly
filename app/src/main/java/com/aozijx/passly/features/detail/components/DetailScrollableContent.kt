@@ -17,9 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.designsystem.state.TotpEditState
-import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.detail.EntryEditState
+import com.aozijx.passly.features.detail.TotpEditState
 import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.features.detail.sections.BankCardSection
@@ -41,10 +41,10 @@ fun DetailScrollableContent(
     padding: PaddingValues,
     entry: VaultEntry,
     vaultType: EntryType,
-    currentState: com.aozijx.passly.core.designsystem.state.TotpState?,
+    currentState: com.aozijx.passly.core.designsystem.model.TotpState?,
     isSteam: Boolean,
     totpEditState: TotpEditState,
-    editState: VaultEditState,
+    editState: EntryEditState,
     revealedUsername: String?,
     revealedPassword: String?,
     onUsernameRevealed: (String?) -> Unit,

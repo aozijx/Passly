@@ -32,9 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.designsystem.state.TotpEditState
-import com.aozijx.passly.core.designsystem.state.TotpState
-import com.aozijx.passly.core.designsystem.state.VaultEditState
+import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.security.otp.TotpUtils
@@ -79,7 +77,7 @@ fun DetailCardDialog(
 
     val entry = detailUiState.entry ?: currentEntry
     val vaultType = remember(entry.entryType) { EntryType.fromValue(entry.entryType) }
-    val editState = remember(entry) { VaultEditState(entry) }
+    val editState = remember(entry) { EntryEditState(entry) }
 
     var revealedUsername by remember { mutableStateOf<String?>(null) }
     var revealedPassword by remember { mutableStateOf<String?>(null) }
@@ -215,7 +213,7 @@ private fun LazyListScope.typeSpecificCardContent(
     currentState: TotpState?,
     isSteam: Boolean,
     totpEditState: TotpEditState,
-    editState: VaultEditState,
+    editState: EntryEditState,
     revealedUsername: String?,
     revealedPassword: String?,
     onUsernameRevealed: (String?) -> Unit,

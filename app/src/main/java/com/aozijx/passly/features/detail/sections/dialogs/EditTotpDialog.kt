@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
-import com.aozijx.passly.core.designsystem.state.TotpEditState
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.detail.TotpEditState
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
@@ -62,6 +62,3 @@ fun EditTotpSection(
         }
     }
 }
-
-
-

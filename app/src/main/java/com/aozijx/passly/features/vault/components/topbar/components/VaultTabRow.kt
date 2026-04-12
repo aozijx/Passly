@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.model.VaultTab
+import com.aozijx.passly.features.vault.VaultTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

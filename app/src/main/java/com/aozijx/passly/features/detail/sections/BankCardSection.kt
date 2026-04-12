@@ -36,9 +36,9 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.CryptoManager
-import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.detail.EntryEditState
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
@@ -47,7 +47,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
 fun BankCardSection(
     activity: FragmentActivity,
     entry: VaultEntry,
-    editState: VaultEditState,
+    editState: EntryEditState,
     vaultViewModel: VaultViewModel,
     mainViewModel: MainViewModel,
     onEntryUpdated: (VaultEntry) -> Unit

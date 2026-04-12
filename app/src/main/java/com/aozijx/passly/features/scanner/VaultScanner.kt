@@ -52,8 +52,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.designsystem.components.ScannerView
-import com.aozijx.passly.core.designsystem.model.ImageType
 import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel

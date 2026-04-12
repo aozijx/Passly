@@ -20,9 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.CryptoManager
-import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.detail.EntryEditState
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.EditTextField
 import com.aozijx.passly.features.main.MainViewModel
@@ -34,7 +34,7 @@ fun CredentialSection(
     item: VaultEntry,
     vaultViewModel: VaultViewModel,
     mainViewModel: MainViewModel,
-    editState: VaultEditState,
+    editState: EntryEditState,
     revealedUsername: String?,
     revealedPassword: String?,
     onUsernameRevealed: (String?) -> Unit,

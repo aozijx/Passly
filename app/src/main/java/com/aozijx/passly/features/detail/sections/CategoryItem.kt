@@ -34,8 +34,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.state.VaultEditState
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.detail.EntryEditState
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,7 +43,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
 fun CategoryItem(
     viewModel: VaultViewModel,
     entry: VaultEntry,
-    editState: VaultEditState,
+    editState: EntryEditState,
     onEntryUpdated: (VaultEntry) -> Unit = viewModel::updateVaultEntry
 ) {
     val categories by viewModel.availableCategories.collectAsState()
