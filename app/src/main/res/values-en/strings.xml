@@ -63,6 +63,7 @@
     <string name="vault_auth_subtitle">Verify your identity to access the vault</string>
     <string name="vault_auth_error">Verification failed: %s</string>
     <string name="vault_auth_failed">Verification failed</string>
+    <string name="main_notification_permission_denied">Notification permission is disabled, so background sync progress will be hidden.</string>
     <string name="vault_locked_title">Vault is locked</string>
     <string name="vault_locked_subtitle">Tap the screen to unlock</string>
     <string name="vault_auth_encrypt_title">Verify to encrypt</string>
