@@ -215,7 +215,6 @@ fun handleSwipeAction(
     onAuthRequired: (onSuccess: () -> Unit) -> Unit,
     onQuickDelete: (VaultSummary) -> Unit,
     onShowDetail: (VaultSummary) -> Unit,
-    onShowEditDetail: (VaultSummary) -> Unit,
     onCopy: (String) -> Unit
 ) {
     if (actionType == SwipeActionType.DISABLED) return
@@ -224,7 +223,6 @@ fun handleSwipeAction(
     val performAction = {
         when (actionType) {
             SwipeActionType.DELETE -> onQuickDelete(item)
-            SwipeActionType.EDIT -> onShowEditDetail(item)
             SwipeActionType.DETAIL -> onShowDetail(item)
             else -> actionType.copyField?.let { onCopy(it) }
         }

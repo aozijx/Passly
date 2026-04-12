@@ -176,8 +176,7 @@ fun VaultContent(
             onAuthRequired = { ok -> mainViewModel.authenticate(activity, "安全验证", item.title, null, ok) },
             onQuickDelete = { vaultViewModel.quickDelete(it) },
             onCopy = { field -> performCopy(field, item) },
-            onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } },
-            onShowEditDetail = { vaultViewModel.loadEntryById(item.id) { vaultViewModel.showDetailForEdit(it) } }
+            onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } }
         )
     }
 
@@ -324,7 +323,6 @@ private fun swipeRevealColors(actionType: SwipeActionType): Pair<Color, Color> {
     return when (actionType) {
         SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
         SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
-        SwipeActionType.EDIT -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
         SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
         SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
     }

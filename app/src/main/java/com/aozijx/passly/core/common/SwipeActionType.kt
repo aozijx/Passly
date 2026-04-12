@@ -3,7 +3,6 @@ package com.aozijx.passly.core.common
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -16,9 +15,6 @@ enum class SwipeActionType(
 ) {
     DELETE(
         displayName = "删除", icon = Icons.Default.Delete, requiresConfirm = true
-    ),
-    EDIT(
-        displayName = "编辑", icon = Icons.Default.Edit, requiresConfirm = true
     ),
     DETAIL(
         displayName = "详情", icon = Icons.Default.Info, requiresConfirm = false
