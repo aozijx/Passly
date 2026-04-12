@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.domain.model.FieldKey
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -215,7 +216,7 @@ fun handleSwipeAction(
     onAuthRequired: (onSuccess: () -> Unit) -> Unit,
     onQuickDelete: (VaultSummary) -> Unit,
     onShowDetail: (VaultSummary) -> Unit,
-    onCopy: (String) -> Unit
+    onCopy: (FieldKey) -> Unit
 ) {
     if (actionType == SwipeActionType.DISABLED) return
 

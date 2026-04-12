@@ -56,6 +56,7 @@ import com.aozijx.passly.core.designsystem.widgets.SwipeToAction
 import com.aozijx.passly.core.designsystem.widgets.createSwipeAction
 import com.aozijx.passly.core.designsystem.widgets.handleSwipeAction
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.model.FieldKey
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
@@ -135,12 +136,13 @@ fun VaultContent(
         }
     }
 
-    // 通用复制逻辑（使用策略模式）
-    val performCopy: (String, VaultSummary) -> Unit = { field, item ->
+    // 通用复制逻辑（使用策略模式 + getFieldValue 统一字段提取）
+    val performCopy: (FieldKey, VaultSummary) -> Unit = { fieldKey, item ->
         val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
-        val label = strategy.getCopyLabel(field)
+        val label = strategy.getCopyLabel(fieldKey)
 
-        if (field == "password" && !item.totpSecret.isNullOrBlank()) {
+        // TOTP 特殊处理：PASSWORD 字段 + 存在 TOTP 密钥时复制当前验证码
+        if (fieldKey == FieldKey.PASSWORD && !item.totpSecret.isNullOrBlank()) {
             totpStates[item.id]?.let { state ->
                 if (state.code.isNotEmpty() && !state.code.contains("-")) {
                     ClipboardUtils.copy(activity, state.code)
@@ -148,22 +150,20 @@ fun VaultContent(
                 }
             }
         } else {
-            if (field == "password") {
-                vaultViewModel.loadEntryById(item.id) { fullEntry ->
-                    vaultViewModel.decryptSingle(
-                        activity = activity,
-                        encryptedData = fullEntry.password,
-                        authenticate = { act, t, s, _, ok -> mainViewModel.authenticate(act, t, s, null, ok) },
-                        onResult = { decrypted ->
-                            decrypted?.let {
-                                ClipboardUtils.copy(activity, it)
-                                Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
-                            }
-                        })
-                }
-            } else {
-                ClipboardUtils.copy(activity, item.username)
-                Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
+            // 通用路径：加载完整条目 → getFieldValue → 解密 → 复制
+            vaultViewModel.loadEntryById(item.id) { fullEntry ->
+                val rawValue = strategy.getFieldValue(fullEntry, fieldKey) ?: return@loadEntryById
+                vaultViewModel.decryptSingle(
+                    activity = activity,
+                    encryptedData = rawValue,
+                    authenticate = { act, t, s, _, ok -> mainViewModel.authenticate(act, t, s, null, ok) },
+                    onResult = { decrypted ->
+                        decrypted?.let {
+                            ClipboardUtils.copy(activity, it)
+                            Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
             }
         }
     }
@@ -175,7 +175,7 @@ fun VaultContent(
             item = item,
             onAuthRequired = { ok -> mainViewModel.authenticate(activity, "安全验证", item.title, null, ok) },
             onQuickDelete = { vaultViewModel.quickDelete(it) },
-            onCopy = { field -> performCopy(field, item) },
+            onCopy = { fieldKey -> performCopy(fieldKey, item) },
             onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } }
         )
     }
