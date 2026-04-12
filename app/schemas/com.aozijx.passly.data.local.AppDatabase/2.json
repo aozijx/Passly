@@ -1,0 +1,136 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "PLACEHOLDER_run_ksp_to_regenerate_this_hash",
+    "entities": [
+      {
+        "tableName": "vault_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `username` TEXT NOT NULL, `password` TEXT NOT NULL, `category` TEXT NOT NULL, `notes` TEXT, `iconName` TEXT, `iconCustomPath` TEXT, `totpSecret` TEXT, `totpPeriod` INTEGER NOT NULL, `totpDigits` INTEGER NOT NULL, `totpAlgorithm` TEXT NOT NULL, `passkeyDataJson` TEXT, `recoveryCodes` TEXT, `hardwareKeyInfo` TEXT, `wifiEncryptionType` TEXT, `wifiIsHidden` INTEGER NOT NULL, `cardCvv` TEXT, `cardExpiration` TEXT, `idNumber` TEXT, `paymentPin` TEXT, `sshPrivateKey` TEXT, `cryptoSeedPhrase` TEXT, `entryType` INTEGER NOT NULL, `associatedAppPackage` TEXT, `associatedDomain` TEXT, `uriList` TEXT, `matchType` INTEGER NOT NULL, `customFieldsJson` TEXT, `autoSubmit` INTEGER NOT NULL, `encryptedImageData` BLOB, `strengthScore` REAL, `lastUsedAt` INTEGER, `usageCount` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, `tags` TEXT, `createdAt` INTEGER, `updatedAt` INTEGER, `expiresAt` INTEGER)",
+        "fields": [
+          { "fieldPath": "id", "columnName": "id", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "title", "columnName": "title", "affinity": "TEXT", "notNull": true },
+          { "fieldPath": "username", "columnName": "username", "affinity": "TEXT", "notNull": true },
+          { "fieldPath": "password", "columnName": "password", "affinity": "TEXT", "notNull": true },
+          { "fieldPath": "category", "columnName": "category", "affinity": "TEXT", "notNull": true },
+          { "fieldPath": "notes", "columnName": "notes", "affinity": "TEXT" },
+          { "fieldPath": "iconName", "columnName": "iconName", "affinity": "TEXT" },
+          { "fieldPath": "iconCustomPath", "columnName": "iconCustomPath", "affinity": "TEXT" },
+          { "fieldPath": "totpSecret", "columnName": "totpSecret", "affinity": "TEXT" },
+          { "fieldPath": "totpPeriod", "columnName": "totpPeriod", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "totpDigits", "columnName": "totpDigits", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "totpAlgorithm", "columnName": "totpAlgorithm", "affinity": "TEXT", "notNull": true },
+          { "fieldPath": "passkeyDataJson", "columnName": "passkeyDataJson", "affinity": "TEXT" },
+          { "fieldPath": "recoveryCodes", "columnName": "recoveryCodes", "affinity": "TEXT" },
+          { "fieldPath": "hardwareKeyInfo", "columnName": "hardwareKeyInfo", "affinity": "TEXT" },
+          { "fieldPath": "wifiEncryptionType", "columnName": "wifiEncryptionType", "affinity": "TEXT" },
+          { "fieldPath": "wifiIsHidden", "columnName": "wifiIsHidden", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "cardCvv", "columnName": "cardCvv", "affinity": "TEXT" },
+          { "fieldPath": "cardExpiration", "columnName": "cardExpiration", "affinity": "TEXT" },
+          { "fieldPath": "idNumber", "columnName": "idNumber", "affinity": "TEXT" },
+          { "fieldPath": "paymentPin", "columnName": "paymentPin", "affinity": "TEXT" },
+          { "fieldPath": "sshPrivateKey", "columnName": "sshPrivateKey", "affinity": "TEXT" },
+          { "fieldPath": "cryptoSeedPhrase", "columnName": "cryptoSeedPhrase", "affinity": "TEXT" },
+          { "fieldPath": "entryType", "columnName": "entryType", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "associatedAppPackage", "columnName": "associatedAppPackage", "affinity": "TEXT" },
+          { "fieldPath": "associatedDomain", "columnName": "associatedDomain", "affinity": "TEXT" },
+          { "fieldPath": "uriList", "columnName": "uriList", "affinity": "TEXT" },
+          { "fieldPath": "matchType", "columnName": "matchType", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "customFieldsJson", "columnName": "customFieldsJson", "affinity": "TEXT" },
+          { "fieldPath": "autoSubmit", "columnName": "autoSubmit", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "encryptedImageData", "columnName": "encryptedImageData", "affinity": "BLOB" },
+          { "fieldPath": "strengthScore", "columnName": "strengthScore", "affinity": "REAL" },
+          { "fieldPath": "lastUsedAt", "columnName": "lastUsedAt", "affinity": "INTEGER" },
+          { "fieldPath": "usageCount", "columnName": "usageCount", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "favorite", "columnName": "favorite", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "tags", "columnName": "tags", "affinity": "TEXT" },
+          { "fieldPath": "createdAt", "columnName": "createdAt", "affinity": "INTEGER" },
+          { "fieldPath": "updatedAt", "columnName": "updatedAt", "affinity": "INTEGER" },
+          { "fieldPath": "expiresAt", "columnName": "expiresAt", "affinity": "INTEGER" }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": ["id"]
+        },
+        "indices": [
+          {
+            "name": "index_vault_entries_favorite_usageCount_createdAt",
+            "unique": false,
+            "columnNames": ["favorite", "usageCount", "createdAt"],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_favorite_usageCount_createdAt` ON `${TABLE_NAME}` (`favorite`, `usageCount`, `createdAt`)"
+          },
+          {
+            "name": "index_vault_entries_category",
+            "unique": false,
+            "columnNames": ["category"],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_category` ON `${TABLE_NAME}` (`category`)"
+          },
+          {
+            "name": "index_vault_entries_createdAt",
+            "unique": false,
+            "columnNames": ["createdAt"],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          },
+          {
+            "name": "index_vault_entries_usageCount",
+            "unique": false,
+            "columnNames": ["usageCount"],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_usageCount` ON `${TABLE_NAME}` (`usageCount`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "vault_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`historyId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `entryId` INTEGER NOT NULL, `fieldName` TEXT NOT NULL, `oldValue` TEXT, `newValue` TEXT, `changeType` INTEGER NOT NULL, `deviceName` TEXT, `changedAt` INTEGER NOT NULL, FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          { "fieldPath": "historyId", "columnName": "historyId", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "entryId", "columnName": "entryId", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "fieldName", "columnName": "fieldName", "affinity": "TEXT", "notNull": true },
+          { "fieldPath": "oldValue", "columnName": "oldValue", "affinity": "TEXT" },
+          { "fieldPath": "newValue", "columnName": "newValue", "affinity": "TEXT" },
+          { "fieldPath": "changeType", "columnName": "changeType", "affinity": "INTEGER", "notNull": true },
+          { "fieldPath": "deviceName", "columnName": "deviceName", "affinity": "TEXT" },
+          { "fieldPath": "changedAt", "columnName": "changedAt", "affinity": "INTEGER", "notNull": true }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": ["historyId"]
+        },
+        "indices": [
+          {
+            "name": "index_vault_history_entryId",
+            "unique": false,
+            "columnNames": ["entryId"],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_history_entryId` ON `${TABLE_NAME}` (`entryId`)"
+          },
+          {
+            "name": "index_vault_history_changedAt",
+            "unique": false,
+            "columnNames": ["changedAt"],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_history_changedAt` ON `${TABLE_NAME}` (`changedAt`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "vault_entries",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": ["entryId"],
+            "referencedColumns": ["id"]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'PLACEHOLDER_run_ksp_to_regenerate_this_hash')"
+    ]
+  }
+}

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -17,8 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.contract.DetailUiState
 import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.AssociatedInfoSection
@@ -33,33 +34,29 @@ import com.aozijx.passly.features.detail.sections.SeedPhraseSection
 import com.aozijx.passly.features.detail.sections.SshKeySection
 import com.aozijx.passly.features.detail.sections.TotpSection
 import com.aozijx.passly.features.detail.sections.WifiSection
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun DetailScrollableContent(
-    padding: PaddingValues,
-    entry: VaultEntry,
-    vaultType: EntryType,
-    currentState: com.aozijx.passly.core.designsystem.model.TotpState?,
+    modifier: Modifier = Modifier,
+    uiState: DetailUiState,
+    currentState: TotpState?,
     isSteam: Boolean,
     totpEditState: TotpEditState,
     editState: EntryEditState,
-    revealedUsername: String?,
-    revealedPassword: String?,
-    onUsernameRevealed: (String?) -> Unit,
-    onPasswordRevealed: (String?) -> Unit,
     onShowQrDialog: () -> Unit,
-    activity: FragmentActivity,
-    mainViewModel: MainViewModel,
-    vaultViewModel: VaultViewModel,
     onEvent: (DetailEvent) -> Unit,
-    onInteraction: () -> Unit
+    onInteraction: () -> Unit,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onShowIconPicker: () -> Unit,
+    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    activity: FragmentActivity
 ) {
+    val entry = uiState.entry ?: return
+    val vaultType = uiState.vaultType
+
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .padding(padding)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -68,20 +65,19 @@ fun DetailScrollableContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // --- 核心业务内容分发 ---
         when (vaultType) {
             EntryType.PASSWORD -> {
                 item {
                     CredentialSection(
                         activity = activity,
                         item = entry,
-                        vaultViewModel = vaultViewModel,
-                        mainViewModel = mainViewModel,
+                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        onAuthenticate = onAuthenticate,
                         editState = editState,
-                        revealedUsername = revealedUsername,
-                        revealedPassword = revealedPassword,
-                        onUsernameRevealed = onUsernameRevealed,
-                        onPasswordRevealed = onPasswordRevealed,
+                        revealedUsername = uiState.revealedUsername,
+                        revealedPassword = uiState.revealedPassword,
+                        onUsernameRevealed = { onEvent(DetailEvent.SetRevealedUsername(it)) },
+                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
@@ -96,7 +92,7 @@ fun DetailScrollableContent(
                         isSteam = isSteam,
                         totpEditState = totpEditState,
                         showQrDialog = onShowQrDialog,
-                        vaultViewModel = vaultViewModel,
+                        onUpdateVaultEntry = onUpdateVaultEntry,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
@@ -108,10 +104,10 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        revealedPassword = revealedPassword,
-                        onPasswordRevealed = onPasswordRevealed,
-                        vaultViewModel = vaultViewModel,
-                        mainViewModel = mainViewModel,
+                        revealedPassword = uiState.revealedPassword,
+                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
+                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
@@ -123,8 +119,8 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        vaultViewModel = vaultViewModel,
-                        mainViewModel = mainViewModel,
+                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
@@ -136,10 +132,10 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        revealedPassword = revealedPassword,
-                        onPasswordRevealed = onPasswordRevealed,
-                        vaultViewModel = vaultViewModel,
-                        mainViewModel = mainViewModel,
+                        revealedPassword = uiState.revealedPassword,
+                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
+                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
@@ -151,10 +147,10 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        revealedPassword = revealedPassword,
-                        onPasswordRevealed = onPasswordRevealed,
-                        vaultViewModel = vaultViewModel,
-                        mainViewModel = mainViewModel,
+                        revealedPassword = uiState.revealedPassword,
+                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
+                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
@@ -164,8 +160,8 @@ fun DetailScrollableContent(
                 item {
                     PasskeySection(
                         activity = activity,
-                        vaultViewModel = vaultViewModel,
-                        mainViewModel = mainViewModel,
+                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        onAuthenticate = onAuthenticate,
                         entry = entry
                     )
                 }
@@ -175,8 +171,8 @@ fun DetailScrollableContent(
                 item {
                     RecoveryCodeSection(
                         activity = activity,
-                        vaultViewModel = vaultViewModel,
-                        mainViewModel = mainViewModel,
+                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        onAuthenticate = onAuthenticate,
                         entry = entry
                     )
                 }
@@ -186,21 +182,20 @@ fun DetailScrollableContent(
                 item {
                     IdCardSection(
                         activity = activity,
-                        vaultViewModel = vaultViewModel,
-                        mainViewModel = mainViewModel,
+                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        onAuthenticate = onAuthenticate,
                         entry = entry
                     )
                 }
             }
         }
 
-        // --- 公共部分 ---
         item {
             InfoGroupCard(title = stringResource(R.string.category)) {
                 CategoryItem(
-                    viewModel = vaultViewModel,
                     entry = entry,
                     editState = editState,
+                    onUpdateVaultEntry = onUpdateVaultEntry,
                     onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                 )
             }
@@ -210,7 +205,8 @@ fun DetailScrollableContent(
             AssociatedInfoSection(
                 entry = entry,
                 editState = editState,
-                vaultViewModel = vaultViewModel,
+                onUpdateVaultEntry = onUpdateVaultEntry,
+                onShowIconPicker = onShowIconPicker,
                 onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
             )
         }
@@ -219,7 +215,7 @@ fun DetailScrollableContent(
             NotesSection(
                 entry = entry,
                 editState = editState,
-                viewModel = vaultViewModel,
+                onUpdateVaultEntry = onUpdateVaultEntry,
                 onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
             )
         }

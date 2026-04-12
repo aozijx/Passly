@@ -67,6 +67,7 @@
     <string name="vault_auth_subtitle">验证身份以访问保险箱</string>
     <string name="vault_auth_error">安全验证失败: %s</string>
     <string name="vault_auth_failed">验证未通过</string>
+    <string name="main_notification_permission_denied">通知权限未开启，后台同步进度将不可见</string>
     <string name="vault_locked_title">保险箱已锁定</string>
     <string name="vault_locked_subtitle">点击屏幕以解锁</string>
     <string name="vault_auth_encrypt_title">验证加密</string>

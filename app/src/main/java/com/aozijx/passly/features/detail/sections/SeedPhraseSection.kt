@@ -32,12 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.internal.EntryEditState
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun SeedPhraseSection(
@@ -46,12 +45,11 @@ fun SeedPhraseSection(
     editState: EntryEditState,
     revealedPassword: String?,
     onPasswordRevealed: (String?) -> Unit,
-    vaultViewModel: VaultViewModel,
-    mainViewModel: MainViewModel,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
-    val seedPhraseLabel = stringResource(R.string.seed_phrase)
     val seedPhraseCopiedMsg = stringResource(R.string.seed_phrase_copied)
 
     var revealedSeedPhrase by remember { mutableStateOf<String?>(null) }
@@ -69,15 +67,16 @@ fun SeedPhraseSection(
                     Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
                 } else {
                     val encryptedSeedPhrase = entry.cryptoSeedPhrase
-                    if (encryptedSeedPhrase != null) {
-                        vaultViewModel.decryptSingle(activity, encryptedSeedPhrase, mainViewModel::authenticate) { decrypted ->
-                            decrypted?.let {
-                                ClipboardUtils.copy(context, it)
+                    if (!encryptedSeedPhrase.isNullOrBlank()) {
+                        onAuthenticate(activity, "解密助记词", "验证身份以复制助记词", {
+                            try {
+                                val decrypted = CryptoManager.decrypt(encryptedSeedPhrase)
+                                ClipboardUtils.copy(context, decrypted)
                                 Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
-                                revealedSeedPhrase = it
-                                wordList = it.split(" ").filter { word -> word.isNotBlank() }
-                            }
-                        }
+                                revealedSeedPhrase = decrypted
+                                wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                            } catch (e: Exception) {}
+                        })
                     }
                 }
             },
@@ -87,13 +86,14 @@ fun SeedPhraseSection(
                     wordList = emptyList()
                 } else {
                     val seedPhrase = entry.cryptoSeedPhrase
-                    if (seedPhrase != null) {
-                        vaultViewModel.decryptSingle(activity, seedPhrase, mainViewModel::authenticate) { decrypted ->
-                            decrypted?.let {
-                                revealedSeedPhrase = it
-                                wordList = it.split(" ").filter { word -> word.isNotBlank() }
-                            }
-                        }
+                    if (!seedPhrase.isNullOrBlank()) {
+                        onAuthenticate(activity, "解密助记词", "验证身份以查看助记词", {
+                            try {
+                                val decrypted = CryptoManager.decrypt(seedPhrase)
+                                revealedSeedPhrase = decrypted
+                                wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                            } catch (e: Exception) {}
+                        })
                     }
                 }
             }
@@ -128,13 +128,14 @@ fun SeedPhraseSection(
             Button(
                 onClick = {
                     val encryptedSeedPhrase = entry.cryptoSeedPhrase
-                    if (encryptedSeedPhrase != null) {
-                        vaultViewModel.decryptSingle(activity, encryptedSeedPhrase, mainViewModel::authenticate) { decrypted ->
-                            decrypted?.let {
-                                revealedSeedPhrase = it
-                                wordList = it.split(" ").filter { word -> word.isNotBlank() }
-                            }
-                        }
+                    if (!encryptedSeedPhrase.isNullOrBlank()) {
+                        onAuthenticate(activity, "解密助记词", "验证身份以显示助记词", {
+                            try {
+                                val decrypted = CryptoManager.decrypt(encryptedSeedPhrase)
+                                revealedSeedPhrase = decrypted
+                                wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                            } catch (e: Exception) {}
+                        })
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -151,7 +152,7 @@ fun SeedPhraseSection(
                 label = stringResource(R.string.vault_detail_notes),
                 value = entry.notes,
                 isRevealed = true,
-                onCopy = { entry.notes.let { ClipboardUtils.copy(context, it) } },
+                onCopy = { ClipboardUtils.copy(context, entry.notes) },
                 onEdit = {}
             )
         }

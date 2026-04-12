@@ -10,7 +10,9 @@ data class DetailUiState(
     val validationError: String? = null,
     val isEditingTitle: Boolean = false,
     val editedTitle: String = "",
-    val strategyReady: Boolean = false
+    val strategyReady: Boolean = false,
+    val revealedUsername: String? = null,
+    val revealedPassword: String? = null
 )
 
 sealed interface DetailEvent {
@@ -25,6 +27,9 @@ sealed interface DetailEvent {
 
     object SaveTitle : DetailEvent
     object ToggleFavorite : DetailEvent
+    
+    data class SetRevealedUsername(val value: String?) : DetailEvent
+    data class SetRevealedPassword(val value: String?) : DetailEvent
 }
 
 sealed interface DetailEffect {

@@ -33,8 +33,6 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.internal.EntryEditState
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun WifiSection(
@@ -43,8 +41,8 @@ fun WifiSection(
     editState: EntryEditState,
     revealedPassword: String?,
     onPasswordRevealed: (String?) -> Unit,
-    vaultViewModel: VaultViewModel,
-    mainViewModel: MainViewModel,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
@@ -92,13 +90,14 @@ fun WifiSection(
                         ClipboardUtils.copy(context, revealedPassword)
                         Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
                     } else {
-                        vaultViewModel.decryptSingle(activity, entry.password, mainViewModel::authenticate) { decrypted ->
-                            decrypted?.let {
-                                ClipboardUtils.copy(context, it)
+                        onAuthenticate(activity, "解密 WiFi 密码", "验证身份以复制密码", {
+                            try {
+                                val decrypted = CryptoManager.decrypt(entry.password)
+                                ClipboardUtils.copy(context, decrypted)
                                 Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
-                                onPasswordRevealed(it)
-                            }
-                        }
+                                onPasswordRevealed(decrypted)
+                            } catch (e: Exception) {}
+                        })
                     }
                 },
                 onEdit = {
@@ -111,9 +110,11 @@ fun WifiSection(
         if (revealedPassword == null && !editState.isEditingPassword) {
             Button(
                 onClick = {
-                    vaultViewModel.decryptSingle(activity, entry.password, mainViewModel::authenticate) { decrypted ->
-                        decrypted?.let { onPasswordRevealed(it) }
-                    }
+                    onAuthenticate(activity, "解密 WiFi 密码", "验证身份以查看密码", {
+                        try {
+                            onPasswordRevealed(CryptoManager.decrypt(entry.password))
+                        } catch (e: Exception) {}
+                    })
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)

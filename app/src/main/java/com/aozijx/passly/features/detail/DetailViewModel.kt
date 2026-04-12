@@ -104,6 +104,14 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                 val current = _uiState.value.entry ?: return
                 commitEntryUpdate(current.copy(favorite = !current.favorite))
             }
+
+            is DetailEvent.SetRevealedUsername -> {
+                _uiState.update { it.copy(revealedUsername = event.value) }
+            }
+
+            is DetailEvent.SetRevealedPassword -> {
+                _uiState.update { it.copy(revealedPassword = event.value) }
+            }
         }
     }
 
@@ -145,5 +153,11 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                 strategyReady = analysis.strategyReady
             )
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // 安全性增强：ViewModel 销毁时立即清空内存中的敏感数据
+        _uiState.update { DetailUiState() }
     }
 }

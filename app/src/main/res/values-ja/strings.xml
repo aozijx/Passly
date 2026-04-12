@@ -63,6 +63,7 @@
     <string name="vault_auth_subtitle">本人確認して金庫にアクセス</string>
     <string name="vault_auth_error">認証失敗：%s</string>
     <string name="vault_auth_failed">認証に失敗しました</string>
+    <string name="main_notification_permission_denied">通知権限が無効のため、バックグラウンド同期の進捗は表示されません。</string>
     <string name="vault_locked_title">金庫がロックされています</string>
     <string name="vault_locked_subtitle">画面をタップして解除</string>
     <string name="vault_auth_encrypt_title">暗号化確認</string>

@@ -16,7 +16,6 @@ import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.components.TotpCodeCard
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.dialogs.EditTotpSection
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun TotpSection(
@@ -26,8 +25,8 @@ fun TotpSection(
     isSteam: Boolean,
     totpEditState: TotpEditState,
     showQrDialog: () -> Unit,
-    vaultViewModel: VaultViewModel,
-    onEntryUpdated: (VaultEntry) -> Unit = vaultViewModel::updateVaultEntry
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
     val totpCopiedMsg = stringResource(R.string.vault_totp_copied)
@@ -51,7 +50,12 @@ fun TotpSection(
 
         if (totpEditState.isEditing && currentState?.decryptedSecret != null) {
             InfoGroupCard(title = stringResource(R.string.vault_edit_totp_title)) {
-                EditTotpSection(entry, vaultViewModel, totpEditState, onEntryUpdated)
+                EditTotpSection(
+                    item = entry,
+                    editState = totpEditState,
+                    onUpdateVaultEntry = onUpdateVaultEntry,
+                    onEntryUpdated = onEntryUpdated
+                )
             }
         }
     }

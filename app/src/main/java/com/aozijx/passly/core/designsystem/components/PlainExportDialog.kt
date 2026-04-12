@@ -42,8 +42,8 @@ fun PlainExportDialog(
 
         PlainExportDialogType.NormalExport -> PlainExportDialogConfig(
             title = "导出明文备份",
-            message = "即将导出明文 JSON 格式的备份文件。\n\n注意：文件为明文存储，请妥善保管，避免泄露敏感信息。",
-            confirmText = "导出备份",
+            message = "即将将所有条目以明文 JSON 格式导出。\n\n⚠️ 风险提示：\n• 文件中的所有密码均为未加密明文\n• 任何获得该文件的人都能直接读取您的全部密码\n• 导出后请立即转移至安全位置并从本机删除\n• 请勿上传至云盘或通过不安全渠道传输\n• 仅在需要数据迁移或自行加密备份时使用",
+            confirmText = "我已了解风险，继续导出",
             dismissText = "取消",
             dismissColor = MaterialTheme.colorScheme.primary
         )

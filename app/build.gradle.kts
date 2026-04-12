@@ -58,8 +58,7 @@ android {
             isMinifyEnabled = true          // 启用 R8 代码压缩
             isShrinkResources = true        // 启用资源压缩
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
             buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "true")
@@ -101,6 +100,11 @@ android {
             // 覆盖默认值
             buildConfigField("boolean", "IS_VAULT", "true")
         }
+    }
+
+    // 让 androidTest 能读到 schemas/ 目录下的版本 JSON（用于 MigrationTestHelper）
+    sourceSets.getByName("androidTest") {
+        assets.directories.add("$projectDir/schemas")
     }
 }
 
@@ -184,6 +188,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.androidx.room.testing)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

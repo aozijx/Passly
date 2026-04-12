@@ -11,15 +11,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,9 +35,8 @@ import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
+import com.aozijx.passly.features.detail.components.EditTextField
 import com.aozijx.passly.features.detail.internal.EntryEditState
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun SshKeySection(
@@ -49,8 +45,8 @@ fun SshKeySection(
     editState: EntryEditState,
     revealedPassword: String?,
     onPasswordRevealed: (String?) -> Unit,
-    vaultViewModel: VaultViewModel,
-    mainViewModel: MainViewModel,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
@@ -71,23 +67,16 @@ fun SshKeySection(
         )
 
         if (editState.isEditingPassword) {
-            OutlinedTextField(
+            EditTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = { Text(stringResource(R.string.label_edit_field, passphraseLabel)) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                trailingIcon = {
-                    IconButton(onClick = {
-                        saveEncrypted(editState.editedPassword, revealedPassphrase, { editState.isEditingPassword = false }) { encrypted ->
-                            onEntryUpdated(entry.copy(password = encrypted))
-                            revealedPassphrase = editState.editedPassword
-                        }
-                    }) {
-                        Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
+                label = stringResource(R.string.label_edit_field, passphraseLabel),
+                onSave = {
+                    saveEncrypted(editState.editedPassword, revealedPassphrase, { editState.isEditingPassword = false }) { encrypted ->
+                        onEntryUpdated(entry.copy(password = encrypted))
+                        revealedPassphrase = editState.editedPassword
                     }
-                },
-                singleLine = true
+                }
             )
         } else {
             DetailItem(
@@ -100,13 +89,14 @@ fun SshKeySection(
                         ClipboardUtils.copy(context, passphrase)
                         Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
                     } else {
-                        vaultViewModel.decryptSingle(activity, entry.password, mainViewModel::authenticate) { decrypted ->
-                            decrypted?.let {
-                                ClipboardUtils.copy(context, it)
+                        onAuthenticate(activity, "解密 SSH 密码", "验证身份以复制信息", {
+                            try {
+                                val decrypted = CryptoManager.decrypt(entry.password)
+                                ClipboardUtils.copy(context, decrypted)
                                 Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
-                                revealedPassphrase = it
-                            }
-                        }
+                                revealedPassphrase = decrypted
+                            } catch (e: Exception) {}
+                        })
                     }
                 },
                 onEdit = {
@@ -124,14 +114,15 @@ fun SshKeySection(
                     Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
                 } else {
                     val sshKey = entry.sshPrivateKey
-                    if (sshKey != null) {
-                        vaultViewModel.decryptSingle(activity, sshKey, mainViewModel::authenticate) { decrypted ->
-                            decrypted?.let {
-                                ClipboardUtils.copy(context, it)
+                    if (!sshKey.isNullOrBlank()) {
+                        onAuthenticate(activity, "解密 SSH 私钥", "验证身份以复制信息", {
+                            try {
+                                val decrypted = CryptoManager.decrypt(sshKey)
+                                ClipboardUtils.copy(context, decrypted)
                                 Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
-                                revealedPrivateKey = it
-                            }
-                        }
+                                revealedPrivateKey = decrypted
+                            } catch (e: Exception) {}
+                        })
                     }
                 }
             },
@@ -188,10 +179,15 @@ fun SshKeySection(
             Button(
                 onClick = {
                     val sshKey = entry.sshPrivateKey
-                    if (sshKey != null) {
-                        vaultViewModel.decryptSingle(activity, sshKey, mainViewModel::authenticate) { decrypted ->
-                            decrypted?.let { revealedPrivateKey = it }
-                        }
+                    if (!sshKey.isNullOrBlank()) {
+                        onAuthenticate(activity, "解密 SSH 私钥", "验证身份以查看完整条目", {
+                            try {
+                                revealedPrivateKey = CryptoManager.decrypt(sshKey)
+                                if (entry.password.isNotEmpty()) {
+                                    revealedPassphrase = CryptoManager.decrypt(entry.password)
+                                }
+                            } catch (e: Exception) {}
+                        })
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

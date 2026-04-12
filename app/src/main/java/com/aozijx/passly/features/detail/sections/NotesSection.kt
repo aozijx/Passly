@@ -25,14 +25,13 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.internal.EntryEditState
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun NotesSection(
     entry: VaultEntry,
     editState: EntryEditState,
-    viewModel: VaultViewModel,
-    onEntryUpdated: (VaultEntry) -> Unit = viewModel::updateVaultEntry
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val notesLabel = stringResource(R.string.vault_detail_notes)
@@ -56,6 +55,7 @@ fun NotesSection(
                 TextButton(
                     onClick = {
                         val updatedEntry = editState.applyNotesOnly(entry)
+                        onUpdateVaultEntry(updatedEntry)
                         onEntryUpdated(updatedEntry)
                         editState.isEditingNotes = false
                     },

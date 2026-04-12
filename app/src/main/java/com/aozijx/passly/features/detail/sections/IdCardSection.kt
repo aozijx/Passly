@@ -14,18 +14,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun IdCardSection(
     activity: FragmentActivity,
     entry: VaultEntry,
-    vaultViewModel: VaultViewModel,
-    mainViewModel: MainViewModel,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -52,13 +51,14 @@ fun IdCardSection(
                     ClipboardUtils.copy(context, cached)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                 } else {
-                    vaultViewModel.decryptSingle(activity, encrypted, mainViewModel::authenticate) { decrypted ->
-                        decrypted?.let {
-                            revealedIdNumber = it
-                            ClipboardUtils.copy(context, it)
+                    onAuthenticate(activity, "解密身份证号", "验证身份以复制信息", {
+                        try {
+                            val decrypted = CryptoManager.decrypt(encrypted)
+                            revealedIdNumber = decrypted
+                            ClipboardUtils.copy(context, decrypted)
                             Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                        } catch (e: Exception) {}
+                    })
                 }
             },
             onEdit = {
@@ -67,9 +67,11 @@ fun IdCardSection(
                 if (revealedIdNumber != null) {
                     revealedIdNumber = null
                 } else {
-                    vaultViewModel.decryptSingle(activity, encrypted, mainViewModel::authenticate) {
-                        revealedIdNumber = it
-                    }
+                    onAuthenticate(activity, "解密身份证号", "验证身份以查看信息", {
+                        try {
+                            revealedIdNumber = CryptoManager.decrypt(encrypted)
+                        } catch (e: Exception) {}
+                    })
                 }
             }
         )

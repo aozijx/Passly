@@ -44,7 +44,6 @@ import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.internal.EntryEditState
-import com.aozijx.passly.features.vault.VaultViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -52,8 +51,9 @@ fun AssociatedInfoSection(
     modifier: Modifier = Modifier,
     entry: VaultEntry,
     editState: EntryEditState,
-    vaultViewModel: VaultViewModel,
-    onEntryUpdated: (VaultEntry) -> Unit = vaultViewModel::updateVaultEntry
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onShowIconPicker: () -> Unit,
+    onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val focusManager = LocalFocusManager.current
@@ -147,17 +147,17 @@ fun AssociatedInfoSection(
                                             )
                                             when (outcome.result) {
                                                 FaviconUtils.DownloadResult.SUCCESS -> {
-                                                    onEntryUpdated(
-                                                        entry.copy(
-                                                            associatedDomain = domainForDownload.ifBlank { null },
-                                                            iconName = null,
-                                                            iconCustomPath = outcome.filePath,
-                                                            totpSecret = entry.totpSecret,
-                                                            totpPeriod = entry.totpPeriod,
-                                                            totpDigits = entry.totpDigits,
-                                                            totpAlgorithm = entry.totpAlgorithm
-                                                        )
+                                                    val updatedEntry = entry.copy(
+                                                        associatedDomain = domainForDownload.ifBlank { null },
+                                                        iconName = null,
+                                                        iconCustomPath = outcome.filePath,
+                                                        totpSecret = entry.totpSecret,
+                                                        totpPeriod = entry.totpPeriod,
+                                                        totpDigits = entry.totpDigits,
+                                                        totpAlgorithm = entry.totpAlgorithm
                                                     )
+                                                    onUpdateVaultEntry(updatedEntry)
+                                                    onEntryUpdated(updatedEntry)
                                                     Toast.makeText(
                                                         context,
                                                         iconDownloadSuccess,
@@ -226,6 +226,7 @@ fun AssociatedInfoSection(
                                             currentPath = entry.iconCustomPath
                                         )
                                     )
+                                    onUpdateVaultEntry(updatedEntry)
                                     onEntryUpdated(updatedEntry)
                                     editState.isEditingDomain = false
                                 }
@@ -308,6 +309,7 @@ fun AssociatedInfoSection(
                                     currentPath = entry.iconCustomPath
                                 )
                             )
+                            onUpdateVaultEntry(updatedEntry)
                             onEntryUpdated(updatedEntry)
                             editState.isEditingDomain = false
                         },
@@ -366,6 +368,7 @@ fun AssociatedInfoSection(
                     TextButton(
                         onClick = {
                             val updatedEntry = editState.applyAssociatedOnly(entry)
+                            onUpdateVaultEntry(updatedEntry)
                             onEntryUpdated(updatedEntry)
                             editState.isEditingPackage = false
                         },
