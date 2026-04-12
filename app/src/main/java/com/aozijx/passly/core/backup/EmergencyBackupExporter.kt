@@ -31,11 +31,18 @@ object EmergencyBackupExporter {
         return exportPlainJson(context, "Passly_Plain_Backup")
     }
 
-    /** 新路径：通过 SAF URI 写入用户指定位置。 */
-    fun exportPlainBackupToUri(context: Context, uri: Uri): Result<Unit> {
+    /**
+     * 新路径：通过 SAF URI 写入用户指定位置。
+     * [dbName] 默认为生产数据库名；测试中可传入隔离的数据库名。
+     */
+    fun exportPlainBackupToUri(
+        context: Context,
+        uri: Uri,
+        dbName: String = DatabaseConfig.DATABASE_NAME
+    ): Result<Unit> {
         var db: SQLiteDatabase? = null
         return try {
-            val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
+            val dbFile = context.getDatabasePath(dbName)
             if (!dbFile.exists()) return Result.failure(Exception("数据库文件不存在"))
 
             val passphrase = DatabasePassphraseManager.getPassphrase(context)
