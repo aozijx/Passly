@@ -2,16 +2,14 @@ package com.aozijx.passly.features.detail.page
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -21,8 +19,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.core.qr.QrCodeUtils
-import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailScrollableContent
 import com.aozijx.passly.features.detail.components.DetailTopBar
@@ -30,7 +26,6 @@ import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.contract.DetailUiState
 import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
-import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
 
 /**
  * 详情页 UI 组件 (Stateless)
@@ -70,18 +65,12 @@ fun DetailScreen(
     val vaultType = uiState.vaultType
     val editState = remember(entry) { EntryEditState(entry) }
 
-    val revealedUsernameState = remember { mutableStateOf<String?>(null) }
-    val revealedPasswordState = remember { mutableStateOf<String?>(null) }
-    val revealedUsername = revealedUsernameState.value
-    val revealedPassword = revealedPasswordState.value
-
     val currentState = totpStates[entry.id]
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
     val totpEditState = remember(entry, currentState?.decryptedSecret) {
         TotpEditState(entry, currentState?.decryptedSecret ?: "")
     }
-    var showQrDialog by remember { mutableStateOf(false) }
-
+    
     // TOTP 自动解锁
     LaunchedEffect(entry.id) {
         if (vaultType == EntryType.TOTP) {
@@ -109,8 +98,6 @@ fun DetailScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            revealedUsernameState.value = null
-            revealedPasswordState.value = null
             ClipboardUtils.clear(context)
         }
     }
@@ -133,19 +120,14 @@ fun DetailScreen(
                 onInteraction = onUpdateInteraction
             )
         }
-    ) { padding ->
+    ) { innerPadding ->
         DetailScrollableContent(
-            padding = padding,
-            entry = entry,
-            vaultType = vaultType,
+            modifier = Modifier.padding(innerPadding),
+            uiState = uiState,
             currentState = currentState,
             isSteam = isSteam,
             totpEditState = totpEditState,
             editState = editState,
-            revealedUsername = revealedUsername,
-            revealedPassword = revealedPassword,
-            onUsernameRevealed = { revealedUsernameState.value = it },
-            onPasswordRevealed = { revealedPasswordState.value = it },
             onShowQrDialog = {
                 onAuthenticate(
                     activity,
@@ -153,7 +135,7 @@ fun DetailScreen(
                     authQrSubtitle
                 ) {
                     totpEditState.isEditing = false
-                    showQrDialog = true
+                    onEvent(DetailEvent.ShowIconPicker) // 借用 Event 系统处理显示逻辑（或根据需要调整）
                 }
             },
             onEvent = onEvent,
@@ -163,13 +145,5 @@ fun DetailScreen(
             onAuthenticate = onAuthenticate,
             activity = activity
         )
-    }
-
-    if (showQrDialog && vaultType == EntryType.TOTP) {
-        if (currentState?.decryptedSecret != null) {
-            val qrContent = TotpUtils.constructOtpAuthUri(entry, currentState.decryptedSecret)
-            val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
-            QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })
-        }
     }
 }

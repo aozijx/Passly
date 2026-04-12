@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -20,6 +19,7 @@ import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.contract.DetailUiState
 import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.AssociatedInfoSection
@@ -37,17 +37,12 @@ import com.aozijx.passly.features.detail.sections.WifiSection
 
 @Composable
 fun DetailScrollableContent(
-    padding: PaddingValues,
-    entry: VaultEntry,
-    vaultType: EntryType,
+    modifier: Modifier = Modifier,
+    uiState: DetailUiState,
     currentState: TotpState?,
     isSteam: Boolean,
     totpEditState: TotpEditState,
     editState: EntryEditState,
-    revealedUsername: String?,
-    revealedPassword: String?,
-    onUsernameRevealed: (String?) -> Unit,
-    onPasswordRevealed: (String?) -> Unit,
     onShowQrDialog: () -> Unit,
     onEvent: (DetailEvent) -> Unit,
     onInteraction: () -> Unit,
@@ -56,10 +51,12 @@ fun DetailScrollableContent(
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     activity: FragmentActivity
 ) {
+    val entry = uiState.entry ?: return
+    val vaultType = uiState.vaultType
+
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .padding(padding)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -77,10 +74,10 @@ fun DetailScrollableContent(
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
                         editState = editState,
-                        revealedUsername = revealedUsername,
-                        revealedPassword = revealedPassword,
-                        onUsernameRevealed = onUsernameRevealed,
-                        onPasswordRevealed = onPasswordRevealed,
+                        revealedUsername = uiState.revealedUsername,
+                        revealedPassword = uiState.revealedPassword,
+                        onUsernameRevealed = { onEvent(DetailEvent.SetRevealedUsername(it)) },
+                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                     )
                 }
@@ -107,8 +104,8 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        revealedPassword = revealedPassword,
-                        onPasswordRevealed = onPasswordRevealed,
+                        revealedPassword = uiState.revealedPassword,
+                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
@@ -135,8 +132,8 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        revealedPassword = revealedPassword,
-                        onPasswordRevealed = onPasswordRevealed,
+                        revealedPassword = uiState.revealedPassword,
+                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
@@ -150,8 +147,8 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        revealedPassword = revealedPassword,
-                        onPasswordRevealed = onPasswordRevealed,
+                        revealedPassword = uiState.revealedPassword,
+                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }

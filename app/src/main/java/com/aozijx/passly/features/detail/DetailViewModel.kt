@@ -154,4 +154,10 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
             )
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        // 安全性增强：ViewModel 销毁时立即清空内存中的敏感数据
+        _uiState.update { DetailUiState() }
+    }
 }
