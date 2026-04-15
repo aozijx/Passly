@@ -125,21 +125,12 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         onResult: (String?) -> Unit
     ) = crypto.decryptSingle(activity, encryptedData, authenticate, onResult)
 
-    fun decryptMultiple(
-        activity: FragmentActivity,
-        encryptedList: List<String>,
-        authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
-        onResult: (List<String?>) -> Unit
-    ) = crypto.decryptMultiple(activity, encryptedList, authenticate, onResult)
-
     // --- TOTP ---
     fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry.toSummary())
     fun autoUnlockTotp(entry: VaultSummary) = totp.autoUnlock(entry)
-    fun unlockTotp(entryId: Int, decryptedSecret: String) = totp.unlock(entryId, decryptedSecret)
 
     // --- Detail management ---
     fun showDetail(entry: VaultEntry) = detail.showDetail(entry)
-    fun showDetailForEdit(entry: VaultEntry) = detail.showDetailForEdit(entry)
     fun showDetail(entry: VaultSummary) = loadEntryById(entry.id) { showDetail(it) }
     fun loadEntryById(entryId: Int, onLoaded: (VaultEntry) -> Unit) {
         viewModelScope.launch { vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) } }

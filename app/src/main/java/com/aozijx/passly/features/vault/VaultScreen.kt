@@ -103,16 +103,16 @@ fun VaultContent(
 
     val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
 
-    // 同步 ViewModel 状态到 Pager
+    // 同步 ViewModel 状态到 Pager（Tab 点击直接跳转，不逐页滚动）
     LaunchedEffect(selectedTab) {
-        if (pagerState.currentPage != selectedTab.ordinal) {
+        if (pagerState.settledPage != selectedTab.ordinal) {
             pagerState.animateScrollToPage(selectedTab.ordinal)
         }
     }
 
-    // 同步 Pager 滑动到 ViewModel
-    LaunchedEffect(pagerState.currentPage) {
-        val newTab = VaultTab.entries[pagerState.currentPage]
+    // 同步 Pager 滑动到 ViewModel（用 settledPage 避免动画途中触发状态覆盖）
+    LaunchedEffect(pagerState.settledPage) {
+        val newTab = VaultTab.entries[pagerState.settledPage]
         if (newTab != selectedTab) {
             vaultViewModel.selectTab(newTab)
         }
@@ -215,6 +215,7 @@ fun VaultContent(
             VaultTopBar(
                 vaultViewModel = vaultViewModel,
                 scrollBehavior = scrollBehavior,
+                currentPageIndex = pagerState.currentPage,
                 onExportClick = {
                     val started = settingsViewModel.backup.tryStartExportInConfiguredDirectory(settingsUiState.backupDirectoryUri)
                     if (!started) {

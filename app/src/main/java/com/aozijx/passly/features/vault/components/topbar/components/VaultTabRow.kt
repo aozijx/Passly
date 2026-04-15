@@ -16,21 +16,24 @@ import com.aozijx.passly.features.vault.VaultTab
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTabRow(
-    selectedTab: VaultTab, onTabSelected: (VaultTab) -> Unit, modifier: Modifier = Modifier
+    selectedTab: VaultTab,
+    currentPageIndex: Int,
+    onTabSelected: (VaultTab) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     SecondaryTabRow(
-        selectedTabIndex = selectedTab.ordinal,
+        selectedTabIndex = currentPageIndex,
         containerColor = MaterialTheme.colorScheme.surface,
         indicator = {
             TabRowDefaults.SecondaryIndicator(
-                Modifier.tabIndicatorOffset(selectedTab.ordinal),
+                Modifier.tabIndicatorOffset(currentPageIndex),
                 color = MaterialTheme.colorScheme.primary
             )
         },
         modifier = modifier
     ) {
         VaultTab.entries.forEach { tab ->
-            Tab(selected = selectedTab == tab, onClick = { onTabSelected(tab) }, text = {
+            Tab(selected = currentPageIndex == tab.ordinal, onClick = { onTabSelected(tab) }, text = {
                 Text(
                     text = stringResource(
                         when (tab) {

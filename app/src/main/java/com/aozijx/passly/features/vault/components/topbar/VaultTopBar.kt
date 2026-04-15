@@ -51,6 +51,7 @@ import com.aozijx.passly.features.vault.components.topbar.components.VaultTabRow
 fun VaultTopBar(
     vaultViewModel: VaultViewModel,
     scrollBehavior: TopAppBarScrollBehavior,
+    currentPageIndex: Int,
     onExportClick: () -> Unit,
     onPlainJsonExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -171,7 +172,9 @@ fun VaultTopBar(
             exit = shrinkVertically() + fadeOut()
         ) {
             VaultTabRow(
-                selectedTab = selectedTab, onTabSelected = { vaultViewModel.selectTab(it) })
+                selectedTab = selectedTab,
+                currentPageIndex = currentPageIndex,
+                onTabSelected = { vaultViewModel.selectTab(it) })
         }
     }
 }
