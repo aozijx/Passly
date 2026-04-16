@@ -25,6 +25,12 @@ class SystemSettingsUseCases(private val repository: SettingsRepository) {
     val swipeRightAction: Flow<SwipeActionType> = repository.swipeRightAction
     val autofillUiMode: Flow<AutofillUiMode> = repository.autofillUiMode
 
+    // 保险箱 Tab 可见性
+    val visibleVaultTabs: Flow<Set<String>?> = repository.visibleVaultTabs
+
+    // 数据与下载
+    val isAutoDownloadIcons: Flow<Boolean> = repository.isAutoDownloadIcons
+
     // 操作方法
     suspend fun setDarkMode(enabled: Boolean?) = repository.setDarkMode(enabled)
     suspend fun setDynamicColor(enabled: Boolean) = repository.setDynamicColor(enabled)
@@ -40,4 +46,6 @@ class SystemSettingsUseCases(private val repository: SettingsRepository) {
     suspend fun setSwipeLeftAction(action: SwipeActionType) = repository.setSwipeLeftAction(action)
     suspend fun setSwipeRightAction(action: SwipeActionType) = repository.setSwipeRightAction(action)
     suspend fun setAutofillUiMode(mode: AutofillUiMode) = repository.setAutofillUiMode(mode)
+    suspend fun setVisibleVaultTabs(keys: Set<String>) = repository.setVisibleVaultTabs(keys)
+    suspend fun setAutoDownloadIcons(enabled: Boolean) = repository.setAutoDownloadIcons(enabled)
 }

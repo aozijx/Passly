@@ -29,7 +29,9 @@ data class SettingsUiState(
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
     val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
     val backupDirectoryUri: String? = null,
-    val lastBackupExportFileName: String? = null
+    val lastBackupExportFileName: String? = null,
+    val visibleVaultTabs: Set<String>? = null,
+    val isAutoDownloadIcons: Boolean = true
 )
 
 private data class CoreSettingsFlowState(
@@ -50,7 +52,9 @@ private data class SecurityAndStyleFlowState(
 private data class AutofillAndSwipeFlowState(
     val autofillUiMode: AutofillUiMode,
     val isSwipeEnabled: Boolean,
-    val swipeLeftAction: SwipeActionType
+    val swipeLeftAction: SwipeActionType,
+    val visibleVaultTabs: Set<String>?,
+    val isAutoDownloadIcons: Boolean
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -97,12 +101,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             combine(
                 systemSettingsUseCases.autofillUiMode,
                 systemSettingsUseCases.isSwipeEnabled,
-                systemSettingsUseCases.swipeLeftAction
-            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction ->
+                systemSettingsUseCases.swipeLeftAction,
+                systemSettingsUseCases.visibleVaultTabs,
+                systemSettingsUseCases.isAutoDownloadIcons
+            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction, visibleVaultTabs, isAutoDownloadIcons ->
                 AutofillAndSwipeFlowState(
                     autofillUiMode = autofillUiMode,
                     isSwipeEnabled = isSwipeEnabled,
-                    swipeLeftAction = swipeLeftAction
+                    swipeLeftAction = swipeLeftAction,
+                    visibleVaultTabs = visibleVaultTabs,
+                    isAutoDownloadIcons = isAutoDownloadIcons
                 )
             }) { securityAndStyle, autofillAndSwipe ->
             SettingsUiState(
@@ -112,7 +120,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 cardStyleByEntryType = securityAndStyle.cardStyleByEntryType,
                 autofillUiMode = autofillAndSwipe.autofillUiMode,
                 isSwipeEnabled = autofillAndSwipe.isSwipeEnabled,
-                swipeLeftAction = autofillAndSwipe.swipeLeftAction
+                swipeLeftAction = autofillAndSwipe.swipeLeftAction,
+                visibleVaultTabs = autofillAndSwipe.visibleVaultTabs,
+                isAutoDownloadIcons = autofillAndSwipe.isAutoDownloadIcons
             )
         },
         systemSettingsUseCases.swipeRightAction,
@@ -134,7 +144,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             swipeLeftAction = partialState.swipeLeftAction,
             swipeRightAction = swipeRightAction,
             backupDirectoryUri = backupDirectoryUri,
-            lastBackupExportFileName = lastBackupExportFileName
+            lastBackupExportFileName = lastBackupExportFileName,
+            visibleVaultTabs = partialState.visibleVaultTabs,
+            isAutoDownloadIcons = partialState.isAutoDownloadIcons
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -184,6 +196,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setSwipeRightAction(action: SwipeActionType) =
         viewModelScope.launch { systemSettingsUseCases.setSwipeRightAction(action) }
+
+    fun setVisibleVaultTabs(keys: Set<String>) =
+        viewModelScope.launch { systemSettingsUseCases.setVisibleVaultTabs(keys) }
+
+    fun setAutoDownloadIcons(enabled: Boolean) =
+        viewModelScope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }
 
     fun setBackupDirectoryUri(uri: String) =
         viewModelScope.launch { backupSettingsUseCases.setBackupDirectoryUri(uri) }

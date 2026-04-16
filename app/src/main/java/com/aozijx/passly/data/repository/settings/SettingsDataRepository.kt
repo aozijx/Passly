@@ -29,6 +29,8 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     override val autofillUiMode: Flow<AutofillUiMode> = prefs.autofillUiMode
     override val backupDirectoryUri: Flow<String?> = prefs.backupDirectoryUri
     override val lastBackupExportFileName: Flow<String?> = prefs.lastBackupExportFileName
+    override val visibleVaultTabs: Flow<Set<String>?> = prefs.visibleVaultTabs
+    override val isAutoDownloadIcons: Flow<Boolean> = prefs.isAutoDownloadIcons
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         prefs.setLockTimeout(timeoutMs)
@@ -104,5 +106,13 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
 
     override suspend fun setLastBackupExportFileName(fileName: String) {
         prefs.setLastBackupExportFileName(fileName)
+    }
+
+    override suspend fun setVisibleVaultTabs(keys: Set<String>) {
+        prefs.setVisibleVaultTabs(keys)
+    }
+
+    override suspend fun setAutoDownloadIcons(enabled: Boolean) {
+        prefs.setAutoDownloadIcons(enabled)
     }
 }

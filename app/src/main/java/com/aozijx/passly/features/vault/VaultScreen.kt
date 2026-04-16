@@ -67,6 +67,8 @@ import com.aozijx.passly.features.vault.components.VaultDialogs
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
 import com.aozijx.passly.features.vault.components.fab.VaultFab
 import com.aozijx.passly.features.vault.components.topbar.VaultTopBar
+import com.aozijx.passly.features.vault.model.AddType
+import com.aozijx.passly.features.vault.model.VaultTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,6 +86,7 @@ fun VaultContent(
     val items by vaultViewModel.vaultItems.collectAsStateWithLifecycle()
     val isVaultItemsLoading by vaultViewModel.isVaultItemsLoading.collectAsStateWithLifecycle()
     val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
+    val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
     val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -101,18 +104,25 @@ fun VaultContent(
     val perTypeStyleMap = settingsUiState.cardStyleByEntryType
     var isFabVisible by remember { mutableStateOf(true) }
 
-    val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
+    val initialTabIndex = visibleTabs.indexOf(selectedTab).coerceAtLeast(0)
+    val pagerState = rememberPagerState(initialPage = initialTabIndex) { visibleTabs.size.coerceAtLeast(1) }
 
-    // 同步 ViewModel 状态到 Pager（Tab 点击直接跳转，不逐页滚动）
-    LaunchedEffect(selectedTab) {
-        if (pagerState.settledPage != selectedTab.ordinal) {
-            pagerState.animateScrollToPage(selectedTab.ordinal)
+    // 当前选中的 Tab 若被设置隐藏，自动回退到第一项（通常是 ALL）。
+    LaunchedEffect(visibleTabs, selectedTab) {
+        if (visibleTabs.isEmpty()) return@LaunchedEffect
+        if (selectedTab !in visibleTabs) {
+            vaultViewModel.selectTab(visibleTabs.first())
+            return@LaunchedEffect
+        }
+        val targetIndex = visibleTabs.indexOf(selectedTab)
+        if (pagerState.settledPage != targetIndex && pagerState.pageCount > targetIndex) {
+            pagerState.animateScrollToPage(targetIndex)
         }
     }
 
     // 同步 Pager 滑动到 ViewModel（用 settledPage 避免动画途中触发状态覆盖）
-    LaunchedEffect(pagerState.settledPage) {
-        val newTab = VaultTab.entries[pagerState.settledPage]
+    LaunchedEffect(pagerState.settledPage, visibleTabs) {
+        val newTab = visibleTabs.getOrNull(pagerState.settledPage) ?: return@LaunchedEffect
         if (newTab != selectedTab) {
             vaultViewModel.selectTab(newTab)
         }
@@ -243,7 +253,7 @@ fun VaultContent(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) { pageIndex ->
-            val currentTab = VaultTab.entries[pageIndex]
+            val currentTab = visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
             val displayItems = remember(items, currentTab) {
                 when (currentTab) {
                     VaultTab.ALL -> items
@@ -313,7 +323,7 @@ fun VaultContent(
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             VaultScanner(
                 vaultViewModel = vaultViewModel,
-                onDismiss = { vaultViewModel.setAddType(AddType.NONE) }
+                onDismiss = { vaultViewModel.setAddType(null) }
             )
         }
     }

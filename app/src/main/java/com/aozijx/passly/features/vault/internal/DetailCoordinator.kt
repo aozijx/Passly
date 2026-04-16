@@ -4,16 +4,16 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.page.DetailOpenRequest
-import com.aozijx.passly.features.vault.AddType
+import com.aozijx.passly.features.vault.model.AddType
 
 internal class DetailCoordinator {
     private val state = DetailState()
 
-    val addType: AddType get() = state.addType
+    val addType: AddType? get() = state.addType
     val itemToDelete: VaultEntry? get() = state.itemToDelete
     val coordinatorState: VaultDetailCoordinatorState get() = state.detailCoordinatorState
 
-    fun setAddType(type: AddType) { state.addType = type }
+    fun setAddType(type: AddType?) { state.addType = type }
     fun setItemToDelete(entry: VaultEntry?) { state.itemToDelete = entry }
 
     private fun update(transform: (VaultDetailCoordinatorState) -> VaultDetailCoordinatorState) {
@@ -24,20 +24,6 @@ internal class DetailCoordinator {
         update {
             it.copy(
                 request = DetailOpenRequest(entry = entry, launchMode = DetailLaunchMode.VIEW),
-                isIconPickerVisible = false
-            )
-        }
-    }
-
-    fun showDetailForEdit(entry: VaultEntry) {
-        val launchMode = if (entry.totpSecret.isNullOrBlank()) {
-            DetailLaunchMode.EDIT_FIELDS
-        } else {
-            DetailLaunchMode.EDIT_TOTP
-        }
-        update {
-            it.copy(
-                request = DetailOpenRequest(entry = entry, launchMode = launchMode),
                 isIconPickerVisible = false
             )
         }

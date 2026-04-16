@@ -16,7 +16,6 @@ import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
-import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.vault.internal.AutofillCoordinator
 import com.aozijx.passly.features.vault.internal.CryptoHelper
@@ -25,11 +24,15 @@ import com.aozijx.passly.features.vault.internal.EntryIconHelper
 import com.aozijx.passly.features.vault.internal.EntryManager
 import com.aozijx.passly.features.vault.internal.SearchFilterState
 import com.aozijx.passly.features.vault.internal.TotpCoordinator
+import com.aozijx.passly.features.vault.internal.VaultQueryCoordinator
+import com.aozijx.passly.features.vault.model.AddType
+import com.aozijx.passly.features.vault.model.VaultTab
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -40,6 +43,7 @@ import kotlinx.coroutines.launch
 class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     private val vaultUseCases = AppContainer.domain.vaultUseCases
+    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
     private val autofill = AutofillCoordinator()
     private val crypto = CryptoHelper()
     private val iconHelper = EntryIconHelper()
@@ -71,8 +75,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     val isVaultItemsLoading: StateFlow<Boolean> = _isVaultItemsLoading
 
     // --- Detail / Add / Delete state ---
-    val addType: AddType get() = detail.addType
-    fun setAddType(type: AddType) = detail.setAddType(type)
+    val addType: AddType? get() = detail.addType
+    fun setAddType(type: AddType?) = detail.setAddType(type)
     internal val detailCoordinatorState: VaultDetailCoordinatorState get() = detail.coordinatorState
     val itemToDelete: VaultEntry? get() = detail.itemToDelete
     fun setItemToDelete(entry: VaultEntry?) = detail.setItemToDelete(entry)
@@ -81,13 +85,23 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     @OptIn(ExperimentalCoroutinesApi::class)
     val availableCategories: StateFlow<List<String>> =
         searchFilter.selectedTab.flatMapLatest { tab ->
-            val entryFilter = when (tab) {
-                VaultTab.PASSWORDS -> VaultSearchRepository.EntryFilter.PASSWORD_ONLY
-                VaultTab.TOTP -> VaultSearchRepository.EntryFilter.TOTP_ONLY
-                else -> VaultSearchRepository.EntryFilter.ALL
-            }
-            vaultUseCases.getCategoriesByFilter(entryFilter)
+            vaultUseCases.getCategoriesByFilter(tab.entryFilter)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // --- Tab visibility (受设置控制) ---
+    val visibleTabs: StateFlow<List<VaultTab>> =
+        systemSettingsUseCases.visibleVaultTabs
+            .map { VaultTab.resolveVisible(it ?: VaultTab.defaultVisibleKeys) }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                VaultTab.resolveVisible(VaultTab.defaultVisibleKeys)
+            )
+
+    // --- 数据与下载设置 ---
+    val isAutoDownloadIcons: StateFlow<Boolean> =
+        systemSettingsUseCases.isAutoDownloadIcons
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     /**
      * 核心优化：使用处理后的流（去抖动、标准化、去重）来驱动数据库查询
@@ -99,7 +113,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         distinctSelectedTab = searchFilter.distinctSelectedTab
     ).onEach { items ->
         if (_isVaultItemsLoading.value) _isVaultItemsLoading.value = false
-        entryManager.downloadMissingIcons(items, viewModelScope)
+        // 仅在启用自动下载图标时执行
+        if (isAutoDownloadIcons.value) {
+            entryManager.downloadMissingIcons(items, viewModelScope)
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -143,14 +160,14 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun addItem(entry: VaultEntry) {
         viewModelScope.launch {
             entryManager.addEntry(entry)
-            setAddType(AddType.NONE)
+            setAddType(null)
         }
     }
 
     fun addItem(entry: VaultEntry, domain: String) {
         viewModelScope.launch {
             entryManager.addEntryWithFavicon(entry, domain)
-            setAddType(AddType.NONE)
+            setAddType(null)
         }
     }
 

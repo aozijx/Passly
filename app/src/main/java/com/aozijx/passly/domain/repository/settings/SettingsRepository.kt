@@ -26,6 +26,9 @@ interface SettingsRepository {
     val autofillUiMode: Flow<AutofillUiMode>
     val backupDirectoryUri: Flow<String?>
     val lastBackupExportFileName: Flow<String?>
+    val visibleVaultTabs: Flow<Set<String>?>
+
+    val isAutoDownloadIcons: Flow<Boolean>
 
     suspend fun setLockTimeout(timeoutMs: Long)
     suspend fun setBiometricEnabled(enabled: Boolean)
@@ -48,4 +51,6 @@ interface SettingsRepository {
     suspend fun setBackupDirectoryUri(uri: String)
     suspend fun clearBackupDirectoryUri()
     suspend fun setLastBackupExportFileName(fileName: String)
+    suspend fun setVisibleVaultTabs(keys: Set<String>)
+    suspend fun setAutoDownloadIcons(enabled: Boolean)
 }

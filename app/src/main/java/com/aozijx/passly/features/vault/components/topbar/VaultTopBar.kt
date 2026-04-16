@@ -68,6 +68,7 @@ fun VaultTopBar(
     val selectedCategory by vaultViewModel.selectedCategory.collectAsStateWithLifecycle()
     val availableCategories by vaultViewModel.availableCategories.collectAsStateWithLifecycle()
     val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
+    val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
 
     var showPlainExportDialog by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -167,11 +168,12 @@ fun VaultTopBar(
         }
 
         AnimatedVisibility(
-            visible = !vaultViewModel.isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+            visible = visibleTabs.size > 1 && !vaultViewModel.isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
             VaultTabRow(
+                tabs = visibleTabs,
                 selectedTab = selectedTab,
                 currentPageIndex = currentPageIndex,
                 onTabSelected = { vaultViewModel.selectTab(it) })

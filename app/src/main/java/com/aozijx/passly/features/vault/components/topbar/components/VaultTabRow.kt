@@ -10,42 +10,42 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import com.aozijx.passly.R
-import com.aozijx.passly.features.vault.VaultTab
+import com.aozijx.passly.features.vault.model.VaultTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTabRow(
+    tabs: List<VaultTab>,
     selectedTab: VaultTab,
     currentPageIndex: Int,
     onTabSelected: (VaultTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (tabs.isEmpty()) return
+    val safePageIndex = currentPageIndex.coerceIn(0, tabs.lastIndex)
     SecondaryTabRow(
-        selectedTabIndex = currentPageIndex,
+        selectedTabIndex = safePageIndex,
         containerColor = MaterialTheme.colorScheme.surface,
         indicator = {
             TabRowDefaults.SecondaryIndicator(
-                Modifier.tabIndicatorOffset(currentPageIndex),
+                Modifier.tabIndicatorOffset(safePageIndex),
                 color = MaterialTheme.colorScheme.primary
             )
         },
         modifier = modifier
     ) {
-        VaultTab.entries.forEach { tab ->
-            Tab(selected = currentPageIndex == tab.ordinal, onClick = { onTabSelected(tab) }, text = {
-                Text(
-                    text = stringResource(
-                        when (tab) {
-                            VaultTab.ALL -> R.string.vault_tab_all
-                            VaultTab.PASSWORDS -> R.string.vault_tab_passwords
-                            VaultTab.TOTP -> R.string.vault_tab_totp
-                        }
-                    ),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
-                )
-            })
+        tabs.forEachIndexed { index, tab ->
+            Tab(
+                selected = safePageIndex == index,
+                onClick = { onTabSelected(tab) },
+                text = {
+                    Text(
+                        text = stringResource(tab.titleRes),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+            )
         }
     }
 }

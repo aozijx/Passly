@@ -49,6 +49,13 @@ class AppPrefs(context: Context) {
         val AUTOFILL_UI_MODE_KEY = stringPreferencesKey("autofill_ui_mode")
         val BACKUP_DIRECTORY_URI_KEY = stringPreferencesKey("backup_directory_uri")
         val LAST_BACKUP_EXPORT_FILE_NAME_KEY = stringPreferencesKey("last_backup_export_file_name")
+
+        // --- 保险箱 Tab 可见性 ---
+        val VISIBLE_VAULT_TABS_KEY = stringPreferencesKey("vault_visible_tabs")
+        private const val VISIBLE_VAULT_TABS_SEPARATOR = ","
+
+        // --- 数据与下载 ---
+        val AUTO_DOWNLOAD_ICONS_KEY = booleanPreferencesKey("data_auto_download_icons")
     }
 
     val isStatusBarAutoHide: Flow<Boolean> =
@@ -91,6 +98,16 @@ class AppPrefs(context: Context) {
     val lastBackupExportFileName: Flow<String?> = appContext.vaultDataStore.data.map { prefs ->
         prefs[LAST_BACKUP_EXPORT_FILE_NAME_KEY]
     }
+    /**
+     * null 代表"从未设置"（上层应套用默认：全部 Tab 可见）；
+     * 非 null 集合代表用户已明确配置，空集合合法（上层会保留不可切换的 Tab）。
+     */
+    val visibleVaultTabs: Flow<Set<String>?> = appContext.vaultDataStore.data.map { prefs ->
+        decodeVisibleTabs(prefs[VISIBLE_VAULT_TABS_KEY])
+    }
+
+    val isAutoDownloadIcons: Flow<Boolean> =
+        appContext.vaultDataStore.data.map { it[AUTO_DOWNLOAD_ICONS_KEY] ?: true }
 
     // 原有设置
     val lockTimeout: Flow<Long> =
@@ -162,6 +179,13 @@ class AppPrefs(context: Context) {
         it[LAST_BACKUP_EXPORT_FILE_NAME_KEY] = fileName
     }
 
+    suspend fun setVisibleVaultTabs(keys: Set<String>) = appContext.vaultDataStore.edit {
+        it[VISIBLE_VAULT_TABS_KEY] = keys.joinToString(VISIBLE_VAULT_TABS_SEPARATOR)
+    }
+
+    suspend fun setAutoDownloadIcons(enabled: Boolean) =
+        appContext.vaultDataStore.edit { it[AUTO_DOWNLOAD_ICONS_KEY] = enabled }
+
     suspend fun setLockTimeout(timeoutMs: Long) =
         appContext.vaultDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
 
@@ -184,6 +208,11 @@ class AppPrefs(context: Context) {
     suspend fun setSwipeRightAction(action: SwipeActionType) =
         appContext.vaultDataStore.edit { it[SWIPE_RIGHT_ACTION_KEY] = action.name }
 
+    private fun decodeVisibleTabs(raw: String?): Set<String>? {
+        if (raw == null) return null
+        return raw.split(VISIBLE_VAULT_TABS_SEPARATOR).mapNotNull { it.trim().takeIf { t -> t.isNotEmpty() } }.toSet()
+    }
+
     private fun parseStyleMap(raw: String?): Map<Int, VaultCardStyle> {
         if (raw.isNullOrBlank()) return emptyMap()
         return raw.split(";").mapNotNull { token ->
@@ -198,6 +227,3 @@ class AppPrefs(context: Context) {
         return map.entries.sortedBy { it.key }.joinToString(";") { "${it.key}:${it.value.key}" }
     }
 }
-
-
-

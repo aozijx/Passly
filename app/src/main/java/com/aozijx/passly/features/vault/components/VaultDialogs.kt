@@ -6,11 +6,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsViewModel
-import com.aozijx.passly.features.vault.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.dialogs.BackupPasswordDialog
 import com.aozijx.passly.features.vault.dialogs.DeleteConfirmDialog
 import com.aozijx.passly.features.vault.dialogs.IconPickerDialog
+import com.aozijx.passly.features.vault.model.AddType
 
 @Composable
 fun VaultDialogs(
@@ -54,7 +54,7 @@ fun VaultDialogs(
     when (vaultViewModel.addType) {
         AddType.PASSWORD -> AddPasswordDialog(viewModel = vaultViewModel)
         AddType.TOTP -> AddTwoFADialog(viewModel = vaultViewModel)
-        else -> {}
+        AddType.SCAN, null -> Unit
     }
 
     // --- 全局确认/反馈对话框 ---

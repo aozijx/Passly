@@ -42,9 +42,11 @@ import com.aozijx.passly.features.settings.components.dialogs.LockTimeoutDialog
 import com.aozijx.passly.features.settings.components.dialogs.SwipeActionSelectDialog
 import com.aozijx.passly.features.settings.components.sections.AppearanceCustomizationSettingsSection
 import com.aozijx.passly.features.settings.components.sections.BackupRestoreSettingsSection
+import com.aozijx.passly.features.settings.components.sections.DataSettingsSection
 import com.aozijx.passly.features.settings.components.sections.ImmersiveExperienceSettingsSection
 import com.aozijx.passly.features.settings.components.sections.InteractionHabitsSettingsSection
 import com.aozijx.passly.features.settings.components.sections.SecurityPrivacySettingsSection
+import com.aozijx.passly.features.settings.components.sections.VaultTabsSettingsSection
 import com.aozijx.passly.features.settings.internal.BackupPathSettingsConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +71,8 @@ fun SettingsScreen(
     val autofillUiMode = uiState.autofillUiMode
     val backupDirectoryUri = uiState.backupDirectoryUri
     val lastBackupExportFileName = uiState.lastBackupExportFileName
+    val visibleVaultTabs = uiState.visibleVaultTabs
+    val isAutoDownloadIcons = uiState.isAutoDownloadIcons
 
     val availableCardStyles = remember { VaultCardStyle.styleConfig.perTypeStyles }
     val effectiveCardStyle = VaultCardStyle.normalizeGlobalStyle(cardStyle)
@@ -176,6 +180,24 @@ fun SettingsScreen(
                     onLeftSwipeActionClick = { showLeftActionDialog = true },
                     onRightSwipeActionClick = { showRightActionDialog = true },
                     onToggleAutofillUiMode = { viewModel.toggleAutofillUiMode(autofillUiMode) })
+            }
+
+            item { Spacer(modifier = Modifier.height(24.dp)) }
+
+            item {
+                VaultTabsSettingsSection(
+                    visibleVaultTabs = visibleVaultTabs,
+                    onVisibleVaultTabsChange = viewModel::setVisibleVaultTabs
+                )
+            }
+
+            item { Spacer(modifier = Modifier.height(24.dp)) }
+
+            item {
+                DataSettingsSection(
+                    isAutoDownloadIcons = isAutoDownloadIcons,
+                    onAutoDownloadIconsChange = viewModel::setAutoDownloadIcons
+                )
             }
 
             item { Spacer(modifier = Modifier.height(24.dp)) }
