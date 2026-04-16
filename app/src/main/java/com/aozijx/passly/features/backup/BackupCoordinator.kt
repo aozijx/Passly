@@ -11,6 +11,7 @@ import androidx.core.net.toUri
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.backup.BackupImportMode
+import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +19,6 @@ import kotlinx.coroutines.launch
 
 /**
  * 备份/恢复交互状态与流程协调器。
- * 已经重构为完全对接 [BackupUseCases] 架构。
  */
 class BackupCoordinator(
     private val scope: CoroutineScope,
@@ -26,6 +26,8 @@ class BackupCoordinator(
     private val backupUseCases: BackupUseCases,
     private val application: Application
 ) {
+    private val TAG = "BackupCoordinator"
+
     // --- 备份/恢复 UI 状态 ---
     var backupMessage by mutableStateOf<String?>(null)
         private set
@@ -89,11 +91,14 @@ class BackupCoordinator(
         onAuthRequired {
             scope.launch {
                 try {
+                    Logcat.d(TAG, "Starting ${if (exportingNow) "Export" else "Import"} operation...")
+                    
                     val finalUri = if (exportingNow && allowFallback) {
                         val createResult = BackupExportStorageSupport.createNamedExportTarget(
                             context, targetUri.toString(), exportFileName ?: nextBackupFileName()
                         )
                         if (createResult.isFailure) {
+                            Logcat.e(TAG, "Failed to create export target file")
                             backupMessage = text(R.string.backup_error_create_file_failed)
                             return@launch
                         }
@@ -112,23 +117,47 @@ class BackupCoordinator(
                         BackupExportStorageSupport.deleteDocument(context, finalUri)
                     }
 
-                    if (exportingNow && outcome.isSuccess) {
-                        if (!exportFileName.isNullOrBlank()) {
-                            backupSettingsUseCases.setLastBackupExportFileName(exportFileName)
-                        } else if (allowFallback) {
-                            backupExportFallbackFileName = exportFileName ?: nextBackupFileName()
+                    if (outcome.isSuccess) {
+                        Logcat.i(TAG, "${if (exportingNow) "Export" else "Import"} successful.")
+                        if (exportingNow) {
+                            if (!exportFileName.isNullOrBlank()) {
+                                backupSettingsUseCases.setLastBackupExportFileName(exportFileName)
+                            } else if (allowFallback) {
+                                backupExportFallbackFileName = exportFileName ?: nextBackupFileName()
+                            }
+                        } else {
+                            // 导入成功，触发图标异步同步服务
+                            BackupImportIconSyncForegroundService.start(context)
                         }
+                    } else {
+                        Logcat.e(TAG, "Backup action failed: ${outcome.exceptionOrNull()?.message}")
                     }
 
+                    // 统一的消息反馈触发
                     backupMessage = if (outcome.isSuccess) {
                         text(if (exportingNow) R.string.backup_export_success else R.string.backup_import_success)
                     } else {
-                        outcome.exceptionOrNull()?.message ?: text(R.string.backup_error_unknown)
+                        val error = outcome.exceptionOrNull()
+                        val rawMsg = error?.message ?: ""
+                        
+                        when {
+                            rawMsg.contains("密码错误") || rawMsg.contains("BAD_DECRYPT") -> 
+                                text(R.string.backup_error_password_incorrect)
+                            rawMsg.contains("损坏") || rawMsg.contains("格式不正确") -> 
+                                text(R.string.backup_error_corrupted)
+                            rawMsg.isNotBlank() -> 
+                                text(R.string.backup_error_with_reason, rawMsg)
+                            else -> 
+                                text(R.string.backup_error_unknown)
+                        }
                     }
 
                     dismissBackupPasswordDialog()
                     pendingExportFileName = null
                     pendingExportAllowFallback = false
+                } catch (e: Exception) {
+                    Logcat.e(TAG, "Unexpected error in processBackupAction", e)
+                    backupMessage = text(R.string.backup_error_unknown)
                 } finally {
                     password.fill('\u0000')
                 }

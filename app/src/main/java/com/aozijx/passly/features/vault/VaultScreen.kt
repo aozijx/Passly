@@ -146,12 +146,11 @@ fun VaultContent(
         }
     }
 
-    // 通用复制逻辑（使用策略模式 + getFieldValue 统一字段提取）
+    // 通用复制逻辑
     val performCopy: (FieldKey, VaultSummary) -> Unit = { fieldKey, item ->
         val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
         val label = strategy.getCopyLabel(fieldKey)
 
-        // TOTP 特殊处理：PASSWORD 字段 + 存在 TOTP 密钥时复制当前验证码
         if (fieldKey == FieldKey.PASSWORD && !item.totpSecret.isNullOrBlank()) {
             totpStates[item.id]?.let { state ->
                 if (state.code.isNotEmpty() && !state.code.contains("-")) {
@@ -160,7 +159,6 @@ fun VaultContent(
                 }
             }
         } else {
-            // 通用路径：加载完整条目 → getFieldValue → 解密 → 复制
             vaultViewModel.loadEntryById(item.id) { fullEntry ->
                 val rawValue = strategy.getFieldValue(fullEntry, fieldKey) ?: return@loadEntryById
                 vaultViewModel.decryptSingle(
@@ -212,7 +210,6 @@ fun VaultContent(
     }
 
     Scaffold(
-        // 核心修复：只有在至少有一个组件需要折叠时，才挂载 scrollBehavior 的 nestedScrollConnection
         modifier = Modifier
             .fillMaxSize()
             .then(
@@ -245,7 +242,7 @@ fun VaultContent(
         floatingActionButton = {
             VaultFab(viewModel = vaultViewModel, isVisible = isFabVisible)
         },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0) // 与旧版保持一致，完全由内部处理内边距
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         HorizontalPager(
             state = pagerState,

@@ -61,7 +61,6 @@ class MainActivity : FragmentActivity() {
         MainSensorController(this) {
             if (viewModel.isAuthorized) {
                 viewModel.handleIntent(MainIntent.Lock)
-                // NavHost 被 isAuthorized=false 驱动自动卸载，无需手动清理导航栈
                 if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
             }
         }
@@ -70,20 +69,15 @@ class MainActivity : FragmentActivity() {
     private val notificationPermissionController: MainNotificationPermissionController by lazy {
         MainNotificationPermissionController(this) {
             Toast.makeText(
-                this,
-                getString(R.string.main_notification_permission_denied),
-                Toast.LENGTH_SHORT
+                this, getString(R.string.main_notification_permission_denied), Toast.LENGTH_SHORT
             ).show()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         sensorController.initialize()
-
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
         enableEdgeToEdge()
 
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
@@ -96,72 +90,78 @@ class MainActivity : FragmentActivity() {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
             val context = LocalContext.current
 
-            // 明文导出：文件选择器（配置目录不可用时的回退）
+            // 统一管理全局使用的 ViewModel
+            val settingsViewModel: SettingsViewModel = viewModel()
+            val vaultViewModel: VaultViewModel = viewModel()
+
+            // --- 全局备份反馈监听 ---
+            LaunchedEffect(settingsViewModel.backup.backupMessage) {
+                settingsViewModel.backup.backupMessage?.let {
+                    Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                    settingsViewModel.backup.clearBackupMessage()
+                }
+            }
+
             val plainExportPickerLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.CreateDocument("application/json")
             ) { uri ->
                 uri?.let { viewModel.handleIntent(MainIntent.ExportPlainBackupToUri(context, it)) }
             }
 
-            // 状态驱动认证：DB 就绪且未授权时触发
             LaunchedEffect(
                 mainUiState.isDatabaseInitializing,
                 mainUiState.databaseError,
                 mainUiState.isAuthorized
             ) {
-                if (!mainUiState.isDatabaseInitializing
-                    && mainUiState.databaseError == null
-                    && !mainUiState.isAuthorized
-                ) {
+                if (!mainUiState.isDatabaseInitializing && mainUiState.databaseError == null && !mainUiState.isAuthorized) {
                     requestAuthentication()
                 }
             }
 
-            // 收集 MainViewModel 单次事件
             LaunchedEffect(Unit) {
                 viewModel.effects.collect { effect ->
                     when (effect) {
-                        is MainEffect.ShowToast ->
-                            Toast.makeText(this@MainActivity, effect.message, Toast.LENGTH_SHORT).show()
-                        is MainEffect.ShowError ->
-                            Toast.makeText(this@MainActivity, effect.error, Toast.LENGTH_LONG).show()
-                        is MainEffect.ShowPlainExportPicker ->
-                            plainExportPickerLauncher.launch(effect.fileName)
-                        // 锁定/解锁由 isAuthorized 分支驱动，NavHost 重建后自动回到 Vault 起始页
+                        is MainEffect.ShowToast -> Toast.makeText(
+                            this@MainActivity, effect.message, Toast.LENGTH_SHORT
+                        ).show()
+
+                        is MainEffect.ShowError -> Toast.makeText(
+                            this@MainActivity, effect.error, Toast.LENGTH_LONG
+                        ).show()
+
+                        is MainEffect.ShowPlainExportPicker -> plainExportPickerLauncher.launch(
+                            effect.fileName
+                        )
+
                         MainEffect.LockedByTimeout, MainEffect.NavigateToVault -> Unit
                     }
                 }
             }
 
-            // 数据库错误弹窗
             if (mainUiState.databaseError != null) {
-                PlainExportDialog(
-                    type = PlainExportDialogType.DatabaseError,
-                    onExportBackup = { viewModel.handleIntent(MainIntent.ExportEmergencyBackup(context)) },
-                    onResetOrCancel = {
-                        context.deleteDatabase(DatabaseConfig.DATABASE_NAME)
-                        Toast.makeText(context, "数据库已清除，请重启应用", Toast.LENGTH_SHORT)
-                            .show()
-                        finishAffinity()
-                        exitProcess(0)
-                    })
+                PlainExportDialog(type = PlainExportDialogType.DatabaseError, onExportBackup = {
+                    viewModel.handleIntent(
+                        MainIntent.ExportEmergencyBackup(
+                            context
+                        )
+                    )
+                }, onResetOrCancel = {
+                    context.deleteDatabase(DatabaseConfig.DATABASE_NAME)
+                    Toast.makeText(context, "数据库已清除，请重启应用", Toast.LENGTH_SHORT).show()
+                    finishAffinity()
+                    exitProcess(0)
+                })
             }
 
             AppTheme(
                 darkTheme = if (mainUiState.isDarkMode == true) true else null,
                 dynamicColor = mainUiState.isDynamicColor
             ) {
-                // 只有在没有数据库错误时才渲染业务界面
                 if (mainUiState.databaseError == null) {
-                    val vaultViewModel: VaultViewModel = viewModel()
-                    val settingsViewModel: SettingsViewModel = viewModel()
                     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
-                    // 应用高级安全防护设置
-                    val isSecureContentEnabled = settingsUiState.isSecureContentEnabled
-
-                    LaunchedEffect(isSecureContentEnabled) {
-                        if (isSecureContentEnabled) {
+                    LaunchedEffect(settingsUiState.isSecureContentEnabled) {
+                        if (settingsUiState.isSecureContentEnabled) {
                             window.setFlags(
                                 WindowManager.LayoutParams.FLAG_SECURE,
                                 WindowManager.LayoutParams.FLAG_SECURE
@@ -171,32 +171,26 @@ class MainActivity : FragmentActivity() {
                         }
                     }
 
-                    // 翻转锁定逻辑
-                    val flipToLock = settingsUiState.isFlipToLockEnabled
-                    val flipExitAndClearStack = settingsUiState.isFlipExitAndClearStackEnabled
-                    LaunchedEffect(flipToLock) {
-                        sensorController.isFlipLockEnabled = flipToLock
-                        if (flipToLock) sensorController.register() else sensorController.unregister()
+                    LaunchedEffect(settingsUiState.isFlipToLockEnabled) {
+                        sensorController.isFlipLockEnabled = settingsUiState.isFlipToLockEnabled
+                        if (settingsUiState.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
                     }
-                    LaunchedEffect(flipExitAndClearStack) {
-                        sensorController.isFlipExitAndClearStackEnabled = flipExitAndClearStack
+                    LaunchedEffect(settingsUiState.isFlipExitAndClearStackEnabled) {
+                        sensorController.isFlipExitAndClearStackEnabled =
+                            settingsUiState.isFlipExitAndClearStackEnabled
                     }
 
-                    // 自动注销传感器
-                    DisposableEffect(Unit) {
-                        onDispose { sensorController.unregister() }
-                    }
+                    DisposableEffect(Unit) { onDispose { sensorController.unregister() } }
 
-                    // 应用状态栏自动隐藏行为设置
-                    val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
-                    LaunchedEffect(isStatusBarAutoHide) {
+                    LaunchedEffect(settingsUiState.isStatusBarAutoHide) {
                         val insetsController =
                             WindowCompat.getInsetsController(window, window.decorView)
-                        insetsController.systemBarsBehavior = if (isStatusBarAutoHide) {
-                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                        } else {
-                            WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
-                        }
+                        insetsController.systemBarsBehavior =
+                            if (settingsUiState.isStatusBarAutoHide) {
+                                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                            } else {
+                                WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                            }
                     }
 
                     if (mainUiState.isAuthorized) {
@@ -208,8 +202,7 @@ class MainActivity : FragmentActivity() {
                             mainViewModel = viewModel,
                             vaultViewModel = vaultViewModel,
                             settingsViewModel = settingsViewModel,
-                            onPlainExportClick = { showPlainExportRiskDialog = true }
-                        )
+                            onPlainExportClick = { showPlainExportRiskDialog = true })
 
                         if (showPlainExportRiskDialog) {
                             PlainExportDialog(
@@ -223,20 +216,17 @@ class MainActivity : FragmentActivity() {
                                     ) {
                                         viewModel.handleIntent(
                                             MainIntent.ExportPlainBackup(
-                                                context,
-                                                settingsUiState.backupDirectoryUri
+                                                context, settingsUiState.backupDirectoryUri
                                             )
                                         )
                                     }
                                 },
-                                onResetOrCancel = { showPlainExportRiskDialog = false }
-                            )
+                                onResetOrCancel = { showPlainExportRiskDialog = false })
                         }
                     } else {
                         AuthorizationPlaceholder { requestAuthentication() }
                     }
                 } else {
-                    // 数据库错误时的背景占位
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -254,8 +244,9 @@ class MainActivity : FragmentActivity() {
             subtitle = getString(R.string.vault_auth_subtitle),
             onSuccess = {},
             onError = { _ ->
-                Toast.makeText(this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(
+                    this, getString(R.string.vault_auth_failed), Toast.LENGTH_SHORT
+                ).show()
             })
     }
 
