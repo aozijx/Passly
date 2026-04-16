@@ -73,7 +73,8 @@ class AutofillStructureParser(structure: AssistStructure) {
             }
         }
 
-        val nodeValue = node.autofillValue?.textValue?.toString() ?: node.text?.toString()
+        val nodeValue = node.autofillValue?.let { if (it.isText) it.textValue.toString() else null }
+            ?: node.text?.toString()
         if (!nodeValue.isNullOrBlank()) {
             if (node.autofillId == usernameId) usernameValue = nodeValue
             else if (node.autofillId == passwordId) passwordValue = nodeValue

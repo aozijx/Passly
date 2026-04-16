@@ -25,9 +25,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -39,8 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.components.PlainExportDialog
-import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.components.topbar.components.VaultDropdownMenu
 import com.aozijx.passly.features.vault.components.topbar.components.VaultSearchBar
@@ -70,7 +66,6 @@ fun VaultTopBar(
     val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
     val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
 
-    var showPlainExportDialog by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     LifecycleResumeEffect(Unit) {
@@ -151,7 +146,7 @@ fun VaultTopBar(
                             onEnableAutofillClick = { vaultViewModel.openAutofillSettings(context) },
                             onSettingsClick = onSettingsClick,
                             onExportClick = onExportClick,
-                            onOpenPlainExport = { showPlainExportDialog = true },
+                            onOpenPlainExport = onPlainJsonExportClick,
                             onImportClick = onImportClick,
                             availableCategories = availableCategories,
                             selectedCategory = selectedCategory,
@@ -159,13 +154,6 @@ fun VaultTopBar(
                     }
                 }
             })
-
-        if (showPlainExportDialog) {
-            PlainExportDialog(type = PlainExportDialogType.NormalExport, onExportBackup = {
-                showPlainExportDialog = false
-                onPlainJsonExportClick()
-            }, onResetOrCancel = { showPlainExportDialog = false })
-        }
 
         AnimatedVisibility(
             visible = visibleTabs.size > 1 && !vaultViewModel.isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
