@@ -9,6 +9,9 @@ class BackupUseCases(private val repository: BackupRepository) {
     val exportBackup = ExportBackupUseCase(repository)
     val importBackup = ImportBackupUseCase(repository)
 
+    suspend fun exportPlainBackup(uri: android.net.Uri) = repository.exportPlainBackup(uri)
+    suspend fun exportEmergencyBackup() = repository.exportEmergencyBackup()
+
     suspend fun testDirectoryWritePermission(directoryUri: String) =
         repository.testDirectoryWritePermission(directoryUri)
 }

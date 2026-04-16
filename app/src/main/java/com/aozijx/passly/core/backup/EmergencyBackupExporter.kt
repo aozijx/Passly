@@ -2,8 +2,6 @@ package com.aozijx.passly.core.backup
 
 import android.content.Context
 import android.database.Cursor
-import android.net.Uri
-import android.os.Environment
 import android.util.JsonWriter
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.DatabasePassphraseManager
@@ -15,61 +13,18 @@ import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 /**
- * 明文 JSON 导出：支持数据库迁移失败时的紧急导出，也支持顶部菜单的手动明文导出。
+ * 紧急备份导出器：仅作为数据库损坏或迁移失败时的最后防线。
+ * 它直接操作底层的 SQLCipher 数据库文件。
  */
 object EmergencyBackupExporter {
 
-    // 定义需要从整数转换为布尔值的列名
     private val BOOLEAN_COLUMNS = setOf("wifiIsHidden", "autoSubmit", "favorite")
 
-    fun exportOnFailure(context: Context): Result<File> {
-        return exportPlainJson(context, "Passly_Emergency_Backup")
-    }
-
-    /** 旧路径：写入系统 Downloads 目录（仅保留供紧急备份使用）。 */
-    fun exportPlainBackup(context: Context): Result<File> {
-        return exportPlainJson(context, "Passly_Plain_Backup")
-    }
-
     /**
-     * 新路径：通过 SAF URI 写入用户指定位置。
-     * [dbName] 默认为生产数据库名；测试中可传入隔离的数据库名。
+     * 当应用检测到数据库无法正常初始化时，尝试抢救数据。
+     * 将数据以明文 JSON 形式保存到 App 私有目录（Cache 目录）中。
      */
-    fun exportPlainBackupToUri(
-        context: Context,
-        uri: Uri,
-        dbName: String = DatabaseConfig.DATABASE_NAME
-    ): Result<Unit> {
-        var db: SQLiteDatabase? = null
-        return try {
-            val dbFile = context.getDatabasePath(dbName)
-            if (!dbFile.exists()) return Result.failure(Exception("数据库文件不存在"))
-
-            val passphrase = DatabasePassphraseManager.getPassphrase(context)
-            db = SQLiteDatabase.openDatabase(
-                dbFile.path, passphrase, null, SQLiteDatabase.OPEN_READONLY, null, null
-            )
-
-            val output = context.contentResolver.openOutputStream(uri)
-                ?: return Result.failure(Exception("无法打开输出流"))
-
-            output.use {
-                val writer = JsonWriter(OutputStreamWriter(it, StandardCharsets.UTF_8))
-                writer.setIndent("  ")
-                writeEntriesToJson(db, writer)
-            }
-
-            Logcat.i("EmergencyBackup", "明文导出成功: $uri")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Logcat.e("EmergencyBackup", "明文导出失败", e)
-            Result.failure(e)
-        } finally {
-            db?.close()
-        }
-    }
-
-    private fun exportPlainJson(context: Context, fileNamePrefix: String): Result<File> {
+    fun exportOnFailure(context: Context): Result<File> {
         var db: SQLiteDatabase? = null
         return try {
             val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
@@ -80,11 +35,9 @@ object EmergencyBackupExporter {
                 dbFile.path, passphrase, null, SQLiteDatabase.OPEN_READONLY, null, null
             )
 
-            val downloadsDir =
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            if (!downloadsDir.exists()) downloadsDir.mkdirs()
+            // 将文件保存在 cache 目录下，避免暴露在 Downloads 这种公开区域
             val backupFile = File(
-                downloadsDir, "${fileNamePrefix}_${System.currentTimeMillis()}.json"
+                context.cacheDir, "emergency_rescue_${System.currentTimeMillis()}.json"
             )
 
             FileOutputStream(backupFile).use { output ->
@@ -93,10 +46,10 @@ object EmergencyBackupExporter {
                 writeEntriesToJson(db, writer)
             }
 
-            Logcat.i("EmergencyBackup", "紧急导出成功: ${backupFile.absolutePath}")
+            Logcat.i("EmergencyBackup", "紧急救灾备份已生成: ${backupFile.absolutePath}")
             Result.success(backupFile)
         } catch (e: Exception) {
-            Logcat.e("EmergencyBackup", "紧急导出失败", e)
+            Logcat.e("EmergencyBackup", "紧急救灾备份失败", e)
             Result.failure(e)
         } finally {
             db?.close()
@@ -111,6 +64,7 @@ object EmergencyBackupExporter {
             while (cursor.moveToNext()) {
                 writer.beginObject()
                 for (columnName in columnNames) {
+                    // 图片二进制数据不建议放入明文 JSON
                     if (columnName == "encryptedImageData") continue
                     val columnIndex = cursor.getColumnIndex(columnName)
                     writer.name(columnName)
@@ -121,6 +75,7 @@ object EmergencyBackupExporter {
                             if (BOOLEAN_COLUMNS.contains(columnName)) writer.value(value == 1L)
                             else writer.value(value)
                         }
+
                         Cursor.FIELD_TYPE_FLOAT -> writer.value(cursor.getDouble(columnIndex))
                         Cursor.FIELD_TYPE_STRING -> writer.value(cursor.getString(columnIndex))
                         Cursor.FIELD_TYPE_BLOB -> writer.value("[BINARY DATA]")

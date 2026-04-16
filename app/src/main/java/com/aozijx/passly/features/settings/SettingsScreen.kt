@@ -209,7 +209,7 @@ fun SettingsScreen(
                     onPickPath = { backupPathPicker.launch(BackupExportStorageSupport.defaultDocumentsTreeUri()) },
                     onTestWrite = {
                         viewModel.testBackupDirectoryWritePermission(
-                            context, backupDirectoryUri
+                            backupDirectoryUri
                         )
                     },
                     onClearPath = if (backupDirectoryUri.isNullOrBlank()) {

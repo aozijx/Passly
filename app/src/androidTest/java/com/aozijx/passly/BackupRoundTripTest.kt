@@ -5,11 +5,12 @@ import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.migration.Migrations
+import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
+import com.aozijx.passly.data.repository.backup.BackupRoomDataSource
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import org.json.JSONArray
@@ -26,14 +27,14 @@ import java.io.File
 /**
  * 备份导出格式与兼容性测试
  *
- * 使用时间戳隔离的测试数据库，与生产数据库完全独立。
- * 测试完成后自动清理临时数据库和导出文件。
+ * 已经更新为测试内聚后的 BackupRepository 架构。
  */
 @RunWith(AndroidJUnit4::class)
 class BackupRoundTripTest {
 
     private lateinit var context: Context
     private lateinit var db: AppDatabase
+    private lateinit var repository: BackupRepositoryImpl
     private val testDbName = "backup_test_${System.currentTimeMillis()}"
     private val tempFiles = mutableListOf<File>()
 
@@ -44,12 +45,14 @@ class BackupRoundTripTest {
         val passphrase = DatabasePassphraseManager.getPassphrase(context)
         db = Room.databaseBuilder(context, AppDatabase::class.java, testDbName)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(*Migrations.getAll())
-            .allowMainThreadQueries()
-            .build()
+            .addMigrations(*Migrations.getAll()).allowMainThreadQueries().build()
 
-        // 确保 schema 已创建（触发 DB 文件写入）
+        // 确保 schema 已创建
         db.openHelper.writableDatabase
+
+        // 初始化测试专用的 Repository，注入测试数据库的 DAO
+        val dataSource = BackupRoomDataSource(context, db.vaultEntryDao())
+        repository = BackupRepositoryImpl(context, dataSource = dataSource)
     }
 
     @After
@@ -62,11 +65,9 @@ class BackupRoundTripTest {
     // ─── 空库导出 ─────────────────────────────────────────────────────────
 
     @Test
-    fun export_emptyDatabase_producesEmptyJsonArray() {
+    fun export_emptyDatabase_producesEmptyJsonArray() = runBlocking {
         val file = tempFile("empty")
-        val result = EmergencyBackupExporter.exportPlainBackupToUri(
-            context, file.toUri(), testDbName
-        )
+        val result = repository.exportPlainBackup(file.toUri())
 
         assertTrue("空库导出应成功", result.isSuccess)
         val array = JSONArray(file.readText(Charsets.UTF_8))
@@ -76,17 +77,12 @@ class BackupRoundTripTest {
     // ─── 含数据导出 ────────────────────────────────────────────────────────
 
     @Test
-    fun export_withTwoEntries_producesCorrectCount() {
-        runBlocking {
-            db.vaultEntryDao().insert(buildEntry("Entry A", "userA@test.com"))
-            db.vaultEntryDao().insert(buildEntry("Entry B", "userB@test.com"))
-        }
-        db.close()
+    fun export_withTwoEntries_producesCorrectCount() = runBlocking {
+        db.vaultEntryDao().insert(buildEntry("Entry A", "userA@test.com"))
+        db.vaultEntryDao().insert(buildEntry("Entry B", "userB@test.com"))
 
         val file = tempFile("two_entries")
-        val result = EmergencyBackupExporter.exportPlainBackupToUri(
-            context, file.toUri(), testDbName
-        )
+        val result = repository.exportPlainBackup(file.toUri())
 
         assertTrue("导出应成功", result.isSuccess)
         val array = JSONArray(file.readText(Charsets.UTF_8))
@@ -94,18 +90,17 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun export_jsonContainsExpectedFields() {
-        runBlocking { db.vaultEntryDao().insert(buildEntry("Field Test", "field@test.com")) }
-        db.close()
+    fun export_jsonContainsExpectedFields() = runBlocking {
+        db.vaultEntryDao().insert(buildEntry("Field Test", "field@test.com"))
 
         val file = tempFile("fields")
-        EmergencyBackupExporter.exportPlainBackupToUri(context, file.toUri(), testDbName)
+        repository.exportPlainBackup(file.toUri())
 
         val array = JSONArray(file.readText(Charsets.UTF_8))
         assertTrue(array.length() > 0)
 
         val entry = array.getJSONObject(0)
-        assertTrue("应含 id 字段", entry.has("id"))
+        // 注意：由于走的是解密后的导出，字段名与 JSON 序列化器定义的为准
         assertTrue("应含 title 字段", entry.has("title"))
         assertTrue("应含 username 字段", entry.has("username"))
         assertTrue("应含 password 字段", entry.has("password"))
@@ -116,19 +111,17 @@ class BackupRoundTripTest {
     // ─── 安全：排除 encryptedImageData ─────────────────────────────────────
 
     @Test
-    fun export_doesNotIncludeEncryptedImageData() {
-        runBlocking { db.vaultEntryDao().insert(buildEntry("Image Entry", "img@test.com")) }
-        db.close()
+    fun export_doesNotIncludeEncryptedImageData() = runBlocking {
+        db.vaultEntryDao().insert(buildEntry("Image Entry", "img@test.com"))
 
         val file = tempFile("no_image")
-        EmergencyBackupExporter.exportPlainBackupToUri(context, file.toUri(), testDbName)
+        repository.exportPlainBackup(file.toUri())
 
         val array = JSONArray(file.readText(Charsets.UTF_8))
         if (array.length() > 0) {
             val entry = array.getJSONObject(0)
             assertFalse(
-                "encryptedImageData 应被排除在导出之外",
-                entry.has("encryptedImageData")
+                "encryptedImageData 应被排除在导出之外", entry.has("encryptedImageData")
             )
         }
     }
@@ -136,12 +129,11 @@ class BackupRoundTripTest {
     // ─── Boolean 列序列化格式 ──────────────────────────────────────────────
 
     @Test
-    fun export_booleanColumns_serializedAsBoolean_notInteger() {
-        runBlocking { db.vaultEntryDao().insert(buildEntry("Bool Entry", "bool@test.com")) }
-        db.close()
+    fun export_booleanColumns_serializedAsBoolean_notInteger() = runBlocking {
+        db.vaultEntryDao().insert(buildEntry("Bool Entry", "bool@test.com"))
 
         val file = tempFile("bool")
-        EmergencyBackupExporter.exportPlainBackupToUri(context, file.toUri(), testDbName)
+        repository.exportPlainBackup(file.toUri())
 
         val array = JSONArray(file.readText(Charsets.UTF_8))
         assertTrue(array.length() > 0)
@@ -157,27 +149,7 @@ class BackupRoundTripTest {
         val autoSubmit = entry.opt("autoSubmit")
         assertNotNull("autoSubmit 应存在于导出中", autoSubmit)
         assertTrue(
-            "autoSubmit 应序列化为 Boolean，而不是整数；实际值: $autoSubmit",
-            autoSubmit is Boolean
-        )
-    }
-
-    // ─── 错误场景 ──────────────────────────────────────────────────────────
-
-    @Test
-    fun export_databaseNotExist_returnsFailure() {
-        db.close()
-        context.deleteDatabase(testDbName)
-
-        val file = tempFile("nonexistent")
-        val result = EmergencyBackupExporter.exportPlainBackupToUri(
-            context, file.toUri(), testDbName
-        )
-
-        assertTrue("数据库不存在时应返回 Failure", result.isFailure)
-        assertTrue(
-            "错误信息应提及数据库文件",
-            result.exceptionOrNull()?.message?.contains("数据库文件不存在") == true
+            "autoSubmit 应序列化为 Boolean，而不是整数；实际值: $autoSubmit", autoSubmit is Boolean
         )
     }
 

@@ -1,7 +1,6 @@
 package com.aozijx.passly.features.settings
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.common.AutofillUiMode
@@ -212,6 +211,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun clearBackupDirectoryUri() =
         viewModelScope.launch { backupSettingsUseCases.clearBackupDirectoryUri() }
 
-    fun testBackupDirectoryWritePermission(context: Context, directoryUri: String?) =
+    fun testBackupDirectoryWritePermission(directoryUri: String?) =
         backup.testBackupDirectoryWritePermission(directoryUri)
 }

@@ -7,7 +7,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.features.main.contract.MainEffect
@@ -32,6 +31,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val appContext = getApplication<Application>()
     private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
     private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
+    private val backupUseCases = AppContainer.domain.backupUseCases
 
     private val validationSupport = MainValidationSupport()
     private val databaseInitializer = MainDatabaseInitializer()
@@ -69,9 +69,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MainIntent.UpdateInteraction -> autoLockCoordinator.onInteraction(isAuthorized)
             MainIntent.CheckAndLock -> autoLockCoordinator.checkNow(isAuthorized)
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
-            is MainIntent.ExportEmergencyBackup -> exportEmergencyBackup(intent.context)
+            is MainIntent.ExportEmergencyBackup -> exportEmergencyBackup()
             is MainIntent.ExportPlainBackup -> exportPlainBackup(intent.context, intent.dirUri)
-            is MainIntent.ExportPlainBackupToUri -> exportPlainBackupToUri(intent.context, intent.uri)
+            is MainIntent.ExportPlainBackupToUri -> exportPlainBackupToUri(intent.uri)
         }
     }
 
@@ -174,10 +174,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun exportEmergencyBackup(context: Context) {
+    fun exportEmergencyBackup() {
         viewModelScope.launch {
             val exportResult = withContext(Dispatchers.IO) {
-                EmergencyBackupExporter.exportOnFailure(context.applicationContext)
+                backupUseCases.exportEmergencyBackup()
             }
 
             exportResult.fold(
@@ -209,7 +209,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
                 targetResult.fold(
-                    onSuccess = { target -> exportPlainBackupToUri(context, target.fileUri) },
+                    onSuccess = { target -> exportPlainBackupToUri(target.fileUri) },
                     onFailure = {
                         // 目录不可写，回退到文件选择器
                         emitEffect(MainEffect.ShowPlainExportPicker(fileName))
@@ -222,15 +222,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun exportPlainBackupToUri(context: Context, uri: Uri) {
+    fun exportPlainBackupToUri(uri: Uri) {
         if (!isAuthorized) {
-            emitEffect(MainEffect.ShowError("请先完成解锁验证后再导出明文备份"))
+            emitEffect(MainEffect.ShowError("请先完成解锁验证后再导出明助备份"))
             return
         }
 
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
-                EmergencyBackupExporter.exportPlainBackupToUri(context.applicationContext, uri)
+                backupUseCases.exportPlainBackup(uri)
             }
             result.fold(
                 onSuccess = { emitEffect(MainEffect.ShowToast("明文备份已导出")) },
