@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.main.internal
+package com.aozijx.passly.features.auth.internal
 
 import com.aozijx.passly.core.security.AutoLockScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -6,20 +6,26 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-internal data class AutoLockDecision(
+/**
+ * 自动锁定决策结果。
+ */
+data class AutoLockDecision(
     val timeoutMs: Long,
     val shouldLockNow: Boolean,
     val timeoutAdjusted: Boolean
 )
 
-internal class MainAutoLockCoordinator(
+/**
+ * 自动锁定协调器：负责计时器调度和锁定决策。
+ */
+class AutoLockCoordinator(
     scope: CoroutineScope,
-    private val validationSupport: MainValidationSupport,
+    private val validationSupport: AuthValidationSupport,
     private val nowProvider: () -> Long = { System.currentTimeMillis() }
 ) {
     private val scheduler = AutoLockScheduler(scope) { onTimeoutTriggered() }
     
-    private var timeoutMs: Long = MainValidationSupport.DEFAULT_LOCK_TIMEOUT_MS
+    private var timeoutMs: Long = AuthValidationSupport.DEFAULT_LOCK_TIMEOUT_MS
     private var lastInteractionAtMs: Long? = null
 
     private val _shouldLock = MutableSharedFlow<Unit>(extraBufferCapacity = 1)

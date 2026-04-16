@@ -1,45 +1,56 @@
-package com.aozijx.passly.features.main.internal
+package com.aozijx.passly.features.auth.internal
 
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 
-internal sealed interface MainValidationResult {
-    data object Valid : MainValidationResult
-    data class Invalid(val message: String) : MainValidationResult
+/**
+ * 认证相关的校验结果。
+ */
+sealed interface AuthValidationResult {
+    data object Valid : AuthValidationResult
+    data class Invalid(val message: String) : AuthValidationResult
 }
 
-internal class MainValidationSupport {
+/**
+ * 提供认证流程中的通用校验与辅助方法。
+ */
+class AuthValidationSupport {
 
+    /**
+     * 校验认证请求的上下文环境。
+     */
     fun validateAuthenticationRequest(
         activity: FragmentActivity,
         title: String
-    ): MainValidationResult {
+    ): AuthValidationResult {
         if (activity.isFinishing || activity.isDestroyed) {
-            return MainValidationResult.Invalid("当前页面已关闭，无法进行验证")
+            return AuthValidationResult.Invalid("当前页面已关闭，无法进行验证")
         }
 
         if (!activity.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            return MainValidationResult.Invalid("页面尚未就绪，请稍后重试")
+            return AuthValidationResult.Invalid("页面尚未就绪，请稍后重试")
         }
 
         if (title.isBlank()) {
-            return MainValidationResult.Invalid("验证标题不能为空")
+            return AuthValidationResult.Invalid("验证标题不能为空")
         }
 
-        return MainValidationResult.Valid
+        return AuthValidationResult.Valid
     }
 
+    /**
+     * 标准化锁定超时时长，确保不低于最小值。
+     */
     fun normalizeLockTimeout(timeoutMs: Long): Long {
         return timeoutMs.coerceAtLeast(MIN_LOCK_TIMEOUT_MS)
     }
 
+    /**
+     * 清理并美化错误消息。
+     */
     fun sanitizeMessage(message: String?): String {
         val normalized = message?.trim().orEmpty()
         return if (normalized.isNotEmpty()) normalized else DEFAULT_ERROR_MESSAGE
-    }
-
-    fun formatDatabaseError(error: Throwable): String {
-        return "数据库错误: ${sanitizeMessage(error.message)}"
     }
 
     companion object {

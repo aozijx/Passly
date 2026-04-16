@@ -7,15 +7,13 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.features.auth.AuthCoordinator
+import com.aozijx.passly.features.auth.internal.AuthValidationSupport
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.main.contract.MainUiState
-import com.aozijx.passly.features.main.internal.MainAutoLockCoordinator
 import com.aozijx.passly.features.main.internal.MainDatabaseInitializer
-import com.aozijx.passly.features.main.internal.MainValidationResult
-import com.aozijx.passly.features.main.internal.MainValidationSupport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,14 +31,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
     private val backupUseCases = AppContainer.domain.backupUseCases
 
-    private val validationSupport = MainValidationSupport()
+    private val validationSupport = AuthValidationSupport()
     private val databaseInitializer = MainDatabaseInitializer()
-    
-    // Coordinator 现在内部封装了 Scheduler，直接传递 scope 即可
-    private val autoLockCoordinator = MainAutoLockCoordinator(
-        scope = viewModelScope,
-        validationSupport = validationSupport
-    )
+
+    // 核心重构：引入 AuthCoordinator 接管认证与自动锁定逻辑
+    val auth = AuthCoordinator(scope = viewModelScope, validationSupport = validationSupport)
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -51,23 +46,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         observeSettings()
         initializeDatabase()
-        observeAutoLock()
+        observeAuthStates()
     }
 
     fun handleIntent(intent: MainIntent) {
         when (intent) {
             is MainIntent.Authenticate ->
-                authenticate(
+                auth.authenticate(
                     activity = intent.activity,
                     title = intent.title,
                     subtitle = intent.subtitle,
                     onError = intent.onError,
                     onSuccess = intent.onSuccess
                 )
-            MainIntent.Authorize -> authorize()
-            MainIntent.Lock -> lock()
-            MainIntent.UpdateInteraction -> autoLockCoordinator.onInteraction(isAuthorized)
-            MainIntent.CheckAndLock -> autoLockCoordinator.checkNow(isAuthorized)
+            MainIntent.Authorize -> auth.authorize()
+            MainIntent.Lock -> auth.lock()
+            MainIntent.UpdateInteraction -> auth.onUserInteraction()
+            MainIntent.CheckAndLock -> auth.checkAndLock()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             is MainIntent.ExportEmergencyBackup -> exportEmergencyBackup()
             is MainIntent.ExportPlainBackup -> exportPlainBackup(intent.context, intent.dirUri)
@@ -76,8 +71,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     val isAuthorized: Boolean
-        get() = _uiState.value.isAuthorized
+        get() = auth.isAuthorized.value
 
+    /**
+     * 保持对外的 authenticate 兼容性接口，内部转发给 auth 协调器。
+     */
     fun authenticate(
         activity: FragmentActivity,
         title: String,
@@ -85,57 +83,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         onError: ((String) -> Unit)? = null,
         onSuccess: () -> Unit
     ) {
-        when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
-            is MainValidationResult.Invalid -> {
-                onError?.invoke(validation.message)
-                _uiState.update { it.copy(validationMessage = validation.message) }
-                emitEffect(MainEffect.ShowError(validation.message))
-                return
-            }
-
-            MainValidationResult.Valid -> Unit
-        }
-
-        BiometricHelper.authenticate(
-            activity = activity,
-            title = title,
-            subtitle = subtitle,
-            onError = { error ->
-                val safeError = validationSupport.sanitizeMessage(error)
-                onError?.invoke(safeError)
-                _uiState.update { it.copy(validationMessage = safeError) }
-                emitEffect(MainEffect.ShowError(safeError))
-            },
-            onSuccess = {
-                _uiState.update { it.copy(validationMessage = null) }
-                authorize()
-                onSuccess()
-            }
-        )
+        auth.authenticate(activity, title, subtitle, onSuccess, onError)
     }
 
-    fun authorize() {
-        _uiState.update { it.copy(isAuthorized = true, validationMessage = null) }
-        autoLockCoordinator.onAuthorized()
-        emitEffect(MainEffect.NavigateToVault)
-    }
-
-    fun lock() {
-        if (!isAuthorized) {
-            autoLockCoordinator.onLocked()
-            return
-        }
-        _uiState.update { it.copy(isAuthorized = false) }
-        autoLockCoordinator.onLocked()
-    }
-
-    private fun observeAutoLock() {
+    private fun observeAuthStates() {
+        // 同步授权状态到 UI
         viewModelScope.launch {
-            autoLockCoordinator.shouldLock.collect {
-                if (isAuthorized) {
-                    lock()
-                    emitEffect(MainEffect.LockedByTimeout)
+            auth.isAuthorized.collect { authorized ->
+                _uiState.update { it.copy(isAuthorized = authorized) }
+                if (authorized) {
+                    emitEffect(MainEffect.NavigateToVault)
                 }
+            }
+        }
+
+        // 监听来自 Auth 模块的消息
+        viewModelScope.launch {
+            auth.authMessage.collect { message ->
+                _uiState.update { it.copy(validationMessage = message) }
+                emitEffect(MainEffect.ShowError(message))
             }
         }
     }
@@ -155,7 +121,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             securitySettingsUseCases.lockTimeout.collect { lockTimeout ->
-                val decision = autoLockCoordinator.applyTimeout(lockTimeout, isAuthorized)
+                val decision = auth.applyTimeout(lockTimeout)
                 _uiState.update {
                     it.copy(
                         lockTimeoutMs = decision.timeoutMs,
@@ -201,7 +167,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         val fileName = "Passly_Plain_Backup_${System.currentTimeMillis()}.json"
         if (!dirUri.isNullOrBlank()) {
-            // 优先写入用户配置的 SAF 目录
             viewModelScope.launch {
                 val targetResult = withContext(Dispatchers.IO) {
                     BackupExportStorageSupport.createNamedExportTarget(
@@ -211,13 +176,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 targetResult.fold(
                     onSuccess = { target -> exportPlainBackupToUri(target.fileUri) },
                     onFailure = {
-                        // 目录不可写，回退到文件选择器
                         emitEffect(MainEffect.ShowPlainExportPicker(fileName))
                     }
                 )
             }
         } else {
-            // 未配置目录，通知 UI 弹出文件选择器
             emitEffect(MainEffect.ShowPlainExportPicker(fileName))
         }
     }
@@ -254,9 +217,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             initResult.error?.let { error ->
-                emitEffect(MainEffect.ShowError(validationSupport.formatDatabaseError(error)))
+                emitEffect(MainEffect.ShowError(formatDatabaseError(error)))
             }
         }
+    }
+
+    private fun formatDatabaseError(error: Throwable): String {
+        return "数据库错误: ${validationSupport.sanitizeMessage(error.message)}"
     }
 
     private fun emitEffect(effect: MainEffect) {
