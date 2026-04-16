@@ -120,8 +120,8 @@
     <string name="vault_backup_auth_subtitle_import">请验证身份以导入并解密数据</string>
     <string name="loading_export">正在导出备份…</string>
     <string name="loading_import">正在导入备份…</string>
-    <string name="backup_action_export_success">导出成功</string>
-    <string name="backup_action_import_success">导入成功（图标将在后台自动同步）</string>
+    <string name="backup_export_success">导出成功</string>
+    <string name="backup_import_success">导入成功（图标将在后台自动同步）</string>
     <string name="backup_error_with_reason">操作失败：%s</string>
     <string name="backup_error_unknown">操作失败：未知错误</string>
     <string name="backup_error_password_incorrect">备份密码错误，请核对后重试</string>

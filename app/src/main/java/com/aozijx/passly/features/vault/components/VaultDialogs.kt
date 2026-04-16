@@ -3,13 +3,12 @@ package com.aozijx.passly.features.vault.components
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aozijx.passly.features.backup.ui.BackupPasswordDialog
 import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.vault.dialogs.BackupPasswordDialog
 import com.aozijx.passly.features.vault.dialogs.DeleteConfirmDialog
-import com.aozijx.passly.features.vault.dialogs.IconPickerDialog
 import com.aozijx.passly.features.vault.model.AddType
 
 @Composable
@@ -69,9 +68,10 @@ fun VaultDialogs(
 
     if (settingsViewModel.backup.showBackupPasswordDialog) {
         BackupPasswordDialog(
-            activity = activity,
-            mainViewModel = mainViewModel,
-            settingsViewModel = settingsViewModel
+            backupCoordinator = settingsViewModel.backup,
+            onAuthRequired = { title, subtitle, onSuccess ->
+                mainViewModel.authenticate(activity, title, subtitle, null, onSuccess)
+            }
         )
     }
 }

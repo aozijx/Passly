@@ -1,4 +1,4 @@
-package com.aozijx.passly.service.backup
+package com.aozijx.passly.features.backup
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -141,4 +141,3 @@ class BackupImportIconSyncForegroundService : Service() {
         }
     }
 }
-

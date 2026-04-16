@@ -65,7 +65,7 @@
 
         <!-- 修复：声明前台服务类型为 dataSync -->
         <service
-            android:name=".service.backup.BackupImportIconSyncForegroundService"
+            android:name=".features.backup.BackupImportIconSyncForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 

@@ -8,6 +8,7 @@ import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.features.backup.BackupCoordinator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -62,10 +63,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
     private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
     private val backupSettingsUseCases = AppContainer.domain.backupSettingsUseCases
+    private val backupUseCases = AppContainer.domain.backupUseCases
 
-    val backup = SettingsBackupCoordinator(
+    val backup = BackupCoordinator(
         scope = viewModelScope,
         backupSettingsUseCases = backupSettingsUseCases,
+        backupUseCases = backupUseCases,
         application = application
     )
 
@@ -210,5 +213,5 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { backupSettingsUseCases.clearBackupDirectoryUri() }
 
     fun testBackupDirectoryWritePermission(context: Context, directoryUri: String?) =
-        backup.testBackupDirectoryWritePermission(context, directoryUri)
+        backup.testBackupDirectoryWritePermission(directoryUri)
 }

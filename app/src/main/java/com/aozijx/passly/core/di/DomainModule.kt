@@ -1,6 +1,7 @@
 package com.aozijx.passly.core.di
 
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
+import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.detail.DetailUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
@@ -38,6 +39,10 @@ class DomainModule {
 
     internal val backupSettingsUseCases by lazy {
         BackupSettingsUseCases(DataModule.settingsRepository)
+    }
+
+    internal val backupUseCases by lazy {
+        BackupUseCases(DataModule.backupRepository)
     }
 
     internal val userConfigUseCases by lazy {

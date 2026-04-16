@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.vault.dialogs
+package com.aozijx.passly.features.vault.components
 
 import android.net.Uri
 import androidx.compose.foundation.background

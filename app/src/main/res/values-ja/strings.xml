@@ -116,8 +116,8 @@
     <string name="vault_backup_auth_subtitle_import">認証してデータをインポート・復号化</string>
     <string name="loading_export">バックアップを出力中…</string>
     <string name="loading_import">バックアップを復元中…</string>
-    <string name="backup_action_export_success">エクスポートに成功しました</string>
-    <string name="backup_action_import_success">インポートに成功しました（アイコンはバックグラウンドで同期されます）</string>
+    <string name="backup_export_success">エクスポートに成功しました</string>
+    <string name="backup_import_success">インポートに成功しました（アイコンはバックグラウンドで同期されます）</string>
     <string name="backup_error_with_reason">操作に失敗しました：%s</string>
     <string name="backup_error_unknown">操作に失敗しました：不明なエラー</string>
     <string name="backup_error_password_incorrect">バックアップパスワードが正しくありません。再度お試しください。</string>

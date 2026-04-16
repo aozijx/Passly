@@ -38,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.features.backup.ui.BackupPathSettingsConfig
 import com.aozijx.passly.features.settings.components.dialogs.LockTimeoutDialog
 import com.aozijx.passly.features.settings.components.dialogs.SwipeActionSelectDialog
 import com.aozijx.passly.features.settings.components.sections.AppearanceCustomizationSettingsSection
@@ -47,7 +48,6 @@ import com.aozijx.passly.features.settings.components.sections.ImmersiveExperien
 import com.aozijx.passly.features.settings.components.sections.InteractionHabitsSettingsSection
 import com.aozijx.passly.features.settings.components.sections.SecurityPrivacySettingsSection
 import com.aozijx.passly.features.settings.components.sections.VaultTabsSettingsSection
-import com.aozijx.passly.features.settings.internal.BackupPathSettingsConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
