@@ -12,18 +12,18 @@
   - `-State`：纯 Compose 状态持有
 - **重命名映射**：
 
-  | 旧名 | 新名 | 文件位置 |
-  |------|------|---------|
-  | `VaultAutofillSupport` | `AutofillCoordinator` | `vault/internal/` |
-  | `VaultCryptoSupport` | `CryptoHelper` | `vault/internal/` |
-  | `VaultDetailCoordinator`（P1-02 中间产物） | `DetailCoordinator` | `vault/internal/` |
-  | `VaultDetailStateHolder` | `DetailState` | `vault/internal/` |
-  | `VaultEntryFileSupport` | `EntryIconHelper` | `vault/internal/` |
-  | `VaultEntryLifecycleSupport` | `EntryManager` | `vault/internal/` |
-  | `VaultSearchFilterStateHolder` | `SearchFilterState` | `vault/internal/` |
-  | `VaultTotpCoordinator`（P1-02 中间产物） | `TotpCoordinator` | `vault/internal/` |
-  | `VaultTotpSupport` | `TotpHelper` | `vault/internal/` |
-  | `VaultOnDemandQuerySupport` | `VaultQueryCoordinator` | `vault/` |
+  | 旧名                                   | 新名                      | 文件位置              |
+  |--------------------------------------|-------------------------|-------------------|
+  | `VaultAutofillSupport`               | `AutofillCoordinator`   | `vault/internal/` |
+  | `VaultCryptoSupport`                 | `CryptoHelper`          | `vault/internal/` |
+  | `VaultDetailCoordinator`（P1-02 中间产物） | `DetailCoordinator`     | `vault/internal/` |
+  | `VaultDetailStateHolder`             | `DetailState`           | `vault/internal/` |
+  | `VaultEntryFileSupport`              | `EntryIconHelper`       | `vault/internal/` |
+  | `VaultEntryLifecycleSupport`         | `EntryManager`          | `vault/internal/` |
+  | `VaultSearchFilterStateHolder`       | `SearchFilterState`     | `vault/internal/` |
+  | `VaultTotpCoordinator`（P1-02 中间产物）   | `TotpCoordinator`       | `vault/internal/` |
+  | `VaultTotpSupport`                   | `TotpHelper`            | `vault/internal/` |
+  | `VaultOnDemandQuerySupport`          | `VaultQueryCoordinator` | `vault/`          |
 
 - **同步变化**：
   - `AutofillCoordinator` 将 `isAutofillEnabled()` 判断内联为 `refreshStatus(context)`，方法命名更直观。
@@ -224,9 +224,73 @@
 
 ---
 
+## 2026-04-16 — Compose Navigation 与全局架构重构
+
+### Navigation — Jetpack Compose Navigation 全局导航引入
+
+- `PasslyNavHost` 统一管理 Vault / Detail / Settings 路由，`AppRoute` 定义路由表。
+- `MainActivity` 移除 `showSettings`/`showDetail` 等手动状态，改由 `isAuthorized` + NavHost 驱动。
+- Detail 页支持 `entryId` 路由参数动态加载。
+- 新增 `PasslyNavigationAnim` 标准化转场动画。
+- **关联**: `08750b7`
+
+### Detail 重构 — UI 解耦与安全性增强
+
+- `DetailScreen` 及子组件重构为无状态，移除对 VM 直接依赖，改用回调机制。
+- 各 Section 直接集成 `CryptoManager` 解密，支持单次验证批量解密。
+- `DetailViewModel.onCleared` 主动擦除敏感状态；`DisposableEffect` 确保页面销毁清理。
+- `EntryEditState`/`TotpEditState` 迁移至 `features.detail.internal`。
+- 修复 AutofillAuthActivity 在 `BOTTOM_SHEET` 模式的 FillResponse 兼容问题。
+- **关联**: `28220e2`, `fca0266`, `11f7804`
+
+### 状态模型跨模块解耦
+
+- 删除 `core.designsystem.state`/`model` 通用 UI 状态，按功能模块重组。
+- `AddType`/`VaultTab` → `features.vault`；`TotpState` 保留为唯一跨模块共享状态。
+- `ImageType` → `core.media`；清理 `DeleteState`/`EditMode` 等无用枚举。
+- **关联**: `abc6660`
+
+### MainViewModel 架构优化
+
+- 新增 `MainAutoLockCoordinator`，封装 `AutoLockScheduler`，通过 `SharedFlow` 订阅锁定事件。
+- 新增 `MainNotificationPermissionController`，解耦通知权限逻辑。
+- `handleIntent` 统一处理 `UpdateInteraction`/`CheckAndLock`。
+- **关联**: `01f0fac`, `5a8fde7`
+
+### Vault 滑动操作与字段访问重构
+
+- `SwipeActionType` 移除 `EDIT`，简化滑动操作。
+- 引入 `FieldKey` 枚举驱动 `EntryTypeStrategy.getFieldValue`，统一复制路径。
+- TOTP 条目优先复制动态验证码。
+- **关联**: `18a9d47`, `ad97e6e`
+
+### P0-03 — 明文备份 SAF 化（部分完成）
+
+- 新增 SAF `CreateDocument` 合约，支持用户自选导出目录。
+- `EmergencyBackupExporter` 新增 `exportPlainBackupToUri` 流式写入方法。
+- `PlainExportDialog` 增加详细风险提示。
+- **未闭环**：紧急导出路径 `exportPlainJson` 仍使用 `DIRECTORY_DOWNLOADS`（见 `EmergencyBackupExporter.kt:84`）。
+- **关联**: `6273812`
+
+### P0-04 — 数据库迁移与备份集成测试（基本完成）
+
+- 新增 `DatabaseMigrationTest`：覆盖 1→2（索引）、2→3（新字段）迁移路径。
+- 新增 `BackupRoundTripTest`：验证明文 JSON 导出完整性与 Boolean 序列化。
+- Room Schema 导出 v2，`androidTest` 关联 `schemas` 资源目录。
+- **关联**: `70e2070`
+
+### Vault Pager 同步与 Tab 可见性控制
+
+- `VaultScreen` 监听 `settledPage` 替代 `currentPage`，避免动画中间态触发更新。
+- `VaultTab` 重构：`settingsKey` 持久化 + `isToggleable` 属性。
+- 新增 `VaultTabsSettingsSection`，用户可自定义 Tab 可见性。
+- 新增"自动下载图标"设置开关。
+- `AddType`/`VaultTab` 迁移至 `features.vault.model`。
+- `VaultViewModel` 移除 `decryptMultiple`/`unlockTotp`/`showDetailForEdit` 冗余方法。
+- **关联**: `2b1a7d0`, `8c68c6b`
+
+---
+
 ## 待完成（后续阶段）
 
-参见 `REFACTORING_TODOS.md`：
-
-- **阶段 B**：P1-01（MainActivity 瘦身）、P1-02（VaultViewModel 拆分）、P1-03（SettingsViewModel 拆分）、P1-04（StateHolder 可变状态治理）、P1-05（Main Contract handleIntent 接入）、P0-03（明文备份 SAF 改造）
-- **阶段 C**：P0-04（迁移与备份自动化测试）、P2-01（单元/集成测试基线）、P2-02（CI 质量门禁）、P2-03（文案国际化）、P2-04（Full/Main 双轨治理）
+参见 `REFACTORING_TODOS.md`。
