@@ -30,7 +30,7 @@ object EmergencyBackupExporter {
             val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
             if (!dbFile.exists()) return Result.failure(Exception("数据库文件不存在"))
 
-            val passphrase = DatabasePassphraseManager.getPassphrase(context)
+            val passphrase = DatabasePassphraseManager.getPassphrase()
             db = SQLiteDatabase.openDatabase(
                 dbFile.path, passphrase, null, SQLiteDatabase.OPEN_READONLY, null, null
             )

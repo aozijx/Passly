@@ -10,13 +10,15 @@ import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.domain.model.backup.BackupImportMode
 import com.aozijx.passly.domain.model.core.BackupException
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import com.aozijx.passly.domain.model.backup.BackupImportMode as DomainBackupImportMode
+import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * 备份模块 UI 状态聚合。
@@ -26,15 +28,15 @@ data class BackupUiState(
     val showPasswordDialog: Boolean = false,
     val backupUri: Uri? = null,
     val backupPassword: String = "",
-    val importMode: DomainBackupImportMode = DomainBackupImportMode.OVERWRITE,
+    val importMode: BackupImportMode = BackupImportMode.OVERWRITE,
     val includeImages: Boolean = true,
     val pendingExportFileName: String? = null,
-    val pendingExportAllowFallback: Boolean = false
+    val pendingExportAllowFallback: Boolean = false,
+    val emergencyBackupFile: File? = null
 )
 
 /**
  * 备份/恢复流程协调器。
- * 采用状态聚合模式，实现了 UI 状态与业务逻辑的高内聚。
  */
 class BackupCoordinator(
     private val scope: CoroutineScope,
@@ -42,9 +44,6 @@ class BackupCoordinator(
     private val backupUseCases: BackupUseCases,
     private val application: Application
 ) {
-    private val tag = "BackupCoordinator"
-
-    // --- 状态流 ---
     var state by mutableStateOf(BackupUiState())
         private set
 
@@ -81,34 +80,29 @@ class BackupCoordinator(
     // --- 流程控制 ---
     fun startExport(uri: Uri, fileNameHint: String? = null, allowFallback: Boolean = false) {
         state = state.copy(
-            backupUri = uri,
-            isExporting = true,
-            showPasswordDialog = true,
-            pendingExportFileName = fileNameHint,
-            pendingExportAllowFallback = allowFallback
+            backupUri = uri, isExporting = true, showPasswordDialog = true,
+            pendingExportFileName = fileNameHint, pendingExportAllowFallback = allowFallback
         )
     }
 
     fun startImport(uri: Uri) {
         state = state.copy(
-            backupUri = uri,
-            isExporting = false,
-            showPasswordDialog = true,
-            pendingExportFileName = null,
-            pendingExportAllowFallback = false
+            backupUri = uri, isExporting = false, showPasswordDialog = true,
+            pendingExportFileName = null, pendingExportAllowFallback = false
         )
     }
 
-    fun updatePassword(password: String) {
-        state = state.copy(backupPassword = password)
-    }
+    fun updatePassword(password: String) = state.copy(backupPassword = password).also { state = it }
+    fun updateImportMode(mode: BackupImportMode) = state.copy(importMode = mode).also { state = it }
+    fun updateIncludeImages(include: Boolean) =
+        state.copy(includeImages = include).also { state = it }
 
-    fun updateImportMode(mode: DomainBackupImportMode) {
-        state = state.copy(importMode = mode)
-    }
+    fun dismissPasswordDialog() =
+        state.copy(showPasswordDialog = false, backupPassword = "", backupUri = null)
+            .also { state = it }
 
-    fun updateIncludeImages(include: Boolean) {
-        state = state.copy(includeImages = include)
+    fun clearBackupMessage() {
+        backupMessage = null
     }
 
     fun nextBackupFileName(): String = BackupExportStorageSupport.buildBackupFileName()
@@ -119,9 +113,7 @@ class BackupCoordinator(
         return true
     }
 
-    fun dismissPasswordDialog() {
-        state = state.copy(showPasswordDialog = false, backupPassword = "", backupUri = null)
-    }
+    // --- 核心业务执行 ---
 
     fun processBackupAction(context: Context, onAuthRequired: (onSuccess: () -> Unit) -> Unit) {
         val currentState = state
@@ -131,8 +123,6 @@ class BackupCoordinator(
         onAuthRequired {
             scope.launch {
                 try {
-                    Logcat.d(tag, "Starting action. Exporting: ${currentState.isExporting}")
-
                     val finalUri =
                         if (currentState.isExporting && currentState.pendingExportAllowFallback) {
                             val createResult = BackupExportStorageSupport.createNamedExportTarget(
@@ -140,13 +130,9 @@ class BackupCoordinator(
                                 targetUri.toString(),
                                 currentState.pendingExportFileName ?: nextBackupFileName()
                             )
-                            if (createResult.isFailure) {
-                                throw BackupException.StoragePermissionDenied()
-                            }
+                            if (createResult.isFailure) throw BackupException.StoragePermissionDenied()
                             createResult.getOrThrow().fileUri
-                        } else {
-                            targetUri
-                        }
+                        } else targetUri
 
                     val outcome = if (currentState.isExporting) {
                         backupUseCases.exportBackup(finalUri, password, currentState.includeImages)
@@ -154,11 +140,8 @@ class BackupCoordinator(
                         backupUseCases.importBackup(finalUri, password, currentState.importMode)
                     }
 
-                    if (outcome.isSuccess) {
-                        handleSuccess(context, currentState)
-                    } else {
-                        handleFailure(context, outcome.exceptionOrNull(), finalUri, currentState)
-                    }
+                    if (outcome.isSuccess) handleSuccess(context, currentState)
+                    else handleFailure(context, outcome.exceptionOrNull(), finalUri, currentState)
 
                     dismissPasswordDialog()
                 } finally {
@@ -168,8 +151,53 @@ class BackupCoordinator(
         }
     }
 
+    /**
+     * 导出明文备份（解密后导出）。
+     */
+    fun exportPlainBackup(
+        context: Context,
+        dirUri: String?,
+        onPickerRequest: (fileName: String) -> Unit
+    ) {
+        val fileName = "Passly_Plain_Backup_${System.currentTimeMillis()}.json"
+        if (!dirUri.isNullOrBlank()) {
+            scope.launch {
+                val targetResult = withContext(Dispatchers.IO) {
+                    BackupExportStorageSupport.createNamedExportTarget(context, dirUri, fileName)
+                }
+                targetResult.fold(
+                    onSuccess = { exportPlainBackupToUri(it.fileUri) },
+                    onFailure = { onPickerRequest(fileName) }
+                )
+            }
+        } else onPickerRequest(fileName)
+    }
+
+    fun exportPlainBackupToUri(uri: Uri) {
+        scope.launch {
+            backupUseCases.exportPlainBackup(uri).fold(
+                onSuccess = { backupMessage = "明文备份已导出" },
+                onFailure = { backupMessage = it.message ?: "导出失败" }
+            )
+        }
+    }
+
+    /**
+     * 数据库损坏时的紧急抢救备份。
+     */
+    fun exportEmergencyBackup() {
+        scope.launch {
+            backupUseCases.exportEmergencyBackup().fold(
+                onSuccess = { file ->
+                    state = state.copy(emergencyBackupFile = file)
+                    backupMessage = "紧急备份已导出: ${file.name}"
+                },
+                onFailure = { backupMessage = "紧急备份导出失败: ${it.message}" }
+            )
+        }
+    }
+
     private suspend fun handleSuccess(context: Context, oldState: BackupUiState) {
-        Logcat.i(tag, "Operation successful")
         if (oldState.isExporting) {
             oldState.pendingExportFileName?.let {
                 backupSettingsUseCases.setLastBackupExportFileName(
@@ -184,20 +212,14 @@ class BackupCoordinator(
     }
 
     private fun handleFailure(
-        context: Context, error: Throwable?, finalUri: Uri, oldState: BackupUiState
+        context: Context,
+        error: Throwable?,
+        finalUri: Uri,
+        oldState: BackupUiState
     ) {
-        Logcat.e(tag, "Operation failed", error)
         if (oldState.isExporting && oldState.pendingExportAllowFallback) {
             BackupExportStorageSupport.deleteDocument(context, finalUri)
         }
-
-        backupMessage = when (error) {
-            is BackupException -> error.message
-            else -> text(R.string.backup_error_unknown)
-        }
-    }
-
-    fun clearBackupMessage() {
-        backupMessage = null
+        backupMessage = (error as? BackupException)?.message ?: text(R.string.backup_error_unknown)
     }
 }

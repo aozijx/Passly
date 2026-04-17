@@ -1,53 +1,33 @@
 package com.aozijx.passly.features.auth
 
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.core.crypto.BiometricHelper
-import com.aozijx.passly.features.auth.internal.AuthValidationResult
-import com.aozijx.passly.features.auth.internal.AuthValidationSupport
-import com.aozijx.passly.features.auth.internal.AutoLockCoordinator
-import com.aozijx.passly.features.auth.internal.AutoLockDecision
+import com.aozijx.passly.core.security.auth.AuthValidationResult
+import com.aozijx.passly.core.security.auth.AuthValidationSupport
+import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * 认证模块协调器：负责管理全局授权状态、生物识别流程及自动锁定逻辑。
- * 它对外部屏蔽了内聚在 internal 中的复杂调度细节。
+ * 认证模块协调器：负责 UI 层的认证流程调度。
+ * 它完全对接 AuthUseCases，不再持有任何底层的计时器或生物识别细节。
  */
 class AuthCoordinator(
     private val scope: CoroutineScope,
+    private val authUseCases: AuthUseCases,
     private val validationSupport: AuthValidationSupport = AuthValidationSupport()
 ) {
-    private val _isAuthorized = MutableStateFlow(false)
-    val isAuthorized: StateFlow<Boolean> = _isAuthorized.asStateFlow()
+    /** 观察全局授权状态：由领域层驱动 */
+    val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
 
     private val _authMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val authMessage: SharedFlow<String> = _authMessage.asSharedFlow()
 
-    private val autoLockCoordinator = AutoLockCoordinator(
-        scope = scope,
-        validationSupport = validationSupport
-    )
-
-    init {
-        // 监听自动锁定信号
-        scope.launch {
-            autoLockCoordinator.shouldLock.collect {
-                if (_isAuthorized.value) {
-                    lock()
-                }
-            }
-        }
-    }
-
     /**
-     * 触发身份验证流程（指纹/PIN等）。
+     * 触发身份验证流程。
      */
     fun authenticate(
         activity: FragmentActivity,
@@ -56,6 +36,7 @@ class AuthCoordinator(
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
+        // 1. UI 层校验：检查 Activity 状态和标题
         when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
             is AuthValidationResult.Invalid -> {
                 val msg = validation.message
@@ -66,41 +47,24 @@ class AuthCoordinator(
             AuthValidationResult.Valid -> Unit
         }
 
-        BiometricHelper.authenticate(
-            activity = activity,
-            title = title,
-            subtitle = subtitle,
-            onError = { error ->
-                val safeError = validationSupport.sanitizeMessage(error)
-                _authMessage.tryEmit(safeError)
-                onError?.invoke(safeError)
-            },
-            onSuccess = {
-                authorize()
-                onSuccess()
-            }
-        )
+        // 2. 调用领域层用例：实际的指纹/系统认证逻辑
+        scope.launch {
+            authUseCases.authenticate(activity, title, subtitle).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { error ->
+                    val safeError = validationSupport.sanitizeMessage(error.message)
+                    _authMessage.tryEmit(safeError)
+                    onError?.invoke(safeError)
+                }
+            )
+        }
     }
 
-    fun authorize() {
-        _isAuthorized.update { true }
-        autoLockCoordinator.onAuthorized()
-    }
+    fun lock() = authUseCases.lock()
 
-    fun lock() {
-        _isAuthorized.update { false }
-        autoLockCoordinator.onLocked()
-    }
+    fun onUserInteraction() = authUseCases.onUserInteraction()
 
-    fun onUserInteraction() {
-        autoLockCoordinator.onInteraction(_isAuthorized.value)
-    }
+    fun checkAndLock() = authUseCases.checkAndLock()
 
-    fun checkAndLock() {
-        autoLockCoordinator.checkNow(_isAuthorized.value)
-    }
-
-    fun applyTimeout(timeoutMs: Long): AutoLockDecision {
-        return autoLockCoordinator.applyTimeout(timeoutMs, _isAuthorized.value)
-    }
+    fun updateLockTimeout(timeoutMs: Long) = authUseCases.updateLockTimeout(timeoutMs)
 }

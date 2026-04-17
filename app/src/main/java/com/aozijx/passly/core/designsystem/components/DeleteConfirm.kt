@@ -25,19 +25,19 @@ fun DeleteConfirmDialog(
         text = { Text(stringResource(R.string.vault_delete_message, item.title)) },
         confirmButton = {
             TextButton(onClick = {
-                mainViewModel.authenticate(
+                mainViewModel.auth.authenticate(
                     activity = activity,
                     title = activity.getString(R.string.vault_delete_title),
-                    subtitle = activity.getString(R.string.vault_auth_decrypt_subtitle_generic)
-                ) {
-                    onConfirm()
-                }
+                    subtitle = activity.getString(R.string.vault_auth_decrypt_subtitle_generic),
+                    onSuccess = { onConfirm() })
             }) {
-                Text(stringResource(R.string.vault_delete_title), color = MaterialTheme.colorScheme.error)
+                Text(
+                    stringResource(R.string.vault_delete_title),
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        }
-    )
+        })
 }

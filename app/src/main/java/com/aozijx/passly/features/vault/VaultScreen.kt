@@ -164,7 +164,14 @@ fun VaultContent(
                 vaultViewModel.decryptSingle(
                     activity = activity,
                     encryptedData = rawValue,
-                    authenticate = { act, t, s, _, ok -> mainViewModel.authenticate(act, t, s, null, ok) },
+                    authenticate = { act, t, s, _, ok ->
+                        mainViewModel.auth.authenticate(
+                            act,
+                            t,
+                            s,
+                            onSuccess = ok
+                        )
+                    },
                     onResult = { decrypted ->
                         decrypted?.let {
                             ClipboardUtils.copy(activity, it)
@@ -181,7 +188,14 @@ fun VaultContent(
         handleSwipeAction(
             actionType = action,
             item = item,
-            onAuthRequired = { ok -> mainViewModel.authenticate(activity, "安全验证", item.title, null, ok) },
+            onAuthRequired = { ok ->
+                mainViewModel.auth.authenticate(
+                    activity,
+                    "安全验证",
+                    item.title,
+                    onSuccess = ok
+                )
+            },
             onQuickDelete = { vaultViewModel.quickDelete(it) },
             onCopy = { fieldKey -> performCopy(fieldKey, item) },
             onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } }
@@ -298,7 +312,9 @@ fun VaultContent(
                         }
                     }
                     item {
-                        Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp))
+                        Spacer(modifier = Modifier
+                            .navigationBarsPadding()
+                            .height(80.dp))
                     }
                 }
             }
@@ -345,12 +361,16 @@ private fun VaultListSkeleton() {
     ) {
         items(6) {
             Card(
-                modifier = Modifier.fillMaxWidth().height(72.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
             ) {}
         }
         item {
-            Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp))
+            Spacer(modifier = Modifier
+                .navigationBarsPadding()
+                .height(80.dp))
         }
     }
 }

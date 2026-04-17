@@ -42,7 +42,7 @@ class BackupRoundTripTest {
     fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
 
-        val passphrase = DatabasePassphraseManager.getPassphrase(context)
+        val passphrase = DatabasePassphraseManager.getPassphrase()
         db = Room.databaseBuilder(context, AppDatabase::class.java, testDbName)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
             .addMigrations(*Migrations.getAll()).allowMainThreadQueries().build()

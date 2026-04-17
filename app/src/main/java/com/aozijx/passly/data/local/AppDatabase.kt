@@ -44,7 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE?.let { return@synchronized it }
 
                 try {
-                    val passphrase = DatabasePassphraseManager.getPassphrase(context)
+                    val passphrase = DatabasePassphraseManager.getPassphrase()
                     val factory = SupportOpenHelperFactory(passphrase)
 
                     val instance = Room.databaseBuilder(
@@ -87,6 +87,11 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun preWarm(context: Context) {
             getDatabase(context)
+        }
+
+        fun close() {
+            INSTANCE?.close()
+            INSTANCE = null
         }
     }
 }

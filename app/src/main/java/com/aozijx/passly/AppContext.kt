@@ -2,18 +2,11 @@ package com.aozijx.passly
 
 import android.app.Application
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.AppPrefs
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 class AppContext : Application() {
-    // 全局单例 VaultPrefs
     val preference: AppPrefs by lazy { AppPrefs(this) }
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
         private const val TAG = "AppContext"
@@ -27,14 +20,13 @@ class AppContext : Application() {
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            Logcat.e(TAG, "Failed to load SQLCipher native library. Verify build.gradle SQLCipher dependency and target ABI .so files are packaged in the APK", e)
+            Logcat.e(TAG, "Failed to load SQLCipher native library.", e)
             throw e
         }
         EntryTypeStrategyRegistry.ensureRegistered()
-        // Pre-warm SQLCipher open/keying to reduce first vault screen latency.
-        appScope.launch {
-            runCatching { AppDatabase.preWarm(this@AppContext) }
-                .onFailure { Logcat.e(TAG, "Database prewarm failed", it) }
-        }
+
+        // 重要：在硬件级认证模式下，此处严禁执行 AppDatabase.preWarm。
+        // 因为此时用户尚未认证，解密口令不可用，后台预热会导致应用启动即崩溃。
+        Logcat.i(TAG, "Passly App Context initialized. Waiting for user authentication...")
     }
 }

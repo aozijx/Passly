@@ -2,8 +2,10 @@ package com.aozijx.passly.core.security
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import androidx.biometric.BiometricPrompt
 import androidx.core.content.edit
 import com.aozijx.passly.core.logging.Logcat
 import java.nio.ByteBuffer
@@ -14,41 +16,90 @@ import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * 管理加密数据库所需的 256 位随机口令。
- * 口令本身由 Android KeyStore 保护。
+ * 管理加密数据库所需的口令。
+ * 保持硬件级认证绑定及指纹变更自动恢复能力。
  */
 object DatabasePassphraseManager {
     private const val TAG = "PassphraseManager"
     private const val PREFS_NAME = "secure_db_prefs"
     private const val KEY_PASSPHRASE = "db_phrase"
+    private const val IV_LENGTH = 12
+    private const val GCM_TAG_BITS = 128
 
-    fun getPassphrase(context: Context): ByteArray {
-        val alias = "${context.packageName}.vault_db_passphrase_key"
+    @Volatile
+    private var _decryptedPassphrase: ByteArray? = null
+
+    private fun getAlias(context: Context) = "${context.packageName}.vault_db_hard_auth"
+
+    /**
+     * 获取初始化的 Cipher。
+     * 自动处理密钥失效（如用户更改了系统指纹）。
+     */
+    fun getInitializedCipher(context: Context): Cipher? =
+        getInitializedCipher(context, isRetry = false)
+
+    private fun getInitializedCipher(context: Context, isRetry: Boolean): Cipher? {
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val alias = getAlias(context)
 
-        // 1. 确保 KeyStore 中存在主密钥
-        if (!ks.containsAlias(alias)) {
-            generateMasterKey(alias)
-        }
+        if (!ks.containsAlias(alias)) generateMasterKey(alias)
 
         val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
         val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val encryptedPassphrase = sharedPrefs.getString(KEY_PASSPHRASE, null)
+        val encryptedBase64 = sharedPrefs.getString(KEY_PASSPHRASE, null)
 
-        // 2. 如果已存在加密的口令，则解密并返回
-        if (encryptedPassphrase != null) {
-            try {
-                return decryptPassphrase(encryptedPassphrase, secretKey)
-            } catch (e: Exception) {
-                Logcat.e(TAG, "Database passphrase decryption failed!", e)
-                throw e
+        return try {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            if (encryptedBase64 == null) {
+                Logcat.i(TAG, "Init ENCRYPT mode for new passphrase.")
+                cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+            } else {
+                Logcat.i(TAG, "Init DECRYPT mode for existing passphrase.")
+                val combined = Base64.decode(encryptedBase64, Base64.NO_WRAP)
+                val iv = ByteArray(IV_LENGTH).also { ByteBuffer.wrap(combined).get(it) }
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(GCM_TAG_BITS, iv))
             }
+            cipher
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            if (isRetry) {
+                Logcat.e(TAG, "Key still invalid after reset, giving up.", e)
+                return null
+            }
+            Logcat.e(TAG, "Key invalidated. Resetting...", e)
+            ks.deleteEntry(alias)
+            sharedPrefs.edit { remove(KEY_PASSPHRASE) }
+            getInitializedCipher(context, isRetry = true)
+        } catch (e: Exception) {
+            Logcat.e(TAG, "Failed to init cipher", e)
+            null
         }
+    }
 
-        // 3. 否则生成新口令，加密后存储
-        val newPassphrase = ByteArray(32).also { SecureRandom().nextBytes(it) }
-        encryptAndSavePassphrase(newPassphrase, secretKey, sharedPrefs)
-        return newPassphrase
+    /**
+     * 认证通过后，执行最终的解密或创建逻辑。
+     */
+    fun processResult(context: Context, result: BiometricPrompt.AuthenticationResult): ByteArray {
+        val cipher =
+            result.cryptoObject?.cipher ?: throw IllegalStateException("CryptoObject is null")
+        val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val encryptedBase64 = sharedPrefs.getString(KEY_PASSPHRASE, null)
+
+        return if (encryptedBase64 == null) {
+            val newPassphrase = ByteArray(32).also { SecureRandom().nextBytes(it) }
+            val encrypted = cipher.doFinal(newPassphrase)
+            val combined = ByteBuffer.allocate(cipher.iv.size + encrypted.size)
+                .put(cipher.iv).put(encrypted).array()
+            sharedPrefs.edit {
+                putString(KEY_PASSPHRASE, Base64.encodeToString(combined, Base64.NO_WRAP))
+            }
+            newPassphrase
+        } else {
+            val combined = Base64.decode(encryptedBase64, Base64.NO_WRAP)
+            val buffer = ByteBuffer.wrap(combined)
+            buffer.position(IV_LENGTH) // 跳过 IV（已在 getInitializedCipher 中使用）
+            val encryptedData = ByteArray(buffer.remaining()).also { buffer.get(it) }
+            cipher.doFinal(encryptedData)
+        }
     }
 
     private fun generateMasterKey(alias: String) {
@@ -60,36 +111,28 @@ object DatabasePassphraseManager {
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
             .setKeySize(256)
+            .setUserAuthenticationRequired(true)
+            .setUserAuthenticationParameters(
+                0,
+                KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
+            )
+            .setInvalidatedByBiometricEnrollment(true) 
             .build()
         keyGenerator.init(spec)
         keyGenerator.generateKey()
     }
 
-    private fun decryptPassphrase(encryptedBase64: String, secretKey: java.security.Key): ByteArray {
-        val combined = Base64.decode(encryptedBase64, Base64.NO_WRAP)
-        val buffer = ByteBuffer.wrap(combined)
-        val iv = ByteArray(12).also { buffer.get(it) }
-        val encrypted = ByteArray(buffer.remaining()).also { buffer.get(it) }
-
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
-        return cipher.doFinal(encrypted)
+    fun getPassphrase(): ByteArray {
+        return _decryptedPassphrase
+            ?: throw IllegalStateException("Database passphrase not available.")
     }
 
-    private fun encryptAndSavePassphrase(
-        passphrase: ByteArray,
-        secretKey: java.security.Key,
-        prefs: android.content.SharedPreferences
-    ) {
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-        val encrypted = cipher.doFinal(passphrase)
-        
-        val combined = ByteBuffer.allocate(cipher.iv.size + encrypted.size)
-            .put(cipher.iv).put(encrypted).array()
+    fun setDecryptedPassphrase(passphrase: ByteArray?) {
+        _decryptedPassphrase = passphrase
+    }
 
-        prefs.edit {
-            putString(KEY_PASSPHRASE, Base64.encodeToString(combined, Base64.NO_WRAP))
-        }
+    fun clearDecryptedPassphrase() {
+        _decryptedPassphrase?.fill(0)
+        _decryptedPassphrase = null
     }
 }

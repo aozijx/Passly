@@ -71,7 +71,12 @@ fun VaultDialogs(
         BackupPasswordDialog(
             backupCoordinator = settingsViewModel.backup,
             onAuthRequired = { title, subtitle, onSuccess ->
-                mainViewModel.authenticate(activity, title, subtitle, null, onSuccess)
+                mainViewModel.auth.authenticate(
+                    activity = activity,
+                    title = title,
+                    subtitle = subtitle,
+                    onSuccess = onSuccess
+                )
             }
         )
     }

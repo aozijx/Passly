@@ -13,7 +13,6 @@ sealed interface MainIntent {
         val onSuccess: () -> Unit
     ) : MainIntent
 
-    data object Authorize : MainIntent
     data object Lock : MainIntent
     data object UpdateInteraction : MainIntent
     data object CheckAndLock : MainIntent
