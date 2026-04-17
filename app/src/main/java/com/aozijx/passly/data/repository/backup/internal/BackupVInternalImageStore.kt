@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.backup.internal
 
 import android.content.Context
-import com.aozijx.passly.features.vault.internal.EntryIconHelper
+import com.aozijx.passly.core.storage.VaultFileUtils
 import java.io.File
 import java.io.InputStream
 
@@ -9,7 +9,6 @@ import java.io.InputStream
  * 备份图片存储的内部实现。
  */
 internal class BackupVInternalImageStore(context: Context) : BackupImageStore {
-    private val iconHelper = EntryIconHelper()
     private val appContext = context.applicationContext
 
     override fun resolveReadable(path: String?): File? {
@@ -19,6 +18,6 @@ internal class BackupVInternalImageStore(context: Context) : BackupImageStore {
     }
 
     override fun saveFromBackup(fileName: String, input: InputStream): String? {
-        return iconHelper.saveIconFromStream(appContext, fileName, input)
+        return VaultFileUtils.saveImageFromStream(appContext, fileName, input)
     }
 }
