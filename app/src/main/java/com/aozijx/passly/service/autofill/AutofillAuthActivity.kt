@@ -17,11 +17,15 @@ import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.crypto.BiometricHelper
+import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.core.security.otp.TwoFAUtils
 import com.aozijx.passly.core.theme.AppTheme
+import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.service.autofill.presentation.AutofillRemoteViewFactory
 import kotlinx.coroutines.launch
 
 /**
@@ -40,11 +44,26 @@ class AutofillAuthActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
 
+        val isUnlockOnly = intent.getBooleanExtra("unlock_only", false)
         val usernameId =
             IntentCompat.getParcelableExtra(intent, "username_id", AutofillId::class.java)
         val passwordId =
             IntentCompat.getParcelableExtra(intent, "password_id", AutofillId::class.java)
         val otpId = IntentCompat.getParcelableExtra(intent, "otp_id", AutofillId::class.java)
+
+        if (isUnlockOnly) {
+            val pkg = intent.getStringExtra("package_name")
+            val domain = intent.getStringExtra("web_domain")
+            performUnlock(
+                usernameId,
+                passwordId,
+                otpId,
+                pkg,
+                domain
+            )
+            return
+        }
+
         val directEntryId = intent.getIntExtra("vault_item_id", -1).takeIf { it > 0 }
         val candidateEntryIds = intent.getIntArrayExtra("vault_item_ids")?.toList().orEmpty()
 
@@ -100,6 +119,97 @@ class AutofillAuthActivity : FragmentActivity() {
         }
     }
 
+    private fun performUnlock(
+        usernameId: AutofillId?,
+        passwordId: AutofillId?,
+        otpId: AutofillId?,
+        packageName: String?,
+        webDomain: String?
+    ) {
+        val cipher = DatabasePassphraseManager.getInitializedCipher(this)
+        BiometricHelper.authenticate(
+            activity = this,
+            title = getString(R.string.vault_auth_decrypt_title),
+            subtitle = getString(R.string.vault_auth_decrypt_subtitle_generic),
+            cryptoObject = cipher?.let { androidx.biometric.BiometricPrompt.CryptoObject(it) },
+            onSuccess = { result ->
+                val passphrase = DatabasePassphraseManager.processResult(this, result)
+                DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+
+                // 解锁成功后，查询候选并返回 FillResponse
+                lifecycleScope.launch {
+                    val candidates =
+                        autofillRepository.findMatchingCandidates(packageName, webDomain)
+                    if (candidates.isEmpty()) {
+                        setResult(RESULT_OK) // 成功解锁但无匹配项
+                        finish()
+                        return@launch
+                    }
+
+                    val responseBuilder = FillResponse.Builder()
+                    candidates.forEach { candidate ->
+                        val entry = candidate.entry
+                        val decryptedUsername =
+                            (CryptoAccess.decryptOrNull(entry.username) ?: "").trim()
+                        val subtitle =
+                            AutofillCredentialProvider.buildSubtitle(entry, decryptedUsername)
+                        val badge = when (candidate.matchType) {
+                            AutofillMatchType.APP -> getString(R.string.autofill_match_app)
+                            AutofillMatchType.DOMAIN -> getString(R.string.autofill_match_domain)
+                            AutofillMatchType.UNKNOWN -> getString(R.string.autofill_match_unknown)
+                        }
+
+                        val presentation = AutofillRemoteViewFactory.createDatasetItem(
+                            context = applicationContext,
+                            entry = entry,
+                            subtitle = subtitle,
+                            badge = badge
+                        )
+
+                        // 这种情况下，数据集也需要 auth，或者我们可以直接填入？
+                        // 为了安全，建议解锁后点击具体项仍需二次验证（硬件解密流程要求），
+                        // 或者这里直接生成带值的 Dataset（因为刚刚已经验证过了）。
+                        // 考虑到用户体验，刚才已经指纹解锁了，这里可以直接返回带值的 Dataset。
+
+                        val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
+                        if (basicCred != null) {
+                            val totpCode =
+                                if (otpId != null && entry.totpSecret?.isNotBlank() == true) {
+                                    TwoFAUtils.generateCurrentTotpFromEntry(entry)
+                                } else null
+
+                            val dataset = buildDataset(
+                                usernameId = usernameId,
+                                passwordId = passwordId,
+                                otpId = otpId,
+                                username = basicCred.username,
+                                password = basicCred.password,
+                                totpCode = totpCode,
+                                presentation = presentation
+                            )
+                            if (dataset != null) {
+                                responseBuilder.addDataset(dataset)
+                            }
+                        }
+                    }
+
+                    val resultIntent = Intent().apply {
+                        putExtra(
+                            AutofillManager.EXTRA_AUTHENTICATION_RESULT,
+                            responseBuilder.build()
+                        )
+                    }
+                    setResult(RESULT_OK, resultIntent)
+                    finish()
+                }
+            },
+            onError = {
+                setResult(RESULT_CANCELED)
+                finish()
+            }
+        )
+    }
+
     private fun authenticateAndFill(
         entry: VaultEntry,
         usernameId: AutofillId?,
@@ -111,11 +221,20 @@ class AutofillAuthActivity : FragmentActivity() {
             TAG,
             "authenticateAndFill: entryId=${entry.id}, usernameId=${usernameId != null}, passwordId=${passwordId != null}, otpId=${otpId != null}, uiMode=$uiMode"
         )
+        // 注意：这里需要传入 CryptoObject 以支持硬件解密
+        val cipher = DatabasePassphraseManager.getInitializedCipher(this)
         BiometricHelper.authenticate(
             activity = this,
             title = getString(R.string.autofill_auth_title),
             subtitle = getString(R.string.autofill_auth_subtitle),
-            onSuccess = {
+            cryptoObject = cipher?.let { androidx.biometric.BiometricPrompt.CryptoObject(it) },
+            onSuccess = { result ->
+                // 确保解密口令已就绪（如果刚才还没就绪的话）
+                if (DatabasePassphraseManager.isLocked) {
+                    val passphrase = DatabasePassphraseManager.processResult(this, result)
+                    DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+                }
+
                 // 调用 getBasicCredentials 触发解密
                 val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
                 if (basicCred == null) {
@@ -140,8 +259,6 @@ class AutofillAuthActivity : FragmentActivity() {
                 )
 
                 if (dataset != null) {
-                    // FillResponse-level auth (BOTTOM_SHEET) requires a FillResponse back;
-                    // Dataset-level auth (SYSTEM_INLINE) requires a Dataset back.
                     val resultIntent = Intent()
                     if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
                         resultIntent.putExtra(
@@ -179,7 +296,8 @@ class AutofillAuthActivity : FragmentActivity() {
         otpId: AutofillId?,
         username: String,
         password: String,
-        totpCode: String?
+        totpCode: String?,
+        presentation: android.widget.RemoteViews? = null
     ): Dataset? {
         val builder = Dataset.Builder()
         var added = false
@@ -189,13 +307,22 @@ class AutofillAuthActivity : FragmentActivity() {
             val value = AutofillValue.forText(text)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val field = Field.Builder()
-                    .setValue(value)
-                    .build()
-                builder.setField(id, field)
+                val fieldBuilder = Field.Builder().setValue(value)
+                if (presentation != null) {
+                    fieldBuilder.setPresentations(
+                        android.service.autofill.Presentations.Builder()
+                            .setMenuPresentation(presentation)
+                            .build()
+                    )
+                }
+                builder.setField(id, fieldBuilder.build())
             } else {
                 @Suppress("DEPRECATION")
-                builder.setValue(id, value)
+                if (presentation != null) {
+                    builder.setValue(id, value, presentation)
+                } else {
+                    builder.setValue(id, value)
+                }
             }
             added = true
         }

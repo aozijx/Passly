@@ -29,6 +29,11 @@ object DatabasePassphraseManager {
     @Volatile
     private var _decryptedPassphrase: ByteArray? = null
 
+    /**
+     * 数据库是否处于锁定状态（口令未解密到内存）。
+     */
+    val isLocked: Boolean get() = _decryptedPassphrase == null
+
     private fun getAlias(context: Context) = "${context.packageName}.vault_db_hard_auth"
 
     /**
