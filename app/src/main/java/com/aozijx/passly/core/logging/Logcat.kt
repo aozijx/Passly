@@ -3,6 +3,7 @@ package com.aozijx.passly.core.logging
 import android.security.keystore.UserNotAuthenticatedException
 import android.util.Log
 import com.aozijx.passly.AppContext
+import com.aozijx.passly.BuildConfig
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
@@ -46,6 +47,10 @@ object Logcat {
         }
     }
 
+    // 发布构建下仅落盘 WARN/ERROR，减少常规业务日志泄漏到外部的风险。
+    private val fileSinkThreshold: Level =
+        if (BuildConfig.DEBUG) Level.INFO else Level.WARN
+
     private fun log(level: Level, tag: String, msg: String, tr: Throwable? = null) {
         if (level.ordinal >= Level.INFO.ordinal) {
             when (level) {
@@ -57,7 +62,7 @@ object Logcat {
             }
         }
 
-        if (level.ordinal >= Level.INFO.ordinal) {
+        if (level.ordinal >= fileSinkThreshold.ordinal) {
             try {
                 AppContext.get()
                 saveToFile(level, tag, msg, tr)
@@ -72,7 +77,8 @@ object Logcat {
             var writer: PrintWriter? = null
             try {
                 val context = AppContext.get()
-                val logDir = context.getExternalFilesDir("logs") ?: return@execute
+                // 移至应用内部存储，避免 adb / 文件管理器直接读取。
+                val logDir = File(context.filesDir, "logs")
                 if (!logDir.exists()) logDir.mkdirs()
 
                 val now = Date()
@@ -100,7 +106,7 @@ object Logcat {
 
     fun getLogFolder(): File? {
         return try {
-            AppContext.get().getExternalFilesDir("logs")
+            File(AppContext.get().filesDir, "logs").takeIf { it.exists() || it.mkdirs() }
         } catch (e: Exception) {
             null
         }
