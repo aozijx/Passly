@@ -20,6 +20,12 @@ interface AuthRepository {
         subtitle: String
     ): Result<Unit>
 
+    /**
+     * 通知仓库：外部流程（如自动填充）已独立完成生物识别并注入口令。
+     * 用于接管授权状态与自动锁定计时器，避免口令无限期滞留内存。
+     */
+    fun onExternalAuthorized()
+
     /** 执行锁定，清除所有敏感授权材料 */
     fun lock()
 

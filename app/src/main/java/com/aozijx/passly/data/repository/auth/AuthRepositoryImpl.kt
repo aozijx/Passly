@@ -87,6 +87,17 @@ internal class AuthRepositoryImpl(
         }
     }
 
+    override fun onExternalAuthorized() {
+        if (DatabasePassphraseManager.isLocked) {
+            Logcat.w(tag, "onExternalAuthorized called but passphrase is absent; ignoring.")
+            return
+        }
+        if (!_isAuthorized.value) {
+            Logcat.i(tag, "Accepting external authorization; engaging auto-lock timer.")
+        }
+        onAuthorized()
+    }
+
     override fun lock() {
         Logcat.i(tag, "Locking session.")
         _isAuthorized.update { false }

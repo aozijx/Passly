@@ -17,6 +17,8 @@ class AuthUseCases(private val repository: AuthRepository) {
         subtitle: String
     ): Result<Unit> = repository.authenticate(activity, title, subtitle)
 
+    fun onExternalAuthorized() = repository.onExternalAuthorized()
+
     fun lock() = repository.lock()
 
     fun onUserInteraction() = repository.onUserInteraction()

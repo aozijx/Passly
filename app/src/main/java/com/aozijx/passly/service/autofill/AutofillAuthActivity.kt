@@ -38,6 +38,7 @@ class AutofillAuthActivity : FragmentActivity() {
 
     private var selectionInProgress = false
     private val autofillRepository = AppContainer.domain.autofillUseCases
+    private val authUseCases = AppContainer.domain.authUseCases
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))
@@ -135,6 +136,7 @@ class AutofillAuthActivity : FragmentActivity() {
             onSuccess = { result ->
                 val passphrase = DatabasePassphraseManager.processResult(this, result)
                 DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+                authUseCases.onExternalAuthorized()
 
                 // 解锁成功后，查询候选并返回 FillResponse
                 lifecycleScope.launch {
@@ -234,6 +236,7 @@ class AutofillAuthActivity : FragmentActivity() {
                     val passphrase = DatabasePassphraseManager.processResult(this, result)
                     DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
                 }
+                authUseCases.onExternalAuthorized()
 
                 // 调用 getBasicCredentials 触发解密
                 val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
