@@ -102,7 +102,6 @@ class AutofillAuthActivity : FragmentActivity() {
 
         lifecycleScope.launch {
             val entry = directEntryId?.let { autofillRepository.getEntryById(it) }
-                ?: IntentCompat.getSerializableExtra(intent, "vault_item", VaultEntry::class.java)
 
             if (entry == null) {
                 Logcat.e(TAG, "Entry is null")

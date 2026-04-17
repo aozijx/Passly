@@ -1,7 +1,6 @@
 package com.aozijx.passly.domain.model.core
 
 import com.aozijx.passly.domain.model.icon.VaultIconable
-import java.io.Serializable
 
 /**
  * 领域模型：保险库条目（与存储实现解耦）
@@ -76,4 +75,4 @@ data class VaultEntry(
     val createdAt: Long? = System.currentTimeMillis(),
     val updatedAt: Long? = null,
     val expiresAt: Long? = null      // 凭据到期时间 (提醒更换密码)
-) : VaultIconable, Serializable
+) : VaultIconable
