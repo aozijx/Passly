@@ -267,8 +267,12 @@ class AutofillServiceDataRepository(
     private fun isDomainMatch(entryDomain: String?, normalizedRequestDomain: String?): Boolean {
         if (normalizedRequestDomain == null) return false
         val normalizedEntryDomain = DomainNormalizer.normalize(entryDomain) ?: return false
-        return normalizedEntryDomain == normalizedRequestDomain ||
-            normalizedEntryDomain.endsWith(".$normalizedRequestDomain") ||
-            normalizedRequestDomain.endsWith(".$normalizedEntryDomain")
+        if (normalizedEntryDomain == normalizedRequestDomain) return true
+        // 仅允许“请求域 ⊆ 条目域”这一单向匹配，避免把子域条目上浮到父域或同级域，
+        // 堵住 entry=github.io → request=attacker.github.io 这类公共后缀场景。
+        // 要求条目域至少两级标签，过滤掉纯 TLD 条目带来的误匹配风险。
+        val entryLabelCount = normalizedEntryDomain.count { it == '.' } + 1
+        if (entryLabelCount < 2) return false
+        return normalizedRequestDomain.endsWith(".$normalizedEntryDomain")
     }
 }
