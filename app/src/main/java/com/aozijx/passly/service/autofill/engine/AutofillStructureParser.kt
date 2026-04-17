@@ -3,6 +3,7 @@ package com.aozijx.passly.service.autofill.engine
 import android.app.assist.AssistStructure
 import android.text.InputType
 import android.view.autofill.AutofillId
+import com.aozijx.passly.domain.policy.DomainNormalizer
 
 class AutofillStructureParser(structure: AssistStructure) {
     var usernameId: AutofillId? = null
@@ -15,7 +16,7 @@ class AutofillStructureParser(structure: AssistStructure) {
     val normalizedPackageName: String?
         get() = packageName?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
     val normalizedWebDomain: String?
-        get() = normalizeDomain(webDomain)
+        get() = DomainNormalizer.normalize(webDomain)
     var pageTitle: String? = null
 
     var usernameValue: String? = null
@@ -94,12 +95,5 @@ class AutofillStructureParser(structure: AssistStructure) {
             variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
     }
 
-    companion object {
-        fun normalizeDomain(raw: String?): String? {
-            val value = raw?.trim()?.lowercase()?.removePrefix("https://")?.removePrefix("http://")
-                ?.substringBefore('/')?.removePrefix("www.")
-            return value?.takeIf { it.isNotBlank() }
-        }
-    }
 }
 

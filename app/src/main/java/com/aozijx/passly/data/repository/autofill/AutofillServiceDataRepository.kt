@@ -14,10 +14,10 @@ import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
+import com.aozijx.passly.domain.policy.DomainNormalizer
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
-import com.aozijx.passly.service.autofill.engine.AutofillStructureParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -96,7 +96,7 @@ class AutofillServiceDataRepository(
             }
 
             val normalizedPackage = normalizePackageName(packageName)
-            val normalizedDomain = AutofillStructureParser.normalizeDomain(webDomain)
+            val normalizedDomain = DomainNormalizer.normalize(webDomain)
 
             entries.asSequence()
                 .mapNotNull { entry ->
@@ -152,7 +152,7 @@ class AutofillServiceDataRepository(
 
             val matchStart = System.currentTimeMillis()
             val normalizedPackage = normalizePackageName(packageName)
-            val normalizedDomain = AutofillStructureParser.normalizeDomain(webDomain)
+            val normalizedDomain = DomainNormalizer.normalize(webDomain)
             val existing = candidateEntries.find { entry ->
                 if (!supportsAutofill(entry)) return@find false
 
@@ -266,7 +266,7 @@ class AutofillServiceDataRepository(
 
     private fun isDomainMatch(entryDomain: String?, normalizedRequestDomain: String?): Boolean {
         if (normalizedRequestDomain == null) return false
-        val normalizedEntryDomain = AutofillStructureParser.normalizeDomain(entryDomain) ?: return false
+        val normalizedEntryDomain = DomainNormalizer.normalize(entryDomain) ?: return false
         return normalizedEntryDomain == normalizedRequestDomain ||
             normalizedEntryDomain.endsWith(".$normalizedRequestDomain") ||
             normalizedRequestDomain.endsWith(".$normalizedEntryDomain")
