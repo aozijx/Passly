@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
-import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.features.auth.AuthCoordinator
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
@@ -24,9 +23,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
     private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
     private val authUseCases = AppContainer.domain.authUseCases
+    private val databaseLifecycleUseCases = AppContainer.domain.databaseLifecycleUseCases
 
     private val authValidationSupport = AuthValidationSupport()
-    private val databaseInitializer = MainDatabaseInitializer()
+    private val databaseInitializer = MainDatabaseInitializer(databaseLifecycleUseCases)
 
     val auth = AuthCoordinator(
         scope = viewModelScope,
@@ -58,11 +58,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
             MainIntent.Lock -> {
                 auth.lock()
-                AppDatabase.close()
+                databaseLifecycleUseCases.close()
             }
             MainIntent.UpdateInteraction -> auth.onUserInteraction()
             MainIntent.CheckAndLock -> auth.checkAndLock()
-            MainIntent.RetryDatabaseInitialization -> initializeDatabase()
+            MainIntent.RetryDatabaseInitialization -> initializeDatabase(isRetry = true)
             else -> Unit 
         }
     }
@@ -107,10 +107,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun initializeDatabase() {
+    private fun initializeDatabase(isRetry: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
-            val initResult = databaseInitializer.initialize(getApplication())
+            val initResult = if (isRetry) databaseInitializer.retry() else databaseInitializer.initialize()
             _uiState.update {
                 it.copy(
                     isDatabaseInitializing = false,
