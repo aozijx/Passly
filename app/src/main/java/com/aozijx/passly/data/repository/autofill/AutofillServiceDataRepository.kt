@@ -177,7 +177,7 @@ class AutofillServiceDataRepository(
                     updatedAt = System.currentTimeMillis()
                 )
                 dao.update(updatedEntry.toEntity())
-                Logcat.i(TAG, "Updated existing account: $usernameValue")
+                Logcat.i(TAG, "Updated existing account: id=${existing.id}")
             } else {
                 val appLabel = packageName?.let { pkg ->
                     try {
