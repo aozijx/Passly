@@ -25,7 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.backup.BackupImportMode
+import com.aozijx.passly.domain.model.backup.BackupImportMode
 import com.aozijx.passly.features.backup.BackupCoordinator
 
 /**
@@ -37,6 +37,8 @@ fun BackupPasswordDialog(
     onAuthRequired: (title: String, subtitle: String, onSuccess: () -> Unit) -> Unit
 ) {
     val context = LocalContext.current
+    val state = backupCoordinator.state
+    
     val authTitle = stringResource(R.string.vault_backup_auth_title)
     val authSubtitleExport = stringResource(R.string.vault_backup_auth_subtitle_export)
     val authSubtitleImport = stringResource(R.string.vault_backup_auth_subtitle_import)
@@ -45,11 +47,11 @@ fun BackupPasswordDialog(
     val passwordLabel = stringResource(R.string.label_password)
 
     AlertDialog(
-        onDismissRequest = { backupCoordinator.dismissBackupPasswordDialog() },
+        onDismissRequest = { backupCoordinator.dismissPasswordDialog() },
         modifier = Modifier.padding(horizontal = 24.dp),
         title = {
             Text(
-                if (backupCoordinator.isExporting) stringResource(R.string.vault_backup_title_export)
+                if (state.isExporting) stringResource(R.string.vault_backup_title_export)
                 else stringResource(R.string.vault_backup_title_import)
             )
         },
@@ -58,7 +60,7 @@ fun BackupPasswordDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 // 1. 导入模式选择 (仅在导入时显示)
-                if (!backupCoordinator.isExporting) {
+                if (!state.isExporting) {
                     Text(
                         text = stringResource(R.string.backup_import_mode_title),
                         style = MaterialTheme.typography.titleSmall,
@@ -71,9 +73,9 @@ fun BackupPasswordDialog(
                             Modifier
                                 .fillMaxWidth()
                                 .selectable(
-                                    selected = backupCoordinator.importMode == BackupImportMode.OVERWRITE,
+                                    selected = state.importMode == BackupImportMode.OVERWRITE,
                                     onClick = {
-                                        backupCoordinator.importMode = BackupImportMode.OVERWRITE
+                                        backupCoordinator.updateImportMode(BackupImportMode.OVERWRITE)
                                     },
                                     role = Role.RadioButton
                                 )
@@ -81,9 +83,9 @@ fun BackupPasswordDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = backupCoordinator.importMode == BackupImportMode.OVERWRITE,
+                                selected = state.importMode == BackupImportMode.OVERWRITE,
                                 onClick = {
-                                    backupCoordinator.importMode = BackupImportMode.OVERWRITE
+                                    backupCoordinator.updateImportMode(BackupImportMode.OVERWRITE)
                                 })
                             Spacer(modifier = Modifier.width(4.dp))
                             Column {
@@ -103,9 +105,9 @@ fun BackupPasswordDialog(
                             Modifier
                                 .fillMaxWidth()
                                 .selectable(
-                                    selected = backupCoordinator.importMode == BackupImportMode.APPEND,
+                                    selected = state.importMode == BackupImportMode.APPEND,
                                     onClick = {
-                                        backupCoordinator.importMode = BackupImportMode.APPEND
+                                        backupCoordinator.updateImportMode(BackupImportMode.APPEND)
                                     },
                                     role = Role.RadioButton
                                 )
@@ -113,9 +115,9 @@ fun BackupPasswordDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = backupCoordinator.importMode == BackupImportMode.APPEND,
+                                selected = state.importMode == BackupImportMode.APPEND,
                                 onClick = {
-                                    backupCoordinator.importMode = BackupImportMode.APPEND
+                                    backupCoordinator.updateImportMode(BackupImportMode.APPEND)
                                 })
                             Spacer(modifier = Modifier.width(4.dp))
                             Column {
@@ -135,7 +137,7 @@ fun BackupPasswordDialog(
                 }
 
                 // 2. 导出选项：是否包含图片 (仅在导出时显示)
-                if (backupCoordinator.isExporting) {
+                if (state.isExporting) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -155,15 +157,15 @@ fun BackupPasswordDialog(
                             )
                         }
                         Switch(
-                            checked = backupCoordinator.includeImagesInBackup,
-                            onCheckedChange = { backupCoordinator.includeImagesInBackup = it })
+                            checked = state.includeImages,
+                            onCheckedChange = { backupCoordinator.updateIncludeImages(it) })
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 // 3. 提示文本
                 Text(
-                    text = if (backupCoordinator.isExporting) stringResource(R.string.vault_backup_message_export)
+                    text = if (state.isExporting) stringResource(R.string.vault_backup_message_export)
                     else stringResource(R.string.vault_backup_message_import),
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -172,8 +174,8 @@ fun BackupPasswordDialog(
 
                 // 4. 密码输入框
                 OutlinedTextField(
-                    value = backupCoordinator.backupPassword,
-                    onValueChange = { backupCoordinator.backupPassword = it },
+                    value = state.backupPassword,
+                    onValueChange = { backupCoordinator.updatePassword(it) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     label = { Text(passwordLabel) },
@@ -185,11 +187,10 @@ fun BackupPasswordDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val canProceed = backupCoordinator.isExporting
-                        .let { isExport -> if (isExport) backupCoordinator.backupPassword.isNotEmpty() else true }
+                    val isExport = state.isExporting
+                    val canProceed = if (isExport) state.backupPassword.isNotEmpty() else true
                     if (canProceed) {
-                         val authSubtitle =
-                             if (backupCoordinator.isExporting) authSubtitleExport else authSubtitleImport
+                         val authSubtitle = if (isExport) authSubtitleExport else authSubtitleImport
                          backupCoordinator.processBackupAction(context) { onSuccess ->
                              onAuthRequired(authTitle, authSubtitle, onSuccess)
                          }
@@ -199,7 +200,7 @@ fun BackupPasswordDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = { backupCoordinator.dismissBackupPasswordDialog() }) {
+            TextButton(onClick = { backupCoordinator.dismissPasswordDialog() }) {
                 Text(cancelText)
             }
         })

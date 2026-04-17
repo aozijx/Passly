@@ -3,13 +3,25 @@ package com.aozijx.passly.data.repository.backup
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.core.backup.BackupFieldEncryptor
-import com.aozijx.passly.core.backup.BackupImportMode
-import com.aozijx.passly.core.backup.BackupManager
-import com.aozijx.passly.core.backup.BackupVInternalImageStore
-import com.aozijx.passly.core.backup.BackupVSerializer
+import com.aozijx.passly.core.backup.BackupManager.BACKUP_VERSION
+import com.aozijx.passly.core.backup.BackupManager.DATA_ENTRY_NAME
+import com.aozijx.passly.core.backup.BackupManager.IMAGE_ENTRY_PREFIX
+import com.aozijx.passly.core.backup.BackupManager.IV_LENGTH
+import com.aozijx.passly.core.backup.BackupManager.MAGIC_NUMBER
+import com.aozijx.passly.core.backup.BackupManager.SALT_LENGTH
+import com.aozijx.passly.core.backup.BackupManager.deriveKeyArgon2id
+import com.aozijx.passly.core.backup.BackupManager.generateSalt
+import com.aozijx.passly.core.backup.BackupManager.getCipher
+import com.aozijx.passly.core.backup.BackupManager.mapImportFailure
+import com.aozijx.passly.core.backup.BackupManager.readFullyOrThrow
+import com.aozijx.passly.core.backup.BackupManager.readSingleByteOrThrow
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
+import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
+import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
+import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.core.BackupException
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,11 +36,10 @@ import javax.crypto.CipherOutputStream
 
 /**
  * 备份仓库的深度实现。
- * 已经内聚了原本散落在 BackupManager 中的业务编排逻辑。
  */
-class BackupRepositoryImpl(
+internal class BackupRepositoryImpl(
     private val context: Context,
-    private val dataSource: BackupRoomDataSource = BackupRoomDataSource(context),
+    private val dataSource: BackupDataSource = BackupRoomDataSource(context),
     private val imageStore: BackupVInternalImageStore = BackupVInternalImageStore(context)
 ) : BackupRepository {
 
@@ -37,48 +48,39 @@ class BackupRepositoryImpl(
         password: CharArray,
         includeImages: Boolean
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
+        val runResult = runCatching {
             val entries = dataSource.readAllEntries()
             val preparedEntries = mutableListOf<VaultEntryEntity>()
             val imageExports = mutableListOf<Pair<String, File>>()
 
-            // 1. 准备数据和图片
             entries.forEach { raw ->
                 val imageZipPath = if (includeImages) {
-                    val imageFile = imageStore.resolveReadable(raw.iconCustomPath)
-                    imageFile?.let {
-                        val imageName = "${raw.id}_${it.name}"
-                        val path = "${BackupManager.IMAGE_ENTRY_PREFIX}$imageName"
+                    imageStore.resolveReadable(raw.iconCustomPath)?.let {
+                        val path = "${IMAGE_ENTRY_PREFIX}${raw.id}_${it.name}"
                         imageExports += path to it
                         path
                     }
-                } else {
-                    null
-                }
+                } else null
                 preparedEntries += BackupFieldEncryptor.toExportEntry(raw, imageZipPath)
             }
 
-            // 2. 初始化加密
-            val salt = BackupManager.generateSalt()
-            val key = BackupManager.deriveKeyArgon2id(password, salt)
-            val cipher = BackupManager.getCipher(Cipher.ENCRYPT_MODE, key)
+            val salt = generateSalt()
+            val key = deriveKeyArgon2id(password, salt)
+            val cipher = getCipher(Cipher.ENCRYPT_MODE, key)
             val iv = cipher.iv
 
-            // 3. 写入文件容器
             context.contentResolver.openOutputStream(uri)?.use { output ->
-                output.write(BackupManager.MAGIC_NUMBER)
-                output.write(BackupManager.BACKUP_VERSION)
+                output.write(MAGIC_NUMBER)
+                output.write(BACKUP_VERSION)
                 output.write(salt)
                 output.write(iv)
 
                 CipherOutputStream(output, cipher).use { encrypted ->
                     ZipOutputStream(encrypted).use { zip ->
-                        // 写入 JSON 数据
-                        zip.putNextEntry(ZipEntry(BackupManager.DATA_ENTRY_NAME))
+                        zip.putNextEntry(ZipEntry(DATA_ENTRY_NAME))
                         BackupVSerializer.writeEntries(zip, preparedEntries)
                         zip.closeEntry()
 
-                        // 写入图片
                         if (includeImages) {
                             imageExports.forEach { (zipPath, file) ->
                                 zip.putNextEntry(ZipEntry(zipPath))
@@ -88,28 +90,28 @@ class BackupRepositoryImpl(
                         }
                     }
                 }
-            } ?: error("无法打开输出流")
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+            } ?: throw BackupException.StoragePermissionDenied()
         }
+        
+        runResult.fold(
+            onSuccess = { Result.success(Unit) },
+            onFailure = { e -> Result.failure(e as? BackupException ?: BackupException.Unknown(e)) }
+        )
     }
 
     override suspend fun exportPlainBackup(uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
+        val runResult = runCatching {
             val entries = dataSource.readAllEntries()
-            // 解密所有敏感字段
             val decryptedEntries = entries.map { BackupFieldEncryptor.toExportEntry(it, it.iconCustomPath) }
-
             context.contentResolver.openOutputStream(uri)?.use { output ->
                 BackupVSerializer.writeEntries(output, decryptedEntries)
-            } ?: error("无法打开输出流")
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+            } ?: throw BackupException.StoragePermissionDenied()
         }
+
+        runResult.fold(
+            onSuccess = { Result.success(Unit) },
+            onFailure = { e -> Result.failure(e as? BackupException ?: BackupException.Unknown(e)) }
+        )
     }
 
     override suspend fun exportEmergencyBackup(): Result<File> = withContext(Dispatchers.IO) {
@@ -121,27 +123,27 @@ class BackupRepositoryImpl(
         password: CharArray,
         mode: BackupImportMode
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
+        val runResult = runCatching {
             context.contentResolver.openInputStream(uri)?.use { input ->
-                val readMagic = ByteArray(BackupManager.MAGIC_NUMBER.size)
+                val readMagic = ByteArray(MAGIC_NUMBER.size)
                 val readCount = input.read(readMagic)
-                val isEncrypted = readCount == BackupManager.MAGIC_NUMBER.size && 
-                                 readMagic.contentEquals(BackupManager.MAGIC_NUMBER)
+                val isEncrypted = readCount == MAGIC_NUMBER.size &&
+                        readMagic.contentEquals(MAGIC_NUMBER)
 
                 if (isEncrypted) {
-                    val version = BackupManager.readSingleByteOrThrow(input)
-                    if (version != BackupManager.BACKUP_VERSION) {
-                        error("不支持的备份版本: $version")
-                    }
+                    val version = readSingleByteOrThrow(input)
+                    if (version != BACKUP_VERSION) error("不支持的备份版本: $version")
                     importEncryptedStream(input, password, mode)
                 } else {
                     importEmergencyJson(uri, mode)
                 }
-            } ?: error("无法打开输入流")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(BackupManager.mapImportFailure(e))
+            } ?: throw BackupException.FileCorrupted()
         }
+
+        runResult.fold(
+            onSuccess = { Result.success(Unit) },
+            onFailure = { e -> Result.failure(mapException(e)) }
+        )
     }
 
     private suspend fun importEncryptedStream(
@@ -149,13 +151,13 @@ class BackupRepositoryImpl(
         password: CharArray,
         mode: BackupImportMode
     ) {
-        val salt = ByteArray(BackupManager.SALT_LENGTH)
-        BackupManager.readFullyOrThrow(encryptedInput, salt, "salt")
-        val iv = ByteArray(BackupManager.IV_LENGTH)
-        BackupManager.readFullyOrThrow(encryptedInput, iv, "iv")
+        val salt = ByteArray(SALT_LENGTH)
+        readFullyOrThrow(encryptedInput, salt, "salt")
+        val iv = ByteArray(IV_LENGTH)
+        readFullyOrThrow(encryptedInput, iv, "iv")
 
-        val key = BackupManager.deriveKeyArgon2id(password, salt)
-        val cipher = BackupManager.getCipher(Cipher.DECRYPT_MODE, key, iv)
+        val key = deriveKeyArgon2id(password, salt)
+        val cipher = getCipher(Cipher.DECRYPT_MODE, key, iv)
 
         val imageRestoredPaths = mutableMapOf<String, String>()
         var plainEntries = emptyList<VaultEntryEntity>()
@@ -165,13 +167,12 @@ class BackupRepositoryImpl(
                 var entry = zip.nextEntry
                 while (entry != null) {
                     when {
-                        entry.name == BackupManager.DATA_ENTRY_NAME -> {
+                        entry.name == DATA_ENTRY_NAME -> {
                             plainEntries = BackupVSerializer.readEntries(zip)
                         }
-                        entry.name.startsWith(BackupManager.IMAGE_ENTRY_PREFIX) -> {
+                        entry.name.startsWith(IMAGE_ENTRY_PREFIX) -> {
                             val fileName = entry.name.substringAfterLast('/')
-                            val restored = imageStore.saveFromBackup(fileName, zip)
-                            if (restored != null) imageRestoredPaths[entry.name] = restored
+                            imageStore.saveFromBackup(fileName, zip)?.let { imageRestoredPaths[entry.name] = it }
                         }
                     }
                     zip.closeEntry()
@@ -180,11 +181,10 @@ class BackupRepositoryImpl(
             }
         }
 
-        if (plainEntries.isEmpty()) error("备份文件内容为空")
+        if (plainEntries.isEmpty()) throw BackupException.FileCorrupted()
 
         val finalEntries = plainEntries.map { plain ->
-            val restoredPath = plain.iconCustomPath?.let { imageRestoredPaths[it] }
-            BackupFieldEncryptor.toImportEntry(plain, restoredPath)
+            BackupFieldEncryptor.toImportEntry(plain, imageRestoredPaths[plain.iconCustomPath])
         }
         dataSource.writeEntries(finalEntries, mode)
     }
@@ -192,11 +192,24 @@ class BackupRepositoryImpl(
     private suspend fun importEmergencyJson(uri: Uri, mode: BackupImportMode) {
         val entries = context.contentResolver.openInputStream(uri)?.use { 
             BackupVSerializer.readEntries(it) 
-        } ?: error("无法读取紧急备份")
+        } ?: throw BackupException.FileCorrupted()
         dataSource.writeEntries(entries, mode)
     }
 
+    private fun mapException(e: Throwable): BackupException {
+        val raw = mapImportFailure(e as? Exception ?: Exception(e))
+        return when {
+            raw.message?.contains("密码错误") == true -> BackupException.PasswordIncorrect()
+            raw.message?.contains("文件损坏") == true -> BackupException.FileCorrupted()
+            e is BackupException -> e
+            else -> BackupException.Unknown(e)
+        }
+    }
+
     override suspend fun testDirectoryWritePermission(directoryUri: String): Result<Unit> {
-        return BackupExportStorageSupport.testWritePermission(context, directoryUri).map { }
+        return BackupExportStorageSupport.testWritePermission(context, directoryUri).fold(
+            onSuccess = { Result.success(Unit) },
+            onFailure = { Result.failure(it) }
+        )
     }
 }

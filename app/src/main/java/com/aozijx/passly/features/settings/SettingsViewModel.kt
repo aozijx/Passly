@@ -205,11 +205,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setAutoDownloadIcons(enabled: Boolean) =
         viewModelScope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }
 
-    fun setBackupDirectoryUri(uri: String) =
-        viewModelScope.launch { backupSettingsUseCases.setBackupDirectoryUri(uri) }
+    // --- 备份相关操作：现在非常统一 ---
+    fun setBackupDirectoryUri(uri: String) = 
+        backup.setBackupDirectoryUri(uri)
 
-    fun clearBackupDirectoryUri() =
-        viewModelScope.launch { backupSettingsUseCases.clearBackupDirectoryUri() }
+    fun clearBackupDirectoryUri() = 
+        backup.clearBackupDirectoryUri()
 
     fun testBackupDirectoryWritePermission(directoryUri: String?) =
         backup.testBackupDirectoryWritePermission(directoryUri)

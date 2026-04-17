@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.backup
+package com.aozijx.passly.data.repository.backup.internal
 
 import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.crypto.CryptoManager

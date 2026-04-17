@@ -66,7 +66,8 @@ fun VaultDialogs(
             onDismiss = { vaultViewModel.setItemToDelete(null) })
     }
 
-    if (settingsViewModel.backup.showBackupPasswordDialog) {
+    // --- 备份对话框 ---
+    if (settingsViewModel.backup.state.showPasswordDialog) {
         BackupPasswordDialog(
             backupCoordinator = settingsViewModel.backup,
             onAuthRequired = { title, subtitle, onSuccess ->
