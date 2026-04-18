@@ -169,6 +169,10 @@ class MainActivity : FragmentActivity() {
                 sensorController.isFlipLockEnabled = settingsUiState.isFlipToLockEnabled
                 if (settingsUiState.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
             }
+            LaunchedEffect(settingsUiState.isFlipExitAndClearStackEnabled) {
+                sensorController.isFlipExitAndClearStackEnabled =
+                    settingsUiState.isFlipExitAndClearStackEnabled
+            }
             LaunchedEffect(settingsUiState.isStatusBarAutoHide) {
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.systemBarsBehavior = if (settingsUiState.isStatusBarAutoHide) {
