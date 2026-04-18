@@ -37,4 +37,13 @@ interface AuthRepository {
 
     /** 应用新的锁定超时设置 */
     fun updateLockTimeout(timeoutMs: Long)
+
+    /**
+     * 切换生物识别变更时是否销毁密钥的策略。
+     * 会重新生成 Keystore 密钥并重新加密数据库口令。
+     */
+    suspend fun rekeyWithInvalidationPolicy(
+        activity: FragmentActivity,
+        invalidateOnBiometricChange: Boolean
+    ): Result<Unit>
 }

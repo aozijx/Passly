@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     override val lockTimeout: Flow<Long> = prefs.lockTimeout
     override val isBiometricEnabled: Flow<Boolean> = prefs.isBiometricEnabled
+    override val isInvalidateKeyOnBioChange: Flow<Boolean> = prefs.isInvalidateKeyOnBioChange
     override val isDarkMode: Flow<Boolean?> = prefs.isDarkMode
     override val isDynamicColor: Flow<Boolean> = prefs.isDynamicColor
 
@@ -38,6 +39,10 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
 
     override suspend fun setBiometricEnabled(enabled: Boolean) {
         prefs.setBiometricEnabled(enabled)
+    }
+
+    override suspend fun setInvalidateKeyOnBioChange(enabled: Boolean) {
+        prefs.setInvalidateKeyOnBioChange(enabled)
     }
 
     override suspend fun setDarkMode(enabled: Boolean?) {

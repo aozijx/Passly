@@ -26,4 +26,9 @@ class AuthUseCases(private val repository: AuthRepository) {
     fun checkAndLock() = repository.checkAndLock()
 
     fun updateLockTimeout(timeoutMs: Long) = repository.updateLockTimeout(timeoutMs)
+
+    suspend fun rekeyWithInvalidationPolicy(
+        activity: FragmentActivity,
+        invalidateOnBiometricChange: Boolean
+    ): Result<Unit> = repository.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
 }

@@ -22,6 +22,8 @@ class AppPrefs(context: Context) {
 
         val LOCK_TIMEOUT_KEY = longPreferencesKey("vault_lock_timeout")
         val BIOMETRIC_AUTH_KEY = booleanPreferencesKey("vault_biometric_auth")
+        val INVALIDATE_KEY_ON_BIO_CHANGE_KEY =
+            booleanPreferencesKey("security_invalidate_key_on_bio_change")
         val DARK_MODE_KEY = booleanPreferencesKey("vault_dark_mode")
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("vault_dynamic_color")
         val SWIPE_ENABLED_KEY = booleanPreferencesKey("vault_swipe_enabled")
@@ -114,6 +116,8 @@ class AppPrefs(context: Context) {
         appContext.vaultDataStore.data.map { it[LOCK_TIMEOUT_KEY] ?: 60000L }
     val isBiometricEnabled: Flow<Boolean> =
         appContext.vaultDataStore.data.map { it[BIOMETRIC_AUTH_KEY] ?: true }
+    val isInvalidateKeyOnBioChange: Flow<Boolean> =
+        appContext.vaultDataStore.data.map { it[INVALIDATE_KEY_ON_BIO_CHANGE_KEY] ?: true }
     val isDarkMode: Flow<Boolean?> = appContext.vaultDataStore.data.map { it[DARK_MODE_KEY] }
     val isDynamicColor: Flow<Boolean> =
         appContext.vaultDataStore.data.map { it[DYNAMIC_COLOR_KEY] ?: true }
@@ -191,6 +195,9 @@ class AppPrefs(context: Context) {
 
     suspend fun setBiometricEnabled(enabled: Boolean) =
         appContext.vaultDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }
+
+    suspend fun setInvalidateKeyOnBioChange(enabled: Boolean) =
+        appContext.vaultDataStore.edit { it[INVALIDATE_KEY_ON_BIO_CHANGE_KEY] = enabled }
 
     suspend fun setDarkMode(enabled: Boolean?) = appContext.vaultDataStore.edit {
         if (enabled == null) it.remove(DARK_MODE_KEY) else it[DARK_MODE_KEY] = enabled

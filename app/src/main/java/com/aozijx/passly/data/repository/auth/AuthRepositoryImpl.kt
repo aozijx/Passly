@@ -124,6 +124,64 @@ internal class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun rekeyWithInvalidationPolicy(
+        activity: FragmentActivity,
+        invalidateOnBiometricChange: Boolean
+    ): Result<Unit> {
+        if (DatabasePassphraseManager.isLocked) {
+            return Result.failure(Exception("请先解锁应用"))
+        }
+
+        val currentPassphrase = DatabasePassphraseManager.getPassphrase().copyOf()
+
+        return runCatching {
+            DatabasePassphraseManager.prepareForRekey(application, invalidateOnBiometricChange)
+
+            val cipher = DatabasePassphraseManager.getInitializedCipher(application)
+                ?: throw Exception("无法初始化加密器")
+
+            val authResult = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
+                kotlin.coroutines.suspendCoroutine<BiometricPrompt.AuthenticationResult> { continuation ->
+                    BiometricHelper.authenticate(
+                        activity = activity,
+                        title = "重新加密保险箱密钥",
+                        subtitle = "验证身份以应用新的安全策略",
+                        cryptoObject = BiometricPrompt.CryptoObject(cipher),
+                        onSuccess = { result ->
+                            continuation.resumeWith(Result.success(result))
+                        },
+                        onError = { error ->
+                            continuation.resumeWith(Result.failure(Exception(error)))
+                        }
+                    )
+                }
+            } ?: throw Exception("认证超时")
+
+            DatabasePassphraseManager.completeRekey(application, authResult, currentPassphrase)
+            Logcat.i(
+                tag,
+                "Rekey completed: invalidateOnBiometricChange=$invalidateOnBiometricChange"
+            )
+        }.onFailure { e ->
+            Logcat.e(tag, "Rekey failed, recovering with previous policy...", e)
+            recoverFromFailedRekey(currentPassphrase, !invalidateOnBiometricChange)
+        }.also {
+            currentPassphrase.fill(0)
+        }
+    }
+
+    private fun recoverFromFailedRekey(passphrase: ByteArray, previousPolicy: Boolean) {
+        runCatching {
+            DatabasePassphraseManager.prepareForRekey(application, previousPolicy)
+            Logcat.w(
+                tag,
+                "Recovered key with previous policy, but passphrase needs re-encryption on next auth."
+            )
+        }.onFailure { e ->
+            Logcat.e(tag, "Recovery also failed. Passphrase is still in memory.", e)
+        }
+    }
+
     override fun updateLockTimeout(timeoutMs: Long) {
         val normalized = validationSupport.normalizeLockTimeout(timeoutMs)
         if (currentTimeoutMs != normalized) {

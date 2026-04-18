@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 interface SettingsRepository {
     val lockTimeout: Flow<Long>
     val isBiometricEnabled: Flow<Boolean>
+    val isInvalidateKeyOnBioChange: Flow<Boolean>
     val isDarkMode: Flow<Boolean?>
     val isDynamicColor: Flow<Boolean>
 
@@ -32,6 +33,7 @@ interface SettingsRepository {
 
     suspend fun setLockTimeout(timeoutMs: Long)
     suspend fun setBiometricEnabled(enabled: Boolean)
+    suspend fun setInvalidateKeyOnBioChange(enabled: Boolean)
     suspend fun setDarkMode(enabled: Boolean?)
     suspend fun setDynamicColor(enabled: Boolean)
 

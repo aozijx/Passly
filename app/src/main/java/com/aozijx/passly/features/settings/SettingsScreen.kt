@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
@@ -57,6 +58,7 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val lockTimeout = uiState.lockTimeout
+    val isInvalidateKeyOnBioChange = uiState.isInvalidateKeyOnBioChange
     val isSwipeEnabled = uiState.isSwipeEnabled
     val swipeLeftAction = uiState.swipeLeftAction
     val swipeRightAction = uiState.swipeRightAction
@@ -158,10 +160,24 @@ fun SettingsScreen(
             item {
                 SecurityPrivacySettingsSection(
                     lockTimeout = lockTimeout,
+                    isInvalidateKeyOnBioChange = isInvalidateKeyOnBioChange,
                     isSecureContentEnabled = isSecureContentEnabled,
                     isFlipToLockEnabled = isFlipToLockEnabled,
                     isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
                     onLockTimeoutClick = { showLockTimeoutDialog = true },
+                    onInvalidateKeyOnBioChangeToggle = { enabled ->
+                        val activity =
+                            context as? FragmentActivity ?: return@SecurityPrivacySettingsSection
+                        viewModel.switchKeyInvalidationPolicy(activity, enabled) { result ->
+                            result.onFailure { e ->
+                                Toast.makeText(
+                                    context,
+                                    "切换失败: ${e.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    },
                     onSecureContentEnabledChange = viewModel::setSecureContentEnabled,
                     onFlipToLockEnabledChange = viewModel::setFlipToLockEnabled,
                     onFlipExitAndClearStackEnabledChange = viewModel::setFlipExitAndClearStackEnabled

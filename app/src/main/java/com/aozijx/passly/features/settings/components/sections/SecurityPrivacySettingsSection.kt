@@ -8,6 +8,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Timer
@@ -24,10 +25,12 @@ import com.aozijx.passly.features.settings.components.common.formatLockTimeoutTe
 @Composable
 fun SecurityPrivacySettingsSection(
     lockTimeout: Long,
+    isInvalidateKeyOnBioChange: Boolean,
     isSecureContentEnabled: Boolean,
     isFlipToLockEnabled: Boolean,
     isFlipExitAndClearStackEnabled: Boolean,
     onLockTimeoutClick: () -> Unit,
+    onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
     onSecureContentEnabledChange: (Boolean) -> Unit,
     onFlipToLockEnabledChange: (Boolean) -> Unit,
     onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit
@@ -39,6 +42,17 @@ fun SecurityPrivacySettingsSection(
             title = "自动锁定时间",
             value = formatLockTimeoutText(lockTimeout),
             onClick = onLockTimeoutClick
+        )
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+        SwitchSettingItem(
+            icon = Icons.Default.Fingerprint,
+            title = "生物识别变更时销毁密钥",
+            subtitle = if (isInvalidateKeyOnBioChange)
+                "新增或移除指纹/面部时，保险箱密钥将被销毁"
+            else
+                "新增或移除指纹/面部时，保险箱密钥保持有效",
+            checked = isInvalidateKeyOnBioChange,
+            onCheckedChange = onInvalidateKeyOnBioChangeToggle
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(

@@ -1,6 +1,7 @@
 package com.aozijx.passly.features.settings
 
 import android.app.Application
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.common.AutofillUiMode
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val lockTimeout: Long = 60000L,
+    val isInvalidateKeyOnBioChange: Boolean = true,
     val isStatusBarAutoHide: Boolean = true,
     val isTopBarCollapsible: Boolean = true,
     val isTabBarCollapsible: Boolean = true,
@@ -36,6 +38,7 @@ data class SettingsUiState(
 
 private data class CoreSettingsFlowState(
     val lockTimeout: Long,
+    val isInvalidateKeyOnBioChange: Boolean,
     val isStatusBarAutoHide: Boolean,
     val isTopBarCollapsible: Boolean,
     val isTabBarCollapsible: Boolean,
@@ -63,6 +66,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
     private val backupSettingsUseCases = AppContainer.domain.backupSettingsUseCases
     private val backupUseCases = AppContainer.domain.backupUseCases
+    private val authUseCases = AppContainer.domain.authUseCases
 
     val backup = BackupCoordinator(
         scope = viewModelScope,
@@ -74,18 +78,21 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
             securitySettingsUseCases.lockTimeout,
+            securitySettingsUseCases.isInvalidateKeyOnBioChange,
             systemSettingsUseCases.isStatusBarAutoHide,
             systemSettingsUseCases.isTopBarCollapsible,
             systemSettingsUseCases.isTabBarCollapsible,
-            securitySettingsUseCases.isSecureContentEnabled
-        ) { lockTimeout, isStatusBarAutoHide, isTopBarCollapsible, isTabBarCollapsible, isSecureContentEnabled ->
+        ) { lockTimeout, isInvalidateKeyOnBioChange, isStatusBarAutoHide, isTopBarCollapsible, isTabBarCollapsible ->
             CoreSettingsFlowState(
                 lockTimeout = lockTimeout,
+                isInvalidateKeyOnBioChange = isInvalidateKeyOnBioChange,
                 isStatusBarAutoHide = isStatusBarAutoHide,
                 isTopBarCollapsible = isTopBarCollapsible,
                 isTabBarCollapsible = isTabBarCollapsible,
-                isSecureContentEnabled = isSecureContentEnabled
+                isSecureContentEnabled = true
             )
+        }.combine(securitySettingsUseCases.isSecureContentEnabled) { core, isSecureContentEnabled ->
+            core.copy(isSecureContentEnabled = isSecureContentEnabled)
         },
         combine(
             securitySettingsUseCases.isFlipToLockEnabled,
@@ -133,6 +140,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     ) { core, partialState, swipeRightAction, backupDirectoryUri, lastBackupExportFileName ->
         SettingsUiState(
             lockTimeout = core.lockTimeout,
+            isInvalidateKeyOnBioChange = core.isInvalidateKeyOnBioChange,
             isStatusBarAutoHide = core.isStatusBarAutoHide,
             isTopBarCollapsible = core.isTopBarCollapsible,
             isTabBarCollapsible = core.isTabBarCollapsible,
@@ -153,6 +161,21 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     // --- Setter 方法 ---
+    fun switchKeyInvalidationPolicy(
+        activity: FragmentActivity,
+        invalidateOnBiometricChange: Boolean,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result =
+                authUseCases.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
+            if (result.isSuccess) {
+                securitySettingsUseCases.setInvalidateKeyOnBioChange(invalidateOnBiometricChange)
+            }
+            onResult(result)
+        }
+    }
+
     fun setStatusBarAutoHide(autoHide: Boolean) =
         viewModelScope.launch { systemSettingsUseCases.setStatusBarAutoHide(autoHide) }
 

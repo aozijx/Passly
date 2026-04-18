@@ -17,7 +17,7 @@ import javax.crypto.spec.GCMParameterSpec
 
 /**
  * 管理加密数据库所需的口令。
- * 保持硬件级认证绑定及指纹变更自动恢复能力。
+ * 保持硬件级认证绑定，支持配置生物识别变更时是否销毁密钥。
  */
 object DatabasePassphraseManager {
     private const val TAG = "PassphraseManager"
@@ -29,17 +29,10 @@ object DatabasePassphraseManager {
     @Volatile
     private var _decryptedPassphrase: ByteArray? = null
 
-    /**
-     * 数据库是否处于锁定状态（口令未解密到内存）。
-     */
     val isLocked: Boolean get() = _decryptedPassphrase == null
 
     private fun getAlias(context: Context) = "${context.packageName}.vault_db_hard_auth"
 
-    /**
-     * 获取初始化的 Cipher。
-     * 自动处理密钥失效（如用户更改了系统指纹）。
-     */
     fun getInitializedCipher(context: Context): Cipher? =
         getInitializedCipher(context, isRetry = false)
 
@@ -47,7 +40,7 @@ object DatabasePassphraseManager {
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         val alias = getAlias(context)
 
-        if (!ks.containsAlias(alias)) generateMasterKey(alias)
+        if (!ks.containsAlias(alias)) generateMasterKey(alias, invalidateOnBiometricChange = true)
 
         val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
         val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -80,9 +73,6 @@ object DatabasePassphraseManager {
         }
     }
 
-    /**
-     * 认证通过后，执行最终的解密或创建逻辑。
-     */
     fun processResult(context: Context, result: BiometricPrompt.AuthenticationResult): ByteArray {
         val cipher =
             result.cryptoObject?.cipher ?: throw IllegalStateException("CryptoObject is null")
@@ -91,23 +81,63 @@ object DatabasePassphraseManager {
 
         return if (encryptedBase64 == null) {
             val newPassphrase = ByteArray(32).also { SecureRandom().nextBytes(it) }
-            val encrypted = cipher.doFinal(newPassphrase)
-            val combined = ByteBuffer.allocate(cipher.iv.size + encrypted.size)
-                .put(cipher.iv).put(encrypted).array()
-            sharedPrefs.edit {
-                putString(KEY_PASSPHRASE, Base64.encodeToString(combined, Base64.NO_WRAP))
-            }
+            encryptAndStorePassphrase(context, cipher, newPassphrase)
             newPassphrase
         } else {
-            val combined = Base64.decode(encryptedBase64, Base64.NO_WRAP)
-            val buffer = ByteBuffer.wrap(combined)
-            buffer.position(IV_LENGTH) // 跳过 IV（已在 getInitializedCipher 中使用）
-            val encryptedData = ByteArray(buffer.remaining()).also { buffer.get(it) }
-            cipher.doFinal(encryptedData)
+            decryptStoredPassphrase(cipher, encryptedBase64)
         }
     }
 
-    private fun generateMasterKey(alias: String) {
+    /**
+     * 重新生成密钥并用新策略重新加密口令。
+     * 用于切换 invalidatedByBiometricEnrollment 策略时的重新密钥操作。
+     */
+    fun prepareForRekey(context: Context, invalidateOnBiometricChange: Boolean) {
+        val alias = getAlias(context)
+        val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (ks.containsAlias(alias)) ks.deleteEntry(alias)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
+            remove(KEY_PASSPHRASE)
+        }
+        generateMasterKey(alias, invalidateOnBiometricChange)
+        Logcat.i(
+            TAG,
+            "Prepared for rekey: invalidateOnBiometricChange=$invalidateOnBiometricChange"
+        )
+    }
+
+    /**
+     * 使用认证后的 CryptoObject 完成重新加密。
+     */
+    fun completeRekey(
+        context: Context,
+        result: BiometricPrompt.AuthenticationResult,
+        passphrase: ByteArray
+    ) {
+        val cipher = result.cryptoObject?.cipher
+            ?: throw IllegalStateException("CryptoObject is null")
+        encryptAndStorePassphrase(context, cipher, passphrase)
+        Logcat.i(TAG, "Rekey completed.")
+    }
+
+    private fun encryptAndStorePassphrase(context: Context, cipher: Cipher, passphrase: ByteArray) {
+        val encrypted = cipher.doFinal(passphrase)
+        val combined = ByteBuffer.allocate(cipher.iv.size + encrypted.size)
+            .put(cipher.iv).put(encrypted).array()
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
+            putString(KEY_PASSPHRASE, Base64.encodeToString(combined, Base64.NO_WRAP))
+        }
+    }
+
+    private fun decryptStoredPassphrase(cipher: Cipher, encryptedBase64: String): ByteArray {
+        val combined = Base64.decode(encryptedBase64, Base64.NO_WRAP)
+        val buffer = ByteBuffer.wrap(combined)
+        buffer.position(IV_LENGTH)
+        val encryptedData = ByteArray(buffer.remaining()).also { buffer.get(it) }
+        return cipher.doFinal(encryptedData)
+    }
+
+    private fun generateMasterKey(alias: String, invalidateOnBiometricChange: Boolean) {
         val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
         val spec = KeyGenParameterSpec.Builder(
             alias,
@@ -121,10 +151,14 @@ object DatabasePassphraseManager {
                 0,
                 KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
             )
-            .setInvalidatedByBiometricEnrollment(true) 
+            .setInvalidatedByBiometricEnrollment(invalidateOnBiometricChange)
             .build()
         keyGenerator.init(spec)
         keyGenerator.generateKey()
+        Logcat.i(
+            TAG,
+            "Generated master key: invalidateOnBiometricChange=$invalidateOnBiometricChange"
+        )
     }
 
     fun getPassphrase(): ByteArray {
