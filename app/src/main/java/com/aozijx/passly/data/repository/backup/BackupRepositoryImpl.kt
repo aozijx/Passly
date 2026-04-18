@@ -135,7 +135,7 @@ internal class BackupRepositoryImpl(
                     if (version != BACKUP_VERSION) error("不支持的备份版本: $version")
                     importEncryptedStream(input, password, mode)
                 } else {
-                    importEmergencyJson(uri, mode)
+                    importPlainJson(uri, mode)
                 }
             } ?: throw BackupException.FileCorrupted()
         }
@@ -189,11 +189,15 @@ internal class BackupRepositoryImpl(
         dataSource.writeEntries(finalEntries, mode)
     }
 
-    private suspend fun importEmergencyJson(uri: Uri, mode: BackupImportMode) {
-        val entries = context.contentResolver.openInputStream(uri)?.use { 
-            BackupVSerializer.readEntries(it) 
+    private suspend fun importPlainJson(uri: Uri, mode: BackupImportMode) {
+        val plainEntries = context.contentResolver.openInputStream(uri)?.use {
+            BackupVSerializer.readEntries(it)
         } ?: throw BackupException.FileCorrupted()
-        dataSource.writeEntries(entries, mode)
+
+        val encryptedEntries = plainEntries.map { entry ->
+            BackupFieldEncryptor.toImportEntry(entry, entry.iconCustomPath)
+        }
+        dataSource.writeEntries(encryptedEntries, mode)
     }
 
     private fun mapException(e: Throwable): BackupException {

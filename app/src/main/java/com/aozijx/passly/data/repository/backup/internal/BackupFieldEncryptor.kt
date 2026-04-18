@@ -10,7 +10,7 @@ internal object BackupFieldEncryptor {
 
     /**
      * 将数据库实体转换为可导出的明文实体。
-     * 重要：此过程必须在用户已授权（KeyStore 可访问）的情况下进行。
+     * 必须在用户已解锁（SessionCryptoKey DEK 已就绪）后调用。
      */
     fun toExportEntry(entry: VaultEntryEntity, iconPathForBackup: String?): VaultEntryEntity {
         fun decryptMandatory(value: String?, fieldName: String): String {
@@ -55,32 +55,30 @@ internal object BackupFieldEncryptor {
     }
 
     /**
-     * 将导出的明文实体重新使用当前设备的 KeyStore 加密并落库。
+     * 将明文实体加密后落库。
      */
     fun toImportEntry(entry: VaultEntryEntity, restoredIconPath: String?): VaultEntryEntity {
-        fun encryptIfPlain(value: String?): String? {
+        fun encryptField(value: String?): String? {
             if (value == null) return null
             if (value.isEmpty()) return ""
-            // 如果已经是加密格式（例如导入了错误的旧版备份），则不再加密
-            if (value.startsWith("A:") || value.startsWith("M:")) return value
             return CryptoManager.encrypt(value)
         }
 
         return entry.copy(
-            username = encryptIfPlain(entry.username) ?: "",
-            password = encryptIfPlain(entry.password) ?: "",
-            notes = encryptIfPlain(entry.notes),
-            totpSecret = encryptIfPlain(entry.totpSecret),
-            passkeyDataJson = encryptIfPlain(entry.passkeyDataJson),
-            recoveryCodes = encryptIfPlain(entry.recoveryCodes),
-            cardCvv = encryptIfPlain(entry.cardCvv),
-            cardExpiration = encryptIfPlain(entry.cardExpiration),
-            idNumber = encryptIfPlain(entry.idNumber),
-            paymentPin = encryptIfPlain(entry.paymentPin),
-            securityAnswer = encryptIfPlain(entry.securityAnswer),
-            sshPrivateKey = encryptIfPlain(entry.sshPrivateKey),
-            cryptoSeedPhrase = encryptIfPlain(entry.cryptoSeedPhrase),
-            customFieldsJson = encryptIfPlain(entry.customFieldsJson),
+            username = encryptField(entry.username) ?: "",
+            password = encryptField(entry.password) ?: "",
+            notes = encryptField(entry.notes),
+            totpSecret = encryptField(entry.totpSecret),
+            passkeyDataJson = encryptField(entry.passkeyDataJson),
+            recoveryCodes = encryptField(entry.recoveryCodes),
+            cardCvv = encryptField(entry.cardCvv),
+            cardExpiration = encryptField(entry.cardExpiration),
+            idNumber = encryptField(entry.idNumber),
+            paymentPin = encryptField(entry.paymentPin),
+            securityAnswer = encryptField(entry.securityAnswer),
+            sshPrivateKey = encryptField(entry.sshPrivateKey),
+            cryptoSeedPhrase = encryptField(entry.cryptoSeedPhrase),
+            customFieldsJson = encryptField(entry.customFieldsJson),
             iconCustomPath = restoredIconPath ?: entry.iconCustomPath
         )
     }
