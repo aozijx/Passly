@@ -3,14 +3,13 @@ package com.aozijx.passly.features.vault.components
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aozijx.passly.features.backup.ui.BackupPasswordDialog
 import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsViewModel
-import com.aozijx.passly.features.vault.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.vault.dialogs.BackupPasswordDialog
 import com.aozijx.passly.features.vault.dialogs.DeleteConfirmDialog
-import com.aozijx.passly.features.vault.dialogs.IconPickerDialog
+import com.aozijx.passly.features.vault.model.AddType
 
 @Composable
 fun VaultDialogs(
@@ -54,7 +53,7 @@ fun VaultDialogs(
     when (vaultViewModel.addType) {
         AddType.PASSWORD -> AddPasswordDialog(viewModel = vaultViewModel)
         AddType.TOTP -> AddTwoFADialog(viewModel = vaultViewModel)
-        else -> {}
+        AddType.SCAN, null -> Unit
     }
 
     // --- 全局确认/反馈对话框 ---
@@ -67,11 +66,18 @@ fun VaultDialogs(
             onDismiss = { vaultViewModel.setItemToDelete(null) })
     }
 
-    if (settingsViewModel.backup.showBackupPasswordDialog) {
+    // --- 备份对话框 ---
+    if (settingsViewModel.backup.state.showPasswordDialog) {
         BackupPasswordDialog(
-            activity = activity,
-            mainViewModel = mainViewModel,
-            settingsViewModel = settingsViewModel
+            backupCoordinator = settingsViewModel.backup,
+            onAuthRequired = { title, subtitle, onSuccess ->
+                mainViewModel.auth.authenticate(
+                    activity = activity,
+                    title = title,
+                    subtitle = subtitle,
+                    onSuccess = onSuccess
+                )
+            }
         )
     }
 }

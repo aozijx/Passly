@@ -15,10 +15,13 @@ class VaultDataRepository(
         entities.map { it.toDomain() }
     }
 
-    override suspend fun getEntryById(entryId: Int): VaultEntry? = 
+    override suspend fun getEntryById(entryId: Int): VaultEntry? =
         entryDao.getEntryById(entryId)?.toDomain()
 
-    override suspend fun insert(entry: VaultEntry): Long = 
+    override suspend fun getEntriesForIconResync(): List<VaultEntry> =
+        entryDao.getEntriesForIconResync().map { it.toDomain() }
+
+    override suspend fun insert(entry: VaultEntry): Long =
         entryDao.insert(entry.toEntity())
 
     override suspend fun update(entry: VaultEntry) = 

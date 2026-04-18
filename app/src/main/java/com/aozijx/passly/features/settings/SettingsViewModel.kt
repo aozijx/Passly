@@ -1,13 +1,14 @@
 package com.aozijx.passly.features.settings
 
 import android.app.Application
-import android.content.Context
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.features.backup.BackupCoordinator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val lockTimeout: Long = 60000L,
+    val isInvalidateKeyOnBioChange: Boolean = true,
     val isStatusBarAutoHide: Boolean = true,
     val isTopBarCollapsible: Boolean = true,
     val isTabBarCollapsible: Boolean = true,
@@ -29,11 +31,14 @@ data class SettingsUiState(
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
     val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
     val backupDirectoryUri: String? = null,
-    val lastBackupExportFileName: String? = null
+    val lastBackupExportFileName: String? = null,
+    val visibleVaultTabs: Set<String>? = null,
+    val isAutoDownloadIcons: Boolean = true
 )
 
 private data class CoreSettingsFlowState(
     val lockTimeout: Long,
+    val isInvalidateKeyOnBioChange: Boolean,
     val isStatusBarAutoHide: Boolean,
     val isTopBarCollapsible: Boolean,
     val isTabBarCollapsible: Boolean,
@@ -50,7 +55,9 @@ private data class SecurityAndStyleFlowState(
 private data class AutofillAndSwipeFlowState(
     val autofillUiMode: AutofillUiMode,
     val isSwipeEnabled: Boolean,
-    val swipeLeftAction: SwipeActionType
+    val swipeLeftAction: SwipeActionType,
+    val visibleVaultTabs: Set<String>?,
+    val isAutoDownloadIcons: Boolean
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -58,28 +65,34 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
     private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
     private val backupSettingsUseCases = AppContainer.domain.backupSettingsUseCases
+    private val backupUseCases = AppContainer.domain.backupUseCases
+    private val authUseCases = AppContainer.domain.authUseCases
 
-    val backup = SettingsBackupCoordinator(
+    val backup = BackupCoordinator(
         scope = viewModelScope,
         backupSettingsUseCases = backupSettingsUseCases,
+        backupUseCases = backupUseCases,
         application = application
     )
 
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
             securitySettingsUseCases.lockTimeout,
+            securitySettingsUseCases.isInvalidateKeyOnBioChange,
             systemSettingsUseCases.isStatusBarAutoHide,
             systemSettingsUseCases.isTopBarCollapsible,
             systemSettingsUseCases.isTabBarCollapsible,
-            securitySettingsUseCases.isSecureContentEnabled
-        ) { lockTimeout, isStatusBarAutoHide, isTopBarCollapsible, isTabBarCollapsible, isSecureContentEnabled ->
+        ) { lockTimeout, isInvalidateKeyOnBioChange, isStatusBarAutoHide, isTopBarCollapsible, isTabBarCollapsible ->
             CoreSettingsFlowState(
                 lockTimeout = lockTimeout,
+                isInvalidateKeyOnBioChange = isInvalidateKeyOnBioChange,
                 isStatusBarAutoHide = isStatusBarAutoHide,
                 isTopBarCollapsible = isTopBarCollapsible,
                 isTabBarCollapsible = isTabBarCollapsible,
-                isSecureContentEnabled = isSecureContentEnabled
+                isSecureContentEnabled = true
             )
+        }.combine(securitySettingsUseCases.isSecureContentEnabled) { core, isSecureContentEnabled ->
+            core.copy(isSecureContentEnabled = isSecureContentEnabled)
         },
         combine(
             securitySettingsUseCases.isFlipToLockEnabled,
@@ -97,12 +110,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             combine(
                 systemSettingsUseCases.autofillUiMode,
                 systemSettingsUseCases.isSwipeEnabled,
-                systemSettingsUseCases.swipeLeftAction
-            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction ->
+                systemSettingsUseCases.swipeLeftAction,
+                systemSettingsUseCases.visibleVaultTabs,
+                systemSettingsUseCases.isAutoDownloadIcons
+            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction, visibleVaultTabs, isAutoDownloadIcons ->
                 AutofillAndSwipeFlowState(
                     autofillUiMode = autofillUiMode,
                     isSwipeEnabled = isSwipeEnabled,
-                    swipeLeftAction = swipeLeftAction
+                    swipeLeftAction = swipeLeftAction,
+                    visibleVaultTabs = visibleVaultTabs,
+                    isAutoDownloadIcons = isAutoDownloadIcons
                 )
             }) { securityAndStyle, autofillAndSwipe ->
             SettingsUiState(
@@ -112,7 +129,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 cardStyleByEntryType = securityAndStyle.cardStyleByEntryType,
                 autofillUiMode = autofillAndSwipe.autofillUiMode,
                 isSwipeEnabled = autofillAndSwipe.isSwipeEnabled,
-                swipeLeftAction = autofillAndSwipe.swipeLeftAction
+                swipeLeftAction = autofillAndSwipe.swipeLeftAction,
+                visibleVaultTabs = autofillAndSwipe.visibleVaultTabs,
+                isAutoDownloadIcons = autofillAndSwipe.isAutoDownloadIcons
             )
         },
         systemSettingsUseCases.swipeRightAction,
@@ -121,6 +140,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     ) { core, partialState, swipeRightAction, backupDirectoryUri, lastBackupExportFileName ->
         SettingsUiState(
             lockTimeout = core.lockTimeout,
+            isInvalidateKeyOnBioChange = core.isInvalidateKeyOnBioChange,
             isStatusBarAutoHide = core.isStatusBarAutoHide,
             isTopBarCollapsible = core.isTopBarCollapsible,
             isTabBarCollapsible = core.isTabBarCollapsible,
@@ -134,11 +154,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             swipeLeftAction = partialState.swipeLeftAction,
             swipeRightAction = swipeRightAction,
             backupDirectoryUri = backupDirectoryUri,
-            lastBackupExportFileName = lastBackupExportFileName
+            lastBackupExportFileName = lastBackupExportFileName,
+            visibleVaultTabs = partialState.visibleVaultTabs,
+            isAutoDownloadIcons = partialState.isAutoDownloadIcons
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     // --- Setter 方法 ---
+    fun switchKeyInvalidationPolicy(
+        activity: FragmentActivity,
+        invalidateOnBiometricChange: Boolean,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result =
+                authUseCases.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
+            if (result.isSuccess) {
+                securitySettingsUseCases.setInvalidateKeyOnBioChange(invalidateOnBiometricChange)
+            }
+            onResult(result)
+        }
+    }
+
     fun setStatusBarAutoHide(autoHide: Boolean) =
         viewModelScope.launch { systemSettingsUseCases.setStatusBarAutoHide(autoHide) }
 
@@ -185,12 +222,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setSwipeRightAction(action: SwipeActionType) =
         viewModelScope.launch { systemSettingsUseCases.setSwipeRightAction(action) }
 
-    fun setBackupDirectoryUri(uri: String) =
-        viewModelScope.launch { backupSettingsUseCases.setBackupDirectoryUri(uri) }
+    fun setVisibleVaultTabs(keys: Set<String>) =
+        viewModelScope.launch { systemSettingsUseCases.setVisibleVaultTabs(keys) }
 
-    fun clearBackupDirectoryUri() =
-        viewModelScope.launch { backupSettingsUseCases.clearBackupDirectoryUri() }
+    fun setAutoDownloadIcons(enabled: Boolean) =
+        viewModelScope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }
 
-    fun testBackupDirectoryWritePermission(context: Context, directoryUri: String?) =
-        backup.testBackupDirectoryWritePermission(context, directoryUri)
+    // --- 备份相关操作：现在非常统一 ---
+    fun setBackupDirectoryUri(uri: String) = 
+        backup.setBackupDirectoryUri(uri)
+
+    fun clearBackupDirectoryUri() = 
+        backup.clearBackupDirectoryUri()
+
+    fun testBackupDirectoryWritePermission(directoryUri: String?) =
+        backup.testBackupDirectoryWritePermission(directoryUri)
 }

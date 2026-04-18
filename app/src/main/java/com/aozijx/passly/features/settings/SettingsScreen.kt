@@ -33,19 +33,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.features.backup.ui.BackupPathSettingsConfig
 import com.aozijx.passly.features.settings.components.dialogs.LockTimeoutDialog
 import com.aozijx.passly.features.settings.components.dialogs.SwipeActionSelectDialog
 import com.aozijx.passly.features.settings.components.sections.AppearanceCustomizationSettingsSection
 import com.aozijx.passly.features.settings.components.sections.BackupRestoreSettingsSection
+import com.aozijx.passly.features.settings.components.sections.DataSettingsSection
 import com.aozijx.passly.features.settings.components.sections.ImmersiveExperienceSettingsSection
 import com.aozijx.passly.features.settings.components.sections.InteractionHabitsSettingsSection
 import com.aozijx.passly.features.settings.components.sections.SecurityPrivacySettingsSection
-import com.aozijx.passly.features.settings.internal.BackupPathSettingsConfig
+import com.aozijx.passly.features.settings.components.sections.VaultTabsSettingsSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +58,7 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val lockTimeout = uiState.lockTimeout
+    val isInvalidateKeyOnBioChange = uiState.isInvalidateKeyOnBioChange
     val isSwipeEnabled = uiState.isSwipeEnabled
     val swipeLeftAction = uiState.swipeLeftAction
     val swipeRightAction = uiState.swipeRightAction
@@ -69,6 +73,8 @@ fun SettingsScreen(
     val autofillUiMode = uiState.autofillUiMode
     val backupDirectoryUri = uiState.backupDirectoryUri
     val lastBackupExportFileName = uiState.lastBackupExportFileName
+    val visibleVaultTabs = uiState.visibleVaultTabs
+    val isAutoDownloadIcons = uiState.isAutoDownloadIcons
 
     val availableCardStyles = remember { VaultCardStyle.styleConfig.perTypeStyles }
     val effectiveCardStyle = VaultCardStyle.normalizeGlobalStyle(cardStyle)
@@ -154,10 +160,24 @@ fun SettingsScreen(
             item {
                 SecurityPrivacySettingsSection(
                     lockTimeout = lockTimeout,
+                    isInvalidateKeyOnBioChange = isInvalidateKeyOnBioChange,
                     isSecureContentEnabled = isSecureContentEnabled,
                     isFlipToLockEnabled = isFlipToLockEnabled,
                     isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
                     onLockTimeoutClick = { showLockTimeoutDialog = true },
+                    onInvalidateKeyOnBioChangeToggle = { enabled ->
+                        val activity =
+                            context as? FragmentActivity ?: return@SecurityPrivacySettingsSection
+                        viewModel.switchKeyInvalidationPolicy(activity, enabled) { result ->
+                            result.onFailure { e ->
+                                Toast.makeText(
+                                    context,
+                                    "切换失败: ${e.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    },
                     onSecureContentEnabledChange = viewModel::setSecureContentEnabled,
                     onFlipToLockEnabledChange = viewModel::setFlipToLockEnabled,
                     onFlipExitAndClearStackEnabledChange = viewModel::setFlipExitAndClearStackEnabled
@@ -181,13 +201,31 @@ fun SettingsScreen(
             item { Spacer(modifier = Modifier.height(24.dp)) }
 
             item {
+                VaultTabsSettingsSection(
+                    visibleVaultTabs = visibleVaultTabs,
+                    onVisibleVaultTabsChange = viewModel::setVisibleVaultTabs
+                )
+            }
+
+            item { Spacer(modifier = Modifier.height(24.dp)) }
+
+            item {
+                DataSettingsSection(
+                    isAutoDownloadIcons = isAutoDownloadIcons,
+                    onAutoDownloadIconsChange = viewModel::setAutoDownloadIcons
+                )
+            }
+
+            item { Spacer(modifier = Modifier.height(24.dp)) }
+
+            item {
                 BackupRestoreSettingsSection(
                     pathLabel = backupPathLabel,
                     recentExportFileName = lastExportFileLabel,
                     onPickPath = { backupPathPicker.launch(BackupExportStorageSupport.defaultDocumentsTreeUri()) },
                     onTestWrite = {
                         viewModel.testBackupDirectoryWritePermission(
-                            context, backupDirectoryUri
+                            backupDirectoryUri
                         )
                     },
                     onClearPath = if (backupDirectoryUri.isNullOrBlank()) {

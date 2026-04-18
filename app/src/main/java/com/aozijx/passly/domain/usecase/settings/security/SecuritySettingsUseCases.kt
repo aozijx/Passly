@@ -9,12 +9,15 @@ import kotlinx.coroutines.flow.Flow
 class SecuritySettingsUseCases(private val repository: SettingsRepository) {
     val lockTimeout: Flow<Long> = repository.lockTimeout
     val isBiometricEnabled: Flow<Boolean> = repository.isBiometricEnabled
+    val isInvalidateKeyOnBioChange: Flow<Boolean> = repository.isInvalidateKeyOnBioChange
     val isSecureContentEnabled: Flow<Boolean> = repository.isSecureContentEnabled
     val isFlipToLockEnabled: Flow<Boolean> = repository.isFlipToLockEnabled
     val isFlipExitAndClearStackEnabled: Flow<Boolean> = repository.isFlipExitAndClearStackEnabled
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
     suspend fun setBiometricEnabled(enabled: Boolean) = repository.setBiometricEnabled(enabled)
+    suspend fun setInvalidateKeyOnBioChange(enabled: Boolean) =
+        repository.setInvalidateKeyOnBioChange(enabled)
     suspend fun setSecureContentEnabled(enabled: Boolean) =
         repository.setSecureContentEnabled(enabled)
     suspend fun setFlipToLockEnabled(enabled: Boolean) = repository.setFlipToLockEnabled(enabled)

@@ -10,6 +10,7 @@ interface VaultRepository {
     val allEntries: Flow<List<VaultEntry>>
     
     suspend fun getEntryById(entryId: Int): VaultEntry?
+    suspend fun getEntriesForIconResync(): List<VaultEntry>
     suspend fun insert(entry: VaultEntry): Long
     suspend fun update(entry: VaultEntry)
     suspend fun delete(entry: VaultEntry)

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 interface SettingsRepository {
     val lockTimeout: Flow<Long>
     val isBiometricEnabled: Flow<Boolean>
+    val isInvalidateKeyOnBioChange: Flow<Boolean>
     val isDarkMode: Flow<Boolean?>
     val isDynamicColor: Flow<Boolean>
 
@@ -26,9 +27,13 @@ interface SettingsRepository {
     val autofillUiMode: Flow<AutofillUiMode>
     val backupDirectoryUri: Flow<String?>
     val lastBackupExportFileName: Flow<String?>
+    val visibleVaultTabs: Flow<Set<String>?>
+
+    val isAutoDownloadIcons: Flow<Boolean>
 
     suspend fun setLockTimeout(timeoutMs: Long)
     suspend fun setBiometricEnabled(enabled: Boolean)
+    suspend fun setInvalidateKeyOnBioChange(enabled: Boolean)
     suspend fun setDarkMode(enabled: Boolean?)
     suspend fun setDynamicColor(enabled: Boolean)
 
@@ -48,4 +53,6 @@ interface SettingsRepository {
     suspend fun setBackupDirectoryUri(uri: String)
     suspend fun clearBackupDirectoryUri()
     suspend fun setLastBackupExportFileName(fileName: String)
+    suspend fun setVisibleVaultTabs(keys: Set<String>)
+    suspend fun setAutoDownloadIcons(enabled: Boolean)
 }

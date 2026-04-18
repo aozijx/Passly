@@ -13,7 +13,6 @@ import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.PasswordInput
 import com.aozijx.passly.core.designsystem.fields.VaultTextField
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.vault.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
@@ -25,7 +24,7 @@ fun AddPasswordDialog(
 
     BaseVaultDialog(
         title = stringResource(R.string.vault_add_password_title),
-        onDismiss = { viewModel.setAddType(AddType.NONE) },
+        onDismiss = { viewModel.setAddType(null) },
         confirmEnabled = state.isValid,
         onConfirm = {
             val encUser = CryptoManager.encrypt(state.username)

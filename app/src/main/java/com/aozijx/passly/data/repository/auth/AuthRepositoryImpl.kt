@@ -1,0 +1,210 @@
+package com.aozijx.passly.data.repository.auth
+
+import android.app.Application
+import androidx.biometric.BiometricPrompt
+import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.crypto.BiometricHelper
+import com.aozijx.passly.core.crypto.SessionCryptoKey
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.security.AutoLockScheduler
+import com.aozijx.passly.core.security.DatabasePassphraseManager
+import com.aozijx.passly.core.security.auth.AuthValidationResult
+import com.aozijx.passly.core.security.auth.AuthValidationSupport
+import com.aozijx.passly.domain.repository.auth.AuthRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
+
+/**
+ * 认证仓库实现类。
+ * 口令由 DatabasePassphraseManager 统一持有，本类负责状态流转与自动锁定。
+ */
+internal class AuthRepositoryImpl(
+    private val application: Application,
+    scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+    private val validationSupport: AuthValidationSupport = AuthValidationSupport()
+) : AuthRepository {
+
+    private val tag = "AuthRepository"
+
+    private val _isAuthorized = MutableStateFlow(false)
+    override val isAuthorized: StateFlow<Boolean> = _isAuthorized.asStateFlow()
+
+    private val authMutex = Mutex()
+
+    private val autoLockScheduler = AutoLockScheduler(scope) {
+        Logcat.i(tag, "Auto-lock timer triggered.")
+        lock()
+    }
+
+    private var currentTimeoutMs: Long = AuthValidationSupport.DEFAULT_LOCK_TIMEOUT_MS
+    private var lastInteractionAtMs: Long = 0
+
+    override suspend fun authenticate(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String
+    ): Result<Unit> = authMutex.withLock {
+        if (_isAuthorized.value) return Result.success(Unit)
+
+        when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
+            is AuthValidationResult.Invalid -> return Result.failure(Exception(validation.message))
+            AuthValidationResult.Valid -> Unit
+        }
+
+        val biometricCipher = DatabasePassphraseManager.getInitializedCipher(application)
+
+        return runCatching {
+            val authResult = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
+                kotlin.coroutines.suspendCoroutine<BiometricPrompt.AuthenticationResult> { continuation ->
+                    BiometricHelper.authenticate(
+                        activity = activity,
+                        title = title,
+                        subtitle = subtitle,
+                        cryptoObject = biometricCipher?.let {
+                            BiometricPrompt.CryptoObject(it)
+                        },
+                        onSuccess = { result ->
+                            continuation.resumeWith(Result.success(result))
+                        },
+                        onError = { error ->
+                            continuation.resumeWith(Result.failure(Exception(error)))
+                        }
+                    )
+                }
+            } ?: throw Exception("认证超时，请重试")
+
+            val passphrase = DatabasePassphraseManager.processResult(application, authResult)
+            DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+            SessionCryptoKey.deriveAndSet(passphrase)
+            onAuthorized()
+            Logcat.i(tag, "Authentication and decryption successful.")
+        }
+    }
+
+    override fun onExternalAuthorized() {
+        if (DatabasePassphraseManager.isLocked) {
+            Logcat.w(tag, "onExternalAuthorized called but passphrase is absent; ignoring.")
+            return
+        }
+        if (!_isAuthorized.value) {
+            Logcat.i(tag, "Accepting external authorization; engaging auto-lock timer.")
+        }
+        onAuthorized()
+    }
+
+    override fun lock() {
+        Logcat.i(tag, "Locking session.")
+        _isAuthorized.update { false }
+        DatabasePassphraseManager.clearDecryptedPassphrase()
+        SessionCryptoKey.clearSessionKey()
+        autoLockScheduler.cancel()
+        lastInteractionAtMs = 0
+    }
+
+    override fun onUserInteraction() {
+        if (_isAuthorized.value) {
+            updateInteractionTimestamp()
+            resetTimer()
+        }
+    }
+
+    override fun checkAndLock() {
+        if (!_isAuthorized.value) return
+        val elapsed = System.currentTimeMillis() - lastInteractionAtMs
+        if (lastInteractionAtMs == 0L || elapsed >= currentTimeoutMs) {
+            lock()
+        }
+    }
+
+    override suspend fun rekeyWithInvalidationPolicy(
+        activity: FragmentActivity,
+        invalidateOnBiometricChange: Boolean
+    ): Result<Unit> {
+        if (DatabasePassphraseManager.isLocked) {
+            return Result.failure(Exception("请先解锁应用"))
+        }
+
+        val currentPassphrase = DatabasePassphraseManager.getPassphrase().copyOf()
+
+        return runCatching {
+            DatabasePassphraseManager.prepareForRekey(application, invalidateOnBiometricChange)
+
+            val cipher = DatabasePassphraseManager.getInitializedCipher(application)
+                ?: throw Exception("无法初始化加密器")
+
+            val authResult = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
+                kotlin.coroutines.suspendCoroutine<BiometricPrompt.AuthenticationResult> { continuation ->
+                    BiometricHelper.authenticate(
+                        activity = activity,
+                        title = "重新加密保险箱密钥",
+                        subtitle = "验证身份以应用新的安全策略",
+                        cryptoObject = BiometricPrompt.CryptoObject(cipher),
+                        onSuccess = { result ->
+                            continuation.resumeWith(Result.success(result))
+                        },
+                        onError = { error ->
+                            continuation.resumeWith(Result.failure(Exception(error)))
+                        }
+                    )
+                }
+            } ?: throw Exception("认证超时")
+
+            DatabasePassphraseManager.completeRekey(application, authResult, currentPassphrase)
+            Logcat.i(
+                tag,
+                "Rekey completed: invalidateOnBiometricChange=$invalidateOnBiometricChange"
+            )
+        }.onFailure { e ->
+            Logcat.e(tag, "Rekey failed, recovering with previous policy...", e)
+            recoverFromFailedRekey(currentPassphrase, !invalidateOnBiometricChange)
+        }.also {
+            currentPassphrase.fill(0)
+        }
+    }
+
+    private fun recoverFromFailedRekey(passphrase: ByteArray, previousPolicy: Boolean) {
+        runCatching {
+            DatabasePassphraseManager.prepareForRekey(application, previousPolicy)
+            Logcat.w(
+                tag,
+                "Recovered key with previous policy, but passphrase needs re-encryption on next auth."
+            )
+        }.onFailure { e ->
+            Logcat.e(tag, "Recovery also failed. Passphrase is still in memory.", e)
+        }
+    }
+
+    override fun updateLockTimeout(timeoutMs: Long) {
+        val normalized = validationSupport.normalizeLockTimeout(timeoutMs)
+        if (currentTimeoutMs != normalized) {
+            currentTimeoutMs = normalized
+            if (_isAuthorized.value) resetTimer()
+        }
+    }
+
+    private fun onAuthorized() {
+        _isAuthorized.update { true }
+        updateInteractionTimestamp()
+        resetTimer()
+    }
+
+    private fun updateInteractionTimestamp() {
+        lastInteractionAtMs = System.currentTimeMillis()
+    }
+
+    private fun resetTimer() {
+        autoLockScheduler.schedule(currentTimeoutMs)
+    }
+
+    companion object {
+        private const val AUTH_TIMEOUT_MS = 60_000L
+    }
+}

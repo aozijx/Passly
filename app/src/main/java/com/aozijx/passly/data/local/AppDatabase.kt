@@ -43,8 +43,11 @@ abstract class AppDatabase : RoomDatabase() {
             return synchronized(this) {
                 INSTANCE?.let { return@synchronized it }
 
+                // 新的构建尝试，先清除上一轮残留的错误，避免重试成功后仍误报。
+                initializationError = null
+
                 try {
-                    val passphrase = DatabasePassphraseManager.getPassphrase(context)
+                    val passphrase = DatabasePassphraseManager.getPassphrase()
                     val factory = SupportOpenHelperFactory(passphrase)
 
                     val instance = Room.databaseBuilder(
@@ -62,7 +65,7 @@ abstract class AppDatabase : RoomDatabase() {
                             Logcat.e(TAG, "Database probe failed, recording error", error)
                             initializationError = wrapError(error)
                         }
-                    
+
                     INSTANCE = instance
                     instance
                 } catch (e: Exception) {
@@ -87,6 +90,23 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun preWarm(context: Context) {
             getDatabase(context)
+        }
+
+        fun close() {
+            INSTANCE?.close()
+            INSTANCE = null
+        }
+
+        /**
+         * 重置数据库单例状态：关闭当前实例、清除初始化错误。
+         * 用于初始化失败后的显式重试。
+         */
+        fun reset() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
+                initializationError = null
+            }
         }
     }
 }

@@ -3,7 +3,10 @@ package com.aozijx.passly.core.di
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.config.UserConfigFileStore
+import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
 import com.aozijx.passly.data.repository.autofill.AutofillServiceDataRepository
+import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
+import com.aozijx.passly.data.repository.database.DatabaseLifecycleRepositoryImpl
 import com.aozijx.passly.data.repository.favicon.FaviconDataRepository
 import com.aozijx.passly.data.repository.history.HistoryDataRepository
 import com.aozijx.passly.data.repository.otp.OtpDataRepository
@@ -11,6 +14,9 @@ import com.aozijx.passly.data.repository.settings.SettingsDataRepository
 import com.aozijx.passly.data.repository.settings.UserConfigDataRepository
 import com.aozijx.passly.data.repository.vault.VaultDataRepository
 import com.aozijx.passly.data.repository.vault.VaultSearchDataRepository
+import com.aozijx.passly.domain.repository.auth.AuthRepository
+import com.aozijx.passly.domain.repository.backup.BackupRepository
+import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 import com.aozijx.passly.domain.repository.settings.SettingsRepository
 import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
@@ -53,6 +59,18 @@ object DataModule {
 
     internal val faviconRepository: FaviconRepository by lazy {
         FaviconDataRepository(appContext)
+    }
+
+    internal val backupRepository: BackupRepository by lazy {
+        BackupRepositoryImpl(appContext)
+    }
+
+    internal val authRepository: AuthRepository by lazy {
+        AuthRepositoryImpl(appContext)
+    }
+
+    internal val databaseLifecycleRepository: DatabaseLifecycleRepository by lazy {
+        DatabaseLifecycleRepositoryImpl(appContext)
     }
 
     private val userConfigStore by lazy {

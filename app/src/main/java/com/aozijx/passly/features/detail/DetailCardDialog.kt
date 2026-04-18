@@ -178,7 +178,7 @@ fun DetailCardDialog(
                         onUsernameRevealed = { revealedUsername = it },
                         onPasswordRevealed = { revealedPassword = it },
                         onShowQrDialog = {
-                            mainViewModel.authenticate(
+                            mainViewModel.auth.authenticate(
                                 activity = activity,
                                 title = authQrTitle,
                                 subtitle = authQrSubtitle,
@@ -242,9 +242,8 @@ private fun LazyListScope.typeSpecificCardContent(
                 CredentialSection(
                     activity = activity,
                     item = entry,
-                    onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onAuthenticate = { act, title, subtitle, onSuccess ->
-                        mainViewModel.authenticate(act, title, subtitle, onSuccess = onSuccess)
+                        mainViewModel.auth.authenticate(act, title, subtitle, onSuccess = onSuccess)
                     },
                     editState = editState,
                     revealedUsername = revealedUsername,

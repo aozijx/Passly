@@ -1,9 +1,6 @@
 package com.aozijx.passly.core.crypto
 
-import android.content.Intent
-import android.provider.Settings
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
@@ -12,7 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
 /**
- * 生物识别辅助类：封装了指纹、面部及设备密码的认证逻辑
+ * 生物识别辅助类：已优化以支持硬件级解密绑定（Hard Lock）。
  */
 object BiometricHelper {
     fun authenticate(
@@ -24,22 +21,18 @@ object BiometricHelper {
         onSuccess: (BiometricPrompt.AuthenticationResult) -> Unit
     ) {
         val biometricManager = BiometricManager.from(activity)
-        
-        // 检查是否有可用的认证方式
-        val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+
+        // 如果有 CryptoObject，必须使用 BIOMETRIC_STRONG，且不能包含 DEVICE_CREDENTIAL
+        val authenticators =
+            if (cryptoObject != null) BIOMETRIC_STRONG else (BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+
+        val canAuthenticate = biometricManager.canAuthenticate(authenticators)
         if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
             val errorMsg = when (canAuthenticate) {
                 BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> "设备不支持生物识别"
                 BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> "生物识别硬件不可用"
-                BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                    showSetupScreenLockDialog(activity)
-                    "请先在系统设置中设置屏幕锁"
-                }
-                BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED -> "需要安全更新"
-                else -> "认证不可用"
-            }
-            if (canAuthenticate != BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
-                Toast.makeText(activity, errorMsg, Toast.LENGTH_LONG).show()
+                BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "请先在系统设置中录入指纹或面部"
+                else -> "认证不可用 (错误码: $canAuthenticate)"
             }
             onError?.invoke(errorMsg)
             return
@@ -53,45 +46,41 @@ object BiometricHelper {
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    val errorMsg = errString.toString()
+                    val error = errString.toString()
+                    // 仅对非主动取消的错误进行提示
                     if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
                         errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON &&
                         errorCode != BiometricPrompt.ERROR_CANCELED
                     ) {
-                        Toast.makeText(activity, "验证: $errorMsg", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, error, Toast.LENGTH_SHORT).show()
                     }
-                    onError?.invoke(errorMsg)
+                    onError?.invoke(error)
                 }
 
                 override fun onAuthenticationFailed() {
-                    Toast.makeText(activity, "验证未识别，请重试", Toast.LENGTH_SHORT).show()
+                    // 指纹不匹配时触发，BiometricPrompt 会自动处理重试
                 }
             })
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        val promptBuilder = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
-            .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-            .build()
 
         if (cryptoObject != null) {
-            biometricPrompt.authenticate(promptInfo, cryptoObject)
+            promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
+            promptBuilder.setNegativeButtonText("取消")
         } else {
-            biometricPrompt.authenticate(promptInfo)
+            promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+        }
+
+        runCatching {
+            if (cryptoObject != null) {
+                biometricPrompt.authenticate(promptBuilder.build(), cryptoObject)
+            } else {
+                biometricPrompt.authenticate(promptBuilder.build())
+            }
+        }.onFailure { e ->
+            onError?.invoke("启动认证失败: ${e.message}")
         }
     }
-
-    private fun showSetupScreenLockDialog(activity: FragmentActivity) {
-        AlertDialog.Builder(activity)
-            .setTitle("需要设置屏幕锁")
-            .setMessage("为了保护您的数据安全，需要先在系统设置中设置屏幕锁（PIN、图案或密码）。")
-            .setPositiveButton("去设置") { _, _ ->
-                val intent = Intent(Settings.ACTION_SECURITY_SETTINGS)
-                activity.startActivity(intent)
-            }
-            .setNegativeButton("取消", null)
-            .show()
-    }
 }
-
-

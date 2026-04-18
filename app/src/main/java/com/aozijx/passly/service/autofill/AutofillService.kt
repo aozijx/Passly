@@ -14,6 +14,7 @@ import android.service.autofill.Presentations
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
+import android.view.autofill.AutofillId
 import androidx.compose.ui.graphics.asAndroidBitmap
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.R
@@ -23,8 +24,8 @@ import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.PackageUtils
+import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.domain.model.AutofillMatchType
-import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.service.autofill.engine.AutofillStructureParser
@@ -48,9 +49,7 @@ class AutofillService : android.service.autofill.AutofillService() {
     private val slowSaveMs = 180L
 
     override fun onFillRequest(
-        request: FillRequest,
-        cancellationSignal: CancellationSignal,
-        callback: FillCallback
+        request: FillRequest, cancellationSignal: CancellationSignal, callback: FillCallback
     ) {
         val structure = request.fillContexts.last().structure
 
@@ -60,7 +59,9 @@ class AutofillService : android.service.autofill.AutofillService() {
                 EntryTypeStrategyRegistry.ensureRegistered()
                 val parser = AutofillStructureParser(structure)
                 val autofillUiMode = AppContext.get().preference.autofillUiMode.first()
-                Logcat.d(tag, "onFillRequest: pkg=${parser.packageName}, domain=${parser.webDomain}")
+                Logcat.d(
+                    tag, "onFillRequest: pkg=${parser.packageName}, domain=${parser.webDomain}"
+                )
 
                 val availableIds = listOfNotNull(parser.usernameId, parser.passwordId, parser.otpId)
                 Logcat.d(
@@ -73,6 +74,15 @@ class AutofillService : android.service.autofill.AutofillService() {
                     return@launch
                 }
 
+                // --- 锁定状态处理：重定向到 AutofillAuthActivity 进行解锁 ---
+                if (DatabasePassphraseManager.isLocked) {
+                    Logcat.i(tag, "Database is locked, suggesting unlock via AuthActivity")
+                    val response =
+                        buildUnlockResponse(availableIds.toTypedArray(), parser, autofillUiMode)
+                    callback.onSuccess(response)
+                    return@launch
+                }
+
                 val repositoryStart = System.currentTimeMillis()
                 val candidates = autofillRepository.findMatchingCandidates(
                     packageName = parser.normalizedPackageName,
@@ -80,7 +90,10 @@ class AutofillService : android.service.autofill.AutofillService() {
                 )
                 val repositoryCost = System.currentTimeMillis() - repositoryStart
                 if (repositoryCost >= slowRepositoryMs) {
-                    Logcat.w(tag, "onFillRequest repository slow: ${repositoryCost}ms, entries=${candidates.size}")
+                    Logcat.w(
+                        tag,
+                        "onFillRequest repository slow: ${repositoryCost}ms, entries=${candidates.size}"
+                    )
                 }
 
                 val responseBuilder = FillResponse.Builder()
@@ -89,17 +102,17 @@ class AutofillService : android.service.autofill.AutofillService() {
                 if (autofillUiMode == AutofillUiMode.BOTTOM_SHEET && candidates.isNotEmpty()) {
                     // BOTTOM_SHEET 模式：展示单条"踏板"，点击后弹出半屏候选列表
                     val presentation = AutofillRemoteViewFactory.createBottomSheetTrigger(
-                        context = applicationContext,
-                        candidateCount = candidates.size
+                        context = applicationContext, candidateCount = candidates.size
                     )
 
-                    val authIntent = Intent(this@AutofillService, AutofillAuthActivity::class.java).apply {
-                        putExtra("vault_item_ids", candidates.map { it.entry.id }.toIntArray())
-                        putExtra("username_id", parser.usernameId)
-                        putExtra("password_id", parser.passwordId)
-                        putExtra("otp_id", parser.otpId)
-                        putExtra("autofill_ui_mode", autofillUiMode.key)
-                    }
+                    val authIntent =
+                        Intent(this@AutofillService, AutofillAuthActivity::class.java).apply {
+                            putExtra("vault_item_ids", candidates.map { it.entry.id }.toIntArray())
+                            putExtra("username_id", parser.usernameId)
+                            putExtra("password_id", parser.passwordId)
+                            putExtra("otp_id", parser.otpId)
+                            putExtra("autofill_ui_mode", autofillUiMode.key)
+                        }
                     val pendingIntent = PendingIntent.getActivity(
                         this@AutofillService,
                         System.nanoTime().toInt(),
@@ -107,12 +120,17 @@ class AutofillService : android.service.autofill.AutofillService() {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
 
-                    @Suppress("DEPRECATION")
-                    responseBuilder.setAuthentication(
-                        availableIds.toTypedArray(),
-                        pendingIntent.intentSender,
-                        presentation
-                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val presentations =
+                            Presentations.Builder().setMenuPresentation(presentation).build()
+                        responseBuilder.setAuthentication(
+                            availableIds.toTypedArray(), pendingIntent.intentSender, presentations
+                        )
+                    } else {
+                        @Suppress("DEPRECATION") responseBuilder.setAuthentication(
+                            availableIds.toTypedArray(), pendingIntent.intentSender, presentation
+                        )
+                    }
                 } else {
                     // SYSTEM_INLINE 模式：为每条候选账号生成独立 dataset 项
                     candidates.forEach { candidate ->
@@ -120,11 +138,10 @@ class AutofillService : android.service.autofill.AutofillService() {
                         val strategy = resolveStrategy(entry.entryType)
                         if (strategy != null && !strategy.supportsAutofill()) return@forEach
 
-                        val decryptedUsername = (CryptoAccess.decryptOrNull(entry.username) ?: "").trim()
-                        val strategySummary = strategy
-                            ?.let { runCatching { it.extractSummary(entry) }.getOrDefault("") }
-                            .orEmpty()
-                        val subtitle = buildDatasetSubtitle(entry, decryptedUsername, strategySummary)
+                        val decryptedUsername =
+                            (CryptoAccess.decryptOrNull(entry.username) ?: "").trim()
+                        val subtitle =
+                            AutofillCredentialProvider.buildSubtitle(entry, decryptedUsername)
                         val badge = when (candidate.matchType) {
                             AutofillMatchType.APP -> getString(R.string.autofill_match_app)
                             AutofillMatchType.DOMAIN -> getString(R.string.autofill_match_domain)
@@ -138,13 +155,14 @@ class AutofillService : android.service.autofill.AutofillService() {
                             badge = badge
                         )
 
-                        val authIntent = Intent(this@AutofillService, AutofillAuthActivity::class.java).apply {
-                            putExtra("vault_item_id", entry.id)
-                            putExtra("username_id", parser.usernameId)
-                            putExtra("password_id", parser.passwordId)
-                            putExtra("otp_id", parser.otpId)
-                            putExtra("autofill_ui_mode", autofillUiMode.key)
-                        }
+                        val authIntent =
+                            Intent(this@AutofillService, AutofillAuthActivity::class.java).apply {
+                                putExtra("vault_item_id", entry.id)
+                                putExtra("username_id", parser.usernameId)
+                                putExtra("password_id", parser.passwordId)
+                                putExtra("otp_id", parser.otpId)
+                                putExtra("autofill_ui_mode", autofillUiMode.key)
+                            }
 
                         val pendingIntent = PendingIntent.getActivity(
                             this@AutofillService,
@@ -153,7 +171,8 @@ class AutofillService : android.service.autofill.AutofillService() {
                             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                         )
 
-                        val datasetBuilder = Dataset.Builder().setAuthentication(pendingIntent.intentSender)
+                        val datasetBuilder =
+                            Dataset.Builder().setAuthentication(pendingIntent.intentSender)
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             val field = Field.Builder().setPresentations(
@@ -161,8 +180,11 @@ class AutofillService : android.service.autofill.AutofillService() {
                             ).build()
                             availableIds.forEach { datasetBuilder.setField(it, field) }
                         } else {
-                            @Suppress("DEPRECATION")
-                            availableIds.forEach { id -> datasetBuilder.setValue(id, null, presentation) }
+                            @Suppress("DEPRECATION") availableIds.forEach { id ->
+                                datasetBuilder.setValue(
+                                    id, null, presentation
+                                )
+                            }
                         }
 
                         responseBuilder.addDataset(datasetBuilder.build())
@@ -171,7 +193,10 @@ class AutofillService : android.service.autofill.AutofillService() {
 
                 val buildCost = System.currentTimeMillis() - buildStart
                 if (buildCost >= slowDatasetBuildMs) {
-                    Logcat.w(tag, "onFillRequest dataset build slow: ${buildCost}ms, entries=${candidates.size}")
+                    Logcat.w(
+                        tag,
+                        "onFillRequest dataset build slow: ${buildCost}ms, entries=${candidates.size}"
+                    )
                 }
 
                 val saveIds = listOfNotNull(parser.usernameId, parser.passwordId)
@@ -223,7 +248,10 @@ class AutofillService : android.service.autofill.AutofillService() {
 
                 val totalCost = System.currentTimeMillis() - fillStart
                 if (totalCost >= slowFillTotalMs) {
-                    Logcat.w(tag, "onFillRequest slow total: ${totalCost}ms, entries=${candidates.size}, saveIds=${saveIds.size}")
+                    Logcat.w(
+                        tag,
+                        "onFillRequest slow total: ${totalCost}ms, entries=${candidates.size}, saveIds=${saveIds.size}"
+                    )
                 }
 
             } catch (e: Exception) {
@@ -233,22 +261,45 @@ class AutofillService : android.service.autofill.AutofillService() {
         }
     }
 
+    private fun buildUnlockResponse(
+        ids: Array<AutofillId>, parser: AutofillStructureParser, uiMode: AutofillUiMode
+    ): FillResponse {
+        val presentation = AutofillRemoteViewFactory.createUnlockTrigger(applicationContext)
+
+        val authIntent = Intent(this, AutofillAuthActivity::class.java).apply {
+            putExtra("unlock_only", true)
+            putExtra("username_id", parser.usernameId)
+            putExtra("password_id", parser.passwordId)
+            putExtra("otp_id", parser.otpId)
+            putExtra("package_name", parser.normalizedPackageName)
+            putExtra("web_domain", parser.normalizedWebDomain)
+            putExtra("autofill_ui_mode", uiMode.key)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            System.nanoTime().toInt(),
+            authIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val responseBuilder = FillResponse.Builder()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val presentations = Presentations.Builder().setMenuPresentation(presentation).build()
+            responseBuilder.setAuthentication(ids, pendingIntent.intentSender, presentations)
+        } else {
+            @Suppress("DEPRECATION") responseBuilder.setAuthentication(
+                ids,
+                pendingIntent.intentSender,
+                presentation
+            )
+        }
+        return responseBuilder.build()
+    }
+
     private fun resolveStrategy(entryTypeValue: Int) = runCatching {
         EntryTypeStrategyFactory.getStrategy(EntryType.fromValue(entryTypeValue))
     }.getOrNull()
-
-    private fun buildDatasetSubtitle(
-        entry: VaultEntry,
-        decryptedUsername: String,
-        strategySummary: String
-    ): String {
-        val infoParts = mutableListOf<String>()
-        if (decryptedUsername.isNotBlank()) infoParts += decryptedUsername
-        if (strategySummary.isNotBlank()) infoParts += strategySummary
-        if (infoParts.isEmpty()) infoParts += EntryType.fromValue(entry.entryType).displayName
-        val joined = infoParts.joinToString(" · ")
-        return if (!entry.totpSecret.isNullOrBlank()) "OTP · $joined" else joined
-    }
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
         var username = ""
@@ -266,7 +317,9 @@ class AutofillService : android.service.autofill.AutofillService() {
             if (!p.passwordValue.isNullOrBlank()) password = p.passwordValue!!
         }
 
-        Logcat.d(tag, "onSaveRequest: captured user=$username, hasPwd=${password.isNotBlank()}, pkg=$pkg")
+        Logcat.d(
+            tag, "onSaveRequest: captured user=$username, hasPwd=${password.isNotBlank()}, pkg=$pkg"
+        )
 
         if (password.isBlank()) {
             Logcat.w(tag, "onSaveRequest: password is blank, ignore save")
@@ -275,6 +328,12 @@ class AutofillService : android.service.autofill.AutofillService() {
 
         serviceScope.launch {
             try {
+                // 如果锁定，无法执行保存（需要解密后重新加密存入 DB）
+                if (DatabasePassphraseManager.isLocked) {
+                    Logcat.w(tag, "onSaveRequest: DB locked, cannot save")
+                    return@launch callback.onFailure("Passly is locked")
+                }
+
                 val saveStart = System.currentTimeMillis()
                 val success = autofillRepository.saveOrUpdateEntry(
                     packageName = pkg,

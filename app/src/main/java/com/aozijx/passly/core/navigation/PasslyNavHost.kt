@@ -31,11 +31,6 @@ import kotlinx.coroutines.flow.collectLatest
 
 /**
  * Passly 应用导航宿主
- *
- * 以 [AppRoute.Vault] 为起始目的地，管理以下页面跳转：
- *  - Vault → Detail（点击列表条目）
- *  - Vault → Settings（点击设置入口）
- *  - Detail / Settings → Vault（返回）
  */
 @Composable
 fun PasslyNavHost(
@@ -81,12 +76,10 @@ fun PasslyNavHost(
                 ?.getInt(AppRoute.Detail.ARG_ENTRY_ID)
                 ?: return@composable
 
-            // 获取详情页 ViewModel 并采集状态
             val detailViewModel: DetailViewModel = viewModel()
             val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
             val totpStates by vaultViewModel.totpStates.collectAsState()
 
-            // 监听 DetailViewModel 的 Side Effects
             LaunchedEffect(detailViewModel) {
                 detailViewModel.effects.collectLatest { effect ->
                     when (effect) {
@@ -96,7 +89,6 @@ fun PasslyNavHost(
                 }
             }
 
-            // 获取初始 Entry 数据用于过渡
             var initialEntry by remember { mutableStateOf<VaultEntry?>(null) }
             LaunchedEffect(entryId) {
                 vaultViewModel.loadEntryById(entryId) { initialEntry = it }
@@ -114,7 +106,7 @@ fun PasslyNavHost(
                     onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it) },
                     onAuthenticate = { act, title, subtitle, success ->
-                        mainViewModel.authenticate(act, title, subtitle, onSuccess = success)
+                        mainViewModel.auth.authenticate(act, title, subtitle, onSuccess = success)
                     },
                     activity = activity
                 )

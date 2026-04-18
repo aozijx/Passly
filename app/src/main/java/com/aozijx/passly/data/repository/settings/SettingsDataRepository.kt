@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     override val lockTimeout: Flow<Long> = prefs.lockTimeout
     override val isBiometricEnabled: Flow<Boolean> = prefs.isBiometricEnabled
+    override val isInvalidateKeyOnBioChange: Flow<Boolean> = prefs.isInvalidateKeyOnBioChange
     override val isDarkMode: Flow<Boolean?> = prefs.isDarkMode
     override val isDynamicColor: Flow<Boolean> = prefs.isDynamicColor
 
@@ -29,6 +30,8 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
     override val autofillUiMode: Flow<AutofillUiMode> = prefs.autofillUiMode
     override val backupDirectoryUri: Flow<String?> = prefs.backupDirectoryUri
     override val lastBackupExportFileName: Flow<String?> = prefs.lastBackupExportFileName
+    override val visibleVaultTabs: Flow<Set<String>?> = prefs.visibleVaultTabs
+    override val isAutoDownloadIcons: Flow<Boolean> = prefs.isAutoDownloadIcons
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         prefs.setLockTimeout(timeoutMs)
@@ -36,6 +39,10 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
 
     override suspend fun setBiometricEnabled(enabled: Boolean) {
         prefs.setBiometricEnabled(enabled)
+    }
+
+    override suspend fun setInvalidateKeyOnBioChange(enabled: Boolean) {
+        prefs.setInvalidateKeyOnBioChange(enabled)
     }
 
     override suspend fun setDarkMode(enabled: Boolean?) {
@@ -104,5 +111,13 @@ class SettingsDataRepository(private val prefs: AppPrefs) : SettingsRepository {
 
     override suspend fun setLastBackupExportFileName(fileName: String) {
         prefs.setLastBackupExportFileName(fileName)
+    }
+
+    override suspend fun setVisibleVaultTabs(keys: Set<String>) {
+        prefs.setVisibleVaultTabs(keys)
+    }
+
+    override suspend fun setAutoDownloadIcons(enabled: Boolean) {
+        prefs.setAutoDownloadIcons(enabled)
     }
 }

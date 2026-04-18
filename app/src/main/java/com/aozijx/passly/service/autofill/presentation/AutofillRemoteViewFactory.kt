@@ -24,6 +24,17 @@ object AutofillRemoteViewFactory {
     }
 
     /**
+     * 创建提示解锁的触发条。
+     */
+    fun createUnlockTrigger(context: Context): RemoteViews {
+        return RemoteViews(context.packageName, R.layout.autofill_dataset_item).apply {
+            setTextViewText(R.id.item_title, context.getString(R.string.vault_locked_title))
+            setTextViewText(R.id.item_subtitle, context.getString(R.string.vault_locked_subtitle))
+            setTextViewText(R.id.item_badge, context.getString(R.string.verify))
+        }
+    }
+
+    /**
      * 创建 BOTTOM_SHEET 模式下唯一一条"踏板"入口。
      * 用户点击后由 AutofillAuthActivity 弹出半屏候选列表。
      *

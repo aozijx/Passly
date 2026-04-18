@@ -1,7 +1,11 @@
 package com.aozijx.passly.core.di
 
+import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
+import com.aozijx.passly.domain.usecase.backup.BackupUseCases
+import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.detail.DetailUseCases
+import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
@@ -40,11 +44,27 @@ class DomainModule {
         BackupSettingsUseCases(DataModule.settingsRepository)
     }
 
+    internal val backupUseCases by lazy {
+        BackupUseCases(DataModule.backupRepository)
+    }
+
+    internal val authUseCases by lazy {
+        AuthUseCases(DataModule.authRepository)
+    }
+
     internal val userConfigUseCases by lazy {
         UserConfigUseCases(DataModule.userConfigRepository)
     }
 
     internal val autofillUseCases by lazy {
         AutofillUseCases(DataModule.autofillServiceRepository)
+    }
+
+    internal val databaseLifecycleUseCases by lazy {
+        DatabaseLifecycleUseCases(DataModule.databaseLifecycleRepository)
+    }
+
+    internal val iconResyncUseCases by lazy {
+        IconResyncUseCases(DataModule.vaultRepository)
     }
 }

@@ -67,6 +67,8 @@ import com.aozijx.passly.features.vault.components.VaultDialogs
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
 import com.aozijx.passly.features.vault.components.fab.VaultFab
 import com.aozijx.passly.features.vault.components.topbar.VaultTopBar
+import com.aozijx.passly.features.vault.model.AddType
+import com.aozijx.passly.features.vault.model.VaultTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,6 +86,7 @@ fun VaultContent(
     val items by vaultViewModel.vaultItems.collectAsStateWithLifecycle()
     val isVaultItemsLoading by vaultViewModel.isVaultItemsLoading.collectAsStateWithLifecycle()
     val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
+    val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
     val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -101,18 +104,25 @@ fun VaultContent(
     val perTypeStyleMap = settingsUiState.cardStyleByEntryType
     var isFabVisible by remember { mutableStateOf(true) }
 
-    val pagerState = rememberPagerState(initialPage = selectedTab.ordinal) { VaultTab.entries.size }
+    val initialTabIndex = visibleTabs.indexOf(selectedTab).coerceAtLeast(0)
+    val pagerState = rememberPagerState(initialPage = initialTabIndex) { visibleTabs.size.coerceAtLeast(1) }
 
-    // 同步 ViewModel 状态到 Pager
-    LaunchedEffect(selectedTab) {
-        if (pagerState.currentPage != selectedTab.ordinal) {
-            pagerState.animateScrollToPage(selectedTab.ordinal)
+    // 当前选中的 Tab 若被设置隐藏，自动回退到第一项（通常是 ALL）。
+    LaunchedEffect(visibleTabs, selectedTab) {
+        if (visibleTabs.isEmpty()) return@LaunchedEffect
+        if (selectedTab !in visibleTabs) {
+            vaultViewModel.selectTab(visibleTabs.first())
+            return@LaunchedEffect
+        }
+        val targetIndex = visibleTabs.indexOf(selectedTab)
+        if (pagerState.settledPage != targetIndex && pagerState.pageCount > targetIndex) {
+            pagerState.animateScrollToPage(targetIndex)
         }
     }
 
-    // 同步 Pager 滑动到 ViewModel
-    LaunchedEffect(pagerState.currentPage) {
-        val newTab = VaultTab.entries[pagerState.currentPage]
+    // 同步 Pager 滑动到 ViewModel（用 settledPage 避免动画途中触发状态覆盖）
+    LaunchedEffect(pagerState.settledPage, visibleTabs) {
+        val newTab = visibleTabs.getOrNull(pagerState.settledPage) ?: return@LaunchedEffect
         if (newTab != selectedTab) {
             vaultViewModel.selectTab(newTab)
         }
@@ -136,12 +146,11 @@ fun VaultContent(
         }
     }
 
-    // 通用复制逻辑（使用策略模式 + getFieldValue 统一字段提取）
+    // 通用复制逻辑
     val performCopy: (FieldKey, VaultSummary) -> Unit = { fieldKey, item ->
         val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
         val label = strategy.getCopyLabel(fieldKey)
 
-        // TOTP 特殊处理：PASSWORD 字段 + 存在 TOTP 密钥时复制当前验证码
         if (fieldKey == FieldKey.PASSWORD && !item.totpSecret.isNullOrBlank()) {
             totpStates[item.id]?.let { state ->
                 if (state.code.isNotEmpty() && !state.code.contains("-")) {
@@ -150,13 +159,19 @@ fun VaultContent(
                 }
             }
         } else {
-            // 通用路径：加载完整条目 → getFieldValue → 解密 → 复制
             vaultViewModel.loadEntryById(item.id) { fullEntry ->
                 val rawValue = strategy.getFieldValue(fullEntry, fieldKey) ?: return@loadEntryById
                 vaultViewModel.decryptSingle(
                     activity = activity,
                     encryptedData = rawValue,
-                    authenticate = { act, t, s, _, ok -> mainViewModel.authenticate(act, t, s, null, ok) },
+                    authenticate = { act, t, s, _, ok ->
+                        mainViewModel.auth.authenticate(
+                            act,
+                            t,
+                            s,
+                            onSuccess = ok
+                        )
+                    },
                     onResult = { decrypted ->
                         decrypted?.let {
                             ClipboardUtils.copy(activity, it)
@@ -173,7 +188,14 @@ fun VaultContent(
         handleSwipeAction(
             actionType = action,
             item = item,
-            onAuthRequired = { ok -> mainViewModel.authenticate(activity, "安全验证", item.title, null, ok) },
+            onAuthRequired = { ok ->
+                mainViewModel.auth.authenticate(
+                    activity,
+                    "安全验证",
+                    item.title,
+                    onSuccess = ok
+                )
+            },
             onQuickDelete = { vaultViewModel.quickDelete(it) },
             onCopy = { fieldKey -> performCopy(fieldKey, item) },
             onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } }
@@ -202,7 +224,6 @@ fun VaultContent(
     }
 
     Scaffold(
-        // 核心修复：只有在至少有一个组件需要折叠时，才挂载 scrollBehavior 的 nestedScrollConnection
         modifier = Modifier
             .fillMaxSize()
             .then(
@@ -215,6 +236,7 @@ fun VaultContent(
             VaultTopBar(
                 vaultViewModel = vaultViewModel,
                 scrollBehavior = scrollBehavior,
+                currentPageIndex = pagerState.currentPage,
                 onExportClick = {
                     val started = settingsViewModel.backup.tryStartExportInConfiguredDirectory(settingsUiState.backupDirectoryUri)
                     if (!started) {
@@ -234,7 +256,7 @@ fun VaultContent(
         floatingActionButton = {
             VaultFab(viewModel = vaultViewModel, isVisible = isFabVisible)
         },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0) // 与旧版保持一致，完全由内部处理内边距
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         HorizontalPager(
             state = pagerState,
@@ -242,7 +264,7 @@ fun VaultContent(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) { pageIndex ->
-            val currentTab = VaultTab.entries[pageIndex]
+            val currentTab = visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
             val displayItems = remember(items, currentTab) {
                 when (currentTab) {
                     VaultTab.ALL -> items
@@ -290,7 +312,9 @@ fun VaultContent(
                         }
                     }
                     item {
-                        Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp))
+                        Spacer(modifier = Modifier
+                            .navigationBarsPadding()
+                            .height(80.dp))
                     }
                 }
             }
@@ -312,7 +336,7 @@ fun VaultContent(
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             VaultScanner(
                 vaultViewModel = vaultViewModel,
-                onDismiss = { vaultViewModel.setAddType(AddType.NONE) }
+                onDismiss = { vaultViewModel.setAddType(null) }
             )
         }
     }
@@ -337,12 +361,16 @@ private fun VaultListSkeleton() {
     ) {
         items(6) {
             Card(
-                modifier = Modifier.fillMaxWidth().height(72.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
             ) {}
         }
         item {
-            Spacer(modifier = Modifier.navigationBarsPadding().height(80.dp))
+            Spacer(modifier = Modifier
+                .navigationBarsPadding()
+                .height(80.dp))
         }
     }
 }

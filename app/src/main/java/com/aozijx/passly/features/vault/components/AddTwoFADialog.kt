@@ -26,7 +26,6 @@ import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.vault.AddType
 import com.aozijx.passly.features.vault.VaultViewModel
 import java.net.URLDecoder
 
@@ -78,7 +77,7 @@ fun AddTwoFADialog(
 
     BaseVaultDialog(
         title = stringResource(R.string.vault_add_2fa_title),
-        onDismiss = { viewModel.setAddType(AddType.NONE) },
+        onDismiss = { viewModel.setAddType(null) },
         confirmEnabled = state.isValid,
         onConfirm = {
             try {
@@ -96,7 +95,7 @@ fun AddTwoFADialog(
                     entryType = 1
                 )
                 viewModel.addItem(entry, state.domain)
-                viewModel.setAddType(AddType.NONE)
+                viewModel.setAddType(null)
             } catch (e: Exception) {
                 Logcat.e("AddTwoFA", "Failed to encrypt/save", e)
                 Toast.makeText(context, "加密保存失败", Toast.LENGTH_SHORT).show()

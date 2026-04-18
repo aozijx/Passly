@@ -1,23 +1,22 @@
 package com.aozijx.passly.features.main.internal
 
-import android.content.Context
-import com.aozijx.passly.data.local.AppDatabase
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 
 internal data class MainDatabaseInitResult(
     val error: Throwable?
 )
 
-internal class MainDatabaseInitializer {
+internal class MainDatabaseInitializer(
+    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases
+) {
 
-    suspend fun initialize(context: Context): MainDatabaseInitResult = withContext(Dispatchers.IO) {
-        runCatching {
-            AppDatabase.preWarm(context)
-            AppDatabase.initializationError
-        }.fold(
-            onSuccess = { MainDatabaseInitResult(error = it) },
-            onFailure = { MainDatabaseInitResult(error = it) }
-        )
+    suspend fun initialize(): MainDatabaseInitResult {
+        val error = databaseLifecycleUseCases.preWarm()
+        return MainDatabaseInitResult(error = error)
+    }
+
+    suspend fun retry(): MainDatabaseInitResult {
+        val error = databaseLifecycleUseCases.retry()
+        return MainDatabaseInitResult(error = error)
     }
 }

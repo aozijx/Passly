@@ -6,7 +6,7 @@ import android.net.NetworkCapabilities
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
-import com.aozijx.passly.data.local.AppDatabase
+import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -19,7 +19,9 @@ internal data class BackupImportIconSyncResult(
     val failedEntryIds: List<Int> = emptyList()
 )
 
-internal class BackupImportIconSyncSupport {
+internal class BackupImportIconSyncSupport(
+    private val iconResyncUseCases: IconResyncUseCases
+) {
 
     private companion object {
         private const val TAG = "BackupIconSync"
@@ -40,8 +42,7 @@ internal class BackupImportIconSyncSupport {
             )
         }
 
-        val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
-        val targets = dao.getEntriesForIconResync()
+        val targets = iconResyncUseCases.getCandidates()
 
         if (targets.isEmpty()) {
             onProgress?.invoke(0, 0, 0, 0)
@@ -67,7 +68,7 @@ internal class BackupImportIconSyncSupport {
 
             val outcome = FaviconUtils.downloadAndSaveFavicon(source, appContext)
             if (outcome.result == FaviconUtils.DownloadResult.SUCCESS && !outcome.filePath.isNullOrBlank()) {
-                dao.update(
+                iconResyncUseCases.update(
                     entry.copy(
                         iconName = null,
                         iconCustomPath = outcome.filePath,

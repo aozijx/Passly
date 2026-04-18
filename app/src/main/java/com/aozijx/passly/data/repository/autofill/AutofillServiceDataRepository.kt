@@ -14,10 +14,10 @@ import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
+import com.aozijx.passly.domain.policy.DomainNormalizer
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
-import com.aozijx.passly.service.autofill.engine.AutofillStructureParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -96,7 +96,7 @@ class AutofillServiceDataRepository(
             }
 
             val normalizedPackage = normalizePackageName(packageName)
-            val normalizedDomain = AutofillStructureParser.normalizeDomain(webDomain)
+            val normalizedDomain = DomainNormalizer.normalize(webDomain)
 
             entries.asSequence()
                 .mapNotNull { entry ->
@@ -152,7 +152,7 @@ class AutofillServiceDataRepository(
 
             val matchStart = System.currentTimeMillis()
             val normalizedPackage = normalizePackageName(packageName)
-            val normalizedDomain = AutofillStructureParser.normalizeDomain(webDomain)
+            val normalizedDomain = DomainNormalizer.normalize(webDomain)
             val existing = candidateEntries.find { entry ->
                 if (!supportsAutofill(entry)) return@find false
 
@@ -177,7 +177,7 @@ class AutofillServiceDataRepository(
                     updatedAt = System.currentTimeMillis()
                 )
                 dao.update(updatedEntry.toEntity())
-                Logcat.i(TAG, "Updated existing account: $usernameValue")
+                Logcat.i(TAG, "Updated existing account: id=${existing.id}")
             } else {
                 val appLabel = packageName?.let { pkg ->
                     try {
@@ -266,9 +266,13 @@ class AutofillServiceDataRepository(
 
     private fun isDomainMatch(entryDomain: String?, normalizedRequestDomain: String?): Boolean {
         if (normalizedRequestDomain == null) return false
-        val normalizedEntryDomain = AutofillStructureParser.normalizeDomain(entryDomain) ?: return false
-        return normalizedEntryDomain == normalizedRequestDomain ||
-            normalizedEntryDomain.endsWith(".$normalizedRequestDomain") ||
-            normalizedRequestDomain.endsWith(".$normalizedEntryDomain")
+        val normalizedEntryDomain = DomainNormalizer.normalize(entryDomain) ?: return false
+        if (normalizedEntryDomain == normalizedRequestDomain) return true
+        // 仅允许“请求域 ⊆ 条目域”这一单向匹配，避免把子域条目上浮到父域或同级域，
+        // 堵住 entry=github.io → request=attacker.github.io 这类公共后缀场景。
+        // 要求条目域至少两级标签，过滤掉纯 TLD 条目带来的误匹配风险。
+        val entryLabelCount = normalizedEntryDomain.count { it == '.' } + 1
+        if (entryLabelCount < 2) return false
+        return normalizedRequestDomain.endsWith(".$normalizedEntryDomain")
     }
 }
