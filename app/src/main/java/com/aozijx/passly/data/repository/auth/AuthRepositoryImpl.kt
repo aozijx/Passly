@@ -83,8 +83,7 @@ internal class AuthRepositoryImpl(
 
             val passphrase = DatabasePassphraseManager.processResult(application, authResult)
             DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
-            // 在生物识别授权窗口仍有效时同步装载字段级 DEK，确保解锁后字段加密立刻可用。
-            SessionCryptoKey.loadOrCreate(application)
+            SessionCryptoKey.deriveAndSet(passphrase)
             onAuthorized()
             Logcat.i(tag, "Authentication and decryption successful.")
         }

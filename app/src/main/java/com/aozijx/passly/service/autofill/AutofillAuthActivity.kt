@@ -136,7 +136,7 @@ class AutofillAuthActivity : FragmentActivity() {
             onSuccess = { result ->
                 val passphrase = DatabasePassphraseManager.processResult(this, result)
                 DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
-                SessionCryptoKey.loadOrCreate(this)
+                SessionCryptoKey.deriveAndSet(passphrase)
                 authUseCases.onExternalAuthorized()
 
                 // 解锁成功后，查询候选并返回 FillResponse
@@ -238,7 +238,7 @@ class AutofillAuthActivity : FragmentActivity() {
                     DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
                 }
                 if (!SessionCryptoKey.isSessionKeyAvailable) {
-                    SessionCryptoKey.loadOrCreate(this)
+                    SessionCryptoKey.deriveAndSet(DatabasePassphraseManager.getPassphrase())
                 }
                 authUseCases.onExternalAuthorized()
 
