@@ -18,6 +18,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.crypto.CryptoAccess
+import com.aozijx.passly.core.crypto.SessionCryptoKey
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.DatabasePassphraseManager
@@ -135,6 +136,7 @@ class AutofillAuthActivity : FragmentActivity() {
             onSuccess = { result ->
                 val passphrase = DatabasePassphraseManager.processResult(this, result)
                 DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+                SessionCryptoKey.loadOrCreate(this)
                 authUseCases.onExternalAuthorized()
 
                 // 解锁成功后，查询候选并返回 FillResponse
@@ -234,6 +236,9 @@ class AutofillAuthActivity : FragmentActivity() {
                 if (DatabasePassphraseManager.isLocked) {
                     val passphrase = DatabasePassphraseManager.processResult(this, result)
                     DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+                }
+                if (!SessionCryptoKey.isSessionKeyAvailable) {
+                    SessionCryptoKey.loadOrCreate(this)
                 }
                 authUseCases.onExternalAuthorized()
 

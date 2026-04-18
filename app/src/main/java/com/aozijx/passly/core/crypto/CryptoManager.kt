@@ -1,50 +1,25 @@
 package com.aozijx.passly.core.crypto
 
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
 import android.util.Base64
 import java.nio.ByteBuffer
-import java.security.KeyStore
 import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 /**
- * 核心加密管理器：处理数据的 AES-GCM 加密与解密
+ * 字段级加密：AES-256-GCM。
+ * 密钥来自 [SessionCryptoKey]，仅在用户已认证解锁时可用；锁定状态下调用会抛出。
  */
 object CryptoManager {
     private const val ALGORITHM = "AES/GCM/NoPadding"
-    private const val KEY_SIZE = 256
     private const val TAG_LENGTH = 128
     private const val IV_LENGTH = 12
-    private const val KEY_ALIAS = "poop_vault_master_key"
-
-    private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-
-    private fun getSecretKey(): SecretKey {
-        val existingKey = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
-        return existingKey?.secretKey ?: createKey()
-    }
-
-    private fun createKey(): SecretKey {
-        return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
-            init(
-                KeyGenParameterSpec.Builder(
-                    KEY_ALIAS,
-                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-                )
-                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                    .setKeySize(KEY_SIZE)
-                    .build()
-            )
-        }.generateKey()
-    }
+    private const val AES_KEY_ALGORITHM = "AES"
 
     fun encrypt(data: String): String {
+        val key = SecretKeySpec(SessionCryptoKey.getSessionKey(), AES_KEY_ALGORITHM)
         val cipher = Cipher.getInstance(ALGORITHM)
-        cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
+        cipher.init(Cipher.ENCRYPT_MODE, key)
         val encrypted = cipher.doFinal(data.toByteArray())
         val combined = ByteBuffer.allocate(cipher.iv.size + encrypted.size)
             .put(cipher.iv)
@@ -54,15 +29,13 @@ object CryptoManager {
     }
 
     fun decrypt(encryptedData: String): String {
+        val key = SecretKeySpec(SessionCryptoKey.getSessionKey(), AES_KEY_ALGORITHM)
         val combined = Base64.decode(encryptedData, Base64.NO_WRAP)
         val buffer = ByteBuffer.wrap(combined)
         val iv = ByteArray(IV_LENGTH).also { buffer.get(it) }
         val encrypted = ByteArray(buffer.remaining()).also { buffer.get(it) }
-
         val cipher = Cipher.getInstance(ALGORITHM)
-        cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), GCMParameterSpec(TAG_LENGTH, iv))
+        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_LENGTH, iv))
         return String(cipher.doFinal(encrypted))
     }
 }
-
-

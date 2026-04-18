@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.crypto.BiometricHelper
+import com.aozijx.passly.core.crypto.SessionCryptoKey
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.AutoLockScheduler
 import com.aozijx.passly.core.security.DatabasePassphraseManager
@@ -82,6 +83,8 @@ internal class AuthRepositoryImpl(
 
             val passphrase = DatabasePassphraseManager.processResult(application, authResult)
             DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+            // 在生物识别授权窗口仍有效时同步装载字段级 DEK，确保解锁后字段加密立刻可用。
+            SessionCryptoKey.loadOrCreate(application)
             onAuthorized()
             Logcat.i(tag, "Authentication and decryption successful.")
         }
@@ -102,6 +105,7 @@ internal class AuthRepositoryImpl(
         Logcat.i(tag, "Locking session.")
         _isAuthorized.update { false }
         DatabasePassphraseManager.clearDecryptedPassphrase()
+        SessionCryptoKey.clearSessionKey()
         autoLockScheduler.cancel()
         lastInteractionAtMs = 0
     }
