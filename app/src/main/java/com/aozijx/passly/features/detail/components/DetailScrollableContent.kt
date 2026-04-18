@@ -71,7 +71,6 @@ fun DetailScrollableContent(
                     CredentialSection(
                         activity = activity,
                         item = entry,
-                        onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
                         editState = editState,
                         revealedUsername = uiState.revealedUsername,

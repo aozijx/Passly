@@ -242,7 +242,6 @@ private fun LazyListScope.typeSpecificCardContent(
                 CredentialSection(
                     activity = activity,
                     item = entry,
-                    onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onAuthenticate = { act, title, subtitle, onSuccess ->
                         mainViewModel.auth.authenticate(act, title, subtitle, onSuccess = onSuccess)
                     },

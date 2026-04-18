@@ -1,5 +1,6 @@
 package com.aozijx.passly.features.detail.sections
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,17 +21,19 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.CryptoManager
+import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.EditTextField
 import com.aozijx.passly.features.detail.internal.EntryEditState
 
+private const val TAG = "CredentialSection"
+
 @Composable
 fun CredentialSection(
     activity: FragmentActivity,
     item: VaultEntry,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     editState: EntryEditState,
     revealedUsername: String?,
@@ -40,6 +43,39 @@ fun CredentialSection(
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
+    val decryptFailMsg = stringResource(R.string.vault_decrypt_failed)
+    val encryptFailMsg = stringResource(R.string.vault_encrypt_failed)
+
+    fun decryptOrToast(ciphertext: String): String? {
+        return try {
+            CryptoManager.decrypt(ciphertext)
+        } catch (e: Exception) {
+            Logcat.e(TAG, "Decrypt failed", e)
+            Toast.makeText(context, decryptFailMsg, Toast.LENGTH_SHORT).show()
+            null
+        }
+    }
+
+    fun saveField(
+        newValue: String,
+        oldRevealed: String?,
+        onClose: () -> Unit,
+        onSuccess: (encrypted: String) -> Unit
+    ) {
+        if (newValue == oldRevealed) {
+            onClose()
+            return
+        }
+        try {
+            val encrypted = CryptoManager.encrypt(newValue)
+            onSuccess(encrypted)
+            onClose()
+        } catch (e: Exception) {
+            Logcat.e(TAG, "Encrypt failed", e)
+            Toast.makeText(context, encryptFailMsg, Toast.LENGTH_SHORT).show()
+            onClose()
+        }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         CredentialRow(
@@ -53,26 +89,20 @@ fun CredentialSection(
                 if (revealedUsername != null) {
                     ClipboardUtils.copy(context, revealedUsername)
                 } else {
-                    onAuthenticate(activity, "解密信息", "验证身份以复制账号", {
-                        // 此处解密逻辑由调用方在 View 层或注入的辅助工具处理
-                        // 在当前架构下，我们将使用 CryptoManager 直接尝试（如果已通过验证）
-                        try {
-                            val decrypted = CryptoManager.decrypt(item.username)
+                    onAuthenticate(activity, "解密信息", "验证身份以复制账号") {
+                        decryptOrToast(item.username)?.let { decrypted ->
                             ClipboardUtils.copy(context, decrypted)
                             onUsernameRevealed(decrypted)
-                        } catch (e: Exception) {
-                            // 处理解密失败
                         }
-                    })
+                    }
                 }
             },
             onSave = { newValue ->
-                saveEncrypted(newValue, revealedUsername, { editState.isEditingUsername = false }) { encrypted ->
+                saveField(newValue, revealedUsername, { editState.isEditingUsername = false }) { encrypted ->
                     onEntryUpdated(item.copy(username = encrypted))
                     onUsernameRevealed(newValue)
                 }
-            }
-        )
+            })
 
         val showPassword = item.password.isNotEmpty() || item.entryType != 1
         if (showPassword) {
@@ -87,42 +117,34 @@ fun CredentialSection(
                     if (revealedPassword != null) {
                         ClipboardUtils.copy(context, revealedPassword)
                     } else {
-                        onAuthenticate(activity, "解密信息", "验证身份以复制密码", {
-                            try {
-                                val decrypted = CryptoManager.decrypt(item.password)
+                        onAuthenticate(activity, "解密信息", "验证身份以复制密码") {
+                            decryptOrToast(item.password)?.let { decrypted ->
                                 ClipboardUtils.copy(context, decrypted)
                                 onPasswordRevealed(decrypted)
-                            } catch (e: Exception) {
                             }
-                        })
+                        }
                     }
                 },
                 onSave = { newValue ->
-                    saveEncrypted(newValue, revealedPassword, { editState.isEditingPassword = false }) { encrypted ->
+                    saveField(newValue, revealedPassword, { editState.isEditingPassword = false }) { encrypted ->
                         onEntryUpdated(item.copy(password = encrypted))
                         onPasswordRevealed(newValue)
                     }
-                }
-            )
+                })
         }
 
         if (revealedUsername == null || revealedPassword == null) {
             Button(
                 onClick = {
-                    onAuthenticate(activity, "解密信息", "验证身份以查看完整条目", {
-                        try {
-                            if (revealedUsername == null && item.username.isNotEmpty()) {
-                                onUsernameRevealed(CryptoManager.decrypt(item.username))
-                            }
-                            if (revealedPassword == null && item.password.isNotEmpty()) {
-                                onPasswordRevealed(CryptoManager.decrypt(item.password))
-                            }
-                        } catch (e: Exception) {
+                    onAuthenticate(activity, "解密信息", "验证身份以查看完整条目") {
+                        if (revealedUsername == null && item.username.isNotEmpty()) {
+                            decryptOrToast(item.username)?.let { onUsernameRevealed(it) }
                         }
-                    })
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                        if (revealedPassword == null && item.password.isNotEmpty()) {
+                            decryptOrToast(item.password)?.let { onPasswordRevealed(it) }
+                        }
+                    }
+                }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)
             ) {
                 Icon(Icons.Default.Visibility, null)
                 Spacer(Modifier.width(8.dp))
@@ -149,8 +171,7 @@ private fun CredentialRow(
                 value = editedValue,
                 onValueChange = onValueChange,
                 label = stringResource(R.string.label_edit_field, label),
-                onSave = { onSave(editedValue) }
-            )
+                onSave = { onSave(editedValue) })
             if (revealedValue != null && editedValue != revealedValue) {
                 Text(
                     stringResource(R.string.vault_edit_modified_hint),
@@ -168,26 +189,6 @@ private fun CredentialRow(
             onEdit = {
                 onValueChange(revealedValue ?: "")
                 onEditToggle(true)
-            }
-        )
-    }
-}
-
-private fun saveEncrypted(
-    newValue: String,
-    oldValue: String?,
-    onClose: () -> Unit,
-    onSuccess: (String) -> Unit
-) {
-    if (newValue == oldValue) {
-        onClose()
-    } else {
-        try {
-            val encrypted = CryptoManager.encrypt(newValue)
-            onSuccess(encrypted)
-            onClose()
-        } catch (e: Exception) {
-            onClose()
-        }
+            })
     }
 }

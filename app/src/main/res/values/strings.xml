@@ -145,6 +145,8 @@
     <string name="vault_add_password_title">添加密码项</string>
     <string name="vault_upgrade_security">验证并升级安全性</string>
     <string name="vault_reveal_info">验证并显示详情</string>
+    <string name="vault_decrypt_failed">解密失败，请重新验证</string>
+    <string name="vault_encrypt_failed">加密失败，保存已取消</string>
     <string name="vault_edit_modify_category">修改分类</string>
     <string name="vault_edit_save_category">保存分类</string>
     <string name="vault_edit_modified_hint">已修改，别忘了保存</string>
