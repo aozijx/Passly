@@ -27,7 +27,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
@@ -70,10 +69,11 @@ fun WifiSection(
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
                     IconButton(onClick = {
-                        saveEncrypted(editState.editedPassword, revealedPassword, { editState.isEditingPassword = false }) { encrypted ->
-                            onEntryUpdated(entry.copy(password = encrypted))
+                        if (editState.editedPassword != revealedPassword) {
+                            onEntryUpdated(entry.copy(password = editState.editedPassword))
                             onPasswordRevealed(editState.editedPassword)
                         }
+                        editState.isEditingPassword = false
                     }) {
                         Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
                     }
@@ -90,14 +90,11 @@ fun WifiSection(
                         ClipboardUtils.copy(context, revealedPassword)
                         Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
                     } else {
-                        onAuthenticate(activity, "解密 WiFi 密码", "验证身份以复制密码", {
-                            try {
-                                val decrypted = CryptoManager.decrypt(entry.password)
-                                ClipboardUtils.copy(context, decrypted)
-                                Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
-                                onPasswordRevealed(decrypted)
-                            } catch (e: Exception) {}
-                        })
+                        onAuthenticate(activity, "解密 WiFi 密码", "验证身份以复制密码") {
+                            ClipboardUtils.copy(context, entry.password)
+                            Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
+                            onPasswordRevealed(entry.password)
+                        }
                     }
                 },
                 onEdit = {
@@ -110,11 +107,9 @@ fun WifiSection(
         if (revealedPassword == null && !editState.isEditingPassword) {
             Button(
                 onClick = {
-                    onAuthenticate(activity, "解密 WiFi 密码", "验证身份以查看密码", {
-                        try {
-                            onPasswordRevealed(CryptoManager.decrypt(entry.password))
-                        } catch (e: Exception) {}
-                    })
+                    onAuthenticate(activity, "解密 WiFi 密码", "验证身份以查看密码") {
+                        onPasswordRevealed(entry.password)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)
@@ -153,25 +148,6 @@ fun WifiSection(
                     )
                 }
             }
-        }
-    }
-}
-
-private fun saveEncrypted(
-    newValue: String,
-    oldValue: String?,
-    onClose: () -> Unit,
-    onSuccess: (String) -> Unit
-) {
-    if (newValue == oldValue) {
-        onClose()
-    } else {
-        try {
-            val encrypted = CryptoManager.encrypt(newValue)
-            onSuccess(encrypted)
-            onClose()
-        } catch (e: Exception) {
-            onClose()
         }
     }
 }

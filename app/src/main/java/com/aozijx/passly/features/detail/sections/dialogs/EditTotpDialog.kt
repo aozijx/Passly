@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
+
 import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.internal.TotpEditState
@@ -52,10 +52,9 @@ fun EditTotpSection(
             Button(onClick = {
                 if (editState.secret.isNotBlank()) {
                     try {
-                        val encrypted = CryptoManager.encrypt(editState.secret.trim())
                         onEntryUpdated(
                             item.copy(
-                                totpSecret = encrypted,
+                                totpSecret = editState.secret.trim(),
                                 totpPeriod = editState.period.toIntOrNull() ?: 30,
                                 totpDigits = editState.digits.toIntOrNull() ?: 6,
                                 totpAlgorithm = editState.algorithm

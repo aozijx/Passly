@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.backup.internal
 import android.util.JsonReader
 import android.util.JsonToken
 import android.util.JsonWriter
-import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.entity.VaultPayload
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
@@ -11,89 +11,80 @@ import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 internal object BackupVSerializer {
-    /**
-     * 注意：此方法不会关闭传入的 output 流，因为在 ZIP 导出中，
-     * 写入一个 Entry 后流必须保持开启以继续写入后续 Entry 或 ZIP 中央目录。
-     */
-    fun writeEntries(output: OutputStream, entries: List<VaultEntryEntity>) {
+
+    fun writeEntries(output: OutputStream, payloads: List<VaultPayload>) {
         val writer = JsonWriter(OutputStreamWriter(output, StandardCharsets.UTF_8))
         writer.setIndent("")
         writer.beginArray()
-        entries.forEach { writeEntry(writer, it) }
+        payloads.forEach { writePayload(writer, it) }
         writer.endArray()
-        // 必须手动 flush 以确保数据写入底层的 ZipOutputStream，
-        // 但严禁调用 close()，否则会导致外层 ZipOutputStream 提前关闭。
         writer.flush()
     }
 
-    /**
-     * 注意：此方法不会关闭传入的 input 流。
-     */
-    fun readEntries(input: InputStream): List<VaultEntryEntity> {
-        val entries = mutableListOf<VaultEntryEntity>()
+    fun readEntries(input: InputStream): List<VaultPayload> {
+        val payloads = mutableListOf<VaultPayload>()
         val reader = JsonReader(InputStreamReader(input, StandardCharsets.UTF_8))
         reader.beginArray()
-        while (reader.hasNext()) entries.add(readEntry(reader))
+        while (reader.hasNext()) payloads.add(readPayload(reader))
         reader.endArray()
-        return entries
+        return payloads
     }
 
-    private fun writeEntry(writer: JsonWriter, entry: VaultEntryEntity) {
+    private fun writePayload(writer: JsonWriter, p: VaultPayload) {
         writer.beginObject()
-        writer.name("title").value(entry.title)
-        writer.name("username").value(entry.username)
-        writer.name("password").value(entry.password)
-        writer.name("category").value(entry.category)
-        writer.name("notes").value(entry.notes)
-        writer.name("iconName").value(entry.iconName)
-        writer.name("iconCustomPath").value(entry.iconCustomPath)
-        writer.name("totpSecret").value(entry.totpSecret)
-        writer.name("totpPeriod").value(entry.totpPeriod.toLong())
-        writer.name("totpDigits").value(entry.totpDigits.toLong())
-        writer.name("totpAlgorithm").value(entry.totpAlgorithm)
-        writer.name("passkeyDataJson").value(entry.passkeyDataJson)
-        writer.name("recoveryCodes").value(entry.recoveryCodes)
-        writer.name("hardwareKeyInfo").value(entry.hardwareKeyInfo)
-        writer.name("wifiEncryptionType").value(entry.wifiSecurityType)
-        writer.name("wifiIsHidden").value(entry.wifiIsHidden)
-        writer.name("cardCvv").value(entry.cardCvv)
-        writer.name("cardExpiration").value(entry.cardExpiration)
-        writer.name("idNumber").value(entry.idNumber)
-        writer.name("paymentPin").value(entry.paymentPin)
-        writer.name("paymentPlatform").value(entry.paymentPlatform)
-        writer.name("securityQuestion").value(entry.securityQuestion)
-        writer.name("securityAnswer").value(entry.securityAnswer)
-        writer.name("sshPrivateKey").value(entry.sshPrivateKey)
-        writer.name("cryptoSeedPhrase").value(entry.cryptoSeedPhrase)
-        writer.name("entryType").value(entry.entryType.toLong())
-        writer.name("associatedAppPackage").value(entry.associatedAppPackage)
-        writer.name("associatedDomain").value(entry.associatedDomain)
+        writer.name("title").value(p.title)
+        writer.name("username").value(p.username)
+        writer.name("password").value(p.password)
+        writer.name("category").value(p.category)
+        writer.name("notes").value(p.notes)
+        writer.name("iconName").value(p.iconName)
+        writer.name("iconCustomPath").value(p.iconCustomPath)
+        writer.name("totpSecret").value(p.totpSecret)
+        writer.name("totpPeriod").value(p.totpPeriod.toLong())
+        writer.name("totpDigits").value(p.totpDigits.toLong())
+        writer.name("totpAlgorithm").value(p.totpAlgorithm)
+        writer.name("passkeyDataJson").value(p.passkeyDataJson)
+        writer.name("recoveryCodes").value(p.recoveryCodes)
+        writer.name("hardwareKeyInfo").value(p.hardwareKeyInfo)
+        writer.name("wifiEncryptionType").value(p.wifiSecurityType)
+        writer.name("wifiIsHidden").value(p.wifiIsHidden)
+        writer.name("cardCvv").value(p.cardCvv)
+        writer.name("cardExpiration").value(p.cardExpiration)
+        writer.name("idNumber").value(p.idNumber)
+        writer.name("paymentPin").value(p.paymentPin)
+        writer.name("paymentPlatform").value(p.paymentPlatform)
+        writer.name("securityQuestion").value(p.securityQuestion)
+        writer.name("securityAnswer").value(p.securityAnswer)
+        writer.name("sshPrivateKey").value(p.sshPrivateKey)
+        writer.name("cryptoSeedPhrase").value(p.cryptoSeedPhrase)
+        writer.name("entryType").value(p.entryType.toLong())
+        writer.name("associatedAppPackage").value(p.associatedAppPackage)
+        writer.name("associatedDomain").value(p.associatedDomain)
         writer.name("uriList")
-        if (entry.uriList == null) writer.nullValue() else {
+        if (p.uriList == null) writer.nullValue() else {
             writer.beginArray()
-            entry.uriList.forEach { writer.value(it) }
+            p.uriList.forEach { writer.value(it) }
             writer.endArray()
         }
-        writer.name("matchType").value(entry.matchType.toLong())
-        writer.name("customFieldsJson").value(entry.customFieldsJson)
-        writer.name("autoSubmit").value(entry.autoSubmit)
-        writer.name("strengthScore").value(entry.strengthScore?.toDouble())
-        writer.name("lastUsedAt").value(entry.lastUsedAt)
-        writer.name("usageCount").value(entry.usageCount.toLong())
-        writer.name("favorite").value(entry.favorite)
+        writer.name("matchType").value(p.matchType.toLong())
+        writer.name("customFieldsJson").value(p.customFieldsJson)
+        writer.name("autoSubmit").value(p.autoSubmit)
+        writer.name("strengthScore").value(p.strengthScore?.toDouble())
+        writer.name("lastUsedAt").value(p.lastUsedAt)
+        writer.name("usageCount").value(p.usageCount.toLong())
+        writer.name("favorite").value(p.favorite)
         writer.name("tags")
-        if (entry.tags == null) writer.nullValue() else {
+        if (p.tags == null) writer.nullValue() else {
             writer.beginArray()
-            entry.tags.forEach { writer.value(it) }
+            p.tags.forEach { writer.value(it) }
             writer.endArray()
         }
-        writer.name("createdAt").value(entry.createdAt)
-        writer.name("updatedAt").value(entry.updatedAt)
-        writer.name("expiresAt").value(entry.expiresAt)
+        writer.name("createdAt").value(p.createdAt)
+        writer.name("expiresAt").value(p.expiresAt)
         writer.endObject()
     }
 
-    private fun readEntry(reader: JsonReader): VaultEntryEntity {
+    private fun readPayload(reader: JsonReader): VaultPayload {
         var title = ""
         var username = ""
         var password = ""
@@ -132,7 +123,6 @@ internal object BackupVSerializer {
         var favorite = false
         var tags: List<String>? = null
         var createdAt: Long? = System.currentTimeMillis()
-        var updatedAt: Long? = null
         var expiresAt: Long? = null
 
         reader.beginObject()
@@ -176,14 +166,13 @@ internal object BackupVSerializer {
                 "favorite" -> favorite = reader.nextBoolean()
                 "tags" -> tags = reader.nextStringList()
                 "createdAt" -> createdAt = reader.nextNullableLong()
-                "updatedAt" -> updatedAt = reader.nextNullableLong()
                 "expiresAt" -> expiresAt = reader.nextNullableLong()
                 else -> reader.skipValue()
             }
         }
         reader.endObject()
 
-        return VaultEntryEntity(
+        return VaultPayload(
             title = title,
             username = username,
             password = password,
@@ -222,7 +211,6 @@ internal object BackupVSerializer {
             favorite = favorite,
             tags = tags,
             createdAt = createdAt,
-            updatedAt = updatedAt,
             expiresAt = expiresAt
         )
     }

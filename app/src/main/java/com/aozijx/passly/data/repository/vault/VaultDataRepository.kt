@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.mapper.toDomain
+import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.repository.vault.VaultRepository
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.map
 class VaultDataRepository(
     private val entryDao: VaultEntryDao
 ) : VaultRepository {
-    override val allEntries: Flow<List<VaultEntry>> = entryDao.getAllEntries().map { entities ->
+    override val allEntries: Flow<List<VaultEntry>> = entryDao.observeAll().map { entities ->
         entities.map { it.toDomain() }
     }
 
@@ -19,17 +20,19 @@ class VaultDataRepository(
         entryDao.getEntryById(entryId)?.toDomain()
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> =
-        entryDao.getEntriesForIconResync().map { it.toDomain() }
+        entryDao.getAll().toDomainList().filter {
+            !it.associatedDomain.isNullOrEmpty()
+        }
 
     override suspend fun insert(entry: VaultEntry): Long =
         entryDao.insert(entry.toEntity())
 
-    override suspend fun update(entry: VaultEntry) = 
+    override suspend fun update(entry: VaultEntry) =
         entryDao.update(entry.toEntity())
 
-    override suspend fun delete(entry: VaultEntry) = 
+    override suspend fun delete(entry: VaultEntry) =
         entryDao.delete(entry.toEntity())
 
-    override suspend fun deleteAll() = 
+    override suspend fun deleteAll() =
         entryDao.deleteAll()
 }

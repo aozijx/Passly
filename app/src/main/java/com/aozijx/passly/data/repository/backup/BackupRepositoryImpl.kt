@@ -16,7 +16,7 @@ import com.aozijx.passly.core.backup.BackupManager.mapImportFailure
 import com.aozijx.passly.core.backup.BackupManager.readFullyOrThrow
 import com.aozijx.passly.core.backup.BackupManager.readSingleByteOrThrow
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
-import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.entity.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
 import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
@@ -34,9 +34,6 @@ import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
 
-/**
- * 备份仓库的深度实现。
- */
 internal class BackupRepositoryImpl(
     private val context: Context,
     private val dataSource: BackupDataSource = BackupRoomDataSource(context),
@@ -49,19 +46,20 @@ internal class BackupRepositoryImpl(
         includeImages: Boolean
     ): Result<Unit> = withContext(Dispatchers.IO) {
         val runResult = runCatching {
-            val entries = dataSource.readAllEntries()
-            val preparedEntries = mutableListOf<VaultEntryEntity>()
+            val entities = dataSource.readAllEntries()
+            val exportPayloads = mutableListOf<VaultPayload>()
             val imageExports = mutableListOf<Pair<String, File>>()
 
-            entries.forEach { raw ->
+            entities.forEach { entity ->
+                val payload = BackupFieldEncryptor.toExportPayload(entity, null)
                 val imageZipPath = if (includeImages) {
-                    imageStore.resolveReadable(raw.iconCustomPath)?.let {
-                        val path = "${IMAGE_ENTRY_PREFIX}${raw.id}_${it.name}"
+                    imageStore.resolveReadable(payload.iconCustomPath)?.let {
+                        val path = "${IMAGE_ENTRY_PREFIX}${entity.id}_${it.name}"
                         imageExports += path to it
                         path
                     }
                 } else null
-                preparedEntries += BackupFieldEncryptor.toExportEntry(raw, imageZipPath)
+                exportPayloads += if (imageZipPath != null) payload.copy(iconCustomPath = imageZipPath) else payload
             }
 
             val salt = generateSalt()
@@ -78,7 +76,7 @@ internal class BackupRepositoryImpl(
                 CipherOutputStream(output, cipher).use { encrypted ->
                     ZipOutputStream(encrypted).use { zip ->
                         zip.putNextEntry(ZipEntry(DATA_ENTRY_NAME))
-                        BackupVSerializer.writeEntries(zip, preparedEntries)
+                        BackupVSerializer.writeEntries(zip, exportPayloads)
                         zip.closeEntry()
 
                         if (includeImages) {
@@ -92,7 +90,7 @@ internal class BackupRepositoryImpl(
                 }
             } ?: throw BackupException.StoragePermissionDenied()
         }
-        
+
         runResult.fold(
             onSuccess = { Result.success(Unit) },
             onFailure = { e -> Result.failure(e as? BackupException ?: BackupException.Unknown(e)) }
@@ -101,10 +99,10 @@ internal class BackupRepositoryImpl(
 
     override suspend fun exportPlainBackup(uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
         val runResult = runCatching {
-            val entries = dataSource.readAllEntries()
-            val decryptedEntries = entries.map { BackupFieldEncryptor.toExportEntry(it, it.iconCustomPath) }
+            val entities = dataSource.readAllEntries()
+            val payloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
             context.contentResolver.openOutputStream(uri)?.use { output ->
-                BackupVSerializer.writeEntries(output, decryptedEntries)
+                BackupVSerializer.writeEntries(output, payloads)
             } ?: throw BackupException.StoragePermissionDenied()
         }
 
@@ -160,7 +158,7 @@ internal class BackupRepositoryImpl(
         val cipher = getCipher(Cipher.DECRYPT_MODE, key, iv)
 
         val imageRestoredPaths = mutableMapOf<String, String>()
-        var plainEntries = emptyList<VaultEntryEntity>()
+        var plainPayloads = emptyList<VaultPayload>()
 
         CipherInputStream(encryptedInput, cipher).use { encryptedIn ->
             ZipInputStream(encryptedIn).use { zip ->
@@ -168,7 +166,7 @@ internal class BackupRepositoryImpl(
                 while (entry != null) {
                     when {
                         entry.name == DATA_ENTRY_NAME -> {
-                            plainEntries = BackupVSerializer.readEntries(zip)
+                            plainPayloads = BackupVSerializer.readEntries(zip)
                         }
                         entry.name.startsWith(IMAGE_ENTRY_PREFIX) -> {
                             val fileName = entry.name.substringAfterLast('/')
@@ -181,23 +179,23 @@ internal class BackupRepositoryImpl(
             }
         }
 
-        if (plainEntries.isEmpty()) throw BackupException.FileCorrupted()
+        if (plainPayloads.isEmpty()) throw BackupException.FileCorrupted()
 
-        val finalEntries = plainEntries.map { plain ->
-            BackupFieldEncryptor.toImportEntry(plain, imageRestoredPaths[plain.iconCustomPath])
+        val entities = plainPayloads.map { payload ->
+            val restoredIcon = imageRestoredPaths[payload.iconCustomPath]
+            val finalPayload = if (restoredIcon != null) payload.copy(iconCustomPath = restoredIcon) else payload
+            BackupFieldEncryptor.toImportEntity(finalPayload)
         }
-        dataSource.writeEntries(finalEntries, mode)
+        dataSource.writeEntries(entities, mode)
     }
 
     private suspend fun importPlainJson(uri: Uri, mode: BackupImportMode) {
-        val plainEntries = context.contentResolver.openInputStream(uri)?.use {
+        val plainPayloads = context.contentResolver.openInputStream(uri)?.use {
             BackupVSerializer.readEntries(it)
         } ?: throw BackupException.FileCorrupted()
 
-        val encryptedEntries = plainEntries.map { entry ->
-            BackupFieldEncryptor.toImportEntry(entry, entry.iconCustomPath)
-        }
-        dataSource.writeEntries(encryptedEntries, mode)
+        val entities = plainPayloads.map { BackupFieldEncryptor.toImportEntity(it) }
+        dataSource.writeEntries(entities, mode)
     }
 
     private fun mapException(e: Throwable): BackupException {

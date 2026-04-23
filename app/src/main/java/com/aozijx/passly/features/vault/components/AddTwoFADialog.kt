@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
+
 import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
 import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.VaultTextField
@@ -81,13 +81,12 @@ fun AddTwoFADialog(
         confirmEnabled = state.isValid,
         onConfirm = {
             try {
-                val encryptedSecret = CryptoManager.encrypt(state.secret.trim())
                 val entry = VaultEntry(
                     title = state.title,
                     username = state.username,
                     password = "",
                     category = state.category.ifBlank { otpCategory },
-                    totpSecret = encryptedSecret,
+                    totpSecret = state.secret.trim(),
                     totpDigits = state.digits.toIntOrNull() ?: 6,
                     totpPeriod = state.period.toIntOrNull() ?: 30,
                     totpAlgorithm = state.algorithm,

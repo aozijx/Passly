@@ -14,7 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
+
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
@@ -54,7 +54,7 @@ fun PasskeySection(
                 } else {
                     onAuthenticate(activity, "解密 Passkey 数据", "验证身份以复制数据", {
                         try {
-                            val decrypted = CryptoManager.decrypt(encrypted)
+                            val decrypted = encrypted
                             revealedPasskeyData = decrypted
                             ClipboardUtils.copy(context, decrypted)
                             Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
@@ -70,7 +70,7 @@ fun PasskeySection(
                 } else {
                     onAuthenticate(activity, "解密 Passkey 数据", "验证身份以查看数据", {
                         try {
-                            revealedPasskeyData = CryptoManager.decrypt(encrypted)
+                            revealedPasskeyData = encrypted
                         } catch (e: Exception) {}
                     })
                 }
@@ -95,7 +95,7 @@ fun PasskeySection(
                 } else {
                     onAuthenticate(activity, "解密恢复码", "验证身份以复制恢复码", {
                         try {
-                            val decrypted = CryptoManager.decrypt(encrypted)
+                            val decrypted = encrypted
                             revealedRecoveryCodes = decrypted
                             ClipboardUtils.copy(context, decrypted)
                             Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
@@ -111,7 +111,7 @@ fun PasskeySection(
                 } else {
                     onAuthenticate(activity, "解密恢复码", "验证身份以查看恢复码", {
                         try {
-                            revealedRecoveryCodes = CryptoManager.decrypt(encrypted)
+                            revealedRecoveryCodes = encrypted
                         } catch (e: Exception) {}
                     })
                 }

@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
+
 import com.aozijx.passly.core.designsystem.components.ScannerView
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.ImageType
@@ -207,14 +207,13 @@ fun VaultScanner(
 
                                     try {
                                         // 核心修复：直接使用简化后的加密逻辑
-                                        val encryptedSecret = CryptoManager.encrypt(totp.secret)
                                         val entry = VaultEntry(
                                             title = totp.issuer ?: totp.label.split(":")
                                                 .firstOrNull() ?: "2FA",
                                             username = totp.label,
                                             password = "",
                                             category = "OTP",
-                                            totpSecret = encryptedSecret,
+                                            totpSecret = totp.secret,
                                             totpDigits = if (isSteam) 5 else (totp.digits ?: 6),
                                             totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm
                                                 ?: "SHA1"),
