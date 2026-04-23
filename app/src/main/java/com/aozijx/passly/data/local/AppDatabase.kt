@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.DatabasePassphraseManager
@@ -13,7 +12,6 @@ import com.aozijx.passly.data.entity.VaultHistoryEntity
 import com.aozijx.passly.data.local.config.DatabaseConfig
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
-import com.aozijx.passly.data.local.migration.Migrations
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(
@@ -21,7 +19,6 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
     version = DatabaseConfig.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
 )
-@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun vaultEntryDao(): VaultEntryDao
@@ -56,7 +53,6 @@ abstract class AppDatabase : RoomDatabase() {
                         DatabaseConfig.DATABASE_NAME
                     )
                         .openHelperFactory(factory)
-                        .addMigrations(*Migrations.getAll())
                         .build()
 
                     // 仅探测，不让探测的异常直接杀掉 getDatabase

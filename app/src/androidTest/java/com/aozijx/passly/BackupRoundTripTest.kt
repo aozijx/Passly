@@ -8,7 +8,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.local.AppDatabase
-import com.aozijx.passly.data.local.migration.Migrations
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRoomDataSource
 import kotlinx.coroutines.runBlocking
@@ -45,7 +44,7 @@ class BackupRoundTripTest {
         val passphrase = DatabasePassphraseManager.getPassphrase()
         db = Room.databaseBuilder(context, AppDatabase::class.java, testDbName)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(*Migrations.getAll()).allowMainThreadQueries().build()
+            .allowMainThreadQueries().build()
 
         // 确保 schema 已创建
         db.openHelper.writableDatabase

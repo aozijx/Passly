@@ -19,17 +19,5 @@ internal class CryptoHelper {
         }
     }
 
-    fun decryptMultiple(
-        activity: FragmentActivity,
-        dataList: List<String>,
-        authenticate: AuthenticateAction,
-        onResult: (List<String?>) -> Unit
-    ) {
-        if (dataList.isEmpty()) { onResult(emptyList()); return }
-        authenticate(activity, "查看详情", "", null) {
-            onResult(dataList)
-        }
-    }
-
     fun decryptTotpSecret(value: String?): String? = value
 }

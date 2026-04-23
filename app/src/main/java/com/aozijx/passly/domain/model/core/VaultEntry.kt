@@ -59,7 +59,7 @@ data class VaultEntry(
     // --- Autofill 自动填充引擎数据 ---
     override val associatedAppPackage: String? = null, // 关联 of Android 包名
     override val associatedDomain: String? = null,     // 关联 of Web 域名
-    val uriList: List<String>? = null,        // 多 URI 匹配列表 (自动应用 Converters)
+    val uriList: List<String>? = null,
     val matchType: Int = 0,                   // 匹配规则 (0:精确, 1:主机名, 2:根域名)
     val customFieldsJson: String? = null,     // 加密后的自定义键值对 (JSON)
     val autoSubmit: Boolean = false,          // 填充后是否尝试自动提交
@@ -71,7 +71,7 @@ data class VaultEntry(
 
     // --- 通用管理 ---
     val favorite: Boolean = false,   // 是否标记为收藏
-    val tags: List<String>? = null,  // 标签列表 (自动应用 Converters)
+    val tags: List<String>? = null,
     val createdAt: Long? = System.currentTimeMillis(),
     val updatedAt: Long? = null,
     val expiresAt: Long? = null      // 凭据到期时间 (提醒更换密码)
