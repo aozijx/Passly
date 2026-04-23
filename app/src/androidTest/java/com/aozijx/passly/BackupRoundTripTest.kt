@@ -5,11 +5,13 @@ import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.aozijx.passly.core.crypto.SessionCryptoKey
 import com.aozijx.passly.core.security.DatabasePassphraseManager
-import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.entity.VaultPayload
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRoomDataSource
+import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import org.json.JSONArray
@@ -41,6 +43,11 @@ class BackupRoundTripTest {
     fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
 
+        // 初始化加密环境
+        val testPassphrase = ByteArray(32) { 0x01.toByte() }
+        DatabasePassphraseManager.setDecryptedPassphrase(testPassphrase)
+        SessionCryptoKey.deriveAndSet(testPassphrase)
+
         val passphrase = DatabasePassphraseManager.getPassphrase()
         db = Room.databaseBuilder(context, AppDatabase::class.java, testDbName)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
@@ -59,6 +66,8 @@ class BackupRoundTripTest {
         runCatching { db.close() }
         context.deleteDatabase(testDbName)
         tempFiles.forEach { it.delete() }
+        SessionCryptoKey.clearSessionKey()
+        DatabasePassphraseManager.clearDecryptedPassphrase()
     }
 
     // ─── 空库导出 ─────────────────────────────────────────────────────────
@@ -154,20 +163,23 @@ class BackupRoundTripTest {
 
     // ─── 工具函数 ─────────────────────────────────────────────────────────
 
-    private fun buildEntry(title: String, username: String) = VaultEntryEntity(
-        title = title,
-        username = username,
-        password = "encrypted_password_placeholder",
-        category = "Test",
-        totpPeriod = 30,
-        totpDigits = 6,
-        totpAlgorithm = "SHA1",
-        wifiIsHidden = false,
-        matchType = 0,
-        autoSubmit = false,
-        usageCount = 0,
-        favorite = false,
-        entryType = 0
+    private fun buildEntry(title: String, username: String) = BackupFieldEncryptor.toImportEntity(
+        VaultPayload(
+            title = title,
+            username = username,
+            password = "encrypted_password_placeholder",
+            category = "Test",
+            totpPeriod = 30,
+            totpDigits = 6,
+            totpAlgorithm = "SHA1",
+            wifiIsHidden = false,
+            matchType = 0,
+            autoSubmit = false,
+            usageCount = 0,
+            favorite = false,
+            entryType = 0,
+            createdAt = System.currentTimeMillis()
+        )
     )
 
     private fun tempFile(tag: String): File {
