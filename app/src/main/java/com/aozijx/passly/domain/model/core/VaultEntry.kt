@@ -10,6 +10,7 @@ data class VaultEntry(
     val title: String,            // 标题（如：谷歌、招行、公司WiFi）
     val username: String,         // 加密后的用户名或 WiFi SSID
     val password: String,         // 加密后的主密码
+    val email: String? = null,    // 加密后的邮箱地址（登录用）
     override val category: String,         // 分类名称（用于 UI 分组）
     val notes: String? = null,    // 加密后的备注/详细笔记
 
@@ -19,6 +20,7 @@ data class VaultEntry(
 
     // --- 动态验证 (TOTP) ---
     val totpSecret: String? = null,      // 加密后的 Base32 密钥
+    val totpIssuer: String? = null,      // 发行方标识（来自 otpauth URI 的 issuer 参数）
     val totpPeriod: Int = 30,            // 步长 (秒)
     val totpDigits: Int = 6,             // 验证码位数
     val totpAlgorithm: String = "SHA1",  // 散列算法
@@ -59,7 +61,7 @@ data class VaultEntry(
     // --- Autofill 自动填充引擎数据 ---
     override val associatedAppPackage: String? = null, // 关联 of Android 包名
     override val associatedDomain: String? = null,     // 关联 of Web 域名
-    val uriList: List<String>? = null,        // 多 URI 匹配列表 (自动应用 Converters)
+    val uriList: List<String>? = null,
     val matchType: Int = 0,                   // 匹配规则 (0:精确, 1:主机名, 2:根域名)
     val customFieldsJson: String? = null,     // 加密后的自定义键值对 (JSON)
     val autoSubmit: Boolean = false,          // 填充后是否尝试自动提交
@@ -71,7 +73,7 @@ data class VaultEntry(
 
     // --- 通用管理 ---
     val favorite: Boolean = false,   // 是否标记为收藏
-    val tags: List<String>? = null,  // 标签列表 (自动应用 Converters)
+    val tags: List<String>? = null,
     val createdAt: Long? = System.currentTimeMillis(),
     val updatedAt: Long? = null,
     val expiresAt: Long? = null      // 凭据到期时间 (提醒更换密码)

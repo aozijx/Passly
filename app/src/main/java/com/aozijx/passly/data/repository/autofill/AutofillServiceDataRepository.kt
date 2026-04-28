@@ -3,8 +3,6 @@ package com.aozijx.passly.data.repository.autofill
 import android.content.Context
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.crypto.CryptoAccess
-import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.mapper.toDomain
@@ -29,8 +27,6 @@ class AutofillServiceDataRepository(
 
     private companion object {
         private const val TAG = "AutofillRepo"
-        private const val CANDIDATE_QUERY_LIMIT = 24
-        private const val EXISTING_MATCH_QUERY_LIMIT = 48
         private const val SLOW_DB_QUERY_MS = 120L
         private const val SLOW_ENTRY_MATCH_MS = 120L
         private const val SLOW_SAVE_FLOW_MS = 200L
@@ -85,31 +81,23 @@ class AutofillServiceDataRepository(
             EntryTypeStrategyRegistry.ensureRegistered()
             val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
             val queryStart = System.currentTimeMillis()
-            val entries = dao.findAutofillCandidates(
-                packageName = packageName,
-                webDomain = webDomain,
-                limit = CANDIDATE_QUERY_LIMIT
-            ).toDomainList()
+            val entries = dao.getAll().toDomainList()
             val queryCost = System.currentTimeMillis() - queryStart
             if (queryCost >= SLOW_DB_QUERY_MS) {
-                Logcat.w(TAG, "findMatchingEntries query slow: ${queryCost}ms, candidates=${entries.size}")
+                Logcat.w(TAG, "findMatchingEntries query slow: ${queryCost}ms, total=${entries.size}")
             }
 
             val normalizedPackage = normalizePackageName(packageName)
             val normalizedDomain = DomainNormalizer.normalize(webDomain)
 
             entries.asSequence()
+                .filter { supportsAutofill(it) }
                 .mapNotNull { entry ->
-                    if (!supportsAutofill(entry)) return@mapNotNull null
-
                     val matchType = when {
                         isPackageMatch(entry.associatedAppPackage, normalizedPackage) -> AutofillMatchType.APP
                         isDomainMatch(entry.associatedDomain, normalizedDomain) -> AutofillMatchType.DOMAIN
-                        else -> AutofillMatchType.UNKNOWN
+                        else -> return@mapNotNull null
                     }
-
-                    if (matchType == AutofillMatchType.UNKNOWN) return@mapNotNull null
-
                     val rank = if (matchType == AutofillMatchType.APP) 0 else 1
                     AutofillCandidate(entry = entry, matchType = matchType, rank = rank)
                 }
@@ -140,40 +128,32 @@ class AutofillServiceDataRepository(
             val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
 
             val queryStart = System.currentTimeMillis()
-            val candidateEntries = dao.findAutofillCandidates(
-                packageName = packageName,
-                webDomain = webDomain,
-                limit = EXISTING_MATCH_QUERY_LIMIT
-            ).toDomainList()
+            val allEntries = dao.getAll().toDomainList()
             val queryCost = System.currentTimeMillis() - queryStart
             if (queryCost >= SLOW_DB_QUERY_MS) {
-                Logcat.w(TAG, "saveOrUpdateEntry query slow: ${queryCost}ms, candidates=${candidateEntries.size}")
+                Logcat.w(TAG, "saveOrUpdateEntry query slow: ${queryCost}ms, total=${allEntries.size}")
             }
 
             val matchStart = System.currentTimeMillis()
             val normalizedPackage = normalizePackageName(packageName)
             val normalizedDomain = DomainNormalizer.normalize(webDomain)
-            val existing = candidateEntries.find { entry ->
+            val existing = allEntries.find { entry ->
                 if (!supportsAutofill(entry)) return@find false
 
                 val scopeMatch = isPackageMatch(entry.associatedAppPackage, normalizedPackage) ||
                     isDomainMatch(entry.associatedDomain, normalizedDomain)
                 if (!scopeMatch) return@find false
 
-                val decUser = CryptoAccess.decryptOrNull(entry.username)
-                decUser == usernameValue
+                entry.username == usernameValue
             }
             val matchCost = System.currentTimeMillis() - matchStart
             if (matchCost >= SLOW_ENTRY_MATCH_MS) {
                 Logcat.w(TAG, "saveOrUpdateEntry username match slow: ${matchCost}ms")
             }
 
-            val encUser = CryptoManager.encrypt(usernameValue)
-            val encPass = CryptoManager.encrypt(passwordValue)
-
             if (existing != null) {
                 val updatedEntry = existing.copy(
-                    password = encPass,
+                    password = passwordValue,
                     updatedAt = System.currentTimeMillis()
                 )
                 dao.update(updatedEntry.toEntity())
@@ -209,8 +189,8 @@ class AutofillServiceDataRepository(
 
                 val newEntry = VaultEntry(
                     title = title,
-                    username = encUser,
-                    password = encPass,
+                    username = usernameValue,
+                    password = passwordValue,
                     category = passwordStrategy?.suggestedCategory().orEmpty().ifBlank { fallbackCategory },
                     associatedAppPackage = packageName,
                     associatedDomain = webDomain,
@@ -268,9 +248,6 @@ class AutofillServiceDataRepository(
         if (normalizedRequestDomain == null) return false
         val normalizedEntryDomain = DomainNormalizer.normalize(entryDomain) ?: return false
         if (normalizedEntryDomain == normalizedRequestDomain) return true
-        // 仅允许“请求域 ⊆ 条目域”这一单向匹配，避免把子域条目上浮到父域或同级域，
-        // 堵住 entry=github.io → request=attacker.github.io 这类公共后缀场景。
-        // 要求条目域至少两级标签，过滤掉纯 TLD 条目带来的误匹配风险。
         val entryLabelCount = normalizedEntryDomain.count { it == '.' } + 1
         if (entryLabelCount < 2) return false
         return normalizedRequestDomain.endsWith(".$normalizedEntryDomain")

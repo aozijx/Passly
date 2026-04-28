@@ -10,7 +10,7 @@ import com.aozijx.passly.data.repository.database.DatabaseLifecycleRepositoryImp
 import com.aozijx.passly.data.repository.favicon.FaviconDataRepository
 import com.aozijx.passly.data.repository.history.HistoryDataRepository
 import com.aozijx.passly.data.repository.otp.OtpDataRepository
-import com.aozijx.passly.data.repository.settings.SettingsDataRepository
+import com.aozijx.passly.data.repository.settings.SettingsRepositoryImpl
 import com.aozijx.passly.data.repository.settings.UserConfigDataRepository
 import com.aozijx.passly.data.repository.vault.VaultDataRepository
 import com.aozijx.passly.data.repository.vault.VaultSearchDataRepository
@@ -18,7 +18,9 @@ import com.aozijx.passly.domain.repository.auth.AuthRepository
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
-import com.aozijx.passly.domain.repository.settings.SettingsRepository
+import com.aozijx.passly.domain.repository.settings.BackupSettingsRepository
+import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
+import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
@@ -34,7 +36,7 @@ object DataModule {
     private val database by lazy { AppDatabase.getDatabase(appContext) }
 
     internal val vaultRepository: VaultRepository by lazy {
-        VaultDataRepository(database.vaultEntryDao())
+        VaultDataRepository(database.vaultEntryDao(), database.vaultHistoryDao())
     }
 
     internal val vaultSearchRepository: VaultSearchRepository by lazy {
@@ -53,9 +55,13 @@ object DataModule {
         AutofillServiceDataRepository(appContext)
     }
 
-    internal val settingsRepository: SettingsRepository by lazy {
-        SettingsDataRepository(appContext.preference)
+    private val settingsRepository: SettingsRepositoryImpl by lazy {
+        SettingsRepositoryImpl(appContext)
     }
+
+    internal val securitySettingsRepository: SecuritySettingsRepository get() = settingsRepository
+    internal val systemSettingsRepository: SystemSettingsRepository get() = settingsRepository
+    internal val backupSettingsRepository: BackupSettingsRepository get() = settingsRepository
 
     internal val faviconRepository: FaviconRepository by lazy {
         FaviconDataRepository(appContext)

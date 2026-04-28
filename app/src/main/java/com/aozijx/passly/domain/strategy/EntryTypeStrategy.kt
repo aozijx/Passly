@@ -17,6 +17,7 @@ interface EntryTypeStrategy {
     fun getCopyLabel(key: FieldKey): String = when (key) {
         FieldKey.PASSWORD -> "密码"
         FieldKey.USERNAME -> "账号"
+        FieldKey.EMAIL -> "邮箱"
         FieldKey.CARD_CVV -> "CVV"
         FieldKey.PAYMENT_PIN -> "支付密码"
         FieldKey.SSH_KEY -> "SSH 私钥"
@@ -50,6 +51,7 @@ interface EntryTypeStrategy {
         FieldKey.TITLE -> entry.title
         FieldKey.USERNAME -> entry.username
         FieldKey.PASSWORD -> entry.password
+        FieldKey.EMAIL -> entry.email
         FieldKey.NOTES -> entry.notes
         FieldKey.URIS -> entry.uriList?.joinToString(", ")
         else -> null
@@ -57,6 +59,7 @@ interface EntryTypeStrategy {
 
     private fun getTotpFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
         FieldKey.TOTP_SECRET -> entry.totpSecret
+        FieldKey.TOTP_ISSUER -> entry.totpIssuer
         FieldKey.TOTP_PERIOD -> entry.totpPeriod.toString()
         FieldKey.TOTP_DIGITS -> entry.totpDigits.toString()
         FieldKey.TOTP_ALGORITHM -> entry.totpAlgorithm
@@ -95,7 +98,7 @@ interface EntryTypeStrategy {
 
     // --- FieldKey 扩展判定 (建议定义在 FieldKey 枚举中，此处仅作演示) ---
     private fun FieldKey.isCommon() = this in listOf(
-        FieldKey.TITLE, FieldKey.USERNAME, FieldKey.PASSWORD, FieldKey.NOTES, FieldKey.URIS
+        FieldKey.TITLE, FieldKey.USERNAME, FieldKey.PASSWORD, FieldKey.EMAIL, FieldKey.NOTES, FieldKey.URIS
     )
 
     private fun FieldKey.isTotp() = this.name.startsWith("TOTP")

@@ -5,11 +5,11 @@ import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.detail.DetailUseCases
-import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.domain.usecase.userconfig.UserConfigUseCases
+import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 
 /**
@@ -33,15 +33,15 @@ class DomainModule {
     }
 
     internal val systemSettingsUseCases by lazy {
-        SystemSettingsUseCases(DataModule.settingsRepository)
+        SystemSettingsUseCases(DataModule.systemSettingsRepository)
     }
 
     internal val securitySettingsUseCases by lazy {
-        SecuritySettingsUseCases(DataModule.settingsRepository)
+        SecuritySettingsUseCases(DataModule.securitySettingsRepository)
     }
 
     internal val backupSettingsUseCases by lazy {
-        BackupSettingsUseCases(DataModule.settingsRepository)
+        BackupSettingsUseCases(DataModule.backupSettingsRepository)
     }
 
     internal val backupUseCases by lazy {

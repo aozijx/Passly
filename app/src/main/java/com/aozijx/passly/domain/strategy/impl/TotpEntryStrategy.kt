@@ -47,6 +47,7 @@ class TotpEntryStrategy : EntryTypeStrategy {
                 title = "基本信息", fields = listOf(
                     FieldDefinition("title", "标题", isRequired = true),
                     FieldDefinition("totpSecret", "密钥", isSensitive = true, isRequired = true),
+                    FieldDefinition("totpIssuer", "发行方"),
                     FieldDefinition("username", "账户名"),
                     FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
                 )

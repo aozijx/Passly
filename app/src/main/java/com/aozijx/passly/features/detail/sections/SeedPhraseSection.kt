@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
+
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
@@ -70,7 +70,7 @@ fun SeedPhraseSection(
                     if (!encryptedSeedPhrase.isNullOrBlank()) {
                         onAuthenticate(activity, "解密助记词", "验证身份以复制助记词", {
                             try {
-                                val decrypted = CryptoManager.decrypt(encryptedSeedPhrase)
+                                val decrypted = encryptedSeedPhrase
                                 ClipboardUtils.copy(context, decrypted)
                                 Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
                                 revealedSeedPhrase = decrypted
@@ -89,7 +89,7 @@ fun SeedPhraseSection(
                     if (!seedPhrase.isNullOrBlank()) {
                         onAuthenticate(activity, "解密助记词", "验证身份以查看助记词", {
                             try {
-                                val decrypted = CryptoManager.decrypt(seedPhrase)
+                                val decrypted = seedPhrase
                                 revealedSeedPhrase = decrypted
                                 wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
                             } catch (e: Exception) {}
@@ -131,7 +131,7 @@ fun SeedPhraseSection(
                     if (!encryptedSeedPhrase.isNullOrBlank()) {
                         onAuthenticate(activity, "解密助记词", "验证身份以显示助记词", {
                             try {
-                                val decrypted = CryptoManager.decrypt(encryptedSeedPhrase)
+                                val decrypted = encryptedSeedPhrase
                                 revealedSeedPhrase = decrypted
                                 wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
                             } catch (e: Exception) {}

@@ -14,7 +14,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
@@ -44,34 +43,29 @@ fun IdCardSection(
             },
             isRevealed = revealedIdNumber != null,
             onCopy = {
-                val encrypted = entry.idNumber
-                if (encrypted.isNullOrBlank()) return@DetailItem
+                val idNum = entry.idNumber
+                if (idNum.isNullOrBlank()) return@DetailItem
                 val cached = revealedIdNumber
                 if (cached != null) {
                     ClipboardUtils.copy(context, cached)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                 } else {
-                    onAuthenticate(activity, "解密身份证号", "验证身份以复制信息", {
-                        try {
-                            val decrypted = CryptoManager.decrypt(encrypted)
-                            revealedIdNumber = decrypted
-                            ClipboardUtils.copy(context, decrypted)
-                            Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {}
-                    })
+                    onAuthenticate(activity, "解密身份证号", "验证身份以复制信息") {
+                        revealedIdNumber = idNum
+                        ClipboardUtils.copy(context, idNum)
+                        Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    }
                 }
             },
             onEdit = {
-                val encrypted = entry.idNumber
-                if (encrypted.isNullOrBlank()) return@DetailItem
+                val idNum = entry.idNumber
+                if (idNum.isNullOrBlank()) return@DetailItem
                 if (revealedIdNumber != null) {
                     revealedIdNumber = null
                 } else {
-                    onAuthenticate(activity, "解密身份证号", "验证身份以查看信息", {
-                        try {
-                            revealedIdNumber = CryptoManager.decrypt(encrypted)
-                        } catch (e: Exception) {}
-                    })
+                    onAuthenticate(activity, "解密身份证号", "验证身份以查看信息") {
+                        revealedIdNumber = idNum
+                    }
                 }
             }
         )

@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.usecase.vault.impl.GetTotpCodeUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.InsertEntryUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.ObserveCategoriesByFilterUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.ObserveEntrySummariesByDemandUseCase
+import com.aozijx.passly.domain.usecase.vault.impl.RecordUsageUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.UpdateEntryUseCase
 
 /**
@@ -28,6 +29,7 @@ class VaultUseCases(
     val insertEntry = InsertEntryUseCase(vaultRepository)
     val updateEntry = UpdateEntryUseCase(vaultRepository)
     val deleteEntry = DeleteEntryUseCase(vaultRepository)
+    val recordUsage = RecordUsageUseCase(vaultRepository)
     val getTotpCode = GetTotpCodeUseCase(otpRepository)
     val downloadFavicon = DownloadFaviconUseCase(faviconRepository)
 }

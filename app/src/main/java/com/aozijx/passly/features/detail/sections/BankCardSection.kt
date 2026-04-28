@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
@@ -61,7 +60,6 @@ fun BankCardSection(
     var revealedSecurityAnswer by remember { mutableStateOf<String?>(null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // --- 持卡人 ---
         if (editState.isEditingUsername) {
             OutlinedTextField(
                 value = editState.editedUsername,
@@ -71,7 +69,7 @@ fun BankCardSection(
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
                     IconButton(onClick = {
-                        saveEncrypted(editState.editedUsername, revealedCardholder, { editState.isEditingUsername = false }) {
+                        savePlaintext(editState.editedUsername, revealedCardholder, { editState.isEditingUsername = false }) {
                             onEntryUpdated(entry.copy(username = it))
                             revealedCardholder = editState.editedUsername
                         }
@@ -89,17 +87,14 @@ fun BankCardSection(
                 onCopy = {
                     revealedCardholder?.let { ClipboardUtils.copy(context, it); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() }
                         ?: onAuthenticate(activity, "解密持卡人", "验证身份以复制信息") {
-                            runCatching { CryptoManager.decrypt(entry.username) }.onSuccess {
-                                ClipboardUtils.copy(context, it); revealedCardholder = it
-                                Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
-                            }
+                            ClipboardUtils.copy(context, entry.username); revealedCardholder = entry.username
+                            Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         }
                 },
                 onEdit = { editState.editedUsername = revealedCardholder ?: ""; editState.isEditingUsername = true }
             )
         }
 
-        // --- 卡号 ---
         if (editState.isEditingPassword) {
             OutlinedTextField(
                 value = editState.editedPassword,
@@ -109,7 +104,7 @@ fun BankCardSection(
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
                     IconButton(onClick = {
-                        saveEncrypted(editState.editedPassword, revealedCardNumber, { editState.isEditingPassword = false }) {
+                        savePlaintext(editState.editedPassword, revealedCardNumber, { editState.isEditingPassword = false }) {
                             onEntryUpdated(entry.copy(password = it))
                             revealedCardNumber = editState.editedPassword
                         }
@@ -127,18 +122,15 @@ fun BankCardSection(
                 onCopy = {
                     revealedCardNumber?.let { ClipboardUtils.copy(context, it); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() }
                         ?: onAuthenticate(activity, "解密卡号", "验证身份以复制信息") {
-                            runCatching { CryptoManager.decrypt(entry.password) }.onSuccess {
-                                ClipboardUtils.copy(context, it); revealedCardNumber = it
-                                Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
-                            }
+                            ClipboardUtils.copy(context, entry.password); revealedCardNumber = entry.password
+                            Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         }
                 },
                 onEdit = { editState.editedPassword = revealedCardNumber ?: ""; editState.isEditingPassword = true }
             )
         }
 
-        // --- CVV ---
-        entry.cardCvv?.let { encryptedCvv ->
+        entry.cardCvv?.let { cvv ->
             if (editState.isEditingTotp) {
                 OutlinedTextField(
                     value = editState.editedTotp,
@@ -148,7 +140,7 @@ fun BankCardSection(
                     shape = RoundedCornerShape(12.dp),
                     trailingIcon = {
                         IconButton(onClick = {
-                            saveEncrypted(editState.editedTotp, revealedCvv, { editState.isEditingTotp = false }) {
+                            savePlaintext(editState.editedTotp, revealedCvv, { editState.isEditingTotp = false }) {
                                 onEntryUpdated(entry.copy(cardCvv = it))
                                 revealedCvv = editState.editedTotp
                             }
@@ -166,10 +158,8 @@ fun BankCardSection(
                     onCopy = {
                         revealedCvv?.let { ClipboardUtils.copy(context, it); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() }
                             ?: onAuthenticate(activity, "解密 CVV", "验证身份以复制信息") {
-                                runCatching { CryptoManager.decrypt(encryptedCvv) }.onSuccess {
-                                    ClipboardUtils.copy(context, it); revealedCvv = it
-                                    Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
-                                }
+                                ClipboardUtils.copy(context, cvv); revealedCvv = cvv
+                                Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                             }
                     },
                     onEdit = { editState.editedTotp = revealedCvv ?: ""; editState.isEditingTotp = true }
@@ -177,7 +167,6 @@ fun BankCardSection(
             }
         }
 
-        // --- 有效期 (明文) ---
         entry.cardExpiration?.let { expiration ->
             DetailItem(
                 label = stringResource(R.string.card_expiration),
@@ -188,8 +177,7 @@ fun BankCardSection(
             )
         }
 
-        // --- 支付密码 ---
-        entry.paymentPin?.let { encryptedPin ->
+        entry.paymentPin?.let { pin ->
             DetailItem(
                 label = stringResource(R.string.payment_pin),
                 value = revealedPaymentPin ?: stringResource(R.string.label_hidden_mask),
@@ -197,29 +185,21 @@ fun BankCardSection(
                 onCopy = {
                     revealedPaymentPin?.let { ClipboardUtils.copy(context, it); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() }
                         ?: onAuthenticate(activity, "解密支付密码", "验证身份以复制信息") {
-                            runCatching { CryptoManager.decrypt(encryptedPin) }.onSuccess {
-                                ClipboardUtils.copy(context, it); revealedPaymentPin = it
-                                Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
-                            }
+                            ClipboardUtils.copy(context, pin); revealedPaymentPin = pin
+                            Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         }
                 },
                 onEdit = {}
             )
         }
 
-        // --- 支付渠道 / 密保问题 (略，结构一致) ---
-        // ... 
-
-        // --- 整体显隐按钮 ---
         if (revealedCardNumber == null && !editState.isEditingPassword) {
             Button(
                 onClick = {
                     onAuthenticate(activity, "解密卡片信息", "验证身份以查看完整信息") {
-                        try {
-                            if (revealedCardNumber == null) revealedCardNumber = CryptoManager.decrypt(entry.password)
-                            if (revealedCvv == null && entry.cardCvv != null) revealedCvv = CryptoManager.decrypt(entry.cardCvv)
-                            if (revealedCardholder == null) revealedCardholder = CryptoManager.decrypt(entry.username)
-                        } catch (_: Exception) {}
+                        if (revealedCardNumber == null) revealedCardNumber = entry.password
+                        if (revealedCvv == null && entry.cardCvv != null) revealedCvv = entry.cardCvv
+                        if (revealedCardholder == null) revealedCardholder = entry.username
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -245,9 +225,8 @@ private fun BankCardNumberItem(label: String, value: String, isRevealed: Boolean
     }
 }
 
-private fun saveEncrypted(newValue: String, oldValue: String?, onClose: () -> Unit, onSuccess: (String) -> Unit) {
+private fun savePlaintext(newValue: String, oldValue: String?, onClose: () -> Unit, onSuccess: (String) -> Unit) {
     if (newValue == oldValue) { onClose(); return }
-    runCatching { CryptoManager.encrypt(newValue) }
-        .onSuccess { onSuccess(it); onClose() }
-        .onFailure { onClose() }
+    onSuccess(newValue)
+    onClose()
 }

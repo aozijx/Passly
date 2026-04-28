@@ -10,6 +10,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -38,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -49,7 +52,9 @@ import com.aozijx.passly.features.vault.model.AddType
 
 @Composable
 fun VaultFab(
-    viewModel: VaultViewModel, isVisible: Boolean = true
+    viewModel: VaultViewModel,
+    isVisible: Boolean = true,
+    isLoading: Boolean = false
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
@@ -58,12 +63,10 @@ fun VaultFab(
         label = "fabRotation"
     )
 
-    // 如果主按钮被隐藏，自动收起菜单
     if (!isVisible) {
         showFabMenu = false
     }
 
-    // 动画改为缩放 (Scale)，变换中心为右下角 (1f, 1f)
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn() + scaleIn(transformOrigin = TransformOrigin(1f, 1f)),
@@ -108,18 +111,30 @@ fun VaultFab(
                 }
             }
 
-            // 主 FAB
-            FloatingActionButton(
-                onClick = { showFabMenu = !showFabMenu },
-                containerColor = if (showFabMenu) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(12.dp),
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = stringResource(R.string.action_add),
-                    modifier = Modifier.rotate(rotation)
-                )
+            // 主按钮区域，如果是加载中，显示圆形进度条
+            Box(contentAlignment = Alignment.Center) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(64.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 3.dp,
+                        strokeCap = StrokeCap.Round
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = { showFabMenu = !showFabMenu },
+                    containerColor = if (showFabMenu) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(R.string.action_add),
+                        modifier = Modifier.rotate(rotation)
+                    )
+                }
             }
         }
     }
@@ -150,7 +165,3 @@ fun FabMenuItem(
         }
     }
 }
-
-
-
-

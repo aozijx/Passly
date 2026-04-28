@@ -3,11 +3,6 @@ package com.aozijx.passly.features.vault
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -21,12 +16,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +39,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.AppContext
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
@@ -61,13 +52,11 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.scanner.VaultScanner
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.components.VaultDialogs
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
 import com.aozijx.passly.features.vault.components.fab.VaultFab
 import com.aozijx.passly.features.vault.components.topbar.VaultTopBar
-import com.aozijx.passly.features.vault.model.AddType
 import com.aozijx.passly.features.vault.model.VaultTab
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,13 +80,11 @@ fun VaultContent(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-    val vaultPrefs = remember { AppContext.get().preference }
-
-    val isSwipeEnabled by vaultPrefs.isSwipeEnabled.collectAsStateWithLifecycle(initialValue = true)
-    val swipeLeftAction by vaultPrefs.swipeLeftAction.collectAsStateWithLifecycle(initialValue = SwipeActionType.DELETE)
-    val swipeRightAction by vaultPrefs.swipeRightAction.collectAsStateWithLifecycle(initialValue = SwipeActionType.DISABLED)
 
     // 设置相关的 UI 行为开关
+    val isSwipeEnabled = settingsUiState.isSwipeEnabled
+    val swipeLeftAction = settingsUiState.swipeLeftAction
+    val swipeRightAction = settingsUiState.swipeRightAction
     val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
     val isTopBarCollapsible = settingsUiState.isTopBarCollapsible
     val isTabBarCollapsible = settingsUiState.isTabBarCollapsible
@@ -254,7 +241,11 @@ fun VaultContent(
             )
         },
         floatingActionButton = {
-            VaultFab(viewModel = vaultViewModel, isVisible = isFabVisible)
+            VaultFab(
+                viewModel = vaultViewModel,
+                isVisible = isFabVisible,
+                isLoading = isVaultItemsLoading
+            )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
@@ -273,9 +264,7 @@ fun VaultContent(
                 }
             }
 
-            if (isVaultItemsLoading) {
-                VaultListSkeleton()
-            } else if (displayItems.isEmpty()) {
+            if (displayItems.isEmpty() && !isVaultItemsLoading) {
                 EmptyVaultPlaceholder()
             } else {
                 LazyColumn(
@@ -283,94 +272,60 @@ fun VaultContent(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(displayItems, key = { it.id }) { item ->
-                        val selectedStyle = perTypeStyleMap[item.entryType] ?: VaultCardStyle.DEFAULT
-                        val resolvedStyle = VaultCardStyle.resolveForEntryType(selectedStyle, item.entryType)
-                        val itemContent = @Composable {
+                    items(
+                        items = displayItems,
+                        key = { it.id }
+                    ) { item ->
+                        val cardStyle =
+                            perTypeStyleMap[item.entryType]?.takeIf { it != VaultCardStyle.DEFAULT }
+                                ?: VaultCardStyle.resolveForEntryType(
+                                    settingsUiState.cardStyle,
+                                    item.entryType
+                                )
+
+                        val actions = listOfNotNull(
+                            createSwipeAction(
+                                actionType = swipeLeftAction,
+                                direction = SwipeDirection.LEFT,
+                                onAction = { onSwipeTriggered(swipeLeftAction, item) },
+                                backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                iconTint = Color.White
+                            ),
+                            createSwipeAction(
+                                actionType = swipeRightAction,
+                                direction = SwipeDirection.RIGHT,
+                                onAction = { onSwipeTriggered(swipeRightAction, item) },
+                                backgroundColor = if (swipeRightAction == SwipeActionType.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
+                                iconTint = Color.White
+                            )
+                        )
+
+                        SwipeToAction(
+                            actions = actions,
+                            modifier = Modifier.fillMaxWidth(),
+                            isActive = isSwipeEnabled,
+                        ) {
                             VaultCardStyleRegistry.RenderVaultItem(
-                                style = resolvedStyle,
+                                style = cardStyle,
                                 entry = item,
                                 viewModel = vaultViewModel
                             )
                         }
-
-                        if (isSwipeEnabled) {
-                            val leftColors = swipeRevealColors(swipeLeftAction)
-                            val rightColors = swipeRevealColors(swipeRightAction)
-
-                            SwipeToAction(
-                                actions = listOfNotNull(
-                                    createSwipeAction(swipeLeftAction, SwipeDirection.LEFT, { onSwipeTriggered(swipeLeftAction, item) }, leftColors.first, leftColors.second),
-                                    createSwipeAction(swipeRightAction, SwipeDirection.RIGHT, { onSwipeTriggered(swipeRightAction, item) }, rightColors.first, rightColors.second)
-                                ),
-                                isActive = vaultViewModel.itemToDelete?.id != item.id
-                            ) {
-                                itemContent()
-                            }
-                        } else {
-                            itemContent()
-                        }
                     }
+
                     item {
-                        Spacer(modifier = Modifier
-                            .navigationBarsPadding()
-                            .height(80.dp))
+                        Spacer(modifier = Modifier.height(80.dp))
+                        Spacer(modifier = Modifier.navigationBarsPadding())
                     }
                 }
             }
         }
-
-        VaultDialogs(
-            activity = activity,
-            mainViewModel = mainViewModel,
-            vaultViewModel = vaultViewModel,
-            settingsViewModel = settingsViewModel
-        )
     }
 
-    AnimatedVisibility(
-        visible = vaultViewModel.addType == AddType.SCAN,
-        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-    ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            VaultScanner(
-                vaultViewModel = vaultViewModel,
-                onDismiss = { vaultViewModel.setAddType(null) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun swipeRevealColors(actionType: SwipeActionType): Pair<Color, Color> {
-    return when (actionType) {
-        SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
-        SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
-        SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-        SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
-    }
-}
-
-@Composable
-private fun VaultListSkeleton() {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(6) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(72.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-            ) {}
-        }
-        item {
-            Spacer(modifier = Modifier
-                .navigationBarsPadding()
-                .height(80.dp))
-        }
-    }
+    VaultDialogs(
+        mainViewModel = mainViewModel,
+        activity = activity,
+        vaultViewModel = vaultViewModel,
+        settingsViewModel = settingsViewModel
+    )
 }

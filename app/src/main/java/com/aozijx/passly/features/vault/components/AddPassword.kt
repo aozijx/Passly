@@ -7,7 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
+
 import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
 import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.PasswordInput
@@ -27,13 +27,10 @@ fun AddPasswordDialog(
         onDismiss = { viewModel.setAddType(null) },
         confirmEnabled = state.isValid,
         onConfirm = {
-            val encUser = CryptoManager.encrypt(state.username)
-            val encPass = CryptoManager.encrypt(state.password)
-
             val entry = VaultEntry(
                 title = state.title,
-                username = encUser,
-                password = encPass,
+                username = state.username,
+                password = state.password,
                 category = state.category.ifBlank { unfiledCategory },
                 entryType = 0
             )

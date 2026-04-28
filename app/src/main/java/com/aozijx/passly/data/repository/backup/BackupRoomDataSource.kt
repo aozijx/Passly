@@ -6,7 +6,7 @@ import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.domain.model.backup.BackupImportMode
-import kotlinx.coroutines.flow.first
+
 
 /**
  * 备份数据源的 Room 实现。
@@ -26,7 +26,7 @@ internal class BackupRoomDataSource(
     }
 
     override suspend fun readAllEntries(): List<VaultEntryEntity> {
-        return getDao().getAllEntries().first()
+        return getDao().getAll()
     }
 
     override suspend fun writeEntries(entries: List<VaultEntryEntity>, mode: BackupImportMode) {

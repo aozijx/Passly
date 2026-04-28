@@ -31,7 +31,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
@@ -72,10 +71,11 @@ fun SshKeySection(
                 onValueChange = { editState.editedPassword = it },
                 label = stringResource(R.string.label_edit_field, passphraseLabel),
                 onSave = {
-                    saveEncrypted(editState.editedPassword, revealedPassphrase, { editState.isEditingPassword = false }) { encrypted ->
-                        onEntryUpdated(entry.copy(password = encrypted))
+                    if (editState.editedPassword != revealedPassphrase) {
+                        onEntryUpdated(entry.copy(password = editState.editedPassword))
                         revealedPassphrase = editState.editedPassword
                     }
+                    editState.isEditingPassword = false
                 }
             )
         } else {
@@ -89,14 +89,11 @@ fun SshKeySection(
                         ClipboardUtils.copy(context, passphrase)
                         Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
                     } else {
-                        onAuthenticate(activity, "解密 SSH 密码", "验证身份以复制信息", {
-                            try {
-                                val decrypted = CryptoManager.decrypt(entry.password)
-                                ClipboardUtils.copy(context, decrypted)
-                                Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
-                                revealedPassphrase = decrypted
-                            } catch (e: Exception) {}
-                        })
+                        onAuthenticate(activity, "解密 SSH 密码", "验证身份以复制信息") {
+                            ClipboardUtils.copy(context, entry.password)
+                            Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
+                            revealedPassphrase = entry.password
+                        }
                     }
                 },
                 onEdit = {
@@ -115,14 +112,11 @@ fun SshKeySection(
                 } else {
                     val sshKey = entry.sshPrivateKey
                     if (!sshKey.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密 SSH 私钥", "验证身份以复制信息", {
-                            try {
-                                val decrypted = CryptoManager.decrypt(sshKey)
-                                ClipboardUtils.copy(context, decrypted)
-                                Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
-                                revealedPrivateKey = decrypted
-                            } catch (e: Exception) {}
-                        })
+                        onAuthenticate(activity, "解密 SSH 私钥", "验证身份以复制信息") {
+                            ClipboardUtils.copy(context, sshKey)
+                            Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
+                            revealedPrivateKey = sshKey
+                        }
                     }
                 }
             },
@@ -180,14 +174,12 @@ fun SshKeySection(
                 onClick = {
                     val sshKey = entry.sshPrivateKey
                     if (!sshKey.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密 SSH 私钥", "验证身份以查看完整条目", {
-                            try {
-                                revealedPrivateKey = CryptoManager.decrypt(sshKey)
-                                if (entry.password.isNotEmpty()) {
-                                    revealedPassphrase = CryptoManager.decrypt(entry.password)
-                                }
-                            } catch (e: Exception) {}
-                        })
+                        onAuthenticate(activity, "解密 SSH 私钥", "验证身份以查看完整条目") {
+                            revealedPrivateKey = sshKey
+                            if (entry.password.isNotEmpty()) {
+                                revealedPassphrase = entry.password
+                            }
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -207,25 +199,6 @@ fun SshKeySection(
                 onCopy = { ClipboardUtils.copy(context, entry.paymentPin) },
                 onEdit = {}
             )
-        }
-    }
-}
-
-private fun saveEncrypted(
-    newValue: String,
-    oldValue: String?,
-    onClose: () -> Unit,
-    onSuccess: (String) -> Unit
-) {
-    if (newValue == oldValue) {
-        onClose()
-    } else {
-        try {
-            val encrypted = CryptoManager.encrypt(newValue)
-            onSuccess(encrypted)
-            onClose()
-        } catch (e: Exception) {
-            onClose()
         }
     }
 }

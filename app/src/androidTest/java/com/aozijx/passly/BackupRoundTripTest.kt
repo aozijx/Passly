@@ -5,12 +5,13 @@ import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.aozijx.passly.core.crypto.SessionCryptoKey
 import com.aozijx.passly.core.security.DatabasePassphraseManager
-import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.entity.VaultPayload
 import com.aozijx.passly.data.local.AppDatabase
-import com.aozijx.passly.data.local.migration.Migrations
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRoomDataSource
+import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import org.json.JSONArray
@@ -42,10 +43,15 @@ class BackupRoundTripTest {
     fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
 
+        // 初始化加密环境
+        val testPassphrase = ByteArray(32) { 0x01.toByte() }
+        DatabasePassphraseManager.setDecryptedPassphrase(testPassphrase)
+        SessionCryptoKey.deriveAndSet(testPassphrase)
+
         val passphrase = DatabasePassphraseManager.getPassphrase()
         db = Room.databaseBuilder(context, AppDatabase::class.java, testDbName)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(*Migrations.getAll()).allowMainThreadQueries().build()
+            .allowMainThreadQueries().build()
 
         // 确保 schema 已创建
         db.openHelper.writableDatabase
@@ -60,6 +66,8 @@ class BackupRoundTripTest {
         runCatching { db.close() }
         context.deleteDatabase(testDbName)
         tempFiles.forEach { it.delete() }
+        SessionCryptoKey.clearSessionKey()
+        DatabasePassphraseManager.clearDecryptedPassphrase()
     }
 
     // ─── 空库导出 ─────────────────────────────────────────────────────────
@@ -104,6 +112,9 @@ class BackupRoundTripTest {
         assertTrue("应含 title 字段", entry.has("title"))
         assertTrue("应含 username 字段", entry.has("username"))
         assertTrue("应含 password 字段", entry.has("password"))
+        assertTrue("应含 email 字段", entry.has("email"))
+        assertTrue("应含 totpSecret 字段", entry.has("totpSecret"))
+        assertTrue("应含 totpIssuer 字段", entry.has("totpIssuer"))
         assertTrue("应含 entryType 字段", entry.has("entryType"))
         assertTrue("应含 createdAt 字段", entry.has("createdAt"))
     }
@@ -155,20 +166,26 @@ class BackupRoundTripTest {
 
     // ─── 工具函数 ─────────────────────────────────────────────────────────
 
-    private fun buildEntry(title: String, username: String) = VaultEntryEntity(
-        title = title,
-        username = username,
-        password = "encrypted_password_placeholder",
-        category = "Test",
-        totpPeriod = 30,
-        totpDigits = 6,
-        totpAlgorithm = "SHA1",
-        wifiIsHidden = false,
-        matchType = 0,
-        autoSubmit = false,
-        usageCount = 0,
-        favorite = false,
-        entryType = 0
+    private fun buildEntry(title: String, username: String) = BackupFieldEncryptor.toImportEntity(
+        VaultPayload(
+            title = title,
+            username = username,
+            password = "encrypted_password_placeholder",
+            email = "test@example.com",
+            category = "Test",
+            totpSecret = "JBSWY3DPEHPK3PXP",
+            totpIssuer = "TestIssuer",
+            totpPeriod = 30,
+            totpDigits = 6,
+            totpAlgorithm = "SHA1",
+            wifiIsHidden = false,
+            matchType = 0,
+            autoSubmit = false,
+            usageCount = 0,
+            favorite = false,
+            entryType = 0,
+            createdAt = System.currentTimeMillis()
+        )
     )
 
     private fun tempFile(tag: String): File {

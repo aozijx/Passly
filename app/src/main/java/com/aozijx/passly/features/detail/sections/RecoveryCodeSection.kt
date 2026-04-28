@@ -14,7 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
+
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
@@ -53,7 +53,7 @@ fun RecoveryCodeSection(
                 } else {
                     onAuthenticate(activity, "解密恢复码", "验证身份以复制信息", {
                         try {
-                            val decrypted = CryptoManager.decrypt(encrypted)
+                            val decrypted = encrypted
                             revealedRecoveryCodes = decrypted
                             ClipboardUtils.copy(context, decrypted)
                             Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
@@ -69,7 +69,7 @@ fun RecoveryCodeSection(
                 } else {
                     onAuthenticate(activity, "解密恢复码", "验证身份以查看信息", {
                         try {
-                            revealedRecoveryCodes = CryptoManager.decrypt(encrypted)
+                            revealedRecoveryCodes = encrypted
                         } catch (e: Exception) {}
                     })
                 }

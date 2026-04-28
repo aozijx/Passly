@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.backup.internal
 import android.util.JsonReader
 import android.util.JsonToken
 import android.util.JsonWriter
-import com.aozijx.passly.data.entity.VaultEntryEntity
+import com.aozijx.passly.data.entity.VaultPayload
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
@@ -11,97 +11,114 @@ import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 internal object BackupVSerializer {
-    /**
-     * 注意：此方法不会关闭传入的 output 流，因为在 ZIP 导出中，
-     * 写入一个 Entry 后流必须保持开启以继续写入后续 Entry 或 ZIP 中央目录。
-     */
-    fun writeEntries(output: OutputStream, entries: List<VaultEntryEntity>) {
+
+    fun writeEntries(output: OutputStream, payloads: List<VaultPayload>) {
         val writer = JsonWriter(OutputStreamWriter(output, StandardCharsets.UTF_8))
         writer.setIndent("")
         writer.beginArray()
-        entries.forEach { writeEntry(writer, it) }
+        payloads.forEach { writePayload(writer, it) }
         writer.endArray()
-        // 必须手动 flush 以确保数据写入底层的 ZipOutputStream，
-        // 但严禁调用 close()，否则会导致外层 ZipOutputStream 提前关闭。
         writer.flush()
     }
 
-    /**
-     * 注意：此方法不会关闭传入的 input 流。
-     */
-    fun readEntries(input: InputStream): List<VaultEntryEntity> {
-        val entries = mutableListOf<VaultEntryEntity>()
+    fun readEntries(input: InputStream): List<VaultPayload> {
+        val payloads = mutableListOf<VaultPayload>()
         val reader = JsonReader(InputStreamReader(input, StandardCharsets.UTF_8))
         reader.beginArray()
-        while (reader.hasNext()) entries.add(readEntry(reader))
+        while (reader.hasNext()) payloads.add(readPayload(reader))
         reader.endArray()
-        return entries
+        return payloads
     }
 
-    private fun writeEntry(writer: JsonWriter, entry: VaultEntryEntity) {
+    private fun writePayload(writer: JsonWriter, p: VaultPayload) {
         writer.beginObject()
-        writer.name("title").value(entry.title)
-        writer.name("username").value(entry.username)
-        writer.name("password").value(entry.password)
-        writer.name("category").value(entry.category)
-        writer.name("notes").value(entry.notes)
-        writer.name("iconName").value(entry.iconName)
-        writer.name("iconCustomPath").value(entry.iconCustomPath)
-        writer.name("totpSecret").value(entry.totpSecret)
-        writer.name("totpPeriod").value(entry.totpPeriod.toLong())
-        writer.name("totpDigits").value(entry.totpDigits.toLong())
-        writer.name("totpAlgorithm").value(entry.totpAlgorithm)
-        writer.name("passkeyDataJson").value(entry.passkeyDataJson)
-        writer.name("recoveryCodes").value(entry.recoveryCodes)
-        writer.name("hardwareKeyInfo").value(entry.hardwareKeyInfo)
-        writer.name("wifiEncryptionType").value(entry.wifiSecurityType)
-        writer.name("wifiIsHidden").value(entry.wifiIsHidden)
-        writer.name("cardCvv").value(entry.cardCvv)
-        writer.name("cardExpiration").value(entry.cardExpiration)
-        writer.name("idNumber").value(entry.idNumber)
-        writer.name("paymentPin").value(entry.paymentPin)
-        writer.name("paymentPlatform").value(entry.paymentPlatform)
-        writer.name("securityQuestion").value(entry.securityQuestion)
-        writer.name("securityAnswer").value(entry.securityAnswer)
-        writer.name("sshPrivateKey").value(entry.sshPrivateKey)
-        writer.name("cryptoSeedPhrase").value(entry.cryptoSeedPhrase)
-        writer.name("entryType").value(entry.entryType.toLong())
-        writer.name("associatedAppPackage").value(entry.associatedAppPackage)
-        writer.name("associatedDomain").value(entry.associatedDomain)
-        writer.name("uriList")
-        if (entry.uriList == null) writer.nullValue() else {
-            writer.beginArray()
-            entry.uriList.forEach { writer.value(it) }
-            writer.endArray()
+        writer.name("title").value(p.title)
+        writer.name("username").value(p.username)
+        writer.name("password").value(p.password)
+        p.email?.let { writer.name("email").value(it) }
+        writer.name("category").value(p.category)
+        
+        p.notes?.let { writer.name("notes").value(it) }
+        p.iconName?.let { writer.name("iconName").value(it) }
+        p.iconCustomPath?.let { writer.name("iconCustomPath").value(it) }
+        
+        p.totpSecret?.let {
+            writer.name("totpSecret").value(it)
+            p.totpIssuer?.let { issuer -> writer.name("totpIssuer").value(issuer) }
+            writer.name("totpPeriod").value(p.totpPeriod.toLong())
+            writer.name("totpDigits").value(p.totpDigits.toLong())
+            writer.name("totpAlgorithm").value(p.totpAlgorithm)
         }
-        writer.name("matchType").value(entry.matchType.toLong())
-        writer.name("customFieldsJson").value(entry.customFieldsJson)
-        writer.name("autoSubmit").value(entry.autoSubmit)
-        writer.name("strengthScore").value(entry.strengthScore?.toDouble())
-        writer.name("lastUsedAt").value(entry.lastUsedAt)
-        writer.name("usageCount").value(entry.usageCount.toLong())
-        writer.name("favorite").value(entry.favorite)
-        writer.name("tags")
-        if (entry.tags == null) writer.nullValue() else {
-            writer.beginArray()
-            entry.tags.forEach { writer.value(it) }
-            writer.endArray()
+
+        p.passkeyDataJson?.let { writer.name("passkeyDataJson").value(it) }
+        p.recoveryCodes?.let { writer.name("recoveryCodes").value(it) }
+        p.hardwareKeyInfo?.let { writer.name("hardwareKeyInfo").value(it) }
+        
+        p.wifiSecurityType?.let { writer.name("wifiSecurityType").value(it) }
+        if (p.wifiIsHidden) writer.name("wifiIsHidden").value(true)
+
+        p.cardCvv?.let { writer.name("cardCvv").value(it) }
+        p.cardExpiration?.let { writer.name("cardExpiration").value(it) }
+        p.idNumber?.let { writer.name("idNumber").value(it) }
+        
+        p.paymentPin?.let { writer.name("paymentPin").value(it) }
+        p.paymentPlatform?.let { writer.name("paymentPlatform").value(it) }
+        
+        p.securityQuestion?.let { writer.name("securityQuestion").value(it) }
+        p.securityAnswer?.let { writer.name("securityAnswer").value(it) }
+        
+        p.sshPrivateKey?.let { writer.name("sshPrivateKey").value(it) }
+        p.cryptoSeedPhrase?.let { writer.name("cryptoSeedPhrase").value(it) }
+        
+        writer.name("entryType").value(p.entryType.toLong())
+        
+        p.associatedAppPackage?.let { writer.name("associatedAppPackage").value(it) }
+        p.associatedDomain?.let { writer.name("associatedDomain").value(it) }
+        
+        p.uriList?.let { list ->
+            if (list.isNotEmpty()) {
+                writer.name("uriList")
+                writer.beginArray()
+                list.forEach { writer.value(it) }
+                writer.endArray()
+            }
         }
-        writer.name("createdAt").value(entry.createdAt)
-        writer.name("updatedAt").value(entry.updatedAt)
-        writer.name("expiresAt").value(entry.expiresAt)
+        
+        if (p.matchType != 0) writer.name("matchType").value(p.matchType.toLong())
+        p.customFieldsJson?.let { writer.name("customFieldsJson").value(it) }
+        if (p.autoSubmit) writer.name("autoSubmit").value(true)
+        
+        p.strengthScore?.let { writer.name("strengthScore").value(it.toDouble()) }
+        p.lastUsedAt?.let { writer.name("lastUsedAt").value(it) }
+        if (p.usageCount != 0) writer.name("usageCount").value(p.usageCount.toLong())
+        if (p.favorite) writer.name("favorite").value(true)
+        
+        p.tags?.let { list ->
+            if (list.isNotEmpty()) {
+                writer.name("tags")
+                writer.beginArray()
+                list.forEach { writer.value(it) }
+                writer.endArray()
+            }
+        }
+        
+        p.createdAt?.let { writer.name("createdAt").value(it) }
+        p.expiresAt?.let { writer.name("expiresAt").value(it) }
+        
         writer.endObject()
     }
 
-    private fun readEntry(reader: JsonReader): VaultEntryEntity {
+    private fun readPayload(reader: JsonReader): VaultPayload {
         var title = ""
         var username = ""
         var password = ""
+        var email: String? = null
         var category = ""
         var notes: String? = null
         var iconName: String? = null
         var iconCustomPath: String? = null
         var totpSecret: String? = null
+        var totpIssuer: String? = null
         var totpPeriod = 30
         var totpDigits = 6
         var totpAlgorithm = "SHA1"
@@ -131,8 +148,7 @@ internal object BackupVSerializer {
         var usageCount = 0
         var favorite = false
         var tags: List<String>? = null
-        var createdAt: Long? = System.currentTimeMillis()
-        var updatedAt: Long? = null
+        var createdAt: Long? = null
         var expiresAt: Long? = null
 
         reader.beginObject()
@@ -141,18 +157,20 @@ internal object BackupVSerializer {
                 "title" -> title = reader.nextString()
                 "username" -> username = reader.nextString()
                 "password" -> password = reader.nextString()
+                "email" -> email = reader.nextNullableString()
                 "category" -> category = reader.nextString()
                 "notes" -> notes = reader.nextNullableString()
                 "iconName" -> iconName = reader.nextNullableString()
                 "iconCustomPath" -> iconCustomPath = reader.nextNullableString()
                 "totpSecret" -> totpSecret = reader.nextNullableString()
+                "totpIssuer" -> totpIssuer = reader.nextNullableString()
                 "totpPeriod" -> totpPeriod = reader.nextInt()
                 "totpDigits" -> totpDigits = reader.nextInt()
                 "totpAlgorithm" -> totpAlgorithm = reader.nextString()
                 "passkeyDataJson" -> passkeyDataJson = reader.nextNullableString()
                 "recoveryCodes" -> recoveryCodes = reader.nextNullableString()
                 "hardwareKeyInfo" -> hardwareKeyInfo = reader.nextNullableString()
-                "wifiEncryptionType" -> wifiSecurityType = reader.nextNullableString()
+                "wifiSecurityType", "wifiEncryptionType" -> wifiSecurityType = reader.nextNullableString()
                 "wifiIsHidden" -> wifiIsHidden = reader.nextBoolean()
                 "cardCvv" -> cardCvv = reader.nextNullableString()
                 "cardExpiration" -> cardExpiration = reader.nextNullableString()
@@ -176,22 +194,23 @@ internal object BackupVSerializer {
                 "favorite" -> favorite = reader.nextBoolean()
                 "tags" -> tags = reader.nextStringList()
                 "createdAt" -> createdAt = reader.nextNullableLong()
-                "updatedAt" -> updatedAt = reader.nextNullableLong()
                 "expiresAt" -> expiresAt = reader.nextNullableLong()
                 else -> reader.skipValue()
             }
         }
         reader.endObject()
 
-        return VaultEntryEntity(
+        return VaultPayload(
             title = title,
             username = username,
             password = password,
+            email = email,
             category = category,
             notes = notes,
             iconName = iconName,
             iconCustomPath = iconCustomPath,
             totpSecret = totpSecret,
+            totpIssuer = totpIssuer,
             totpPeriod = totpPeriod,
             totpDigits = totpDigits,
             totpAlgorithm = totpAlgorithm,
@@ -222,7 +241,6 @@ internal object BackupVSerializer {
             favorite = favorite,
             tags = tags,
             createdAt = createdAt,
-            updatedAt = updatedAt,
             expiresAt = expiresAt
         )
     }

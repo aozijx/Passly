@@ -18,8 +18,6 @@ import java.nio.charset.StandardCharsets
  */
 object EmergencyBackupExporter {
 
-    private val BOOLEAN_COLUMNS = setOf("wifiIsHidden", "autoSubmit", "favorite")
-
     /**
      * 当应用检测到数据库无法正常初始化时，尝试抢救数据。
      * 将数据以明文 JSON 形式保存到 App 私有目录（Cache 目录）中。
@@ -64,18 +62,11 @@ object EmergencyBackupExporter {
             while (cursor.moveToNext()) {
                 writer.beginObject()
                 for (columnName in columnNames) {
-                    // 图片二进制数据不建议放入明文 JSON
-                    if (columnName == "encryptedImageData") continue
                     val columnIndex = cursor.getColumnIndex(columnName)
                     writer.name(columnName)
                     when (cursor.getType(columnIndex)) {
                         Cursor.FIELD_TYPE_NULL -> writer.nullValue()
-                        Cursor.FIELD_TYPE_INTEGER -> {
-                            val value = cursor.getLong(columnIndex)
-                            if (BOOLEAN_COLUMNS.contains(columnName)) writer.value(value == 1L)
-                            else writer.value(value)
-                        }
-
+                        Cursor.FIELD_TYPE_INTEGER -> writer.value(cursor.getLong(columnIndex))
                         Cursor.FIELD_TYPE_FLOAT -> writer.value(cursor.getDouble(columnIndex))
                         Cursor.FIELD_TYPE_STRING -> writer.value(cursor.getString(columnIndex))
                         Cursor.FIELD_TYPE_BLOB -> writer.value("[BINARY DATA]")

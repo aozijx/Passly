@@ -1,6 +1,5 @@
 package com.aozijx.passly.features.detail.sections
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,15 +19,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.CryptoManager
-import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.EditTextField
 import com.aozijx.passly.features.detail.internal.EntryEditState
-
-private const val TAG = "CredentialSection"
 
 @Composable
 fun CredentialSection(
@@ -43,39 +38,6 @@ fun CredentialSection(
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
-    val decryptFailMsg = stringResource(R.string.vault_decrypt_failed)
-    val encryptFailMsg = stringResource(R.string.vault_encrypt_failed)
-
-    fun decryptOrToast(ciphertext: String): String? {
-        return try {
-            CryptoManager.decrypt(ciphertext)
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Decrypt failed", e)
-            Toast.makeText(context, decryptFailMsg, Toast.LENGTH_SHORT).show()
-            null
-        }
-    }
-
-    fun saveField(
-        newValue: String,
-        oldRevealed: String?,
-        onClose: () -> Unit,
-        onSuccess: (encrypted: String) -> Unit
-    ) {
-        if (newValue == oldRevealed) {
-            onClose()
-            return
-        }
-        try {
-            val encrypted = CryptoManager.encrypt(newValue)
-            onSuccess(encrypted)
-            onClose()
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Encrypt failed", e)
-            Toast.makeText(context, encryptFailMsg, Toast.LENGTH_SHORT).show()
-            onClose()
-        }
-    }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         CredentialRow(
@@ -90,18 +52,17 @@ fun CredentialSection(
                     ClipboardUtils.copy(context, revealedUsername)
                 } else {
                     onAuthenticate(activity, "解密信息", "验证身份以复制账号") {
-                        decryptOrToast(item.username)?.let { decrypted ->
-                            ClipboardUtils.copy(context, decrypted)
-                            onUsernameRevealed(decrypted)
-                        }
+                        ClipboardUtils.copy(context, item.username)
+                        onUsernameRevealed(item.username)
                     }
                 }
             },
             onSave = { newValue ->
-                saveField(newValue, revealedUsername, { editState.isEditingUsername = false }) { encrypted ->
-                    onEntryUpdated(item.copy(username = encrypted))
+                if (newValue != revealedUsername) {
+                    onEntryUpdated(item.copy(username = newValue))
                     onUsernameRevealed(newValue)
                 }
+                editState.isEditingUsername = false
             })
 
         val showPassword = item.password.isNotEmpty() || item.entryType != 1
@@ -118,18 +79,17 @@ fun CredentialSection(
                         ClipboardUtils.copy(context, revealedPassword)
                     } else {
                         onAuthenticate(activity, "解密信息", "验证身份以复制密码") {
-                            decryptOrToast(item.password)?.let { decrypted ->
-                                ClipboardUtils.copy(context, decrypted)
-                                onPasswordRevealed(decrypted)
-                            }
+                            ClipboardUtils.copy(context, item.password)
+                            onPasswordRevealed(item.password)
                         }
                     }
                 },
                 onSave = { newValue ->
-                    saveField(newValue, revealedPassword, { editState.isEditingPassword = false }) { encrypted ->
-                        onEntryUpdated(item.copy(password = encrypted))
+                    if (newValue != revealedPassword) {
+                        onEntryUpdated(item.copy(password = newValue))
                         onPasswordRevealed(newValue)
                     }
+                    editState.isEditingPassword = false
                 })
         }
 
@@ -138,10 +98,10 @@ fun CredentialSection(
                 onClick = {
                     onAuthenticate(activity, "解密信息", "验证身份以查看完整条目") {
                         if (revealedUsername == null && item.username.isNotEmpty()) {
-                            decryptOrToast(item.username)?.let { onUsernameRevealed(it) }
+                            onUsernameRevealed(item.username)
                         }
                         if (revealedPassword == null && item.password.isNotEmpty()) {
-                            decryptOrToast(item.password)?.let { onPasswordRevealed(it) }
+                            onPasswordRevealed(item.password)
                         }
                     }
                 }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)
