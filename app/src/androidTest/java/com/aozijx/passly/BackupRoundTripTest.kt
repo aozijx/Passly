@@ -112,6 +112,9 @@ class BackupRoundTripTest {
         assertTrue("应含 title 字段", entry.has("title"))
         assertTrue("应含 username 字段", entry.has("username"))
         assertTrue("应含 password 字段", entry.has("password"))
+        assertTrue("应含 email 字段", entry.has("email"))
+        assertTrue("应含 totpSecret 字段", entry.has("totpSecret"))
+        assertTrue("应含 totpIssuer 字段", entry.has("totpIssuer"))
         assertTrue("应含 entryType 字段", entry.has("entryType"))
         assertTrue("应含 createdAt 字段", entry.has("createdAt"))
     }
@@ -168,7 +171,10 @@ class BackupRoundTripTest {
             title = title,
             username = username,
             password = "encrypted_password_placeholder",
+            email = "test@example.com",
             category = "Test",
+            totpSecret = "JBSWY3DPEHPK3PXP",
+            totpIssuer = "TestIssuer",
             totpPeriod = 30,
             totpDigits = 6,
             totpAlgorithm = "SHA1",
