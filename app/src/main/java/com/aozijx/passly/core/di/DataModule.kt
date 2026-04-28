@@ -34,7 +34,7 @@ object DataModule {
     private val database by lazy { AppDatabase.getDatabase(appContext) }
 
     internal val vaultRepository: VaultRepository by lazy {
-        VaultDataRepository(database.vaultEntryDao())
+        VaultDataRepository(database.vaultEntryDao(), database.vaultHistoryDao())
     }
 
     internal val vaultSearchRepository: VaultSearchRepository by lazy {
