@@ -34,7 +34,7 @@ object TotpUtils {
     }
 
     fun constructOtpAuthUri(entry: VaultEntry, secret: String): String {
-        val issuer = URLEncoder.encode(entry.category, "UTF-8")
+        val issuer = URLEncoder.encode(entry.totpIssuer ?: entry.category, "UTF-8")
         val label = URLEncoder.encode(entry.title, "UTF-8")
         val secretEncoded = secret.replace(" ", "").uppercase()
 
