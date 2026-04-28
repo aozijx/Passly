@@ -54,7 +54,7 @@ internal object BackupVSerializer {
         p.recoveryCodes?.let { writer.name("recoveryCodes").value(it) }
         p.hardwareKeyInfo?.let { writer.name("hardwareKeyInfo").value(it) }
         
-        p.wifiSecurityType?.let { writer.name("wifiEncryptionType").value(it) }
+        p.wifiSecurityType?.let { writer.name("wifiSecurityType").value(it) }
         if (p.wifiIsHidden) writer.name("wifiIsHidden").value(true)
 
         p.cardCvv?.let { writer.name("cardCvv").value(it) }
@@ -170,7 +170,7 @@ internal object BackupVSerializer {
                 "passkeyDataJson" -> passkeyDataJson = reader.nextNullableString()
                 "recoveryCodes" -> recoveryCodes = reader.nextNullableString()
                 "hardwareKeyInfo" -> hardwareKeyInfo = reader.nextNullableString()
-                "wifiEncryptionType" -> wifiSecurityType = reader.nextNullableString()
+                "wifiSecurityType", "wifiEncryptionType" -> wifiSecurityType = reader.nextNullableString()
                 "wifiIsHidden" -> wifiIsHidden = reader.nextBoolean()
                 "cardCvv" -> cardCvv = reader.nextNullableString()
                 "cardExpiration" -> cardExpiration = reader.nextNullableString()
