@@ -147,7 +147,10 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun autoUnlockTotp(entry: VaultSummary) = totp.autoUnlock(entry)
 
     // --- Detail management ---
-    fun showDetail(entry: VaultEntry) = detail.showDetail(entry)
+    fun showDetail(entry: VaultEntry) {
+        detail.showDetail(entry)
+        viewModelScope.launch { vaultUseCases.recordUsage(entry.id) }
+    }
     fun showDetail(entry: VaultSummary) = loadEntryById(entry.id) { showDetail(it) }
     fun loadEntryById(entryId: Int, onLoaded: (VaultEntry) -> Unit) {
         viewModelScope.launch { vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) } }
