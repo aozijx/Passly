@@ -63,6 +63,16 @@ class VaultDataRepository(
         entryDao.update(entry.toEntity())
     }
 
+    override suspend fun recordUsage(entryId: Int) {
+        val entity = entryDao.getEntryById(entryId) ?: return
+        val entry = entity.toDomain()
+        val updated = entry.copy(
+            usageCount = entry.usageCount + 1,
+            lastUsedAt = System.currentTimeMillis()
+        )
+        entryDao.update(updated.toEntity())
+    }
+
     override suspend fun delete(entry: VaultEntry) =
         entryDao.delete(entry.toEntity())
 

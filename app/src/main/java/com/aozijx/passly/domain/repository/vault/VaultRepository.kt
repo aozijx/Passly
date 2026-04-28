@@ -18,6 +18,7 @@ interface VaultRepository {
     suspend fun countByType(type: EntryType): Int
     suspend fun insert(entry: VaultEntry): Long
     suspend fun update(entry: VaultEntry)
+    suspend fun recordUsage(entryId: Int)
     suspend fun delete(entry: VaultEntry)
     suspend fun deleteAll()
 }
