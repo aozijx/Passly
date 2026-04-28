@@ -47,7 +47,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 
@@ -55,9 +54,9 @@ import com.aozijx.passly.core.designsystem.components.ScannerView
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
+import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel
-import java.net.URLDecoder
 
 /**
  * Vault 专用的扫码特化组件
@@ -84,7 +83,7 @@ fun VaultScanner(
     val successSaveMsg = stringResource(R.string.vault_scanner_success_save)
     val scanResult by scannerViewModel.scanResult.collectAsState()
 
-    val scannedTotp = remember(scanResult) { parseOtpAuthUri(scanResult) }
+    val scannedTotp = remember(scanResult) { TotpUtils.parseOtpAuthUri(scanResult) }
 
     LaunchedEffect(scanResult) {
         if (scanResult.isNotEmpty() && scannedTotp == null) {
@@ -214,6 +213,7 @@ fun VaultScanner(
                                             password = "",
                                             category = "OTP",
                                             totpSecret = totp.secret,
+                                            totpPeriod = totp.period ?: 30,
                                             totpDigits = if (isSteam) 5 else (totp.digits ?: 6),
                                             totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm
                                                 ?: "SHA1"),
@@ -246,26 +246,3 @@ fun VaultScanner(
     }
 }
 
-private data class OtpAuthData(
-    val label: String,
-    val secret: String,
-    val issuer: String?,
-    val digits: Int? = null,
-    val algorithm: String? = null
-)
-
-private fun parseOtpAuthUri(uriString: String): OtpAuthData? {
-    if (uriString.isBlank() || !uriString.startsWith("otpauth://")) return null
-    return try {
-        val uri = uriString.toUri()
-        if (uri.host != "totp") return null
-        val label = URLDecoder.decode(uri.path?.trimStart('/') ?: "", "UTF-8")
-        val secret = uri.getQueryParameter("secret") ?: return null
-        val issuer = uri.getQueryParameter("issuer")
-        val digits = uri.getQueryParameter("digits")?.toIntOrNull()
-        val algorithm = uri.getQueryParameter("algorithm")?.uppercase()
-        OtpAuthData(label, secret, issuer, digits, algorithm)
-    } catch (_: Exception) {
-        null
-    }
-}
