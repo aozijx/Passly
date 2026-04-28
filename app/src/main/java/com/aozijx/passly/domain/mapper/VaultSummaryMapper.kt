@@ -9,6 +9,7 @@ fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     category = category,
     entryType = entryType,
     username = username,
+    email = email,
     iconName = iconName,
     iconCustomPath = iconCustomPath,
     associatedAppPackage = associatedAppPackage,

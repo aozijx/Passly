@@ -12,6 +12,7 @@ data class VaultSummary(
     override val category: String,
     val entryType: Int = 0,
     val username: String,
+    val email: String? = null,
     override val iconName: String? = null,
     override val iconCustomPath: String? = null,
     override val associatedAppPackage: String? = null,
