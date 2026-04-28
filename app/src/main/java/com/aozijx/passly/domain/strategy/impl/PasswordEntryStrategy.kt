@@ -29,7 +29,7 @@ class PasswordEntryStrategy : EntryTypeStrategy {
     }
 
     override fun getSensitiveFields(): Set<String> {
-        return setOf("password", "username")
+        return setOf("password", "username", "totpSecret")
     }
 
     override fun extractSummary(entry: VaultEntry): String {
@@ -61,6 +61,13 @@ class PasswordEntryStrategy : EntryTypeStrategy {
                         fieldType = FieldType.PASSWORD
                     ),
                     FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
+                )
+            ), FieldGroup(
+                title = "两步验证", fields = listOf(
+                    FieldDefinition("totpSecret", "TOTP 密钥", isSensitive = true),
+                    FieldDefinition("totpDigits", "位数", fieldType = FieldType.SELECT),
+                    FieldDefinition("totpPeriod", "更新周期 (s)", fieldType = FieldType.SELECT),
+                    FieldDefinition("totpAlgorithm", "算法", fieldType = FieldType.SELECT)
                 )
             ), FieldGroup(
                 title = "额外信息", fields = listOf(
