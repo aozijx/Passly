@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.aozijx.passly.R
 
 import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
@@ -25,9 +24,9 @@ import com.aozijx.passly.core.designsystem.fields.VaultTextField
 import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel
-import java.net.URLDecoder
 
 @Composable
 fun AddTwoFADialog(
@@ -41,32 +40,24 @@ fun AddTwoFADialog(
     val uriParseFailedMsg = stringResource(R.string.vault_2fa_uri_parse_failed)
     val otpCategory = stringResource(R.string.category_otp)
 
-    // 自动解析 otpauth URI 逻辑
     LaunchedEffect(state.uriText) {
-        if (!state.uriText.startsWith("otpauth://totp/")) return@LaunchedEffect
+        val parsed = TotpUtils.parseOtpAuthUri(state.uriText) ?: return@LaunchedEffect
         try {
-            val uri = state.uriText.toUri()
-            val label = URLDecoder.decode(uri.path?.trimStart('/') ?: "", "UTF-8")
-            val secret = uri.getQueryParameter("secret") ?: ""
-            val issuer = uri.getQueryParameter("issuer")
-            val rawAlgorithm = uri.getQueryParameter("algorithm")?.uppercase()
-            val digits = uri.getQueryParameter("digits")?.toIntOrNull() ?: 6
-            val period = uri.getQueryParameter("period")?.toIntOrNull() ?: 30
+            state.title = parsed.issuer ?: parsed.label.split(":").firstOrNull() ?: ""
+            state.username = parsed.label
+            state.secret = parsed.secret
+            state.issuer = parsed.issuer ?: ""
+            state.domain = parsed.issuer ?: ""
 
-            state.title = issuer ?: label.split(":").firstOrNull() ?: ""
-            state.username = label
-            state.secret = secret
-            // 尝试从 issuer 提取域名（如果 issuer 是域名的话）
-            state.domain = issuer ?: ""
-
-            if ((issuer ?: label).contains("Steam", ignoreCase = true)) {
+            val isSteam = (parsed.issuer ?: parsed.label).contains("Steam", ignoreCase = true)
+            if (isSteam) {
                 state.algorithm = "STEAM"
                 state.digits = "5"
             } else {
-                state.algorithm = rawAlgorithm?.takeIf { algorithms.contains(it) } ?: "SHA1"
-                state.digits = digits.toString()
+                state.algorithm = parsed.algorithm?.takeIf { algorithms.contains(it) } ?: "SHA1"
+                state.digits = (parsed.digits ?: 6).toString()
             }
-            state.period = period.toString()
+            state.period = (parsed.period ?: 30).toString()
 
             Toast.makeText(context, uriParsedMsg, Toast.LENGTH_SHORT).show()
             ClipboardUtils.clear(context)
@@ -87,6 +78,7 @@ fun AddTwoFADialog(
                     password = "",
                     category = state.category.ifBlank { otpCategory },
                     totpSecret = state.secret.trim(),
+                    totpIssuer = state.issuer.ifBlank { null },
                     totpDigits = state.digits.toIntOrNull() ?: 6,
                     totpPeriod = state.period.toIntOrNull() ?: 30,
                     totpAlgorithm = state.algorithm,

@@ -12,6 +12,7 @@ class TotpAddState {
     var username by mutableStateOf("")
     var category by mutableStateOf("")
     var domain by mutableStateOf("")
+    var issuer by mutableStateOf("")
 
     // TOTP 核心配置
     var secret by mutableStateOf("")
