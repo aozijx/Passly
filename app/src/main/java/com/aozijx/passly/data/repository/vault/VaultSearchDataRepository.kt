@@ -25,6 +25,8 @@ class VaultSearchDataRepository(
         entities.map { it.toDomain() }
             .filter { entry ->
                 (query.isEmpty() || entry.title.contains(query, ignoreCase = true)
+                        || entry.username.contains(query, ignoreCase = true)
+                        || entry.email?.contains(query, ignoreCase = true) == true
                         || entry.category.contains(query, ignoreCase = true)
                         || entry.tags?.any { it.contains(query, ignoreCase = true) } == true)
             }
