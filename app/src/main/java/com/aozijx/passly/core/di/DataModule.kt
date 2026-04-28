@@ -2,7 +2,6 @@ package com.aozijx.passly.core.di
 
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.data.local.AppDatabase
-import com.aozijx.passly.data.local.AppPrefs
 import com.aozijx.passly.data.local.config.UserConfigFileStore
 import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
 import com.aozijx.passly.data.repository.autofill.AutofillServiceDataRepository
@@ -11,6 +10,7 @@ import com.aozijx.passly.data.repository.database.DatabaseLifecycleRepositoryImp
 import com.aozijx.passly.data.repository.favicon.FaviconDataRepository
 import com.aozijx.passly.data.repository.history.HistoryDataRepository
 import com.aozijx.passly.data.repository.otp.OtpDataRepository
+import com.aozijx.passly.data.repository.settings.SettingsRepositoryImpl
 import com.aozijx.passly.data.repository.settings.UserConfigDataRepository
 import com.aozijx.passly.data.repository.vault.VaultDataRepository
 import com.aozijx.passly.data.repository.vault.VaultSearchDataRepository
@@ -55,11 +55,13 @@ object DataModule {
         AutofillServiceDataRepository(appContext)
     }
 
-    private val prefs: AppPrefs by lazy { appContext.preference }
+    private val settingsRepository: SettingsRepositoryImpl by lazy {
+        SettingsRepositoryImpl(appContext)
+    }
 
-    internal val securitySettingsRepository: SecuritySettingsRepository get() = prefs
-    internal val systemSettingsRepository: SystemSettingsRepository get() = prefs
-    internal val backupSettingsRepository: BackupSettingsRepository get() = prefs
+    internal val securitySettingsRepository: SecuritySettingsRepository get() = settingsRepository
+    internal val systemSettingsRepository: SystemSettingsRepository get() = settingsRepository
+    internal val backupSettingsRepository: BackupSettingsRepository get() = settingsRepository
 
     internal val faviconRepository: FaviconRepository by lazy {
         FaviconDataRepository(appContext)

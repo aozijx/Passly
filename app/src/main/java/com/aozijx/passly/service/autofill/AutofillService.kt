@@ -16,7 +16,6 @@ import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
 import android.view.autofill.AutofillId
 import androidx.compose.ui.graphics.asAndroidBitmap
-import com.aozijx.passly.AppContext
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.EntryType
@@ -41,7 +40,8 @@ import kotlinx.coroutines.launch
  */
 class AutofillService : android.service.autofill.AutofillService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val autofillRepository = AppContainer.domain.autofillUseCases
+    private val autofillUseCases = AppContainer.domain.autofillUseCases
+    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
     private val tag = "PasslyAutofill"
     private val slowFillTotalMs = 250L
     private val slowRepositoryMs = 120L
@@ -58,7 +58,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                 val fillStart = System.currentTimeMillis()
                 EntryTypeStrategyRegistry.ensureRegistered()
                 val parser = AutofillStructureParser(structure)
-                val autofillUiMode = AppContext.get().preference.autofillUiMode.first()
+                val autofillUiMode = systemSettingsUseCases.autofillUiMode.first()
                 Logcat.d(
                     tag, "onFillRequest: pkg=${parser.packageName}, domain=${parser.webDomain}"
                 )
@@ -84,7 +84,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                 }
 
                 val repositoryStart = System.currentTimeMillis()
-                val candidates = autofillRepository.findMatchingCandidates(
+                val candidates = autofillUseCases.findMatchingCandidates(
                     packageName = parser.normalizedPackageName,
                     webDomain = parser.normalizedWebDomain
                 )
@@ -335,7 +335,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                 }
 
                 val saveStart = System.currentTimeMillis()
-                val success = autofillRepository.saveOrUpdateEntry(
+                val success = autofillUseCases.saveOrUpdateEntry(
                     packageName = pkg,
                     webDomain = domain,
                     pageTitle = title,
