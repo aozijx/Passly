@@ -90,8 +90,10 @@ fun DetailCardDialog(
     }
     var showQrDialog by remember { mutableStateOf(false) }
 
+    val hasTotp = !entry.totpSecret.isNullOrBlank()
+
     LaunchedEffect(entry.id) {
-        if (vaultType == EntryType.TOTP) {
+        if (hasTotp) {
             vaultViewModel.autoUnlockTotp(entry)
         }
     }
@@ -169,6 +171,7 @@ fun DetailCardDialog(
                     typeSpecificCardContent(
                         entry = entry,
                         vaultType = vaultType,
+                        hasTotp = hasTotp,
                         currentState = currentState,
                         isSteam = isSteam,
                         totpEditState = totpEditState,
@@ -198,7 +201,7 @@ fun DetailCardDialog(
         }
     }
 
-    if (showQrDialog && vaultType == EntryType.TOTP) {
+    if (showQrDialog && hasTotp) {
         if (currentState?.decryptedSecret != null) {
             val qrContent = TotpUtils.constructOtpAuthUri(entry, currentState.decryptedSecret)
             val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
@@ -210,6 +213,7 @@ fun DetailCardDialog(
 private fun LazyListScope.typeSpecificCardContent(
     entry: VaultEntry,
     vaultType: EntryType,
+    hasTotp: Boolean,
     currentState: TotpState?,
     isSteam: Boolean,
     totpEditState: TotpEditState,
@@ -253,6 +257,20 @@ private fun LazyListScope.typeSpecificCardContent(
                     onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
                 )
             }
+        }
+    }
+
+    if (vaultType != EntryType.TOTP && hasTotp) {
+        item {
+            TotpSection(
+                entry = entry,
+                currentState = currentState,
+                isSteam = isSteam,
+                totpEditState = totpEditState,
+                showQrDialog = onShowQrDialog,
+                onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
+                onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+            )
         }
     }
 }
