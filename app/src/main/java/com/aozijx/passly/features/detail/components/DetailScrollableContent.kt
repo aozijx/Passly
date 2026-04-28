@@ -26,6 +26,7 @@ import com.aozijx.passly.features.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.features.detail.sections.BankCardSection
 import com.aozijx.passly.features.detail.sections.CategoryItem
 import com.aozijx.passly.features.detail.sections.CredentialSection
+import com.aozijx.passly.features.detail.sections.HistoryTimelineSection
 import com.aozijx.passly.features.detail.sections.IdCardSection
 import com.aozijx.passly.features.detail.sections.NotesSection
 import com.aozijx.passly.features.detail.sections.PasskeySection
@@ -77,7 +78,8 @@ fun DetailScrollableContent(
                         revealedPassword = uiState.revealedPassword,
                         onUsernameRevealed = { onEvent(DetailEvent.SetRevealedUsername(it)) },
                         onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEvent = onEvent
                     )
                 }
             }
@@ -92,7 +94,8 @@ fun DetailScrollableContent(
                         totpEditState = totpEditState,
                         showQrDialog = onShowQrDialog,
                         onUpdateVaultEntry = onUpdateVaultEntry,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEvent = onEvent
                     )
                 }
             }
@@ -221,6 +224,10 @@ fun DetailScrollableContent(
 
         item {
             MetadataSection(entry)
+        }
+
+        item {
+            HistoryTimelineSection(historyList = uiState.history)
         }
     }
 }

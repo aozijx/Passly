@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.domain.model.icon.FaviconResult
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.features.detail.contract.DetailEffect
@@ -22,6 +23,7 @@ import kotlinx.coroutines.launch
 
 class DetailViewModel(application: Application) : AndroidViewModel(application) {
     private val detailUseCases = AppContainer.domain.detailUseCases
+    private val historyRepository = AppContainer.data.historyRepository
     private val entryAnalyzer = DetailEntryAnalyzer()
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -42,6 +44,14 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                     val latest = detailUseCases.getEntryById(event.initialEntry.id) ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
                     autoDownloadFavicon(latest)
+                }
+
+                // 监听历史记录
+                viewModelScope.launch {
+                    historyRepository.getHistoryByEntryId(event.initialEntry.id)
+                        .collect { list: List<VaultHistory> ->
+                            _uiState.update { it.copy(history = list) }
+                        }
                 }
             }
 
@@ -112,6 +122,19 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
             is DetailEvent.SetRevealedPassword -> {
                 _uiState.update { it.copy(revealedPassword = event.value) }
             }
+
+            is DetailEvent.RecordAction -> {
+                val current = _uiState.value.entry ?: return
+                viewModelScope.launch {
+                    historyRepository.insertHistory(
+                        VaultHistory(
+                            entryId = current.id,
+                            fieldName = event.field,
+                            changeType = event.type
+                        )
+                    )
+                }
+            }
         }
     }
 
@@ -157,7 +180,6 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
 
     override fun onCleared() {
         super.onCleared()
-        // 安全性增强：ViewModel 销毁时立即清空内存中的敏感数据
         _uiState.update { DetailUiState() }
     }
 }

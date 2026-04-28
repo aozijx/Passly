@@ -2,6 +2,7 @@ package com.aozijx.passly.features.detail.contract
 
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 
 data class DetailUiState(
     val entry: VaultEntry? = null,
@@ -12,7 +13,8 @@ data class DetailUiState(
     val editedTitle: String = "",
     val strategyReady: Boolean = false,
     val revealedUsername: String? = null,
-    val revealedPassword: String? = null
+    val revealedPassword: String? = null,
+    val history: List<VaultHistory> = emptyList()
 )
 
 sealed interface DetailEvent {
@@ -30,6 +32,8 @@ sealed interface DetailEvent {
     
     data class SetRevealedUsername(val value: String?) : DetailEvent
     data class SetRevealedPassword(val value: String?) : DetailEvent
+
+    data class RecordAction(val field: String, val type: VaultHistory.HistoryType) : DetailEvent
 }
 
 sealed interface DetailEffect {

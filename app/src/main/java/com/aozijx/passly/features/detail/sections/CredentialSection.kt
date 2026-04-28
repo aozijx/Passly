@@ -21,8 +21,10 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.EditTextField
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.internal.EntryEditState
 
 @Composable
@@ -35,7 +37,8 @@ fun CredentialSection(
     revealedPassword: String?,
     onUsernameRevealed: (String?) -> Unit,
     onPasswordRevealed: (String?) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEntryUpdated: (VaultEntry) -> Unit,
+    onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -50,10 +53,12 @@ fun CredentialSection(
             onCopy = {
                 if (revealedUsername != null) {
                     ClipboardUtils.copy(context, revealedUsername)
+                    onEvent(DetailEvent.RecordAction("username", VaultHistory.HistoryType.COPY))
                 } else {
                     onAuthenticate(activity, "解密信息", "验证身份以复制账号") {
                         ClipboardUtils.copy(context, item.username)
                         onUsernameRevealed(item.username)
+                        onEvent(DetailEvent.RecordAction("username", VaultHistory.HistoryType.COPY))
                     }
                 }
             },
@@ -77,10 +82,17 @@ fun CredentialSection(
                 onCopy = {
                     if (revealedPassword != null) {
                         ClipboardUtils.copy(context, revealedPassword)
+                        onEvent(DetailEvent.RecordAction("password", VaultHistory.HistoryType.COPY))
                     } else {
                         onAuthenticate(activity, "解密信息", "验证身份以复制密码") {
                             ClipboardUtils.copy(context, item.password)
                             onPasswordRevealed(item.password)
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "password",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         }
                     }
                 },
@@ -99,9 +111,21 @@ fun CredentialSection(
                     onAuthenticate(activity, "解密信息", "验证身份以查看完整条目") {
                         if (revealedUsername == null && item.username.isNotEmpty()) {
                             onUsernameRevealed(item.username)
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "username",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
                         }
                         if (revealedPassword == null && item.password.isNotEmpty()) {
                             onPasswordRevealed(item.password)
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "password",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
                         }
                     }
                 }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)

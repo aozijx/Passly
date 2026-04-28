@@ -146,6 +146,8 @@
     <string name="vault_upgrade_security">验证并升级安全性</string>
     <string name="vault_reveal_info">验证并显示详情</string>
     <string name="vault_decrypt_failed">解密失败，请重新验证</string>
+    <string name="vault_reveal_password_subtitle">验证身份以显示密码</string>
+    <string name="vault_reveal_username_subtitle">验证身份以显示账号</string>
     <string name="vault_encrypt_failed">加密失败，保存已取消</string>
     <string name="vault_edit_modify_category">修改分类</string>
     <string name="vault_edit_save_category">保存分类</string>
@@ -217,6 +219,7 @@
     <string name="vault_detail_notes">备注</string>
     <string name="vault_detail_add_notes">添加备注…</string>
     <string name="vault_detail_no_notes">暂无备注</string>
+    <string name="vault_detail_history_label">活动日志</string>
 
     <!-- icon_ 系列 -->
     <string name="icon_bank">银行</string>

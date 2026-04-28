@@ -115,7 +115,8 @@ fun VaultHistoryEntity.toDomain(): VaultHistory = VaultHistory(
     fieldName = fieldName,
     oldValue = oldValue,
     newValue = newValue,
-    changeType = changeType,
+    changeType = VaultHistory.HistoryType.entries.find { it.value == changeType }
+        ?: VaultHistory.HistoryType.UPDATE,
     deviceName = deviceName,
     changedAt = changedAt
 )
@@ -126,7 +127,7 @@ fun VaultHistory.toEntity(): VaultHistoryEntity = VaultHistoryEntity(
     fieldName = fieldName,
     oldValue = oldValue,
     newValue = newValue,
-    changeType = changeType,
+    changeType = changeType.value,
     deviceName = deviceName,
     changedAt = changedAt
 )

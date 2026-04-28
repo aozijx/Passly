@@ -44,6 +44,7 @@ import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.sections.CredentialSection
+import com.aozijx.passly.features.detail.sections.HistoryTimelineSection
 import com.aozijx.passly.features.detail.sections.TotpSection
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.features.main.MainViewModel
@@ -196,6 +197,10 @@ fun DetailCardDialog(
                         vaultViewModel = vaultViewModel,
                         onEvent = detailViewModel::onEvent
                     )
+
+                    item {
+                        HistoryTimelineSection(historyList = detailUiState.history)
+                    }
                 }
             }
         }
@@ -238,7 +243,8 @@ private fun LazyListScope.typeSpecificCardContent(
                     totpEditState = totpEditState,
                     showQrDialog = onShowQrDialog,
                     onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
-                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                    onEvent = onEvent
                 )
             }
 
@@ -254,7 +260,8 @@ private fun LazyListScope.typeSpecificCardContent(
                     revealedPassword = revealedPassword,
                     onUsernameRevealed = onUsernameRevealed,
                     onPasswordRevealed = onPasswordRevealed,
-                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                    onEvent = onEvent
                 )
             }
         }
@@ -269,7 +276,8 @@ private fun LazyListScope.typeSpecificCardContent(
                 totpEditState = totpEditState,
                 showQrDialog = onShowQrDialog,
                 onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
-                onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                onEvent = onEvent
             )
         }
     }

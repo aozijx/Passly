@@ -6,5 +6,8 @@ package com.aozijx.passly.core.di
 object AppContainer {
 
     // --- 聚合领域层模块 ---
-    internal val domain by lazy { DomainModule() }
+    val domain by lazy { DomainModule() }
+
+    // --- 聚合数据层模块 ---
+    val data get() = DataModule
 }

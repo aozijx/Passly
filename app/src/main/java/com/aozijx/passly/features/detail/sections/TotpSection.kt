@@ -12,8 +12,10 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.components.TotpCodeCard
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.dialogs.EditTotpSection
 
@@ -26,7 +28,8 @@ fun TotpSection(
     totpEditState: TotpEditState,
     showQrDialog: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEntryUpdated: (VaultEntry) -> Unit,
+    onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val totpCopiedMsg = stringResource(R.string.vault_totp_copied)
@@ -42,6 +45,7 @@ fun TotpSection(
                     if (it.code.isNotEmpty() && !it.code.contains("-")) {
                         ClipboardUtils.copy(context, it.code)
                         Toast.makeText(context, totpCopiedMsg, Toast.LENGTH_SHORT).show()
+                        onEvent(DetailEvent.RecordAction("totp", VaultHistory.HistoryType.COPY))
                     }
                 }
             },
