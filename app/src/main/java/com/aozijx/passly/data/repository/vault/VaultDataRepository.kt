@@ -1,5 +1,6 @@
 package com.aozijx.passly.data.repository.vault
 
+import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainList
@@ -16,13 +17,23 @@ class VaultDataRepository(
         entities.map { it.toDomain() }
     }
 
+    override fun observeByType(type: EntryType): Flow<List<VaultEntry>> =
+        entryDao.observeByType(type.value).map { it.toDomainList() }
+
     override suspend fun getEntryById(entryId: Int): VaultEntry? =
         entryDao.getEntryById(entryId)?.toDomain()
+
+    override suspend fun getByType(type: EntryType): List<VaultEntry> =
+        entryDao.getByType(type.value).toDomainList()
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> =
         entryDao.getAll().toDomainList().filter {
             !it.associatedDomain.isNullOrEmpty()
         }
+
+    override suspend fun count(): Int = entryDao.count()
+
+    override suspend fun countByType(type: EntryType): Int = entryDao.countByType(type.value)
 
     override suspend fun insert(entry: VaultEntry): Long =
         entryDao.insert(entry.toEntity())

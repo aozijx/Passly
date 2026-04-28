@@ -25,6 +25,18 @@ interface VaultEntryDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE id IN (:entryIds)")
     suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntryEntity>
 
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE entryType = :entryType")
+    fun observeByType(entryType: Int): Flow<List<VaultEntryEntity>>
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE entryType = :entryType")
+    suspend fun getByType(entryType: Int): List<VaultEntryEntity>
+
+    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_ENTRIES}")
+    suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE entryType = :entryType")
+    suspend fun countByType(entryType: Int): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: VaultEntryEntity): Long
 
