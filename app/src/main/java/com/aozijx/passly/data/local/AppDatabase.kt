@@ -12,7 +12,6 @@ import com.aozijx.passly.data.entity.VaultHistoryEntity
 import com.aozijx.passly.data.local.config.DatabaseConfig
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
-import com.aozijx.passly.data.local.migration.MIGRATION_1_2
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(
@@ -54,7 +53,6 @@ abstract class AppDatabase : RoomDatabase() {
                         DatabaseConfig.DATABASE_NAME
                     )
                         .openHelperFactory(factory)
-                        .addMigrations(MIGRATION_1_2)
                         .build()
 
                     // 仅探测，不让探测的异常直接杀掉 getDatabase
