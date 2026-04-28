@@ -11,6 +11,7 @@ data class VaultPayload(
     val title: String,
     val username: String,
     val password: String,
+    val email: String? = null,
     val category: String,
     val notes: String? = null,
 
@@ -18,6 +19,7 @@ data class VaultPayload(
     val iconCustomPath: String? = null,
 
     val totpSecret: String? = null,
+    val totpIssuer: String? = null,
     val totpPeriod: Int = 30,
     val totpDigits: Int = 6,
     val totpAlgorithm: String = "SHA1",
@@ -65,6 +67,7 @@ data class VaultPayload(
         json.put("title", title)
         json.put("username", username)
         json.put("password", password)
+        json.putOpt("email", email)
         json.put("category", category)
         json.putOpt("notes", notes)
 
@@ -72,6 +75,7 @@ data class VaultPayload(
         json.putOpt("iconCustomPath", iconCustomPath)
 
         json.putOpt("totpSecret", totpSecret)
+        json.putOpt("totpIssuer", totpIssuer)
         json.put("totpPeriod", totpPeriod)
         json.put("totpDigits", totpDigits)
         json.put("totpAlgorithm", totpAlgorithm)
@@ -124,6 +128,7 @@ data class VaultPayload(
                 title = json.getString("title"),
                 username = json.getString("username"),
                 password = json.getString("password"),
+                email = json.optStringOrNull("email"),
                 category = json.getString("category"),
                 notes = json.optStringOrNull("notes"),
 
@@ -131,6 +136,7 @@ data class VaultPayload(
                 iconCustomPath = json.optStringOrNull("iconCustomPath"),
 
                 totpSecret = json.optStringOrNull("totpSecret"),
+                totpIssuer = json.optStringOrNull("totpIssuer"),
                 totpPeriod = json.optInt("totpPeriod", 30),
                 totpDigits = json.optInt("totpDigits", 6),
                 totpAlgorithm = json.optString("totpAlgorithm", "SHA1"),

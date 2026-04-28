@@ -10,6 +10,7 @@ data class VaultEntry(
     val title: String,            // 标题（如：谷歌、招行、公司WiFi）
     val username: String,         // 加密后的用户名或 WiFi SSID
     val password: String,         // 加密后的主密码
+    val email: String? = null,    // 加密后的邮箱地址（登录用）
     override val category: String,         // 分类名称（用于 UI 分组）
     val notes: String? = null,    // 加密后的备注/详细笔记
 
@@ -19,6 +20,7 @@ data class VaultEntry(
 
     // --- 动态验证 (TOTP) ---
     val totpSecret: String? = null,      // 加密后的 Base32 密钥
+    val totpIssuer: String? = null,      // 发行方标识（来自 otpauth URI 的 issuer 参数）
     val totpPeriod: Int = 30,            // 步长 (秒)
     val totpDigits: Int = 6,             // 验证码位数
     val totpAlgorithm: String = "SHA1",  // 散列算法

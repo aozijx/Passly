@@ -35,52 +35,76 @@ internal object BackupVSerializer {
         writer.name("title").value(p.title)
         writer.name("username").value(p.username)
         writer.name("password").value(p.password)
+        p.email?.let { writer.name("email").value(it) }
         writer.name("category").value(p.category)
-        writer.name("notes").value(p.notes)
-        writer.name("iconName").value(p.iconName)
-        writer.name("iconCustomPath").value(p.iconCustomPath)
-        writer.name("totpSecret").value(p.totpSecret)
-        writer.name("totpPeriod").value(p.totpPeriod.toLong())
-        writer.name("totpDigits").value(p.totpDigits.toLong())
-        writer.name("totpAlgorithm").value(p.totpAlgorithm)
-        writer.name("passkeyDataJson").value(p.passkeyDataJson)
-        writer.name("recoveryCodes").value(p.recoveryCodes)
-        writer.name("hardwareKeyInfo").value(p.hardwareKeyInfo)
-        writer.name("wifiEncryptionType").value(p.wifiSecurityType)
-        writer.name("wifiIsHidden").value(p.wifiIsHidden)
-        writer.name("cardCvv").value(p.cardCvv)
-        writer.name("cardExpiration").value(p.cardExpiration)
-        writer.name("idNumber").value(p.idNumber)
-        writer.name("paymentPin").value(p.paymentPin)
-        writer.name("paymentPlatform").value(p.paymentPlatform)
-        writer.name("securityQuestion").value(p.securityQuestion)
-        writer.name("securityAnswer").value(p.securityAnswer)
-        writer.name("sshPrivateKey").value(p.sshPrivateKey)
-        writer.name("cryptoSeedPhrase").value(p.cryptoSeedPhrase)
+        
+        p.notes?.let { writer.name("notes").value(it) }
+        p.iconName?.let { writer.name("iconName").value(it) }
+        p.iconCustomPath?.let { writer.name("iconCustomPath").value(it) }
+        
+        p.totpSecret?.let {
+            writer.name("totpSecret").value(it)
+            p.totpIssuer?.let { issuer -> writer.name("totpIssuer").value(issuer) }
+            writer.name("totpPeriod").value(p.totpPeriod.toLong())
+            writer.name("totpDigits").value(p.totpDigits.toLong())
+            writer.name("totpAlgorithm").value(p.totpAlgorithm)
+        }
+
+        p.passkeyDataJson?.let { writer.name("passkeyDataJson").value(it) }
+        p.recoveryCodes?.let { writer.name("recoveryCodes").value(it) }
+        p.hardwareKeyInfo?.let { writer.name("hardwareKeyInfo").value(it) }
+        
+        p.wifiSecurityType?.let { writer.name("wifiEncryptionType").value(it) }
+        if (p.wifiIsHidden) writer.name("wifiIsHidden").value(true)
+
+        p.cardCvv?.let { writer.name("cardCvv").value(it) }
+        p.cardExpiration?.let { writer.name("cardExpiration").value(it) }
+        p.idNumber?.let { writer.name("idNumber").value(it) }
+        
+        p.paymentPin?.let { writer.name("paymentPin").value(it) }
+        p.paymentPlatform?.let { writer.name("paymentPlatform").value(it) }
+        
+        p.securityQuestion?.let { writer.name("securityQuestion").value(it) }
+        p.securityAnswer?.let { writer.name("securityAnswer").value(it) }
+        
+        p.sshPrivateKey?.let { writer.name("sshPrivateKey").value(it) }
+        p.cryptoSeedPhrase?.let { writer.name("cryptoSeedPhrase").value(it) }
+        
         writer.name("entryType").value(p.entryType.toLong())
-        writer.name("associatedAppPackage").value(p.associatedAppPackage)
-        writer.name("associatedDomain").value(p.associatedDomain)
-        writer.name("uriList")
-        if (p.uriList == null) writer.nullValue() else {
-            writer.beginArray()
-            p.uriList.forEach { writer.value(it) }
-            writer.endArray()
+        
+        p.associatedAppPackage?.let { writer.name("associatedAppPackage").value(it) }
+        p.associatedDomain?.let { writer.name("associatedDomain").value(it) }
+        
+        p.uriList?.let { list ->
+            if (list.isNotEmpty()) {
+                writer.name("uriList")
+                writer.beginArray()
+                list.forEach { writer.value(it) }
+                writer.endArray()
+            }
         }
-        writer.name("matchType").value(p.matchType.toLong())
-        writer.name("customFieldsJson").value(p.customFieldsJson)
-        writer.name("autoSubmit").value(p.autoSubmit)
-        writer.name("strengthScore").value(p.strengthScore?.toDouble())
-        writer.name("lastUsedAt").value(p.lastUsedAt)
-        writer.name("usageCount").value(p.usageCount.toLong())
-        writer.name("favorite").value(p.favorite)
-        writer.name("tags")
-        if (p.tags == null) writer.nullValue() else {
-            writer.beginArray()
-            p.tags.forEach { writer.value(it) }
-            writer.endArray()
+        
+        if (p.matchType != 0) writer.name("matchType").value(p.matchType.toLong())
+        p.customFieldsJson?.let { writer.name("customFieldsJson").value(it) }
+        if (p.autoSubmit) writer.name("autoSubmit").value(true)
+        
+        p.strengthScore?.let { writer.name("strengthScore").value(it.toDouble()) }
+        p.lastUsedAt?.let { writer.name("lastUsedAt").value(it) }
+        if (p.usageCount != 0) writer.name("usageCount").value(p.usageCount.toLong())
+        if (p.favorite) writer.name("favorite").value(true)
+        
+        p.tags?.let { list ->
+            if (list.isNotEmpty()) {
+                writer.name("tags")
+                writer.beginArray()
+                list.forEach { writer.value(it) }
+                writer.endArray()
+            }
         }
-        writer.name("createdAt").value(p.createdAt)
-        writer.name("expiresAt").value(p.expiresAt)
+        
+        p.createdAt?.let { writer.name("createdAt").value(it) }
+        p.expiresAt?.let { writer.name("expiresAt").value(it) }
+        
         writer.endObject()
     }
 
@@ -88,11 +112,13 @@ internal object BackupVSerializer {
         var title = ""
         var username = ""
         var password = ""
+        var email: String? = null
         var category = ""
         var notes: String? = null
         var iconName: String? = null
         var iconCustomPath: String? = null
         var totpSecret: String? = null
+        var totpIssuer: String? = null
         var totpPeriod = 30
         var totpDigits = 6
         var totpAlgorithm = "SHA1"
@@ -122,7 +148,7 @@ internal object BackupVSerializer {
         var usageCount = 0
         var favorite = false
         var tags: List<String>? = null
-        var createdAt: Long? = System.currentTimeMillis()
+        var createdAt: Long? = null
         var expiresAt: Long? = null
 
         reader.beginObject()
@@ -131,11 +157,13 @@ internal object BackupVSerializer {
                 "title" -> title = reader.nextString()
                 "username" -> username = reader.nextString()
                 "password" -> password = reader.nextString()
+                "email" -> email = reader.nextNullableString()
                 "category" -> category = reader.nextString()
                 "notes" -> notes = reader.nextNullableString()
                 "iconName" -> iconName = reader.nextNullableString()
                 "iconCustomPath" -> iconCustomPath = reader.nextNullableString()
                 "totpSecret" -> totpSecret = reader.nextNullableString()
+                "totpIssuer" -> totpIssuer = reader.nextNullableString()
                 "totpPeriod" -> totpPeriod = reader.nextInt()
                 "totpDigits" -> totpDigits = reader.nextInt()
                 "totpAlgorithm" -> totpAlgorithm = reader.nextString()
@@ -176,11 +204,13 @@ internal object BackupVSerializer {
             title = title,
             username = username,
             password = password,
+            email = email,
             category = category,
             notes = notes,
             iconName = iconName,
             iconCustomPath = iconCustomPath,
             totpSecret = totpSecret,
+            totpIssuer = totpIssuer,
             totpPeriod = totpPeriod,
             totpDigits = totpDigits,
             totpAlgorithm = totpAlgorithm,

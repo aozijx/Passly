@@ -213,6 +213,7 @@ fun VaultScanner(
                                             password = "",
                                             category = "OTP",
                                             totpSecret = totp.secret,
+                                            totpIssuer = totp.issuer,
                                             totpPeriod = totp.period ?: 30,
                                             totpDigits = if (isSteam) 5 else (totp.digits ?: 6),
                                             totpAlgorithm = if (isSteam) "STEAM" else (totp.algorithm

@@ -53,6 +53,7 @@ class PasswordEntryStrategy : EntryTypeStrategy {
                 title = "基本信息", fields = listOf(
                     FieldDefinition("title", "标题", isRequired = true),
                     FieldDefinition("username", "用户名", isRequired = true),
+                    FieldDefinition("email", "邮箱"),
                     FieldDefinition(
                         "password",
                         "密码",
