@@ -1,12 +1,12 @@
 package com.aozijx.passly.domain.usecase.settings.security
 
-import com.aozijx.passly.domain.repository.settings.SettingsRepository
+import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
 import kotlinx.coroutines.flow.Flow
 
 /**
  * 安全级设置用例：负责锁屏超时、生物识别、安全内容等用户敏感设置
  */
-class SecuritySettingsUseCases(private val repository: SettingsRepository) {
+class SecuritySettingsUseCases(private val repository: SecuritySettingsRepository) {
     val lockTimeout: Flow<Long> = repository.lockTimeout
     val isBiometricEnabled: Flow<Boolean> = repository.isBiometricEnabled
     val isInvalidateKeyOnBioChange: Flow<Boolean> = repository.isInvalidateKeyOnBioChange

@@ -3,13 +3,13 @@ package com.aozijx.passly.domain.usecase.settings.system
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
-import com.aozijx.passly.domain.repository.settings.SettingsRepository
+import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import kotlinx.coroutines.flow.Flow
 
 /**
  * 系统级设置用例：负责全局行为、界面样式、自动填充模式等非业务逻辑设置
  */
-class SystemSettingsUseCases(private val repository: SettingsRepository) {
+class SystemSettingsUseCases(private val repository: SystemSettingsRepository) {
     // 界面相关
     val isDarkMode: Flow<Boolean?> = repository.isDarkMode
     val isDynamicColor: Flow<Boolean> = repository.isDynamicColor

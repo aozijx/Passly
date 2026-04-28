@@ -1,0 +1,36 @@
+package com.aozijx.passly.domain.repository.settings
+
+import com.aozijx.passly.core.common.AutofillUiMode
+import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import kotlinx.coroutines.flow.Flow
+
+interface SystemSettingsRepository {
+    val isDarkMode: Flow<Boolean?>
+    val isDynamicColor: Flow<Boolean>
+    val cardStyle: Flow<VaultCardStyle>
+    val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>>
+    val isStatusBarAutoHide: Flow<Boolean>
+    val isTopBarCollapsible: Flow<Boolean>
+    val isTabBarCollapsible: Flow<Boolean>
+    val isSwipeEnabled: Flow<Boolean>
+    val swipeLeftAction: Flow<SwipeActionType>
+    val swipeRightAction: Flow<SwipeActionType>
+    val autofillUiMode: Flow<AutofillUiMode>
+    val visibleVaultTabs: Flow<Set<String>?>
+    val isAutoDownloadIcons: Flow<Boolean>
+
+    suspend fun setDarkMode(enabled: Boolean?)
+    suspend fun setDynamicColor(enabled: Boolean)
+    suspend fun setCardStyle(style: VaultCardStyle)
+    suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle)
+    suspend fun setStatusBarAutoHide(autoHide: Boolean)
+    suspend fun setTopBarCollapsible(collapsible: Boolean)
+    suspend fun setTabBarCollapsible(collapsible: Boolean)
+    suspend fun setSwipeEnabled(enabled: Boolean)
+    suspend fun setSwipeLeftAction(action: SwipeActionType)
+    suspend fun setSwipeRightAction(action: SwipeActionType)
+    suspend fun setAutofillUiMode(mode: AutofillUiMode)
+    suspend fun setVisibleVaultTabs(keys: Set<String>)
+    suspend fun setAutoDownloadIcons(enabled: Boolean)
+}
