@@ -16,8 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -243,7 +241,11 @@ fun VaultContent(
             )
         },
         floatingActionButton = {
-            VaultFab(viewModel = vaultViewModel, isVisible = isFabVisible)
+            VaultFab(
+                viewModel = vaultViewModel,
+                isVisible = isFabVisible,
+                isLoading = isVaultItemsLoading
+            )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
@@ -262,9 +264,7 @@ fun VaultContent(
                 }
             }
 
-            if (isVaultItemsLoading) {
-                VaultListSkeleton()
-            } else if (displayItems.isEmpty()) {
+            if (displayItems.isEmpty() && !isVaultItemsLoading) {
                 EmptyVaultPlaceholder()
             } else {
                 LazyColumn(
@@ -328,24 +328,4 @@ fun VaultContent(
         vaultViewModel = vaultViewModel,
         settingsViewModel = settingsViewModel
     )
-}
-
-@Composable
-private fun VaultListSkeleton() {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(5) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                )
-            ) {}
-        }
-    }
 }
