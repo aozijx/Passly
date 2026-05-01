@@ -151,7 +151,8 @@ class MainActivity : FragmentActivity() {
                     else -> {
                         AuthScreen(
                             authCoordinator = viewModel.auth,
-                            activity = this
+                            activity = this,
+                            preferPasswordFirst = settingsUiState.isPasswordPreferredAuthFirst
                         )
                     }
                 }

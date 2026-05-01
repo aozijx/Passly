@@ -13,6 +13,7 @@ class SecuritySettingsUseCases(private val repository: SecuritySettingsRepositor
     val isSecureContentEnabled: Flow<Boolean> = repository.isSecureContentEnabled
     val isFlipToLockEnabled: Flow<Boolean> = repository.isFlipToLockEnabled
     val isFlipExitAndClearStackEnabled: Flow<Boolean> = repository.isFlipExitAndClearStackEnabled
+    val isPasswordPreferredAuthFirst: Flow<Boolean> = repository.isPasswordPreferredAuthFirst
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
     suspend fun setBiometricEnabled(enabled: Boolean) = repository.setBiometricEnabled(enabled)
@@ -23,4 +24,6 @@ class SecuritySettingsUseCases(private val repository: SecuritySettingsRepositor
     suspend fun setFlipToLockEnabled(enabled: Boolean) = repository.setFlipToLockEnabled(enabled)
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) =
         repository.setFlipExitAndClearStackEnabled(enabled)
+    suspend fun setPasswordPreferredAuthFirst(enabled: Boolean) =
+        repository.setPasswordPreferredAuthFirst(enabled)
 }

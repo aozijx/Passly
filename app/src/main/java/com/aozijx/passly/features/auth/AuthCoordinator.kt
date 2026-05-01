@@ -22,6 +22,7 @@ class AuthCoordinator(
 ) {
     /** 观察全局授权状态：由领域层驱动 */
     val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
+    val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
 
     private val _authMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val authMessage: SharedFlow<String> = _authMessage.asSharedFlow()
@@ -58,6 +59,52 @@ class AuthCoordinator(
                 }
             )
         }
+    }
+
+    fun authenticateWithAppPassword(
+        password: CharArray,
+        onSuccess: () -> Unit = {},
+        onError: ((String) -> Unit)? = null
+    ) {
+        scope.launch {
+            authUseCases.authenticateWithAppPassword(password).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { error ->
+                    val safeError = validationSupport.sanitizeMessage(error.message)
+                    _authMessage.tryEmit(safeError)
+                    onError?.invoke(safeError)
+                }
+            )
+        }
+    }
+
+    fun setAppPassword(
+        password: CharArray,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        scope.launch { onResult(authUseCases.setAppPassword(password)) }
+    }
+
+    fun bootstrapAppPassword(
+        password: CharArray,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        scope.launch { onResult(authUseCases.bootstrapAppPassword(password)) }
+    }
+
+    fun changeAppPassword(
+        oldPassword: CharArray,
+        newPassword: CharArray,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        scope.launch { onResult(authUseCases.changeAppPassword(oldPassword, newPassword)) }
+    }
+
+    fun disableAppPassword(
+        password: CharArray,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        scope.launch { onResult(authUseCases.disableAppPassword(password)) }
     }
 
     fun lock() = authUseCases.lock()

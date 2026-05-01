@@ -22,6 +22,7 @@ data class SettingsUiState(
     val isTopBarCollapsible: Boolean = true,
     val isTabBarCollapsible: Boolean = true,
     val isSecureContentEnabled: Boolean = true,
+    val isPasswordPreferredAuthFirst: Boolean = true,
     val isFlipToLockEnabled: Boolean = false,
     val isFlipExitAndClearStackEnabled: Boolean = false,
     val cardStyle: VaultCardStyle = VaultCardStyle.styleConfig.globalDefaultStyle,
@@ -46,6 +47,7 @@ private data class CoreSettingsFlowState(
 )
 
 private data class SecurityAndStyleFlowState(
+    val isPasswordPreferredAuthFirst: Boolean,
     val isFlipToLockEnabled: Boolean,
     val isFlipExitAndClearStackEnabled: Boolean,
     val cardStyle: VaultCardStyle,
@@ -75,6 +77,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         application = application
     )
 
+    val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
+
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
             securitySettingsUseCases.lockTimeout,
@@ -95,12 +99,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             core.copy(isSecureContentEnabled = isSecureContentEnabled)
         },
         combine(
+            securitySettingsUseCases.isPasswordPreferredAuthFirst,
             securitySettingsUseCases.isFlipToLockEnabled,
             securitySettingsUseCases.isFlipExitAndClearStackEnabled,
             systemSettingsUseCases.cardStyle,
             systemSettingsUseCases.cardStyleByEntryType
-        ) { isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle, cardStyleByEntryType ->
+        ) { isPasswordPreferredAuthFirst, isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle, cardStyleByEntryType ->
             SecurityAndStyleFlowState(
+                isPasswordPreferredAuthFirst = isPasswordPreferredAuthFirst,
                 isFlipToLockEnabled = isFlipToLockEnabled,
                 isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
                 cardStyle = cardStyle,
@@ -123,6 +129,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 )
             }) { securityAndStyle, autofillAndSwipe ->
             SettingsUiState(
+                isPasswordPreferredAuthFirst = securityAndStyle.isPasswordPreferredAuthFirst,
                 isFlipToLockEnabled = securityAndStyle.isFlipToLockEnabled,
                 isFlipExitAndClearStackEnabled = securityAndStyle.isFlipExitAndClearStackEnabled,
                 cardStyle = securityAndStyle.cardStyle,
@@ -145,6 +152,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isTopBarCollapsible = core.isTopBarCollapsible,
             isTabBarCollapsible = core.isTabBarCollapsible,
             isSecureContentEnabled = core.isSecureContentEnabled,
+            isPasswordPreferredAuthFirst = partialState.isPasswordPreferredAuthFirst,
             isFlipToLockEnabled = partialState.isFlipToLockEnabled,
             isFlipExitAndClearStackEnabled = partialState.isFlipExitAndClearStackEnabled,
             cardStyle = partialState.cardStyle,
@@ -194,6 +202,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setFlipExitAndClearStackEnabled(enabled: Boolean) =
         viewModelScope.launch { securitySettingsUseCases.setFlipExitAndClearStackEnabled(enabled) }
 
+    fun setPasswordPreferredAuthFirst(enabled: Boolean) =
+        viewModelScope.launch { securitySettingsUseCases.setPasswordPreferredAuthFirst(enabled) }
+
     fun setLockTimeout(timeoutMs: Long) =
         viewModelScope.launch { securitySettingsUseCases.setLockTimeout(timeoutMs.coerceAtLeast(5000L)) }
 
@@ -227,6 +238,39 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setAutoDownloadIcons(enabled: Boolean) =
         viewModelScope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }
+
+    fun setAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
+        viewModelScope.launch { onResult(authUseCases.setAppPassword(password)) }
+    }
+
+    fun changeAppPassword(
+        oldPassword: CharArray,
+        newPassword: CharArray,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        viewModelScope.launch { onResult(authUseCases.changeAppPassword(oldPassword, newPassword)) }
+    }
+
+    fun disableAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
+        viewModelScope.launch { onResult(authUseCases.disableAppPassword(password)) }
+    }
+
+    fun verifyBeforeSetAppPassword(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        viewModelScope.launch {
+            onResult(
+                authUseCases.verifyIdentity(
+                    activity = activity,
+                    title = title,
+                    subtitle = subtitle
+                )
+            )
+        }
+    }
 
     // --- 备份相关操作：现在非常统一 ---
     fun setBackupDirectoryUri(uri: String) = 

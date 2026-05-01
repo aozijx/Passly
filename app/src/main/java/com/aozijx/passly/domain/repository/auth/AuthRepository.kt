@@ -10,6 +10,9 @@ interface AuthRepository {
     /** 全局授权状态 */
     val isAuthorized: StateFlow<Boolean>
 
+    /** 应用密码是否已启用 */
+    val isAppPasswordEnabled: StateFlow<Boolean>
+
     /**
      * 触发生物识别/系统凭据认证。
      * 认证成功后自动完成授权与口令注入。
@@ -19,6 +22,28 @@ interface AuthRepository {
         title: String,
         subtitle: String
     ): Result<Unit>
+
+    /** 强制二次验证身份（不依赖当前 isAuthorized 状态） */
+    suspend fun verifyIdentity(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String
+    ): Result<Unit>
+
+    /** 使用应用密码解锁（不依赖系统生物识别） */
+    suspend fun authenticateWithAppPassword(password: CharArray): Result<Unit>
+
+    /** 设置应用密码（需要当前已解锁） */
+    suspend fun setAppPassword(password: CharArray): Result<Unit>
+
+    /** 冷启动首次设置应用密码（无生物识别时） */
+    suspend fun bootstrapAppPassword(password: CharArray): Result<Unit>
+
+    /** 修改应用密码（需要旧密码） */
+    suspend fun changeAppPassword(oldPassword: CharArray, newPassword: CharArray): Result<Unit>
+
+    /** 关闭应用密码（需要当前密码） */
+    suspend fun disableAppPassword(password: CharArray): Result<Unit>
 
     /**
      * 通知仓库：外部流程（如自动填充）已独立完成生物识别并注入口令。

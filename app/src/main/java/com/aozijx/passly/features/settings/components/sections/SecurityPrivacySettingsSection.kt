@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Flip
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.HorizontalDivider
@@ -25,11 +26,15 @@ import com.aozijx.passly.features.settings.components.common.formatLockTimeoutTe
 @Composable
 fun SecurityPrivacySettingsSection(
     lockTimeout: Long,
+    isAppPasswordEnabled: Boolean,
+    isPasswordPreferredAuthFirst: Boolean,
     isInvalidateKeyOnBioChange: Boolean,
     isSecureContentEnabled: Boolean,
     isFlipToLockEnabled: Boolean,
     isFlipExitAndClearStackEnabled: Boolean,
     onLockTimeoutClick: () -> Unit,
+    onAppPasswordClick: () -> Unit,
+    onPasswordPreferredAuthFirstChange: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
     onSecureContentEnabledChange: (Boolean) -> Unit,
     onFlipToLockEnabledChange: (Boolean) -> Unit,
@@ -42,6 +47,22 @@ fun SecurityPrivacySettingsSection(
             title = "自动锁定时间",
             value = formatLockTimeoutText(lockTimeout),
             onClick = onLockTimeoutClick
+        )
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+        ClickableSettingItem(
+            icon = Icons.Default.Lock,
+            title = "设置密码",
+            value = if (isAppPasswordEnabled) "已设置" else "未设置",
+            longValue = "独立于系统锁屏，可用密码直接解锁应用",
+            onClick = onAppPasswordClick
+        )
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+        SwitchSettingItem(
+            icon = Icons.Default.Lock,
+            title = "优先验证应用密码",
+            subtitle = "开启后，解锁页优先显示应用密码入口",
+            checked = isPasswordPreferredAuthFirst,
+            onCheckedChange = onPasswordPreferredAuthFirstChange
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(

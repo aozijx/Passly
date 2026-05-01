@@ -36,10 +36,15 @@ import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.features.backup.ui.BackupPathSettingsConfig
+import com.aozijx.passly.features.settings.components.dialogs.AppPasswordActionDialog
+import com.aozijx.passly.features.settings.components.dialogs.AppPasswordChangeDialog
+import com.aozijx.passly.features.settings.components.dialogs.AppPasswordDisableDialog
+import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDialog
 import com.aozijx.passly.features.settings.components.dialogs.LockTimeoutDialog
 import com.aozijx.passly.features.settings.components.dialogs.SwipeActionSelectDialog
 import com.aozijx.passly.features.settings.components.sections.AppearanceCustomizationSettingsSection
@@ -50,12 +55,19 @@ import com.aozijx.passly.features.settings.components.sections.InteractionHabits
 import com.aozijx.passly.features.settings.components.sections.SecurityPrivacySettingsSection
 import com.aozijx.passly.features.settings.components.sections.VaultTabsSettingsSection
 
+private enum class AppPasswordAction {
+    SET,
+    CHANGE,
+    DISABLE
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit, viewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isAppPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
 
     val lockTimeout = uiState.lockTimeout
     val isInvalidateKeyOnBioChange = uiState.isInvalidateKeyOnBioChange
@@ -66,6 +78,7 @@ fun SettingsScreen(
     val isTopBarCollapsible = uiState.isTopBarCollapsible
     val isTabBarCollapsible = uiState.isTabBarCollapsible
     val isSecureContentEnabled = uiState.isSecureContentEnabled
+    val isPasswordPreferredAuthFirst = uiState.isPasswordPreferredAuthFirst
     val isFlipToLockEnabled = uiState.isFlipToLockEnabled
     val isFlipExitAndClearStackEnabled = uiState.isFlipExitAndClearStackEnabled
     val cardStyle = uiState.cardStyle
@@ -99,6 +112,90 @@ fun SettingsScreen(
     var showRightActionDialog by remember { mutableStateOf(false) }
     var showLockTimeoutDialog by remember { mutableStateOf(false) }
     var showClearBackupDirConfirmDialog by remember { mutableStateOf(false) }
+    var showAppPasswordActionDialog by remember { mutableStateOf(false) }
+    var showSetAppPasswordDialog by remember { mutableStateOf(false) }
+    var showChangeAppPasswordDialog by remember { mutableStateOf(false) }
+    var showDisableAppPasswordDialog by remember { mutableStateOf(false) }
+    var appPasswordCurrent by remember { mutableStateOf("") }
+    var appPasswordNew by remember { mutableStateOf("") }
+    var appPasswordConfirm by remember { mutableStateOf("") }
+
+    fun clearAppPasswordInputs() {
+        appPasswordCurrent = ""
+        appPasswordNew = ""
+        appPasswordConfirm = ""
+    }
+
+    fun handleAppPasswordAction(action: AppPasswordAction) {
+        when (action) {
+            AppPasswordAction.SET -> {
+                if (appPasswordNew != appPasswordConfirm) {
+                    Toast.makeText(context, "两次输入的密码不一致", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                val newPasswordChars = appPasswordNew.toCharArray()
+                viewModel.setAppPassword(newPasswordChars) { result ->
+                    try {
+                        result.onSuccess {
+                            Toast.makeText(context, "应用密码已启用", Toast.LENGTH_SHORT).show()
+                            showSetAppPasswordDialog = false
+                            clearAppPasswordInputs()
+                        }.onFailure { e ->
+                            Toast.makeText(context, e.message ?: "设置失败", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    } finally {
+                        newPasswordChars.fill('\u0000')
+                    }
+                }
+            }
+
+            AppPasswordAction.CHANGE -> {
+                if (appPasswordNew != appPasswordConfirm) {
+                    Toast.makeText(context, "两次输入的新密码不一致", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                val oldPasswordChars = appPasswordCurrent.toCharArray()
+                val newPasswordChars = appPasswordNew.toCharArray()
+                viewModel.changeAppPassword(
+                    oldPassword = oldPasswordChars,
+                    newPassword = newPasswordChars
+                ) { result ->
+                    try {
+                        result.onSuccess {
+                            Toast.makeText(context, "应用密码已更新", Toast.LENGTH_SHORT).show()
+                            showChangeAppPasswordDialog = false
+                            clearAppPasswordInputs()
+                        }.onFailure { e ->
+                            Toast.makeText(context, e.message ?: "修改失败", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    } finally {
+                        oldPasswordChars.fill('\u0000')
+                        newPasswordChars.fill('\u0000')
+                    }
+                }
+            }
+
+            AppPasswordAction.DISABLE -> {
+                val currentPasswordChars = appPasswordCurrent.toCharArray()
+                viewModel.disableAppPassword(currentPasswordChars) { result ->
+                    try {
+                        result.onSuccess {
+                            Toast.makeText(context, "已关闭应用密码", Toast.LENGTH_SHORT).show()
+                            showDisableAppPasswordDialog = false
+                            clearAppPasswordInputs()
+                        }.onFailure { e ->
+                            Toast.makeText(context, e.message ?: "关闭失败", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    } finally {
+                        currentPasswordChars.fill('\u0000')
+                    }
+                }
+            }
+        }
+    }
 
     val backupPathLabel =
         remember(backupDirectoryUri) { BackupPathSettingsConfig.displayValue(backupDirectoryUri) }
@@ -160,11 +257,41 @@ fun SettingsScreen(
             item {
                 SecurityPrivacySettingsSection(
                     lockTimeout = lockTimeout,
+                    isAppPasswordEnabled = isAppPasswordEnabled,
+                    isPasswordPreferredAuthFirst = isPasswordPreferredAuthFirst,
                     isInvalidateKeyOnBioChange = isInvalidateKeyOnBioChange,
                     isSecureContentEnabled = isSecureContentEnabled,
                     isFlipToLockEnabled = isFlipToLockEnabled,
                     isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
                     onLockTimeoutClick = { showLockTimeoutDialog = true },
+                    onAppPasswordClick = {
+                        if (isAppPasswordEnabled) {
+                            showAppPasswordActionDialog = true
+                        } else {
+                            val activity = context as? FragmentActivity
+                            if (activity == null) {
+                                Toast.makeText(context, "当前页面不支持验证", Toast.LENGTH_SHORT)
+                                    .show()
+                                return@SecurityPrivacySettingsSection
+                            }
+                            viewModel.verifyBeforeSetAppPassword(
+                                activity = activity,
+                                title = context.getString(R.string.vault_auth_decrypt_title),
+                                subtitle = context.getString(R.string.settings_auth_before_set_app_password)
+                            ) { result ->
+                                result.onSuccess {
+                                    showSetAppPasswordDialog = true
+                                }.onFailure { e ->
+                                    Toast.makeText(
+                                        context,
+                                        e.message ?: context.getString(R.string.vault_auth_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        }
+                    },
+                    onPasswordPreferredAuthFirstChange = viewModel::setPasswordPreferredAuthFirst,
                     onInvalidateKeyOnBioChangeToggle = { enabled ->
                         val activity =
                             context as? FragmentActivity ?: return@SecurityPrivacySettingsSection
@@ -300,5 +427,61 @@ fun SettingsScreen(
                     Text("取消")
                 }
             })
+    }
+
+    if (showAppPasswordActionDialog) {
+        AppPasswordActionDialog(
+            onDismiss = { showAppPasswordActionDialog = false },
+            onChangePassword = {
+                showAppPasswordActionDialog = false
+                showChangeAppPasswordDialog = true
+            },
+            onDisablePassword = {
+                showAppPasswordActionDialog = false
+                showDisableAppPasswordDialog = true
+            }
+        )
+    }
+
+    if (showSetAppPasswordDialog) {
+        AppPasswordSetDialog(
+            newPassword = appPasswordNew,
+            confirmPassword = appPasswordConfirm,
+            onNewPasswordChange = { appPasswordNew = it },
+            onConfirmPasswordChange = { appPasswordConfirm = it },
+            onConfirm = { handleAppPasswordAction(AppPasswordAction.SET) },
+            onDismiss = {
+                showSetAppPasswordDialog = false
+                clearAppPasswordInputs()
+            }
+        )
+    }
+
+    if (showChangeAppPasswordDialog) {
+        AppPasswordChangeDialog(
+            currentPassword = appPasswordCurrent,
+            newPassword = appPasswordNew,
+            confirmPassword = appPasswordConfirm,
+            onCurrentPasswordChange = { appPasswordCurrent = it },
+            onNewPasswordChange = { appPasswordNew = it },
+            onConfirmPasswordChange = { appPasswordConfirm = it },
+            onConfirm = { handleAppPasswordAction(AppPasswordAction.CHANGE) },
+            onDismiss = {
+                showChangeAppPasswordDialog = false
+                clearAppPasswordInputs()
+            }
+        )
+    }
+
+    if (showDisableAppPasswordDialog) {
+        AppPasswordDisableDialog(
+            currentPassword = appPasswordCurrent,
+            onCurrentPasswordChange = { appPasswordCurrent = it },
+            onConfirm = { handleAppPasswordAction(AppPasswordAction.DISABLE) },
+            onDismiss = {
+                showDisableAppPasswordDialog = false
+                clearAppPasswordInputs()
+            }
+        )
     }
 }

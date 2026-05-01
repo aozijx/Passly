@@ -41,6 +41,8 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
         val FLIP_TO_LOCK_KEY = booleanPreferencesKey("security_flip_to_lock")
         val FLIP_EXIT_AND_CLEAR_STACK_KEY =
             booleanPreferencesKey("security_flip_exit_and_clear_stack")
+        val PASSWORD_PREFERRED_AUTH_FIRST_KEY =
+            booleanPreferencesKey("security_password_preferred_auth_first")
         val CARD_STYLE_KEY = stringPreferencesKey("ui_card_style")
         val CARD_STYLE_MAP_KEY = stringPreferencesKey("ui_card_style_map_v2")
         val AUTOFILL_UI_MODE_KEY = stringPreferencesKey("autofill_ui_mode")
@@ -63,6 +65,8 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
         appContext.settingsDataStore.data.map { it[FLIP_TO_LOCK_KEY] ?: false }
     override val isFlipExitAndClearStackEnabled: Flow<Boolean> =
         appContext.settingsDataStore.data.map { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] ?: false }
+    override val isPasswordPreferredAuthFirst: Flow<Boolean> =
+        appContext.settingsDataStore.data.map { it[PASSWORD_PREFERRED_AUTH_FIRST_KEY] ?: true }
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         appContext.settingsDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
@@ -86,6 +90,10 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
 
     override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] = enabled }
+    }
+
+    override suspend fun setPasswordPreferredAuthFirst(enabled: Boolean) {
+        appContext.settingsDataStore.edit { it[PASSWORD_PREFERRED_AUTH_FIRST_KEY] = enabled }
     }
 
     // --- SystemSettingsRepository ---

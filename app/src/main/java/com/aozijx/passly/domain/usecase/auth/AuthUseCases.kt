@@ -10,12 +10,34 @@ import kotlinx.coroutines.flow.StateFlow
 class AuthUseCases(private val repository: AuthRepository) {
 
     val isAuthorized: StateFlow<Boolean> = repository.isAuthorized
+    val isAppPasswordEnabled: StateFlow<Boolean> = repository.isAppPasswordEnabled
 
     suspend fun authenticate(
         activity: FragmentActivity,
         title: String,
         subtitle: String
     ): Result<Unit> = repository.authenticate(activity, title, subtitle)
+
+    suspend fun verifyIdentity(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String
+    ): Result<Unit> = repository.verifyIdentity(activity, title, subtitle)
+
+    suspend fun authenticateWithAppPassword(password: CharArray): Result<Unit> =
+        repository.authenticateWithAppPassword(password)
+
+    suspend fun setAppPassword(password: CharArray): Result<Unit> =
+        repository.setAppPassword(password)
+
+    suspend fun bootstrapAppPassword(password: CharArray): Result<Unit> =
+        repository.bootstrapAppPassword(password)
+
+    suspend fun changeAppPassword(oldPassword: CharArray, newPassword: CharArray): Result<Unit> =
+        repository.changeAppPassword(oldPassword, newPassword)
+
+    suspend fun disableAppPassword(password: CharArray): Result<Unit> =
+        repository.disableAppPassword(password)
 
     fun onExternalAuthorized() = repository.onExternalAuthorized()
 
