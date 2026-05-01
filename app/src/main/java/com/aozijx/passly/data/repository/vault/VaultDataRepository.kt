@@ -9,6 +9,7 @@ import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -19,9 +20,6 @@ class VaultDataRepository(
     private val historyDao: VaultHistoryDao? = null
 ) : VaultRepository {
 
-    /**
-     * 安全守卫：如果数据库已锁定（密钥被清理），则不触发底层 SQLCipher 查询，避免 Crash
-     */
     private inline fun <T> withLockGuard(onLocked: () -> T, block: () -> T): T {
         return if (DatabasePassphraseManager.isLocked) onLocked() else block()
     }
@@ -34,7 +32,7 @@ class VaultDataRepository(
 
     override fun observeByType(type: EntryType): Flow<List<VaultEntry>> =
         withLockGuard({ emptyFlow() }) {
-        entryDao.observeByType(type.value).map { it.toDomainList() }
+            entryDao.observeByType(type.value).map { it.toDomainList() }
         }
 
     override suspend fun getEntryById(entryId: Int): VaultEntry? = withLockGuard({ null }) {
@@ -43,14 +41,14 @@ class VaultDataRepository(
 
     override suspend fun getByType(type: EntryType): List<VaultEntry> =
         withLockGuard({ emptyList() }) {
-        entryDao.getByType(type.value).toDomainList()
+            entryDao.getByType(type.value).toDomainList()
         }
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> =
         withLockGuard({ emptyList() }) {
-        entryDao.getAll().toDomainList().filter {
-            !it.associatedDomain.isNullOrEmpty()
-        }
+            entryDao.getAll().toDomainList().filter {
+                !it.associatedDomain.isNullOrEmpty()
+            }
         }
 
     override suspend fun count(): Int = withLockGuard({ 0 }) { entryDao.count() }
@@ -59,7 +57,20 @@ class VaultDataRepository(
         withLockGuard({ 0 }) { entryDao.countByType(type.value) }
 
     override suspend fun insert(entry: VaultEntry): Long = withLockGuard({ -1L }) {
-        entryDao.insert(entry.toEntity())
+        val id = entryDao.insert(entry.toEntity())
+        if (id > 0) {
+            historyDao?.insertHistory(
+                VaultHistoryEntity(
+                    entryId = id.toInt(),
+                    fieldName = "entry",
+                    oldValue = null,
+                    newValue = entry.title,
+                    changeType = VaultHistory.HistoryType.CREATE.value,
+                    changedAt = System.currentTimeMillis()
+                )
+            )
+        }
+        id
     }
 
     override suspend fun update(entry: VaultEntry) {
@@ -75,7 +86,7 @@ class VaultDataRepository(
                             fieldName = field,
                             oldValue = oldVal,
                             newValue = newVal,
-                            changeType = CHANGE_TYPE_UPDATE,
+                            changeType = VaultHistory.HistoryType.UPDATE.value,
                             changedAt = now
                         )
                     )
@@ -89,11 +100,24 @@ class VaultDataRepository(
         if (DatabasePassphraseManager.isLocked) return
         val entity = entryDao.getEntryById(entryId) ?: return
         val entry = entity.toDomain()
+
         val updated = entry.copy(
             usageCount = entry.usageCount + 1,
             lastUsedAt = System.currentTimeMillis()
         )
         entryDao.update(updated.toEntity())
+
+        // 记录为 ACCESS 类型
+        historyDao?.insertHistory(
+            VaultHistoryEntity(
+                entryId = entryId,
+                fieldName = "details",
+                oldValue = null,
+                newValue = null,
+                changeType = VaultHistory.HistoryType.ACCESS.value,
+                changedAt = System.currentTimeMillis()
+            )
+        )
     }
 
     override suspend fun delete(entry: VaultEntry) {
@@ -107,8 +131,6 @@ class VaultDataRepository(
     }
 
     companion object {
-        private const val CHANGE_TYPE_UPDATE = 0 // 与 domain.VaultHistory.HistoryType.UPDATE 对齐
-
         private fun diffFields(
             old: VaultEntry,
             new: VaultEntry

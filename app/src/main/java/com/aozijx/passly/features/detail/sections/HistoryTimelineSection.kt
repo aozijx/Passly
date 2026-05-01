@@ -12,9 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,28 +34,96 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private enum class HistoryFilter {
+    ALL, UPDATES, ACTIONS
+}
+
 @Composable
 fun HistoryTimelineSection(historyList: List<VaultHistory>) {
     if (historyList.isEmpty()) return
+
+    var currentFilter by remember { mutableStateOf(HistoryFilter.ALL) }
+
+    val filteredList = remember(historyList, currentFilter) {
+        when (currentFilter) {
+            HistoryFilter.ALL -> historyList
+            HistoryFilter.UPDATES -> historyList.filter {
+                it.changeType == VaultHistory.HistoryType.UPDATE ||
+                        it.changeType == VaultHistory.HistoryType.CREATE
+            }
+
+            HistoryFilter.ACTIONS -> historyList.filter {
+                it.changeType != VaultHistory.HistoryType.UPDATE &&
+                        it.changeType != VaultHistory.HistoryType.CREATE
+            }
+        }
+    }
 
     InfoGroupCard(title = stringResource(R.string.vault_detail_history_label)) {
         Column(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxWidth()
         ) {
-            historyList.take(10).forEach { history ->
-                HistoryItem(history)
+            // 过滤选项组 (Chip 组) - 替代原本的开关
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                HistoryFilterChip(
+                    selected = currentFilter == HistoryFilter.ALL,
+                    onClick = { currentFilter = HistoryFilter.ALL },
+                    label = stringResource(R.string.vault_detail_history_all)
+                )
+                HistoryFilterChip(
+                    selected = currentFilter == HistoryFilter.UPDATES,
+                    onClick = { currentFilter = HistoryFilter.UPDATES },
+                    label = stringResource(R.string.vault_detail_history_updates)
+                )
+                HistoryFilterChip(
+                    selected = currentFilter == HistoryFilter.ACTIONS,
+                    onClick = { currentFilter = HistoryFilter.ACTIONS },
+                    label = stringResource(R.string.vault_detail_history_actions)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (filteredList.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.vault_detail_history_empty_filtered),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    filteredList.take(20).forEach { history ->
+                        HistoryItem(history)
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
+private fun HistoryFilterChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+    )
+}
+
+@Composable
 private fun HistoryItem(history: VaultHistory) {
-    val dateFormat = rememberDateFormat()
-    val timeFormat = rememberTimeFormat()
+    val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
+    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
     Row(verticalAlignment = Alignment.Top) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -94,29 +167,21 @@ private fun HistoryItem(history: VaultHistory) {
 @Composable
 private fun formatHistoryDescription(history: VaultHistory): String {
     return when (history.changeType) {
-        VaultHistory.HistoryType.UPDATE -> {
-            if (history.oldValue == null) "创建了条目"
-            else "更新了 ${history.fieldName}"
-        }
-
-        VaultHistory.HistoryType.ACCESS -> "查看了 ${history.fieldName}"
+        VaultHistory.HistoryType.CREATE -> "创建了该条目"
+        VaultHistory.HistoryType.UPDATE -> "修改了 ${history.fieldName}"
+        VaultHistory.HistoryType.ACCESS -> "查看了详情"
         VaultHistory.HistoryType.COPY -> "复制了 ${history.fieldName}"
-        VaultHistory.HistoryType.AUTOFILL -> "使用了自动填充"
+        VaultHistory.HistoryType.AUTOFILL -> "执行了自动填充"
     }
 }
 
 @Composable
 private fun getHistoryColor(type: VaultHistory.HistoryType): Color {
     return when (type) {
+        VaultHistory.HistoryType.CREATE -> Color(0xFF2196F3) // 蓝色
         VaultHistory.HistoryType.UPDATE -> MaterialTheme.colorScheme.primary
-        VaultHistory.HistoryType.ACCESS -> MaterialTheme.colorScheme.secondary
-        VaultHistory.HistoryType.COPY -> MaterialTheme.colorScheme.tertiary
-        VaultHistory.HistoryType.AUTOFILL -> Color(0xFF4CAF50)
+        VaultHistory.HistoryType.ACCESS -> Color(0xFF9C27B0) // 紫色
+        VaultHistory.HistoryType.COPY -> Color(0xFF00BCD4)   // 青色
+        VaultHistory.HistoryType.AUTOFILL -> Color(0xFF4CAF50) // 绿色
     }
 }
-
-@Composable
-fun rememberDateFormat() = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-
-@Composable
-fun rememberTimeFormat() = SimpleDateFormat("HH:mm", Locale.getDefault())

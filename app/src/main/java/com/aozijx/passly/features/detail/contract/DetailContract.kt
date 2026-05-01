@@ -12,6 +12,7 @@ data class DetailUiState(
     val isEditingTitle: Boolean = false,
     val editedTitle: String = "",
     val strategyReady: Boolean = false,
+    val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<String, String> = emptyMap(),
     val history: List<VaultHistory> = emptyList()
 ) {
@@ -48,6 +49,8 @@ sealed interface DetailEvent {
     data class RevealField(val key: String, val value: String?) : DetailEvent
 
     data class RecordAction(val field: String, val type: VaultHistory.HistoryType) : DetailEvent
+    data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailEvent
+    object ClearSensitiveState : DetailEvent
 }
 
 sealed interface DetailEffect {

@@ -23,8 +23,13 @@ import kotlinx.coroutines.launch
 
 class DetailViewModel(application: Application) : AndroidViewModel(application) {
     private val detailUseCases = AppContainer.domain.detailUseCases
+    private val userConfigUseCases = AppContainer.domain.userConfigUseCases
     private val historyRepository = AppContainer.data.historyRepository
     private val entryAnalyzer = DetailEntryAnalyzer()
+
+    companion object {
+        private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
+    }
 
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
@@ -33,13 +38,21 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         EntryTypeStrategyRegistry.ensureRegistered()
+        viewModelScope.launch {
+            userConfigUseCases.userConfig.collect { config ->
+                val enabled = config.extras[ACCESS_HISTORY_TOGGLE_KEY]
+                    ?.toBooleanStrictOrNull()
+                    ?: false
+                _uiState.update { it.copy(isAccessHistoryEnabled = enabled) }
+            }
+        }
     }
 
     fun onEvent(event: DetailEvent) {
         when (event) {
             is DetailEvent.Initialize -> {
                 refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
-                
+
                 viewModelScope.launch {
                     val latest = detailUseCases.getEntryById(event.initialEntry.id) ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
@@ -126,6 +139,11 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
 
             is DetailEvent.RecordAction -> {
                 val current = _uiState.value.entry ?: return
+                if (event.type == VaultHistory.HistoryType.ACCESS && !_uiState.value.isAccessHistoryEnabled) return
+                if (event.type == VaultHistory.HistoryType.COPY) {
+                    _uiState.update { it.copy(revealedFields = emptyMap()) }
+                }
+
                 viewModelScope.launch {
                     historyRepository.insertHistory(
                         VaultHistory(
@@ -135,6 +153,24 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     )
                 }
+            }
+
+            is DetailEvent.ToggleAccessHistoryRecording -> {
+                _uiState.update { it.copy(isAccessHistoryEnabled = event.enabled) }
+                viewModelScope.launch {
+                    userConfigUseCases.update { config ->
+                        config.copy(
+                            extras = config.extras.toMutableMap().apply {
+                                this[ACCESS_HISTORY_TOGGLE_KEY] = event.enabled.toString()
+                            },
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    }
+                }
+            }
+
+            DetailEvent.ClearSensitiveState -> {
+                _uiState.update { DetailUiState() }
             }
         }
     }

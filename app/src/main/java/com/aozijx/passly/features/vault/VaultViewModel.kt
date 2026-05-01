@@ -155,7 +155,14 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun loadEntryById(entryId: Int, onLoaded: (VaultEntry) -> Unit) {
         viewModelScope.launch { vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) } }
     }
-    fun dismissDetail() = detail.dismissDetail()
+    fun dismissDetail() {
+        detailCoordinatorState.request?.entry?.id?.let { totp.removeEntry(it) }
+        detail.dismissDetail()
+    }
+
+    fun clearDetailSensitiveState(entryId: Int) {
+        totp.removeEntry(entryId)
+    }
     fun showDetailIconPicker() = detail.showIconPicker()
     fun hideDetailIconPicker() = detail.hideIconPicker()
 

@@ -45,7 +45,6 @@ import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.sections.CredentialSection
-import com.aozijx.passly.features.detail.sections.HistoryTimelineSection
 import com.aozijx.passly.features.detail.sections.TotpSection
 import com.aozijx.passly.features.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.features.main.MainViewModel
@@ -130,7 +129,12 @@ fun DetailCardDialog(
     }
 
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            detailViewModel.onEvent(DetailEvent.ClearSensitiveState)
+            ClipboardUtils.clear(context)
+            vaultViewModel.clearDetailSensitiveState(entry.id)
+            onDismiss()
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
@@ -207,10 +211,6 @@ fun DetailCardDialog(
                         vaultViewModel = vaultViewModel,
                         onEvent = detailViewModel::onEvent
                     )
-
-                    item {
-                        HistoryTimelineSection(historyList = detailUiState.history)
-                    }
                 }
             }
         }

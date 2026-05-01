@@ -220,6 +220,10 @@
     <string name="vault_detail_add_notes">添加备注…</string>
     <string name="vault_detail_no_notes">暂无备注</string>
     <string name="vault_detail_history_label">活动日志</string>
+    <string name="vault_detail_history_all">全部</string>
+    <string name="vault_detail_history_updates">变更</string>
+    <string name="vault_detail_history_actions">使用</string>
+    <string name="vault_detail_history_empty_filtered">当前筛选下暂无记录</string>
 
     <!-- icon_ 系列 -->
     <string name="icon_bank">银行</string>
