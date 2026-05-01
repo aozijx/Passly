@@ -56,19 +56,16 @@ import com.aozijx.passly.features.settings.components.sections.SecurityPrivacySe
 import com.aozijx.passly.features.settings.components.sections.VaultTabsSettingsSection
 
 private enum class AppPasswordAction {
-    SET,
-    CHANGE,
-    DISABLE
+    SET, CHANGE, DISABLE
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
-    viewModel: SettingsViewModel
+    onBack: () -> Unit, viewModel: SettingsViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isAppPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
+    val isAppPasswordEnabled by viewModel.authGateway.isAppPasswordEnabled.collectAsStateWithLifecycle()
 
     val lockTimeout = uiState.lockTimeout
     val isInvalidateKeyOnBioChange = uiState.isInvalidateKeyOnBioChange
@@ -140,7 +137,7 @@ fun SettingsScreen(
                     return
                 }
                 val newPasswordChars = appPasswordNew.toCharArray()
-                viewModel.auth.setAppPassword(newPasswordChars) { result ->
+                viewModel.authGateway.setAppPassword(newPasswordChars) { result ->
                     try {
                         result.onSuccess {
                             Toast.makeText(context, "应用密码已启用", Toast.LENGTH_SHORT).show()
@@ -163,9 +160,8 @@ fun SettingsScreen(
                 }
                 val oldPasswordChars = appPasswordCurrent.toCharArray()
                 val newPasswordChars = appPasswordNew.toCharArray()
-                viewModel.auth.changeAppPassword(
-                    oldPassword = oldPasswordChars,
-                    newPassword = newPasswordChars
+                viewModel.authGateway.changeAppPassword(
+                    oldPassword = oldPasswordChars, newPassword = newPasswordChars
                 ) { result ->
                     try {
                         result.onSuccess {
@@ -185,7 +181,7 @@ fun SettingsScreen(
 
             AppPasswordAction.DISABLE -> {
                 val currentPasswordChars = appPasswordCurrent.toCharArray()
-                viewModel.auth.disableAppPassword(currentPasswordChars) { result ->
+                viewModel.authGateway.disableAppPassword(currentPasswordChars) { result ->
                     try {
                         result.onSuccess {
                             Toast.makeText(context, "已关闭应用密码", Toast.LENGTH_SHORT).show()
@@ -280,7 +276,7 @@ fun SettingsScreen(
                                     .show()
                                 return@SecurityPrivacySettingsSection
                             }
-                            viewModel.auth.verifyIdentity(
+                            viewModel.authGateway.verifyIdentity(
                                 activity = activity,
                                 title = authDecryptTitle,
                                 subtitle = setAppPasswordSubtitle
@@ -289,9 +285,7 @@ fun SettingsScreen(
                                     showSetAppPasswordDialog = true
                                 }.onFailure { e ->
                                     Toast.makeText(
-                                        context,
-                                        e.message ?: authFailedMsg,
-                                        Toast.LENGTH_SHORT
+                                        context, e.message ?: authFailedMsg, Toast.LENGTH_SHORT
                                     ).show()
                                 }
                             }
@@ -304,9 +298,7 @@ fun SettingsScreen(
                         viewModel.switchKeyInvalidationPolicy(activity, enabled) { result ->
                             result.onFailure { e ->
                                 Toast.makeText(
-                                    context,
-                                    "切换失败: ${e.message}",
-                                    Toast.LENGTH_SHORT
+                                    context, "切换失败: ${e.message}", Toast.LENGTH_SHORT
                                 ).show()
                             }
                         }
@@ -445,8 +437,7 @@ fun SettingsScreen(
             onDisablePassword = {
                 showAppPasswordActionDialog = false
                 showDisableAppPasswordDialog = true
-            }
-        )
+            })
     }
 
     if (showSetAppPasswordDialog) {
@@ -459,8 +450,7 @@ fun SettingsScreen(
             onDismiss = {
                 showSetAppPasswordDialog = false
                 clearAppPasswordInputs()
-            }
-        )
+            })
     }
 
     if (showChangeAppPasswordDialog) {
@@ -475,8 +465,7 @@ fun SettingsScreen(
             onDismiss = {
                 showChangeAppPasswordDialog = false
                 clearAppPasswordInputs()
-            }
-        )
+            })
     }
 
     if (showDisableAppPasswordDialog) {
@@ -487,7 +476,6 @@ fun SettingsScreen(
             onDismiss = {
                 showDisableAppPasswordDialog = false
                 clearAppPasswordInputs()
-            }
-        )
+            })
     }
 }

@@ -9,6 +9,7 @@ import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.features.auth.AuthCoordinator
+import com.aozijx.passly.features.auth.ui.SettingsAuthGateway
 import com.aozijx.passly.features.backup.BackupCoordinator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -78,12 +79,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
 
     /** 认证协调器：统一处理认证相关的 UI 流程 */
-    val auth = AuthCoordinator(
-        scope = viewModelScope,
-        authUseCases = AppContainer.domain.authUseCases
+    private val authCoordinator = AuthCoordinator(
+        scope = viewModelScope, authUseCases = AppContainer.domain.authUseCases
     )
-
-    val isAppPasswordEnabled: StateFlow<Boolean> = auth.isAppPasswordEnabled
+    val authGateway: SettingsAuthGateway = authCoordinator
 
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
@@ -180,7 +179,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         invalidateOnBiometricChange: Boolean,
         onResult: (Result<Unit>) -> Unit
     ) {
-        auth.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange) { result ->
+        authCoordinator.rekeyWithInvalidationPolicy(
+            activity, invalidateOnBiometricChange
+        ) { result ->
             if (result.isSuccess) {
                 viewModelScope.launch {
                     securitySettingsUseCases.setInvalidateKeyOnBioChange(invalidateOnBiometricChange)
@@ -211,8 +212,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setPasswordPreferredAuthFirst(enabled: Boolean) =
         viewModelScope.launch { securitySettingsUseCases.setPasswordPreferredAuthFirst(enabled) }
 
-    fun setLockTimeout(timeoutMs: Long) =
-        viewModelScope.launch { securitySettingsUseCases.setLockTimeout(timeoutMs.coerceAtLeast(5000L)) }
+    fun setLockTimeout(timeoutMs: Long) = viewModelScope.launch {
+        securitySettingsUseCases.setLockTimeout(
+            timeoutMs.coerceAtLeast(
+                5000L
+            )
+        )
+    }
 
     fun setCardStyle(style: VaultCardStyle) =
         viewModelScope.launch { systemSettingsUseCases.setCardStyle(style) }
@@ -247,11 +253,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
 
     // --- 备份相关操作 ---
-    fun setBackupDirectoryUri(uri: String) = 
-        backup.setBackupDirectoryUri(uri)
+    fun setBackupDirectoryUri(uri: String) = backup.setBackupDirectoryUri(uri)
 
-    fun clearBackupDirectoryUri() = 
-        backup.clearBackupDirectoryUri()
+    fun clearBackupDirectoryUri() = backup.clearBackupDirectoryUri()
 
     fun testBackupDirectoryWritePermission(directoryUri: String?) =
         backup.testBackupDirectoryWritePermission(directoryUri)

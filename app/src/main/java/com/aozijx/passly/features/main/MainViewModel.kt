@@ -59,7 +59,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MainIntent.UpdateInteraction -> authCoordinator.onUserInteraction()
             MainIntent.CheckAndLock -> authCoordinator.checkAndLock()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase(isRetry = true)
-            else -> Unit 
+            else -> Unit
         }
     }
 
@@ -124,11 +124,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun initializeDatabase(isRetry: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
-            val initResult = if (isRetry) databaseInitializer.retry() else databaseInitializer.initialize()
+            val initResult =
+                if (isRetry) databaseInitializer.retry() else databaseInitializer.initialize()
             _uiState.update {
                 it.copy(
-                    isDatabaseInitializing = false,
-                    databaseError = initResult.error
+                    isDatabaseInitializing = false, databaseError = initResult.error
                 )
             }
 
