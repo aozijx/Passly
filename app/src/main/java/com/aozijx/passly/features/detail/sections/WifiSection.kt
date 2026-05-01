@@ -29,8 +29,10 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.InfoGroupCard
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.internal.EntryEditState
 
 @Composable
@@ -42,7 +44,8 @@ fun WifiSection(
     onPasswordRevealed: (String?) -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEntryUpdated: (VaultEntry) -> Unit,
+    onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val wifiSsidLabel = stringResource(R.string.wifi_ssid)
@@ -56,7 +59,10 @@ fun WifiSection(
             label = wifiSsidLabel,
             value = entry.username,
             isRevealed = true,
-            onCopy = { ClipboardUtils.copy(context, entry.username) },
+            onCopy = {
+                ClipboardUtils.copy(context, entry.username)
+                onEvent(DetailEvent.RecordAction("SSID", VaultHistory.HistoryType.COPY))
+            },
             onEdit = {}
         )
 
@@ -89,11 +95,23 @@ fun WifiSection(
                     if (revealedPassword != null) {
                         ClipboardUtils.copy(context, revealedPassword)
                         Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "wifi password",
+                                VaultHistory.HistoryType.COPY
+                            )
+                        )
                     } else {
                         onAuthenticate(activity, "解密 WiFi 密码", "验证身份以复制密码") {
                             ClipboardUtils.copy(context, entry.password)
                             Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
                             onPasswordRevealed(entry.password)
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "wifi password",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         }
                     }
                 },
@@ -109,6 +127,12 @@ fun WifiSection(
                 onClick = {
                     onAuthenticate(activity, "解密 WiFi 密码", "验证身份以查看密码") {
                         onPasswordRevealed(entry.password)
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "wifi password",
+                                VaultHistory.HistoryType.ACCESS
+                            )
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

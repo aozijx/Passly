@@ -110,7 +110,8 @@ fun DetailScrollableContent(
                         onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEvent = onEvent
                     )
                 }
             }
@@ -123,7 +124,8 @@ fun DetailScrollableContent(
                         editState = editState,
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEvent = onEvent
                     )
                 }
             }
@@ -138,7 +140,8 @@ fun DetailScrollableContent(
                         onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEvent = onEvent
                     )
                 }
             }
@@ -153,7 +156,8 @@ fun DetailScrollableContent(
                         onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEvent = onEvent
                     )
                 }
             }
@@ -164,6 +168,7 @@ fun DetailScrollableContent(
                         activity = activity,
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
+                        onEvent = onEvent,
                         entry = entry
                     )
                 }
@@ -175,6 +180,7 @@ fun DetailScrollableContent(
                         activity = activity,
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
+                        onEvent = onEvent,
                         entry = entry
                     )
                 }
@@ -186,6 +192,7 @@ fun DetailScrollableContent(
                         activity = activity,
                         onUpdateVaultEntry = onUpdateVaultEntry,
                         onAuthenticate = onAuthenticate,
+                        onEvent = onEvent,
                         entry = entry
                     )
                 }

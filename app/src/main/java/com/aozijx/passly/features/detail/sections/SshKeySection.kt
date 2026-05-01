@@ -33,8 +33,10 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.EditTextField
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.internal.EntryEditState
 
 @Composable
@@ -46,7 +48,8 @@ fun SshKeySection(
     onPasswordRevealed: (String?) -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEntryUpdated: (VaultEntry) -> Unit,
+    onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val sshPrivateKeyLabel = stringResource(R.string.ssh_private_key)
@@ -61,7 +64,10 @@ fun SshKeySection(
             label = stringResource(R.string.ssh_fingerprint),
             value = entry.username.ifEmpty { stringResource(R.string.ssh_default_fingerprint) },
             isRevealed = true,
-            onCopy = { ClipboardUtils.copy(context, entry.username) },
+            onCopy = {
+                ClipboardUtils.copy(context, entry.username)
+                onEvent(DetailEvent.RecordAction("fingerprint", VaultHistory.HistoryType.COPY))
+            },
             onEdit = {}
         )
 
@@ -88,11 +94,23 @@ fun SshKeySection(
                     if (passphrase != null) {
                         ClipboardUtils.copy(context, passphrase)
                         Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "passphrase",
+                                VaultHistory.HistoryType.COPY
+                            )
+                        )
                     } else {
                         onAuthenticate(activity, "解密 SSH 密码", "验证身份以复制信息") {
                             ClipboardUtils.copy(context, entry.password)
                             Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
                             revealedPassphrase = entry.password
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "passphrase",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         }
                     }
                 },
@@ -109,6 +127,7 @@ fun SshKeySection(
                 if (privateKey != null) {
                     ClipboardUtils.copy(context, privateKey)
                     Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
+                    onEvent(DetailEvent.RecordAction("private key", VaultHistory.HistoryType.COPY))
                 } else {
                     val sshKey = entry.sshPrivateKey
                     if (!sshKey.isNullOrBlank()) {
@@ -116,6 +135,12 @@ fun SshKeySection(
                             ClipboardUtils.copy(context, sshKey)
                             Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
                             revealedPrivateKey = sshKey
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "private key",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         }
                     }
                 }
@@ -176,8 +201,20 @@ fun SshKeySection(
                     if (!sshKey.isNullOrBlank()) {
                         onAuthenticate(activity, "解密 SSH 私钥", "验证身份以查看完整条目") {
                             revealedPrivateKey = sshKey
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "private key",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
                             if (entry.password.isNotEmpty()) {
                                 revealedPassphrase = entry.password
+                                onEvent(
+                                    DetailEvent.RecordAction(
+                                        "passphrase",
+                                        VaultHistory.HistoryType.ACCESS
+                                    )
+                                )
                             }
                         }
                     }
@@ -196,7 +233,10 @@ fun SshKeySection(
                 label = stringResource(R.string.ssh_key_pin),
                 value = entry.paymentPin,
                 isRevealed = true,
-                onCopy = { ClipboardUtils.copy(context, entry.paymentPin) },
+                onCopy = {
+                    ClipboardUtils.copy(context, entry.paymentPin)
+                    onEvent(DetailEvent.RecordAction("SSH key PIN", VaultHistory.HistoryType.COPY))
+                },
                 onEdit = {}
             )
         }

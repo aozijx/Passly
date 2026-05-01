@@ -38,7 +38,9 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.internal.EntryEditState
 
 @Composable
@@ -48,7 +50,8 @@ fun BankCardSection(
     editState: EntryEditState,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEntryUpdated: (VaultEntry) -> Unit,
+    onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val cardCopiedMsg = stringResource(R.string.card_copied)
@@ -57,7 +60,6 @@ fun BankCardSection(
     var revealedCvv by remember { mutableStateOf<String?>(null) }
     var revealedCardholder by remember { mutableStateOf<String?>(null) }
     var revealedPaymentPin by remember { mutableStateOf<String?>(null) }
-    var revealedSecurityAnswer by remember { mutableStateOf<String?>(null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (editState.isEditingUsername) {
@@ -85,11 +87,28 @@ fun BankCardSection(
                 value = revealedCardholder ?: entry.username,
                 isRevealed = revealedCardholder != null,
                 onCopy = {
-                    revealedCardholder?.let { ClipboardUtils.copy(context, it); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() }
-                        ?: onAuthenticate(activity, "解密持卡人", "验证身份以复制信息") {
-                            ClipboardUtils.copy(context, entry.username); revealedCardholder = entry.username
+                    if (revealedCardholder != null) {
+                        ClipboardUtils.copy(context, revealedCardholder!!)
+                        Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "cardholder",
+                                VaultHistory.HistoryType.COPY
+                            )
+                        )
+                    } else {
+                        onAuthenticate(activity, "解密持卡人", "验证身份以复制信息") {
+                            ClipboardUtils.copy(context, entry.username)
+                            revealedCardholder = entry.username
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "cardholder",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         }
+                    }
                 },
                 onEdit = { editState.editedUsername = revealedCardholder ?: ""; editState.isEditingUsername = true }
             )
@@ -120,11 +139,28 @@ fun BankCardSection(
                 value = revealedCardNumber ?: stringResource(R.string.label_hidden_mask),
                 isRevealed = revealedCardNumber != null,
                 onCopy = {
-                    revealedCardNumber?.let { ClipboardUtils.copy(context, it); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() }
-                        ?: onAuthenticate(activity, "解密卡号", "验证身份以复制信息") {
-                            ClipboardUtils.copy(context, entry.password); revealedCardNumber = entry.password
+                    if (revealedCardNumber != null) {
+                        ClipboardUtils.copy(context, revealedCardNumber!!)
+                        Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "card number",
+                                VaultHistory.HistoryType.COPY
+                            )
+                        )
+                    } else {
+                        onAuthenticate(activity, "解密卡号", "验证身份以复制信息") {
+                            ClipboardUtils.copy(context, entry.password)
+                            revealedCardNumber = entry.password
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "card number",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         }
+                    }
                 },
                 onEdit = { editState.editedPassword = revealedCardNumber ?: ""; editState.isEditingPassword = true }
             )
@@ -156,11 +192,23 @@ fun BankCardSection(
                     value = revealedCvv ?: stringResource(R.string.label_hidden_mask),
                     isRevealed = revealedCvv != null,
                     onCopy = {
-                        revealedCvv?.let { ClipboardUtils.copy(context, it); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() }
-                            ?: onAuthenticate(activity, "解密 CVV", "验证身份以复制信息") {
-                                ClipboardUtils.copy(context, cvv); revealedCvv = cvv
+                        if (revealedCvv != null) {
+                            ClipboardUtils.copy(context, revealedCvv!!)
+                            Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                            onEvent(DetailEvent.RecordAction("CVV", VaultHistory.HistoryType.COPY))
+                        } else {
+                            onAuthenticate(activity, "解密 CVV", "验证身份以复制信息") {
+                                ClipboardUtils.copy(context, cvv)
+                                revealedCvv = cvv
                                 Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                                onEvent(
+                                    DetailEvent.RecordAction(
+                                        "CVV",
+                                        VaultHistory.HistoryType.COPY
+                                    )
+                                )
                             }
+                        }
                     },
                     onEdit = { editState.editedTotp = revealedCvv ?: ""; editState.isEditingTotp = true }
                 )
@@ -172,7 +220,11 @@ fun BankCardSection(
                 label = stringResource(R.string.card_expiration),
                 value = expiration,
                 isRevealed = true,
-                onCopy = { ClipboardUtils.copy(context, expiration); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() },
+                onCopy = {
+                    ClipboardUtils.copy(context, expiration)
+                    Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                    onEvent(DetailEvent.RecordAction("expiration", VaultHistory.HistoryType.COPY))
+                },
                 onEdit = {}
             )
         }
@@ -183,11 +235,28 @@ fun BankCardSection(
                 value = revealedPaymentPin ?: stringResource(R.string.label_hidden_mask),
                 isRevealed = revealedPaymentPin != null,
                 onCopy = {
-                    revealedPaymentPin?.let { ClipboardUtils.copy(context, it); Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show() }
-                        ?: onAuthenticate(activity, "解密支付密码", "验证身份以复制信息") {
-                            ClipboardUtils.copy(context, pin); revealedPaymentPin = pin
+                    if (revealedPaymentPin != null) {
+                        ClipboardUtils.copy(context, revealedPaymentPin!!)
+                        Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "payment PIN",
+                                VaultHistory.HistoryType.COPY
+                            )
+                        )
+                    } else {
+                        onAuthenticate(activity, "解密支付密码", "验证身份以复制信息") {
+                            ClipboardUtils.copy(context, pin)
+                            revealedPaymentPin = pin
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "payment PIN",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         }
+                    }
                 },
                 onEdit = {}
             )
@@ -197,9 +266,33 @@ fun BankCardSection(
             Button(
                 onClick = {
                     onAuthenticate(activity, "解密卡片信息", "验证身份以查看完整信息") {
-                        if (revealedCardNumber == null) revealedCardNumber = entry.password
-                        if (revealedCvv == null && entry.cardCvv != null) revealedCvv = entry.cardCvv
-                        if (revealedCardholder == null) revealedCardholder = entry.username
+                        if (revealedCardNumber == null) {
+                            revealedCardNumber = entry.password
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "card number",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
+                        }
+                        if (revealedCvv == null && entry.cardCvv != null) {
+                            revealedCvv = entry.cardCvv
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "CVV",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
+                        }
+                        if (revealedCardholder == null) {
+                            revealedCardholder = entry.username
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "cardholder",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -216,7 +309,10 @@ fun BankCardSection(
 @Composable
 private fun BankCardNumberItem(label: String, value: String, isRevealed: Boolean, onCopy: () -> Unit, onEdit: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { if (isRevealed) onEdit() else onCopy() }.padding(vertical = 12.dp, horizontal = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { if (isRevealed) onEdit() else onCopy() }
+            .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.width(70.dp))

@@ -14,10 +14,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
+import com.aozijx.passly.features.detail.contract.DetailEvent
 
 @Composable
 fun PasskeySection(
@@ -25,6 +26,7 @@ fun PasskeySection(
     entry: VaultEntry,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onEvent: (DetailEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -51,6 +53,7 @@ fun PasskeySection(
                 if (cached != null) {
                     ClipboardUtils.copy(context, cached)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    onEvent(DetailEvent.RecordAction("passkey data", VaultHistory.HistoryType.COPY))
                 } else {
                     onAuthenticate(activity, "解密 Passkey 数据", "验证身份以复制数据", {
                         try {
@@ -58,6 +61,12 @@ fun PasskeySection(
                             revealedPasskeyData = decrypted
                             ClipboardUtils.copy(context, decrypted)
                             Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "passkey data",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         } catch (e: Exception) {}
                     })
                 }
@@ -71,6 +80,12 @@ fun PasskeySection(
                     onAuthenticate(activity, "解密 Passkey 数据", "验证身份以查看数据", {
                         try {
                             revealedPasskeyData = encrypted
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "passkey data",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
                         } catch (e: Exception) {}
                     })
                 }
@@ -92,6 +107,12 @@ fun PasskeySection(
                 if (cached != null) {
                     ClipboardUtils.copy(context, cached)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    onEvent(
+                        DetailEvent.RecordAction(
+                            "recovery codes",
+                            VaultHistory.HistoryType.COPY
+                        )
+                    )
                 } else {
                     onAuthenticate(activity, "解密恢复码", "验证身份以复制恢复码", {
                         try {
@@ -99,6 +120,12 @@ fun PasskeySection(
                             revealedRecoveryCodes = decrypted
                             ClipboardUtils.copy(context, decrypted)
                             Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "recovery codes",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         } catch (e: Exception) {}
                     })
                 }
@@ -112,6 +139,12 @@ fun PasskeySection(
                     onAuthenticate(activity, "解密恢复码", "验证身份以查看恢复码", {
                         try {
                             revealedRecoveryCodes = encrypted
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "recovery codes",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
                         } catch (e: Exception) {}
                     })
                 }
@@ -126,6 +159,12 @@ fun PasskeySection(
                 onCopy = {
                     ClipboardUtils.copy(context, entry.hardwareKeyInfo)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    onEvent(
+                        DetailEvent.RecordAction(
+                            "hardware key info",
+                            VaultHistory.HistoryType.COPY
+                        )
+                    )
                 },
                 onEdit = {}
             )

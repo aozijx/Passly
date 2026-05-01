@@ -14,10 +14,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
+import com.aozijx.passly.features.detail.contract.DetailEvent
 
 @Composable
 fun RecoveryCodeSection(
@@ -25,6 +26,7 @@ fun RecoveryCodeSection(
     entry: VaultEntry,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onEvent: (DetailEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -50,6 +52,12 @@ fun RecoveryCodeSection(
                 if (cached != null) {
                     ClipboardUtils.copy(context, cached)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    onEvent(
+                        DetailEvent.RecordAction(
+                            "recovery codes",
+                            VaultHistory.HistoryType.COPY
+                        )
+                    )
                 } else {
                     onAuthenticate(activity, "解密恢复码", "验证身份以复制信息", {
                         try {
@@ -57,6 +65,12 @@ fun RecoveryCodeSection(
                             revealedRecoveryCodes = decrypted
                             ClipboardUtils.copy(context, decrypted)
                             Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "recovery codes",
+                                    VaultHistory.HistoryType.COPY
+                                )
+                            )
                         } catch (e: Exception) {}
                     })
                 }
@@ -70,6 +84,12 @@ fun RecoveryCodeSection(
                     onAuthenticate(activity, "解密恢复码", "验证身份以查看信息", {
                         try {
                             revealedRecoveryCodes = encrypted
+                            onEvent(
+                                DetailEvent.RecordAction(
+                                    "recovery codes",
+                                    VaultHistory.HistoryType.ACCESS
+                                )
+                            )
                         } catch (e: Exception) {}
                     })
                 }
@@ -84,6 +104,7 @@ fun RecoveryCodeSection(
                 onCopy = {
                     ClipboardUtils.copy(context, entry.username)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    onEvent(DetailEvent.RecordAction("username", VaultHistory.HistoryType.COPY))
                 },
                 onEdit = {}
             )

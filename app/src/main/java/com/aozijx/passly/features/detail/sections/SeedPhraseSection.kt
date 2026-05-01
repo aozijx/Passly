@@ -32,10 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
+import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.internal.EntryEditState
 
 @Composable
@@ -47,7 +48,8 @@ fun SeedPhraseSection(
     onPasswordRevealed: (String?) -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEntryUpdated: (VaultEntry) -> Unit,
+    onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val seedPhraseCopiedMsg = stringResource(R.string.seed_phrase_copied)
@@ -65,6 +67,7 @@ fun SeedPhraseSection(
                 if (seedPhrase != null) {
                     ClipboardUtils.copy(context, seedPhrase)
                     Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
+                    onEvent(DetailEvent.RecordAction("seed phrase", VaultHistory.HistoryType.COPY))
                 } else {
                     val encryptedSeedPhrase = entry.cryptoSeedPhrase
                     if (!encryptedSeedPhrase.isNullOrBlank()) {
@@ -75,6 +78,12 @@ fun SeedPhraseSection(
                                 Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
                                 revealedSeedPhrase = decrypted
                                 wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                                onEvent(
+                                    DetailEvent.RecordAction(
+                                        "seed phrase",
+                                        VaultHistory.HistoryType.COPY
+                                    )
+                                )
                             } catch (e: Exception) {}
                         })
                     }
@@ -92,6 +101,12 @@ fun SeedPhraseSection(
                                 val decrypted = seedPhrase
                                 revealedSeedPhrase = decrypted
                                 wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                                onEvent(
+                                    DetailEvent.RecordAction(
+                                        "seed phrase",
+                                        VaultHistory.HistoryType.ACCESS
+                                    )
+                                )
                             } catch (e: Exception) {}
                         })
                     }
@@ -134,6 +149,12 @@ fun SeedPhraseSection(
                                 val decrypted = encryptedSeedPhrase
                                 revealedSeedPhrase = decrypted
                                 wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                                onEvent(
+                                    DetailEvent.RecordAction(
+                                        "seed phrase",
+                                        VaultHistory.HistoryType.ACCESS
+                                    )
+                                )
                             } catch (e: Exception) {}
                         })
                     }
@@ -152,7 +173,10 @@ fun SeedPhraseSection(
                 label = stringResource(R.string.vault_detail_notes),
                 value = entry.notes,
                 isRevealed = true,
-                onCopy = { ClipboardUtils.copy(context, entry.notes) },
+                onCopy = {
+                    ClipboardUtils.copy(context, entry.notes)
+                    onEvent(DetailEvent.RecordAction("notes", VaultHistory.HistoryType.COPY))
+                },
                 onEdit = {}
             )
         }

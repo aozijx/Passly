@@ -16,7 +16,9 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
+import com.aozijx.passly.features.detail.contract.DetailEvent
 
 @Composable
 fun IdCardSection(
@@ -24,6 +26,7 @@ fun IdCardSection(
     entry: VaultEntry,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onEvent: (DetailEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -49,11 +52,18 @@ fun IdCardSection(
                 if (cached != null) {
                     ClipboardUtils.copy(context, cached)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    onEvent(DetailEvent.RecordAction("ID number", VaultHistory.HistoryType.COPY))
                 } else {
                     onAuthenticate(activity, "解密身份证号", "验证身份以复制信息") {
                         revealedIdNumber = idNum
                         ClipboardUtils.copy(context, idNum)
                         Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "ID number",
+                                VaultHistory.HistoryType.COPY
+                            )
+                        )
                     }
                 }
             },
@@ -65,6 +75,12 @@ fun IdCardSection(
                 } else {
                     onAuthenticate(activity, "解密身份证号", "验证身份以查看信息") {
                         revealedIdNumber = idNum
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "ID number",
+                                VaultHistory.HistoryType.ACCESS
+                            )
+                        )
                     }
                 }
             }
@@ -78,6 +94,7 @@ fun IdCardSection(
                 onCopy = {
                     ClipboardUtils.copy(context, entry.username)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    onEvent(DetailEvent.RecordAction("username", VaultHistory.HistoryType.COPY))
                 },
                 onEdit = {}
             )
@@ -91,6 +108,7 @@ fun IdCardSection(
                 onCopy = {
                     ClipboardUtils.copy(context, entry.cardExpiration)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    onEvent(DetailEvent.RecordAction("expiration", VaultHistory.HistoryType.COPY))
                 },
                 onEdit = {}
             )

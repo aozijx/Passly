@@ -88,10 +88,6 @@ object DatabasePassphraseManager {
         }
     }
 
-    /**
-     * 重新生成密钥并用新策略重新加密口令。
-     * 用于切换 invalidatedByBiometricEnrollment 策略时的重新密钥操作。
-     */
     fun prepareForRekey(context: Context, invalidateOnBiometricChange: Boolean) {
         val alias = getAlias(context)
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -100,15 +96,8 @@ object DatabasePassphraseManager {
             remove(KEY_PASSPHRASE)
         }
         generateMasterKey(alias, invalidateOnBiometricChange)
-        Logcat.i(
-            TAG,
-            "Prepared for rekey: invalidateOnBiometricChange=$invalidateOnBiometricChange"
-        )
     }
 
-    /**
-     * 使用认证后的 CryptoObject 完成重新加密。
-     */
     fun completeRekey(
         context: Context,
         result: BiometricPrompt.AuthenticationResult,
@@ -117,7 +106,6 @@ object DatabasePassphraseManager {
         val cipher = result.cryptoObject?.cipher
             ?: throw IllegalStateException("CryptoObject is null")
         encryptAndStorePassphrase(context, cipher, passphrase)
-        Logcat.i(TAG, "Rekey completed.")
     }
 
     private fun encryptAndStorePassphrase(context: Context, cipher: Cipher, passphrase: ByteArray) {
@@ -155,19 +143,18 @@ object DatabasePassphraseManager {
             .build()
         keyGenerator.init(spec)
         keyGenerator.generateKey()
-        Logcat.i(
-            TAG,
-            "Generated master key: invalidateOnBiometricChange=$invalidateOnBiometricChange"
-        )
     }
 
+    /**
+     * 重要：返回克隆副本，防止 fill(0) 破坏正在运行的数据库连接密钥
+     */
     fun getPassphrase(): ByteArray {
-        return _decryptedPassphrase
+        return _decryptedPassphrase?.clone()
             ?: throw IllegalStateException("Database passphrase not available.")
     }
 
     fun setDecryptedPassphrase(passphrase: ByteArray?) {
-        _decryptedPassphrase = passphrase
+        _decryptedPassphrase = passphrase?.clone()
     }
 
     fun clearDecryptedPassphrase() {

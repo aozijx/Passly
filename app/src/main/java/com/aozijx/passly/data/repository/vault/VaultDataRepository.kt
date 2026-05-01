@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.data.entity.VaultHistoryEntity
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
@@ -10,38 +11,59 @@ import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 
 class VaultDataRepository(
     private val entryDao: VaultEntryDao,
     private val historyDao: VaultHistoryDao? = null
 ) : VaultRepository {
-    override val allEntries: Flow<List<VaultEntry>> = entryDao.observeAll().map { entities ->
-        entities.map { it.toDomain() }
+
+    /**
+     * 安全守卫：如果数据库已锁定（密钥被清理），则不触发底层 SQLCipher 查询，避免 Crash
+     */
+    private inline fun <T> withLockGuard(onLocked: () -> T, block: () -> T): T {
+        return if (DatabasePassphraseManager.isLocked) onLocked() else block()
+    }
+
+    override val allEntries: Flow<List<VaultEntry>> = withLockGuard({ emptyFlow() }) {
+        entryDao.observeAll().map { entities ->
+            entities.map { it.toDomain() }
+        }
     }
 
     override fun observeByType(type: EntryType): Flow<List<VaultEntry>> =
+        withLockGuard({ emptyFlow() }) {
         entryDao.observeByType(type.value).map { it.toDomainList() }
+        }
 
-    override suspend fun getEntryById(entryId: Int): VaultEntry? =
+    override suspend fun getEntryById(entryId: Int): VaultEntry? = withLockGuard({ null }) {
         entryDao.getEntryById(entryId)?.toDomain()
+    }
 
     override suspend fun getByType(type: EntryType): List<VaultEntry> =
+        withLockGuard({ emptyList() }) {
         entryDao.getByType(type.value).toDomainList()
+        }
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> =
+        withLockGuard({ emptyList() }) {
         entryDao.getAll().toDomainList().filter {
             !it.associatedDomain.isNullOrEmpty()
         }
+        }
 
-    override suspend fun count(): Int = entryDao.count()
+    override suspend fun count(): Int = withLockGuard({ 0 }) { entryDao.count() }
 
-    override suspend fun countByType(type: EntryType): Int = entryDao.countByType(type.value)
+    override suspend fun countByType(type: EntryType): Int =
+        withLockGuard({ 0 }) { entryDao.countByType(type.value) }
 
-    override suspend fun insert(entry: VaultEntry): Long =
+    override suspend fun insert(entry: VaultEntry): Long = withLockGuard({ -1L }) {
         entryDao.insert(entry.toEntity())
+    }
 
     override suspend fun update(entry: VaultEntry) {
+        if (DatabasePassphraseManager.isLocked) return
         if (historyDao != null) {
             val old = entryDao.getEntryById(entry.id)?.toDomain()
             if (old != null) {
@@ -64,6 +86,7 @@ class VaultDataRepository(
     }
 
     override suspend fun recordUsage(entryId: Int) {
+        if (DatabasePassphraseManager.isLocked) return
         val entity = entryDao.getEntryById(entryId) ?: return
         val entry = entity.toDomain()
         val updated = entry.copy(
@@ -73,14 +96,18 @@ class VaultDataRepository(
         entryDao.update(updated.toEntity())
     }
 
-    override suspend fun delete(entry: VaultEntry) =
+    override suspend fun delete(entry: VaultEntry) {
+        if (DatabasePassphraseManager.isLocked) return
         entryDao.delete(entry.toEntity())
+    }
 
-    override suspend fun deleteAll() =
+    override suspend fun deleteAll() {
+        if (DatabasePassphraseManager.isLocked) return
         entryDao.deleteAll()
+    }
 
     companion object {
-        private const val CHANGE_TYPE_UPDATE = 1
+        private const val CHANGE_TYPE_UPDATE = 0 // 与 domain.VaultHistory.HistoryType.UPDATE 对齐
 
         private fun diffFields(
             old: VaultEntry,
