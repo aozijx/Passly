@@ -30,12 +30,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val authValidationSupport = AuthValidationSupport()
     private val databaseInitializer = MainDatabaseInitializer(databaseLifecycleUseCases)
 
-    val auth = AuthCoordinator(
+    private val authCoordinator = AuthCoordinator(
         scope = viewModelScope,
         authUseCases = authUseCases,
         validationSupport = authValidationSupport
     )
-    val authScreenGateway: AuthScreenAuthGateway = auth
+    val authScreenGateway: AuthScreenAuthGateway = authCoordinator
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -52,17 +52,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun handleIntent(intent: MainIntent) {
         when (intent) {
             MainIntent.Lock -> {
-                auth.lock()
+                authCoordinator.lock()
                 databaseLifecycleUseCases.close()
             }
-            MainIntent.UpdateInteraction -> auth.onUserInteraction()
-            MainIntent.CheckAndLock -> auth.checkAndLock()
+
+            MainIntent.UpdateInteraction -> authCoordinator.onUserInteraction()
+            MainIntent.CheckAndLock -> authCoordinator.checkAndLock()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase(isRetry = true)
             else -> Unit 
         }
     }
 
-    fun isAuthorizedNow(): Boolean = auth.isAuthorized.value
+    fun isAuthorizedNow(): Boolean = authCoordinator.isAuthorized.value
 
     fun requestAuth(
         activity: FragmentActivity,
@@ -71,7 +72,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        auth.authenticate(
+        authCoordinator.authenticate(
             activity = activity,
             title = title,
             subtitle = subtitle,
@@ -82,7 +83,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun observeAuthStates() {
         viewModelScope.launch {
-            auth.isAuthorized.collect { authorized ->
+            authCoordinator.isAuthorized.collect { authorized ->
                 _uiState.update { it.copy(isAuthorized = authorized) }
                 if (authorized) {
                     // 硬件口令已就绪，现在可以安全初始化数据库
@@ -93,7 +94,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
-            auth.authMessage.collect { message ->
+            authCoordinator.authMessage.collect { message ->
                 _uiState.update { it.copy(validationMessage = message) }
                 emitEffect(MainEffect.ShowError(message))
             }
@@ -115,7 +116,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             securitySettingsUseCases.lockTimeout.collect { lockTimeout ->
-                auth.updateLockTimeout(lockTimeout)
+                authCoordinator.updateLockTimeout(lockTimeout)
             }
         }
     }
