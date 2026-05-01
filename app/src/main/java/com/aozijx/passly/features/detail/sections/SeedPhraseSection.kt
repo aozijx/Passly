@@ -20,10 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,25 +34,22 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.contract.DetailEvent
-import com.aozijx.passly.features.detail.internal.EntryEditState
 
 @Composable
 fun SeedPhraseSection(
     activity: FragmentActivity,
     entry: VaultEntry,
-    editState: EntryEditState,
-    revealedPassword: String?,
-    onPasswordRevealed: (String?) -> Unit,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    revealedSeedPhrase: String?,
+    onSeedPhraseRevealed: (String?) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val seedPhraseCopiedMsg = stringResource(R.string.seed_phrase_copied)
 
-    var revealedSeedPhrase by remember { mutableStateOf<String?>(null) }
-    var wordList by remember { mutableStateOf<List<String>>(emptyList()) }
+    val wordList = remember(revealedSeedPhrase) {
+        revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
@@ -63,52 +57,48 @@ fun SeedPhraseSection(
             value = if (revealedSeedPhrase != null) stringResource(R.string.seed_phrase_revealed) else stringResource(R.string.label_hidden_mask),
             isRevealed = revealedSeedPhrase != null,
             onCopy = {
-                val seedPhrase = revealedSeedPhrase
-                if (seedPhrase != null) {
-                    ClipboardUtils.copy(context, seedPhrase)
+                if (revealedSeedPhrase != null) {
+                    ClipboardUtils.copy(context, revealedSeedPhrase)
                     Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
                     onEvent(DetailEvent.RecordAction("seed phrase", VaultHistory.HistoryType.COPY))
                 } else {
                     val encryptedSeedPhrase = entry.cryptoSeedPhrase
                     if (!encryptedSeedPhrase.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密助记词", "验证身份以复制助记词", {
+                        onAuthenticate(activity, "解密助记词", "验证身份以复制助记词") {
                             try {
-                                val decrypted = encryptedSeedPhrase
-                                ClipboardUtils.copy(context, decrypted)
+                                ClipboardUtils.copy(context, encryptedSeedPhrase)
                                 Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
-                                revealedSeedPhrase = decrypted
-                                wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                                onSeedPhraseRevealed(encryptedSeedPhrase)
                                 onEvent(
                                     DetailEvent.RecordAction(
                                         "seed phrase",
                                         VaultHistory.HistoryType.COPY
                                     )
                                 )
-                            } catch (e: Exception) {}
-                        })
+                            } catch (_: Exception) {
+                            }
+                        }
                     }
                 }
             },
             onEdit = {
                 if (revealedSeedPhrase != null) {
-                    revealedSeedPhrase = null
-                    wordList = emptyList()
+                    onSeedPhraseRevealed(null)
                 } else {
                     val seedPhrase = entry.cryptoSeedPhrase
                     if (!seedPhrase.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密助记词", "验证身份以查看助记词", {
+                        onAuthenticate(activity, "解密助记词", "验证身份以查看助记词") {
                             try {
-                                val decrypted = seedPhrase
-                                revealedSeedPhrase = decrypted
-                                wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                                onSeedPhraseRevealed(seedPhrase)
                                 onEvent(
                                     DetailEvent.RecordAction(
                                         "seed phrase",
                                         VaultHistory.HistoryType.ACCESS
                                     )
                                 )
-                            } catch (e: Exception) {}
-                        })
+                            } catch (_: Exception) {
+                            }
+                        }
                     }
                 }
             }
@@ -144,19 +134,18 @@ fun SeedPhraseSection(
                 onClick = {
                     val encryptedSeedPhrase = entry.cryptoSeedPhrase
                     if (!encryptedSeedPhrase.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密助记词", "验证身份以显示助记词", {
+                        onAuthenticate(activity, "解密助记词", "验证身份以显示助记词") {
                             try {
-                                val decrypted = encryptedSeedPhrase
-                                revealedSeedPhrase = decrypted
-                                wordList = decrypted.split(" ").filter { word -> word.isNotBlank() }
+                                onSeedPhraseRevealed(encryptedSeedPhrase)
                                 onEvent(
                                     DetailEvent.RecordAction(
                                         "seed phrase",
                                         VaultHistory.HistoryType.ACCESS
                                     )
                                 )
-                            } catch (e: Exception) {}
-                        })
+                            } catch (_: Exception) {
+                            }
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

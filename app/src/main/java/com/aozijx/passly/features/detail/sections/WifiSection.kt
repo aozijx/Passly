@@ -42,7 +42,6 @@ fun WifiSection(
     editState: EntryEditState,
     revealedPassword: String?,
     onPasswordRevealed: (String?) -> Unit,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit

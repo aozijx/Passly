@@ -4,10 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -24,7 +20,8 @@ import com.aozijx.passly.features.detail.contract.DetailEvent
 fun RecoveryCodeSection(
     activity: FragmentActivity,
     entry: VaultEntry,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    revealedRecoveryCodes: String?,
+    onRecoveryCodesRevealed: (String?) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEvent: (DetailEvent) -> Unit,
     modifier: Modifier = Modifier
@@ -34,23 +31,20 @@ fun RecoveryCodeSection(
     val notSet = stringResource(R.string.vault_detail_not_set)
     val hidden = stringResource(R.string.label_hidden_mask)
 
-    var revealedRecoveryCodes by remember { mutableStateOf<String?>(null) }
-
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.passkey_recovery_codes),
             value = when {
                 entry.recoveryCodes.isNullOrBlank() -> notSet
-                revealedRecoveryCodes != null -> revealedRecoveryCodes!!
+                revealedRecoveryCodes != null -> revealedRecoveryCodes
                 else -> hidden
             },
             isRevealed = revealedRecoveryCodes != null,
             onCopy = {
                 val encrypted = entry.recoveryCodes
                 if (encrypted.isNullOrBlank()) return@DetailItem
-                val cached = revealedRecoveryCodes
-                if (cached != null) {
-                    ClipboardUtils.copy(context, cached)
+                if (revealedRecoveryCodes != null) {
+                    ClipboardUtils.copy(context, revealedRecoveryCodes)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     onEvent(
                         DetailEvent.RecordAction(
@@ -59,11 +53,10 @@ fun RecoveryCodeSection(
                         )
                     )
                 } else {
-                    onAuthenticate(activity, "解密恢复码", "验证身份以复制信息", {
+                    onAuthenticate(activity, "解密恢复码", "验证身份以复制信息") {
                         try {
-                            val decrypted = encrypted
-                            revealedRecoveryCodes = decrypted
-                            ClipboardUtils.copy(context, decrypted)
+                            onRecoveryCodesRevealed(encrypted)
+                            ClipboardUtils.copy(context, encrypted)
                             Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                             onEvent(
                                 DetailEvent.RecordAction(
@@ -71,27 +64,29 @@ fun RecoveryCodeSection(
                                     VaultHistory.HistoryType.COPY
                                 )
                             )
-                        } catch (e: Exception) {}
-                    })
+                        } catch (_: Exception) {
+                        }
+                    }
                 }
             },
             onEdit = {
                 val encrypted = entry.recoveryCodes
                 if (encrypted.isNullOrBlank()) return@DetailItem
                 if (revealedRecoveryCodes != null) {
-                    revealedRecoveryCodes = null
+                    onRecoveryCodesRevealed(null)
                 } else {
-                    onAuthenticate(activity, "解密恢复码", "验证身份以查看信息", {
+                    onAuthenticate(activity, "解密恢复码", "验证身份以查看信息") {
                         try {
-                            revealedRecoveryCodes = encrypted
+                            onRecoveryCodesRevealed(encrypted)
                             onEvent(
                                 DetailEvent.RecordAction(
                                     "recovery codes",
                                     VaultHistory.HistoryType.ACCESS
                                 )
                             )
-                        } catch (e: Exception) {}
-                    })
+                        } catch (_: Exception) {
+                        }
+                    }
                 }
             }
         )

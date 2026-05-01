@@ -22,10 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +37,7 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.contract.RevealedFieldKey
 import com.aozijx.passly.features.detail.internal.EntryEditState
 
 @Composable
@@ -48,18 +45,17 @@ fun BankCardSection(
     activity: FragmentActivity,
     entry: VaultEntry,
     editState: EntryEditState,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    revealedCardholder: String?,
+    revealedCardNumber: String?,
+    revealedCvv: String?,
+    revealedPaymentPin: String?,
+    onRevealField: (String, String?) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val cardCopiedMsg = stringResource(R.string.card_copied)
-
-    var revealedCardNumber by remember { mutableStateOf<String?>(null) }
-    var revealedCvv by remember { mutableStateOf<String?>(null) }
-    var revealedCardholder by remember { mutableStateOf<String?>(null) }
-    var revealedPaymentPin by remember { mutableStateOf<String?>(null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (editState.isEditingUsername) {
@@ -73,7 +69,7 @@ fun BankCardSection(
                     IconButton(onClick = {
                         savePlaintext(editState.editedUsername, revealedCardholder, { editState.isEditingUsername = false }) {
                             onEntryUpdated(entry.copy(username = it))
-                            revealedCardholder = editState.editedUsername
+                            onRevealField(RevealedFieldKey.CARDHOLDER, editState.editedUsername)
                         }
                     }) {
                         Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -88,7 +84,7 @@ fun BankCardSection(
                 isRevealed = revealedCardholder != null,
                 onCopy = {
                     if (revealedCardholder != null) {
-                        ClipboardUtils.copy(context, revealedCardholder!!)
+                        ClipboardUtils.copy(context, revealedCardholder)
                         Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         onEvent(
                             DetailEvent.RecordAction(
@@ -99,7 +95,7 @@ fun BankCardSection(
                     } else {
                         onAuthenticate(activity, "解密持卡人", "验证身份以复制信息") {
                             ClipboardUtils.copy(context, entry.username)
-                            revealedCardholder = entry.username
+                            onRevealField(RevealedFieldKey.CARDHOLDER, entry.username)
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                             onEvent(
                                 DetailEvent.RecordAction(
@@ -125,7 +121,7 @@ fun BankCardSection(
                     IconButton(onClick = {
                         savePlaintext(editState.editedPassword, revealedCardNumber, { editState.isEditingPassword = false }) {
                             onEntryUpdated(entry.copy(password = it))
-                            revealedCardNumber = editState.editedPassword
+                            onRevealField(RevealedFieldKey.CARD_NUMBER, editState.editedPassword)
                         }
                     }) {
                         Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -140,7 +136,7 @@ fun BankCardSection(
                 isRevealed = revealedCardNumber != null,
                 onCopy = {
                     if (revealedCardNumber != null) {
-                        ClipboardUtils.copy(context, revealedCardNumber!!)
+                        ClipboardUtils.copy(context, revealedCardNumber)
                         Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         onEvent(
                             DetailEvent.RecordAction(
@@ -151,7 +147,7 @@ fun BankCardSection(
                     } else {
                         onAuthenticate(activity, "解密卡号", "验证身份以复制信息") {
                             ClipboardUtils.copy(context, entry.password)
-                            revealedCardNumber = entry.password
+                            onRevealField(RevealedFieldKey.CARD_NUMBER, entry.password)
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                             onEvent(
                                 DetailEvent.RecordAction(
@@ -178,7 +174,7 @@ fun BankCardSection(
                         IconButton(onClick = {
                             savePlaintext(editState.editedTotp, revealedCvv, { editState.isEditingTotp = false }) {
                                 onEntryUpdated(entry.copy(cardCvv = it))
-                                revealedCvv = editState.editedTotp
+                                onRevealField(RevealedFieldKey.CVV, editState.editedTotp)
                             }
                         }) {
                             Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -193,13 +189,13 @@ fun BankCardSection(
                     isRevealed = revealedCvv != null,
                     onCopy = {
                         if (revealedCvv != null) {
-                            ClipboardUtils.copy(context, revealedCvv!!)
+                            ClipboardUtils.copy(context, revealedCvv)
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                             onEvent(DetailEvent.RecordAction("CVV", VaultHistory.HistoryType.COPY))
                         } else {
                             onAuthenticate(activity, "解密 CVV", "验证身份以复制信息") {
                                 ClipboardUtils.copy(context, cvv)
-                                revealedCvv = cvv
+                                onRevealField(RevealedFieldKey.CVV, cvv)
                                 Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                                 onEvent(
                                     DetailEvent.RecordAction(
@@ -236,7 +232,7 @@ fun BankCardSection(
                 isRevealed = revealedPaymentPin != null,
                 onCopy = {
                     if (revealedPaymentPin != null) {
-                        ClipboardUtils.copy(context, revealedPaymentPin!!)
+                        ClipboardUtils.copy(context, revealedPaymentPin)
                         Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         onEvent(
                             DetailEvent.RecordAction(
@@ -247,7 +243,7 @@ fun BankCardSection(
                     } else {
                         onAuthenticate(activity, "解密支付密码", "验证身份以复制信息") {
                             ClipboardUtils.copy(context, pin)
-                            revealedPaymentPin = pin
+                            onRevealField(RevealedFieldKey.PAYMENT_PIN, pin)
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                             onEvent(
                                 DetailEvent.RecordAction(
@@ -266,17 +262,15 @@ fun BankCardSection(
             Button(
                 onClick = {
                     onAuthenticate(activity, "解密卡片信息", "验证身份以查看完整信息") {
-                        if (revealedCardNumber == null) {
-                            revealedCardNumber = entry.password
-                            onEvent(
-                                DetailEvent.RecordAction(
-                                    "card number",
-                                    VaultHistory.HistoryType.ACCESS
-                                )
+                        onRevealField(RevealedFieldKey.CARD_NUMBER, entry.password)
+                        onEvent(
+                            DetailEvent.RecordAction(
+                                "card number",
+                                VaultHistory.HistoryType.ACCESS
                             )
-                        }
+                        )
                         if (revealedCvv == null && entry.cardCvv != null) {
-                            revealedCvv = entry.cardCvv
+                            onRevealField(RevealedFieldKey.CVV, entry.cardCvv)
                             onEvent(
                                 DetailEvent.RecordAction(
                                     "CVV",
@@ -285,7 +279,7 @@ fun BankCardSection(
                             )
                         }
                         if (revealedCardholder == null) {
-                            revealedCardholder = entry.username
+                            onRevealField(RevealedFieldKey.CARDHOLDER, entry.username)
                             onEvent(
                                 DetailEvent.RecordAction(
                                     "cardholder",

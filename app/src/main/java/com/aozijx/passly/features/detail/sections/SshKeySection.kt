@@ -20,10 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -45,8 +41,9 @@ fun SshKeySection(
     entry: VaultEntry,
     editState: EntryEditState,
     revealedPassword: String?,
+    revealedSshPrivateKey: String?,
     onPasswordRevealed: (String?) -> Unit,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onSshPrivateKeyRevealed: (String?) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit
@@ -55,9 +52,6 @@ fun SshKeySection(
     val sshPrivateKeyLabel = stringResource(R.string.ssh_private_key)
     val passphraseLabel = stringResource(R.string.passphrase)
     val sshKeyCopiedMsg = stringResource(R.string.ssh_key_copied)
-
-    var revealedPrivateKey by remember { mutableStateOf<String?>(null) }
-    var revealedPassphrase by remember { mutableStateOf<String?>(null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
@@ -77,9 +71,9 @@ fun SshKeySection(
                 onValueChange = { editState.editedPassword = it },
                 label = stringResource(R.string.label_edit_field, passphraseLabel),
                 onSave = {
-                    if (editState.editedPassword != revealedPassphrase) {
+                    if (editState.editedPassword != revealedPassword) {
                         onEntryUpdated(entry.copy(password = editState.editedPassword))
-                        revealedPassphrase = editState.editedPassword
+                        onPasswordRevealed(editState.editedPassword)
                     }
                     editState.isEditingPassword = false
                 }
@@ -87,12 +81,11 @@ fun SshKeySection(
         } else {
             DetailItem(
                 label = passphraseLabel,
-                value = revealedPassphrase ?: stringResource(R.string.label_hidden_mask),
-                isRevealed = revealedPassphrase != null,
+                value = revealedPassword ?: stringResource(R.string.label_hidden_mask),
+                isRevealed = revealedPassword != null,
                 onCopy = {
-                    val passphrase = revealedPassphrase
-                    if (passphrase != null) {
-                        ClipboardUtils.copy(context, passphrase)
+                    if (revealedPassword != null) {
+                        ClipboardUtils.copy(context, revealedPassword)
                         Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
                         onEvent(
                             DetailEvent.RecordAction(
@@ -104,7 +97,7 @@ fun SshKeySection(
                         onAuthenticate(activity, "解密 SSH 密码", "验证身份以复制信息") {
                             ClipboardUtils.copy(context, entry.password)
                             Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
-                            revealedPassphrase = entry.password
+                            onPasswordRevealed(entry.password)
                             onEvent(
                                 DetailEvent.RecordAction(
                                     "passphrase",
@@ -115,7 +108,7 @@ fun SshKeySection(
                     }
                 },
                 onEdit = {
-                    editState.editedPassword = revealedPassphrase ?: ""
+                    editState.editedPassword = revealedPassword ?: ""
                     editState.isEditingPassword = true
                 }
             )
@@ -123,9 +116,8 @@ fun SshKeySection(
 
         Surface(
             onClick = {
-                val privateKey = revealedPrivateKey
-                if (privateKey != null) {
-                    ClipboardUtils.copy(context, privateKey)
+                if (revealedSshPrivateKey != null) {
+                    ClipboardUtils.copy(context, revealedSshPrivateKey)
                     Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
                     onEvent(DetailEvent.RecordAction("private key", VaultHistory.HistoryType.COPY))
                 } else {
@@ -134,7 +126,7 @@ fun SshKeySection(
                         onAuthenticate(activity, "解密 SSH 私钥", "验证身份以复制信息") {
                             ClipboardUtils.copy(context, sshKey)
                             Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
-                            revealedPrivateKey = sshKey
+                            onSshPrivateKeyRevealed(sshKey)
                             onEvent(
                                 DetailEvent.RecordAction(
                                     "private key",
@@ -156,13 +148,13 @@ fun SshKeySection(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = if (revealedPrivateKey != null) {
-                        revealedPrivateKey!!.take(60) + "..."
+                    text = if (revealedSshPrivateKey != null) {
+                        revealedSshPrivateKey.take(60) + "..."
                     } else {
                         stringResource(R.string.label_hidden_mask)
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = if (revealedPrivateKey != null) FontFamily.Monospace else FontFamily.Default,
+                    fontFamily = if (revealedSshPrivateKey != null) FontFamily.Monospace else FontFamily.Default,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
@@ -170,7 +162,7 @@ fun SshKeySection(
             }
         }
 
-        if (revealedPrivateKey != null) {
+        if (revealedSshPrivateKey != null) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -186,7 +178,7 @@ fun SshKeySection(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Text(
-                        text = revealedPrivateKey!!,
+                        text = revealedSshPrivateKey,
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = FontFamily.Monospace
                     )
@@ -194,13 +186,13 @@ fun SshKeySection(
             }
         }
 
-        if (revealedPrivateKey == null && revealedPassphrase == null) {
+        if (revealedSshPrivateKey == null && revealedPassword == null) {
             Button(
                 onClick = {
                     val sshKey = entry.sshPrivateKey
                     if (!sshKey.isNullOrBlank()) {
                         onAuthenticate(activity, "解密 SSH 私钥", "验证身份以查看完整条目") {
-                            revealedPrivateKey = sshKey
+                            onSshPrivateKeyRevealed(sshKey)
                             onEvent(
                                 DetailEvent.RecordAction(
                                     "private key",
@@ -208,7 +200,7 @@ fun SshKeySection(
                                 )
                             )
                             if (entry.password.isNotEmpty()) {
-                                revealedPassphrase = entry.password
+                                onPasswordRevealed(entry.password)
                                 onEvent(
                                     DetailEvent.RecordAction(
                                         "passphrase",

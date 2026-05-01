@@ -20,6 +20,7 @@ import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.contract.DetailUiState
+import com.aozijx.passly.features.detail.contract.RevealedFieldKey
 import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.sections.AssociatedInfoSection
@@ -55,6 +56,10 @@ fun DetailScrollableContent(
     val entry = uiState.entry ?: return
     val vaultType = uiState.vaultType
 
+    val revealField: (String, String?) -> Unit = { key, value ->
+        onEvent(DetailEvent.RevealField(key, value))
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -74,10 +79,10 @@ fun DetailScrollableContent(
                         item = entry,
                         onAuthenticate = onAuthenticate,
                         editState = editState,
-                        revealedUsername = uiState.revealedUsername,
-                        revealedPassword = uiState.revealedPassword,
-                        onUsernameRevealed = { onEvent(DetailEvent.SetRevealedUsername(it)) },
-                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
+                        revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME),
+                        revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
+                        onUsernameRevealed = { revealField(RevealedFieldKey.USERNAME, it) },
+                        onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
                     )
@@ -106,9 +111,8 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        revealedPassword = uiState.revealedPassword,
-                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
-                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
+                        onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
                         onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
@@ -122,7 +126,11 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        revealedCardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER),
+                        revealedCardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER),
+                        revealedCvv = uiState.revealed(RevealedFieldKey.CVV),
+                        revealedPaymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN),
+                        onRevealField = revealField,
                         onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
@@ -135,12 +143,9 @@ fun DetailScrollableContent(
                     SeedPhraseSection(
                         activity = activity,
                         entry = entry,
-                        editState = editState,
-                        revealedPassword = uiState.revealedPassword,
-                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
-                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        revealedSeedPhrase = uiState.revealed(RevealedFieldKey.SEED_PHRASE),
+                        onSeedPhraseRevealed = { revealField(RevealedFieldKey.SEED_PHRASE, it) },
                         onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
                     )
                 }
@@ -152,9 +157,15 @@ fun DetailScrollableContent(
                         activity = activity,
                         entry = entry,
                         editState = editState,
-                        revealedPassword = uiState.revealedPassword,
-                        onPasswordRevealed = { onEvent(DetailEvent.SetRevealedPassword(it)) },
-                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
+                        revealedSshPrivateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY),
+                        onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
+                        onSshPrivateKeyRevealed = {
+                            revealField(
+                                RevealedFieldKey.SSH_PRIVATE_KEY,
+                                it
+                            )
+                        },
                         onAuthenticate = onAuthenticate,
                         onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
@@ -166,10 +177,12 @@ fun DetailScrollableContent(
                 item {
                     PasskeySection(
                         activity = activity,
-                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        entry = entry,
+                        revealedPasskeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA),
+                        revealedRecoveryCodes = uiState.revealed(RevealedFieldKey.RECOVERY_CODES),
+                        onRevealField = revealField,
                         onAuthenticate = onAuthenticate,
-                        onEvent = onEvent,
-                        entry = entry
+                        onEvent = onEvent
                     )
                 }
             }
@@ -178,10 +191,16 @@ fun DetailScrollableContent(
                 item {
                     RecoveryCodeSection(
                         activity = activity,
-                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        entry = entry,
+                        revealedRecoveryCodes = uiState.revealed(RevealedFieldKey.RECOVERY_CODES),
+                        onRecoveryCodesRevealed = {
+                            revealField(
+                                RevealedFieldKey.RECOVERY_CODES,
+                                it
+                            )
+                        },
                         onAuthenticate = onAuthenticate,
-                        onEvent = onEvent,
-                        entry = entry
+                        onEvent = onEvent
                     )
                 }
             }
@@ -190,10 +209,11 @@ fun DetailScrollableContent(
                 item {
                     IdCardSection(
                         activity = activity,
-                        onUpdateVaultEntry = onUpdateVaultEntry,
+                        entry = entry,
+                        revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER),
+                        onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, it) },
                         onAuthenticate = onAuthenticate,
-                        onEvent = onEvent,
-                        entry = entry
+                        onEvent = onEvent
                     )
                 }
             }

@@ -40,6 +40,7 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailHeader
 import com.aozijx.passly.features.detail.contract.DetailEffect
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.contract.RevealedFieldKey
 import com.aozijx.passly.features.detail.internal.EntryEditState
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
@@ -79,9 +80,6 @@ fun DetailCardDialog(
     val entry = detailUiState.entry ?: currentEntry
     val vaultType = remember(entry.entryType) { EntryType.fromValue(entry.entryType) }
     val editState = remember(entry) { EntryEditState(entry) }
-
-    var revealedUsername by remember { mutableStateOf<String?>(null) }
-    var revealedPassword by remember { mutableStateOf<String?>(null) }
 
     val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
     val currentState = totpStates[entry.id]
@@ -127,8 +125,6 @@ fun DetailCardDialog(
 
     DisposableEffect(Unit) {
         onDispose {
-            revealedUsername = null
-            revealedPassword = null
             ClipboardUtils.clear(context)
         }
     }
@@ -177,10 +173,24 @@ fun DetailCardDialog(
                         isSteam = isSteam,
                         totpEditState = totpEditState,
                         editState = editState,
-                        revealedUsername = revealedUsername,
-                        revealedPassword = revealedPassword,
-                        onUsernameRevealed = { revealedUsername = it },
-                        onPasswordRevealed = { revealedPassword = it },
+                        revealedUsername = detailUiState.revealed(RevealedFieldKey.USERNAME),
+                        revealedPassword = detailUiState.revealed(RevealedFieldKey.PASSWORD),
+                        onUsernameRevealed = {
+                            detailViewModel.onEvent(
+                                DetailEvent.RevealField(
+                                    RevealedFieldKey.USERNAME,
+                                    it
+                                )
+                            )
+                        },
+                        onPasswordRevealed = {
+                            detailViewModel.onEvent(
+                                DetailEvent.RevealField(
+                                    RevealedFieldKey.PASSWORD,
+                                    it
+                                )
+                            )
+                        },
                         onShowQrDialog = {
                             mainViewModel.auth.authenticate(
                                 activity = activity,

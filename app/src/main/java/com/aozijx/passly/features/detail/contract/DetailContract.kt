@@ -12,10 +12,25 @@ data class DetailUiState(
     val isEditingTitle: Boolean = false,
     val editedTitle: String = "",
     val strategyReady: Boolean = false,
-    val revealedUsername: String? = null,
-    val revealedPassword: String? = null,
+    val revealedFields: Map<String, String> = emptyMap(),
     val history: List<VaultHistory> = emptyList()
-)
+) {
+    fun revealed(key: String): String? = revealedFields[key]
+}
+
+object RevealedFieldKey {
+    const val USERNAME = "username"
+    const val PASSWORD = "password"
+    const val SSH_PRIVATE_KEY = "sshPrivateKey"
+    const val CARDHOLDER = "cardholder"
+    const val CARD_NUMBER = "cardNumber"
+    const val CVV = "cvv"
+    const val PAYMENT_PIN = "paymentPin"
+    const val SEED_PHRASE = "seedPhrase"
+    const val PASSKEY_DATA = "passkeyData"
+    const val RECOVERY_CODES = "recoveryCodes"
+    const val ID_NUMBER = "idNumber"
+}
 
 sealed interface DetailEvent {
     data class Initialize(val initialEntry: VaultEntry) : DetailEvent
@@ -29,9 +44,8 @@ sealed interface DetailEvent {
 
     object SaveTitle : DetailEvent
     object ToggleFavorite : DetailEvent
-    
-    data class SetRevealedUsername(val value: String?) : DetailEvent
-    data class SetRevealedPassword(val value: String?) : DetailEvent
+
+    data class RevealField(val key: String, val value: String?) : DetailEvent
 
     data class RecordAction(val field: String, val type: VaultHistory.HistoryType) : DetailEvent
 }

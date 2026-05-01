@@ -4,10 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -24,7 +20,8 @@ import com.aozijx.passly.features.detail.contract.DetailEvent
 fun IdCardSection(
     activity: FragmentActivity,
     entry: VaultEntry,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    revealedIdNumber: String?,
+    onIdNumberRevealed: (String?) -> Unit,
     onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEvent: (DetailEvent) -> Unit,
     modifier: Modifier = Modifier
@@ -34,28 +31,25 @@ fun IdCardSection(
     val notSet = stringResource(R.string.vault_detail_not_set)
     val hidden = stringResource(R.string.label_hidden_mask)
 
-    var revealedIdNumber by remember { mutableStateOf<String?>(null) }
-
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.id_number),
             value = when {
                 entry.idNumber.isNullOrBlank() -> notSet
-                revealedIdNumber != null -> revealedIdNumber!!
+                revealedIdNumber != null -> revealedIdNumber
                 else -> hidden
             },
             isRevealed = revealedIdNumber != null,
             onCopy = {
                 val idNum = entry.idNumber
                 if (idNum.isNullOrBlank()) return@DetailItem
-                val cached = revealedIdNumber
-                if (cached != null) {
-                    ClipboardUtils.copy(context, cached)
+                if (revealedIdNumber != null) {
+                    ClipboardUtils.copy(context, revealedIdNumber)
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     onEvent(DetailEvent.RecordAction("ID number", VaultHistory.HistoryType.COPY))
                 } else {
                     onAuthenticate(activity, "解密身份证号", "验证身份以复制信息") {
-                        revealedIdNumber = idNum
+                        onIdNumberRevealed(idNum)
                         ClipboardUtils.copy(context, idNum)
                         Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                         onEvent(
@@ -71,10 +65,10 @@ fun IdCardSection(
                 val idNum = entry.idNumber
                 if (idNum.isNullOrBlank()) return@DetailItem
                 if (revealedIdNumber != null) {
-                    revealedIdNumber = null
+                    onIdNumberRevealed(null)
                 } else {
                     onAuthenticate(activity, "解密身份证号", "验证身份以查看信息") {
-                        revealedIdNumber = idNum
+                        onIdNumberRevealed(idNum)
                         onEvent(
                             DetailEvent.RecordAction(
                                 "ID number",
