@@ -69,7 +69,7 @@
     <string name="vault_auth_failed">验证未通过</string>
     <string name="main_notification_permission_denied">通知权限未开启，后台同步进度将不可见</string>
     <string name="vault_locked_title">保险箱已锁定</string>
-    <string name="vault_locked_subtitle">点击屏幕以解锁</string>
+    <string name="vault_locked_subtitle">点击屏幕或下方按钮以解锁</string>
     <string name="vault_auth_encrypt_title">验证加密</string>
     <string name="vault_auth_encrypt_subtitle">请验证以保护信息</string>
     <string name="vault_auth_decrypt_title">验证身份</string>
@@ -224,6 +224,11 @@
     <string name="vault_detail_history_updates">变更</string>
     <string name="vault_detail_history_actions">使用</string>
     <string name="vault_detail_history_empty_filtered">当前筛选下暂无记录</string>
+
+    <!-- 验证页面新字符串 -->
+    <string name="auth_verify_now">立即验证</string>
+    <string name="auth_system_selects_best_mode">系统会自动选择可用验证方式</string>
+    <string name="auth_switch_method">切换验证方式</string>
 
     <!-- icon_ 系列 -->
     <string name="icon_bank">银行</string>

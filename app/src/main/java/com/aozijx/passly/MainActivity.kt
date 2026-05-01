@@ -75,6 +75,7 @@ class MainActivity : FragmentActivity() {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
             val context = LocalContext.current
             val settingsViewModel: SettingsViewModel = viewModel()
+            val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
             // 全局备份消息监听
             LaunchedEffect(settingsViewModel.backup.backupMessage) {
@@ -148,13 +149,15 @@ class MainActivity : FragmentActivity() {
                     }
 
                     else -> {
-                        AuthScreen(authCoordinator = viewModel.auth, activity = this)
+                        AuthScreen(
+                            authCoordinator = viewModel.auth,
+                            activity = this
+                        )
                     }
                 }
             }
 
             // 安全策略与系统 UI 设置
-            val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(settingsUiState.isSecureContentEnabled) {
                 if (settingsUiState.isSecureContentEnabled) {
                     window.setFlags(

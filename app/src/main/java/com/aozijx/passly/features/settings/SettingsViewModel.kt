@@ -81,7 +81,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             securitySettingsUseCases.isInvalidateKeyOnBioChange,
             systemSettingsUseCases.isStatusBarAutoHide,
             systemSettingsUseCases.isTopBarCollapsible,
-            systemSettingsUseCases.isTabBarCollapsible,
+            systemSettingsUseCases.isTabBarCollapsible
         ) { lockTimeout, isInvalidateKeyOnBioChange, isStatusBarAutoHide, isTopBarCollapsible, isTabBarCollapsible ->
             CoreSettingsFlowState(
                 lockTimeout = lockTimeout,
