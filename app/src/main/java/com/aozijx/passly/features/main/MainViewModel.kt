@@ -1,6 +1,7 @@
 package com.aozijx.passly.features.main
 
 import android.app.Application
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.di.AppContainer
@@ -57,6 +58,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MainIntent.RetryDatabaseInitialization -> initializeDatabase(isRetry = true)
             else -> Unit 
         }
+    }
+
+    fun isAuthorizedNow(): Boolean = auth.isAuthorized.value
+
+    fun requestAuth(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String,
+        onSuccess: () -> Unit = {},
+        onError: ((String) -> Unit)? = null
+    ) {
+        auth.authenticate(
+            activity = activity,
+            title = title,
+            subtitle = subtitle,
+            onSuccess = onSuccess,
+            onError = onError
+        )
     }
 
     private fun observeAuthStates() {

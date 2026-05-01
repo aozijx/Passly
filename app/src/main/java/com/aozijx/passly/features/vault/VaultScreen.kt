@@ -152,7 +152,7 @@ fun VaultContent(
                     activity = activity,
                     encryptedData = rawValue,
                     authenticate = { act, t, s, _, ok ->
-                        mainViewModel.auth.authenticate(
+                        mainViewModel.requestAuth(
                             act,
                             t,
                             s,
@@ -176,7 +176,7 @@ fun VaultContent(
             actionType = action,
             item = item,
             onAuthRequired = { ok ->
-                mainViewModel.auth.authenticate(
+                mainViewModel.requestAuth(
                     activity,
                     "安全验证",
                     item.title,

@@ -25,7 +25,7 @@ fun DeleteConfirmDialog(
         text = { Text(stringResource(R.string.vault_delete_message, item.title)) },
         confirmButton = {
             TextButton(onClick = {
-                mainViewModel.auth.authenticate(
+                mainViewModel.requestAuth(
                     activity = activity,
                     title = activity.getString(R.string.vault_delete_title),
                     subtitle = activity.getString(R.string.vault_auth_decrypt_subtitle_generic),

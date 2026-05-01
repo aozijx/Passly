@@ -196,7 +196,7 @@ fun DetailCardDialog(
                             )
                         },
                         onShowQrDialog = {
-                            mainViewModel.auth.authenticate(
+                            mainViewModel.requestAuth(
                                 activity = activity,
                                 title = authQrTitle,
                                 subtitle = authQrSubtitle,
@@ -263,7 +263,7 @@ private fun LazyListScope.typeSpecificCardContent(
                     activity = activity,
                     item = entry,
                     onAuthenticate = { act, title, subtitle, onSuccess ->
-                        mainViewModel.auth.authenticate(act, title, subtitle, onSuccess = onSuccess)
+                        mainViewModel.requestAuth(act, title, subtitle, onSuccess = onSuccess)
                     },
                     editState = editState,
                     revealedUsername = revealedUsername,

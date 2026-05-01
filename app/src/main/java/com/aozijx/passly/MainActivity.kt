@@ -42,7 +42,7 @@ class MainActivity : FragmentActivity() {
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
-            if (viewModel.auth.isAuthorized.value) {
+            if (viewModel.isAuthorizedNow()) {
                 viewModel.handleIntent(MainIntent.Lock)
                 if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
             }
@@ -211,7 +211,7 @@ class MainActivity : FragmentActivity() {
                 type = PlainExportDialogType.NormalExport,
                 onExportBackup = {
                     showPlainExportRiskDialog = false
-                    mainViewModel.auth.authenticate(
+                    mainViewModel.requestAuth(
                         activity = this,
                         title = getString(R.string.vault_backup_auth_title),
                         subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export),

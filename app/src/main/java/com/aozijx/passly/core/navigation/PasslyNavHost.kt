@@ -106,7 +106,7 @@ fun PasslyNavHost(
                     onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it) },
                     onAuthenticate = { act, title, subtitle, success ->
-                        mainViewModel.auth.authenticate(act, title, subtitle, onSuccess = success)
+                        mainViewModel.requestAuth(act, title, subtitle, onSuccess = success)
                     },
                     activity = activity
                 )
