@@ -30,12 +30,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
@@ -64,7 +64,8 @@ private enum class AppPasswordAction {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit, viewModel: SettingsViewModel = viewModel()
+    onBack: () -> Unit,
+    viewModel: SettingsViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAppPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
@@ -120,6 +121,11 @@ fun SettingsScreen(
     var appPasswordNew by remember { mutableStateOf("") }
     var appPasswordConfirm by remember { mutableStateOf("") }
 
+    // 预解析字符串，避免在 lambda 中调用 @Composable stringResource
+    val authDecryptTitle = stringResource(R.string.vault_auth_decrypt_title)
+    val setAppPasswordSubtitle = stringResource(R.string.settings_auth_before_set_app_password)
+    val authFailedMsg = stringResource(R.string.vault_auth_failed)
+
     fun clearAppPasswordInputs() {
         appPasswordCurrent = ""
         appPasswordNew = ""
@@ -134,7 +140,7 @@ fun SettingsScreen(
                     return
                 }
                 val newPasswordChars = appPasswordNew.toCharArray()
-                viewModel.setAppPassword(newPasswordChars) { result ->
+                viewModel.auth.setAppPassword(newPasswordChars) { result ->
                     try {
                         result.onSuccess {
                             Toast.makeText(context, "应用密码已启用", Toast.LENGTH_SHORT).show()
@@ -157,7 +163,7 @@ fun SettingsScreen(
                 }
                 val oldPasswordChars = appPasswordCurrent.toCharArray()
                 val newPasswordChars = appPasswordNew.toCharArray()
-                viewModel.changeAppPassword(
+                viewModel.auth.changeAppPassword(
                     oldPassword = oldPasswordChars,
                     newPassword = newPasswordChars
                 ) { result ->
@@ -179,7 +185,7 @@ fun SettingsScreen(
 
             AppPasswordAction.DISABLE -> {
                 val currentPasswordChars = appPasswordCurrent.toCharArray()
-                viewModel.disableAppPassword(currentPasswordChars) { result ->
+                viewModel.auth.disableAppPassword(currentPasswordChars) { result ->
                     try {
                         result.onSuccess {
                             Toast.makeText(context, "已关闭应用密码", Toast.LENGTH_SHORT).show()
@@ -274,17 +280,17 @@ fun SettingsScreen(
                                     .show()
                                 return@SecurityPrivacySettingsSection
                             }
-                            viewModel.verifyBeforeSetAppPassword(
+                            viewModel.auth.verifyIdentity(
                                 activity = activity,
-                                title = context.getString(R.string.vault_auth_decrypt_title),
-                                subtitle = context.getString(R.string.settings_auth_before_set_app_password)
+                                title = authDecryptTitle,
+                                subtitle = setAppPasswordSubtitle
                             ) { result ->
                                 result.onSuccess {
                                     showSetAppPasswordDialog = true
                                 }.onFailure { e ->
                                     Toast.makeText(
                                         context,
-                                        e.message ?: context.getString(R.string.vault_auth_failed),
+                                        e.message ?: authFailedMsg,
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }

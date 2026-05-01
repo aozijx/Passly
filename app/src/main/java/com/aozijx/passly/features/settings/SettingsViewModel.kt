@@ -8,6 +8,7 @@ import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.features.auth.AuthCoordinator
 import com.aozijx.passly.features.backup.BackupCoordinator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -68,7 +69,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
     private val backupSettingsUseCases = AppContainer.domain.backupSettingsUseCases
     private val backupUseCases = AppContainer.domain.backupUseCases
-    private val authUseCases = AppContainer.domain.authUseCases
 
     val backup = BackupCoordinator(
         scope = viewModelScope,
@@ -77,7 +77,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         application = application
     )
 
-    val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
+    /** 认证协调器：统一处理认证相关的 UI 流程 */
+    val auth = AuthCoordinator(
+        scope = viewModelScope,
+        authUseCases = AppContainer.domain.authUseCases
+    )
+
+    val isAppPasswordEnabled: StateFlow<Boolean> = auth.isAppPasswordEnabled
 
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
@@ -174,11 +180,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         invalidateOnBiometricChange: Boolean,
         onResult: (Result<Unit>) -> Unit
     ) {
-        viewModelScope.launch {
-            val result =
-                authUseCases.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
+        auth.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange) { result ->
             if (result.isSuccess) {
-                securitySettingsUseCases.setInvalidateKeyOnBioChange(invalidateOnBiometricChange)
+                viewModelScope.launch {
+                    securitySettingsUseCases.setInvalidateKeyOnBioChange(invalidateOnBiometricChange)
+                }
             }
             onResult(result)
         }
@@ -239,40 +245,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setAutoDownloadIcons(enabled: Boolean) =
         viewModelScope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }
 
-    fun setAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
-        viewModelScope.launch { onResult(authUseCases.setAppPassword(password)) }
-    }
 
-    fun changeAppPassword(
-        oldPassword: CharArray,
-        newPassword: CharArray,
-        onResult: (Result<Unit>) -> Unit
-    ) {
-        viewModelScope.launch { onResult(authUseCases.changeAppPassword(oldPassword, newPassword)) }
-    }
-
-    fun disableAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
-        viewModelScope.launch { onResult(authUseCases.disableAppPassword(password)) }
-    }
-
-    fun verifyBeforeSetAppPassword(
-        activity: FragmentActivity,
-        title: String,
-        subtitle: String,
-        onResult: (Result<Unit>) -> Unit
-    ) {
-        viewModelScope.launch {
-            onResult(
-                authUseCases.verifyIdentity(
-                    activity = activity,
-                    title = title,
-                    subtitle = subtitle
-                )
-            )
-        }
-    }
-
-    // --- 备份相关操作：现在非常统一 ---
+    // --- 备份相关操作 ---
     fun setBackupDirectoryUri(uri: String) = 
         backup.setBackupDirectoryUri(uri)
 

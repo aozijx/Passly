@@ -2,16 +2,8 @@ package com.aozijx.passly.features.main.contract
 
 import android.content.Context
 import android.net.Uri
-import androidx.fragment.app.FragmentActivity
 
 sealed interface MainIntent {
-    data class Authenticate(
-        val activity: FragmentActivity,
-        val title: String,
-        val subtitle: String = "",
-        val onError: ((String) -> Unit)? = null,
-        val onSuccess: () -> Unit
-    ) : MainIntent
 
     data object Lock : MainIntent
     data object UpdateInteraction : MainIntent

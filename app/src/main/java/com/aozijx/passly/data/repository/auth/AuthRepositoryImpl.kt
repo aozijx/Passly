@@ -307,13 +307,13 @@ internal class AuthRepositoryImpl(
             )
         }.onFailure { e ->
             Logcat.e(tag, "Rekey failed, recovering with previous policy...", e)
-            recoverFromFailedRekey(currentPassphrase, !invalidateOnBiometricChange)
+            recoverFromFailedRekey(!invalidateOnBiometricChange)
         }.also {
             currentPassphrase.fill(0)
         }
     }
 
-    private fun recoverFromFailedRekey(passphrase: ByteArray, previousPolicy: Boolean) {
+    private fun recoverFromFailedRekey(previousPolicy: Boolean) {
         runCatching {
             DatabasePassphraseManager.prepareForRekey(application, previousPolicy)
             Logcat.w(

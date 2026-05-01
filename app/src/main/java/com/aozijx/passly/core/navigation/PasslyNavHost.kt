@@ -114,7 +114,10 @@ fun PasslyNavHost(
         }
 
         composable(AppRoute.Settings.route) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = settingsViewModel
+            )
         }
     }
 }

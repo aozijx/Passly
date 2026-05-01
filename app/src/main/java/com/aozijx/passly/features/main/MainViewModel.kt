@@ -48,14 +48,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun handleIntent(intent: MainIntent) {
         when (intent) {
-            is MainIntent.Authenticate ->
-                auth.authenticate(
-                    activity = intent.activity,
-                    title = intent.title,
-                    subtitle = intent.subtitle,
-                    onError = intent.onError,
-                    onSuccess = intent.onSuccess
-                )
             MainIntent.Lock -> {
                 auth.lock()
                 databaseLifecycleUseCases.close()
