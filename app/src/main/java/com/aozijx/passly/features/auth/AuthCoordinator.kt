@@ -36,9 +36,7 @@ class AuthCoordinator(
     ) {
         when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
             is AuthValidationResult.Invalid -> {
-                val msg = validation.message
-                _authMessage.tryEmit(msg)
-                onError?.invoke(msg)
+                emitAuthError(validation.message, onError, sanitize = false)
                 return
             }
             AuthValidationResult.Valid -> Unit
@@ -47,11 +45,7 @@ class AuthCoordinator(
         scope.launch {
             authUseCases.authenticate(activity, title, subtitle).fold(
                 onSuccess = { onSuccess() },
-                onFailure = { error ->
-                    val safeError = validationSupport.sanitizeMessage(error.message)
-                    _authMessage.tryEmit(safeError)
-                    onError?.invoke(safeError)
-                }
+                onFailure = { error -> emitAuthError(error.message, onError) }
             )
         }
     }
@@ -64,21 +58,17 @@ class AuthCoordinator(
         scope.launch {
             authUseCases.authenticateWithAppPassword(password).fold(
                 onSuccess = { onSuccess() },
-                onFailure = { error ->
-                    val safeError = validationSupport.sanitizeMessage(error.message)
-                    _authMessage.tryEmit(safeError)
-                    onError?.invoke(safeError)
-                }
+                onFailure = { error -> emitAuthError(error.message, onError) }
             )
         }
     }
 
     fun setAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
-        scope.launch { onResult(authUseCases.setAppPassword(password)) }
+        launchResult(onResult) { authUseCases.setAppPassword(password) }
     }
 
     override fun bootstrapAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
-        scope.launch { onResult(authUseCases.bootstrapAppPassword(password)) }
+        launchResult(onResult) { authUseCases.bootstrapAppPassword(password) }
     }
 
     fun changeAppPassword(
@@ -86,11 +76,11 @@ class AuthCoordinator(
         newPassword: CharArray,
         onResult: (Result<Unit>) -> Unit
     ) {
-        scope.launch { onResult(authUseCases.changeAppPassword(oldPassword, newPassword)) }
+        launchResult(onResult) { authUseCases.changeAppPassword(oldPassword, newPassword) }
     }
 
     fun disableAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
-        scope.launch { onResult(authUseCases.disableAppPassword(password)) }
+        launchResult(onResult) { authUseCases.disableAppPassword(password) }
     }
 
     fun verifyIdentity(
@@ -99,9 +89,7 @@ class AuthCoordinator(
         subtitle: String,
         onResult: (Result<Unit>) -> Unit
     ) {
-        scope.launch {
-            onResult(authUseCases.verifyIdentity(activity, title, subtitle))
-        }
+        launchResult(onResult) { authUseCases.verifyIdentity(activity, title, subtitle) }
     }
 
     fun rekeyWithInvalidationPolicy(
@@ -109,14 +97,24 @@ class AuthCoordinator(
         invalidateOnBiometricChange: Boolean,
         onResult: (Result<Unit>) -> Unit
     ) {
-        scope.launch {
-            onResult(
-                authUseCases.rekeyWithInvalidationPolicy(
-                    activity,
-                    invalidateOnBiometricChange
-                )
-            )
+        launchResult(onResult) {
+            authUseCases.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
         }
+    }
+
+    private fun emitAuthError(
+        message: String?,
+        onError: ((String) -> Unit)?,
+        sanitize: Boolean = true
+    ) {
+        val resolved =
+            if (sanitize) validationSupport.sanitizeMessage(message) else message.orEmpty()
+        _authMessage.tryEmit(resolved)
+        onError?.invoke(resolved)
+    }
+
+    private fun launchResult(onResult: (Result<Unit>) -> Unit, block: suspend () -> Result<Unit>) {
+        scope.launch { onResult(block()) }
     }
 
     fun lock() = authUseCases.lock()
