@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.features.auth.AuthCoordinator
+import com.aozijx.passly.features.auth.ui.AuthScreenAuthGateway
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.main.contract.MainUiState
@@ -34,6 +35,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         authUseCases = authUseCases,
         validationSupport = authValidationSupport
     )
+    val authScreenGateway: AuthScreenAuthGateway = auth
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()

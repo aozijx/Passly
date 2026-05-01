@@ -4,6 +4,7 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.security.auth.AuthValidationResult
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
+import com.aozijx.passly.features.auth.ui.AuthScreenAuthGateway
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,20 +19,20 @@ class AuthCoordinator(
     private val scope: CoroutineScope,
     private val authUseCases: AuthUseCases,
     private val validationSupport: AuthValidationSupport = AuthValidationSupport()
-) {
+) : AuthScreenAuthGateway {
     /** 观察全局授权状态 */
     val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
-    val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
+    override val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
 
     private val _authMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val authMessage: SharedFlow<String> = _authMessage.asSharedFlow()
 
-    fun authenticate(
+    override fun authenticate(
         activity: FragmentActivity,
         title: String,
         subtitle: String,
-        onSuccess: () -> Unit = {},
-        onError: ((String) -> Unit)? = null
+        onSuccess: () -> Unit,
+        onError: ((String) -> Unit)?
     ) {
         when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
             is AuthValidationResult.Invalid -> {
@@ -55,10 +56,10 @@ class AuthCoordinator(
         }
     }
 
-    fun authenticateWithAppPassword(
+    override fun authenticateWithAppPassword(
         password: CharArray,
-        onSuccess: () -> Unit = {},
-        onError: ((String) -> Unit)? = null
+        onSuccess: () -> Unit,
+        onError: ((String) -> Unit)?
     ) {
         scope.launch {
             authUseCases.authenticateWithAppPassword(password).fold(
@@ -76,7 +77,7 @@ class AuthCoordinator(
         scope.launch { onResult(authUseCases.setAppPassword(password)) }
     }
 
-    fun bootstrapAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
+    override fun bootstrapAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
         scope.launch { onResult(authUseCases.bootstrapAppPassword(password)) }
     }
 

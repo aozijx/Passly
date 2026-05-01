@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.features.auth.AuthCoordinator
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDialog
 
 /**
@@ -47,11 +46,11 @@ import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDial
  */
 @Composable
 fun AuthScreen(
-    authCoordinator: AuthCoordinator,
+    authGateway: AuthScreenAuthGateway,
     activity: FragmentActivity,
     preferPasswordFirst: Boolean = true
 ) {
-    val appPasswordEnabled by authCoordinator.isAppPasswordEnabled.collectAsStateWithLifecycle()
+    val appPasswordEnabled by authGateway.isAppPasswordEnabled.collectAsStateWithLifecycle()
     val biometricAvailable =
         BiometricManager.from(activity)
             .canAuthenticate(BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
@@ -71,7 +70,7 @@ fun AuthScreen(
     fun requestBiometricAuth() {
         if (authInProgress) return
         authInProgress = true
-        authCoordinator.authenticate(
+        authGateway.authenticate(
             activity = activity,
             title = title,
             subtitle = subtitle,
@@ -82,7 +81,7 @@ fun AuthScreen(
     fun requestPasswordAuth() {
         if (authInProgress) return
         authInProgress = true
-        authCoordinator.authenticateWithAppPassword(
+        authGateway.authenticateWithAppPassword(
             password = appPassword.toCharArray(),
             onSuccess = {
                 authInProgress = false
@@ -190,7 +189,7 @@ fun AuthScreen(
     if (showSetPasswordDialog) {
         SetPasswordDialogSection(
             activity = activity,
-            authCoordinator = authCoordinator,
+            authGateway = authGateway,
             authInProgress = authInProgress,
             appPassword = appPassword,
             appPasswordConfirm = appPasswordConfirm,
@@ -230,7 +229,7 @@ private fun SetPasswordEntrySection(
 @Composable
 private fun SetPasswordDialogSection(
     activity: FragmentActivity,
-    authCoordinator: AuthCoordinator,
+    authGateway: AuthScreenAuthGateway,
     authInProgress: Boolean,
     appPassword: String,
     appPasswordConfirm: String,
@@ -262,7 +261,7 @@ private fun SetPasswordDialogSection(
 
             onAuthInProgressChange(true)
             val password = appPassword.toCharArray()
-            authCoordinator.bootstrapAppPassword(password) { result ->
+            authGateway.bootstrapAppPassword(password) { result ->
                 password.fill('\u0000')
                 onAuthInProgressChange(false)
                 result.onSuccess {
