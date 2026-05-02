@@ -32,18 +32,14 @@ class SettingsScreenLocalStateTest {
     @Test
     fun openChangeAppPasswordDialog_dismissesOtherPasswordDialogs_withoutClearingInputs() {
         val state = SettingsScreenLocalState()
-        state.showAppPasswordActionDialog = true
-        state.showSetAppPasswordDialog = true
+        state.activeAppPasswordDialog = AppPasswordDialog.Set
         state.appPasswordCurrent = "old"
         state.appPasswordNew = "new"
         state.appPasswordConfirm = "new"
 
         state.openChangeAppPasswordDialog()
 
-        assertTrue(state.showChangeAppPasswordDialog)
-        assertFalse(state.showAppPasswordActionDialog)
-        assertFalse(state.showSetAppPasswordDialog)
-        assertFalse(state.showDisableAppPasswordDialog)
+        assertEquals(AppPasswordDialog.Change, state.activeAppPasswordDialog)
         assertEquals("old", state.appPasswordCurrent)
         assertEquals("new", state.appPasswordNew)
         assertEquals("new", state.appPasswordConfirm)
@@ -52,13 +48,13 @@ class SettingsScreenLocalStateTest {
     @Test
     fun dismissSetAppPasswordDialog_clearsPasswordInputs() {
         val state = SettingsScreenLocalState()
-        state.showSetAppPasswordDialog = true
+        state.activeAppPasswordDialog = AppPasswordDialog.Set
         state.appPasswordNew = "new"
         state.appPasswordConfirm = "new"
 
         state.dismissSetAppPasswordDialog()
 
-        assertFalse(state.showSetAppPasswordDialog)
+        assertEquals(AppPasswordDialog.None, state.activeAppPasswordDialog)
         assertEquals("", state.appPasswordCurrent)
         assertEquals("", state.appPasswordNew)
         assertEquals("", state.appPasswordConfirm)
@@ -67,12 +63,12 @@ class SettingsScreenLocalStateTest {
     @Test
     fun onAppPasswordSuccess_closesRelatedDialog_andClearsInputs() {
         val state = SettingsScreenLocalState()
-        state.showDisableAppPasswordDialog = true
+        state.activeAppPasswordDialog = AppPasswordDialog.Disable
         state.appPasswordCurrent = "old"
 
         state.onAppPasswordSuccess(AppPasswordAction.DISABLE)
 
-        assertFalse(state.showDisableAppPasswordDialog)
+        assertEquals(AppPasswordDialog.None, state.activeAppPasswordDialog)
         assertEquals("", state.appPasswordCurrent)
         assertEquals("", state.appPasswordNew)
         assertEquals("", state.appPasswordConfirm)

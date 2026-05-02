@@ -7,15 +7,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.features.backup.ui.BackupPathSettingsConfig
 
+internal sealed interface AppPasswordDialog {
+    data object None : AppPasswordDialog
+    data object Action : AppPasswordDialog
+    data object Set : AppPasswordDialog
+    data object Change : AppPasswordDialog
+    data object Disable : AppPasswordDialog
+}
+
 internal class SettingsScreenLocalState {
     var showLeftActionDialog by mutableStateOf(false)
     var showRightActionDialog by mutableStateOf(false)
     var showLockTimeoutDialog by mutableStateOf(false)
     var showClearBackupDirConfirmDialog by mutableStateOf(false)
-    var showAppPasswordActionDialog by mutableStateOf(false)
-    var showSetAppPasswordDialog by mutableStateOf(false)
-    var showChangeAppPasswordDialog by mutableStateOf(false)
-    var showDisableAppPasswordDialog by mutableStateOf(false)
+    var activeAppPasswordDialog by mutableStateOf<AppPasswordDialog>(AppPasswordDialog.None)
 
     var appPasswordCurrent by mutableStateOf("")
     var appPasswordNew by mutableStateOf("")
@@ -56,41 +61,37 @@ internal class SettingsScreenLocalState {
     }
 
     fun openAppPasswordActionDialog() {
-        dismissAppPasswordDialogs(clearInputs = false)
-        showAppPasswordActionDialog = true
+        setActiveAppPasswordDialog(AppPasswordDialog.Action, clearInputs = false)
     }
 
     fun dismissAppPasswordActionDialog() {
-        showAppPasswordActionDialog = false
+        activeAppPasswordDialog = AppPasswordDialog.None
     }
 
     fun openSetAppPasswordDialog() {
-        dismissAppPasswordDialogs(clearInputs = false)
-        showSetAppPasswordDialog = true
+        setActiveAppPasswordDialog(AppPasswordDialog.Set, clearInputs = false)
     }
 
     fun openChangeAppPasswordDialog() {
-        dismissAppPasswordDialogs(clearInputs = false)
-        showChangeAppPasswordDialog = true
+        setActiveAppPasswordDialog(AppPasswordDialog.Change, clearInputs = false)
     }
 
     fun openDisableAppPasswordDialog() {
-        dismissAppPasswordDialogs(clearInputs = false)
-        showDisableAppPasswordDialog = true
+        setActiveAppPasswordDialog(AppPasswordDialog.Disable, clearInputs = false)
     }
 
     fun dismissSetAppPasswordDialog() {
-        showSetAppPasswordDialog = false
+        activeAppPasswordDialog = AppPasswordDialog.None
         clearAppPasswordInputs()
     }
 
     fun dismissChangeAppPasswordDialog() {
-        showChangeAppPasswordDialog = false
+        activeAppPasswordDialog = AppPasswordDialog.None
         clearAppPasswordInputs()
     }
 
     fun dismissDisableAppPasswordDialog() {
-        showDisableAppPasswordDialog = false
+        activeAppPasswordDialog = AppPasswordDialog.None
         clearAppPasswordInputs()
     }
 
@@ -102,9 +103,9 @@ internal class SettingsScreenLocalState {
 
     fun onAppPasswordSuccess(action: AppPasswordAction) {
         when (action) {
-            AppPasswordAction.SET -> showSetAppPasswordDialog = false
-            AppPasswordAction.CHANGE -> showChangeAppPasswordDialog = false
-            AppPasswordAction.DISABLE -> showDisableAppPasswordDialog = false
+            AppPasswordAction.SET,
+            AppPasswordAction.CHANGE,
+            AppPasswordAction.DISABLE -> activeAppPasswordDialog = AppPasswordDialog.None
         }
         clearAppPasswordInputs()
     }
@@ -114,11 +115,8 @@ internal class SettingsScreenLocalState {
     fun lastExportFileLabel(fileName: String?): String =
         BackupPathSettingsConfig.displayRecentFileName(fileName)
 
-    private fun dismissAppPasswordDialogs(clearInputs: Boolean) {
-        showAppPasswordActionDialog = false
-        showSetAppPasswordDialog = false
-        showChangeAppPasswordDialog = false
-        showDisableAppPasswordDialog = false
+    private fun setActiveAppPasswordDialog(dialog: AppPasswordDialog, clearInputs: Boolean) {
+        activeAppPasswordDialog = dialog
         if (clearInputs) clearAppPasswordInputs()
     }
 }

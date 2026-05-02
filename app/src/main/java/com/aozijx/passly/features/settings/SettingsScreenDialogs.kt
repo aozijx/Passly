@@ -14,16 +14,14 @@ import com.aozijx.passly.features.settings.components.dialogs.AppPasswordDisable
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDialog
 import com.aozijx.passly.features.settings.components.dialogs.LockTimeoutDialog
 import com.aozijx.passly.features.settings.components.dialogs.SwipeActionSelectDialog
+import com.aozijx.passly.features.settings.internal.AppPasswordDialog
 
 internal data class SettingsDialogsState(
     val showRightActionDialog: Boolean,
     val showLeftActionDialog: Boolean,
     val showLockTimeoutDialog: Boolean,
     val showClearBackupDirConfirmDialog: Boolean,
-    val showAppPasswordActionDialog: Boolean,
-    val showSetAppPasswordDialog: Boolean,
-    val showChangeAppPasswordDialog: Boolean,
-    val showDisableAppPasswordDialog: Boolean,
+    val activeAppPasswordDialog: AppPasswordDialog,
     val swipeLeftAction: SwipeActionType,
     val swipeRightAction: SwipeActionType,
     val lockTimeout: Long,
@@ -129,50 +127,53 @@ internal fun SettingsScreenDialogsHost(
         )
     }
 
-    if (state.showAppPasswordActionDialog) {
-        AppPasswordActionDialog(
-            onDismiss = actions.onDismissAppPasswordActionDialog,
-            onChangePassword = {
-                actions.onDismissAppPasswordActionDialog()
-                actions.onShowChangeAppPasswordDialog()
-            },
-            onDisablePassword = {
-                actions.onDismissAppPasswordActionDialog()
-                actions.onShowDisableAppPasswordDialog()
-            }
-        )
-    }
+    when (state.activeAppPasswordDialog) {
+        AppPasswordDialog.None -> Unit
+        AppPasswordDialog.Action -> {
+            AppPasswordActionDialog(
+                onDismiss = actions.onDismissAppPasswordActionDialog,
+                onChangePassword = {
+                    actions.onDismissAppPasswordActionDialog()
+                    actions.onShowChangeAppPasswordDialog()
+                },
+                onDisablePassword = {
+                    actions.onDismissAppPasswordActionDialog()
+                    actions.onShowDisableAppPasswordDialog()
+                }
+            )
+        }
 
-    if (state.showSetAppPasswordDialog) {
-        AppPasswordSetDialog(
-            newPassword = state.appPasswordNew,
-            confirmPassword = state.appPasswordConfirm,
-            onNewPasswordChange = actions.onAppPasswordNewChange,
-            onConfirmPasswordChange = actions.onAppPasswordConfirmChange,
-            onConfirm = actions.onConfirmSetAppPassword,
-            onDismiss = actions.onDismissSetAppPasswordDialog
-        )
-    }
+        AppPasswordDialog.Set -> {
+            AppPasswordSetDialog(
+                newPassword = state.appPasswordNew,
+                confirmPassword = state.appPasswordConfirm,
+                onNewPasswordChange = actions.onAppPasswordNewChange,
+                onConfirmPasswordChange = actions.onAppPasswordConfirmChange,
+                onConfirm = actions.onConfirmSetAppPassword,
+                onDismiss = actions.onDismissSetAppPasswordDialog
+            )
+        }
 
-    if (state.showChangeAppPasswordDialog) {
-        AppPasswordChangeDialog(
-            currentPassword = state.appPasswordCurrent,
-            newPassword = state.appPasswordNew,
-            confirmPassword = state.appPasswordConfirm,
-            onCurrentPasswordChange = actions.onAppPasswordCurrentChange,
-            onNewPasswordChange = actions.onAppPasswordNewChange,
-            onConfirmPasswordChange = actions.onAppPasswordConfirmChange,
-            onConfirm = actions.onConfirmChangeAppPassword,
-            onDismiss = actions.onDismissChangeAppPasswordDialog
-        )
-    }
+        AppPasswordDialog.Change -> {
+            AppPasswordChangeDialog(
+                currentPassword = state.appPasswordCurrent,
+                newPassword = state.appPasswordNew,
+                confirmPassword = state.appPasswordConfirm,
+                onCurrentPasswordChange = actions.onAppPasswordCurrentChange,
+                onNewPasswordChange = actions.onAppPasswordNewChange,
+                onConfirmPasswordChange = actions.onAppPasswordConfirmChange,
+                onConfirm = actions.onConfirmChangeAppPassword,
+                onDismiss = actions.onDismissChangeAppPasswordDialog
+            )
+        }
 
-    if (state.showDisableAppPasswordDialog) {
-        AppPasswordDisableDialog(
-            currentPassword = state.appPasswordCurrent,
-            onCurrentPasswordChange = actions.onAppPasswordCurrentChange,
-            onConfirm = actions.onConfirmDisableAppPassword,
-            onDismiss = actions.onDismissDisableAppPasswordDialog
-        )
+        AppPasswordDialog.Disable -> {
+            AppPasswordDisableDialog(
+                currentPassword = state.appPasswordCurrent,
+                onCurrentPasswordChange = actions.onAppPasswordCurrentChange,
+                onConfirm = actions.onConfirmDisableAppPassword,
+                onDismiss = actions.onDismissDisableAppPasswordDialog
+            )
+        }
     }
 }
