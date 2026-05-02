@@ -24,7 +24,7 @@ fun VaultTabsSettingsSection(
     onVisibleVaultTabsChange: (Set<String>) -> Unit
 ) {
     val enabledKeys = visibleVaultTabs ?: VaultTab.defaultVisibleKeys
-    val toggleableTabs = VaultTab.entries.filter { it.isToggleable }
+    val toggleableTabs = VaultTab.toggleableVisibleTabs
 
     SettingsGroupTitle(text = "保险箱 Tab")
     SettingsCard {

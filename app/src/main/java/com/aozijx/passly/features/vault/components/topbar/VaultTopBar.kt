@@ -47,7 +47,6 @@ import com.aozijx.passly.features.vault.components.topbar.components.VaultTabRow
 fun VaultTopBar(
     vaultViewModel: VaultViewModel,
     scrollBehavior: TopAppBarScrollBehavior,
-    currentPageIndex: Int,
     onExportClick: () -> Unit,
     onPlainJsonExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -65,6 +64,21 @@ fun VaultTopBar(
     val availableCategories by vaultViewModel.availableCategories.collectAsStateWithLifecycle()
     val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
     val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
+    val vaultItems by vaultViewModel.vaultItems.collectAsStateWithLifecycle()
+
+    val displayTabs = remember(visibleTabs, vaultItems) {
+        visibleTabs.filter { tab ->
+            tab.isToggleable && when (tab) {
+                com.aozijx.passly.features.vault.model.VaultTab.PASSWORDS ->
+                    vaultItems.any { it.totpSecret.isNullOrBlank() }
+
+                com.aozijx.passly.features.vault.model.VaultTab.TOTP ->
+                    vaultItems.any { !it.totpSecret.isNullOrBlank() }
+
+                else -> false
+            }
+        }
+    }
 
     val focusRequester = remember { FocusRequester() }
 
@@ -156,14 +170,13 @@ fun VaultTopBar(
             })
 
         AnimatedVisibility(
-            visible = visibleTabs.size > 1 && !vaultViewModel.isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+            visible = displayTabs.isNotEmpty() && !vaultViewModel.isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
             VaultTabRow(
-                tabs = visibleTabs,
+                tabs = displayTabs,
                 selectedTab = selectedTab,
-                currentPageIndex = currentPageIndex,
                 onTabSelected = { vaultViewModel.selectTab(it) })
         }
     }

@@ -20,6 +20,7 @@ enum class VaultTab(
     val titleRes: Int,
     val icon: ImageVector,
     val isToggleable: Boolean,
+    val isUiVisible: Boolean,
     val entryFilter: VaultSearchRepository.EntryFilter
 ) {
     ALL(
@@ -27,6 +28,7 @@ enum class VaultTab(
         titleRes = R.string.vault_tab_all,
         icon = Icons.Default.Apps,
         isToggleable = false,
+        isUiVisible = true,
         entryFilter = VaultSearchRepository.EntryFilter.ALL
     ),
     PASSWORDS(
@@ -34,6 +36,7 @@ enum class VaultTab(
         titleRes = R.string.vault_tab_passwords,
         icon = Icons.Default.Key,
         isToggleable = true,
+        isUiVisible = false,
         entryFilter = VaultSearchRepository.EntryFilter.PASSWORD_ONLY
     ),
     TOTP(
@@ -41,6 +44,7 @@ enum class VaultTab(
         titleRes = R.string.vault_tab_totp,
         icon = Icons.Default.Pin,
         isToggleable = true,
+        isUiVisible = true,
         entryFilter = VaultSearchRepository.EntryFilter.TOTP_ONLY
     );
 
@@ -48,11 +52,18 @@ enum class VaultTab(
         fun fromKey(key: String?): VaultTab? =
             entries.firstOrNull { it.settingsKey == key }
 
-        /** 默认启用的 Tab 集合（全部）。 */
-        val defaultVisibleKeys: Set<String> = entries.map { it.settingsKey }.toSet()
+        /** 默认启用的 Tab 集合（仅包含仍需展示的 UI 选项 + 必选项）。 */
+        val defaultVisibleKeys: Set<String> =
+            entries.filter { !it.isToggleable || it.isUiVisible }
+                .map { it.settingsKey }
+                .toSet()
+
+        /** 设置页可切换的 Tab（已排除不再展示的选项）。 */
+        val toggleableVisibleTabs: List<VaultTab> =
+            entries.filter { it.isToggleable && it.isUiVisible }
 
         /** 根据偏好集合筛选出当前可见 Tab，始终保留 [isToggleable] 为 false 的 Tab。 */
         fun resolveVisible(enabledKeys: Set<String>): List<VaultTab> =
-            entries.filter { !it.isToggleable || it.settingsKey in enabledKeys }
+            entries.filter { (!it.isToggleable || it.settingsKey in enabledKeys) && (it.isUiVisible || !it.isToggleable) }
     }
 }

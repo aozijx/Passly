@@ -17,12 +17,12 @@ import com.aozijx.passly.features.vault.model.VaultTab
 fun VaultTabRow(
     tabs: List<VaultTab>,
     selectedTab: VaultTab,
-    currentPageIndex: Int,
     onTabSelected: (VaultTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (tabs.isEmpty()) return
-    val safePageIndex = currentPageIndex.coerceIn(0, tabs.lastIndex)
+    val selectedIndex = tabs.indexOf(selectedTab)
+    val safePageIndex = selectedIndex.coerceIn(0, tabs.lastIndex)
     SecondaryTabRow(
         selectedTabIndex = safePageIndex,
         containerColor = MaterialTheme.colorScheme.surface,

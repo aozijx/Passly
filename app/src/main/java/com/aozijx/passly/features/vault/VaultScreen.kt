@@ -225,7 +225,6 @@ fun VaultContent(
                 VaultTopBar(
                     vaultViewModel = vaultViewModel,
                     scrollBehavior = scrollBehavior,
-                    currentPageIndex = pagerState.currentPage,
                     onExportClick = {
                         val started = settingsViewModel.backup.tryStartExportInConfiguredDirectory(
                             settingsUiState.backupDirectoryUri
