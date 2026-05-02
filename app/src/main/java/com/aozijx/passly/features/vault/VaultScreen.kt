@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
@@ -220,31 +221,49 @@ fun VaultContent(
             )
             .nestedScroll(fabScrollConnection),
         topBar = {
-            VaultTopBar(
-                vaultViewModel = vaultViewModel,
-                scrollBehavior = scrollBehavior,
-                currentPageIndex = pagerState.currentPage,
-                onExportClick = {
-                    val started = settingsViewModel.backup.tryStartExportInConfiguredDirectory(settingsUiState.backupDirectoryUri)
-                    if (!started) {
-                        val manualFileName = settingsViewModel.backup.nextBackupFileName()
-                        pendingManualExportFileName = manualFileName
-                        exportLauncher.launch(manualFileName)
-                    }
-                },
-                onPlainJsonExportClick = onPlainExportClick,
-                onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
-                onSettingsClick = onSettingsClick,
-                isStatusBarAutoHide = isStatusBarAutoHide,
-                isTopBarCollapsible = isTopBarCollapsible,
-                isTabBarCollapsible = isTabBarCollapsible
-            )
+            androidx.compose.foundation.layout.Column {
+                VaultTopBar(
+                    vaultViewModel = vaultViewModel,
+                    scrollBehavior = scrollBehavior,
+                    currentPageIndex = pagerState.currentPage,
+                    onExportClick = {
+                        val started = settingsViewModel.backup.tryStartExportInConfiguredDirectory(
+                            settingsUiState.backupDirectoryUri
+                        )
+                        if (!started) {
+                            val manualFileName = settingsViewModel.backup.nextBackupFileName()
+                            pendingManualExportFileName = manualFileName
+                            exportLauncher.launch(manualFileName)
+                        }
+                    },
+                    onPlainJsonExportClick = onPlainExportClick,
+                    onImportClick = {
+                        importLauncher.launch(
+                            arrayOf(
+                                "application/octet-stream",
+                                "*/*"
+                            )
+                        )
+                    },
+                    onSettingsClick = onSettingsClick,
+                    isStatusBarAutoHide = isStatusBarAutoHide,
+                    isTopBarCollapsible = isTopBarCollapsible,
+                    isTabBarCollapsible = isTabBarCollapsible
+                )
+
+                if (isVaultItemsLoading) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+            }
         },
         floatingActionButton = {
             VaultFab(
                 viewModel = vaultViewModel,
-                isVisible = isFabVisible,
-                isLoading = isVaultItemsLoading
+                isVisible = isFabVisible
             )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
