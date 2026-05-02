@@ -18,6 +18,10 @@ import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.features.backup.ui.BackupPathSettingsConfig
 import com.aozijx.passly.features.settings.internal.AppPasswordAction
+import com.aozijx.passly.features.settings.internal.buildSettingsContentActions
+import com.aozijx.passly.features.settings.internal.buildSettingsContentState
+import com.aozijx.passly.features.settings.internal.buildSettingsDialogsActions
+import com.aozijx.passly.features.settings.internal.buildSettingsDialogsState
 import com.aozijx.passly.features.settings.internal.handleAppPasswordAction
 import com.aozijx.passly.features.settings.internal.handleBackupPathPicked
 import com.aozijx.passly.features.settings.internal.rememberSettingsScreenLocalState
@@ -94,51 +98,6 @@ fun SettingsScreen(
         }
     }
 
-    fun buildContentState(
-        backupPathLabel: String, lastExportFileLabel: String
-    ): SettingsContentState = SettingsContentState(
-        lockTimeout = uiState.lockTimeout,
-        isAppPasswordEnabled = isAppPasswordEnabled,
-        isPasswordPreferredAuthFirst = uiState.isPasswordPreferredAuthFirst,
-        isInvalidateKeyOnBioChange = uiState.isInvalidateKeyOnBioChange,
-        isSecureContentEnabled = uiState.isSecureContentEnabled,
-        isFlipToLockEnabled = uiState.isFlipToLockEnabled,
-        isFlipExitAndClearStackEnabled = uiState.isFlipExitAndClearStackEnabled,
-        isStatusBarAutoHide = uiState.isStatusBarAutoHide,
-        isTopBarCollapsible = uiState.isTopBarCollapsible,
-        isTabBarCollapsible = uiState.isTabBarCollapsible,
-        isSwipeEnabled = uiState.isSwipeEnabled,
-        swipeLeftAction = uiState.swipeLeftAction,
-        swipeRightAction = uiState.swipeRightAction,
-        autofillUiMode = uiState.autofillUiMode,
-        visibleVaultTabs = uiState.visibleVaultTabs,
-        isAutoDownloadIcons = uiState.isAutoDownloadIcons,
-        availableCardStyles = availableCardStyles,
-        passwordSelectedStyle = passwordSelectedStyle,
-        totpSelectedStyle = totpSelectedStyle,
-        backupPathLabel = backupPathLabel,
-        lastExportFileLabel = lastExportFileLabel
-    )
-
-    fun buildDialogsState(): SettingsDialogsState = SettingsDialogsState(
-        showRightActionDialog = localState.showRightActionDialog,
-        showLeftActionDialog = localState.showLeftActionDialog,
-        showLockTimeoutDialog = localState.showLockTimeoutDialog,
-        showClearBackupDirConfirmDialog = localState.showClearBackupDirConfirmDialog,
-        showAppPasswordActionDialog = localState.showAppPasswordActionDialog,
-        showSetAppPasswordDialog = localState.showSetAppPasswordDialog,
-        showChangeAppPasswordDialog = localState.showChangeAppPasswordDialog,
-        showDisableAppPasswordDialog = localState.showDisableAppPasswordDialog,
-        swipeLeftAction = uiState.swipeLeftAction,
-        swipeRightAction = uiState.swipeRightAction,
-        lockTimeout = uiState.lockTimeout,
-        backupDirectoryUri = uiState.backupDirectoryUri,
-        context = context,
-        appPasswordCurrent = localState.appPasswordCurrent,
-        appPasswordNew = localState.appPasswordNew,
-        appPasswordConfirm = localState.appPasswordConfirm
-    )
-
     val backupPathLabel = remember(uiState.backupDirectoryUri) {
         BackupPathSettingsConfig.displayValue(uiState.backupDirectoryUri)
     }
@@ -153,74 +112,42 @@ fun SettingsScreen(
             }
         }
 
-    fun buildContentActions(): SettingsContentActions = SettingsContentActions(
-        onBack = onBack,
-        onShowLockTimeoutDialog = { localState.showLockTimeoutDialog = true },
-        onAppPasswordClick = ::handleAppPasswordEntryClick,
-        onPasswordPreferredAuthFirstChange = viewModel::setPasswordPreferredAuthFirst,
-        onInvalidateKeyOnBioChangeToggle = ::handleInvalidateKeyToggle,
-        onSecureContentEnabledChange = viewModel::setSecureContentEnabled,
-        onFlipToLockEnabledChange = viewModel::setFlipToLockEnabled,
-        onFlipExitAndClearStackEnabledChange = viewModel::setFlipExitAndClearStackEnabled,
-        onStatusBarAutoHideChange = viewModel::setStatusBarAutoHide,
-        onTopBarCollapsibleChange = viewModel::setTopBarCollapsible,
-        onTabBarCollapsibleChange = viewModel::setTabBarCollapsible,
-        onSwipeEnabledChange = viewModel::setSwipeEnabled,
-        onLeftSwipeActionClick = { localState.showLeftActionDialog = true },
-        onRightSwipeActionClick = { localState.showRightActionDialog = true },
-        onToggleAutofillUiMode = { viewModel.toggleAutofillUiMode(uiState.autofillUiMode) },
-        onVisibleVaultTabsChange = viewModel::setVisibleVaultTabs,
-        onAutoDownloadIconsChange = viewModel::setAutoDownloadIcons,
-        onPickBackupPath = { backupPathPicker.launch(BackupExportStorageSupport.defaultDocumentsTreeUri()) },
-        onTestBackupWrite = { viewModel.testBackupDirectoryWritePermission(uiState.backupDirectoryUri) },
-        onClearBackupPath = if (uiState.backupDirectoryUri.isNullOrBlank()) null
-        else {
-            { localState.showClearBackupDirConfirmDialog = true }
-        },
-        onPasswordStyleSelected = {
-            viewModel.setCardStyleForEntryType(
-                EntryType.PASSWORD.value, it
-            )
-        },
-        onTotpStyleSelected = { viewModel.setCardStyleForEntryType(EntryType.TOTP.value, it) })
-
-    fun buildDialogsActions(): SettingsDialogsActions = SettingsDialogsActions(
-        onSetSwipeRightAction = viewModel::setSwipeRightAction,
-        onSetSwipeLeftAction = viewModel::setSwipeLeftAction,
-        onSetLockTimeout = viewModel::setLockTimeout,
-        onClearBackupDirectory = viewModel::clearBackupDirectoryUri,
-        onDismissRightActionDialog = { localState.showRightActionDialog = false },
-        onDismissLeftActionDialog = { localState.showLeftActionDialog = false },
-        onDismissLockTimeoutDialog = { localState.showLockTimeoutDialog = false },
-        onDismissClearBackupDirConfirmDialog = {
-            localState.showClearBackupDirConfirmDialog = false
-        },
-        onDismissAppPasswordActionDialog = { localState.showAppPasswordActionDialog = false },
-        onShowChangeAppPasswordDialog = { localState.showChangeAppPasswordDialog = true },
-        onShowDisableAppPasswordDialog = { localState.showDisableAppPasswordDialog = true },
-        onDismissSetAppPasswordDialog = {
-            localState.showSetAppPasswordDialog = false
-            localState.clearAppPasswordInputs()
-        },
-        onDismissChangeAppPasswordDialog = {
-            localState.showChangeAppPasswordDialog = false
-            localState.clearAppPasswordInputs()
-        },
-        onDismissDisableAppPasswordDialog = {
-            localState.showDisableAppPasswordDialog = false
-            localState.clearAppPasswordInputs()
-        },
-        onAppPasswordCurrentChange = { localState.appPasswordCurrent = it },
-        onAppPasswordNewChange = { localState.appPasswordNew = it },
-        onAppPasswordConfirmChange = { localState.appPasswordConfirm = it },
-        onConfirmSetAppPassword = { submitAppPasswordAction(AppPasswordAction.SET) },
-        onConfirmChangeAppPassword = { submitAppPasswordAction(AppPasswordAction.CHANGE) },
-        onConfirmDisableAppPassword = { submitAppPasswordAction(AppPasswordAction.DISABLE) })
-
     SettingsScreenContent(
-        state = buildContentState(backupPathLabel, lastExportFileLabel),
-        actions = buildContentActions()
+        state = buildSettingsContentState(
+            uiState = uiState,
+            isAppPasswordEnabled = isAppPasswordEnabled,
+            availableCardStyles = availableCardStyles,
+            passwordSelectedStyle = passwordSelectedStyle,
+            totpSelectedStyle = totpSelectedStyle,
+            backupPathLabel = backupPathLabel,
+            lastExportFileLabel = lastExportFileLabel
+        ),
+        actions = buildSettingsContentActions(
+            uiState = uiState,
+            localState = localState,
+            onBack = onBack,
+            viewModel = viewModel,
+            onAppPasswordClick = ::handleAppPasswordEntryClick,
+            onInvalidateKeyOnBioChangeToggle = ::handleInvalidateKeyToggle,
+            onPickBackupPath = {
+                backupPathPicker.launch(BackupExportStorageSupport.defaultDocumentsTreeUri())
+            },
+            onTestBackupWrite = {
+                viewModel.testBackupDirectoryWritePermission(uiState.backupDirectoryUri)
+            }
+        )
     )
 
-    SettingsScreenDialogsHost(state = buildDialogsState(), actions = buildDialogsActions())
+    SettingsScreenDialogsHost(
+        state = buildSettingsDialogsState(
+            uiState = uiState,
+            localState = localState,
+            context = context
+        ),
+        actions = buildSettingsDialogsActions(
+            localState = localState,
+            viewModel = viewModel,
+            submitAppPasswordAction = ::submitAppPasswordAction
+        )
+    )
 }
