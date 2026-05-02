@@ -47,16 +47,20 @@ internal sealed interface AppPasswordDialogEvent {
     data object ConfirmDisable : AppPasswordDialogEvent
 }
 
+internal sealed interface SettingsDialogEvent {
+    data class SetSwipeRightAction(val action: SwipeActionType) : SettingsDialogEvent
+    data class SetSwipeLeftAction(val action: SwipeActionType) : SettingsDialogEvent
+    data class SetLockTimeout(val timeoutMs: Long) : SettingsDialogEvent
+    data object ClearBackupDirectory : SettingsDialogEvent
+    data object DismissRightActionDialog : SettingsDialogEvent
+    data object DismissLeftActionDialog : SettingsDialogEvent
+    data object DismissLockTimeoutDialog : SettingsDialogEvent
+    data object DismissClearBackupDirConfirmDialog : SettingsDialogEvent
+    data class AppPassword(val event: AppPasswordDialogEvent) : SettingsDialogEvent
+}
+
 internal data class SettingsDialogsActions(
-    val onSetSwipeRightAction: (SwipeActionType) -> Unit,
-    val onSetSwipeLeftAction: (SwipeActionType) -> Unit,
-    val onSetLockTimeout: (Long) -> Unit,
-    val onClearBackupDirectory: () -> Unit,
-    val onDismissRightActionDialog: () -> Unit,
-    val onDismissLeftActionDialog: () -> Unit,
-    val onDismissLockTimeoutDialog: () -> Unit,
-    val onDismissClearBackupDirConfirmDialog: () -> Unit,
-    val onAppPasswordEvent: (AppPasswordDialogEvent) -> Unit
+    val onDialogEvent: (SettingsDialogEvent) -> Unit
 )
 
 @Composable
@@ -69,10 +73,10 @@ internal fun SettingsScreenDialogsHost(
             "选择右滑动作",
             state.swipeRightAction,
             {
-                actions.onSetSwipeRightAction(it)
-                actions.onDismissRightActionDialog()
+                actions.onDialogEvent(SettingsDialogEvent.SetSwipeRightAction(it))
+                actions.onDialogEvent(SettingsDialogEvent.DismissRightActionDialog)
             },
-            actions.onDismissRightActionDialog
+            { actions.onDialogEvent(SettingsDialogEvent.DismissRightActionDialog) }
         )
     }
 
@@ -81,10 +85,10 @@ internal fun SettingsScreenDialogsHost(
             "选择左滑动作",
             state.swipeLeftAction,
             {
-                actions.onSetSwipeLeftAction(it)
-                actions.onDismissLeftActionDialog()
+                actions.onDialogEvent(SettingsDialogEvent.SetSwipeLeftAction(it))
+                actions.onDialogEvent(SettingsDialogEvent.DismissLeftActionDialog)
             },
-            actions.onDismissLeftActionDialog
+            { actions.onDialogEvent(SettingsDialogEvent.DismissLeftActionDialog) }
         )
     }
 
@@ -92,16 +96,18 @@ internal fun SettingsScreenDialogsHost(
         LockTimeoutDialog(
             currentTimeoutMs = state.lockTimeout,
             onTimeoutSelected = {
-                actions.onSetLockTimeout(it)
-                actions.onDismissLockTimeoutDialog()
+                actions.onDialogEvent(SettingsDialogEvent.SetLockTimeout(it))
+                actions.onDialogEvent(SettingsDialogEvent.DismissLockTimeoutDialog)
             },
-            onDismiss = actions.onDismissLockTimeoutDialog
+            onDismiss = { actions.onDialogEvent(SettingsDialogEvent.DismissLockTimeoutDialog) }
         )
     }
 
     if (state.showClearBackupDirConfirmDialog) {
         AlertDialog(
-            onDismissRequest = actions.onDismissClearBackupDirConfirmDialog,
+            onDismissRequest = {
+                actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
+            },
             title = { Text("清除备份目录") },
             text = { Text("只会清除目录配置，不会删除已导出的备份文件。") },
             confirmButton = {
@@ -117,14 +123,16 @@ internal fun SettingsScreenDialogsHost(
                             )
                         }
                     }
-                    actions.onClearBackupDirectory()
-                    actions.onDismissClearBackupDirConfirmDialog()
+                    actions.onDialogEvent(SettingsDialogEvent.ClearBackupDirectory)
+                    actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
                 }) {
                     Text("清除")
                 }
             },
             dismissButton = {
-                TextButton(onClick = actions.onDismissClearBackupDirConfirmDialog) {
+                TextButton(onClick = {
+                    actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
+                }) {
                     Text("取消")
                 }
             }
@@ -135,12 +143,20 @@ internal fun SettingsScreenDialogsHost(
         AppPasswordDialog.None -> Unit
         AppPasswordDialog.Action -> {
             AppPasswordActionDialog(
-                onDismiss = { actions.onAppPasswordEvent(AppPasswordDialogEvent.DismissAction) },
+                onDismiss = {
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissAction)
+                    )
+                },
                 onChangePassword = {
-                    actions.onAppPasswordEvent(AppPasswordDialogEvent.ShowChange)
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ShowChange)
+                    )
                 },
                 onDisablePassword = {
-                    actions.onAppPasswordEvent(AppPasswordDialogEvent.ShowDisable)
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ShowDisable)
+                    )
                 }
             )
         }
@@ -150,13 +166,25 @@ internal fun SettingsScreenDialogsHost(
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
                 onNewPasswordChange = {
-                    actions.onAppPasswordEvent(AppPasswordDialogEvent.NewChanged(it))
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.NewChanged(it))
+                    )
                 },
                 onConfirmPasswordChange = {
-                    actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmChanged(it))
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChanged(it))
+                    )
                 },
-                onConfirm = { actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmSet) },
-                onDismiss = { actions.onAppPasswordEvent(AppPasswordDialogEvent.DismissSet) }
+                onConfirm = {
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmSet)
+                    )
+                },
+                onDismiss = {
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissSet)
+                    )
+                }
             )
         }
 
@@ -166,16 +194,30 @@ internal fun SettingsScreenDialogsHost(
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
                 onCurrentPasswordChange = {
-                    actions.onAppPasswordEvent(AppPasswordDialogEvent.CurrentChanged(it))
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.CurrentChanged(it))
+                    )
                 },
                 onNewPasswordChange = {
-                    actions.onAppPasswordEvent(AppPasswordDialogEvent.NewChanged(it))
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.NewChanged(it))
+                    )
                 },
                 onConfirmPasswordChange = {
-                    actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmChanged(it))
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChanged(it))
+                    )
                 },
-                onConfirm = { actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmChange) },
-                onDismiss = { actions.onAppPasswordEvent(AppPasswordDialogEvent.DismissChange) }
+                onConfirm = {
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmChange)
+                    )
+                },
+                onDismiss = {
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissChange)
+                    )
+                }
             )
         }
 
@@ -183,10 +225,20 @@ internal fun SettingsScreenDialogsHost(
             AppPasswordDisableDialog(
                 currentPassword = state.appPasswordCurrent,
                 onCurrentPasswordChange = {
-                    actions.onAppPasswordEvent(AppPasswordDialogEvent.CurrentChanged(it))
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.CurrentChanged(it))
+                    )
                 },
-                onConfirm = { actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmDisable) },
-                onDismiss = { actions.onAppPasswordEvent(AppPasswordDialogEvent.DismissDisable) }
+                onConfirm = {
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmDisable)
+                    )
+                },
+                onDismiss = {
+                    actions.onDialogEvent(
+                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissDisable)
+                    )
+                }
             )
         }
     }
