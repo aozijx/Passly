@@ -74,7 +74,7 @@ internal fun buildSettingsContentActions(
     onTestBackupWrite: () -> Unit
 ): SettingsContentActions = SettingsContentActions(
     onBack = onBack,
-    onShowLockTimeoutDialog = { localState.showLockTimeoutDialog = true },
+    onShowLockTimeoutDialog = localState::openLockTimeoutDialog,
     onAppPasswordClick = onAppPasswordClick,
     onPasswordPreferredAuthFirstChange = viewModel::setPasswordPreferredAuthFirst,
     onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
@@ -85,8 +85,8 @@ internal fun buildSettingsContentActions(
     onTopBarCollapsibleChange = viewModel::setTopBarCollapsible,
     onTabBarCollapsibleChange = viewModel::setTabBarCollapsible,
     onSwipeEnabledChange = viewModel::setSwipeEnabled,
-    onLeftSwipeActionClick = { localState.showLeftActionDialog = true },
-    onRightSwipeActionClick = { localState.showRightActionDialog = true },
+    onLeftSwipeActionClick = localState::openLeftActionDialog,
+    onRightSwipeActionClick = localState::openRightActionDialog,
     onToggleAutofillUiMode = { viewModel.toggleAutofillUiMode(uiState.autofillUiMode) },
     onVisibleVaultTabsChange = viewModel::setVisibleVaultTabs,
     onAutoDownloadIconsChange = viewModel::setAutoDownloadIcons,
@@ -95,7 +95,7 @@ internal fun buildSettingsContentActions(
     onClearBackupPath =
         if (uiState.backupDirectoryUri.isNullOrBlank()) null
         else {
-            { localState.showClearBackupDirConfirmDialog = true }
+            localState::openClearBackupDirConfirmDialog
         },
     onPasswordStyleSelected = { viewModel.setCardStyleForEntryType(EntryType.PASSWORD.value, it) },
     onTotpStyleSelected = { viewModel.setCardStyleForEntryType(EntryType.TOTP.value, it) }
@@ -110,25 +110,16 @@ internal fun buildSettingsDialogsActions(
     onSetSwipeLeftAction = viewModel::setSwipeLeftAction,
     onSetLockTimeout = viewModel::setLockTimeout,
     onClearBackupDirectory = viewModel::clearBackupDirectoryUri,
-    onDismissRightActionDialog = { localState.showRightActionDialog = false },
-    onDismissLeftActionDialog = { localState.showLeftActionDialog = false },
-    onDismissLockTimeoutDialog = { localState.showLockTimeoutDialog = false },
-    onDismissClearBackupDirConfirmDialog = { localState.showClearBackupDirConfirmDialog = false },
-    onDismissAppPasswordActionDialog = { localState.showAppPasswordActionDialog = false },
-    onShowChangeAppPasswordDialog = { localState.showChangeAppPasswordDialog = true },
-    onShowDisableAppPasswordDialog = { localState.showDisableAppPasswordDialog = true },
-    onDismissSetAppPasswordDialog = {
-        localState.showSetAppPasswordDialog = false
-        localState.clearAppPasswordInputs()
-    },
-    onDismissChangeAppPasswordDialog = {
-        localState.showChangeAppPasswordDialog = false
-        localState.clearAppPasswordInputs()
-    },
-    onDismissDisableAppPasswordDialog = {
-        localState.showDisableAppPasswordDialog = false
-        localState.clearAppPasswordInputs()
-    },
+    onDismissRightActionDialog = localState::dismissRightActionDialog,
+    onDismissLeftActionDialog = localState::dismissLeftActionDialog,
+    onDismissLockTimeoutDialog = localState::dismissLockTimeoutDialog,
+    onDismissClearBackupDirConfirmDialog = localState::dismissClearBackupDirConfirmDialog,
+    onDismissAppPasswordActionDialog = localState::dismissAppPasswordActionDialog,
+    onShowChangeAppPasswordDialog = localState::openChangeAppPasswordDialog,
+    onShowDisableAppPasswordDialog = localState::openDisableAppPasswordDialog,
+    onDismissSetAppPasswordDialog = localState::dismissSetAppPasswordDialog,
+    onDismissChangeAppPasswordDialog = localState::dismissChangeAppPasswordDialog,
+    onDismissDisableAppPasswordDialog = localState::dismissDisableAppPasswordDialog,
     onAppPasswordCurrentChange = { localState.appPasswordCurrent = it },
     onAppPasswordNewChange = { localState.appPasswordNew = it },
     onAppPasswordConfirmChange = { localState.appPasswordConfirm = it },

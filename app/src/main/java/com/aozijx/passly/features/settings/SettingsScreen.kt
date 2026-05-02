@@ -113,8 +113,8 @@ fun SettingsScreen(
                     title = authDecryptTitle,
                     subtitle = setAppPasswordSubtitle,
                     authFailedMsg = authFailedMsg,
-                    onAlreadyEnabled = { localState.showAppPasswordActionDialog = true },
-                    onVerified = { localState.showSetAppPasswordDialog = true }
+                    onAlreadyEnabled = localState::openAppPasswordActionDialog,
+                    onVerified = localState::openSetAppPasswordDialog
                 )
             },
             onInvalidateKeyOnBioChangeToggle = { enabled ->

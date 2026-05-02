@@ -20,6 +20,79 @@ internal class SettingsScreenLocalState {
     var appPasswordNew by mutableStateOf("")
     var appPasswordConfirm by mutableStateOf("")
 
+    fun openLeftActionDialog() {
+        showRightActionDialog = false
+        showLeftActionDialog = true
+    }
+
+    fun openRightActionDialog() {
+        showLeftActionDialog = false
+        showRightActionDialog = true
+    }
+
+    fun dismissLeftActionDialog() {
+        showLeftActionDialog = false
+    }
+
+    fun dismissRightActionDialog() {
+        showRightActionDialog = false
+    }
+
+    fun openLockTimeoutDialog() {
+        showLockTimeoutDialog = true
+    }
+
+    fun dismissLockTimeoutDialog() {
+        showLockTimeoutDialog = false
+    }
+
+    fun openClearBackupDirConfirmDialog() {
+        showClearBackupDirConfirmDialog = true
+    }
+
+    fun dismissClearBackupDirConfirmDialog() {
+        showClearBackupDirConfirmDialog = false
+    }
+
+    fun openAppPasswordActionDialog() {
+        dismissAppPasswordDialogs(clearInputs = false)
+        showAppPasswordActionDialog = true
+    }
+
+    fun dismissAppPasswordActionDialog() {
+        showAppPasswordActionDialog = false
+    }
+
+    fun openSetAppPasswordDialog() {
+        dismissAppPasswordDialogs(clearInputs = false)
+        showSetAppPasswordDialog = true
+    }
+
+    fun openChangeAppPasswordDialog() {
+        dismissAppPasswordDialogs(clearInputs = false)
+        showChangeAppPasswordDialog = true
+    }
+
+    fun openDisableAppPasswordDialog() {
+        dismissAppPasswordDialogs(clearInputs = false)
+        showDisableAppPasswordDialog = true
+    }
+
+    fun dismissSetAppPasswordDialog() {
+        showSetAppPasswordDialog = false
+        clearAppPasswordInputs()
+    }
+
+    fun dismissChangeAppPasswordDialog() {
+        showChangeAppPasswordDialog = false
+        clearAppPasswordInputs()
+    }
+
+    fun dismissDisableAppPasswordDialog() {
+        showDisableAppPasswordDialog = false
+        clearAppPasswordInputs()
+    }
+
     fun clearAppPasswordInputs() {
         appPasswordCurrent = ""
         appPasswordNew = ""
@@ -33,6 +106,14 @@ internal class SettingsScreenLocalState {
             AppPasswordAction.DISABLE -> showDisableAppPasswordDialog = false
         }
         clearAppPasswordInputs()
+    }
+
+    private fun dismissAppPasswordDialogs(clearInputs: Boolean) {
+        showAppPasswordActionDialog = false
+        showSetAppPasswordDialog = false
+        showChangeAppPasswordDialog = false
+        showDisableAppPasswordDialog = false
+        if (clearInputs) clearAppPasswordInputs()
     }
 }
 
