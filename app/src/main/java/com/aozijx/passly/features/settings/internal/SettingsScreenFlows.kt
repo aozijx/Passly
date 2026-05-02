@@ -112,6 +112,46 @@ internal fun verifyBeforeSetAppPassword(
     }
 }
 
+internal fun handleAppPasswordEntryClick(
+    context: android.content.Context,
+    activity: FragmentActivity?,
+    isAppPasswordEnabled: Boolean,
+    authGateway: SettingsAuthGateway,
+    title: String,
+    subtitle: String,
+    authFailedMsg: String,
+    onAlreadyEnabled: () -> Unit,
+    onVerified: () -> Unit
+) {
+    if (isAppPasswordEnabled) {
+        onAlreadyEnabled()
+        return
+    }
+    verifyBeforeSetAppPassword(
+        context = context,
+        activity = activity,
+        authGateway = authGateway,
+        title = title,
+        subtitle = subtitle,
+        authFailedMsg = authFailedMsg,
+        onVerified = onVerified
+    )
+}
+
+internal fun handleInvalidateKeyToggle(
+    context: android.content.Context,
+    activity: FragmentActivity?,
+    enabled: Boolean,
+    switchPolicy: (FragmentActivity, Boolean, (Result<Unit>) -> Unit) -> Unit
+) {
+    if (activity == null) return
+    switchPolicy(activity, enabled) { result ->
+        result.onFailure { e ->
+            Toast.makeText(context, "切换失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
 internal fun handleBackupPathPicked(
     context: android.content.Context,
     uri: Uri?,

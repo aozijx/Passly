@@ -23,9 +23,10 @@ import com.aozijx.passly.features.settings.internal.buildSettingsContentState
 import com.aozijx.passly.features.settings.internal.buildSettingsDialogsActions
 import com.aozijx.passly.features.settings.internal.buildSettingsDialogsState
 import com.aozijx.passly.features.settings.internal.handleAppPasswordAction
+import com.aozijx.passly.features.settings.internal.handleAppPasswordEntryClick
 import com.aozijx.passly.features.settings.internal.handleBackupPathPicked
+import com.aozijx.passly.features.settings.internal.handleInvalidateKeyToggle
 import com.aozijx.passly.features.settings.internal.rememberSettingsScreenLocalState
-import com.aozijx.passly.features.settings.internal.verifyBeforeSetAppPassword
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,30 +75,6 @@ fun SettingsScreen(
         )
     }
 
-    fun handleAppPasswordEntryClick() {
-        if (isAppPasswordEnabled) {
-            localState.showAppPasswordActionDialog = true
-            return
-        }
-        verifyBeforeSetAppPassword(
-            context = context,
-            activity = context as? FragmentActivity,
-            authGateway = viewModel.authGateway,
-            title = authDecryptTitle,
-            subtitle = setAppPasswordSubtitle,
-            authFailedMsg = authFailedMsg,
-            onVerified = { localState.showSetAppPasswordDialog = true })
-    }
-
-    fun handleInvalidateKeyToggle(enabled: Boolean) {
-        val activity = context as? FragmentActivity ?: return
-        viewModel.switchKeyInvalidationPolicy(activity, enabled) { result ->
-            result.onFailure { e ->
-                Toast.makeText(context, "切换失败: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     val backupPathLabel = remember(uiState.backupDirectoryUri) {
         BackupPathSettingsConfig.displayValue(uiState.backupDirectoryUri)
     }
@@ -127,8 +104,27 @@ fun SettingsScreen(
             localState = localState,
             onBack = onBack,
             viewModel = viewModel,
-            onAppPasswordClick = ::handleAppPasswordEntryClick,
-            onInvalidateKeyOnBioChangeToggle = ::handleInvalidateKeyToggle,
+            onAppPasswordClick = {
+                handleAppPasswordEntryClick(
+                    context = context,
+                    activity = context as? FragmentActivity,
+                    isAppPasswordEnabled = isAppPasswordEnabled,
+                    authGateway = viewModel.authGateway,
+                    title = authDecryptTitle,
+                    subtitle = setAppPasswordSubtitle,
+                    authFailedMsg = authFailedMsg,
+                    onAlreadyEnabled = { localState.showAppPasswordActionDialog = true },
+                    onVerified = { localState.showSetAppPasswordDialog = true }
+                )
+            },
+            onInvalidateKeyOnBioChangeToggle = { enabled ->
+                handleInvalidateKeyToggle(
+                    context = context,
+                    activity = context as? FragmentActivity,
+                    enabled = enabled,
+                    switchPolicy = viewModel::switchKeyInvalidationPolicy
+                )
+            },
             onPickBackupPath = {
                 backupPathPicker.launch(BackupExportStorageSupport.defaultDocumentsTreeUri())
             },
