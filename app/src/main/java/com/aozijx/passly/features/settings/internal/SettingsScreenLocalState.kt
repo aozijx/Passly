@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.aozijx.passly.features.backup.ui.BackupPathSettingsConfig
 
 internal class SettingsScreenLocalState {
     var showLeftActionDialog by mutableStateOf(false)
@@ -107,6 +108,11 @@ internal class SettingsScreenLocalState {
         }
         clearAppPasswordInputs()
     }
+
+    fun backupPathLabel(rawUri: String?): String = BackupPathSettingsConfig.displayValue(rawUri)
+
+    fun lastExportFileLabel(fileName: String?): String =
+        BackupPathSettingsConfig.displayRecentFileName(fileName)
 
     private fun dismissAppPasswordDialogs(clearInputs: Boolean) {
         showAppPasswordActionDialog = false

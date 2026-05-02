@@ -16,7 +16,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
-import com.aozijx.passly.features.backup.ui.BackupPathSettingsConfig
 import com.aozijx.passly.features.settings.internal.AppPasswordAction
 import com.aozijx.passly.features.settings.internal.buildSettingsContentActions
 import com.aozijx.passly.features.settings.internal.buildSettingsContentState
@@ -76,10 +75,10 @@ fun SettingsScreen(
     }
 
     val backupPathLabel = remember(uiState.backupDirectoryUri) {
-        BackupPathSettingsConfig.displayValue(uiState.backupDirectoryUri)
+        localState.backupPathLabel(uiState.backupDirectoryUri)
     }
     val lastExportFileLabel = remember(uiState.lastBackupExportFileName) {
-        BackupPathSettingsConfig.displayRecentFileName(uiState.lastBackupExportFileName)
+        localState.lastExportFileLabel(uiState.lastBackupExportFileName)
     }
 
     val backupPathPicker =
