@@ -46,6 +46,22 @@ class SettingsScreenLocalStateTest {
     }
 
     @Test
+    fun openAppPasswordActionDialog_overridesCurrentDialog_withoutClearingInputs() {
+        val state = SettingsScreenLocalState()
+        state.activeAppPasswordDialog = AppPasswordDialog.Disable
+        state.appPasswordCurrent = "old"
+        state.appPasswordNew = "new"
+        state.appPasswordConfirm = "new"
+
+        state.openAppPasswordActionDialog()
+
+        assertEquals(AppPasswordDialog.Action, state.activeAppPasswordDialog)
+        assertEquals("old", state.appPasswordCurrent)
+        assertEquals("new", state.appPasswordNew)
+        assertEquals("new", state.appPasswordConfirm)
+    }
+
+    @Test
     fun dismissSetAppPasswordDialog_clearsPasswordInputs() {
         val state = SettingsScreenLocalState()
         state.activeAppPasswordDialog = AppPasswordDialog.Set

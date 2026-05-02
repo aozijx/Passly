@@ -3,6 +3,7 @@ package com.aozijx.passly.features.settings.internal
 import android.content.Context
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.features.settings.AppPasswordDialogEvent
 import com.aozijx.passly.features.settings.SettingsContentActions
 import com.aozijx.passly.features.settings.SettingsContentState
 import com.aozijx.passly.features.settings.SettingsDialogsActions
@@ -111,16 +112,20 @@ internal fun buildSettingsDialogsActions(
     onDismissLeftActionDialog = localState::dismissLeftActionDialog,
     onDismissLockTimeoutDialog = localState::dismissLockTimeoutDialog,
     onDismissClearBackupDirConfirmDialog = localState::dismissClearBackupDirConfirmDialog,
-    onDismissAppPasswordActionDialog = localState::dismissAppPasswordActionDialog,
-    onShowChangeAppPasswordDialog = localState::openChangeAppPasswordDialog,
-    onShowDisableAppPasswordDialog = localState::openDisableAppPasswordDialog,
-    onDismissSetAppPasswordDialog = localState::dismissSetAppPasswordDialog,
-    onDismissChangeAppPasswordDialog = localState::dismissChangeAppPasswordDialog,
-    onDismissDisableAppPasswordDialog = localState::dismissDisableAppPasswordDialog,
-    onAppPasswordCurrentChange = { localState.appPasswordCurrent = it },
-    onAppPasswordNewChange = { localState.appPasswordNew = it },
-    onAppPasswordConfirmChange = { localState.appPasswordConfirm = it },
-    onConfirmSetAppPassword = { submitAppPasswordAction(AppPasswordAction.SET) },
-    onConfirmChangeAppPassword = { submitAppPasswordAction(AppPasswordAction.CHANGE) },
-    onConfirmDisableAppPassword = { submitAppPasswordAction(AppPasswordAction.DISABLE) }
+    onAppPasswordEvent = { event ->
+        when (event) {
+            AppPasswordDialogEvent.DismissAction -> localState.dismissAppPasswordActionDialog()
+            AppPasswordDialogEvent.ShowChange -> localState.openChangeAppPasswordDialog()
+            AppPasswordDialogEvent.ShowDisable -> localState.openDisableAppPasswordDialog()
+            AppPasswordDialogEvent.DismissSet -> localState.dismissSetAppPasswordDialog()
+            AppPasswordDialogEvent.DismissChange -> localState.dismissChangeAppPasswordDialog()
+            AppPasswordDialogEvent.DismissDisable -> localState.dismissDisableAppPasswordDialog()
+            is AppPasswordDialogEvent.CurrentChanged -> localState.appPasswordCurrent = event.value
+            is AppPasswordDialogEvent.NewChanged -> localState.appPasswordNew = event.value
+            is AppPasswordDialogEvent.ConfirmChanged -> localState.appPasswordConfirm = event.value
+            AppPasswordDialogEvent.ConfirmSet -> submitAppPasswordAction(AppPasswordAction.SET)
+            AppPasswordDialogEvent.ConfirmChange -> submitAppPasswordAction(AppPasswordAction.CHANGE)
+            AppPasswordDialogEvent.ConfirmDisable -> submitAppPasswordAction(AppPasswordAction.DISABLE)
+        }
+    }
 )

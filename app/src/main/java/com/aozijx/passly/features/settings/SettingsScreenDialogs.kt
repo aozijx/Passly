@@ -32,6 +32,21 @@ internal data class SettingsDialogsState(
     val appPasswordConfirm: String
 )
 
+internal sealed interface AppPasswordDialogEvent {
+    data object DismissAction : AppPasswordDialogEvent
+    data object ShowChange : AppPasswordDialogEvent
+    data object ShowDisable : AppPasswordDialogEvent
+    data object DismissSet : AppPasswordDialogEvent
+    data object DismissChange : AppPasswordDialogEvent
+    data object DismissDisable : AppPasswordDialogEvent
+    data class CurrentChanged(val value: String) : AppPasswordDialogEvent
+    data class NewChanged(val value: String) : AppPasswordDialogEvent
+    data class ConfirmChanged(val value: String) : AppPasswordDialogEvent
+    data object ConfirmSet : AppPasswordDialogEvent
+    data object ConfirmChange : AppPasswordDialogEvent
+    data object ConfirmDisable : AppPasswordDialogEvent
+}
+
 internal data class SettingsDialogsActions(
     val onSetSwipeRightAction: (SwipeActionType) -> Unit,
     val onSetSwipeLeftAction: (SwipeActionType) -> Unit,
@@ -41,18 +56,7 @@ internal data class SettingsDialogsActions(
     val onDismissLeftActionDialog: () -> Unit,
     val onDismissLockTimeoutDialog: () -> Unit,
     val onDismissClearBackupDirConfirmDialog: () -> Unit,
-    val onDismissAppPasswordActionDialog: () -> Unit,
-    val onShowChangeAppPasswordDialog: () -> Unit,
-    val onShowDisableAppPasswordDialog: () -> Unit,
-    val onDismissSetAppPasswordDialog: () -> Unit,
-    val onDismissChangeAppPasswordDialog: () -> Unit,
-    val onDismissDisableAppPasswordDialog: () -> Unit,
-    val onAppPasswordCurrentChange: (String) -> Unit,
-    val onAppPasswordNewChange: (String) -> Unit,
-    val onAppPasswordConfirmChange: (String) -> Unit,
-    val onConfirmSetAppPassword: () -> Unit,
-    val onConfirmChangeAppPassword: () -> Unit,
-    val onConfirmDisableAppPassword: () -> Unit
+    val onAppPasswordEvent: (AppPasswordDialogEvent) -> Unit
 )
 
 @Composable
@@ -131,14 +135,12 @@ internal fun SettingsScreenDialogsHost(
         AppPasswordDialog.None -> Unit
         AppPasswordDialog.Action -> {
             AppPasswordActionDialog(
-                onDismiss = actions.onDismissAppPasswordActionDialog,
+                onDismiss = { actions.onAppPasswordEvent(AppPasswordDialogEvent.DismissAction) },
                 onChangePassword = {
-                    actions.onDismissAppPasswordActionDialog()
-                    actions.onShowChangeAppPasswordDialog()
+                    actions.onAppPasswordEvent(AppPasswordDialogEvent.ShowChange)
                 },
                 onDisablePassword = {
-                    actions.onDismissAppPasswordActionDialog()
-                    actions.onShowDisableAppPasswordDialog()
+                    actions.onAppPasswordEvent(AppPasswordDialogEvent.ShowDisable)
                 }
             )
         }
@@ -147,10 +149,14 @@ internal fun SettingsScreenDialogsHost(
             AppPasswordSetDialog(
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
-                onNewPasswordChange = actions.onAppPasswordNewChange,
-                onConfirmPasswordChange = actions.onAppPasswordConfirmChange,
-                onConfirm = actions.onConfirmSetAppPassword,
-                onDismiss = actions.onDismissSetAppPasswordDialog
+                onNewPasswordChange = {
+                    actions.onAppPasswordEvent(AppPasswordDialogEvent.NewChanged(it))
+                },
+                onConfirmPasswordChange = {
+                    actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmChanged(it))
+                },
+                onConfirm = { actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmSet) },
+                onDismiss = { actions.onAppPasswordEvent(AppPasswordDialogEvent.DismissSet) }
             )
         }
 
@@ -159,20 +165,28 @@ internal fun SettingsScreenDialogsHost(
                 currentPassword = state.appPasswordCurrent,
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
-                onCurrentPasswordChange = actions.onAppPasswordCurrentChange,
-                onNewPasswordChange = actions.onAppPasswordNewChange,
-                onConfirmPasswordChange = actions.onAppPasswordConfirmChange,
-                onConfirm = actions.onConfirmChangeAppPassword,
-                onDismiss = actions.onDismissChangeAppPasswordDialog
+                onCurrentPasswordChange = {
+                    actions.onAppPasswordEvent(AppPasswordDialogEvent.CurrentChanged(it))
+                },
+                onNewPasswordChange = {
+                    actions.onAppPasswordEvent(AppPasswordDialogEvent.NewChanged(it))
+                },
+                onConfirmPasswordChange = {
+                    actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmChanged(it))
+                },
+                onConfirm = { actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmChange) },
+                onDismiss = { actions.onAppPasswordEvent(AppPasswordDialogEvent.DismissChange) }
             )
         }
 
         AppPasswordDialog.Disable -> {
             AppPasswordDisableDialog(
                 currentPassword = state.appPasswordCurrent,
-                onCurrentPasswordChange = actions.onAppPasswordCurrentChange,
-                onConfirm = actions.onConfirmDisableAppPassword,
-                onDismiss = actions.onDismissDisableAppPasswordDialog
+                onCurrentPasswordChange = {
+                    actions.onAppPasswordEvent(AppPasswordDialogEvent.CurrentChanged(it))
+                },
+                onConfirm = { actions.onAppPasswordEvent(AppPasswordDialogEvent.ConfirmDisable) },
+                onDismiss = { actions.onAppPasswordEvent(AppPasswordDialogEvent.DismissDisable) }
             )
         }
     }
