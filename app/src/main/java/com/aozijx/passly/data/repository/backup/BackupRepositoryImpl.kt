@@ -26,7 +26,9 @@ import com.aozijx.passly.domain.repository.backup.BackupRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.InputStream
+import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -67,7 +69,7 @@ internal class BackupRepositoryImpl(
             val cipher = getCipher(Cipher.ENCRYPT_MODE, key)
             val iv = cipher.iv
 
-            context.contentResolver.openOutputStream(uri)?.use { output ->
+            openOutputStreamOrThrow(uri).use { output ->
                 output.write(MAGIC_NUMBER)
                 output.write(BACKUP_VERSION)
                 output.write(salt)
@@ -88,7 +90,7 @@ internal class BackupRepositoryImpl(
                         }
                     }
                 }
-            } ?: throw BackupException.StoragePermissionDenied()
+            }
         }
 
         runResult.fold(
@@ -101,9 +103,9 @@ internal class BackupRepositoryImpl(
         val runResult = runCatching {
             val entities = dataSource.readAllEntries()
             val payloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
-            context.contentResolver.openOutputStream(uri)?.use { output ->
+            openOutputStreamOrThrow(uri).use { output ->
                 BackupVSerializer.writeEntries(output, payloads)
-            } ?: throw BackupException.StoragePermissionDenied()
+            }
         }
 
         runResult.fold(
@@ -122,7 +124,7 @@ internal class BackupRepositoryImpl(
         mode: BackupImportMode
     ): Result<Unit> = withContext(Dispatchers.IO) {
         val runResult = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { input ->
+            openInputStreamOrThrow(uri).use { input ->
                 val readMagic = ByteArray(MAGIC_NUMBER.size)
                 val readCount = input.read(readMagic)
                 val isEncrypted = readCount == MAGIC_NUMBER.size &&
@@ -135,7 +137,7 @@ internal class BackupRepositoryImpl(
                 } else {
                     importPlainJson(uri, mode)
                 }
-            } ?: throw BackupException.FileCorrupted()
+            }
         }
 
         runResult.fold(
@@ -190,9 +192,9 @@ internal class BackupRepositoryImpl(
     }
 
     private suspend fun importPlainJson(uri: Uri, mode: BackupImportMode) {
-        val plainPayloads = context.contentResolver.openInputStream(uri)?.use {
+        val plainPayloads = openInputStreamOrThrow(uri).use {
             BackupVSerializer.readEntries(it)
-        } ?: throw BackupException.FileCorrupted()
+        }
 
         val entities = plainPayloads.map { BackupFieldEncryptor.toImportEntity(it) }
         dataSource.writeEntries(entities, mode)
@@ -205,6 +207,27 @@ internal class BackupRepositoryImpl(
             raw.message?.contains("文件损坏") == true -> BackupException.FileCorrupted()
             e is BackupException -> e
             else -> BackupException.Unknown(e)
+        }
+    }
+
+    private fun openInputStreamOrThrow(uri: Uri): InputStream {
+        return try {
+            context.contentResolver.openInputStream(uri) ?: throw BackupException.FileCorrupted()
+        } catch (_: SecurityException) {
+            throw BackupException.StoragePermissionDenied()
+        } catch (_: FileNotFoundException) {
+            throw BackupException.FileCorrupted()
+        }
+    }
+
+    private fun openOutputStreamOrThrow(uri: Uri): OutputStream {
+        return try {
+            context.contentResolver.openOutputStream(uri)
+                ?: throw BackupException.StoragePermissionDenied()
+        } catch (_: SecurityException) {
+            throw BackupException.StoragePermissionDenied()
+        } catch (_: FileNotFoundException) {
+            throw BackupException.StoragePermissionDenied()
         }
     }
 
