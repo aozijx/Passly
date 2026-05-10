@@ -8,12 +8,17 @@ plugins {
     alias(libs.plugins.androidx.room)
 }
 
-// 读取 local.properties（放在文件顶部或根项目）
-val localProperties = Properties().apply {
-    val localPropFile = rootProject.file("local.properties")
-    if (localPropFile.exists()) {
-        load(FileInputStream(localPropFile))
+// Release 签名优先读取环境变量，其次读取本地未跟踪 keystore.properties
+val keystoreProperties = Properties().apply {
+    val keystoreFile = rootProject.file("keystore.properties")
+    if (keystoreFile.exists()) {
+        load(FileInputStream(keystoreFile))
     }
+}
+
+fun resolveSigningValue(envName: String, propertyName: String): String? {
+    return System.getenv(envName)?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
 }
 
 // Android 配置
@@ -36,18 +41,31 @@ android {
 
     signingConfigs {
         create("release") {
-            val storeFilePath = localProperties.getProperty("signing.store.file")
-            if (storeFilePath != null) {
-                storeFile = file(storeFilePath)
-                storePassword = localProperties.getProperty("signing.store.password")
-                keyAlias = localProperties.getProperty("signing.key.alias")
-                keyPassword = localProperties.getProperty("signing.key.password")
+            val storeFilePath = resolveSigningValue("SIGNING_STORE_FILE", "signing.store.file")
+            val storePasswordValue =
+                resolveSigningValue("SIGNING_STORE_PASSWORD", "signing.store.password")
+            val keyAliasValue = resolveSigningValue("SIGNING_KEY_ALIAS", "signing.key.alias")
+            val keyPasswordValue =
+                resolveSigningValue("SIGNING_KEY_PASSWORD", "signing.key.password")
+
+            val hasCompleteSigningConfig = listOf(
+                storeFilePath,
+                storePasswordValue,
+                keyAliasValue,
+                keyPasswordValue
+            ).all { !it.isNullOrBlank() }
+
+            if (hasCompleteSigningConfig) {
+                storeFile = file(requireNotNull(storeFilePath))
+                storePassword = requireNotNull(storePasswordValue)
+                keyAlias = requireNotNull(keyAliasValue)
+                keyPassword = requireNotNull(keyPasswordValue)
 
                 // 显式启用签名方案 (v2 和 v3)
                 enableV2Signing = true   // 启用 APK 签名方案 v2 (默认 true，显式写出)
                 enableV3Signing = true    // 启用 APK 签名方案 v3
             } else {
-                // 如果没有签名配置（如在 CI/CodeQL 环境中），回退到 debug 签名以保证编译通过
+                // 签名信息不完整时回退到 debug 签名，保证本地/CI 可构建 release 产物
                 initWith(getByName("debug"))
             }
         }
