@@ -3,26 +3,41 @@ package com.aozijx.passly.core.backup
 import android.content.Context
 import android.database.Cursor
 import android.util.JsonWriter
+import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.data.local.config.DatabaseConfig
 import net.zetetic.database.sqlcipher.SQLiteDatabase
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.security.SecureRandom
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * 紧急备份导出器：仅作为数据库损坏或迁移失败时的最后防线。
  * 它直接操作底层的 SQLCipher 数据库文件。
  */
 object EmergencyBackupExporter {
+    private const val TAG = "EmergencyBackup"
+    private const val IV_LENGTH = 12
+    private val MAGIC = "PSEM1".toByteArray(StandardCharsets.UTF_8)
+    private val KDF_LABEL = "passly-emergency-backup-v1".toByteArray(StandardCharsets.UTF_8)
 
     /**
      * 当应用检测到数据库无法正常初始化时，尝试抢救数据。
      * 将数据以明文 JSON 形式保存到 App 私有目录（Cache 目录）中。
      */
     fun exportOnFailure(context: Context): Result<File> {
+        if (!BuildConfig.DEBUG) {
+            return Result.failure(IllegalStateException("Emergency backup export is disabled in release builds."))
+        }
+
         var db: SQLiteDatabase? = null
         return try {
             val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
@@ -33,28 +48,37 @@ object EmergencyBackupExporter {
                 dbFile.path, passphrase, null, SQLiteDatabase.OPEN_READONLY, null, null
             )
 
+            val plainJson = writeEntriesToJsonBytes(db)
+            val encryptedPayload = encryptPayload(plainJson, passphrase)
+
             // 将文件保存在 cache 目录下，避免暴露在 Downloads 这种公开区域
             val backupFile = File(
-                context.cacheDir, "emergency_rescue_${System.currentTimeMillis()}.json"
+                context.cacheDir, "emergency_rescue_${System.currentTimeMillis()}.json.enc"
             )
 
             FileOutputStream(backupFile).use { output ->
-                val writer = JsonWriter(OutputStreamWriter(output, StandardCharsets.UTF_8))
-                writer.setIndent("  ")
-                writeEntriesToJson(db, writer)
+                output.write(MAGIC)
+                output.write(encryptedPayload)
             }
 
-            Logcat.i("EmergencyBackup", "紧急救灾备份已生成: ${backupFile.absolutePath}")
+            plainJson.fill(0)
+            encryptedPayload.fill(0)
+
+            Logcat.i(TAG, "紧急救灾备份已生成(密文): ${backupFile.absolutePath}")
             Result.success(backupFile)
         } catch (e: Exception) {
-            Logcat.e("EmergencyBackup", "紧急救灾备份失败", e)
+            Logcat.e(TAG, "紧急救灾备份失败", e)
             Result.failure(e)
         } finally {
             db?.close()
         }
     }
 
-    private fun writeEntriesToJson(db: SQLiteDatabase, writer: JsonWriter) {
+    private fun writeEntriesToJsonBytes(db: SQLiteDatabase): ByteArray {
+        val output = ByteArrayOutputStream()
+        val writer = JsonWriter(OutputStreamWriter(output, StandardCharsets.UTF_8))
+        writer.setIndent("  ")
+
         val cursor = db.rawQuery("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}", null)
         writer.beginArray()
         cursor.use {
@@ -77,5 +101,25 @@ object EmergencyBackupExporter {
         }
         writer.endArray()
         writer.close()
+        return output.toByteArray()
+    }
+
+    private fun encryptPayload(plain: ByteArray, passphrase: ByteArray): ByteArray {
+        val iv = ByteArray(IV_LENGTH).also { SecureRandom().nextBytes(it) }
+
+        val keyMaterial = MessageDigest.getInstance("SHA-256").digest(passphrase + KDF_LABEL)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+
+        return try {
+            cipher.init(
+                Cipher.ENCRYPT_MODE,
+                SecretKeySpec(keyMaterial, "AES"),
+                GCMParameterSpec(128, iv)
+            )
+            val encrypted = cipher.doFinal(plain)
+            iv + encrypted
+        } finally {
+            keyMaterial.fill(0)
+        }
     }
 }

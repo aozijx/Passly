@@ -6,6 +6,7 @@ import androidx.core.graphics.drawable.toBitmap
 import coil.ImageLoader
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
+import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.logging.Logcat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -35,6 +36,14 @@ object FaviconUtils {
      * 从 HTML 中解析 link 标签获取图标 URL
      */
     suspend fun fetchFaviconUrlFromHtml(domain: String): String? = withContext(Dispatchers.IO) {
+        if (!BuildConfig.DEBUG) {
+            Logcat.w(
+                TAG,
+                "Favicon HTML fetch is disabled in release build until certificate pinning is configured"
+            )
+            return@withContext null
+        }
+
         try {
             val clean = cleanDomain(domain)
             if (clean.isBlank()) return@withContext null
@@ -151,6 +160,14 @@ object FaviconUtils {
     }
 
     suspend fun downloadAndSaveFavicon(input: String, context: Context): DownloadOutcome = withContext(Dispatchers.IO) {
+        if (!BuildConfig.DEBUG) {
+            Logcat.w(
+                TAG,
+                "Favicon network download is disabled in release build until certificate pinning is configured"
+            )
+            return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
+        }
+
         if (input.isBlank()) return@withContext DownloadOutcome(DownloadResult.EMPTY_INPUT)
 
         Logcat.d(TAG, "Trying to download favicon from: $input")
