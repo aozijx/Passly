@@ -26,6 +26,8 @@
 
     <application
         android:name=".AppContext"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
         android:icon="@mipmap/launcher_logo"
         android:label="@string/app_name"
         android:localeConfig="@xml/local_config"

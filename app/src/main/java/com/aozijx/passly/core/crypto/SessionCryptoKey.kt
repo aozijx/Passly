@@ -10,23 +10,31 @@ import javax.crypto.spec.SecretKeySpec
  */
 object SessionCryptoKey {
     private const val DERIVE_LABEL = "passly-vault-field-key-v1"
+    private val lock = Any()
 
     @Volatile
     private var _sessionDek: ByteArray? = null
 
-    val isSessionKeyAvailable: Boolean get() = _sessionDek != null
+    val isSessionKeyAvailable: Boolean
+        get() = synchronized(lock) { _sessionDek != null }
 
-    fun getSessionKey(): ByteArray =
-        _sessionDek ?: throw IllegalStateException("Field DEK not loaded; vault is locked.")
+    fun getSessionKey(): ByteArray = synchronized(lock) {
+        _sessionDek?.clone()
+            ?: throw IllegalStateException("Field DEK not loaded; vault is locked.")
+    }
 
     fun deriveAndSet(dbPassphrase: ByteArray) {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(dbPassphrase, "HmacSHA256"))
-        _sessionDek = mac.doFinal(DERIVE_LABEL.toByteArray())
+        synchronized(lock) {
+            _sessionDek = mac.doFinal(DERIVE_LABEL.toByteArray())
+        }
     }
 
     fun clearSessionKey() {
-        _sessionDek?.fill(0)
-        _sessionDek = null
+        synchronized(lock) {
+            _sessionDek?.fill(0)
+            _sessionDek = null
+        }
     }
 }

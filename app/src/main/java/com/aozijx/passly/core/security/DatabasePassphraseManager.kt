@@ -25,11 +25,13 @@ object DatabasePassphraseManager {
     private const val KEY_PASSPHRASE = "db_phrase"
     private const val IV_LENGTH = 12
     private const val GCM_TAG_BITS = 128
+    private val lock = Any()
 
     @Volatile
     private var _decryptedPassphrase: ByteArray? = null
 
-    val isLocked: Boolean get() = _decryptedPassphrase == null
+    val isLocked: Boolean
+        get() = synchronized(lock) { _decryptedPassphrase == null }
 
     private fun getAlias(context: Context) = "${context.packageName}.vault_db_hard_auth"
 
@@ -149,16 +151,22 @@ object DatabasePassphraseManager {
      * 重要：返回克隆副本，防止 fill(0) 破坏正在运行的数据库连接密钥
      */
     fun getPassphrase(): ByteArray {
-        return _decryptedPassphrase?.clone()
-            ?: throw IllegalStateException("Database passphrase not available.")
+        return synchronized(lock) {
+            _decryptedPassphrase?.clone()
+                ?: throw IllegalStateException("Database passphrase not available.")
+        }
     }
 
     fun setDecryptedPassphrase(passphrase: ByteArray?) {
-        _decryptedPassphrase = passphrase?.clone()
+        synchronized(lock) {
+            _decryptedPassphrase = passphrase?.clone()
+        }
     }
 
     fun clearDecryptedPassphrase() {
-        _decryptedPassphrase?.fill(0)
-        _decryptedPassphrase = null
+        synchronized(lock) {
+            _decryptedPassphrase?.fill(0)
+            _decryptedPassphrase = null
+        }
     }
 }

@@ -32,6 +32,7 @@ import com.aozijx.passly.service.autofill.presentation.AutofillRemoteViewFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -47,6 +48,11 @@ class AutofillService : android.service.autofill.AutofillService() {
     private val slowRepositoryMs = 120L
     private val slowDatasetBuildMs = 120L
     private val slowSaveMs = 180L
+
+    override fun onDestroy() {
+        serviceScope.cancel()
+        super.onDestroy()
+    }
 
     override fun onFillRequest(
         request: FillRequest, cancellationSignal: CancellationSignal, callback: FillCallback
