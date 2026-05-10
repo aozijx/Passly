@@ -74,23 +74,13 @@ object PackageUtils {
 
     private fun getAppArchitecture(appInfo: ApplicationInfo): String {
         return try {
-            val primaryCpuAbi =
-                ApplicationInfo::class.java.getField("primaryCpuAbi").get(appInfo) as? String
-
             when {
-                primaryCpuAbi != null -> {
-                    when {
-                        primaryCpuAbi.contains("arm64-v8a") -> "arm64-v8a"
-                        primaryCpuAbi.contains("armeabi-v7a") -> "armeabi-v7a"
-                        primaryCpuAbi.contains("x86_64") -> "x86_64"
-                        primaryCpuAbi.contains("x86") -> "x86"
-                        primaryCpuAbi.contains("64") -> "64-bit"
-                        else -> primaryCpuAbi
-                    }
-                }
+                appInfo.nativeLibraryDir.contains("arm64", ignoreCase = true) -> "arm64-v8a"
+                appInfo.nativeLibraryDir.contains("armeabi", ignoreCase = true) ||
+                        appInfo.nativeLibraryDir.contains("arm", ignoreCase = true) -> "armeabi-v7a"
 
-                appInfo.nativeLibraryDir.contains("arm64") -> "arm64-v8a"
-                appInfo.nativeLibraryDir.contains("arm") -> "armeabi-v7a"
+                appInfo.nativeLibraryDir.contains("x86_64", ignoreCase = true) -> "x86_64"
+                appInfo.nativeLibraryDir.contains("x86", ignoreCase = true) -> "x86"
                 else -> "32-bit"
             }
         } catch (e: Exception) {

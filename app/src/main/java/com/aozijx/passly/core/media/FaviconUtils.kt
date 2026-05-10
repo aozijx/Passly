@@ -45,25 +45,32 @@ object FaviconUtils {
 
             val url = "https://$clean"
             val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-            connection.connectTimeout = 5000
-            connection.readTimeout = 5000
-            // 关闭自动跳转：防止目标站点把我们引向内网或非 HTTP(S) 资源。
-            connection.instanceFollowRedirects = false
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+            val html = try {
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                // 关闭自动跳转：防止目标站点把我们引向内网或非 HTTP(S) 资源。
+                connection.instanceFollowRedirects = false
+                connection.setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                )
 
-            val html = connection.inputStream.use { stream ->
-                val buffer = StringBuilder()
-                val reader = stream.bufferedReader()
-                val chunk = CharArray(8 * 1024)
-                var totalChars = 0L
-                while (true) {
-                    val read = reader.read(chunk)
-                    if (read == -1) break
-                    totalChars += read
-                    buffer.append(chunk, 0, read)
-                    if (totalChars >= MAX_HTML_BYTES) break
+                connection.inputStream.use { stream ->
+                    val buffer = StringBuilder()
+                    val reader = stream.bufferedReader()
+                    val chunk = CharArray(8 * 1024)
+                    var totalChars = 0L
+                    while (true) {
+                        val read = reader.read(chunk)
+                        if (read == -1) break
+                        totalChars += read
+                        buffer.append(chunk, 0, read)
+                        if (totalChars >= MAX_HTML_BYTES) break
+                    }
+                    buffer.toString()
                 }
-                buffer.toString()
+            } finally {
+                connection.disconnect()
             }
 
             // 匹配 rel 为 icon, shortcut icon 或 apple-touch-icon 的 link 标签
@@ -103,7 +110,7 @@ object FaviconUtils {
             "${uri.scheme}://${uri.host}/"
         } else {
             val lastSlash = path.lastIndexOf('/')
-            "${uri.scheme}://${uri.host}${path.substring(0, lastSlash + 1)}"
+            "${uri.scheme}://${uri.host}${path.take(lastSlash + 1)}"
         }
         return base + href
     }
@@ -132,7 +139,7 @@ object FaviconUtils {
         val ipv4 = Regex("""^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$""").matchEntire(h)
         if (ipv4 != null) {
             val parts = ipv4.groupValues.drop(1).map { it.toIntOrNull() ?: -1 }
-            if (parts.any { it < 0 || it > 255 }) return true
+            if (parts.any { it !in 0..255 }) return true
             val a = parts[0]; val b = parts[1]
             if (a == 0 || a == 10 || a == 127) return true
             if (a == 169 && b == 254) return true

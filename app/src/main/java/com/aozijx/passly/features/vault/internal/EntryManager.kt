@@ -2,10 +2,12 @@ package com.aozijx.passly.features.vault.internal
 
 import android.content.Context
 import android.net.Uri
+import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.icon.FaviconResult
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,10 +30,14 @@ internal class EntryManager(
     }
 
     fun downloadMissingIcons(summaries: List<VaultSummary>, scope: CoroutineScope) {
+        val handler = CoroutineExceptionHandler { _, throwable ->
+            Logcat.e("EntryManager", "Failed to download missing icon", throwable)
+        }
+
         summaries
             .filter { !it.associatedDomain.isNullOrBlank() && it.iconCustomPath.isNullOrBlank() }
             .forEach { summary ->
-                scope.launch(Dispatchers.IO) {
+                scope.launch(Dispatchers.IO + handler) {
                     val outcome = vaultUseCases.downloadFavicon(summary.associatedDomain!!)
                     if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                         vaultUseCases.getEntryById(summary.id)?.let { entry ->
