@@ -88,7 +88,7 @@ class MainActivity : FragmentActivity() {
             val plainExportPickerLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.CreateDocument("application/json")
             ) { uri ->
-                uri?.let { viewModel.handleIntent(MainIntent.ExportPlainBackupToUri(context, it)) }
+                uri?.let { settingsViewModel.backup.exportPlainBackupToUri(it) }
             }
 
             // 监听 MainEffect
@@ -145,7 +145,13 @@ class MainActivity : FragmentActivity() {
                     }
 
                     mainUiState.isAuthorized -> {
-                        AppMainContent(viewModel, settingsViewModel)
+                        AppMainContent(
+                            mainViewModel = viewModel,
+                            settingsViewModel = settingsViewModel,
+                            onPlainExportPickerRequest = { fileName ->
+                                plainExportPickerLauncher.launch(fileName)
+                            }
+                        )
                     }
 
                     else -> {
@@ -190,7 +196,11 @@ class MainActivity : FragmentActivity() {
     }
 
     @Composable
-    private fun AppMainContent(mainViewModel: MainViewModel, settingsViewModel: SettingsViewModel) {
+    private fun AppMainContent(
+        mainViewModel: MainViewModel,
+        settingsViewModel: SettingsViewModel,
+        onPlainExportPickerRequest: (String) -> Unit
+    ) {
         val context = LocalContext.current
         val vaultViewModel: VaultViewModel = viewModel()
         val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -216,11 +226,13 @@ class MainActivity : FragmentActivity() {
                         title = getString(R.string.vault_backup_auth_title),
                         subtitle = getString(R.string.vault_backup_auth_subtitle_plain_export),
                         onSuccess = {
-                            mainViewModel.handleIntent(
-                                MainIntent.ExportPlainBackup(
-                                    context,
-                                    settingsUiState.backupDirectoryUri
-                                )
+                            settingsViewModel.backup.issuePlainExportToken()
+                            settingsViewModel.backup.exportPlainBackup(
+                                context = context,
+                                dirUri = settingsUiState.backupDirectoryUri,
+                                onPickerRequest = { fileName ->
+                                    onPlainExportPickerRequest(fileName)
+                                }
                             )
                         }
                     )

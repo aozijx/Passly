@@ -44,6 +44,9 @@ class BackupCoordinator(
     private val backupUseCases: BackupUseCases,
     private val application: Application
 ) {
+    private var plainExportTokenIssuedAt: Long = 0L
+    private var plainExportTokenTtlMs: Long = 0L
+
     var state by mutableStateOf(BackupUiState())
         private set
 
@@ -52,6 +55,23 @@ class BackupCoordinator(
 
     private fun text(@StringRes resId: Int, vararg args: Any): String =
         application.getString(resId, *args)
+
+    fun issuePlainExportToken(ttlMs: Long = 60_000L) {
+        plainExportTokenIssuedAt = System.currentTimeMillis()
+        plainExportTokenTtlMs = ttlMs
+    }
+
+    private fun isPlainExportTokenValid(): Boolean {
+        if (plainExportTokenIssuedAt <= 0L || plainExportTokenTtlMs <= 0L) return false
+        return System.currentTimeMillis() <= plainExportTokenIssuedAt + plainExportTokenTtlMs
+    }
+
+    private fun consumePlainExportToken(): Boolean {
+        val valid = isPlainExportTokenValid()
+        plainExportTokenIssuedAt = 0L
+        plainExportTokenTtlMs = 0L
+        return valid
+    }
 
     // --- 路径设置 ---
     fun setBackupDirectoryUri(uri: String) {
@@ -159,6 +179,11 @@ class BackupCoordinator(
         dirUri: String?,
         onPickerRequest: (fileName: String) -> Unit
     ) {
+        if (!isPlainExportTokenValid()) {
+            backupMessage = text(R.string.backup_plain_export_auth_required)
+            return
+        }
+
         val fileName = "Passly_Plain_Backup_${System.currentTimeMillis()}.json"
         if (!dirUri.isNullOrBlank()) {
             scope.launch {
@@ -174,6 +199,11 @@ class BackupCoordinator(
     }
 
     fun exportPlainBackupToUri(uri: Uri) {
+        if (!consumePlainExportToken()) {
+            backupMessage = text(R.string.backup_plain_export_auth_required)
+            return
+        }
+
         scope.launch {
             backupUseCases.exportPlainBackup(uri).fold(
                 onSuccess = { backupMessage = "明文备份已导出" },
