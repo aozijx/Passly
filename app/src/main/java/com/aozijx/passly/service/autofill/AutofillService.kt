@@ -27,6 +27,8 @@ import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
+import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.service.autofill.engine.AutofillStructureParser
 import com.aozijx.passly.service.autofill.presentation.AutofillRemoteViewFactory
 import kotlinx.coroutines.CoroutineScope
@@ -40,9 +42,31 @@ import kotlinx.coroutines.launch
  * Passly 自动填充服务
  */
 class AutofillService : android.service.autofill.AutofillService() {
+    internal data class Dependencies(
+        val autofillUseCases: AutofillUseCases,
+        val systemSettingsUseCases: SystemSettingsUseCases
+    )
+
+    companion object {
+        @Volatile
+        internal var dependenciesProvider: (() -> Dependencies)? = null
+
+        internal fun resetDependenciesProvider() {
+            dependenciesProvider = null
+        }
+    }
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val autofillUseCases = AppContainer.domain.autofillUseCases
-    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
+    private val dependencies by lazy {
+        (dependenciesProvider ?: {
+            Dependencies(
+                autofillUseCases = AppContainer.domain.autofillUseCases,
+                systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
+            )
+        }).invoke()
+    }
+    private val autofillUseCases by lazy { dependencies.autofillUseCases }
+    private val systemSettingsUseCases by lazy { dependencies.systemSettingsUseCases }
     private val tag = "PasslyAutofill"
     private val slowFillTotalMs = 250L
     private val slowRepositoryMs = 120L
