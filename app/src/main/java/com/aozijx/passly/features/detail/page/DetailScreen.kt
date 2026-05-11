@@ -56,13 +56,15 @@ fun DetailScreen(
         onUpdateInteraction()
     }
 
-    // 页面数据初始化
+    // 页面数据初始化（同 key 内串联首次 TOTP 自动解锁，避免重复 effect 触发）
     LaunchedEffect(initialEntry.id) {
         onEvent(DetailEvent.Initialize(initialEntry))
+        if (initialEntry.entryType == EntryType.TOTP.value) {
+            onAutoUnlockTotp(initialEntry)
+        }
     }
 
     val entry = uiState.entry ?: initialEntry
-    val vaultType = uiState.vaultType
     val editState = remember(entry) { EntryEditState(entry) }
 
     val currentState = totpStates[entry.id]
@@ -71,12 +73,6 @@ fun DetailScreen(
         TotpEditState(entry, currentState?.decryptedSecret ?: "")
     }
     
-    // TOTP 自动解锁
-    LaunchedEffect(entry.id) {
-        if (vaultType == EntryType.TOTP) {
-            onAutoUnlockTotp(entry)
-        }
-    }
 
     val authQrTitle = stringResource(R.string.vault_auth_qr_title)
     val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
