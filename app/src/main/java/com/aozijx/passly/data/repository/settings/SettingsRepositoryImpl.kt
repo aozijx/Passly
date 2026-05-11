@@ -151,7 +151,7 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
         SettingsMapper.decodeVisibleTabs(it[VISIBLE_VAULT_TABS_KEY])
     }
     override val tabBarMaxTabsWithoutScroll: Flow<Int> = appContext.settingsDataStore.data.map {
-        normalizeTabBarMaxTabsWithoutScroll(it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] ?: 4)
+        (it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] ?: 4).coerceIn(2, 8)
     }
     override val isAutoDownloadIcons: Flow<Boolean> =
         appContext.settingsDataStore.data.map { it[AUTO_DOWNLOAD_ICONS_KEY] ?: true }
@@ -220,7 +220,7 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
 
     override suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) {
         appContext.settingsDataStore.edit {
-            it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] = normalizeTabBarMaxTabsWithoutScroll(maxTabs)
+            it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] = maxTabs.coerceIn(2, 8)
         }
     }
 
@@ -245,6 +245,4 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
     override suspend fun setLastBackupExportFileName(fileName: String) {
         appContext.settingsDataStore.edit { it[LAST_BACKUP_EXPORT_FILE_NAME_KEY] = fileName }
     }
-
-    private fun normalizeTabBarMaxTabsWithoutScroll(value: Int): Int = value.coerceIn(2, 8)
 }

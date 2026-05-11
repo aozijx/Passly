@@ -263,8 +263,7 @@ fun VaultContent(
                     onSettingsClick = onSettingsClick,
                     isStatusBarAutoHide = isStatusBarAutoHide,
                     isTopBarCollapsible = isTopBarCollapsible,
-                    isTabBarCollapsible = isTabBarCollapsible,
-                    tabBarMaxTabsWithoutScroll = settingsUiState.tabBarMaxTabsWithoutScroll
+                    isTabBarCollapsible = isTabBarCollapsible
                 )
 
                 if (isVaultItemsLoading) {

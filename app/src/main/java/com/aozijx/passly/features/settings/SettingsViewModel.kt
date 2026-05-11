@@ -136,22 +136,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 systemSettingsUseCases.autofillUiMode,
                 systemSettingsUseCases.isSwipeEnabled,
                 systemSettingsUseCases.swipeLeftAction,
-                combine(
-                    systemSettingsUseCases.visibleVaultTabs,
-                    systemSettingsUseCases.tabBarMaxTabsWithoutScroll
-                ) { visibleVaultTabs, tabBarMaxTabsWithoutScroll ->
-                    visibleVaultTabs to tabBarMaxTabsWithoutScroll
-                },
-                systemSettingsUseCases.isAutoDownloadIcons
-            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction, tabSettings, isAutoDownloadIcons ->
+                systemSettingsUseCases.visibleVaultTabs,
+                systemSettingsUseCases.tabBarMaxTabsWithoutScroll
+            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction, visibleVaultTabs, tabBarMaxTabsWithoutScroll ->
                 AutofillAndSwipeFlowState(
                     autofillUiMode = autofillUiMode,
                     isSwipeEnabled = isSwipeEnabled,
                     swipeLeftAction = swipeLeftAction,
-                    visibleVaultTabs = tabSettings.first,
-                    tabBarMaxTabsWithoutScroll = tabSettings.second,
-                    isAutoDownloadIcons = isAutoDownloadIcons
+                    visibleVaultTabs = visibleVaultTabs,
+                    tabBarMaxTabsWithoutScroll = tabBarMaxTabsWithoutScroll,
+                    isAutoDownloadIcons = true
                 )
+            }.combine(systemSettingsUseCases.isAutoDownloadIcons) { partial, isAutoDownloadIcons ->
+                partial.copy(isAutoDownloadIcons = isAutoDownloadIcons)
             }) { securityAndStyle, autofillAndSwipe ->
             SettingsUiState(
                 isPasswordPreferredAuthFirst = securityAndStyle.isPasswordPreferredAuthFirst,

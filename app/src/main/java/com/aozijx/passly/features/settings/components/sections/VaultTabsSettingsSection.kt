@@ -12,6 +12,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,6 +40,9 @@ fun VaultTabsSettingsSection(
 ) {
     val enabledKeys = visibleVaultTabs ?: VaultTab.defaultVisibleKeys
     val toggleableTabs = VaultTab.toggleableVisibleTabs
+    val persistedThreshold = tabBarMaxTabsWithoutScroll.coerceIn(2, 8)
+    var sliderValue by remember(persistedThreshold) { mutableFloatStateOf(persistedThreshold.toFloat()) }
+    val previewThreshold = sliderValue.roundToInt().coerceIn(2, 8)
 
     SettingsGroupTitle(text = "保险箱 Tab")
     SettingsCard {
@@ -47,13 +54,18 @@ fun VaultTabsSettingsSection(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(text = "顶部 Tab 均分阈值")
-            Text(text = "${tabBarMaxTabsWithoutScroll.coerceIn(2, 8)}")
+            Text(text = "$previewThreshold")
         }
 
         Slider(
-            value = tabBarMaxTabsWithoutScroll.coerceIn(2, 8).toFloat(),
+            value = sliderValue,
             onValueChange = { value ->
-                onTabBarMaxTabsWithoutScrollChange(value.roundToInt().coerceIn(2, 8))
+                sliderValue = value.coerceIn(2f, 8f)
+            },
+            onValueChangeFinished = {
+                if (previewThreshold != persistedThreshold) {
+                    onTabBarMaxTabsWithoutScrollChange(previewThreshold)
+                }
             },
             valueRange = 2f..8f,
             steps = 5,

@@ -16,9 +16,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.R
 import com.aozijx.passly.features.settings.components.common.ClickableSettingItem
 import com.aozijx.passly.features.settings.components.common.SettingsCard
 import com.aozijx.passly.features.settings.components.common.SettingsGroupTitle
@@ -44,66 +42,62 @@ fun SecurityPrivacySettingsSection(
     onFlipToLockEnabledChange: (Boolean) -> Unit,
     onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit
 ) {
-    SettingsGroupTitle(text = stringResource(R.string.settings_security_privacy_title))
+    SettingsGroupTitle(text = "安全与隐私")
     SettingsCard {
         ClickableSettingItem(
             icon = Icons.Default.Timer,
-            title = stringResource(R.string.settings_auto_lock_title),
+            title = "自动锁定时间",
             value = formatLockTimeoutText(lockTimeout),
             onClick = onLockTimeoutClick
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         ClickableSettingItem(
             icon = Icons.Default.Lock,
-            title = stringResource(R.string.settings_app_password_title),
-            value = if (isAppPasswordEnabled) {
-                stringResource(R.string.settings_app_password_status_enabled)
-            } else {
-                stringResource(R.string.settings_app_password_status_disabled)
-            },
-            longValue = stringResource(R.string.settings_app_password_description),
+            title = "设置密码",
+            value = if (isAppPasswordEnabled) "已设置" else "未设置",
+            longValue = "独立于系统锁屏，可用密码直接解锁应用",
             onClick = onAppPasswordClick
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(
             icon = Icons.Default.Lock,
-            title = stringResource(R.string.settings_password_priority_title),
-            subtitle = stringResource(R.string.settings_password_priority_subtitle),
+            title = "优先验证应用密码",
+            subtitle = "开启后，解锁页优先显示应用密码入口",
             checked = isPasswordPreferredAuthFirst,
             onCheckedChange = onPasswordPreferredAuthFirstChange
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(
             icon = Icons.Default.Fingerprint,
-            title = stringResource(R.string.settings_device_credential_fallback_title),
-            subtitle = stringResource(R.string.settings_device_credential_fallback_subtitle),
+            title = "允许设备凭据作为兜底",
+            subtitle = "关闭后仅允许生物识别，不可使用系统PIN/图案/密码",
             checked = isDeviceCredentialFallbackEnabled,
             onCheckedChange = onDeviceCredentialFallbackToggleRequested
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(
             icon = Icons.Default.Fingerprint,
-            title = stringResource(R.string.settings_key_invalidation_title),
+            title = "生物识别变更时销毁密钥",
             subtitle = if (isInvalidateKeyOnBioChange)
-                stringResource(R.string.settings_key_invalidation_subtitle_on)
+                "新增或移除指纹/面部时，保险箱密钥将被销毁"
             else
-                stringResource(R.string.settings_key_invalidation_subtitle_off),
+                "新增或移除指纹/面部时，保险箱密钥保持有效",
             checked = isInvalidateKeyOnBioChange,
             onCheckedChange = onInvalidateKeyOnBioChangeToggle
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(
             icon = Icons.Default.Security,
-            title = stringResource(R.string.settings_secure_content_title),
-            subtitle = stringResource(R.string.settings_secure_content_subtitle),
+            title = "高级安全防护",
+            subtitle = "禁止截屏录屏，并隐藏多任务预览内容",
             checked = isSecureContentEnabled,
             onCheckedChange = onSecureContentEnabledChange
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(
             icon = Icons.Default.Flip,
-            title = stringResource(R.string.settings_flip_lock_title),
-            subtitle = stringResource(R.string.settings_flip_lock_subtitle),
+            title = "翻转即锁定",
+            subtitle = "手机屏幕朝下放置时立即关闭保险箱",
             checked = isFlipToLockEnabled,
             onCheckedChange = onFlipToLockEnabledChange
         )
@@ -118,8 +112,8 @@ fun SecurityPrivacySettingsSection(
                     Modifier.padding(start = 56.dp, end = 16.dp), thickness = 0.5.dp
                 )
                 SwitchSettingItem(
-                    title = stringResource(R.string.settings_flip_exit_title),
-                    subtitle = stringResource(R.string.settings_flip_exit_subtitle),
+                    title = "翻转后退出应用并清空任务栈",
+                    subtitle = "开启后将直接退出到桌面，下次进入需重新认证",
                     checked = isFlipExitAndClearStackEnabled,
                     onCheckedChange = onFlipExitAndClearStackEnabledChange
                 )

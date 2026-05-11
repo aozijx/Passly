@@ -53,8 +53,7 @@ fun VaultTopBar(
     onSettingsClick: () -> Unit = {},
     isStatusBarAutoHide: Boolean = false,
     isTopBarCollapsible: Boolean = true,
-    isTabBarCollapsible: Boolean = true,
-    tabBarMaxTabsWithoutScroll: Int = 4
+    isTabBarCollapsible: Boolean = true
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -167,7 +166,6 @@ fun VaultTopBar(
             VaultTabRow(
                 tabs = displayTabs,
                 selectedTab = selectedTab,
-                maxTabsWithoutScroll = tabBarMaxTabsWithoutScroll,
                 onTabSelected = { vaultViewModel.selectTab(it) })
         }
     }
