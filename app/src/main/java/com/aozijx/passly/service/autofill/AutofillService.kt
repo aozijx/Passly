@@ -2,6 +2,7 @@ package com.aozijx.passly.service.autofill
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.IntentSender
 import android.os.Build
 import android.os.CancellationSignal
 import android.service.autofill.CustomDescription
@@ -15,6 +16,7 @@ import android.service.autofill.SaveCallback
 import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
 import android.view.autofill.AutofillId
+import android.widget.RemoteViews
 import androidx.compose.ui.graphics.asAndroidBitmap
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
@@ -50,10 +52,6 @@ class AutofillService : android.service.autofill.AutofillService() {
     companion object {
         @Volatile
         internal var dependenciesProvider: (() -> Dependencies)? = null
-
-        internal fun resetDependenciesProvider() {
-            dependenciesProvider = null
-        }
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -150,18 +148,11 @@ class AutofillService : android.service.autofill.AutofillService() {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        val presentations =
-                            Presentations.Builder().setMenuPresentation(presentation).build()
-                        responseBuilder.setAuthentication(
-                            availableIds.toTypedArray(), pendingIntent.intentSender, presentations
-                        )
-                    } else {
-                        // API 31-32 require the legacy signature; keep until minSdk is raised beyond 32.
-                        @Suppress("DEPRECATION") responseBuilder.setAuthentication(
-                            availableIds.toTypedArray(), pendingIntent.intentSender, presentation
-                        )
-                    }
+                    responseBuilder.setAuthenticationCompat(
+                        ids = availableIds.toTypedArray(),
+                        intentSender = pendingIntent.intentSender,
+                        presentation = presentation
+                    )
                 } else {
                     // SYSTEM_INLINE 模式：为每条候选账号生成独立 dataset 项
                     candidates.forEach { candidate ->
@@ -205,19 +196,10 @@ class AutofillService : android.service.autofill.AutofillService() {
                         val datasetBuilder =
                             Dataset.Builder().setAuthentication(pendingIntent.intentSender)
 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            val field = Field.Builder().setPresentations(
-                                Presentations.Builder().setMenuPresentation(presentation).build()
-                            ).build()
-                            availableIds.forEach { datasetBuilder.setField(it, field) }
-                        } else {
-                            // API 31-32 still rely on setValue for inline menu presentation.
-                            @Suppress("DEPRECATION") availableIds.forEach { id ->
-                                datasetBuilder.setValue(
-                                    id, null, presentation
-                                )
-                            }
-                        }
+                        datasetBuilder.setMenuPresentationForIdsCompat(
+                            ids = availableIds,
+                            presentation = presentation
+                        )
 
                         responseBuilder.addDataset(datasetBuilder.build())
                     }
@@ -316,17 +298,51 @@ class AutofillService : android.service.autofill.AutofillService() {
         )
 
         val responseBuilder = FillResponse.Builder()
+        responseBuilder.setAuthenticationCompat(
+            ids = ids,
+            intentSender = pendingIntent.intentSender,
+            presentation = presentation
+        )
+        return responseBuilder.build()
+    }
+
+    /**
+     * Single compat gate for Autofill auth presentation.
+     * Keep all deprecated API 31-32 calls here and remove when minSdk >= 33.
+     */
+    private fun FillResponse.Builder.setAuthenticationCompat(
+        ids: Array<AutofillId>,
+        intentSender: IntentSender,
+        presentation: RemoteViews
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val presentations = Presentations.Builder().setMenuPresentation(presentation).build()
-            responseBuilder.setAuthentication(ids, pendingIntent.intentSender, presentations)
+            setAuthentication(ids, intentSender, presentations)
         } else {
-            @Suppress("DEPRECATION") responseBuilder.setAuthentication(
-                ids,
-                pendingIntent.intentSender,
-                presentation
-            )
+            // TODO(minSdk>=33): remove @Suppress("DEPRECATION") and legacy branch.
+            @Suppress("DEPRECATION")
+            setAuthentication(ids, intentSender, presentation)
         }
-        return responseBuilder.build()
+    }
+
+    /**
+     * Single compat gate for dataset menu presentations.
+     * Keep all deprecated API 31-32 calls here and remove when minSdk >= 33.
+     */
+    private fun Dataset.Builder.setMenuPresentationForIdsCompat(
+        ids: List<AutofillId>,
+        presentation: RemoteViews
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val field = Field.Builder().setPresentations(
+                Presentations.Builder().setMenuPresentation(presentation).build()
+            ).build()
+            ids.forEach { setField(it, field) }
+        } else {
+            // TODO(minSdk>=33): remove @Suppress("DEPRECATION") and legacy branch.
+            @Suppress("DEPRECATION")
+            ids.forEach { id -> setValue(id, null, presentation) }
+        }
     }
 
     private fun resolveStrategy(entryTypeValue: Int) = runCatching {
