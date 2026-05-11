@@ -2,7 +2,7 @@ package com.aozijx.passly.ui.navigation
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -28,10 +28,22 @@ class TopBarState {
         this.isVisible = isVisible
         this.centerTitle = centerTitle
     }
+
+    fun reset() {
+        this.title = ""
+        this.actions = {}
+        this.navigationIcon = null
+        this.isVisible = true
+        this.centerTitle = false
+    }
 }
 
 val LocalTopBarState = staticCompositionLocalOf { TopBarState() }
 
+/**
+ * 优雅方案：生命周期自动清理
+ * 使用 DisposableEffect 确保当页面退出组合（Dispose）时，TopBar 状态会自动重置。
+ */
 @Composable
 fun TopBarConfig(
     title: String = "",
@@ -41,7 +53,17 @@ fun TopBarConfig(
     centerTitle: Boolean = false
 ) {
     val state = LocalTopBarState.current
-    SideEffect {
-        state.update(title, actions, navigationIcon, isVisible, centerTitle)
+
+    DisposableEffect(title, actions, navigationIcon, isVisible, centerTitle) {
+        state.update(
+            title = title,
+            actions = actions,
+            navigationIcon = navigationIcon,
+            isVisible = isVisible,
+            centerTitle = centerTitle
+        )
+        onDispose {
+            state.reset()
+        }
     }
 }

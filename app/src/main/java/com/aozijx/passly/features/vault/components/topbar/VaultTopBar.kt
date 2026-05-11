@@ -58,7 +58,14 @@ fun VaultTopBar(
     val context = LocalContext.current
     val density = LocalDensity.current
 
-    // 使用 collectAsStateWithLifecycle 提升性能
+    // 优雅方案 1：生命周期自动清理
+    // 当页面不再处于活跃状态（如导航跳转开始）时，自动关闭下拉菜单
+    LifecycleResumeEffect(vaultViewModel) {
+        onPauseOrDispose {
+            vaultViewModel.expandMoreMenu(false)
+        }
+    }
+
     val searchQuery by vaultViewModel.searchQuery.collectAsStateWithLifecycle()
     val selectedCategory by vaultViewModel.selectedCategory.collectAsStateWithLifecycle()
     val availableCategories by vaultViewModel.availableCategories.collectAsStateWithLifecycle()
@@ -73,12 +80,6 @@ fun VaultTopBar(
 
     val focusRequester = remember { FocusRequester() }
 
-    LifecycleResumeEffect(Unit) {
-        vaultViewModel.updateAutofillStatus()
-        onPauseOrDispose { }
-    }
-
-    // 状态栏与标题栏折叠协调逻辑
     LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible, isStatusBarAutoHide) {
         if (!isTopBarCollapsible && (isTabBarCollapsible || isStatusBarAutoHide)) {
             scrollBehavior.state.heightOffsetLimit = with(density) { -64.dp.toPx() }
