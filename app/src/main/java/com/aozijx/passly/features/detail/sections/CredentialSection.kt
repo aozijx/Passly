@@ -19,13 +19,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.EditTextField
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.features.detail.internal.EntryEditState
+import com.aozijx.passly.features.detail.internal.copySensitiveField
 
 @Composable
 fun CredentialSection(
@@ -41,6 +42,11 @@ fun CredentialSection(
     onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
+    val actionHandler = DetailSectionActionHandler(
+        activity = activity,
+        onAuthenticate = onAuthenticate,
+        onEvent = onEvent
+    )
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         CredentialRow(
@@ -51,16 +57,16 @@ fun CredentialSection(
             onEditToggle = { editState.isEditingUsername = it },
             onValueChange = { editState.editedUsername = it },
             onCopy = {
-                if (revealedUsername != null) {
-                    ClipboardUtils.copy(context, revealedUsername)
-                    onEvent(DetailEvent.RecordAction("username", VaultHistory.HistoryType.COPY))
-                } else {
-                    onAuthenticate(activity, "解密信息", "验证身份以复制账号") {
-                        ClipboardUtils.copy(context, item.username)
-                        onUsernameRevealed(item.username)
-                        onEvent(DetailEvent.RecordAction("username", VaultHistory.HistoryType.COPY))
-                    }
-                }
+                copySensitiveField(
+                    context = context,
+                    handler = actionHandler,
+                    fieldName = "username",
+                    revealedValue = revealedUsername,
+                    sourceValue = item.username,
+                    authTitle = "解密信息",
+                    authSubtitle = "验证身份以复制账号",
+                    onReveal = onUsernameRevealed
+                )
             },
             onSave = { newValue ->
                 if (newValue != revealedUsername) {
@@ -80,21 +86,16 @@ fun CredentialSection(
                 onEditToggle = { editState.isEditingPassword = it },
                 onValueChange = { editState.editedPassword = it },
                 onCopy = {
-                    if (revealedPassword != null) {
-                        ClipboardUtils.copy(context, revealedPassword)
-                        onEvent(DetailEvent.RecordAction("password", VaultHistory.HistoryType.COPY))
-                    } else {
-                        onAuthenticate(activity, "解密信息", "验证身份以复制密码") {
-                            ClipboardUtils.copy(context, item.password)
-                            onPasswordRevealed(item.password)
-                            onEvent(
-                                DetailEvent.RecordAction(
-                                    "password",
-                                    VaultHistory.HistoryType.COPY
-                                )
-                            )
-                        }
-                    }
+                    copySensitiveField(
+                        context = context,
+                        handler = actionHandler,
+                        fieldName = "password",
+                        revealedValue = revealedPassword,
+                        sourceValue = item.password,
+                        authTitle = "解密信息",
+                        authSubtitle = "验证身份以复制密码",
+                        onReveal = onPasswordRevealed
+                    )
                 },
                 onSave = { newValue ->
                     if (newValue != revealedPassword) {

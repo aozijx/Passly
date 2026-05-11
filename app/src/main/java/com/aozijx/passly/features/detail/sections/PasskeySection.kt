@@ -10,12 +10,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.contract.RevealedFieldKey
+import com.aozijx.passly.features.detail.internal.DetailSectionActionHandler
+import com.aozijx.passly.features.detail.internal.copySensitiveField
+import com.aozijx.passly.features.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun PasskeySection(
@@ -32,6 +33,11 @@ fun PasskeySection(
     val copied = stringResource(R.string.vault_detail_copied)
     val notSet = stringResource(R.string.vault_detail_not_set)
     val hidden = stringResource(R.string.label_hidden_mask)
+    val actionHandler = DetailSectionActionHandler(
+        activity = activity,
+        onAuthenticate = onAuthenticate,
+        onEvent = onEvent
+    )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
@@ -43,48 +49,28 @@ fun PasskeySection(
             },
             isRevealed = revealedPasskeyData != null,
             onCopy = {
-                val encrypted = entry.passkeyDataJson
-                if (encrypted.isNullOrBlank()) return@DetailItem
-                if (revealedPasskeyData != null) {
-                    ClipboardUtils.copy(context, revealedPasskeyData)
-                    Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                    onEvent(DetailEvent.RecordAction("passkey data", VaultHistory.HistoryType.COPY))
-                } else {
-                    onAuthenticate(activity, "解密 Passkey 数据", "验证身份以复制数据") {
-                        try {
-                            onRevealField(RevealedFieldKey.PASSKEY_DATA, encrypted)
-                            ClipboardUtils.copy(context, encrypted)
-                            Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                            onEvent(
-                                DetailEvent.RecordAction(
-                                    "passkey data",
-                                    VaultHistory.HistoryType.COPY
-                                )
-                            )
-                        } catch (_: Exception) {
-                        }
-                    }
-                }
+                copySensitiveField(
+                    context = context,
+                    handler = actionHandler,
+                    fieldName = "passkey data",
+                    revealedValue = revealedPasskeyData,
+                    sourceValue = entry.passkeyDataJson,
+                    authTitle = "解密 Passkey 数据",
+                    authSubtitle = "验证身份以复制数据",
+                    onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) },
+                    afterCopy = { Toast.makeText(context, copied, Toast.LENGTH_SHORT).show() }
+                )
             },
             onEdit = {
-                val encrypted = entry.passkeyDataJson
-                if (encrypted.isNullOrBlank()) return@DetailItem
-                if (revealedPasskeyData != null) {
-                    onRevealField(RevealedFieldKey.PASSKEY_DATA, null)
-                } else {
-                    onAuthenticate(activity, "解密 Passkey 数据", "验证身份以查看数据") {
-                        try {
-                            onRevealField(RevealedFieldKey.PASSKEY_DATA, encrypted)
-                            onEvent(
-                                DetailEvent.RecordAction(
-                                    "passkey data",
-                                    VaultHistory.HistoryType.ACCESS
-                                )
-                            )
-                        } catch (_: Exception) {
-                        }
-                    }
-                }
+                toggleRevealSensitiveField(
+                    handler = actionHandler,
+                    fieldName = "passkey data",
+                    revealedValue = revealedPasskeyData,
+                    sourceValue = entry.passkeyDataJson,
+                    authTitle = "解密 Passkey 数据",
+                    authSubtitle = "验证身份以查看数据",
+                    onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) }
+                )
             }
         )
 
@@ -97,53 +83,28 @@ fun PasskeySection(
             },
             isRevealed = revealedRecoveryCodes != null,
             onCopy = {
-                val encrypted = entry.recoveryCodes
-                if (encrypted.isNullOrBlank()) return@DetailItem
-                if (revealedRecoveryCodes != null) {
-                    ClipboardUtils.copy(context, revealedRecoveryCodes)
-                    Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                    onEvent(
-                        DetailEvent.RecordAction(
-                            "recovery codes",
-                            VaultHistory.HistoryType.COPY
-                        )
-                    )
-                } else {
-                    onAuthenticate(activity, "解密恢复码", "验证身份以复制恢复码") {
-                        try {
-                            onRevealField(RevealedFieldKey.RECOVERY_CODES, encrypted)
-                            ClipboardUtils.copy(context, encrypted)
-                            Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                            onEvent(
-                                DetailEvent.RecordAction(
-                                    "recovery codes",
-                                    VaultHistory.HistoryType.COPY
-                                )
-                            )
-                        } catch (_: Exception) {
-                        }
-                    }
-                }
+                copySensitiveField(
+                    context = context,
+                    handler = actionHandler,
+                    fieldName = "recovery codes",
+                    revealedValue = revealedRecoveryCodes,
+                    sourceValue = entry.recoveryCodes,
+                    authTitle = "解密恢复码",
+                    authSubtitle = "验证身份以复制恢复码",
+                    onReveal = { onRevealField(RevealedFieldKey.RECOVERY_CODES, it) },
+                    afterCopy = { Toast.makeText(context, copied, Toast.LENGTH_SHORT).show() }
+                )
             },
             onEdit = {
-                val encrypted = entry.recoveryCodes
-                if (encrypted.isNullOrBlank()) return@DetailItem
-                if (revealedRecoveryCodes != null) {
-                    onRevealField(RevealedFieldKey.RECOVERY_CODES, null)
-                } else {
-                    onAuthenticate(activity, "解密恢复码", "验证身份以查看恢复码") {
-                        try {
-                            onRevealField(RevealedFieldKey.RECOVERY_CODES, encrypted)
-                            onEvent(
-                                DetailEvent.RecordAction(
-                                    "recovery codes",
-                                    VaultHistory.HistoryType.ACCESS
-                                )
-                            )
-                        } catch (_: Exception) {
-                        }
-                    }
-                }
+                toggleRevealSensitiveField(
+                    handler = actionHandler,
+                    fieldName = "recovery codes",
+                    revealedValue = revealedRecoveryCodes,
+                    sourceValue = entry.recoveryCodes,
+                    authTitle = "解密恢复码",
+                    authSubtitle = "验证身份以查看恢复码",
+                    onReveal = { onRevealField(RevealedFieldKey.RECOVERY_CODES, it) }
+                )
             }
         )
 
@@ -153,13 +114,14 @@ fun PasskeySection(
                 value = entry.hardwareKeyInfo,
                 isRevealed = true,
                 onCopy = {
-                    ClipboardUtils.copy(context, entry.hardwareKeyInfo)
+                    com.aozijx.passly.core.platform.ClipboardUtils.copy(
+                        context,
+                        entry.hardwareKeyInfo
+                    )
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                    onEvent(
-                        DetailEvent.RecordAction(
-                            "hardware key info",
-                            VaultHistory.HistoryType.COPY
-                        )
+                    actionHandler.record(
+                        "hardware key info",
+                        com.aozijx.passly.domain.model.core.VaultHistory.HistoryType.COPY
                     )
                 },
                 onEdit = {}

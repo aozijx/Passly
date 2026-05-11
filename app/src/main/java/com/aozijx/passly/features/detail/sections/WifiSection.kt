@@ -33,7 +33,10 @@ import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.features.detail.internal.EntryEditState
+import com.aozijx.passly.features.detail.internal.copySensitiveField
+import com.aozijx.passly.features.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun WifiSection(
@@ -52,6 +55,11 @@ fun WifiSection(
     val wifiEncryptionLabel = stringResource(R.string.wifi_encryption)
     val wifiHiddenLabel = stringResource(R.string.wifi_hidden)
     val wifiCopiedMsg = stringResource(R.string.wifi_copied)
+    val actionHandler = DetailSectionActionHandler(
+        activity = activity,
+        onAuthenticate = onAuthenticate,
+        onEvent = onEvent
+    )
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
@@ -91,28 +99,19 @@ fun WifiSection(
                 value = revealedPassword ?: stringResource(R.string.label_hidden_mask),
                 isRevealed = revealedPassword != null,
                 onCopy = {
-                    if (revealedPassword != null) {
-                        ClipboardUtils.copy(context, revealedPassword)
-                        Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
-                        onEvent(
-                            DetailEvent.RecordAction(
-                                "wifi password",
-                                VaultHistory.HistoryType.COPY
-                            )
-                        )
-                    } else {
-                        onAuthenticate(activity, "解密 WiFi 密码", "验证身份以复制密码") {
-                            ClipboardUtils.copy(context, entry.password)
+                    copySensitiveField(
+                        context = context,
+                        handler = actionHandler,
+                        fieldName = "wifi password",
+                        revealedValue = revealedPassword,
+                        sourceValue = entry.password,
+                        authTitle = "解密 WiFi 密码",
+                        authSubtitle = "验证身份以复制密码",
+                        onReveal = onPasswordRevealed,
+                        afterCopy = {
                             Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
-                            onPasswordRevealed(entry.password)
-                            onEvent(
-                                DetailEvent.RecordAction(
-                                    "wifi password",
-                                    VaultHistory.HistoryType.COPY
-                                )
-                            )
                         }
-                    }
+                    )
                 },
                 onEdit = {
                     editState.editedPassword = revealedPassword ?: ""
@@ -124,15 +123,15 @@ fun WifiSection(
         if (revealedPassword == null && !editState.isEditingPassword) {
             Button(
                 onClick = {
-                    onAuthenticate(activity, "解密 WiFi 密码", "验证身份以查看密码") {
-                        onPasswordRevealed(entry.password)
-                        onEvent(
-                            DetailEvent.RecordAction(
-                                "wifi password",
-                                VaultHistory.HistoryType.ACCESS
-                            )
-                        )
-                    }
+                    toggleRevealSensitiveField(
+                        handler = actionHandler,
+                        fieldName = "wifi password",
+                        revealedValue = revealedPassword,
+                        sourceValue = entry.password,
+                        authTitle = "解密 WiFi 密码",
+                        authSubtitle = "验证身份以查看密码",
+                        onReveal = onPasswordRevealed
+                    )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)

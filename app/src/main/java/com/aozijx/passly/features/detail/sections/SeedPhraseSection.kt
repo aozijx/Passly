@@ -34,6 +34,9 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.contract.DetailEvent
+import com.aozijx.passly.features.detail.internal.DetailSectionActionHandler
+import com.aozijx.passly.features.detail.internal.copySensitiveField
+import com.aozijx.passly.features.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun SeedPhraseSection(
@@ -46,6 +49,11 @@ fun SeedPhraseSection(
 ) {
     val context = LocalContext.current
     val seedPhraseCopiedMsg = stringResource(R.string.seed_phrase_copied)
+    val actionHandler = DetailSectionActionHandler(
+        activity = activity,
+        onAuthenticate = onAuthenticate,
+        onEvent = onEvent
+    )
 
     val wordList = remember(revealedSeedPhrase) {
         revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
@@ -57,50 +65,30 @@ fun SeedPhraseSection(
             value = if (revealedSeedPhrase != null) stringResource(R.string.seed_phrase_revealed) else stringResource(R.string.label_hidden_mask),
             isRevealed = revealedSeedPhrase != null,
             onCopy = {
-                if (revealedSeedPhrase != null) {
-                    ClipboardUtils.copy(context, revealedSeedPhrase)
-                    Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
-                    onEvent(DetailEvent.RecordAction("seed phrase", VaultHistory.HistoryType.COPY))
-                } else {
-                    val encryptedSeedPhrase = entry.cryptoSeedPhrase
-                    if (!encryptedSeedPhrase.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密助记词", "验证身份以复制助记词") {
-                            try {
-                                ClipboardUtils.copy(context, encryptedSeedPhrase)
-                                Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
-                                onSeedPhraseRevealed(encryptedSeedPhrase)
-                                onEvent(
-                                    DetailEvent.RecordAction(
-                                        "seed phrase",
-                                        VaultHistory.HistoryType.COPY
-                                    )
-                                )
-                            } catch (_: Exception) {
-                            }
-                        }
+                copySensitiveField(
+                    context = context,
+                    handler = actionHandler,
+                    fieldName = "seed phrase",
+                    revealedValue = revealedSeedPhrase,
+                    sourceValue = entry.cryptoSeedPhrase,
+                    authTitle = "解密助记词",
+                    authSubtitle = "验证身份以复制助记词",
+                    onReveal = onSeedPhraseRevealed,
+                    afterCopy = {
+                        Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
                     }
-                }
+                )
             },
             onEdit = {
-                if (revealedSeedPhrase != null) {
-                    onSeedPhraseRevealed(null)
-                } else {
-                    val seedPhrase = entry.cryptoSeedPhrase
-                    if (!seedPhrase.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密助记词", "验证身份以查看助记词") {
-                            try {
-                                onSeedPhraseRevealed(seedPhrase)
-                                onEvent(
-                                    DetailEvent.RecordAction(
-                                        "seed phrase",
-                                        VaultHistory.HistoryType.ACCESS
-                                    )
-                                )
-                            } catch (_: Exception) {
-                            }
-                        }
-                    }
-                }
+                toggleRevealSensitiveField(
+                    handler = actionHandler,
+                    fieldName = "seed phrase",
+                    revealedValue = revealedSeedPhrase,
+                    sourceValue = entry.cryptoSeedPhrase,
+                    authTitle = "解密助记词",
+                    authSubtitle = "验证身份以查看助记词",
+                    onReveal = onSeedPhraseRevealed
+                )
             }
         )
 
@@ -132,21 +120,15 @@ fun SeedPhraseSection(
         if (revealedSeedPhrase == null) {
             Button(
                 onClick = {
-                    val encryptedSeedPhrase = entry.cryptoSeedPhrase
-                    if (!encryptedSeedPhrase.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密助记词", "验证身份以显示助记词") {
-                            try {
-                                onSeedPhraseRevealed(encryptedSeedPhrase)
-                                onEvent(
-                                    DetailEvent.RecordAction(
-                                        "seed phrase",
-                                        VaultHistory.HistoryType.ACCESS
-                                    )
-                                )
-                            } catch (_: Exception) {
-                            }
-                        }
-                    }
+                    toggleRevealSensitiveField(
+                        handler = actionHandler,
+                        fieldName = "seed phrase",
+                        revealedValue = revealedSeedPhrase,
+                        sourceValue = entry.cryptoSeedPhrase,
+                        authTitle = "解密助记词",
+                        authSubtitle = "验证身份以显示助记词",
+                        onReveal = onSeedPhraseRevealed
+                    )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)
@@ -164,7 +146,7 @@ fun SeedPhraseSection(
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(context, entry.notes)
-                    onEvent(DetailEvent.RecordAction("notes", VaultHistory.HistoryType.COPY))
+                    actionHandler.record("notes", VaultHistory.HistoryType.COPY)
                 },
                 onEdit = {}
             )
