@@ -21,12 +21,11 @@ internal class TotpCoordinator(
 
     fun start(entriesProvider: () -> List<VaultSummary>) {
         scope.launch {
-            helper.runRefresher(
+            helper.refresherFlow(
                 statesProvider = { _states.value },
                 entriesProvider = entriesProvider,
-                updateStates = { _states.value = it },
                 codeGenerator = codeGenerator
-            )
+            ).collect { _states.value = it }
         }
     }
 

@@ -3,21 +3,24 @@ package com.aozijx.passly.features.vault.internal
 import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.domain.model.TotpConfig
 import com.aozijx.passly.domain.model.presentation.VaultSummary
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 
 internal class TotpHelper {
 
-    suspend fun runRefresher(
+    fun refresherFlow(
         statesProvider: () -> Map<Int, TotpState>,
         entriesProvider: () -> List<VaultSummary>,
-        updateStates: (Map<Int, TotpState>) -> Unit,
         codeGenerator: (TotpConfig) -> String,
         intervalMs: Long = 500L
-    ) {
-        while (true) {
-            val current = statesProvider()
-            if (current.isNotEmpty()) {
-                updateStates(refreshStates(current, entriesProvider(), codeGenerator))
+    ): Flow<Map<Int, TotpState>> = flow {
+        while (currentCoroutineContext().isActive) {
+            val currentStates = statesProvider()
+            if (currentStates.isNotEmpty()) {
+                emit(refreshStates(currentStates, entriesProvider(), codeGenerator))
             }
             delay(intervalMs)
         }
