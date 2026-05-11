@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -148,58 +149,74 @@ fun VaultContent(
         }
     }
 
-    // 通用复制逻辑
-    val performCopy: (FieldKey, VaultSummary) -> Unit = { fieldKey, item ->
-        val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
-        val label = strategy.getCopyLabel(fieldKey)
+    val latestTotpStates by rememberUpdatedState(totpStates)
 
-        if (fieldKey == FieldKey.PASSWORD && !item.totpSecret.isNullOrBlank()) {
-            totpStates[item.id]?.let { state ->
-                if (state.code.isNotEmpty() && !state.code.contains("-")) {
-                    ClipboardUtils.copy(activity, state.code)
-                    Toast.makeText(context, totpCopiedText, Toast.LENGTH_SHORT).show()
+    // 通用复制逻辑
+    val performCopy = remember(
+        activity,
+        context,
+        vaultViewModel,
+        mainViewModel,
+        decryptAuthTitle,
+        decryptAuthSubtitle,
+        totpCopiedText,
+        fieldCopiedFormat
+    ) {
+        { fieldKey: FieldKey, item: VaultSummary ->
+            val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
+            val label = strategy.getCopyLabel(fieldKey)
+
+            if (fieldKey == FieldKey.PASSWORD && !item.totpSecret.isNullOrBlank()) {
+                latestTotpStates[item.id]?.let { state ->
+                    if (state.code.isNotEmpty() && !state.code.contains("-")) {
+                        ClipboardUtils.copy(activity, state.code)
+                        Toast.makeText(context, totpCopiedText, Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }
-        } else {
-            vaultViewModel.loadEntryById(item.id) { fullEntry ->
-                val rawValue = strategy.getFieldValue(fullEntry, fieldKey) ?: return@loadEntryById
-                vaultViewModel.decryptSingle(
-                    activity = activity,
-                    encryptedData = rawValue,
-                    promptTitle = decryptAuthTitle,
-                    promptSubtitle = decryptAuthSubtitle,
-                    authenticate = { act, t, s, _, ok ->
-                        mainViewModel.requestAuth(
-                            act, t, s, onSuccess = ok
-                        )
-                    },
-                    onResult = { decrypted ->
-                        decrypted?.let {
-                            ClipboardUtils.copy(activity, it)
-                            Toast.makeText(
-                                context,
-                                fieldCopiedFormat.format(label),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    })
+            } else {
+                vaultViewModel.loadEntryById(item.id) { fullEntry ->
+                    val rawValue =
+                        strategy.getFieldValue(fullEntry, fieldKey) ?: return@loadEntryById
+                    vaultViewModel.decryptSingle(
+                        activity = activity,
+                        encryptedData = rawValue,
+                        promptTitle = decryptAuthTitle,
+                        promptSubtitle = decryptAuthSubtitle,
+                        authenticate = { act, t, s, _, ok ->
+                            mainViewModel.requestAuth(
+                                act, t, s, onSuccess = ok
+                            )
+                        },
+                        onResult = { decrypted ->
+                            decrypted?.let {
+                                ClipboardUtils.copy(activity, it)
+                                Toast.makeText(
+                                    context, fieldCopiedFormat.format(label), Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        })
+                }
             }
         }
     }
 
     // 统一的滑动触发处理
-    val onSwipeTriggered: (SwipeActionType, VaultSummary) -> Unit = { action, item ->
-        handleSwipeAction(
-            actionType = action,
-            item = item,
-            onAuthRequired = { ok ->
-                mainViewModel.requestAuth(
-                    activity, authTitle, item.title, onSuccess = ok
-                )
-            },
-            onQuickDelete = { vaultViewModel.quickDelete(it) },
-            onCopy = { fieldKey -> performCopy(fieldKey, item) },
-            onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } })
+    val onSwipeTriggered = remember(
+        activity, mainViewModel, vaultViewModel, authTitle, onShowDetail, performCopy
+    ) {
+        { action: SwipeActionType, item: VaultSummary ->
+            handleSwipeAction(
+                actionType = action,
+                item = item,
+                onAuthRequired = { ok ->
+                    mainViewModel.requestAuth(
+                        activity, authTitle, item.title, onSuccess = ok
+                    )
+                },
+                onQuickDelete = { vaultViewModel.quickDelete(it) },
+                onCopy = { fieldKey -> performCopy(fieldKey, item) },
+                onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } })
+        }
     }
 
     // 导出/导入 Launcher
@@ -304,37 +321,16 @@ fun VaultContent(
                 ) {
                     items(
                         items = displayItems, key = { it.id }) { item ->
-                        val cardStyle =
-                            perTypeStyleMap[item.entryType]?.takeIf { it != VaultCardStyle.DEFAULT }
-                                ?: VaultCardStyle.resolveForEntryType(
-                                    settingsUiState.cardStyle, item.entryType
-                                )
-
-                        val actions = listOfNotNull(
-                            createSwipeAction(
-                                actionType = swipeLeftAction,
-                                direction = SwipeDirection.LEFT,
-                                onAction = { onSwipeTriggered(swipeLeftAction, item) },
-                                backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                                iconTint = Color.White
-                            ), createSwipeAction(
-                                actionType = swipeRightAction,
-                                direction = SwipeDirection.RIGHT,
-                                onAction = { onSwipeTriggered(swipeRightAction, item) },
-                                backgroundColor = if (swipeRightAction == SwipeActionType.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
-                                iconTint = Color.White
-                            )
+                        VaultListItemRow(
+                            item = item,
+                            perTypeStyleMap = perTypeStyleMap,
+                            defaultCardStyle = settingsUiState.cardStyle,
+                            swipeLeftAction = swipeLeftAction,
+                            swipeRightAction = swipeRightAction,
+                            isSwipeEnabled = isSwipeEnabled,
+                            onSwipeTriggered = onSwipeTriggered,
+                            vaultViewModel = vaultViewModel
                         )
-
-                        SwipeToAction(
-                            actions = actions,
-                            modifier = Modifier.fillMaxWidth(),
-                            isActive = isSwipeEnabled,
-                        ) {
-                            VaultCardStyleRegistry.RenderVaultItem(
-                                style = cardStyle, entry = item, viewModel = vaultViewModel
-                            )
-                        }
                     }
 
                     item {
@@ -352,4 +348,50 @@ fun VaultContent(
         vaultViewModel = vaultViewModel,
         settingsViewModel = settingsViewModel
     )
+}
+
+@Composable
+private fun VaultListItemRow(
+    item: VaultSummary,
+    perTypeStyleMap: Map<Int, VaultCardStyle>,
+    defaultCardStyle: VaultCardStyle,
+    swipeLeftAction: SwipeActionType,
+    swipeRightAction: SwipeActionType,
+    isSwipeEnabled: Boolean,
+    onSwipeTriggered: (SwipeActionType, VaultSummary) -> Unit,
+    vaultViewModel: VaultViewModel
+) {
+    val cardStyle = remember(item.entryType, perTypeStyleMap, defaultCardStyle) {
+        perTypeStyleMap[item.entryType]?.takeIf { it != VaultCardStyle.DEFAULT }
+            ?: VaultCardStyle.resolveForEntryType(defaultCardStyle, item.entryType)
+    }
+    val colorScheme = MaterialTheme.colorScheme
+    val actions =
+        remember(item.id, swipeLeftAction, swipeRightAction, onSwipeTriggered, colorScheme) {
+            listOfNotNull(
+                createSwipeAction(
+                    actionType = swipeLeftAction,
+                    direction = SwipeDirection.LEFT,
+                    onAction = { onSwipeTriggered(swipeLeftAction, item) },
+                    backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.primary,
+                    iconTint = Color.White
+                ), createSwipeAction(
+                    actionType = swipeRightAction,
+                    direction = SwipeDirection.RIGHT,
+                    onAction = { onSwipeTriggered(swipeRightAction, item) },
+                    backgroundColor = if (swipeRightAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.secondary,
+                    iconTint = Color.White
+                )
+            )
+        }
+
+    SwipeToAction(
+        actions = actions,
+        modifier = Modifier.fillMaxWidth(),
+        isActive = isSwipeEnabled,
+    ) {
+        VaultCardStyleRegistry.RenderVaultItem(
+            style = cardStyle, entry = item, viewModel = vaultViewModel
+        )
+    }
 }
