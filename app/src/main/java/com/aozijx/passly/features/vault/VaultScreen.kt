@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -59,6 +60,7 @@ import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistr
 import com.aozijx.passly.features.vault.components.fab.VaultFab
 import com.aozijx.passly.features.vault.components.topbar.VaultTopBar
 import com.aozijx.passly.features.vault.model.VaultTab
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,7 +97,8 @@ fun VaultContent(
     var isFabVisible by remember { mutableStateOf(true) }
 
     val initialTabIndex = visibleTabs.indexOf(selectedTab).coerceAtLeast(0)
-    val pagerState = rememberPagerState(initialPage = initialTabIndex) { visibleTabs.size.coerceAtLeast(1) }
+    val pagerState =
+        rememberPagerState(initialPage = initialTabIndex) { visibleTabs.size.coerceAtLeast(1) }
 
     // 当前选中的 Tab 若被设置隐藏，自动回退到第一项（通常是 ALL）。
     LaunchedEffect(visibleTabs, selectedTab) {
@@ -110,11 +113,13 @@ fun VaultContent(
         }
     }
 
-    // 同步 Pager 滑动到 ViewModel（用 settledPage 避免动画途中触发状态覆盖）
-    LaunchedEffect(pagerState.settledPage, visibleTabs) {
-        val newTab = visibleTabs.getOrNull(pagerState.settledPage) ?: return@LaunchedEffect
-        if (newTab != selectedTab) {
-            vaultViewModel.selectTab(newTab)
+    // 同步 Pager -> ViewModel：使用 snapshotFlow 避免以 settledPage 作为 key 重启 effect 导致振荡。
+    LaunchedEffect(pagerState, visibleTabs) {
+        snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
+            val newTab = visibleTabs.getOrNull(page) ?: return@collect
+            if (newTab != selectedTab) {
+                vaultViewModel.selectTab(newTab)
+            }
         }
     }
 
@@ -156,10 +161,7 @@ fun VaultContent(
                     encryptedData = rawValue,
                     authenticate = { act, t, s, _, ok ->
                         mainViewModel.requestAuth(
-                            act,
-                            t,
-                            s,
-                            onSuccess = ok
+                            act, t, s, onSuccess = ok
                         )
                     },
                     onResult = { decrypted ->
@@ -167,8 +169,7 @@ fun VaultContent(
                             ClipboardUtils.copy(activity, it)
                             Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                )
+                    })
             }
         }
     }
@@ -180,24 +181,25 @@ fun VaultContent(
             item = item,
             onAuthRequired = { ok ->
                 mainViewModel.requestAuth(
-                    activity,
-                    "安全验证",
-                    item.title,
-                    onSuccess = ok
+                    activity, "安全验证", item.title, onSuccess = ok
                 )
             },
             onQuickDelete = { vaultViewModel.quickDelete(it) },
             onCopy = { fieldKey -> performCopy(fieldKey, item) },
-            onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } }
-        )
+            onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } })
     }
 
     // 导出/导入 Launcher
     var pendingManualExportFileName by remember { mutableStateOf<String?>(null) }
-    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
-        it?.let { selectedUri -> settingsViewModel.backup.startExport(selectedUri, fileNameHint = pendingManualExportFileName) }
-        pendingManualExportFileName = null
-    }
+    val exportLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
+            it?.let { selectedUri ->
+                settingsViewModel.backup.startExport(
+                    selectedUri, fileNameHint = pendingManualExportFileName
+                )
+            }
+            pendingManualExportFileName = null
+        }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
         it?.let { settingsViewModel.backup.startImport(it) }
     }
@@ -217,12 +219,12 @@ fun VaultContent(
         modifier = Modifier
             .fillMaxSize()
             .then(
-                if (isTopBarCollapsible || isTabBarCollapsible || isStatusBarAutoHide)
-                    Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                if (isTopBarCollapsible || isTabBarCollapsible || isStatusBarAutoHide) Modifier.nestedScroll(
+                    scrollBehavior.nestedScrollConnection
+                )
                 else Modifier
             )
-            .nestedScroll(fabScrollConnection),
-        topBar = {
+            .nestedScroll(fabScrollConnection), topBar = {
             androidx.compose.foundation.layout.Column {
                 VaultTopBar(
                     vaultViewModel = vaultViewModel,
@@ -241,8 +243,7 @@ fun VaultContent(
                     onImportClick = {
                         importLauncher.launch(
                             arrayOf(
-                                "application/octet-stream",
-                                "*/*"
+                                "application/octet-stream", "*/*"
                             )
                         )
                     },
@@ -260,18 +261,14 @@ fun VaultContent(
                     )
                 }
             }
-        },
-        floatingActionButton = {
+        }, floatingActionButton = {
             VaultFab(
-                viewModel = vaultViewModel,
-                isVisible = isFabVisible
+                viewModel = vaultViewModel, isVisible = isFabVisible
             )
-        },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        }, contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
+            state = pagerState, modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) { pageIndex ->
@@ -293,14 +290,11 @@ fun VaultContent(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(
-                        items = displayItems,
-                        key = { it.id }
-                    ) { item ->
+                        items = displayItems, key = { it.id }) { item ->
                         val cardStyle =
                             perTypeStyleMap[item.entryType]?.takeIf { it != VaultCardStyle.DEFAULT }
                                 ?: VaultCardStyle.resolveForEntryType(
-                                    settingsUiState.cardStyle,
-                                    item.entryType
+                                    settingsUiState.cardStyle, item.entryType
                                 )
 
                         val actions = listOfNotNull(
@@ -310,8 +304,7 @@ fun VaultContent(
                                 onAction = { onSwipeTriggered(swipeLeftAction, item) },
                                 backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                                 iconTint = Color.White
-                            ),
-                            createSwipeAction(
+                            ), createSwipeAction(
                                 actionType = swipeRightAction,
                                 direction = SwipeDirection.RIGHT,
                                 onAction = { onSwipeTriggered(swipeRightAction, item) },
@@ -326,9 +319,7 @@ fun VaultContent(
                             isActive = isSwipeEnabled,
                         ) {
                             VaultCardStyleRegistry.RenderVaultItem(
-                                style = cardStyle,
-                                entry = item,
-                                viewModel = vaultViewModel
+                                style = cardStyle, entry = item, viewModel = vaultViewModel
                             )
                         }
                     }
