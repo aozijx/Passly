@@ -64,6 +64,8 @@ fun VaultTopBar(
     val availableCategories by vaultViewModel.availableCategories.collectAsStateWithLifecycle()
     val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
     val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
+    val isSearchActive by vaultViewModel.isSearchActive.collectAsStateWithLifecycle()
+    val isMoreMenuExpanded by vaultViewModel.isMoreMenuExpanded.collectAsStateWithLifecycle()
 
     val displayTabs = remember(visibleTabs) {
         visibleTabs.filter { it.isToggleable }
@@ -83,8 +85,8 @@ fun VaultTopBar(
         }
     }
 
-    LaunchedEffect(vaultViewModel.isSearchActive) {
-        if (vaultViewModel.isSearchActive) {
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) {
             focusRequester.requestFocus()
         }
     }
@@ -94,7 +96,7 @@ fun VaultTopBar(
             scrollBehavior = if (isTopBarCollapsible) scrollBehavior else null,
             windowInsets = WindowInsets.statusBars,
             title = {
-                if (vaultViewModel.isSearchActive) {
+                if (isSearchActive) {
                     VaultSearchBar(
                         query = searchQuery,
                         onQueryChange = { vaultViewModel.onSearchQueryChange(it) },
@@ -122,15 +124,15 @@ fun VaultTopBar(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = { vaultViewModel.toggleSearch(!vaultViewModel.isSearchActive) }) {
+                IconButton(onClick = { vaultViewModel.toggleSearch(!isSearchActive) }) {
                     Icon(
-                        if (vaultViewModel.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
-                        contentDescription = stringResource(if (vaultViewModel.isSearchActive) R.string.action_back else R.string.action_search)
+                        if (isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
+                        contentDescription = stringResource(if (isSearchActive) R.string.action_back else R.string.action_search)
                     )
                 }
             },
             actions = {
-                if (!vaultViewModel.isSearchActive) {
+                if (!isSearchActive) {
                     Box {
                         IconButton(onClick = { vaultViewModel.expandMoreMenu(true) }) {
                             Icon(
@@ -139,7 +141,7 @@ fun VaultTopBar(
                             )
                         }
                         VaultDropdownMenu(
-                            expanded = vaultViewModel.isMoreMenuExpanded,
+                            expanded = isMoreMenuExpanded,
                             onDismissRequest = { vaultViewModel.expandMoreMenu(false) },
                             showTOTPCode = vaultViewModel.showTOTPCode,
                             onToggleTotpVisibility = {
@@ -159,7 +161,7 @@ fun VaultTopBar(
             })
 
         AnimatedVisibility(
-            visible = displayTabs.size > 1 && !vaultViewModel.isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+            visible = displayTabs.size > 1 && !isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {

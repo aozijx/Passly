@@ -59,8 +59,8 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     val searchQuery: StateFlow<String> = searchFilter.searchQuery
     val selectedCategory: StateFlow<String?> = searchFilter.selectedCategory
     val selectedTab: StateFlow<VaultTab> = searchFilter.selectedTab
-    val isSearchActive: Boolean get() = searchFilter.isSearchActive
-    val isMoreMenuExpanded: Boolean get() = searchFilter.isMoreMenuExpanded
+    val isSearchActive: StateFlow<Boolean> = searchFilter.isSearchActive
+    val isMoreMenuExpanded: StateFlow<Boolean> = searchFilter.isMoreMenuExpanded
     fun expandMoreMenu(expanded: Boolean) = searchFilter.expandMoreMenu(expanded)
 
     // --- Display state ---

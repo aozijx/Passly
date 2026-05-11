@@ -1,8 +1,5 @@
 package com.aozijx.passly.features.vault.internal
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import com.aozijx.passly.features.vault.model.VaultTab
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -32,19 +29,22 @@ internal class SearchFilterState {
 
     val distinctSelectedTab: Flow<VaultTab> = _selectedTab
 
-    var isSearchActive by mutableStateOf(false)
-        private set
-    var isMoreMenuExpanded by mutableStateOf(false)
-        private set
+    private val _isSearchActive = MutableStateFlow(false)
+    val isSearchActive: StateFlow<Boolean> = _isSearchActive
+
+    private val _isMoreMenuExpanded = MutableStateFlow(false)
+    val isMoreMenuExpanded: StateFlow<Boolean> = _isMoreMenuExpanded
 
     fun updateSearchQuery(query: String) { _searchQuery.value = query }
     fun updateSelectedTab(tab: VaultTab) { _selectedTab.value = tab }
     fun updateSelectedCategory(category: String?) { _selectedCategory.value = category }
 
     fun toggleSearch(active: Boolean) {
-        isSearchActive = active
+        _isSearchActive.value = active
         if (!active) _searchQuery.value = ""
     }
 
-    fun expandMoreMenu(expanded: Boolean) { isMoreMenuExpanded = expanded }
+    fun expandMoreMenu(expanded: Boolean) {
+        _isMoreMenuExpanded.value = expanded
+    }
 }
