@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -108,19 +109,18 @@ class MainViewModel(
 
     private fun observeSettings() {
         viewModelScope.launch {
-            systemSettingsUseCases.isDarkMode.collect { isDarkMode ->
-                _uiState.update { it.copy(isDarkMode = isDarkMode) }
-            }
-        }
-
-        viewModelScope.launch {
-            systemSettingsUseCases.isDynamicColor.collect { isDynamicColor ->
-                _uiState.update { it.copy(isDynamicColor = isDynamicColor) }
-            }
-        }
-
-        viewModelScope.launch {
-            securitySettingsUseCases.lockTimeout.collect { lockTimeout ->
+            combine(
+                systemSettingsUseCases.isDarkMode,
+                systemSettingsUseCases.isDynamicColor,
+                securitySettingsUseCases.lockTimeout
+            ) { isDarkMode, isDynamicColor, lockTimeout ->
+                Triple(isDarkMode, isDynamicColor, lockTimeout)
+            }.collect { (isDarkMode, isDynamicColor, lockTimeout) ->
+                _uiState.update {
+                    it.copy(
+                        isDarkMode = isDarkMode, isDynamicColor = isDynamicColor
+                    )
+                }
                 authCoordinator.updateLockTimeout(lockTimeout)
             }
         }
