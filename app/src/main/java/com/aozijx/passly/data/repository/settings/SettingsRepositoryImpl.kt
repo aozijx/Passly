@@ -43,6 +43,8 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
             booleanPreferencesKey("security_flip_exit_and_clear_stack")
         val PASSWORD_PREFERRED_AUTH_FIRST_KEY =
             booleanPreferencesKey("security_password_preferred_auth_first")
+        val DEVICE_CREDENTIAL_FALLBACK_KEY =
+            booleanPreferencesKey("security_device_credential_fallback")
         val CARD_STYLE_KEY = stringPreferencesKey("ui_card_style")
         val CARD_STYLE_MAP_KEY = stringPreferencesKey("ui_card_style_map_v2")
         val AUTOFILL_UI_MODE_KEY = stringPreferencesKey("autofill_ui_mode")
@@ -67,6 +69,8 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
         appContext.settingsDataStore.data.map { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] ?: false }
     override val isPasswordPreferredAuthFirst: Flow<Boolean> =
         appContext.settingsDataStore.data.map { it[PASSWORD_PREFERRED_AUTH_FIRST_KEY] ?: true }
+    override val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
+        appContext.settingsDataStore.data.map { it[DEVICE_CREDENTIAL_FALLBACK_KEY] ?: true }
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         appContext.settingsDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
@@ -94,6 +98,10 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
 
     override suspend fun setPasswordPreferredAuthFirst(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[PASSWORD_PREFERRED_AUTH_FIRST_KEY] = enabled }
+    }
+
+    override suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean) {
+        appContext.settingsDataStore.edit { it[DEVICE_CREDENTIAL_FALLBACK_KEY] = enabled }
     }
 
     // --- SystemSettingsRepository ---

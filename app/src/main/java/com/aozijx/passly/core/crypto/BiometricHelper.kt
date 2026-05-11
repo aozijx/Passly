@@ -17,14 +17,19 @@ object BiometricHelper {
         title: String,
         subtitle: String = "",
         cryptoObject: BiometricPrompt.CryptoObject? = null,
+        allowDeviceCredentialFallback: Boolean = true,
         onError: ((String) -> Unit)? = null,
         onSuccess: (BiometricPrompt.AuthenticationResult) -> Unit
     ) {
         val biometricManager = BiometricManager.from(activity)
 
-        // 如果有 CryptoObject，必须使用 BIOMETRIC_STRONG，且不能包含 DEVICE_CREDENTIAL
+        // 如果有 CryptoObject，必须使用 BIOMETRIC_STRONG；否则由设置控制是否允许设备凭据兜底。
         val authenticators =
-            if (cryptoObject != null) BIOMETRIC_STRONG else (BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+            if (cryptoObject != null || !allowDeviceCredentialFallback) {
+                BIOMETRIC_STRONG
+            } else {
+                BIOMETRIC_STRONG or DEVICE_CREDENTIAL
+            }
 
         val canAuthenticate = biometricManager.canAuthenticate(authenticators)
         if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
@@ -70,7 +75,12 @@ object BiometricHelper {
             promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
             promptBuilder.setNegativeButtonText("取消")
         } else {
-            promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+            if (allowDeviceCredentialFallback) {
+                promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+            } else {
+                promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
+                promptBuilder.setNegativeButtonText("取消")
+            }
         }
 
         runCatching {

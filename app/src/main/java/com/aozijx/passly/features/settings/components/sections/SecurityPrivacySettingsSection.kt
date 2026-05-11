@@ -28,6 +28,7 @@ fun SecurityPrivacySettingsSection(
     lockTimeout: Long,
     isAppPasswordEnabled: Boolean,
     isPasswordPreferredAuthFirst: Boolean,
+    isDeviceCredentialFallbackEnabled: Boolean,
     isInvalidateKeyOnBioChange: Boolean,
     isSecureContentEnabled: Boolean,
     isFlipToLockEnabled: Boolean,
@@ -35,6 +36,7 @@ fun SecurityPrivacySettingsSection(
     onLockTimeoutClick: () -> Unit,
     onAppPasswordClick: () -> Unit,
     onPasswordPreferredAuthFirstChange: (Boolean) -> Unit,
+    onDeviceCredentialFallbackToggleRequested: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
     onSecureContentEnabledChange: (Boolean) -> Unit,
     onFlipToLockEnabledChange: (Boolean) -> Unit,
@@ -63,6 +65,14 @@ fun SecurityPrivacySettingsSection(
             subtitle = "开启后，解锁页优先显示应用密码入口",
             checked = isPasswordPreferredAuthFirst,
             onCheckedChange = onPasswordPreferredAuthFirstChange
+        )
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+        SwitchSettingItem(
+            icon = Icons.Default.Fingerprint,
+            title = "允许设备凭据作为兜底",
+            subtitle = "关闭后仅允许生物识别，不可使用系统PIN/图案/密码",
+            checked = isDeviceCredentialFallbackEnabled,
+            onCheckedChange = onDeviceCredentialFallbackToggleRequested
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(

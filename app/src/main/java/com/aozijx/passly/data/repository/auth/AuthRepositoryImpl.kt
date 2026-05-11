@@ -12,12 +12,14 @@ import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.core.security.auth.AuthValidationResult
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.domain.repository.auth.AuthRepository
+import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -29,6 +31,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  */
 internal class AuthRepositoryImpl(
     private val application: Application,
+    private val securitySettingsRepository: SecuritySettingsRepository,
     scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     private val validationSupport: AuthValidationSupport = AuthValidationSupport()
 ) : AuthRepository {
@@ -64,6 +67,8 @@ internal class AuthRepositoryImpl(
         }
 
         val biometricCipher = DatabasePassphraseManager.getInitializedCipher(application)
+        val allowDeviceCredentialFallback =
+            if (biometricCipher == null) isDeviceCredentialFallbackEnabled() else false
 
         return runCatching {
             val authResult = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
@@ -75,6 +80,7 @@ internal class AuthRepositoryImpl(
                         cryptoObject = biometricCipher?.let {
                             BiometricPrompt.CryptoObject(it)
                         },
+                        allowDeviceCredentialFallback = allowDeviceCredentialFallback,
                         onSuccess = { result ->
                             continuation.resumeWith(Result.success(result))
                         },
@@ -104,6 +110,7 @@ internal class AuthRepositoryImpl(
         }
 
         return runCatching {
+            val allowDeviceCredentialFallback = isDeviceCredentialFallbackEnabled()
             withTimeoutOrNull(AUTH_TIMEOUT_MS) {
                 kotlin.coroutines.suspendCoroutine<BiometricPrompt.AuthenticationResult> { continuation ->
                     BiometricHelper.authenticate(
@@ -111,6 +118,7 @@ internal class AuthRepositoryImpl(
                         title = title,
                         subtitle = subtitle,
                         cryptoObject = null,
+                        allowDeviceCredentialFallback = allowDeviceCredentialFallback,
                         onSuccess = { result ->
                             continuation.resumeWith(Result.success(result))
                         },
@@ -367,6 +375,12 @@ internal class AuthRepositoryImpl(
 
     private fun resetTimer() {
         autoLockScheduler.schedule(currentTimeoutMs)
+    }
+
+    private suspend fun isDeviceCredentialFallbackEnabled(): Boolean {
+        return runCatching {
+            securitySettingsRepository.isDeviceCredentialFallbackEnabled.first()
+        }.getOrDefault(true)
     }
 
     companion object {

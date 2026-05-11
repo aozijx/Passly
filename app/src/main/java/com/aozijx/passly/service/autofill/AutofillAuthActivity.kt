@@ -27,6 +27,7 @@ import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.service.autofill.presentation.AutofillRemoteViewFactory
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -40,6 +41,7 @@ class AutofillAuthActivity : FragmentActivity() {
     private var selectionInProgress = false
     private val autofillRepository = AppContainer.domain.autofillUseCases
     private val authUseCases = AppContainer.domain.authUseCases
+    private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))
@@ -127,14 +129,19 @@ class AutofillAuthActivity : FragmentActivity() {
         packageName: String?,
         webDomain: String?
     ) {
-        val cipher = DatabasePassphraseManager.getInitializedCipher(this)
-        BiometricHelper.authenticate(
-            activity = this,
-            title = getString(R.string.vault_auth_decrypt_title),
-            subtitle = getString(R.string.vault_auth_decrypt_subtitle_generic),
-            cryptoObject = cipher?.let { androidx.biometric.BiometricPrompt.CryptoObject(it) },
-            onSuccess = { result ->
-                val passphrase = DatabasePassphraseManager.processResult(this, result)
+        lifecycleScope.launch {
+            val cipher = DatabasePassphraseManager.getInitializedCipher(this@AutofillAuthActivity)
+            val allowDeviceCredentialFallback =
+                if (cipher == null) isDeviceCredentialFallbackEnabled() else false
+            BiometricHelper.authenticate(
+                activity = this@AutofillAuthActivity,
+                title = getString(R.string.vault_auth_decrypt_title),
+                subtitle = getString(R.string.vault_auth_decrypt_subtitle_generic),
+                cryptoObject = cipher?.let { androidx.biometric.BiometricPrompt.CryptoObject(it) },
+                allowDeviceCredentialFallback = allowDeviceCredentialFallback,
+                onSuccess = { result ->
+                    val passphrase =
+                        DatabasePassphraseManager.processResult(this@AutofillAuthActivity, result)
                 DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
                 SessionCryptoKey.deriveAndSet(passphrase)
                 authUseCases.onExternalAuthorized()
@@ -205,12 +212,13 @@ class AutofillAuthActivity : FragmentActivity() {
                     setResult(RESULT_OK, resultIntent)
                     finish()
                 }
-            },
-            onError = {
-                setResult(RESULT_CANCELED)
-                finish()
-            }
-        )
+                },
+                onError = {
+                    setResult(RESULT_CANCELED)
+                    finish()
+                }
+            )
+        }
     }
 
     private fun authenticateAndFill(
@@ -225,16 +233,21 @@ class AutofillAuthActivity : FragmentActivity() {
             "authenticateAndFill: entryId=${entry.id}, usernameId=${usernameId != null}, passwordId=${passwordId != null}, otpId=${otpId != null}, uiMode=$uiMode"
         )
         // 注意：这里需要传入 CryptoObject 以支持硬件解密
-        val cipher = DatabasePassphraseManager.getInitializedCipher(this)
-        BiometricHelper.authenticate(
-            activity = this,
-            title = getString(R.string.autofill_auth_title),
-            subtitle = getString(R.string.autofill_auth_subtitle),
-            cryptoObject = cipher?.let { androidx.biometric.BiometricPrompt.CryptoObject(it) },
-            onSuccess = { result ->
+        lifecycleScope.launch {
+            val cipher = DatabasePassphraseManager.getInitializedCipher(this@AutofillAuthActivity)
+            val allowDeviceCredentialFallback =
+                if (cipher == null) isDeviceCredentialFallbackEnabled() else false
+            BiometricHelper.authenticate(
+                activity = this@AutofillAuthActivity,
+                title = getString(R.string.autofill_auth_title),
+                subtitle = getString(R.string.autofill_auth_subtitle),
+                cryptoObject = cipher?.let { androidx.biometric.BiometricPrompt.CryptoObject(it) },
+                allowDeviceCredentialFallback = allowDeviceCredentialFallback,
+                onSuccess = { result ->
                 // 确保解密口令已就绪（如果刚才还没就绪的话）
                 if (DatabasePassphraseManager.isLocked) {
-                    val passphrase = DatabasePassphraseManager.processResult(this, result)
+                    val passphrase =
+                        DatabasePassphraseManager.processResult(this@AutofillAuthActivity, result)
                     DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
                 }
                 if (!SessionCryptoKey.isSessionKeyAvailable) {
@@ -246,7 +259,7 @@ class AutofillAuthActivity : FragmentActivity() {
                 val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
                 if (basicCred == null) {
                     Logcat.e(TAG, "Failed to decrypt credentials")
-                    Toast.makeText(this, "解密失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AutofillAuthActivity, "解密失败", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_CANCELED)
                     finish()
                     return@authenticate
@@ -283,18 +296,29 @@ class AutofillAuthActivity : FragmentActivity() {
                     }
                 } else {
                     Logcat.w(TAG, "Autofill dataset is null, canceling fill")
-                    Toast.makeText(this, "当前页面未识别到可填充字段", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@AutofillAuthActivity,
+                        "当前页面未识别到可填充字段",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     setResult(RESULT_CANCELED)
                 }
                 finish()
             },
-            onError = { error ->
-                Logcat.e(TAG, "Auth failed: $error")
-                setResult(RESULT_CANCELED)
-                selectionInProgress = false
-                finish()
-            }
-        )
+                onError = { error ->
+                    Logcat.e(TAG, "Auth failed: $error")
+                    setResult(RESULT_CANCELED)
+                    selectionInProgress = false
+                    finish()
+                }
+            )
+        }
+    }
+
+    private suspend fun isDeviceCredentialFallbackEnabled(): Boolean {
+        return runCatching {
+            securitySettingsUseCases.isDeviceCredentialFallbackEnabled.first()
+        }.getOrDefault(true)
     }
 
     private fun buildDataset(

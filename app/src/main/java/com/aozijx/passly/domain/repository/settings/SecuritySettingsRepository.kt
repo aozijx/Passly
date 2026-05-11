@@ -10,6 +10,7 @@ interface SecuritySettingsRepository {
     val isFlipToLockEnabled: Flow<Boolean>
     val isFlipExitAndClearStackEnabled: Flow<Boolean>
     val isPasswordPreferredAuthFirst: Flow<Boolean>
+    val isDeviceCredentialFallbackEnabled: Flow<Boolean>
 
     suspend fun setLockTimeout(timeoutMs: Long)
     suspend fun setBiometricEnabled(enabled: Boolean)
@@ -18,4 +19,5 @@ interface SecuritySettingsRepository {
     suspend fun setFlipToLockEnabled(enabled: Boolean)
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean)
     suspend fun setPasswordPreferredAuthFirst(enabled: Boolean)
+    suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean)
 }

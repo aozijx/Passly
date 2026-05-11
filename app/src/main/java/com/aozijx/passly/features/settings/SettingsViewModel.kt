@@ -25,6 +25,7 @@ data class SettingsUiState(
     val isTabBarCollapsible: Boolean = true,
     val isSecureContentEnabled: Boolean = true,
     val isPasswordPreferredAuthFirst: Boolean = true,
+    val isDeviceCredentialFallbackEnabled: Boolean = true,
     val isFlipToLockEnabled: Boolean = false,
     val isFlipExitAndClearStackEnabled: Boolean = false,
     val cardStyle: VaultCardStyle = VaultCardStyle.styleConfig.globalDefaultStyle,
@@ -50,6 +51,7 @@ private data class CoreSettingsFlowState(
 
 private data class SecurityAndStyleFlowState(
     val isPasswordPreferredAuthFirst: Boolean,
+    val isDeviceCredentialFallbackEnabled: Boolean,
     val isFlipToLockEnabled: Boolean,
     val isFlipExitAndClearStackEnabled: Boolean,
     val cardStyle: VaultCardStyle,
@@ -105,15 +107,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         },
         combine(
             securitySettingsUseCases.isPasswordPreferredAuthFirst,
-            securitySettingsUseCases.isFlipToLockEnabled,
-            securitySettingsUseCases.isFlipExitAndClearStackEnabled,
-            systemSettingsUseCases.cardStyle,
-            systemSettingsUseCases.cardStyleByEntryType
-        ) { isPasswordPreferredAuthFirst, isFlipToLockEnabled, isFlipExitAndClearStackEnabled, cardStyle, cardStyleByEntryType ->
+            securitySettingsUseCases.isDeviceCredentialFallbackEnabled
+        ) { isPasswordPreferredAuthFirst, isDeviceCredentialFallbackEnabled ->
+            isPasswordPreferredAuthFirst to isDeviceCredentialFallbackEnabled
+        }.combine(securitySettingsUseCases.isFlipToLockEnabled) { authPrefs, isFlipToLockEnabled ->
+            Triple(authPrefs.first, authPrefs.second, isFlipToLockEnabled)
+        }
+            .combine(securitySettingsUseCases.isFlipExitAndClearStackEnabled) { authPrefs, isFlipExitAndClearStackEnabled ->
+                Pair(authPrefs, isFlipExitAndClearStackEnabled)
+            }.combine(systemSettingsUseCases.cardStyle) { authPrefsAndFlipExit, cardStyle ->
+            Pair(authPrefsAndFlipExit, cardStyle)
+        }
+            .combine(systemSettingsUseCases.cardStyleByEntryType) { authPrefsAndStyle, cardStyleByEntryType ->
+                val authPrefsAndFlipExit = authPrefsAndStyle.first.first
+                val cardStyle = authPrefsAndStyle.second
             SecurityAndStyleFlowState(
-                isPasswordPreferredAuthFirst = isPasswordPreferredAuthFirst,
-                isFlipToLockEnabled = isFlipToLockEnabled,
-                isFlipExitAndClearStackEnabled = isFlipExitAndClearStackEnabled,
+                isPasswordPreferredAuthFirst = authPrefsAndFlipExit.first,
+                isDeviceCredentialFallbackEnabled = authPrefsAndFlipExit.second,
+                isFlipToLockEnabled = authPrefsAndFlipExit.third,
+                isFlipExitAndClearStackEnabled = authPrefsAndStyle.first.second,
                 cardStyle = cardStyle,
                 cardStyleByEntryType = cardStyleByEntryType
             )
@@ -135,6 +147,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }) { securityAndStyle, autofillAndSwipe ->
             SettingsUiState(
                 isPasswordPreferredAuthFirst = securityAndStyle.isPasswordPreferredAuthFirst,
+                isDeviceCredentialFallbackEnabled = securityAndStyle.isDeviceCredentialFallbackEnabled,
                 isFlipToLockEnabled = securityAndStyle.isFlipToLockEnabled,
                 isFlipExitAndClearStackEnabled = securityAndStyle.isFlipExitAndClearStackEnabled,
                 cardStyle = securityAndStyle.cardStyle,
@@ -158,6 +171,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             isTabBarCollapsible = core.isTabBarCollapsible,
             isSecureContentEnabled = core.isSecureContentEnabled,
             isPasswordPreferredAuthFirst = partialState.isPasswordPreferredAuthFirst,
+            isDeviceCredentialFallbackEnabled = partialState.isDeviceCredentialFallbackEnabled,
             isFlipToLockEnabled = partialState.isFlipToLockEnabled,
             isFlipExitAndClearStackEnabled = partialState.isFlipExitAndClearStackEnabled,
             cardStyle = partialState.cardStyle,
@@ -211,6 +225,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setPasswordPreferredAuthFirst(enabled: Boolean) =
         viewModelScope.launch { securitySettingsUseCases.setPasswordPreferredAuthFirst(enabled) }
+
+    fun setDeviceCredentialFallbackEnabled(enabled: Boolean) =
+        viewModelScope.launch { securitySettingsUseCases.setDeviceCredentialFallbackEnabled(enabled) }
 
     fun setLockTimeout(timeoutMs: Long) = viewModelScope.launch {
         securitySettingsUseCases.setLockTimeout(

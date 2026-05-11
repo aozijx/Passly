@@ -24,6 +24,7 @@ internal fun buildSettingsContentState(
     lockTimeout = uiState.lockTimeout,
     isAppPasswordEnabled = isAppPasswordEnabled,
     isPasswordPreferredAuthFirst = uiState.isPasswordPreferredAuthFirst,
+    isDeviceCredentialFallbackEnabled = uiState.isDeviceCredentialFallbackEnabled,
     isInvalidateKeyOnBioChange = uiState.isInvalidateKeyOnBioChange,
     isSecureContentEnabled = uiState.isSecureContentEnabled,
     isFlipToLockEnabled = uiState.isFlipToLockEnabled,
@@ -51,6 +52,8 @@ internal fun buildSettingsDialogsState(
     showLeftActionDialog = localState.showLeftActionDialog,
     showLockTimeoutDialog = localState.showLockTimeoutDialog,
     showClearBackupDirConfirmDialog = localState.showClearBackupDirConfirmDialog,
+    showDeviceCredentialFallbackWarningDialog =
+        localState.showDeviceCredentialFallbackWarningDialog,
     activeAppPasswordDialog = localState.activeAppPasswordDialog,
     swipeLeftAction = uiState.swipeLeftAction,
     swipeRightAction = uiState.swipeRightAction,
@@ -76,6 +79,13 @@ internal fun buildSettingsContentActions(
     onShowLockTimeoutDialog = localState::openLockTimeoutDialog,
     onAppPasswordClick = onAppPasswordClick,
     onPasswordPreferredAuthFirstChange = viewModel::setPasswordPreferredAuthFirst,
+    onDeviceCredentialFallbackToggleRequested = { enabled ->
+        if (enabled && !uiState.isDeviceCredentialFallbackEnabled) {
+            localState.openDeviceCredentialFallbackWarningDialog()
+        } else {
+            viewModel.setDeviceCredentialFallbackEnabled(enabled)
+        }
+    },
     onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
     onSecureContentEnabledChange = viewModel::setSecureContentEnabled,
     onFlipToLockEnabledChange = viewModel::setFlipToLockEnabled,
@@ -116,6 +126,13 @@ internal fun buildSettingsDialogsActions(
             SettingsDialogEvent.DismissLockTimeoutDialog -> localState.dismissLockTimeoutDialog()
             SettingsDialogEvent.DismissClearBackupDirConfirmDialog ->
                 localState.dismissClearBackupDirConfirmDialog()
+            SettingsDialogEvent.DismissDeviceCredentialFallbackWarningDialog ->
+                localState.dismissDeviceCredentialFallbackWarningDialog()
+
+            SettingsDialogEvent.ConfirmEnableDeviceCredentialFallback -> {
+                viewModel.setDeviceCredentialFallbackEnabled(true)
+                localState.dismissDeviceCredentialFallbackWarningDialog()
+            }
 
             is SettingsDialogEvent.AppPassword -> {
                 when (event.event) {

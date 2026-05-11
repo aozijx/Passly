@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.core.net.toUri
+import com.aozijx.passly.R
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordActionDialog
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordChangeDialog
@@ -21,6 +22,7 @@ internal data class SettingsDialogsState(
     val showLeftActionDialog: Boolean,
     val showLockTimeoutDialog: Boolean,
     val showClearBackupDirConfirmDialog: Boolean,
+    val showDeviceCredentialFallbackWarningDialog: Boolean,
     val activeAppPasswordDialog: AppPasswordDialog,
     val swipeLeftAction: SwipeActionType,
     val swipeRightAction: SwipeActionType,
@@ -56,6 +58,8 @@ internal sealed interface SettingsDialogEvent {
     data object DismissLeftActionDialog : SettingsDialogEvent
     data object DismissLockTimeoutDialog : SettingsDialogEvent
     data object DismissClearBackupDirConfirmDialog : SettingsDialogEvent
+    data object DismissDeviceCredentialFallbackWarningDialog : SettingsDialogEvent
+    data object ConfirmEnableDeviceCredentialFallback : SettingsDialogEvent
     data class AppPassword(val event: AppPasswordDialogEvent) : SettingsDialogEvent
 }
 
@@ -134,6 +138,30 @@ internal fun SettingsScreenDialogsHost(
                     actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
                 }) {
                     Text("取消")
+                }
+            }
+        )
+    }
+
+    if (state.showDeviceCredentialFallbackWarningDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                actions.onDialogEvent(SettingsDialogEvent.DismissDeviceCredentialFallbackWarningDialog)
+            },
+            title = { Text(state.context.getString(R.string.settings_device_credential_warning_title)) },
+            text = { Text(state.context.getString(R.string.settings_device_credential_warning_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    actions.onDialogEvent(SettingsDialogEvent.ConfirmEnableDeviceCredentialFallback)
+                }) {
+                    Text(state.context.getString(R.string.settings_device_credential_warning_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    actions.onDialogEvent(SettingsDialogEvent.DismissDeviceCredentialFallbackWarningDialog)
+                }) {
+                    Text(state.context.getString(R.string.action_cancel))
                 }
             }
         )
