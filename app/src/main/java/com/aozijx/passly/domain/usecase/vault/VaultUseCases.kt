@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
+import com.aozijx.passly.domain.usecase.vault.impl.DecryptSingleWithAuthUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.DeleteEntryUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.DownloadFaviconUseCase
 import com.aozijx.passly.domain.usecase.vault.impl.GetEntryByIdUseCase
@@ -32,4 +33,5 @@ class VaultUseCases(
     val recordUsage = RecordUsageUseCase(vaultRepository)
     val getTotpCode = GetTotpCodeUseCase(otpRepository)
     val downloadFavicon = DownloadFaviconUseCase(faviconRepository)
+    val decryptSingleWithAuth = DecryptSingleWithAuthUseCase()
 }

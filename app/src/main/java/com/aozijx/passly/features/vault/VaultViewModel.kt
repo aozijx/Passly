@@ -18,7 +18,6 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.vault.internal.AutofillCoordinator
-import com.aozijx.passly.features.vault.internal.CryptoHelper
 import com.aozijx.passly.features.vault.internal.DetailCoordinator
 import com.aozijx.passly.features.vault.internal.EntryIconHelper
 import com.aozijx.passly.features.vault.internal.EntryManager
@@ -45,7 +44,6 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val vaultUseCases = AppContainer.domain.vaultUseCases
     private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
     private val autofill = AutofillCoordinator()
-    private val crypto = CryptoHelper()
     private val iconHelper = EntryIconHelper()
     private val entryManager = EntryManager(vaultUseCases, iconHelper)
     private val queryCoordinator = VaultQueryCoordinator(vaultUseCases)
@@ -54,7 +52,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     private val totp = TotpCoordinator(
         scope = viewModelScope,
         codeGenerator = { config -> vaultUseCases.getTotpCode(config) },
-        decryptSecret = { encrypted -> crypto.decryptTotpSecret(encrypted) }
+        decryptSecret = { encrypted -> encrypted }
     )
 
     // --- Search / Filter ---
@@ -138,9 +136,18 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun decryptSingle(
         activity: FragmentActivity,
         encryptedData: String,
+        promptTitle: String,
+        promptSubtitle: String,
         authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
         onResult: (String?) -> Unit
-    ) = crypto.decryptSingle(activity, encryptedData, authenticate, onResult)
+    ) = vaultUseCases.decryptSingleWithAuth(
+        activity = activity,
+        encryptedData = encryptedData,
+        promptTitle = promptTitle,
+        promptSubtitle = promptSubtitle,
+        authenticate = authenticate,
+        onResult = onResult
+    )
 
     // --- TOTP ---
     fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry.toSummary())
