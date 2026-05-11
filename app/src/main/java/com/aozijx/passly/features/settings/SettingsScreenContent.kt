@@ -48,6 +48,7 @@ internal data class SettingsContentState(
     val swipeRightAction: SwipeActionType,
     val autofillUiMode: AutofillUiMode,
     val visibleVaultTabs: Set<String>?,
+    val tabBarMaxTabsWithoutScroll: Int,
     val isAutoDownloadIcons: Boolean,
     val availableCardStyles: List<VaultCardStyle>,
     val passwordSelectedStyle: VaultCardStyle,
@@ -74,6 +75,7 @@ internal data class SettingsContentActions(
     val onRightSwipeActionClick: () -> Unit,
     val onToggleAutofillUiMode: () -> Unit,
     val onVisibleVaultTabsChange: (Set<String>) -> Unit,
+    val onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit,
     val onAutoDownloadIconsChange: (Boolean) -> Unit,
     val onPickBackupPath: () -> Unit,
     val onTestBackupWrite: () -> Unit,
@@ -167,6 +169,8 @@ internal fun SettingsScreenContent(
             item {
                 VaultTabsSettingsSection(
                     visibleVaultTabs = state.visibleVaultTabs,
+                    tabBarMaxTabsWithoutScroll = state.tabBarMaxTabsWithoutScroll,
+                    onTabBarMaxTabsWithoutScrollChange = actions.onTabBarMaxTabsWithoutScrollChange,
                     onVisibleVaultTabsChange = actions.onVisibleVaultTabsChange
                 )
             }

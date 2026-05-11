@@ -1,16 +1,25 @@
 package com.aozijx.passly.features.settings.components.sections
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.features.settings.components.common.SettingsCard
 import com.aozijx.passly.features.settings.components.common.SettingsGroupTitle
-import com.aozijx.passly.features.settings.components.common.SwitchSettingItem
 import com.aozijx.passly.features.vault.model.VaultTab
+import kotlin.math.roundToInt
 
 /**
  * 保险箱 Tab 可见性设置。
@@ -21,6 +30,8 @@ import com.aozijx.passly.features.vault.model.VaultTab
 @Composable
 fun VaultTabsSettingsSection(
     visibleVaultTabs: Set<String>?,
+    tabBarMaxTabsWithoutScroll: Int,
+    onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit,
     onVisibleVaultTabsChange: (Set<String>) -> Unit
 ) {
     val enabledKeys = visibleVaultTabs ?: VaultTab.defaultVisibleKeys
@@ -28,30 +39,61 @@ fun VaultTabsSettingsSection(
 
     SettingsGroupTitle(text = "保险箱 Tab")
     SettingsCard {
-        toggleableTabs.forEachIndexed { index, tab ->
-            if (index > 0) {
-                HorizontalDivider(Modifier.padding(start = 56.dp, end = 16.dp), thickness = 0.5.dp)
-            }
-            val isChecked = tab.settingsKey in enabledKeys
-            SwitchSettingItem(
-                icon = tab.icon,
-                title = stringResource(tab.titleRes),
-                subtitle = null,
-                checked = isChecked,
-                onCheckedChange = { checked ->
-                    val next = buildSet {
-                        // 保留所有不可切换的 Tab
-                        VaultTab.entries.filter { !it.isToggleable }.forEach { add(it.settingsKey) }
-                        // 保留当前仍启用的其它可切换 Tab
-                        toggleableTabs.filter { it != tab && it.settingsKey in enabledKeys }
-                            .forEach { add(it.settingsKey) }
-                        if (checked) add(tab.settingsKey)
-                    }
-                    onVisibleVaultTabsChange(next)
-                }
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "顶部 Tab 均分阈值")
+            Text(text = "${tabBarMaxTabsWithoutScroll.coerceIn(2, 8)}")
         }
-        // 避免最后一项下方视觉上过于紧凑
-        Column(Modifier.padding(bottom = 4.dp)) {}
+
+        Slider(
+            value = tabBarMaxTabsWithoutScroll.coerceIn(2, 8).toFloat(),
+            onValueChange = { value ->
+                onTabBarMaxTabsWithoutScrollChange(value.roundToInt().coerceIn(2, 8))
+            },
+            valueRange = 2f..8f,
+            steps = 5,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        Text(
+            text = "当 Tab 数量小于等于阈值时均分宽度，超过则横向滚动。",
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FlowRow(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            toggleableTabs.forEach { tab ->
+                val isChecked = tab.settingsKey in enabledKeys
+                FilterChip(
+                    selected = isChecked,
+                    onClick = {
+                        val next = buildSet {
+                            VaultTab.entries.filter { !it.isToggleable }
+                                .forEach { add(it.settingsKey) }
+                            toggleableTabs.filter { it != tab && it.settingsKey in enabledKeys }
+                                .forEach { add(it.settingsKey) }
+                            if (!isChecked) add(tab.settingsKey)
+                        }
+                        onVisibleVaultTabsChange(next)
+                    },
+                    label = { Text(stringResource(tab.titleRes)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = null
+                        )
+                    }
+                )
+            }
+        }
     }
 }

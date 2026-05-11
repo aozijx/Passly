@@ -36,7 +36,7 @@ enum class VaultTab(
         titleRes = R.string.vault_tab_passwords,
         icon = Icons.Default.Key,
         isToggleable = true,
-        isUiVisible = false,
+        isUiVisible = true,
         entryFilter = VaultSearchRepository.EntryFilter.PASSWORD_ONLY
     ),
     TOTP(

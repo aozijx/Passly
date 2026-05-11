@@ -18,6 +18,7 @@ interface SystemSettingsRepository {
     val swipeRightAction: Flow<SwipeActionType>
     val autofillUiMode: Flow<AutofillUiMode>
     val visibleVaultTabs: Flow<Set<String>?>
+    val tabBarMaxTabsWithoutScroll: Flow<Int>
     val isAutoDownloadIcons: Flow<Boolean>
 
     suspend fun setDarkMode(enabled: Boolean?)
@@ -32,5 +33,6 @@ interface SystemSettingsRepository {
     suspend fun setSwipeRightAction(action: SwipeActionType)
     suspend fun setAutofillUiMode(mode: AutofillUiMode)
     suspend fun setVisibleVaultTabs(keys: Set<String>)
+    suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int)
     suspend fun setAutoDownloadIcons(enabled: Boolean)
 }

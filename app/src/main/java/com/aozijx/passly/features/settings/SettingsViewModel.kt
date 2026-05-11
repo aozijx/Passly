@@ -37,6 +37,7 @@ data class SettingsUiState(
     val backupDirectoryUri: String? = null,
     val lastBackupExportFileName: String? = null,
     val visibleVaultTabs: Set<String>? = null,
+    val tabBarMaxTabsWithoutScroll: Int = 4,
     val isAutoDownloadIcons: Boolean = true
 )
 
@@ -63,6 +64,7 @@ private data class AutofillAndSwipeFlowState(
     val isSwipeEnabled: Boolean,
     val swipeLeftAction: SwipeActionType,
     val visibleVaultTabs: Set<String>?,
+    val tabBarMaxTabsWithoutScroll: Int,
     val isAutoDownloadIcons: Boolean
 )
 
@@ -134,14 +136,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 systemSettingsUseCases.autofillUiMode,
                 systemSettingsUseCases.isSwipeEnabled,
                 systemSettingsUseCases.swipeLeftAction,
-                systemSettingsUseCases.visibleVaultTabs,
+                combine(
+                    systemSettingsUseCases.visibleVaultTabs,
+                    systemSettingsUseCases.tabBarMaxTabsWithoutScroll
+                ) { visibleVaultTabs, tabBarMaxTabsWithoutScroll ->
+                    visibleVaultTabs to tabBarMaxTabsWithoutScroll
+                },
                 systemSettingsUseCases.isAutoDownloadIcons
-            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction, visibleVaultTabs, isAutoDownloadIcons ->
+            ) { autofillUiMode, isSwipeEnabled, swipeLeftAction, tabSettings, isAutoDownloadIcons ->
                 AutofillAndSwipeFlowState(
                     autofillUiMode = autofillUiMode,
                     isSwipeEnabled = isSwipeEnabled,
                     swipeLeftAction = swipeLeftAction,
-                    visibleVaultTabs = visibleVaultTabs,
+                    visibleVaultTabs = tabSettings.first,
+                    tabBarMaxTabsWithoutScroll = tabSettings.second,
                     isAutoDownloadIcons = isAutoDownloadIcons
                 )
             }) { securityAndStyle, autofillAndSwipe ->
@@ -156,6 +164,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 isSwipeEnabled = autofillAndSwipe.isSwipeEnabled,
                 swipeLeftAction = autofillAndSwipe.swipeLeftAction,
                 visibleVaultTabs = autofillAndSwipe.visibleVaultTabs,
+                tabBarMaxTabsWithoutScroll = autofillAndSwipe.tabBarMaxTabsWithoutScroll,
                 isAutoDownloadIcons = autofillAndSwipe.isAutoDownloadIcons
             )
         },
@@ -183,6 +192,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             backupDirectoryUri = backupDirectoryUri,
             lastBackupExportFileName = lastBackupExportFileName,
             visibleVaultTabs = partialState.visibleVaultTabs,
+            tabBarMaxTabsWithoutScroll = partialState.tabBarMaxTabsWithoutScroll,
             isAutoDownloadIcons = partialState.isAutoDownloadIcons
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
@@ -264,6 +274,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setVisibleVaultTabs(keys: Set<String>) =
         viewModelScope.launch { systemSettingsUseCases.setVisibleVaultTabs(keys) }
+
+    fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) =
+        viewModelScope.launch { systemSettingsUseCases.setTabBarMaxTabsWithoutScroll(maxTabs) }
 
     fun setAutoDownloadIcons(enabled: Boolean) =
         viewModelScope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }

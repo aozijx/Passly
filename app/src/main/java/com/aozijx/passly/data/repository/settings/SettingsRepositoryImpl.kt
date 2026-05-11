@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.settings
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -51,6 +52,8 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
         val BACKUP_DIRECTORY_URI_KEY = stringPreferencesKey("backup_directory_uri")
         val LAST_BACKUP_EXPORT_FILE_NAME_KEY = stringPreferencesKey("last_backup_export_file_name")
         val VISIBLE_VAULT_TABS_KEY = stringPreferencesKey("vault_visible_tabs")
+        val TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY =
+            intPreferencesKey("vault_tab_bar_max_tabs_without_scroll")
         val AUTO_DOWNLOAD_ICONS_KEY = booleanPreferencesKey("data_auto_download_icons")
     }
 
@@ -147,6 +150,9 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
     override val visibleVaultTabs: Flow<Set<String>?> = appContext.settingsDataStore.data.map {
         SettingsMapper.decodeVisibleTabs(it[VISIBLE_VAULT_TABS_KEY])
     }
+    override val tabBarMaxTabsWithoutScroll: Flow<Int> = appContext.settingsDataStore.data.map {
+        normalizeTabBarMaxTabsWithoutScroll(it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] ?: 4)
+    }
     override val isAutoDownloadIcons: Flow<Boolean> =
         appContext.settingsDataStore.data.map { it[AUTO_DOWNLOAD_ICONS_KEY] ?: true }
 
@@ -212,6 +218,12 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
         appContext.settingsDataStore.edit { it[VISIBLE_VAULT_TABS_KEY] = keys.joinToString(",") }
     }
 
+    override suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) {
+        appContext.settingsDataStore.edit {
+            it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] = normalizeTabBarMaxTabsWithoutScroll(maxTabs)
+        }
+    }
+
     override suspend fun setAutoDownloadIcons(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[AUTO_DOWNLOAD_ICONS_KEY] = enabled }
     }
@@ -233,4 +245,6 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
     override suspend fun setLastBackupExportFileName(fileName: String) {
         appContext.settingsDataStore.edit { it[LAST_BACKUP_EXPORT_FILE_NAME_KEY] = fileName }
     }
+
+    private fun normalizeTabBarMaxTabsWithoutScroll(value: Int): Int = value.coerceIn(2, 8)
 }

@@ -27,6 +27,7 @@ class SystemSettingsUseCases(private val repository: SystemSettingsRepository) {
 
     // 保险箱 Tab 可见性
     val visibleVaultTabs: Flow<Set<String>?> = repository.visibleVaultTabs
+    val tabBarMaxTabsWithoutScroll: Flow<Int> = repository.tabBarMaxTabsWithoutScroll
 
     // 数据与下载
     val isAutoDownloadIcons: Flow<Boolean> = repository.isAutoDownloadIcons
@@ -47,5 +48,7 @@ class SystemSettingsUseCases(private val repository: SystemSettingsRepository) {
     suspend fun setSwipeRightAction(action: SwipeActionType) = repository.setSwipeRightAction(action)
     suspend fun setAutofillUiMode(mode: AutofillUiMode) = repository.setAutofillUiMode(mode)
     suspend fun setVisibleVaultTabs(keys: Set<String>) = repository.setVisibleVaultTabs(keys)
+    suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) =
+        repository.setTabBarMaxTabsWithoutScroll(maxTabs)
     suspend fun setAutoDownloadIcons(enabled: Boolean) = repository.setAutoDownloadIcons(enabled)
 }
