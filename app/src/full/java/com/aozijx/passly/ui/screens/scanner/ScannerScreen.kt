@@ -39,8 +39,7 @@ fun ScannerScreen(
     }
 
     TopBarConfig(
-        title = "扫一扫",
-        actions = {
+        title = "扫一扫", actions = {
             IconButton(onClick = { pickPhoto(ImageType.SCREEN) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_photo_24),
@@ -48,21 +47,16 @@ fun ScannerScreen(
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
-        }
-    )
+        })
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize()) {
             // 使用封装了结果显示逻辑的公共扫码组件
-            ScannerView(
-                scanResult = scanResult,
-                onBarcodeDetected = { barcode ->
-                    viewModel.onBarcodeDetected(context, barcode)
-                },
-                onPermissionDenied = {
-                    Toast.makeText(context, "需要相机权限才能扫码", Toast.LENGTH_SHORT).show()
-                }
-            )
+            ScannerView(scanResult = scanResult, onBarcodeDetected = { barcode ->
+                viewModel.onBarcodeDetected(context, barcode)
+            }, onPermissionDenied = {
+                Toast.makeText(context, "需要相机权限才能扫码", Toast.LENGTH_SHORT).show()
+            })
         }
     }
 }
