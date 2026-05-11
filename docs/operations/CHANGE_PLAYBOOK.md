@@ -290,7 +290,48 @@ BiometricPrompt
 
 ---
 
-## 8. 后续扩展
+## 8. 证书 Pin 轮换（Favicon）
+
+适用范围：`network_security_config.xml` pin 即将到期、favicon 提供方证书链变更、紧急证书重签。
+
+关键文件：
+
+- `app/src/main/res/xml/network_security_config.xml` — pin-set 与过期时间
+- `app/src/main/java/com/aozijx/passly/core/media/FaviconUtils.kt` — release 下的 provider allowlist
+  路由
+- `docs/PROJECT_ISSUES_AND_SOLUTIONS.md` — SEC-05 处置记录与维护要求
+
+### 8.1 改动步骤
+
+1. 先确认触发原因：到期预警 / 证书链变更 / 紧急重签。
+2. 为每个 provider 重新采集至少 2 个有效 SPKI pin（建议 leaf + intermediate）。
+3. 更新 `network_security_config.xml` 对应 `<pin-set>`，不要一次性删除全部旧 pin。
+4. 确认 `FaviconUtils` 的 release allowlist 与 pin 的 provider 域名保持一致。
+5. 提交前完成双 flavor 构建，并记录 pin 来源与采集时间。
+
+### 8.2 风险点
+
+- 仅保留单 pin，provider 换证后会导致线上 favicon 全量失败。
+- allowlist 域名与 pin 域名不一致，release 下载会被策略拒绝。
+- 临近到期才处理，发布窗口不足会放大回滚压力。
+
+### 8.3 验证清单
+
+- [ ] `network_security_config.xml` 中每个 pinned 域名至少 2 个有效 pin。
+- [ ] pin 过期时间距离当前 >= 30 天（建议提前轮换）。
+- [ ] `:app:assembleFullDebug` 与 `:app:assembleVaultDebug` 通过。
+- [ ] release 路径下两家 provider favicon 下载均可成功。
+- [ ] `docs/PROJECT_ISSUES_AND_SOLUTIONS.md` 的维护说明与本节一致。
+
+### 8.4 回滚建议
+
+1. 保留上一版可用 pin 作为回滚提交，不要在同一次改动中清空旧 pin 池。
+2. 若新 pin 生效后出现大面积失败，优先回滚到上一版 pin-set。
+3. 回滚后立即复盘 provider 证书链变化，补充新的双 pin 再二次发布。
+
+---
+
+## 9. 后续扩展
 
 可继续新增章节：
 

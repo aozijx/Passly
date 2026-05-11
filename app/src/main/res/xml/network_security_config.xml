@@ -1,4 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
+
+    <!-- Favicon providers used by release builds; pin both leaf/intermediate/root SPKI hashes as backups. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">www.google.com</domain>
+        <pin-set expiration="2030-12-31">
+            <pin digest="SHA-256">CQ2Nf4E/Y0gbNWpUYCT2Ts/sXNq97QmWr5Yfe6T6cR8=</pin>
+            <pin digest="SHA-256">YPtHaftLw6/0vnc2BnNKGF54xiCA28WFcccjkA4ypCM=</pin>
+            <pin digest="SHA-256">hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=</pin>
+        </pin-set>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">icons.duckduckgo.com</domain>
+        <pin-set expiration="2030-12-31">
+            <pin digest="SHA-256">31O7+rVzh5szs+zlEfsrWUD1LbMgK9469NRyyFyxWp0=</pin>
+            <pin digest="SHA-256">Wec45nQiFwKvHtuHxSAMGkt19k+uPSw9JlEkxhvYPHk=</pin>
+            <pin digest="SHA-256">i7WTqTvh0OioIruIfFR4kMPnBqrS2rdiVPl/s2uC/CY=</pin>
+        </pin-set>
+    </domain-config>
 </network-security-config>

@@ -18,6 +18,10 @@ object FaviconUtils {
 
     private const val TAG = "FaviconUtils"
     private const val MAX_HTML_BYTES = 512 * 1024L // HTML 解析上限 512 KB
+    private val PINNED_FAVICON_HOSTS = setOf(
+        "www.google.com",
+        "icons.duckduckgo.com"
+    )
 
     enum class DownloadResult {
         SUCCESS,
@@ -39,7 +43,7 @@ object FaviconUtils {
         if (!BuildConfig.DEBUG) {
             Logcat.w(
                 TAG,
-                "Favicon HTML fetch is disabled in release build until certificate pinning is configured"
+                "Favicon HTML fetch is disabled in release build; release uses pinned favicon providers only"
             )
             return@withContext null
         }
@@ -128,11 +132,20 @@ object FaviconUtils {
         return try {
             val parsed = java.net.URI(url)
             val scheme = parsed.scheme?.lowercase()
-            val host = parsed.host
-            (scheme == "http" || scheme == "https") && !host.isNullOrBlank() && !isRestrictedHost(host)
+            val host = parsed.host?.lowercase()
+            if (scheme != "http" && scheme != "https") return false
+            if (host.isNullOrBlank() || isRestrictedHost(host)) return false
+            BuildConfig.DEBUG || host in PINNED_FAVICON_HOSTS
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun buildPinnedProviderUrls(domain: String): List<String> {
+        return listOf(
+            "https://www.google.com/s2/favicons?sz=256&domain=$domain",
+            "https://icons.duckduckgo.com/ip3/$domain.ico"
+        )
     }
 
     /**
@@ -160,14 +173,6 @@ object FaviconUtils {
     }
 
     suspend fun downloadAndSaveFavicon(input: String, context: Context): DownloadOutcome = withContext(Dispatchers.IO) {
-        if (!BuildConfig.DEBUG) {
-            Logcat.w(
-                TAG,
-                "Favicon network download is disabled in release build until certificate pinning is configured"
-            )
-            return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
-        }
-
         if (input.isBlank()) return@withContext DownloadOutcome(DownloadResult.EMPTY_INPUT)
 
         Logcat.d(TAG, "Trying to download favicon from: $input")
@@ -195,6 +200,27 @@ object FaviconUtils {
         val clean = cleanDomain(input)
         if (clean.isBlank() || isRestrictedHost(clean)) {
             Logcat.w(TAG, "Reject favicon download for restricted domain")
+            return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
+        }
+
+        if (!BuildConfig.DEBUG) {
+            for (url in buildPinnedProviderUrls(clean)) {
+                try {
+                    Logcat.d(TAG, "Trying pinned provider: $url")
+                    val bitmap = downloadFaviconWithCoil(url, context)
+                    if (bitmap != null) {
+                        val savedPath = saveBitmapToInternalStorage(context, bitmap)
+                        if (savedPath != null) {
+                            Logcat.d(TAG, "Successfully downloaded favicon from pinned provider")
+                            return@withContext DownloadOutcome(DownloadResult.SUCCESS, savedPath)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Logcat.e(TAG, "Pinned provider favicon download failed: $url", e)
+                }
+            }
+
+            Logcat.w(TAG, "Failed to download favicon from pinned providers for: $input")
             return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
         }
 
