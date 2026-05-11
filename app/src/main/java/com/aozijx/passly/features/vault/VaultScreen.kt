@@ -89,7 +89,9 @@ fun VaultContent(
     val isStatusBarAutoHide = settingsUiState.isStatusBarAutoHide
     val isTopBarCollapsible = settingsUiState.isTopBarCollapsible
     val isTabBarCollapsible = settingsUiState.isTabBarCollapsible
-    val perTypeStyleMap = settingsUiState.cardStyleByEntryType
+    val perTypeStyleMap = remember(settingsUiState.cardStyleByEntryType) {
+        settingsUiState.cardStyleByEntryType
+    }
     var isFabVisible by remember { mutableStateOf(true) }
 
     val initialTabIndex = visibleTabs.indexOf(selectedTab).coerceAtLeast(0)

@@ -133,6 +133,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                             availableIds.toTypedArray(), pendingIntent.intentSender, presentations
                         )
                     } else {
+                        // API 31-32 require the legacy signature; keep until minSdk is raised beyond 32.
                         @Suppress("DEPRECATION") responseBuilder.setAuthentication(
                             availableIds.toTypedArray(), pendingIntent.intentSender, presentation
                         )
@@ -186,6 +187,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                             ).build()
                             availableIds.forEach { datasetBuilder.setField(it, field) }
                         } else {
+                            // API 31-32 still rely on setValue for inline menu presentation.
                             @Suppress("DEPRECATION") availableIds.forEach { id ->
                                 datasetBuilder.setValue(
                                     id, null, presentation

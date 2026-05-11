@@ -5,6 +5,7 @@ import android.util.Base64
 import androidx.core.content.edit
 import com.aozijx.passly.core.backup.BackupManager
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
@@ -59,7 +60,7 @@ object AppPasswordStore {
     ): Result<Unit> = runCatching {
         val decrypted = decryptPassphrase(context, oldPassword)
         try {
-            if (!decrypted.contentEquals(currentPassphrase)) {
+            if (!MessageDigest.isEqual(decrypted, currentPassphrase)) {
                 throw IllegalArgumentException("应用密码校验失败，请重新解锁后再试")
             }
         } finally {
@@ -80,7 +81,7 @@ object AppPasswordStore {
         runCatching {
             val decrypted = decryptPassphrase(context, password)
             try {
-                if (!decrypted.contentEquals(currentPassphrase)) {
+                if (!MessageDigest.isEqual(decrypted, currentPassphrase)) {
                     throw IllegalArgumentException("应用密码校验失败")
                 }
             } finally {
