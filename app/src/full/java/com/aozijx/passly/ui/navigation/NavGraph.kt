@@ -1,8 +1,10 @@
 package com.aozijx.passly.ui.navigation
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -32,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -46,18 +49,47 @@ import com.aozijx.passly.ui.screens.profile.ProfileScreen
 import com.aozijx.passly.ui.screens.scanner.ScannerScreen
 import com.aozijx.passly.ui.screens.settings.SettingsScreen
 
+private const val ANIM_DURATION = 350
+private val animEasing = FastOutSlowInEasing
+
 /**
- * 提取重复的水平进入动画
+ * 优化后的水平进入动画：减少初始位移，增加柔和度
  */
-private fun horizontalEnter(): EnterTransition {
-    return slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(400)) + fadeIn()
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.horizontalEnter(): EnterTransition {
+    return slideInHorizontally(
+        initialOffsetX = { (it * 0.15f).toInt() },
+        animationSpec = tween(ANIM_DURATION, easing = animEasing)
+    ) + fadeIn(animationSpec = tween(ANIM_DURATION))
 }
 
 /**
- * 提取重复的水平退出动画
+ * 优化后的水平退出动画
  */
-private fun horizontalExit(): ExitTransition {
-    return slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(400)) + fadeOut()
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.horizontalExit(): ExitTransition {
+    return slideOutHorizontally(
+        targetOffsetX = { -(it * 0.15f).toInt() },
+        animationSpec = tween(ANIM_DURATION, easing = animEasing)
+    ) + fadeOut(animationSpec = tween(ANIM_DURATION))
+}
+
+/**
+ * 优化后的返回进入动画
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.horizontalPopEnter(): EnterTransition {
+    return slideInHorizontally(
+        initialOffsetX = { -(it * 0.15f).toInt() },
+        animationSpec = tween(ANIM_DURATION, easing = animEasing)
+    ) + fadeIn(animationSpec = tween(ANIM_DURATION))
+}
+
+/**
+ * 优化后的返回退出动画
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.horizontalPopExit(): ExitTransition {
+    return slideOutHorizontally(
+        targetOffsetX = { (it * 0.15f).toInt() },
+        animationSpec = tween(ANIM_DURATION, easing = animEasing)
+    ) + fadeOut(animationSpec = tween(ANIM_DURATION))
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,10 +172,10 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                enterTransition = { EnterTransition.None },
-                exitTransition = { ExitTransition.None },
-                popEnterTransition = { EnterTransition.None },
-                popExitTransition = { ExitTransition.None }
+                enterTransition = { fadeIn(tween(ANIM_DURATION)) },
+                exitTransition = { fadeOut(tween(ANIM_DURATION)) },
+                popEnterTransition = { fadeIn(tween(ANIM_DURATION)) },
+                popExitTransition = { fadeOut(tween(ANIM_DURATION)) }
             ) {
                 composable(Screen.Home.route) {
                     HomeScreen()
@@ -169,10 +201,16 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 composable(
                     Screen.Scanner.route,
                     enterTransition = {
-                        slideInVertically(initialOffsetY = { it }, animationSpec = tween(400)) + fadeIn()
+                        slideInVertically(
+                            initialOffsetY = { it / 4 },
+                            animationSpec = tween(ANIM_DURATION, easing = animEasing)
+                        ) + fadeIn()
                     },
                     exitTransition = {
-                        slideOutVertically(targetOffsetY = { it }, animationSpec = tween(400)) + fadeOut()
+                        slideOutVertically(
+                            targetOffsetY = { it / 4 },
+                            animationSpec = tween(ANIM_DURATION, easing = animEasing)
+                        ) + fadeOut()
                     }
                 ) {
                     ScannerScreen()
@@ -180,14 +218,18 @@ fun NavGraph(startDestination: String = Screen.Home.route) {
                 composable(
                     Screen.Setting.route,
                     enterTransition = { horizontalEnter() },
-                    exitTransition = { horizontalExit() }
+                    exitTransition = { horizontalExit() },
+                    popEnterTransition = { horizontalPopEnter() },
+                    popExitTransition = { horizontalPopExit() }
                 ) {
                     SettingsScreen()
                 }
                 composable(
                     Screen.AppAnalysis.route,
                     enterTransition = { horizontalEnter() },
-                    exitTransition = { horizontalExit() }
+                    exitTransition = { horizontalExit() },
+                    popEnterTransition = { horizontalPopEnter() },
+                    popExitTransition = { horizontalPopExit() }
                 ) {
                     AppSdkClassifier()
                 }
