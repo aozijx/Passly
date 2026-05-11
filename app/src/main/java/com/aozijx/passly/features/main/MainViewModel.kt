@@ -132,6 +132,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
+            initResult.recoveryNotice?.let { notice ->
+                emitEffect(MainEffect.ShowToast(notice))
+            }
+
             initResult.error?.let { error ->
                 val msg = "数据库错误: ${authValidationSupport.sanitizeMessage(error.message)}"
                 emitEffect(MainEffect.ShowError(msg))

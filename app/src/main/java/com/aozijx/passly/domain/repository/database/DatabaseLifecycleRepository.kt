@@ -20,6 +20,11 @@ interface DatabaseLifecycleRepository {
     suspend fun retry(): Throwable?
 
     /**
+     * 返回并清空一次性的数据库自动恢复提示信息。
+     */
+    fun consumeAutoRecoveryNotice(): String?
+
+    /**
      * 关闭底层数据库连接，释放资源。
      */
     fun close()

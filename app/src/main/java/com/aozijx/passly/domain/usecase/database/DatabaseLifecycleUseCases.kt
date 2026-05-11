@@ -12,5 +12,7 @@ class DatabaseLifecycleUseCases(
 
     suspend fun retry(): Throwable? = repository.retry()
 
+    fun consumeAutoRecoveryNotice(): String? = repository.consumeAutoRecoveryNotice()
+
     fun close() = repository.close()
 }
