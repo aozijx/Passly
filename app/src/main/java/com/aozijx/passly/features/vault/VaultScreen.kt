@@ -35,12 +35,14 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aozijx.passly.R
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
@@ -81,6 +83,9 @@ fun VaultContent(
     val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
     val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val authTitle = stringResource(R.string.auth_title)
+    val totpCopiedText = stringResource(R.string.vault_totp_copied)
+    val fieldCopiedFormat = stringResource(R.string.vault_field_copied_format)
 
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -150,7 +155,7 @@ fun VaultContent(
             totpStates[item.id]?.let { state ->
                 if (state.code.isNotEmpty() && !state.code.contains("-")) {
                     ClipboardUtils.copy(activity, state.code)
-                    Toast.makeText(context, "验证码已复制", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, totpCopiedText, Toast.LENGTH_SHORT).show()
                 }
             }
         } else {
@@ -167,7 +172,11 @@ fun VaultContent(
                     onResult = { decrypted ->
                         decrypted?.let {
                             ClipboardUtils.copy(activity, it)
-                            Toast.makeText(context, "${label}已复制", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                fieldCopiedFormat.format(label),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     })
             }
@@ -181,7 +190,7 @@ fun VaultContent(
             item = item,
             onAuthRequired = { ok ->
                 mainViewModel.requestAuth(
-                    activity, "安全验证", item.title, onSuccess = ok
+                    activity, authTitle, item.title, onSuccess = ok
                 )
             },
             onQuickDelete = { vaultViewModel.quickDelete(it) },

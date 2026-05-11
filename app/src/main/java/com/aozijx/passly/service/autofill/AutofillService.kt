@@ -363,7 +363,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                 // 如果锁定，无法执行保存（需要解密后重新加密存入 DB）
                 if (DatabasePassphraseManager.isLocked) {
                     Logcat.w(tag, "onSaveRequest: DB locked, cannot save")
-                    return@launch callback.onFailure("Passly is locked")
+                    return@launch callback.onFailure(getString(R.string.autofill_locked))
                 }
 
                 val saveStart = System.currentTimeMillis()
@@ -378,7 +378,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                     callback.onSuccess()
                 } else {
                     Logcat.e(tag, "Failed to save credentials")
-                    callback.onFailure("Save failed in repository")
+                    callback.onFailure(getString(R.string.autofill_save_failed_repository))
                 }
                 val saveCost = System.currentTimeMillis() - saveStart
                 if (saveCost >= slowSaveMs) Logcat.w(tag, "onSaveRequest slow: ${saveCost}ms")

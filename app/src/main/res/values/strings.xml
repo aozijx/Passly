@@ -45,6 +45,8 @@
     <string name="autofill_save_prompt_description">是否将 %s 的账号密码保存到 Passly？</string>
     <string name="autofill_save_icon_description">应用图标</string>
     <string name="autofill_no_suggestions">Passly 暂无匹配建议</string>
+    <string name="autofill_locked">Passly 已锁定</string>
+    <string name="autofill_save_failed_repository">保存失败</string>
     <string name="autofill_pending_verification">待验证的自动填充项</string>
     <string name="autofill_match_app">应用匹配</string>
     <string name="autofill_match_domain">域名匹配</string>
@@ -88,6 +90,7 @@
     <string name="vault_menu_enable_autofill">开启自动填充</string>
     <string name="vault_toast_enable_autofill_manual">请在系统设置中开启自动填充</string>
     <string name="vault_toast_save_icon_failed">图片保存失败</string>
+    <string name="vault_field_copied_format">%1$s已复制</string>
     <string name="vault_menu_export">导出备份</string>
     <string name="vault_menu_import">导入恢复</string>
     <string name="vault_menu_all_categories">全部分类</string>
