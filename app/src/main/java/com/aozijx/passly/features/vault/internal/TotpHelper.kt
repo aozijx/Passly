@@ -17,10 +17,15 @@ internal class TotpHelper {
         codeGenerator: (TotpConfig) -> String,
         intervalMs: Long = 500L
     ): Flow<Map<Int, TotpState>> = flow {
+        var lastEmitted: Map<Int, TotpState>? = null
         while (currentCoroutineContext().isActive) {
             val currentStates = statesProvider()
             if (currentStates.isNotEmpty()) {
-                emit(refreshStates(currentStates, entriesProvider(), codeGenerator))
+                val refreshed = refreshStates(currentStates, entriesProvider(), codeGenerator)
+                if (refreshed != lastEmitted) {
+                    lastEmitted = refreshed
+                    emit(refreshed)
+                }
             }
             delay(intervalMs)
         }
