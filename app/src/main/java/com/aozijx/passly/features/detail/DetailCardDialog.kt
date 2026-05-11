@@ -33,6 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.model.TotpState
+import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.security.otp.TotpUtils
@@ -61,7 +62,10 @@ fun DetailCardDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val detailViewModel: DetailViewModel = viewModel()
+    val application = context.applicationContext as android.app.Application
+    val detailViewModel: DetailViewModel = viewModel(
+        factory = appViewModelFactory(application)
+    )
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
 
     val currentEntry by remember {

@@ -42,7 +42,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
@@ -70,8 +69,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun VaultContent(
     mainViewModel: MainViewModel,
     activity: FragmentActivity,
-    vaultViewModel: VaultViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel(),
+    vaultViewModel: VaultViewModel,
+    settingsViewModel: SettingsViewModel,
     onSettingsClick: () -> Unit = {},
     onPlainExportClick: () -> Unit = {},
     onShowDetail: (VaultEntry) -> Unit = {}

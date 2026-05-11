@@ -7,7 +7,11 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
-import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.domain.usecase.auth.AuthUseCases
+import com.aozijx.passly.domain.usecase.backup.BackupUseCases
+import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
+import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
+import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.features.auth.AuthCoordinator
 import com.aozijx.passly.features.auth.ui.SettingsAuthGateway
 import com.aozijx.passly.features.backup.BackupCoordinator
@@ -68,12 +72,14 @@ private data class AutofillAndSwipeFlowState(
     val isAutoDownloadIcons: Boolean
 )
 
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
-    private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
-    private val backupSettingsUseCases = AppContainer.domain.backupSettingsUseCases
-    private val backupUseCases = AppContainer.domain.backupUseCases
+class SettingsViewModel(
+    application: Application,
+    private val systemSettingsUseCases: SystemSettingsUseCases,
+    private val securitySettingsUseCases: SecuritySettingsUseCases,
+    private val backupSettingsUseCases: BackupSettingsUseCases,
+    private val backupUseCases: BackupUseCases,
+    authUseCases: AuthUseCases
+) : AndroidViewModel(application) {
 
     val backup = BackupCoordinator(
         scope = viewModelScope,
@@ -84,7 +90,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     /** 认证协调器：统一处理认证相关的 UI 流程 */
     private val authCoordinator = AuthCoordinator(
-        scope = viewModelScope, authUseCases = AppContainer.domain.authUseCases
+        scope = viewModelScope, authUseCases = authUseCases
     )
     val authGateway: SettingsAuthGateway = authCoordinator
 

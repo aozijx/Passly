@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.core.designsystem.components.PlainExportDialog
 import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
+import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.navigation.PasslyNavHost
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.local.config.DatabaseConfig
@@ -38,7 +39,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
 import kotlin.system.exitProcess
 
 class MainActivity : FragmentActivity() {
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels { appViewModelFactory(application) }
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
@@ -74,7 +75,9 @@ class MainActivity : FragmentActivity() {
         setContent {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
             val context = LocalContext.current
-            val settingsViewModel: SettingsViewModel = viewModel()
+            val settingsViewModel: SettingsViewModel = viewModel(
+                factory = appViewModelFactory(application)
+            )
             val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
             // 全局备份消息监听
@@ -202,7 +205,9 @@ class MainActivity : FragmentActivity() {
         onPlainExportPickerRequest: (String) -> Unit
     ) {
         val context = LocalContext.current
-        val vaultViewModel: VaultViewModel = viewModel()
+        val vaultViewModel: VaultViewModel = viewModel(
+            factory = appViewModelFactory(application)
+        )
         val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
         var showPlainExportRiskDialog by remember { mutableStateOf(false) }
         val navController = rememberNavController()

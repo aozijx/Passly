@@ -12,10 +12,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.model.TotpState
-import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
+import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.vault.internal.AutofillCoordinator
 import com.aozijx.passly.features.vault.internal.DetailCoordinator
@@ -39,10 +40,11 @@ import kotlinx.coroutines.launch
 /**
  * 保险箱主界面业务逻辑
  */
-class VaultViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val vaultUseCases = AppContainer.domain.vaultUseCases
-    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
+class VaultViewModel(
+    application: Application,
+    private val vaultUseCases: VaultUseCases,
+    private val systemSettingsUseCases: SystemSettingsUseCases
+) : AndroidViewModel(application) {
     private val autofill = AutofillCoordinator()
     private val iconHelper = EntryIconHelper()
     private val entryManager = EntryManager(vaultUseCases, iconHelper)

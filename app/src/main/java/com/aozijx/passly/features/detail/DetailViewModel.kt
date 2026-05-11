@@ -3,11 +3,13 @@ package com.aozijx.passly.features.detail
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.domain.model.icon.FaviconResult
+import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import com.aozijx.passly.domain.usecase.detail.DetailUseCases
+import com.aozijx.passly.domain.usecase.userconfig.UserConfigUseCases
 import com.aozijx.passly.features.detail.contract.DetailEffect
 import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.contract.DetailUiState
@@ -21,10 +23,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class DetailViewModel(application: Application) : AndroidViewModel(application) {
-    private val detailUseCases = AppContainer.domain.detailUseCases
-    private val userConfigUseCases = AppContainer.domain.userConfigUseCases
-    private val historyRepository = AppContainer.data.historyRepository
+class DetailViewModel(
+    application: Application,
+    private val detailUseCases: DetailUseCases,
+    private val userConfigUseCases: UserConfigUseCases,
+    private val historyRepository: HistoryRepository
+) : AndroidViewModel(application) {
     private val entryAnalyzer = DetailEntryAnalyzer()
 
     companion object {

@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -16,6 +17,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.DetailViewModel
 import com.aozijx.passly.features.detail.contract.DetailEffect
@@ -75,7 +77,10 @@ fun PasslyNavHost(
                 ?.getInt(AppRoute.Detail.ARG_ENTRY_ID)
                 ?: return@composable
 
-            val detailViewModel: DetailViewModel = viewModel()
+            val application = LocalContext.current.applicationContext as android.app.Application
+            val detailViewModel: DetailViewModel = viewModel(
+                factory = appViewModelFactory(application)
+            )
             val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
             val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
 

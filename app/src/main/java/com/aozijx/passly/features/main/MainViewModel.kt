@@ -4,8 +4,11 @@ import android.app.Application
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
+import com.aozijx.passly.domain.usecase.auth.AuthUseCases
+import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
+import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
+import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.features.auth.AuthCoordinator
 import com.aozijx.passly.features.auth.ui.AuthScreenAuthGateway
 import com.aozijx.passly.features.main.contract.MainEffect
@@ -21,11 +24,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
-    private val securitySettingsUseCases = AppContainer.domain.securitySettingsUseCases
-    private val authUseCases = AppContainer.domain.authUseCases
-    private val databaseLifecycleUseCases = AppContainer.domain.databaseLifecycleUseCases
+class MainViewModel(
+    application: Application,
+    private val systemSettingsUseCases: SystemSettingsUseCases,
+    private val securitySettingsUseCases: SecuritySettingsUseCases,
+    private val authUseCases: AuthUseCases,
+    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases
+) : AndroidViewModel(application) {
 
     private val authValidationSupport = AuthValidationSupport()
     private val databaseInitializer = MainDatabaseInitializer(databaseLifecycleUseCases)
