@@ -26,12 +26,13 @@ import javax.crypto.spec.SecretKeySpec
 object EmergencyBackupExporter {
     private const val TAG = "EmergencyBackup"
     private const val IV_LENGTH = 12
+    private const val MAX_FILE_AGE_MS = 15 * 60 * 1000L
     private val MAGIC = "PSEM1".toByteArray(StandardCharsets.UTF_8)
     private val KDF_LABEL = "passly-emergency-backup-v1".toByteArray(StandardCharsets.UTF_8)
 
     /**
      * 当应用检测到数据库无法正常初始化时，尝试抢救数据。
-     * 将数据以明文 JSON 形式保存到 App 私有目录（Cache 目录）中。
+     * 仅在 DEBUG 构建导出，并以密文文件保存到 app cache。
      */
     fun exportOnFailure(context: Context): Result<File> {
         if (!BuildConfig.DEBUG) {
@@ -39,17 +40,22 @@ object EmergencyBackupExporter {
         }
 
         var db: SQLiteDatabase? = null
+        var passphrase: ByteArray? = null
+        var plainJson: ByteArray? = null
+        var encryptedPayload: ByteArray? = null
         return try {
+            deleteExpiredBackups(context.cacheDir)
+
             val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
             if (!dbFile.exists()) return Result.failure(Exception("数据库文件不存在"))
 
-            val passphrase = DatabasePassphraseManager.getPassphrase()
+            passphrase = DatabasePassphraseManager.getPassphrase()
             db = SQLiteDatabase.openDatabase(
                 dbFile.path, passphrase, null, SQLiteDatabase.OPEN_READONLY, null, null
             )
 
-            val plainJson = writeEntriesToJsonBytes(db)
-            val encryptedPayload = encryptPayload(plainJson, passphrase)
+            plainJson = writeEntriesToJsonBytes(db)
+            encryptedPayload = encryptPayload(plainJson, passphrase)
 
             // 将文件保存在 cache 目录下，避免暴露在 Downloads 这种公开区域
             val backupFile = File(
@@ -61,15 +67,15 @@ object EmergencyBackupExporter {
                 output.write(encryptedPayload)
             }
 
-            plainJson.fill(0)
-            encryptedPayload.fill(0)
-
             Logcat.i(TAG, "紧急救灾备份已生成(密文): ${backupFile.absolutePath}")
             Result.success(backupFile)
         } catch (e: Exception) {
             Logcat.e(TAG, "紧急救灾备份失败", e)
             Result.failure(e)
         } finally {
+            passphrase?.fill(0)
+            plainJson?.fill(0)
+            encryptedPayload?.fill(0)
             db?.close()
         }
     }
@@ -82,18 +88,22 @@ object EmergencyBackupExporter {
         val cursor = db.rawQuery("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}", null)
         writer.beginArray()
         cursor.use {
-            val columnNames = cursor.columnNames
             while (cursor.moveToNext()) {
                 writer.beginObject()
-                for (columnName in columnNames) {
-                    val columnIndex = cursor.getColumnIndex(columnName)
-                    writer.name(columnName)
-                    when (cursor.getType(columnIndex)) {
+                val idIndex = cursor.getColumnIndex("id")
+                if (idIndex >= 0) {
+                    writer.name("id")
+                    writer.value(cursor.getLong(idIndex))
+                }
+
+                val blobIndex = cursor.getColumnIndex("encryptedBlob")
+                if (blobIndex >= 0) {
+                    writer.name("encryptedBlob")
+                    when (cursor.getType(blobIndex)) {
                         Cursor.FIELD_TYPE_NULL -> writer.nullValue()
-                        Cursor.FIELD_TYPE_INTEGER -> writer.value(cursor.getLong(columnIndex))
-                        Cursor.FIELD_TYPE_FLOAT -> writer.value(cursor.getDouble(columnIndex))
-                        Cursor.FIELD_TYPE_STRING -> writer.value(cursor.getString(columnIndex))
+                        Cursor.FIELD_TYPE_STRING -> writer.value(cursor.getString(blobIndex))
                         Cursor.FIELD_TYPE_BLOB -> writer.value("[BINARY DATA]")
+                        else -> writer.value(cursor.getString(blobIndex))
                     }
                 }
                 writer.endObject()
@@ -102,6 +112,17 @@ object EmergencyBackupExporter {
         writer.endArray()
         writer.close()
         return output.toByteArray()
+    }
+
+    private fun deleteExpiredBackups(cacheDir: File) {
+        val now = System.currentTimeMillis()
+        cacheDir.listFiles { file ->
+            file.name.startsWith("emergency_rescue_") && file.name.endsWith(".json.enc")
+        }?.forEach { file ->
+            if (now - file.lastModified() > MAX_FILE_AGE_MS) {
+                runCatching { file.delete() }
+            }
+        }
     }
 
     private fun encryptPayload(plain: ByteArray, passphrase: ByteArray): ByteArray {
