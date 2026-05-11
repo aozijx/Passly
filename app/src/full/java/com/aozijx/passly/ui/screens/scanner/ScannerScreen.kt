@@ -8,7 +8,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,7 +31,7 @@ fun ScannerScreen(
     viewModel: ScannerViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val scanResult by viewModel.scanResult.collectAsState()
+    val scanResult by viewModel.scanResult.collectAsStateWithLifecycle()
 
     // 图片识别逻辑（从相册选择）
     val pickPhoto = rememberImagePicker { uri, _ ->
@@ -66,5 +66,3 @@ fun ScannerScreen(
         }
     }
 }
-
-

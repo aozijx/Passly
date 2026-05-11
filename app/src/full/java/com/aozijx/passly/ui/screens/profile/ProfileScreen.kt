@@ -35,7 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,7 +60,7 @@ import com.aozijx.passly.ui.screens.login.LoginActivity
 fun ProfileScreen(
     navController: NavController? = null, viewModel: ProfileViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     // 图片选择器
     val pickPhoto = rememberImagePicker { uri, type ->
@@ -301,4 +301,3 @@ fun ExifInfoList(info: Map<String, String>) {
         }
     }
 }
-

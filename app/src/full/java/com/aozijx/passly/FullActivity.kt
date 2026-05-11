@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.theme.AppTheme
@@ -39,8 +39,8 @@ class FullActivity : AppCompatActivity() {
         }
 
         setContent {
-            val isDark by preference.isDarkMode.collectAsState(initial = null)
-            val isDynamic by preference.isDynamicColor.collectAsState(initial = true)
+            val isDark by preference.isDarkMode.collectAsStateWithLifecycle(initialValue = null)
+            val isDynamic by preference.isDynamicColor.collectAsStateWithLifecycle(initialValue = true)
 
             AppTheme(darkTheme = if (isDark == true) true else null, dynamicColor = isDynamic) {
                 NavGraph(startDestination = Screen.Home.route)

@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.designsystem.base.VaultItemIcon
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
@@ -40,7 +40,8 @@ fun TwoFAItem(
     previewProgress: Float? = null,
     onClick: () -> Unit = { vaultViewModel?.showDetail(entry) }
 ) {
-    val currentState = vaultViewModel?.totpStates?.collectAsState()?.value?.get(entry.id)
+    val currentState =
+        vaultViewModel?.totpStates?.collectAsStateWithLifecycle()?.value?.get(entry.id)
 
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
 

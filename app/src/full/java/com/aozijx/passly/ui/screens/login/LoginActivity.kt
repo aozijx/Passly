@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.aozijx.passly.core.theme.AppTheme
@@ -22,8 +22,10 @@ class LoginActivity : ComponentActivity() {
             // 1. 实例化 Preference 类
             val preference = remember { AppPreference(applicationContext) }
             // initialValue 建议使用系统默认值，这样启动时不会有闪烁
-            val isDarkModePref by preference.isDarkMode.collectAsState(initial = null)
-            val isDynamicColorPref by preference.isDynamicColor.collectAsState(initial = true)
+            val isDarkModePref by preference.isDarkMode.collectAsStateWithLifecycle(initialValue = null)
+            val isDynamicColorPref by preference.isDynamicColor.collectAsStateWithLifecycle(
+                initialValue = true
+            )
 
             AppTheme(
                 darkTheme = if (isDarkModePref == true) true else null,
@@ -34,4 +36,3 @@ class LoginActivity : ComponentActivity() {
         }
     }
 }
-

@@ -2,12 +2,11 @@ package com.aozijx.passly.features.vault.components
 
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-
 import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
 import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.PasswordInput
@@ -61,7 +60,7 @@ fun AddPasswordDialog(
         CategoryDropdown(
             selectedCategory = state.category,
             onCategorySelected = { state.category = it },
-            availableCategories = viewModel.availableCategories.collectAsState().value
+            availableCategories = viewModel.availableCategories.collectAsStateWithLifecycle().value
         )
     }
 }

@@ -3,7 +3,6 @@ package com.aozijx.passly.core.navigation
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,7 +77,7 @@ fun PasslyNavHost(
 
             val detailViewModel: DetailViewModel = viewModel()
             val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
-            val totpStates by vaultViewModel.totpStates.collectAsState()
+            val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
 
             LaunchedEffect(detailViewModel) {
                 detailViewModel.effects.collectLatest { effect ->

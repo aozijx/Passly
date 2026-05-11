@@ -36,7 +36,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,9 +46,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
-
 import com.aozijx.passly.core.designsystem.components.ScannerView
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.ImageType
@@ -81,7 +80,7 @@ fun VaultScanner(
 
     val errorNotOtp = stringResource(R.string.vault_scanner_error_not_otp)
     val successSaveMsg = stringResource(R.string.vault_scanner_success_save)
-    val scanResult by scannerViewModel.scanResult.collectAsState()
+    val scanResult by scannerViewModel.scanResult.collectAsStateWithLifecycle()
 
     val scannedTotp = remember(scanResult) { TotpUtils.parseOtpAuthUri(scanResult) }
 
@@ -246,4 +245,3 @@ fun VaultScanner(
         }
     }
 }
-
