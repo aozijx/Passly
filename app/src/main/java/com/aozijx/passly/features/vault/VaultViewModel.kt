@@ -189,14 +189,12 @@ class VaultViewModel(
 
     val addType: AddType? get() = detail.addType
     fun setAddType(type: AddType?) = detail.setAddType(type)
-    val detailCoordinatorState: VaultDetailCoordinatorState get() = detail.coordinatorState
     val itemToDelete: VaultEntry? get() = detail.itemToDelete
     fun setItemToDelete(entry: VaultEntry?) = detail.setItemToDelete(entry)
 
     fun showDetailIconPicker() = detail.showIconPicker()
     fun hideDetailIconPicker() = detail.hideIconPicker()
 
-    val totpStates: StateFlow<Map<Int, TotpState>> = totp.states
     fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry)
     fun autoUnlockTotp(entry: VaultSummary) = totp.autoUnlock(entry)
     fun clearDetailSensitiveState(entryId: Int) = totp.clearSensitiveState(entryId)

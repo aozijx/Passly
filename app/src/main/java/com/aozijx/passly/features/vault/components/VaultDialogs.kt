@@ -1,7 +1,9 @@
 package com.aozijx.passly.features.vault.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.features.backup.ui.BackupPasswordDialog
 import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.main.MainViewModel
@@ -18,7 +20,8 @@ fun VaultDialogs(
     vaultViewModel: VaultViewModel,
     settingsViewModel: SettingsViewModel
 ) {
-    val detailCoordinator = vaultViewModel.detailCoordinatorState
+    val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
+    val detailCoordinator = uiState.detailCoordinatorState
 
     // --- 详情对话框 ---
     detailCoordinator.request?.let { request ->

@@ -53,8 +53,8 @@ fun TotpStyleVaultItem(
     previewProgress: Float? = null,
     onClick: () -> Unit = { vaultViewModel?.showDetail(entry) }
 ) {
-    val totpStatesState = vaultViewModel?.totpStates?.collectAsStateWithLifecycle()
-    val currentState = totpStatesState?.value?.get(entry.id)
+    val vaultUiStateState = vaultViewModel?.uiState?.collectAsStateWithLifecycle()
+    val currentState = vaultUiStateState?.value?.totpStates?.get(entry.id)
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
 
     val targetProgress = previewProgress ?: (currentState?.progress ?: 0f)

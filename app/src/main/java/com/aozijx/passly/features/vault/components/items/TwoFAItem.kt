@@ -41,7 +41,7 @@ fun TwoFAItem(
     onClick: () -> Unit = { vaultViewModel?.showDetail(entry) }
 ) {
     val currentState =
-        vaultViewModel?.totpStates?.collectAsStateWithLifecycle()?.value?.get(entry.id)
+        vaultViewModel?.uiState?.collectAsStateWithLifecycle()?.value?.totpStates?.get(entry.id)
 
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
 
