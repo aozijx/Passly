@@ -12,7 +12,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.model.TotpState
-import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
@@ -155,7 +154,7 @@ class VaultViewModel(
         onResult = onResult
     )
 
-    fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry.toSummary())
+    fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry)
     fun autoUnlockTotp(entry: VaultSummary) = totp.autoUnlock(entry)
 
     fun showDetail(entry: VaultEntry) {
@@ -167,13 +166,12 @@ class VaultViewModel(
         viewModelScope.launch { vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) } }
     }
     fun dismissDetail() {
-        detailCoordinatorState.request?.entry?.id?.let { totp.removeEntry(it) }
+        detailCoordinatorState.request?.entry?.id?.let { totp.clearSensitiveState(it) }
         detail.dismissDetail()
     }
 
-    fun clearDetailSensitiveState(entryId: Int) {
-        totp.removeEntry(entryId)
-    }
+    fun clearDetailSensitiveState(entryId: Int) = totp.clearSensitiveState(entryId)
+
     fun showDetailIconPicker() = detail.showIconPicker()
     fun hideDetailIconPicker() = detail.hideIconPicker()
 
@@ -195,8 +193,7 @@ class VaultViewModel(
         viewModelScope.launch {
             entryManager.updateEntry(entry)
             detail.updateEntry(entry)
-            totp.removeEntry(entry.id)
-            if (!entry.totpSecret.isNullOrBlank()) totp.autoUnlock(entry.toSummary())
+            totp.onEntryUpdated(entry)
         }
     }
 
@@ -215,7 +212,7 @@ class VaultViewModel(
                 if (detail.isViewingEntry(entry.id)) detail.dismissDetail()
                 entryManager.deleteEntry(entry)
                 detail.setItemToDelete(null)
-                totp.removeEntry(entry.id)
+                totp.clearSensitiveState(entry.id)
             }
         }
     }
@@ -224,7 +221,7 @@ class VaultViewModel(
         viewModelScope.launch {
             if (detail.isViewingEntry(entry.id)) detail.dismissDetail()
             entryManager.deleteEntry(entry)
-            totp.removeEntry(entry.id)
+            totp.clearSensitiveState(entry.id)
         }
     }
 
