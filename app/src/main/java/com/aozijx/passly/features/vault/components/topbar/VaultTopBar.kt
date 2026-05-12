@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,17 +34,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.components.topbar.components.VaultDropdownMenu
 import com.aozijx.passly.features.vault.components.topbar.components.VaultSearchBar
 import com.aozijx.passly.features.vault.components.topbar.components.VaultTabRow
+import com.aozijx.passly.features.vault.model.VaultUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTopBar(
     vaultViewModel: VaultViewModel,
+    uiState: VaultUiState,
     scrollBehavior: TopAppBarScrollBehavior,
     onExportClick: () -> Unit,
     onPlainJsonExportClick: () -> Unit,
@@ -64,15 +64,6 @@ fun VaultTopBar(
         }
     }
 
-    val searchQuery by vaultViewModel.searchQuery.collectAsStateWithLifecycle()
-    val selectedCategory by vaultViewModel.selectedCategory.collectAsStateWithLifecycle()
-    val availableCategories by vaultViewModel.availableCategories.collectAsStateWithLifecycle()
-    val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
-    val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
-    val isSearchActive by vaultViewModel.isSearchActive.collectAsStateWithLifecycle()
-    val isMoreMenuExpanded by vaultViewModel.isMoreMenuExpanded.collectAsStateWithLifecycle()
-
-    val displayTabs = visibleTabs
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible, isStatusBarAutoHide) {
@@ -81,8 +72,8 @@ fun VaultTopBar(
         }
     }
 
-    LaunchedEffect(isSearchActive) {
-        if (isSearchActive) {
+    LaunchedEffect(uiState.isSearchActive) {
+        if (uiState.isSearchActive) {
             focusRequester.requestFocus()
         }
     }
@@ -92,22 +83,22 @@ fun VaultTopBar(
             scrollBehavior = if (isTopBarCollapsible) scrollBehavior else null,
             windowInsets = WindowInsets.statusBars,
             title = {
-                if (isSearchActive) {
+                if (uiState.isSearchActive) {
                     VaultSearchBar(
-                        query = searchQuery,
+                        query = uiState.searchQuery,
                         onQueryChange = { vaultViewModel.onSearchQueryChange(it) },
                         focusRequester = focusRequester,
                     )
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (selectedCategory != null) stringResource(
-                                R.string.vault_title_category, selectedCategory!!
+                            text = if (uiState.selectedCategory != null) stringResource(
+                                R.string.vault_title_category, uiState.selectedCategory
                             )
                             else stringResource(R.string.vault_title_default),
                             fontWeight = FontWeight.Bold
                         )
-                        if (selectedCategory != null) {
+                        if (uiState.selectedCategory != null) {
                             IconButton(onClick = { vaultViewModel.clearSelectedCategory() }) {
                                 Icon(
                                     Icons.Default.Clear,
@@ -120,15 +111,15 @@ fun VaultTopBar(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = { vaultViewModel.toggleSearch(!isSearchActive) }) {
+                IconButton(onClick = { vaultViewModel.toggleSearch(!uiState.isSearchActive) }) {
                     Icon(
-                        if (isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
-                        contentDescription = stringResource(if (isSearchActive) R.string.action_back else R.string.action_search)
+                        if (uiState.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
+                        contentDescription = stringResource(if (uiState.isSearchActive) R.string.action_back else R.string.action_search)
                     )
                 }
             },
             actions = {
-                if (!isSearchActive) {
+                if (!uiState.isSearchActive) {
                     Box {
                         IconButton(onClick = { vaultViewModel.expandMoreMenu(true) }) {
                             Icon(
@@ -137,11 +128,11 @@ fun VaultTopBar(
                             )
                         }
                         VaultDropdownMenu(
-                            expanded = isMoreMenuExpanded,
+                            expanded = uiState.isMoreMenuExpanded,
                             onDismissRequest = { vaultViewModel.expandMoreMenu(false) },
-                            showTOTPCode = vaultViewModel.showTOTPCode,
+                            showTOTPCode = uiState.showTOTPCode,
                             onToggleTotpVisibility = {
-                                vaultViewModel.showTOTPCode = !vaultViewModel.showTOTPCode
+                                vaultViewModel.toggleShowTOTPCode()
                             },
                             isAutofillEnabled = vaultViewModel.isAutofillEnabled,
                             onEnableAutofillClick = { vaultViewModel.openAutofillSettings(context) },
@@ -149,23 +140,24 @@ fun VaultTopBar(
                             onExportClick = onExportClick,
                             onOpenPlainExport = onPlainJsonExportClick,
                             onImportClick = onImportClick,
-                            availableCategories = availableCategories,
-                            selectedCategory = selectedCategory,
+                            availableCategories = uiState.availableCategories,
+                            selectedCategory = uiState.selectedCategory,
                             onCategorySelected = { vaultViewModel.setSelectedCategory(it) })
                     }
                 }
             })
 
         AnimatedVisibility(
-            visible = displayTabs.size > 1 && !isSearchActive && selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+            visible = uiState.visibleTabs.size > 1 && !uiState.isSearchActive && uiState.selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
             VaultTabRow(
-                tabs = displayTabs,
-                selectedTabIndex = displayTabs.indexOf(selectedTab).coerceAtLeast(0),
+                tabs = uiState.visibleTabs,
+                selectedTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab)
+                    .coerceAtLeast(0),
                 onTabSelected = { index ->
-                    displayTabs.getOrNull(index)?.let { vaultViewModel.selectTab(it) }
+                    uiState.visibleTabs.getOrNull(index)?.let { vaultViewModel.selectTab(it) }
                 }
             )
         }

@@ -2,6 +2,7 @@ package com.aozijx.passly.features.vault.components
 
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -18,6 +19,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
 fun AddPasswordDialog(
     viewModel: VaultViewModel
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val state = remember { PasswordAddState() }
     val unfiledCategory = stringResource(R.string.category_unfiled)
 
@@ -60,7 +62,7 @@ fun AddPasswordDialog(
         CategoryDropdown(
             selectedCategory = state.category,
             onCategorySelected = { state.category = it },
-            availableCategories = viewModel.availableCategories.collectAsStateWithLifecycle().value
+            availableCategories = uiState.availableCategories
         )
     }
 }

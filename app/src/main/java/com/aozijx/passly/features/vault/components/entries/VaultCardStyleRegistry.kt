@@ -1,7 +1,9 @@
 package com.aozijx.passly.features.vault.components.entries
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.designsystem.base.VaultItem
@@ -46,6 +48,7 @@ object VaultCardStyleRegistry {
         viewModel: VaultViewModel,
         onClick: () -> Unit = { viewModel.showDetail(entry) }
     ) {
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val isTotp = entry.totpSecret?.isNotBlank() == true
         val isAutofill = entry.category == stringResource(R.string.category_autofill)
 
@@ -60,7 +63,7 @@ object VaultCardStyleRegistry {
                         TwoFAItem(
                             entry = entry,
                             vaultViewModel = viewModel,
-                            showCode = viewModel.showTOTPCode,
+                            showCode = uiState.showTOTPCode,
                             onClick = onClick
                         )
                     }
@@ -88,7 +91,7 @@ object VaultCardStyleRegistry {
                     TotpStyleVaultItem(
                         entry = entry,
                         vaultViewModel = viewModel,
-                        showCode = viewModel.showTOTPCode,
+                        showCode = uiState.showTOTPCode,
                         onClick = onClick
                     )
                 } else {

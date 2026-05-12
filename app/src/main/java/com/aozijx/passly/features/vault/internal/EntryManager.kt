@@ -62,6 +62,19 @@ internal class EntryManager(
         }
     }
 
+    fun deleteEntryById(entryId: Int) {
+        scope.launch(Dispatchers.IO + handler) {
+            val entry = vaultUseCases.getEntryById(entryId)
+            if (detail.isViewingEntry(entryId)) {
+                detail.dismissDetail()
+            }
+            iconHelper.cleanupIcon(entry?.iconCustomPath)
+            entry?.let { vaultUseCases.deleteEntry(it) }
+            detail.setItemToDelete(null)
+            totp.clearSensitiveState(entryId)
+        }
+    }
+
     fun saveCustomIcon(context: Context, item: VaultEntry, uri: Uri, onFailed: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
             val internalPath = iconHelper.saveCustomIcon(context, item, uri)

@@ -75,13 +75,8 @@ fun VaultContent(
     onPlainExportClick: () -> Unit = {},
     onShowDetail: (VaultEntry) -> Unit = {}
 ) {
-    // 使用 lifecycle-aware 的状态订阅
     val context = LocalContext.current
-    val vaultItemsByTab by vaultViewModel.vaultItemsByTab.collectAsStateWithLifecycle()
-    val isVaultItemsLoading by vaultViewModel.isVaultItemsLoading.collectAsStateWithLifecycle()
-    val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
-    val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
-    val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
+    val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val authTitle = stringResource(R.string.auth_title)
     val decryptAuthTitle = stringResource(R.string.vault_auth_decrypt_title)
@@ -91,7 +86,6 @@ fun VaultContent(
 
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
-    // 设置相关的 UI 行为开关
     val isSwipeEnabled = settingsUiState.isSwipeEnabled
     val swipeLeftAction = settingsUiState.swipeLeftAction
     val swipeRightAction = settingsUiState.swipeRightAction
@@ -103,34 +97,31 @@ fun VaultContent(
     }
     var isFabVisible by remember { mutableStateOf(true) }
 
-    val initialTabIndex = visibleTabs.indexOf(selectedTab).coerceAtLeast(0)
+    val initialTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab).coerceAtLeast(0)
     val pagerState =
-        rememberPagerState(initialPage = initialTabIndex) { visibleTabs.size.coerceAtLeast(1) }
+        rememberPagerState(initialPage = initialTabIndex) { uiState.visibleTabs.size.coerceAtLeast(1) }
 
-    // 当前选中的 Tab 若被设置隐藏，自动回退到第一项（通常是 ALL）。
-    LaunchedEffect(visibleTabs, selectedTab) {
-        if (visibleTabs.isEmpty()) return@LaunchedEffect
-        if (selectedTab !in visibleTabs) {
-            vaultViewModel.selectTab(visibleTabs.first())
+    LaunchedEffect(uiState.visibleTabs, uiState.selectedTab) {
+        if (uiState.visibleTabs.isEmpty()) return@LaunchedEffect
+        if (uiState.selectedTab !in uiState.visibleTabs) {
+            vaultViewModel.selectTab(uiState.visibleTabs.first())
             return@LaunchedEffect
         }
-        val targetIndex = visibleTabs.indexOf(selectedTab)
+        val targetIndex = uiState.visibleTabs.indexOf(uiState.selectedTab)
         if (pagerState.settledPage != targetIndex && pagerState.pageCount > targetIndex) {
             pagerState.animateScrollToPage(targetIndex)
         }
     }
 
-    // 同步 Pager -> ViewModel：使用 snapshotFlow 避免以 settledPage 作为 key 重启 effect 导致振荡。
-    LaunchedEffect(pagerState, visibleTabs) {
+    LaunchedEffect(pagerState, uiState.visibleTabs) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
-            val newTab = visibleTabs.getOrNull(page) ?: return@collect
-            if (newTab != selectedTab) {
+            val newTab = uiState.visibleTabs.getOrNull(page) ?: return@collect
+            if (newTab != uiState.selectedTab) {
                 vaultViewModel.selectTab(newTab)
             }
         }
     }
 
-    // 状态栏自动隐藏逻辑（来自旧版）
     LaunchedEffect(scrollBehavior.state.collapsedFraction, isStatusBarAutoHide) {
         if (!isStatusBarAutoHide) {
             val window = activity.window
@@ -140,7 +131,6 @@ fun VaultContent(
         }
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        // 增加阈值和平滑处理，防止频繁切换导致手势冲突
         if (scrollBehavior.state.collapsedFraction > 0.6f) {
             insetsController.hide(WindowInsetsCompat.Type.statusBars())
         } else if (scrollBehavior.state.collapsedFraction < 0.4f) {
@@ -148,9 +138,8 @@ fun VaultContent(
         }
     }
 
-    val latestTotpStates by rememberUpdatedState(totpStates)
+    val latestTotpStates by rememberUpdatedState(uiState.totpStates)
 
-    // 通用复制逻辑
     val performCopy = remember(
         activity,
         context,
@@ -199,7 +188,6 @@ fun VaultContent(
         }
     }
 
-    // 统一的滑动触发处理
     val onSwipeTriggered = remember(
         activity, mainViewModel, vaultViewModel, authTitle, onShowDetail, performCopy
     ) {
@@ -218,7 +206,6 @@ fun VaultContent(
         }
     }
 
-    // 导出/导入 Launcher
     var pendingManualExportFileName by remember { mutableStateOf<String?>(null) }
     val exportLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
@@ -233,7 +220,6 @@ fun VaultContent(
         it?.let { settingsViewModel.backup.startImport(it) }
     }
 
-    // FAB 滑动隐藏/显示
     val fabScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -257,6 +243,7 @@ fun VaultContent(
             androidx.compose.foundation.layout.Column {
                 VaultTopBar(
                     vaultViewModel = vaultViewModel,
+                    uiState = uiState,
                     scrollBehavior = scrollBehavior,
                     onExportClick = {
                         val started = settingsViewModel.backup.tryStartExportInConfiguredDirectory(
@@ -282,7 +269,7 @@ fun VaultContent(
                     isTabBarCollapsible = isTabBarCollapsible
                 )
 
-                if (isVaultItemsLoading) {
+                if (uiState.isVaultItemsLoading) {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primary,
@@ -301,10 +288,10 @@ fun VaultContent(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) { pageIndex ->
-            val currentTab = visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
-            val displayItems = vaultItemsByTab[currentTab] ?: emptyList()
+            val currentTab = uiState.visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
+            val displayItems = uiState.vaultItemsByTab[currentTab] ?: emptyList()
 
-            if (displayItems.isEmpty() && !isVaultItemsLoading) {
+            if (displayItems.isEmpty() && !uiState.isVaultItemsLoading) {
                 EmptyVaultPlaceholder()
             } else {
                 LazyColumn(

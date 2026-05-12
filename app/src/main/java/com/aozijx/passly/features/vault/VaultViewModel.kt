@@ -4,9 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,10 +23,14 @@ import com.aozijx.passly.features.vault.internal.TotpCoordinator
 import com.aozijx.passly.features.vault.internal.VaultQueryCoordinator
 import com.aozijx.passly.features.vault.model.AddType
 import com.aozijx.passly.features.vault.model.VaultTab
+import com.aozijx.passly.features.vault.model.VaultUiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -40,7 +41,7 @@ import kotlinx.coroutines.launch
 class VaultViewModel(
     application: Application,
     private val vaultUseCases: VaultUseCases,
-    private val systemSettingsUseCases: SystemSettingsUseCases
+    systemSettingsUseCases: SystemSettingsUseCases
 ) : AndroidViewModel(application) {
 
     private val autofill = AutofillCoordinator()
@@ -59,14 +60,117 @@ class VaultViewModel(
     )
 
     private val queryCoordinator = VaultQueryCoordinator(vaultUseCases)
-    private val searchFilter = SearchFilterState()
+    private val searchFilter = SearchFilterState(viewModelScope)
 
-    // --- 状态流暴露 ---
-    val searchQuery: StateFlow<String> = searchFilter.searchQuery
-    val selectedCategory: StateFlow<String?> = searchFilter.selectedCategory
-    val selectedTab: StateFlow<VaultTab> = searchFilter.selectedTab
-    val isSearchActive: StateFlow<Boolean> = searchFilter.isSearchActive
-    val isMoreMenuExpanded: StateFlow<Boolean> = searchFilter.isMoreMenuExpanded
+    // --- 内部状态 (Private) ---
+    private val _isVaultItemsLoading = MutableStateFlow(true)
+    private val _showTOTPCode = MutableStateFlow(true)
+
+    // --- 基础数据流 (Private) ---
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val availableCategories: StateFlow<List<String>> =
+        searchFilter.selectedTab.flatMapLatest { tab ->
+            vaultUseCases.getCategoriesByFilter(tab.entryFilter)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val visibleTabs: StateFlow<List<VaultTab>> =
+        systemSettingsUseCases.visibleVaultTabs
+            .map { VaultTab.resolveVisible(it ?: VaultTab.defaultVisibleKeys) }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                VaultTab.resolveVisible(VaultTab.defaultVisibleKeys)
+            )
+
+    private val isAutoDownloadIcons: StateFlow<Boolean> =
+        systemSettingsUseCases.isAutoDownloadIcons
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val vaultItems: StateFlow<List<VaultSummary>> = queryCoordinator.observeItems(
+        debouncedSearchQuery = searchFilter.debouncedSearchQuery,
+        normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
+        distinctSelectedTab = flowOf(VaultTab.ALL)
+    ).onEach { items ->
+        _isVaultItemsLoading.value = false
+        if (isAutoDownloadIcons.value) {
+            entryManager.downloadMissingIcons(items)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val loadingTrigger = combine(
+        searchFilter.searchQuery,
+        searchFilter.selectedCategory,
+        searchFilter.selectedTab
+    ) { query, category, tab -> Triple(query.trim(), category?.trim(), tab) }
+        .distinctUntilChanged()
+
+    private val settingsState: StateFlow<Triple<List<VaultTab>, Boolean, Boolean>> =
+        combine(visibleTabs, isAutoDownloadIcons, _showTOTPCode) { tabs, auto, show ->
+            Triple(tabs, auto, show)
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            Triple(VaultTab.resolveVisible(VaultTab.defaultVisibleKeys), true, true)
+        )
+
+    private val sensitiveState: StateFlow<Pair<VaultDetailCoordinatorState, Map<Int, TotpState>>> =
+        combine(detail.coordinatorStateFlow, totp.states) { detailState, totpStates ->
+            detailState to totpStates
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            VaultDetailCoordinatorState() to emptyMap()
+        )
+
+    private val contentState: StateFlow<Triple<Boolean, List<String>, List<VaultSummary>>> =
+        combine(
+            _isVaultItemsLoading,
+            availableCategories,
+            vaultItems
+        ) { loading, categories, items ->
+            Triple(loading, categories, items)
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            Triple(true, emptyList(), emptyList())
+        )
+
+    // --- 统一 UI 状态暴露 (类型安全) ---
+    val uiState: StateFlow<VaultUiState> = combine(
+        searchFilter.uiStateFlow,
+        settingsState,
+        contentState,
+        sensitiveState
+    ) { search, settings, content, sensitive ->
+        val (tabs, autoIcons, showCode) = settings
+        val (loading, cats, items) = content
+        val (detailState, totpStates) = sensitive
+        VaultUiState(
+            searchQuery = search.searchQuery,
+            selectedCategory = search.selectedCategory,
+            selectedTab = search.selectedTab,
+            isSearchActive = search.isSearchActive,
+            isMoreMenuExpanded = search.isMoreMenuExpanded,
+            isVaultItemsLoading = loading,
+            availableCategories = cats,
+            visibleTabs = tabs,
+            isAutoDownloadIcons = autoIcons,
+            vaultItems = items,
+            vaultItemsByTab = mapOf(
+                VaultTab.ALL to items,
+                VaultTab.PASSWORDS to items.filter { it.totpSecret.isNullOrBlank() },
+                VaultTab.TOTP to items.filter { !it.totpSecret.isNullOrBlank() }
+            ),
+            showTOTPCode = showCode,
+            totpStates = totpStates,
+            detailCoordinatorState = detailState
+        )
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        VaultUiState()
+    )
 
     // --- 操作方法 ---
     fun expandMoreMenu(expanded: Boolean) = searchFilter.expandMoreMenu(expanded)
@@ -75,18 +179,17 @@ class VaultViewModel(
     fun clearSelectedCategory() = setSelectedCategory(null)
     fun selectTab(tab: VaultTab) = searchFilter.updateSelectedTab(tab)
     fun toggleSearch(active: Boolean) = searchFilter.toggleSearch(active)
+    fun toggleShowTOTPCode() {
+        _showTOTPCode.value = !_showTOTPCode.value
+    }
 
-    // --- UI 状态 ---
-    var showTOTPCode by mutableStateOf(true)
-    private val _isVaultItemsLoading = MutableStateFlow(true)
-    val isVaultItemsLoading: StateFlow<Boolean> = _isVaultItemsLoading
-
+    // --- 其他业务状态 ---
     val isAutofillEnabled: Boolean get() = autofill.isEnabled
     fun openAutofillSettings(context: Context) = autofill.requestEnable(context)
 
     val addType: AddType? get() = detail.addType
     fun setAddType(type: AddType?) = detail.setAddType(type)
-    internal val detailCoordinatorState: VaultDetailCoordinatorState get() = detail.coordinatorState
+    val detailCoordinatorState: VaultDetailCoordinatorState get() = detail.coordinatorState
     val itemToDelete: VaultEntry? get() = detail.itemToDelete
     fun setItemToDelete(entry: VaultEntry?) = detail.setItemToDelete(entry)
 
@@ -98,48 +201,10 @@ class VaultViewModel(
     fun autoUnlockTotp(entry: VaultSummary) = totp.autoUnlock(entry)
     fun clearDetailSensitiveState(entryId: Int) = totp.clearSensitiveState(entryId)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val availableCategories: StateFlow<List<String>> =
-        searchFilter.selectedTab.flatMapLatest { tab ->
-            vaultUseCases.getCategoriesByFilter(tab.entryFilter)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val visibleTabs: StateFlow<List<VaultTab>> =
-        systemSettingsUseCases.visibleVaultTabs
-            .map { VaultTab.resolveVisible(it ?: VaultTab.defaultVisibleKeys) }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                VaultTab.resolveVisible(VaultTab.defaultVisibleKeys)
-            )
-
-    val isAutoDownloadIcons: StateFlow<Boolean> =
-        systemSettingsUseCases.isAutoDownloadIcons
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val vaultItems: StateFlow<List<VaultSummary>> = queryCoordinator.observeItems(
-        debouncedSearchQuery = searchFilter.debouncedSearchQuery,
-        normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
-        distinctSelectedTab = flowOf(VaultTab.ALL)
-    ).onEach { items ->
-        if (_isVaultItemsLoading.value) _isVaultItemsLoading.value = false
-        if (isAutoDownloadIcons.value) {
-            entryManager.downloadMissingIcons(items)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val vaultItemsByTab: StateFlow<Map<VaultTab, List<VaultSummary>>> = vaultItems
-        .map { items ->
-            mapOf(
-                VaultTab.ALL to items,
-                VaultTab.PASSWORDS to items.filter { it.totpSecret.isNullOrBlank() },
-                VaultTab.TOTP to items.filter { !it.totpSecret.isNullOrBlank() }
-            )
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
-
     init {
+        viewModelScope.launch {
+            loadingTrigger.drop(1).collect { _isVaultItemsLoading.value = true }
+        }
         totp.start { vaultItems.value }
         autofill.refreshStatus(getApplication())
     }
@@ -181,7 +246,7 @@ class VaultViewModel(
     fun addItem(entry: VaultEntry) = entryManager.addItem(entry)
     fun addItem(entry: VaultEntry, domain: String) = entryManager.addItem(entry, domain)
     fun updateVaultEntry(entry: VaultEntry) = entryManager.updateEntry(entry)
-    fun quickDelete(entry: VaultSummary) = loadEntryById(entry.id) { entryManager.deleteEntry(it) }
+    fun quickDelete(entry: VaultSummary) = entryManager.deleteEntryById(entry.id)
     fun confirmDelete() = detail.itemToDelete?.let { entryManager.deleteEntry(it) }
 
     fun saveCustomIcon(item: VaultEntry, uri: Uri) {

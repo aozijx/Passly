@@ -5,19 +5,25 @@ import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.page.DetailOpenRequest
 import com.aozijx.passly.features.vault.model.AddType
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 internal class DetailCoordinator {
     private val state = DetailState()
+    private val _coordinatorState = MutableStateFlow(VaultDetailCoordinatorState())
+    val coordinatorStateFlow: StateFlow<VaultDetailCoordinatorState> = _coordinatorState
 
     val addType: AddType? get() = state.addType
     val itemToDelete: VaultEntry? get() = state.itemToDelete
-    val coordinatorState: VaultDetailCoordinatorState get() = state.detailCoordinatorState
+    val coordinatorState: VaultDetailCoordinatorState get() = _coordinatorState.value
 
     fun setAddType(type: AddType?) { state.addType = type }
     fun setItemToDelete(entry: VaultEntry?) { state.itemToDelete = entry }
 
     private fun update(transform: (VaultDetailCoordinatorState) -> VaultDetailCoordinatorState) {
-        state.detailCoordinatorState = transform(state.detailCoordinatorState)
+        val next = transform(_coordinatorState.value)
+        _coordinatorState.value = next
+        state.detailCoordinatorState = next
     }
 
     fun showDetail(entry: VaultEntry) {
@@ -45,5 +51,5 @@ internal class DetailCoordinator {
     }
 
     fun isViewingEntry(entryId: Int): Boolean =
-        state.detailCoordinatorState.request?.entry?.id == entryId
+        _coordinatorState.value.request?.entry?.id == entryId
 }

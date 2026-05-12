@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +32,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
 fun AddTwoFADialog(
     viewModel: VaultViewModel
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val state = remember { TotpAddState() }
     val algorithms = listOf("SHA1", "SHA256", "SHA512", "STEAM")
@@ -111,7 +113,7 @@ fun AddTwoFADialog(
         CategoryDropdown(
             selectedCategory = state.category,
             onCategorySelected = { state.category = it },
-            availableCategories = viewModel.availableCategories.collectAsStateWithLifecycle().value
+            availableCategories = uiState.availableCategories
         )
 
         if (state.showAdvanced) {
