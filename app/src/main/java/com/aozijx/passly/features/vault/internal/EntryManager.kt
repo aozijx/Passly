@@ -13,50 +13,77 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 internal class EntryManager(
+    private val scope: CoroutineScope,
     private val vaultUseCases: VaultUseCases,
-    private val iconHelper: EntryIconHelper
+    private val iconHelper: EntryIconHelper,
+    private val detail: DetailCoordinator,
+    private val totp: TotpCoordinator
 ) {
-    suspend fun addEntry(entry: VaultEntry): Long = vaultUseCases.insertEntry(entry)
+    private val handler = CoroutineExceptionHandler { _, throwable ->
+        Logcat.e("EntryManager", "Operation failed", throwable)
+    }
 
-    suspend fun addEntryWithFavicon(entry: VaultEntry, domain: String) {
-        val insertedId = addEntry(entry)
-        if (domain.isBlank()) return
-        val outcome = vaultUseCases.downloadFavicon(domain)
-        if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-            vaultUseCases.updateEntry(
-                entry.copy(id = insertedId.toInt(), iconName = null, iconCustomPath = outcome.filePath)
-            )
+    fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
+        scope.launch(Dispatchers.IO + handler) {
+            val insertedId = vaultUseCases.insertEntry(entry)
+            detail.setAddType(null)
+
+            if (!domain.isNullOrBlank()) {
+                val outcome = vaultUseCases.downloadFavicon(domain)
+                if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                    val updated = entry.copy(
+                        id = insertedId.toInt(), iconName = null, iconCustomPath = outcome.filePath
+                    )
+                    updateEntry(updated)
+                }
+            }
+            onComplete()
         }
     }
 
-    fun downloadMissingIcons(summaries: List<VaultSummary>, scope: CoroutineScope) {
-        val handler = CoroutineExceptionHandler { _, throwable ->
-            Logcat.e("EntryManager", "Failed to download missing icon", throwable)
+    fun updateEntry(entry: VaultEntry) {
+        scope.launch(Dispatchers.IO + handler) {
+            vaultUseCases.updateEntry(entry)
+            detail.updateEntry(entry)
+            totp.onEntryUpdated(entry)
         }
+    }
 
-        summaries
-            .filter { !it.associatedDomain.isNullOrBlank() && it.iconCustomPath.isNullOrBlank() }
+    fun deleteEntry(entry: VaultEntry) {
+        scope.launch(Dispatchers.IO + handler) {
+            if (detail.isViewingEntry(entry.id)) {
+                detail.dismissDetail()
+                totp.clearSensitiveState(entry.id)
+            }
+            iconHelper.cleanupIcon(entry.iconCustomPath)
+            vaultUseCases.deleteEntry(entry)
+            detail.setItemToDelete(null)
+            totp.clearSensitiveState(entry.id)
+        }
+    }
+
+    fun saveCustomIcon(context: Context, item: VaultEntry, uri: Uri, onFailed: () -> Unit = {}) {
+        scope.launch(Dispatchers.IO + handler) {
+            val internalPath = iconHelper.saveCustomIcon(context, item, uri)
+            if (internalPath != null) {
+                updateEntry(item.copy(iconName = null, iconCustomPath = internalPath))
+            } else {
+                onFailed()
+            }
+        }
+    }
+
+    fun downloadMissingIcons(summaries: List<VaultSummary>) {
+        summaries.filter { !it.associatedDomain.isNullOrBlank() && it.iconCustomPath.isNullOrBlank() }
             .forEach { summary ->
                 scope.launch(Dispatchers.IO + handler) {
                     val outcome = vaultUseCases.downloadFavicon(summary.associatedDomain!!)
                     if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                         vaultUseCases.getEntryById(summary.id)?.let { entry ->
-                            vaultUseCases.updateEntry(entry.copy(iconCustomPath = outcome.filePath))
+                            updateEntry(entry.copy(iconCustomPath = outcome.filePath))
                         }
                     }
                 }
             }
-    }
-
-    suspend fun updateEntry(entry: VaultEntry) = vaultUseCases.updateEntry(entry)
-
-    suspend fun deleteEntry(entry: VaultEntry) {
-        iconHelper.cleanupIcon(entry.iconCustomPath)
-        vaultUseCases.deleteEntry(entry)
-    }
-
-    suspend fun saveCustomIcon(context: Context, item: VaultEntry, uri: Uri): VaultEntry? {
-        val internalPath = iconHelper.saveCustomIcon(context, item, uri) ?: return null
-        return item.copy(iconName = null, iconCustomPath = internalPath)
     }
 }

@@ -6,7 +6,7 @@ package com.aozijx.passly.features.detail.internal
 import com.aozijx.passly.features.detail.page.DetailOpenRequest
 
 // 示例：internal 类型定义
-internal data class VaultDetailCoordinatorState(
+data class VaultDetailCoordinatorState(
     val request: DetailOpenRequest? = null,
     val isIconPickerVisible: Boolean = false
 )
