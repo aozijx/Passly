@@ -11,6 +11,8 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal class EntryManager(
     private val scope: CoroutineScope,
@@ -22,6 +24,8 @@ internal class EntryManager(
     private val handler = CoroutineExceptionHandler { _, throwable ->
         Logcat.e("EntryManager", "Operation failed", throwable)
     }
+    private val deletingIds = mutableSetOf<Int>()
+    private val deletingIdsMutex = Mutex()
 
     fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
@@ -51,20 +55,24 @@ internal class EntryManager(
 
     fun deleteEntry(entry: VaultEntry) {
         scope.launch(Dispatchers.IO + handler) {
-            if (detail.isViewingEntry(entry.id)) {
-                detail.dismissDetail()
-                totp.clearSensitiveState(entry.id)
-            }
-            iconHelper.cleanupIcon(entry.iconCustomPath)
-            vaultUseCases.deleteEntry(entry)
-            detail.setItemToDelete(null)
-            totp.clearSensitiveState(entry.id)
+            deleteEntryInternal(entry.id, presetEntry = entry)
         }
     }
 
     fun deleteEntryById(entryId: Int) {
         scope.launch(Dispatchers.IO + handler) {
-            val entry = vaultUseCases.getEntryById(entryId)
+            deleteEntryInternal(entryId)
+        }
+    }
+
+    private suspend fun deleteEntryInternal(entryId: Int, presetEntry: VaultEntry? = null) {
+        val acquired = deletingIdsMutex.withLock {
+            if (deletingIds.contains(entryId)) false else deletingIds.add(entryId)
+        }
+        if (!acquired) return
+
+        try {
+            val entry = presetEntry ?: vaultUseCases.getEntryById(entryId)
             if (detail.isViewingEntry(entryId)) {
                 detail.dismissDetail()
             }
@@ -72,6 +80,8 @@ internal class EntryManager(
             entry?.let { vaultUseCases.deleteEntry(it) }
             detail.setItemToDelete(null)
             totp.clearSensitiveState(entryId)
+        } finally {
+            deletingIdsMutex.withLock { deletingIds.remove(entryId) }
         }
     }
 

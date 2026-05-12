@@ -16,7 +16,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,10 +66,9 @@ fun DetailCardDialog(
         factory = appViewModelFactory(application)
     )
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
+    val vaultUiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
 
-    val currentEntry by remember {
-        derivedStateOf { vaultViewModel.detailCoordinatorState.request?.entry ?: initialEntry }
-    }
+    val currentEntry = vaultUiState.detailCoordinatorState.request?.entry ?: initialEntry
 
     LaunchedEffect(initialEntry.id) {
         detailViewModel.onEvent(DetailEvent.Initialize(initialEntry))
@@ -84,8 +82,7 @@ fun DetailCardDialog(
     val vaultType = remember(entry.entryType) { EntryType.fromValue(entry.entryType) }
     val editState = remember(entry) { EntryEditState(entry) }
 
-    val totpStates by vaultViewModel.totpStates.collectAsStateWithLifecycle()
-    val currentState = totpStates[entry.id]
+    val currentState = vaultUiState.totpStates[entry.id]
     val isSteam = remember(entry.totpAlgorithm) { entry.totpAlgorithm.uppercase() == "STEAM" }
     val totpEditState = remember(entry, currentState?.decryptedSecret) {
         TotpEditState(entry, currentState?.decryptedSecret ?: "")
