@@ -133,9 +133,7 @@ class VaultViewModel(
 
     fun openAutofillSettings(context: Context) {
         expandMoreMenu(false)
-        if (!autofill.openSettings(context)) {
-            Toast.makeText(context, R.string.vault_toast_enable_autofill_manual, Toast.LENGTH_LONG).show()
-        }
+        autofill.requestEnable(context)
     }
 
     fun decryptSingle(
