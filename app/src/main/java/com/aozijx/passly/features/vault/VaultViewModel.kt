@@ -32,14 +32,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * 保险箱主界面业务逻辑
- */
 class VaultViewModel(
     application: Application,
     private val vaultUseCases: VaultUseCases,
@@ -74,21 +72,18 @@ class VaultViewModel(
     private val _isVaultItemsLoading = MutableStateFlow(true)
     val isVaultItemsLoading: StateFlow<Boolean> = _isVaultItemsLoading
 
-    // --- Detail / Add / Delete state ---
     val addType: AddType? get() = detail.addType
     fun setAddType(type: AddType?) = detail.setAddType(type)
     internal val detailCoordinatorState: VaultDetailCoordinatorState get() = detail.coordinatorState
     val itemToDelete: VaultEntry? get() = detail.itemToDelete
     fun setItemToDelete(entry: VaultEntry?) = detail.setItemToDelete(entry)
 
-    // --- Data flows ---
     @OptIn(ExperimentalCoroutinesApi::class)
     val availableCategories: StateFlow<List<String>> =
         searchFilter.selectedTab.flatMapLatest { tab ->
             vaultUseCases.getCategoriesByFilter(tab.entryFilter)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // --- Tab visibility (受设置控制) ---
     val visibleTabs: StateFlow<List<VaultTab>> =
         systemSettingsUseCases.visibleVaultTabs
             .map { VaultTab.resolveVisible(it ?: VaultTab.defaultVisibleKeys) }
@@ -98,34 +93,44 @@ class VaultViewModel(
                 VaultTab.resolveVisible(VaultTab.defaultVisibleKeys)
             )
 
-    // --- 数据与下载设置 ---
     val isAutoDownloadIcons: StateFlow<Boolean> =
         systemSettingsUseCases.isAutoDownloadIcons
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     /**
-     * 核心优化：使用处理后的流（去抖动、标准化、去重）来驱动数据库查询
+     * 全部数据的原始流。固定使用 VaultTab.ALL 避免滑动重载。
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     val vaultItems: StateFlow<List<VaultSummary>> = queryCoordinator.observeItems(
         debouncedSearchQuery = searchFilter.debouncedSearchQuery,
         normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
-        distinctSelectedTab = searchFilter.distinctSelectedTab
+        distinctSelectedTab = flowOf(VaultTab.ALL)
     ).onEach { items ->
         if (_isVaultItemsLoading.value) _isVaultItemsLoading.value = false
-        // 仅在启用自动下载图标时执行
         if (isAutoDownloadIcons.value) {
             entryManager.downloadMissingIcons(items, viewModelScope)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /**
+     * 核心优化：按 Tab 预处理后的数据 Map。
+     * 将过滤逻辑下沉到 Flow 变换阶段（后台线程）完成。
+     * UI 层只需通过 Tab 取 List，彻底消除滑动跨栏时的 UI 线程计算压力。
+     */
+    val vaultItemsByTab: StateFlow<Map<VaultTab, List<VaultSummary>>> = vaultItems
+        .map { items ->
+            mapOf(
+                VaultTab.ALL to items,
+                VaultTab.PASSWORDS to items.filter { it.totpSecret.isNullOrBlank() },
+                VaultTab.TOTP to items.filter { !it.totpSecret.isNullOrBlank() }
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     init {
         totp.start { vaultItems.value }
         autofill.refreshStatus(getApplication())
     }
-
-    // --- Autofill ---
-    fun updateAutofillStatus() = autofill.refreshStatus(getApplication())
 
     fun openAutofillSettings(context: Context) {
         expandMoreMenu(false)
@@ -134,7 +139,6 @@ class VaultViewModel(
         }
     }
 
-    // --- Crypto ---
     fun decryptSingle(
         activity: FragmentActivity,
         encryptedData: String,
@@ -151,11 +155,9 @@ class VaultViewModel(
         onResult = onResult
     )
 
-    // --- TOTP ---
     fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry.toSummary())
     fun autoUnlockTotp(entry: VaultSummary) = totp.autoUnlock(entry)
 
-    // --- Detail management ---
     fun showDetail(entry: VaultEntry) {
         detail.showDetail(entry)
         viewModelScope.launch { vaultUseCases.recordUsage(entry.id) }
@@ -175,7 +177,6 @@ class VaultViewModel(
     fun showDetailIconPicker() = detail.showIconPicker()
     fun hideDetailIconPicker() = detail.hideIconPicker()
 
-    // --- Entry CRUD ---
     fun addItem(entry: VaultEntry) {
         viewModelScope.launch {
             entryManager.addEntry(entry)
@@ -229,7 +230,6 @@ class VaultViewModel(
 
     fun quickDelete(entry: VaultSummary) = loadEntryById(entry.id) { quickDelete(it) }
 
-    // --- Search / Filter ---
     fun onSearchQueryChange(q: String) = searchFilter.updateSearchQuery(q)
     fun setSelectedCategory(category: String?) = searchFilter.updateSelectedCategory(category)
     fun clearSelectedCategory() = setSelectedCategory(null)

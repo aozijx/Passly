@@ -77,7 +77,7 @@ fun VaultContent(
 ) {
     // 使用 lifecycle-aware 的状态订阅
     val context = LocalContext.current
-    val items by vaultViewModel.vaultItems.collectAsStateWithLifecycle()
+    val vaultItemsByTab by vaultViewModel.vaultItemsByTab.collectAsStateWithLifecycle()
     val isVaultItemsLoading by vaultViewModel.isVaultItemsLoading.collectAsStateWithLifecycle()
     val selectedTab by vaultViewModel.selectedTab.collectAsStateWithLifecycle()
     val visibleTabs by vaultViewModel.visibleTabs.collectAsStateWithLifecycle()
@@ -302,13 +302,7 @@ fun VaultContent(
                 .padding(innerPadding)
         ) { pageIndex ->
             val currentTab = visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
-            val displayItems = remember(items, currentTab) {
-                when (currentTab) {
-                    VaultTab.ALL -> items
-                    VaultTab.PASSWORDS -> items.filter { it.totpSecret.isNullOrBlank() }
-                    VaultTab.TOTP -> items.filter { !it.totpSecret.isNullOrBlank() }
-                }
-            }
+            val displayItems = vaultItemsByTab[currentTab] ?: emptyList()
 
             if (displayItems.isEmpty() && !isVaultItemsLoading) {
                 EmptyVaultPlaceholder()

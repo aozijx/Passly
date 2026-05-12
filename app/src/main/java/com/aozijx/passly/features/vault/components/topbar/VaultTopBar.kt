@@ -58,8 +58,6 @@ fun VaultTopBar(
     val context = LocalContext.current
     val density = LocalDensity.current
 
-    // 优雅方案 1：生命周期自动清理
-    // 当页面不再处于活跃状态（如导航跳转开始）时，自动关闭下拉菜单
     LifecycleResumeEffect(vaultViewModel) {
         onPauseOrDispose {
             vaultViewModel.expandMoreMenu(false)
@@ -74,10 +72,7 @@ fun VaultTopBar(
     val isSearchActive by vaultViewModel.isSearchActive.collectAsStateWithLifecycle()
     val isMoreMenuExpanded by vaultViewModel.isMoreMenuExpanded.collectAsStateWithLifecycle()
 
-    val displayTabs = remember(visibleTabs) {
-        visibleTabs.filter { it.isToggleable }
-    }
-
+    val displayTabs = visibleTabs
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible, isStatusBarAutoHide) {
@@ -168,8 +163,11 @@ fun VaultTopBar(
         ) {
             VaultTabRow(
                 tabs = displayTabs,
-                selectedTab = selectedTab,
-                onTabSelected = { vaultViewModel.selectTab(it) })
+                selectedTabIndex = displayTabs.indexOf(selectedTab).coerceAtLeast(0),
+                onTabSelected = { index ->
+                    displayTabs.getOrNull(index)?.let { vaultViewModel.selectTab(it) }
+                }
+            )
         }
     }
 }

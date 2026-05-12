@@ -1,63 +1,67 @@
 package com.aozijx.passly.features.vault.components.topbar.components
 
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.features.vault.model.VaultTab
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTabRow(
     modifier: Modifier = Modifier,
     tabs: List<VaultTab>,
-    selectedTab: VaultTab,
+    selectedTabIndex: Int, // 核心：改为接收 Pager 的实时索引
     maxTabsWithoutScroll: Int = 4,
-    onTabSelected: (VaultTab) -> Unit
+    onTabSelected: (Int) -> Unit // 返回索引
 ) {
     if (tabs.size <= 1) return
-    val selectedIndex = tabs.indexOf(selectedTab)
-    val safePageIndex = selectedIndex.coerceIn(0, tabs.lastIndex)
-    val normalizedMaxTabsWithoutScroll = maxTabsWithoutScroll.coerceAtLeast(2)
+    val safeIndex = selectedTabIndex.coerceIn(0, tabs.lastIndex)
 
-    if (tabs.size <= normalizedMaxTabsWithoutScroll) {
-        Row(modifier = modifier.fillMaxWidth()) {
+    if (tabs.size <= maxTabsWithoutScroll) {
+        SecondaryTabRow(
+            selectedTabIndex = safeIndex,
+            modifier = modifier.fillMaxWidth(),
+            containerColor = MaterialTheme.colorScheme.surface,
+            divider = {}
+        ) {
             tabs.forEachIndexed { index, tab ->
                 Tab(
-                    selected = safePageIndex == index,
-                    onClick = { onTabSelected(tab) },
-                    modifier = Modifier.weight(1f),
+                    selected = safeIndex == index,
+                    onClick = { onTabSelected(index) },
                     text = {
                         Text(
                             text = stringResource(tab.titleRes),
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (safeIndex == index) FontWeight.Bold else FontWeight.Normal
                         )
                     }
                 )
             }
         }
     } else {
-        Row(
-            modifier = modifier.horizontalScroll(rememberScrollState())
+        SecondaryScrollableTabRow(
+            selectedTabIndex = safeIndex,
+            modifier = modifier.fillMaxWidth(),
+            containerColor = MaterialTheme.colorScheme.surface,
+            edgePadding = 16.dp,
+            divider = {}
         ) {
             tabs.forEachIndexed { index, tab ->
                 Tab(
-                    selected = safePageIndex == index,
-                    onClick = { onTabSelected(tab) },
+                    selected = safeIndex == index,
+                    onClick = { onTabSelected(index) },
                     text = {
                         Text(
                             text = stringResource(tab.titleRes),
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (safeIndex == index) FontWeight.Bold else FontWeight.Normal
                         )
                     }
                 )
