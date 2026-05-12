@@ -32,9 +32,9 @@ enum class VaultCardStyle(
         )
 
         val styleConfig = StyleConfig(
-            settingsStyles = listOf(PASSWORD, TOTP),
+            settingsStyles = listOf(DEFAULT, PASSWORD, TOTP),
             perTypeStyles = listOf(DEFAULT, PASSWORD, TOTP),
-            globalDefaultStyle = PASSWORD
+            globalDefaultStyle = DEFAULT
         )
 
         data class TypeStylePolicy(
