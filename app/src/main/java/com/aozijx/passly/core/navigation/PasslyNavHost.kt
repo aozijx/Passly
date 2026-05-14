@@ -118,9 +118,12 @@ fun PasslyNavHost(
         }
 
         composable(AppRoute.Settings.route) {
+            val onUpdateInteraction: () -> Unit =
+                { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                viewModel = settingsViewModel
+                viewModel = settingsViewModel,
+                onUpdateInteraction = onUpdateInteraction
             )
         }
     }

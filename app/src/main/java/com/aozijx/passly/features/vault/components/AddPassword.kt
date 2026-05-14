@@ -17,7 +17,8 @@ import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun AddPasswordDialog(
-    viewModel: VaultViewModel
+    viewModel: VaultViewModel,
+    onUpdateInteraction: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val state = remember { PasswordAddState() }
@@ -39,21 +40,21 @@ fun AddPasswordDialog(
         }) {
         VaultTextField(
             value = state.title,
-            onValueChange = { state.title = it },
+            onValueChange = { state.title = it; onUpdateInteraction() },
             label = stringResource(R.string.label_title_hint),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
         VaultTextField(
             value = state.username,
-            onValueChange = { state.username = it },
+            onValueChange = { state.username = it; onUpdateInteraction() },
             label = stringResource(R.string.label_username_hint),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
         PasswordInput(
             password = state.password,
-            onPasswordChange = { state.password = it },
+            onPasswordChange = { state.password = it; onUpdateInteraction() },
             isVisible = state.isPasswordVisible,
             onVisibilityChange = { state.isPasswordVisible = it },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)

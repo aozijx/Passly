@@ -3,6 +3,8 @@ package com.aozijx.passly.features.vault
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -56,6 +58,7 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.features.main.MainViewModel
+import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.components.VaultDialogs
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
@@ -230,9 +233,18 @@ fun VaultContent(
         }
     }
 
+    val onUpdateInteraction = remember(mainViewModel) {
+        { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onUpdateInteraction
+            )
             .then(
                 if (isTopBarCollapsible || isTabBarCollapsible || isStatusBarAutoHide) Modifier.nestedScroll(
                     scrollBehavior.nestedScrollConnection
@@ -326,7 +338,8 @@ fun VaultContent(
         mainViewModel = mainViewModel,
         activity = activity,
         vaultViewModel = vaultViewModel,
-        settingsViewModel = settingsViewModel
+        settingsViewModel = settingsViewModel,
+        onUpdateInteraction = onUpdateInteraction
     )
 }
 

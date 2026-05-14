@@ -30,7 +30,8 @@ import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 fun AddTwoFADialog(
-    viewModel: VaultViewModel
+    viewModel: VaultViewModel,
+    onUpdateInteraction: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -95,13 +96,13 @@ fun AddTwoFADialog(
         }) {
         VaultTextField(
             value = state.title,
-            onValueChange = { state.title = it },
+            onValueChange = { state.title = it; onUpdateInteraction() },
             label = stringResource(R.string.label_title)
         )
 
         VaultTextField(
             value = state.uriText,
-            onValueChange = { state.uriText = it },
+            onValueChange = { state.uriText = it; onUpdateInteraction() },
             label = stringResource(R.string.label_2fa_uri_hint),
             trailingIcon = {
                 TextButton(onClick = { state.uriText = ClipboardUtils.getText(context) }) {
@@ -120,13 +121,13 @@ fun AddTwoFADialog(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             TotpConfigForm(
                 secret = state.secret,
-                onSecretChange = { state.secret = it },
+                onSecretChange = { state.secret = it; onUpdateInteraction() },
                 period = state.period,
-                onPeriodChange = { state.period = it },
+                onPeriodChange = { state.period = it; onUpdateInteraction() },
                 digits = state.digits,
-                onDigitsChange = { state.digits = it },
+                onDigitsChange = { state.digits = it; onUpdateInteraction() },
                 algorithm = state.algorithm,
-                onAlgorithmChange = { state.algorithm = it })
+                onAlgorithmChange = { state.algorithm = it; onUpdateInteraction() })
         } else {
             TextButton(onClick = { state.showAdvanced = true }) {
                 Text(stringResource(R.string.action_advanced_config))

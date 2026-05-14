@@ -18,7 +18,8 @@ fun VaultDialogs(
     mainViewModel: MainViewModel,
     activity: FragmentActivity,
     vaultViewModel: VaultViewModel,
-    settingsViewModel: SettingsViewModel
+    settingsViewModel: SettingsViewModel,
+    onUpdateInteraction: () -> Unit
 ) {
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val detailCoordinator = uiState.detailCoordinatorState
@@ -54,8 +55,15 @@ fun VaultDialogs(
 
     // --- 添加对话框 ---
     when (vaultViewModel.addType) {
-        AddType.PASSWORD -> AddPasswordDialog(viewModel = vaultViewModel)
-        AddType.TOTP -> AddTwoFADialog(viewModel = vaultViewModel)
+        AddType.PASSWORD -> AddPasswordDialog(
+            viewModel = vaultViewModel,
+            onUpdateInteraction = onUpdateInteraction
+        )
+
+        AddType.TOTP -> AddTwoFADialog(
+            viewModel = vaultViewModel,
+            onUpdateInteraction = onUpdateInteraction
+        )
         AddType.SCAN -> {
             VaultScanner(
                 vaultViewModel = vaultViewModel,

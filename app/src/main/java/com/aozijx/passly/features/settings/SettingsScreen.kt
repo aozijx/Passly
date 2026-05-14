@@ -30,7 +30,9 @@ import com.aozijx.passly.features.settings.internal.rememberSettingsScreenLocalS
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit, viewModel: SettingsViewModel
+    onBack: () -> Unit,
+    viewModel: SettingsViewModel,
+    onUpdateInteraction: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAppPasswordEnabled by viewModel.authGateway.isAppPasswordEnabled.collectAsStateWithLifecycle()
@@ -130,7 +132,8 @@ fun SettingsScreen(
             onTestBackupWrite = {
                 viewModel.testBackupDirectoryWritePermission(uiState.backupDirectoryUri)
             }
-        )
+        ),
+        onUpdateInteraction = onUpdateInteraction
     )
 
     SettingsScreenDialogsHost(
