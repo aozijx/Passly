@@ -26,70 +26,70 @@ import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 
 class DomainModule(
-    vaultRepository: VaultRepository,
-    vaultSearchRepository: VaultSearchRepository,
-    otpRepository: OtpRepository,
-    faviconRepository: FaviconRepository,
-    historyRepository: HistoryRepository,
-    systemSettingsRepository: SystemSettingsRepository,
-    securitySettingsRepository: SecuritySettingsRepository,
-    backupSettingsRepository: BackupSettingsRepository,
-    backupRepository: BackupRepository,
-    authRepository: AuthRepository,
-    userConfigRepository: UserConfigRepository,
-    autofillServiceRepository: AutofillServiceRepository,
-    databaseLifecycleRepository: DatabaseLifecycleRepository
+    private val vaultRepository: Lazy<VaultRepository>,
+    private val vaultSearchRepository: Lazy<VaultSearchRepository>,
+    private val otpRepository: Lazy<OtpRepository>,
+    private val faviconRepository: Lazy<FaviconRepository>,
+    private val historyRepository: Lazy<HistoryRepository>,
+    private val systemSettingsRepository: Lazy<SystemSettingsRepository>,
+    private val securitySettingsRepository: Lazy<SecuritySettingsRepository>,
+    private val backupSettingsRepository: Lazy<BackupSettingsRepository>,
+    private val backupRepository: Lazy<BackupRepository>,
+    private val authRepository: Lazy<AuthRepository>,
+    private val userConfigRepository: Lazy<UserConfigRepository>,
+    private val autofillServiceRepository: Lazy<AutofillServiceRepository>,
+    private val databaseLifecycleRepository: Lazy<DatabaseLifecycleRepository>
 ) {
     internal val vaultUseCases by lazy {
         VaultUseCases(
-            vaultRepository = vaultRepository,
-            vaultSearchRepository = vaultSearchRepository,
-            otpRepository = otpRepository,
-            faviconRepository = faviconRepository
+            vaultRepository = vaultRepository.value,
+            vaultSearchRepository = vaultSearchRepository.value,
+            otpRepository = otpRepository.value,
+            faviconRepository = faviconRepository.value
         )
     }
 
     internal val detailUseCases by lazy {
         DetailUseCases(
-            vaultRepository = vaultRepository,
-            faviconRepository = faviconRepository,
-            historyRepository = historyRepository
+            vaultRepository = vaultRepository.value,
+            faviconRepository = faviconRepository.value,
+            historyRepository = historyRepository.value
         )
     }
 
     internal val systemSettingsUseCases by lazy {
-        SystemSettingsUseCases(systemSettingsRepository)
+        SystemSettingsUseCases(systemSettingsRepository.value)
     }
 
     internal val securitySettingsUseCases by lazy {
-        SecuritySettingsUseCases(securitySettingsRepository)
+        SecuritySettingsUseCases(securitySettingsRepository.value)
     }
 
     internal val backupSettingsUseCases by lazy {
-        BackupSettingsUseCases(backupSettingsRepository)
+        BackupSettingsUseCases(backupSettingsRepository.value)
     }
 
     internal val backupUseCases by lazy {
-        BackupUseCases(backupRepository)
+        BackupUseCases(backupRepository.value)
     }
 
     internal val authUseCases by lazy {
-        AuthUseCases(authRepository)
+        AuthUseCases(authRepository.value)
     }
 
     internal val userConfigUseCases by lazy {
-        UserConfigUseCases(userConfigRepository)
+        UserConfigUseCases(userConfigRepository.value)
     }
 
     internal val autofillUseCases by lazy {
-        AutofillUseCases(autofillServiceRepository)
+        AutofillUseCases(autofillServiceRepository.value)
     }
 
     internal val databaseLifecycleUseCases by lazy {
-        DatabaseLifecycleUseCases(databaseLifecycleRepository)
+        DatabaseLifecycleUseCases(databaseLifecycleRepository.value)
     }
 
     internal val iconResyncUseCases by lazy {
-        IconResyncUseCases(vaultRepository)
+        IconResyncUseCases(vaultRepository.value)
     }
 }

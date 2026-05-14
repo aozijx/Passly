@@ -4,19 +4,19 @@ object AppContainer {
 
     val domain by lazy {
         DomainModule(
-            vaultRepository = DataModule.vaultRepository,
-            vaultSearchRepository = DataModule.vaultSearchRepository,
-            otpRepository = DataModule.otpRepository,
-            faviconRepository = DataModule.faviconRepository,
-            historyRepository = DataModule.historyRepository,
-            systemSettingsRepository = DataModule.systemSettingsRepository,
-            securitySettingsRepository = DataModule.securitySettingsRepository,
-            backupSettingsRepository = DataModule.backupSettingsRepository,
-            backupRepository = DataModule.backupRepository,
-            authRepository = DataModule.authRepository,
-            userConfigRepository = DataModule.userConfigRepository,
-            autofillServiceRepository = DataModule.autofillServiceRepository,
-            databaseLifecycleRepository = DataModule.databaseLifecycleRepository
+            vaultRepository = lazy { DataModule.vaultRepository },
+            vaultSearchRepository = lazy { DataModule.vaultSearchRepository },
+            otpRepository = lazy { DataModule.otpRepository },
+            faviconRepository = lazy { DataModule.faviconRepository },
+            historyRepository = lazy { DataModule.historyRepository },
+            systemSettingsRepository = lazy { DataModule.systemSettingsRepository },
+            securitySettingsRepository = lazy { DataModule.securitySettingsRepository },
+            backupSettingsRepository = lazy { DataModule.backupSettingsRepository },
+            backupRepository = lazy { DataModule.backupRepository },
+            authRepository = lazy { DataModule.authRepository },
+            userConfigRepository = lazy { DataModule.userConfigRepository },
+            autofillServiceRepository = lazy { DataModule.autofillServiceRepository },
+            databaseLifecycleRepository = lazy { DataModule.databaseLifecycleRepository }
         )
     }
 }
