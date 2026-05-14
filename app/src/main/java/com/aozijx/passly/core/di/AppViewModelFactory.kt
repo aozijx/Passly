@@ -9,16 +9,11 @@ import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
 
-/**
- * Central manual DI entry for ViewModel creation.
- * Keeps AppContainer wiring out of ViewModel implementations.
- */
 fun appViewModelFactory(application: Application): ViewModelProvider.Factory {
     return object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
             val domain = AppContainer.domain
-            val data = AppContainer.data
             return when {
                 modelClass.isAssignableFrom(MainViewModel::class.java) -> {
                     MainViewModel(
@@ -53,8 +48,7 @@ fun appViewModelFactory(application: Application): ViewModelProvider.Factory {
                     DetailViewModel(
                         application = application,
                         detailUseCases = domain.detailUseCases,
-                        userConfigUseCases = domain.userConfigUseCases,
-                        historyRepository = data.historyRepository
+                        userConfigUseCases = domain.userConfigUseCases
                     ) as T
                 }
 

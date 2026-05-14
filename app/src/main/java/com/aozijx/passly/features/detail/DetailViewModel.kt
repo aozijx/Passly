@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.domain.model.icon.FaviconResult
-import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.domain.usecase.detail.DetailUseCases
 import com.aozijx.passly.domain.usecase.userconfig.UserConfigUseCases
@@ -26,8 +25,7 @@ import kotlinx.coroutines.launch
 class DetailViewModel(
     application: Application,
     private val detailUseCases: DetailUseCases,
-    private val userConfigUseCases: UserConfigUseCases,
-    private val historyRepository: HistoryRepository
+    private val userConfigUseCases: UserConfigUseCases
 ) : AndroidViewModel(application) {
     private val entryAnalyzer = DetailEntryAnalyzer()
 
@@ -63,9 +61,8 @@ class DetailViewModel(
                     autoDownloadFavicon(latest)
                 }
 
-                // 监听历史记录
                 viewModelScope.launch {
-                    historyRepository.getHistoryByEntryId(event.initialEntry.id)
+                    detailUseCases.getHistoryByEntryId(event.initialEntry.id)
                         .collect { list: List<VaultHistory> ->
                             _uiState.update { it.copy(history = list) }
                         }
@@ -149,7 +146,7 @@ class DetailViewModel(
                 }
 
                 viewModelScope.launch {
-                    historyRepository.insertHistory(
+                    detailUseCases.insertHistory(
                         VaultHistory(
                             entryId = current.id,
                             fieldName = event.field,

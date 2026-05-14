@@ -1,13 +1,22 @@
 package com.aozijx.passly.core.di
 
-/**
- * 全局依赖容器入口：作为模块化依赖的聚合入口
- */
 object AppContainer {
 
-    // --- 聚合领域层模块 ---
-    val domain by lazy { DomainModule() }
-
-    // --- 聚合数据层模块 ---
-    val data get() = DataModule
+    val domain by lazy {
+        DomainModule(
+            vaultRepository = DataModule.vaultRepository,
+            vaultSearchRepository = DataModule.vaultSearchRepository,
+            otpRepository = DataModule.otpRepository,
+            faviconRepository = DataModule.faviconRepository,
+            historyRepository = DataModule.historyRepository,
+            systemSettingsRepository = DataModule.systemSettingsRepository,
+            securitySettingsRepository = DataModule.securitySettingsRepository,
+            backupSettingsRepository = DataModule.backupSettingsRepository,
+            backupRepository = DataModule.backupRepository,
+            authRepository = DataModule.authRepository,
+            userConfigRepository = DataModule.userConfigRepository,
+            autofillServiceRepository = DataModule.autofillServiceRepository,
+            databaseLifecycleRepository = DataModule.databaseLifecycleRepository
+        )
+    }
 }
