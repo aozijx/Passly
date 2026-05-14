@@ -90,9 +90,11 @@ class MainViewModel(
     private fun observeAuthStates() {
         viewModelScope.launch {
             authCoordinator.isAuthorized.collect { authorized ->
+                if (authorized) {
+                    _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
+                }
                 _uiState.update { it.copy(isAuthorized = authorized) }
                 if (authorized) {
-                    // 硬件口令已就绪，现在可以安全初始化数据库
                     initializeDatabase()
                     emitEffect(MainEffect.NavigateToVault)
                 }

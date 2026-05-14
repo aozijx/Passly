@@ -7,7 +7,7 @@ data class MainUiState(
     val isDarkMode: Boolean? = null,
     val isDynamicColor: Boolean = true,
     val lockTimeoutMs: Long = 60_000L,
-    val isDatabaseInitializing: Boolean = true,
+    val isDatabaseInitializing: Boolean = false,
     val databaseError: Throwable? = null,
     val validationMessage: String? = null,
     val emergencyBackupFile: File? = null,
