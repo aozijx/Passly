@@ -23,7 +23,7 @@ internal class VaultQueryCoordinator(
     ) { query, category, tab ->
         QueryParams(query = query, category = category, filter = tab.entryFilter)
     }.distinctUntilChanged().flatMapLatest { params ->
-        vaultUseCases.observeEntrySummariesByDemand(
+        vaultUseCases.observeEntrySummaries(
             query = params.query, category = params.category, filter = params.filter
         )
     }

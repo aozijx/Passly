@@ -70,7 +70,7 @@ class VaultViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val availableCategories: StateFlow<List<String>> =
         searchFilter.selectedTab.flatMapLatest { tab ->
-            vaultUseCases.getCategoriesByFilter(tab.entryFilter)
+            vaultUseCases.observeCategoriesByFilter(tab.entryFilter)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val visibleTabs: StateFlow<List<VaultTab>> =

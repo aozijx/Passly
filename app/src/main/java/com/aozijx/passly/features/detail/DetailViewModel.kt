@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
-import com.aozijx.passly.domain.model.icon.FaviconResult
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.domain.usecase.detail.DetailUseCases
 import com.aozijx.passly.domain.usecase.userconfig.UserConfigUseCases
@@ -187,15 +186,11 @@ class DetailViewModel(
     }
 
     private fun autoDownloadFavicon(entry: VaultEntry) {
-        val domain = entry.associatedDomain
-        if (!domain.isNullOrBlank() && entry.iconCustomPath.isNullOrBlank()) {
-            viewModelScope.launch {
-                val outcome = detailUseCases.downloadFavicon(domain)
-                if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                    val updatedEntry = entry.copy(iconCustomPath = outcome.filePath)
-                    detailUseCases.updateEntry(updatedEntry)
-                    refreshFromEntry(updatedEntry, _uiState.value.isEditingTitle, _uiState.value.editedTitle)
-                }
+        if (entry.associatedDomain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return
+        viewModelScope.launch {
+            val updated = detailUseCases.downloadAndApplyFavicon(entry)
+            if (updated != null) {
+                refreshFromEntry(updated, _uiState.value.isEditingTitle, _uiState.value.editedTitle)
             }
         }
     }

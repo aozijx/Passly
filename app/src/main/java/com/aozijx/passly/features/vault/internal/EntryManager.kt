@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.icon.FaviconResult
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -29,18 +28,8 @@ internal class EntryManager(
 
     fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
-            val insertedId = vaultUseCases.insertEntry(entry)
+            vaultUseCases.addEntry(entry, domain)
             detail.setAddType(null)
-
-            if (!domain.isNullOrBlank()) {
-                val outcome = vaultUseCases.downloadFavicon(domain)
-                if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                    val updated = entry.copy(
-                        id = insertedId.toInt(), iconName = null, iconCustomPath = outcome.filePath
-                    )
-                    updateEntry(updated)
-                }
-            }
             onComplete()
         }
     }
@@ -97,16 +86,8 @@ internal class EntryManager(
     }
 
     fun downloadMissingIcons(summaries: List<VaultSummary>) {
-        summaries.filter { !it.associatedDomain.isNullOrBlank() && it.iconCustomPath.isNullOrBlank() }
-            .forEach { summary ->
-                scope.launch(Dispatchers.IO + handler) {
-                    val outcome = vaultUseCases.downloadFavicon(summary.associatedDomain!!)
-                    if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                        vaultUseCases.getEntryById(summary.id)?.let { entry ->
-                            updateEntry(entry.copy(iconCustomPath = outcome.filePath))
-                        }
-                    }
-                }
-            }
+        scope.launch(Dispatchers.IO + handler) {
+            vaultUseCases.downloadMissingFavicons(summaries)
+        }
     }
 }
