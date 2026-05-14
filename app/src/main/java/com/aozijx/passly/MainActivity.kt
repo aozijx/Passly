@@ -173,7 +173,12 @@ class MainActivity : FragmentActivity() {
             }
 
             // 安全策略与系统 UI 设置
-            LaunchedEffect(settingsUiState.isSecureContentEnabled) {
+            LaunchedEffect(
+                settingsUiState.isSecureContentEnabled,
+                settingsUiState.isFlipToLockEnabled,
+                settingsUiState.isFlipExitAndClearStackEnabled,
+                settingsUiState.isStatusBarAutoHide
+            ) {
                 if (settingsUiState.isSecureContentEnabled) {
                     window.setFlags(
                         WindowManager.LayoutParams.FLAG_SECURE,
@@ -182,16 +187,13 @@ class MainActivity : FragmentActivity() {
                 } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 }
-            }
-            LaunchedEffect(settingsUiState.isFlipToLockEnabled) {
+
                 sensorController.isFlipLockEnabled = settingsUiState.isFlipToLockEnabled
                 if (settingsUiState.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
-            }
-            LaunchedEffect(settingsUiState.isFlipExitAndClearStackEnabled) {
+
                 sensorController.isFlipExitAndClearStackEnabled =
                     settingsUiState.isFlipExitAndClearStackEnabled
-            }
-            LaunchedEffect(settingsUiState.isStatusBarAutoHide) {
+
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.systemBarsBehavior = if (settingsUiState.isStatusBarAutoHide) {
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
