@@ -75,7 +75,7 @@ object VaultCardStyleRegistry {
                         )
                     }
                     else -> {
-                        VaultItem(entry = entry, viewModel = viewModel, onClick = onClick)
+                        VaultItem(entry = entry, onClick = onClick)
                     }
                 }
             }
@@ -96,7 +96,7 @@ object VaultCardStyleRegistry {
                     )
                 } else {
                     // 非 TOTP 条目选了 TOTP 样式，回退到基础款
-                    VaultItem(entry = entry, viewModel = viewModel, onClick = onClick)
+                    VaultItem(entry = entry, onClick = onClick)
                 }
             }
         }
@@ -120,7 +120,7 @@ object VaultCardStyleRegistry {
                         onClick = onClick
                     )
                 } else {
-                    VaultItem(entry = previewBaseEntry, viewModel = null, onClick = onClick)
+                    VaultItem(entry = previewBaseEntry, onClick = onClick)
                 }
             }
 

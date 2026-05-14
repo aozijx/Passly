@@ -17,17 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
 import com.aozijx.passly.domain.model.presentation.VaultSummary
-import com.aozijx.passly.features.vault.VaultViewModel
 
-/**
- * 保险库条目列表项：通用列表卡片
- * 点击后打开详情对话框 (VaultDetailDialog)
- */
 @Composable
 fun VaultItem(
     entry: VaultSummary,
-    viewModel: VaultViewModel? = null,
-    onClick: () -> Unit = { viewModel?.showDetail(entry) }
+    onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
