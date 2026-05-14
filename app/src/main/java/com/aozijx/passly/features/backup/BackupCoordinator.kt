@@ -14,26 +14,11 @@ import com.aozijx.passly.domain.model.backup.BackupImportMode
 import com.aozijx.passly.domain.model.core.BackupException
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
+import com.aozijx.passly.features.backup.contract.BackupUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-
-/**
- * 备份模块 UI 状态聚合。
- */
-data class BackupUiState(
-    val isExporting: Boolean = false,
-    val showPasswordDialog: Boolean = false,
-    val backupUri: Uri? = null,
-    val backupPassword: String = "",
-    val importMode: BackupImportMode = BackupImportMode.OVERWRITE,
-    val includeImages: Boolean = true,
-    val pendingExportFileName: String? = null,
-    val pendingExportAllowFallback: Boolean = false,
-    val emergencyBackupFile: File? = null
-)
 
 /**
  * 备份/恢复流程协调器。

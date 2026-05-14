@@ -9,8 +9,8 @@ import com.aozijx.passly.features.settings.SettingsContentState
 import com.aozijx.passly.features.settings.SettingsDialogEvent
 import com.aozijx.passly.features.settings.SettingsDialogsActions
 import com.aozijx.passly.features.settings.SettingsDialogsState
-import com.aozijx.passly.features.settings.SettingsUiState
 import com.aozijx.passly.features.settings.SettingsViewModel
+import com.aozijx.passly.features.settings.contract.SettingsUiState
 
 internal fun buildSettingsContentState(
     uiState: SettingsUiState,

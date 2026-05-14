@@ -14,6 +14,7 @@ import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
+import com.aozijx.passly.features.vault.contract.VaultUiState
 import com.aozijx.passly.features.vault.internal.AutofillCoordinator
 import com.aozijx.passly.features.vault.internal.DetailCoordinator
 import com.aozijx.passly.features.vault.internal.EntryIconHelper
@@ -23,7 +24,6 @@ import com.aozijx.passly.features.vault.internal.TotpCoordinator
 import com.aozijx.passly.features.vault.internal.VaultQueryCoordinator
 import com.aozijx.passly.features.vault.model.AddType
 import com.aozijx.passly.features.vault.model.VaultTab
-import com.aozijx.passly.features.vault.model.VaultUiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

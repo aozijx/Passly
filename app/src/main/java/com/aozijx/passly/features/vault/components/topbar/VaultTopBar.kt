@@ -1,4 +1,4 @@
-﻿package com.aozijx.passly.features.vault.components.topbar
+package com.aozijx.passly.features.vault.components.topbar
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -39,7 +39,7 @@ import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.components.topbar.components.VaultDropdownMenu
 import com.aozijx.passly.features.vault.components.topbar.components.VaultSearchBar
 import com.aozijx.passly.features.vault.components.topbar.components.VaultTabRow
-import com.aozijx.passly.features.vault.model.VaultUiState
+import com.aozijx.passly.features.vault.contract.VaultUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

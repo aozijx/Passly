@@ -15,35 +15,12 @@ import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.features.auth.AuthCoordinator
 import com.aozijx.passly.features.auth.ui.SettingsAuthGateway
 import com.aozijx.passly.features.backup.BackupCoordinator
+import com.aozijx.passly.features.settings.contract.SettingsUiState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-data class SettingsUiState(
-    val lockTimeout: Long = 60000L,
-    val isInvalidateKeyOnBioChange: Boolean = true,
-    val isStatusBarAutoHide: Boolean = true,
-    val isTopBarCollapsible: Boolean = true,
-    val isTabBarCollapsible: Boolean = true,
-    val isSecureContentEnabled: Boolean = true,
-    val isPasswordPreferredAuthFirst: Boolean = true,
-    val isDeviceCredentialFallbackEnabled: Boolean = true,
-    val isFlipToLockEnabled: Boolean = false,
-    val isFlipExitAndClearStackEnabled: Boolean = false,
-    val cardStyle: VaultCardStyle = VaultCardStyle.styleConfig.globalDefaultStyle,
-    val cardStyleByEntryType: Map<Int, VaultCardStyle> = mapOf(-1 to VaultCardStyle.styleConfig.globalDefaultStyle),
-    val autofillUiMode: AutofillUiMode = AutofillUiMode.SYSTEM_INLINE,
-    val isSwipeEnabled: Boolean = true,
-    val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
-    val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
-    val backupDirectoryUri: String? = null,
-    val lastBackupExportFileName: String? = null,
-    val visibleVaultTabs: Set<String>? = null,
-    val tabBarMaxTabsWithoutScroll: Int = 4,
-    val isAutoDownloadIcons: Boolean = true
-)
 
 private data class CoreSettingsFlowState(
     val lockTimeout: Long,
