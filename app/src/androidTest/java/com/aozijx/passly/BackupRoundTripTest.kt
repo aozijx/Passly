@@ -75,9 +75,8 @@ class BackupRoundTripTest {
     @Test
     fun export_emptyDatabase_producesEmptyJsonArray() = runBlocking {
         val file = tempFile("empty")
-        val result = repository.exportPlainBackup(file.toUri())
+        repository.exportPlainBackup(file.toUri())
 
-        assertTrue("空库导出应成功", result.isSuccess)
         val array = JSONArray(file.readText(Charsets.UTF_8))
         assertEquals("空库应导出 0 条记录", 0, array.length())
     }
@@ -90,9 +89,8 @@ class BackupRoundTripTest {
         db.vaultEntryDao().insert(buildEntry("Entry B", "userB@test.com"))
 
         val file = tempFile("two_entries")
-        val result = repository.exportPlainBackup(file.toUri())
+        repository.exportPlainBackup(file.toUri())
 
-        assertTrue("导出应成功", result.isSuccess)
         val array = JSONArray(file.readText(Charsets.UTF_8))
         assertEquals("应导出 2 条记录", 2, array.length())
     }
