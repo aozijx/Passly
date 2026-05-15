@@ -15,6 +15,7 @@ import com.aozijx.passly.features.main.MainSensorController
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.main.ui.MainScreen
+import kotlin.system.exitProcess
 
 class MainActivity : FragmentActivity() {
     private val viewModel: MainViewModel by viewModels { appViewModelFactory(application) }
@@ -23,7 +24,10 @@ class MainActivity : FragmentActivity() {
         MainSensorController(this) {
             if (viewModel.isAuthorizedNow()) {
                 viewModel.handleIntent(MainIntent.Lock)
-                if (sensorController.isFlipExitAndClearStackEnabled) finishAndRemoveTask()
+                if (sensorController.isFlipExitAndClearStackEnabled) {
+                    finishAndRemoveTask()
+                    exitProcess(0)
+                }
             }
         }
     }
