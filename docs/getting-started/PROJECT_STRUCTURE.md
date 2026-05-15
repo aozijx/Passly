@@ -8,6 +8,7 @@
 - 开发者指南：`DEVELOPER_GUIDE.md`
 - 改动操作手册：`CHANGE_PLAYBOOK.md`
 - 架构决策记录：`ARCHITECTURE_DECISIONS.md`
+- 模块文档索引：`docs/modules/README.md`
 
 ---
 
