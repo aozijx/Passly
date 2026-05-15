@@ -9,7 +9,10 @@ class AppContext : Application() {
     companion object {
         private const val TAG = "AppContext"
         private var _instance: AppContext? = null
-        fun get(): AppContext = _instance!!
+        fun get(): AppContext = checkNotNull(_instance) {
+            "AppContext has not been initialized. " +
+                "Ensure android:name=\".AppContext\" is declared in AndroidManifest.xml"
+        }
     }
 
     override fun onCreate() {
@@ -22,9 +25,5 @@ class AppContext : Application() {
             throw e
         }
         EntryTypeStrategyRegistry.ensureRegistered()
-
-        // 重要：在硬件级认证模式下，此处严禁执行 AppDatabase.preWarm。
-        // 因为此时用户尚未认证，解密口令不可用，后台预热会导致应用启动即崩溃。
-        Logcat.i(TAG, "Passly App Context initialized. Waiting for user authentication...")
     }
 }
