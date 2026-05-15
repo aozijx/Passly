@@ -203,6 +203,6 @@ internal fun handleBackupPathPicked(
     BackupExportStorageSupport.ensureAppDirectoryTreeUri(context, uri)
         .onSuccess { resolvedUri -> onResolved(resolvedUri.toString()) }
         .onFailure { error ->
-            Toast.makeText(context, error.message ?: "无法解析目录", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, error.toUiMessage("无法解析目录"), Toast.LENGTH_SHORT).show()
         }
 }

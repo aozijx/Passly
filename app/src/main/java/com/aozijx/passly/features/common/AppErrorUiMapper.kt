@@ -1,6 +1,7 @@
 package com.aozijx.passly.features.common
 
 import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.ErrorLayer
 
 fun AppError.toUiMessage(defaultMessage: String = "操作失败，请稍后重试"): String {
     return when (this) {
@@ -9,5 +10,13 @@ fun AppError.toUiMessage(defaultMessage: String = "操作失败，请稍后重�
         is AppError.DatabaseInitFailed -> message.ifBlank { "数据库初始化失败" }
         is AppError.BackupFailed -> message.ifBlank { "备份操作失败" }
         is AppError.Unexpected -> message.ifBlank { defaultMessage }
+    }
+}
+
+fun Throwable.toUiMessage(defaultMessage: String = "操作失败，请稍后重试"): String {
+    return if (this is AppError) {
+        this.toUiMessage(defaultMessage)
+    } else {
+        AppError.fromThrowable(this, layer = ErrorLayer.UI).toUiMessage(defaultMessage)
     }
 }

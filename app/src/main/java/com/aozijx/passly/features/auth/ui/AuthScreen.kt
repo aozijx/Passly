@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.features.common.toUiMessage
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDialog
 
 /**
@@ -273,7 +274,7 @@ private fun SetPasswordDialogSection(
                 }.onFailure { error ->
                     Toast.makeText(
                         activity,
-                        error.message ?: passwordSetFailedMessage,
+                        error.toUiMessage(passwordSetFailedMessage),
                         Toast.LENGTH_SHORT
                     ).show()
                 }

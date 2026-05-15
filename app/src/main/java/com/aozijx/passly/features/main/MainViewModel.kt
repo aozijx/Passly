@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCas
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.features.auth.AuthCoordinator
 import com.aozijx.passly.features.auth.ui.AuthScreenAuthGateway
+import com.aozijx.passly.features.common.toUiMessage
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.main.contract.MainUiState
@@ -144,7 +145,7 @@ class MainViewModel(
             }
 
             initResult.error?.let { error ->
-                val msg = "数据库错误: ${authValidationSupport.sanitizeMessage(error.message)}"
+                val msg = "数据库错误: ${error.toUiMessage("数据库初始化失败")}" 
                 emitEffect(MainEffect.ShowError(msg))
             }
         }
