@@ -1,14 +1,11 @@
 package com.aozijx.passly.domain.usecase.auth
 
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import kotlinx.coroutines.flow.StateFlow
 
-/**
- * 认证业务用例门面类。
- */
 class AuthUseCases(private val repository: AuthRepository) {
-
     val isAuthorized: StateFlow<Boolean> = repository.isAuthorized
     val isAppPasswordEnabled: StateFlow<Boolean> = repository.isAppPasswordEnabled
 
@@ -16,41 +13,40 @@ class AuthUseCases(private val repository: AuthRepository) {
         activity: FragmentActivity,
         title: String,
         subtitle: String
-    ): Result<Unit> = repository.authenticate(activity, title, subtitle)
+    ): AppResult<Unit> = repository.authenticate(activity, title, subtitle)
+
+    suspend fun authenticateWithAppPassword(password: CharArray): AppResult<Unit> =
+        repository.authenticateWithAppPassword(password)
+
+    suspend fun setAppPassword(password: CharArray): AppResult<Unit> =
+        repository.setAppPassword(password)
+
+    suspend fun bootstrapAppPassword(password: CharArray): AppResult<Unit> =
+        repository.bootstrapAppPassword(password)
+
+    suspend fun changeAppPassword(
+        oldPassword: CharArray,
+        newPassword: CharArray
+    ): AppResult<Unit> = repository.changeAppPassword(oldPassword, newPassword)
+
+    suspend fun disableAppPassword(password: CharArray): AppResult<Unit> =
+        repository.disableAppPassword(password)
 
     suspend fun verifyIdentity(
         activity: FragmentActivity,
         title: String,
         subtitle: String
-    ): Result<Unit> = repository.verifyIdentity(activity, title, subtitle)
-
-    suspend fun authenticateWithAppPassword(password: CharArray): Result<Unit> =
-        repository.authenticateWithAppPassword(password)
-
-    suspend fun setAppPassword(password: CharArray): Result<Unit> =
-        repository.setAppPassword(password)
-
-    suspend fun bootstrapAppPassword(password: CharArray): Result<Unit> =
-        repository.bootstrapAppPassword(password)
-
-    suspend fun changeAppPassword(oldPassword: CharArray, newPassword: CharArray): Result<Unit> =
-        repository.changeAppPassword(oldPassword, newPassword)
-
-    suspend fun disableAppPassword(password: CharArray): Result<Unit> =
-        repository.disableAppPassword(password)
-
-    fun onExternalAuthorized() = repository.onExternalAuthorized()
-
-    fun lock() = repository.lock()
-
-    fun onUserInteraction() = repository.onUserInteraction()
-
-    fun checkAndLock() = repository.checkAndLock()
-
-    fun updateLockTimeout(timeoutMs: Long) = repository.updateLockTimeout(timeoutMs)
+    ): AppResult<Unit> = repository.verifyIdentity(activity, title, subtitle)
 
     suspend fun rekeyWithInvalidationPolicy(
         activity: FragmentActivity,
         invalidateOnBiometricChange: Boolean
-    ): Result<Unit> = repository.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
+    ): AppResult<Unit> =
+        repository.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
+
+    fun lock() = repository.lock()
+    fun onUserInteraction() = repository.onUserInteraction()
+    fun checkAndLock() = repository.checkAndLock()
+    fun updateLockTimeout(timeoutMs: Long) = repository.updateLockTimeout(timeoutMs)
+    fun onExternalAuthorized() = repository.onExternalAuthorized()
 }

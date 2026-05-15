@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
@@ -181,7 +182,7 @@ class SettingsViewModel(
     fun switchKeyInvalidationPolicy(
         activity: FragmentActivity,
         invalidateOnBiometricChange: Boolean,
-        onResult: (Result<Unit>) -> Unit
+        onResult: (AppResult<Unit>) -> Unit
     ) {
         authCoordinator.rekeyWithInvalidationPolicy(
             activity, invalidateOnBiometricChange

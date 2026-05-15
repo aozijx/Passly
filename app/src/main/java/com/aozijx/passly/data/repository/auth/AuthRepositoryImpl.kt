@@ -5,6 +5,8 @@ import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.crypto.BiometricHelper
 import com.aozijx.passly.core.crypto.SessionCryptoKey
+import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.AppPasswordStore
 import com.aozijx.passly.core.security.AutoLockScheduler
@@ -25,10 +27,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 
-/**
- * 认证仓库实现类。
- * 口令由 DatabasePassphraseManager 统一持有，本类负责状态流转与自动锁定。
- */
 internal class AuthRepositoryImpl(
     private val application: Application,
     private val securitySettingsRepository: SecuritySettingsRepository,
@@ -58,11 +56,12 @@ internal class AuthRepositoryImpl(
         activity: FragmentActivity,
         title: String,
         subtitle: String
-    ): Result<Unit> = authMutex.withLock {
-        if (_isAuthorized.value) return Result.success(Unit)
+    ): AppResult<Unit> = authMutex.withLock {
+        if (_isAuthorized.value) return AppResult.success(Unit)
 
         when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
-            is AuthValidationResult.Invalid -> return Result.failure(Exception(validation.message))
+            is AuthValidationResult.Invalid ->
+                return AppResult.failure(AppError.AuthFailed(validation.message))
             AuthValidationResult.Valid -> Unit
         }
 
@@ -70,7 +69,7 @@ internal class AuthRepositoryImpl(
         val allowDeviceCredentialFallback =
             if (biometricCipher == null) isDeviceCredentialFallbackEnabled() else false
 
-        return runCatching {
+        return try {
             val authResult = withTimeoutOrNull(AUTH_TIMEOUT_MS) {
                 kotlin.coroutines.suspendCoroutine<BiometricPrompt.AuthenticationResult> { continuation ->
                     BiometricHelper.authenticate(
@@ -89,13 +88,16 @@ internal class AuthRepositoryImpl(
                         }
                     )
                 }
-            } ?: throw Exception("认证超时，请重试")
+            } ?: return AppResult.failure(AppError.AuthFailed("认证超时，请重试"))
 
             val passphrase = DatabasePassphraseManager.processResult(application, authResult)
             DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
             SessionCryptoKey.deriveAndSet(passphrase)
             onAuthorized()
             Logcat.i(tag, "Authentication and decryption successful.")
+            AppResult.success(Unit)
+        } catch (e: Exception) {
+            AppResult.failure(AppError.AuthFailed(e.message ?: "认证失败"))
         }
     }
 
@@ -103,13 +105,14 @@ internal class AuthRepositoryImpl(
         activity: FragmentActivity,
         title: String,
         subtitle: String
-    ): Result<Unit> = authMutex.withLock {
+    ): AppResult<Unit> = authMutex.withLock {
         when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
-            is AuthValidationResult.Invalid -> return Result.failure(Exception(validation.message))
+            is AuthValidationResult.Invalid ->
+                return AppResult.failure(AppError.AuthFailed(validation.message))
             AuthValidationResult.Valid -> Unit
         }
 
-        return runCatching {
+        return try {
             val allowDeviceCredentialFallback = isDeviceCredentialFallbackEnabled()
             withTimeoutOrNull(AUTH_TIMEOUT_MS) {
                 kotlin.coroutines.suspendCoroutine<BiometricPrompt.AuthenticationResult> { continuation ->
@@ -127,20 +130,23 @@ internal class AuthRepositoryImpl(
                         }
                     )
                 }
-            } ?: throw Exception("认证超时，请重试")
+            } ?: return AppResult.failure(AppError.AuthFailed("认证超时，请重试"))
 
             Logcat.i(tag, "Identity verification successful.")
+            AppResult.success(Unit)
+        } catch (e: Exception) {
+            AppResult.failure(AppError.AuthFailed(e.message ?: "身份验证失败"))
         }
     }
 
-    override suspend fun authenticateWithAppPassword(password: CharArray): Result<Unit> =
+    override suspend fun authenticateWithAppPassword(password: CharArray): AppResult<Unit> =
         authMutex.withLock {
-            if (_isAuthorized.value) return Result.success(Unit)
+            if (_isAuthorized.value) return AppResult.success(Unit)
             if (!_isAppPasswordEnabled.value) {
-                return Result.failure(IllegalStateException("尚未设置应用密码"))
+                return AppResult.failure(AppError.AuthFailed("尚未设置应用密码"))
             }
             if (password.isEmpty()) {
-                return Result.failure(IllegalArgumentException("请输入应用密码"))
+                return AppResult.failure(AppError.AuthFailed("请输入应用密码"))
             }
 
             return try {
@@ -153,38 +159,47 @@ internal class AuthRepositoryImpl(
                     passphrase.fill(0)
                 }
                 onAuthorized()
-                Result.success(Unit)
+                AppResult.success(Unit)
             } catch (e: Exception) {
-                Result.failure(e)
+                AppResult.failure(AppError.AuthFailed(e.message ?: "应用密码验证失败"))
             } finally {
                 password.fill('\u0000')
             }
         }
 
-    override suspend fun setAppPassword(password: CharArray): Result<Unit> = authMutex.withLock {
-        return try {
-            runCatching { validateAppPasswordPolicy(password) }
-                .getOrElse { return Result.failure(it) }
-            if (DatabasePassphraseManager.isLocked) {
-                Result.failure(IllegalStateException("请先解锁应用后再设置应用密码"))
-            } else {
-                val passphrase = DatabasePassphraseManager.getPassphrase()
-                AppPasswordStore.configure(application, password, passphrase)
-                    .onSuccess { _isAppPasswordEnabled.update { true } }
-                    .also { passphrase.fill(0) }
-            }
-        } finally {
-            password.fill('\u0000')
-        }
-    }
-
-    override suspend fun bootstrapAppPassword(password: CharArray): Result<Unit> =
+    override suspend fun setAppPassword(password: CharArray): AppResult<Unit> =
         authMutex.withLock {
             return try {
                 runCatching { validateAppPasswordPolicy(password) }
-                    .getOrElse { return Result.failure(it) }
+                    .getOrElse { return AppResult.failure(AppError.AuthFailed(it.message.orEmpty())) }
+                if (DatabasePassphraseManager.isLocked) {
+                    AppResult.failure(AppError.AuthFailed("请先解锁应用后再设置应用密码"))
+                } else {
+                    val passphrase = DatabasePassphraseManager.getPassphrase()
+                    AppPasswordStore.configure(application, password, passphrase)
+                        .onSuccess { _isAppPasswordEnabled.update { true } }
+                        .also { passphrase.fill(0) }
+                        .map { AppResult.success(Unit) }
+                        .getOrElse {
+                            AppResult.failure(
+                                AppError.AuthFailed(
+                                    it.message ?: "设置应用密码失败"
+                                )
+                            )
+                        }
+                }
+            } finally {
+                password.fill('\u0000')
+            }
+        }
+
+    override suspend fun bootstrapAppPassword(password: CharArray): AppResult<Unit> =
+        authMutex.withLock {
+            return try {
+                runCatching { validateAppPasswordPolicy(password) }
+                    .getOrElse { return AppResult.failure(AppError.AuthFailed(it.message.orEmpty())) }
                 if (!DatabasePassphraseManager.isLocked) {
-                    Result.failure(IllegalStateException("应用已解锁，请在设置中管理应用密码"))
+                    AppResult.failure(AppError.AuthFailed("应用已解锁，请在设置中管理应用密码"))
                 } else {
                     AppPasswordStore.configureWithGeneratedPassphrase(application, password)
                         .map { generatedPassphrase ->
@@ -195,8 +210,17 @@ internal class AuthRepositoryImpl(
                             } finally {
                                 generatedPassphrase.fill(0)
                             }
+                            Unit
                         }
                         .onSuccess { _isAppPasswordEnabled.update { true } }
+                        .map { AppResult.success(Unit) }
+                        .getOrElse {
+                            AppResult.failure(
+                                AppError.AuthFailed(
+                                    it.message ?: "设置应用密码失败"
+                                )
+                            )
+                        }
                 }
             } finally {
                 password.fill('\u0000')
@@ -206,17 +230,25 @@ internal class AuthRepositoryImpl(
     override suspend fun changeAppPassword(
         oldPassword: CharArray,
         newPassword: CharArray
-    ): Result<Unit> = authMutex.withLock {
+    ): AppResult<Unit> = authMutex.withLock {
         return try {
             runCatching { validateAppPasswordPolicy(newPassword) }
-                .getOrElse { return Result.failure(it) }
+                .getOrElse { return AppResult.failure(AppError.AuthFailed(it.message.orEmpty())) }
             if (DatabasePassphraseManager.isLocked) {
-                Result.failure(IllegalStateException("请先解锁应用后再修改应用密码"))
+                AppResult.failure(AppError.AuthFailed("请先解锁应用后再修改应用密码"))
             } else {
                 val passphrase = DatabasePassphraseManager.getPassphrase()
                 AppPasswordStore.change(application, oldPassword, newPassword, passphrase)
                     .onSuccess { refreshAppPasswordState() }
                     .also { passphrase.fill(0) }
+                    .map { AppResult.success(Unit) }
+                    .getOrElse {
+                        AppResult.failure(
+                            AppError.AuthFailed(
+                                it.message ?: "修改应用密码失败"
+                            )
+                        )
+                    }
             }
         } finally {
             oldPassword.fill('\u0000')
@@ -224,16 +256,24 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun disableAppPassword(password: CharArray): Result<Unit> =
+    override suspend fun disableAppPassword(password: CharArray): AppResult<Unit> =
         authMutex.withLock {
             return try {
                 if (DatabasePassphraseManager.isLocked) {
-                    Result.failure(IllegalStateException("请先解锁应用后再关闭应用密码"))
+                    AppResult.failure(AppError.AuthFailed("请先解锁应用后再关闭应用密码"))
                 } else {
                     val passphrase = DatabasePassphraseManager.getPassphrase()
                     AppPasswordStore.disable(application, password, passphrase)
                         .onSuccess { refreshAppPasswordState() }
                         .also { passphrase.fill(0) }
+                        .map { AppResult.success(Unit) }
+                        .getOrElse {
+                            AppResult.failure(
+                                AppError.AuthFailed(
+                                    it.message ?: "关闭应用密码失败"
+                                )
+                            )
+                        }
                 }
             } finally {
                 password.fill('\u0000')
@@ -278,9 +318,9 @@ internal class AuthRepositoryImpl(
     override suspend fun rekeyWithInvalidationPolicy(
         activity: FragmentActivity,
         invalidateOnBiometricChange: Boolean
-    ): Result<Unit> {
+    ): AppResult<Unit> {
         if (DatabasePassphraseManager.isLocked) {
-            return Result.failure(Exception("请先解锁应用"))
+            return AppResult.failure(AppError.AuthFailed("请先解锁应用"))
         }
 
         val currentPassphrase = DatabasePassphraseManager.getPassphrase().copyOf()
@@ -313,9 +353,11 @@ internal class AuthRepositoryImpl(
                 tag,
                 "Rekey completed: invalidateOnBiometricChange=$invalidateOnBiometricChange"
             )
-        }.onFailure { e ->
+            AppResult.success(Unit)
+        }.getOrElse { e ->
             Logcat.e(tag, "Rekey failed, recovering with previous policy...", e)
             recoverFromFailedRekey(!invalidateOnBiometricChange)
+            AppResult.failure(AppError.AuthFailed(e.message ?: "重新加密失败"))
         }.also {
             currentPassphrase.fill(0)
         }

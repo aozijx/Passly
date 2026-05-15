@@ -16,6 +16,9 @@ import com.aozijx.passly.core.backup.BackupManager.mapImportFailure
 import com.aozijx.passly.core.backup.BackupManager.readFullyOrThrow
 import com.aozijx.passly.core.backup.BackupManager.readSingleByteOrThrow
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
+import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.ErrorLayer
+import com.aozijx.passly.core.error.ErrorTrace
 import com.aozijx.passly.data.entity.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
@@ -46,8 +49,8 @@ internal class BackupRepositoryImpl(
         uri: Uri,
         password: CharArray,
         includeImages: Boolean
-    ): Result<Unit> = withContext(Dispatchers.IO) {
-        val runResult = runCatching {
+    ) = withContext(Dispatchers.IO) {
+        try {
             val entities = dataSource.readAllEntries()
             val exportPayloads = mutableListOf<VaultPayload>()
             val imageExports = mutableListOf<Pair<String, File>>()
@@ -91,39 +94,40 @@ internal class BackupRepositoryImpl(
                     }
                 }
             }
-        }
 
-        runResult.fold(
-            onSuccess = { Result.success(Unit) },
-            onFailure = { e -> Result.failure(e as? BackupException ?: BackupException.Unknown(e)) }
-        )
+        } catch (e: Throwable) {
+            throw mapToAppError("backup.export.encrypted", e)
+        }
     }
 
-    override suspend fun exportPlainBackup(uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
-        val runResult = runCatching {
+    override suspend fun exportPlainBackup(uri: Uri) = withContext(Dispatchers.IO) {
+        try {
             val entities = dataSource.readAllEntries()
             val payloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
             openOutputStreamOrThrow(uri).use { output ->
                 BackupVSerializer.writeEntries(output, payloads)
             }
+        } catch (e: Throwable) {
+            throw mapToAppError("backup.export.plain", e)
         }
-
-        runResult.fold(
-            onSuccess = { Result.success(Unit) },
-            onFailure = { e -> Result.failure(e as? BackupException ?: BackupException.Unknown(e)) }
-        )
     }
 
-    override suspend fun exportEmergencyBackup(): Result<File> = withContext(Dispatchers.IO) {
-        EmergencyBackupExporter.exportOnFailure(context)
+    override suspend fun exportEmergencyBackup(): File = withContext(Dispatchers.IO) {
+        try {
+            EmergencyBackupExporter.exportOnFailure(context).getOrElse {
+                throw mapToAppError("backup.export.emergency", it)
+            }
+        } catch (e: Throwable) {
+            throw mapToAppError("backup.export.emergency", e)
+        }
     }
 
     override suspend fun importBackup(
         uri: Uri,
         password: CharArray,
         mode: BackupImportMode
-    ): Result<Unit> = withContext(Dispatchers.IO) {
-        val runResult = runCatching {
+    ) = withContext(Dispatchers.IO) {
+        try {
             openInputStreamOrThrow(uri).use { input ->
                 val readMagic = ByteArray(MAGIC_NUMBER.size)
                 val readCount = input.read(readMagic)
@@ -138,12 +142,9 @@ internal class BackupRepositoryImpl(
                     importPlainJson(uri, mode)
                 }
             }
+        } catch (e: Throwable) {
+            throw mapToAppError("backup.import", e)
         }
-
-        runResult.fold(
-            onSuccess = { Result.success(Unit) },
-            onFailure = { e -> Result.failure(mapException(e)) }
-        )
     }
 
     private suspend fun importEncryptedStream(
@@ -210,6 +211,16 @@ internal class BackupRepositoryImpl(
         }
     }
 
+    private fun mapToAppError(operation: String, e: Throwable): AppError {
+        if (e is AppError) return e
+        val backupException = if (e is BackupException) e else mapException(e)
+        return AppError.BackupFailed(
+            message = backupException.message ?: "备份操作失败",
+            errorTrace = ErrorTrace(originLayer = ErrorLayer.DATA, operation = operation),
+            cause = backupException
+        )
+    }
+
     private fun openInputStreamOrThrow(uri: Uri): InputStream {
         return try {
             context.contentResolver.openInputStream(uri) ?: throw BackupException.FileCorrupted()
@@ -231,10 +242,8 @@ internal class BackupRepositoryImpl(
         }
     }
 
-    override suspend fun testDirectoryWritePermission(directoryUri: String): Result<Unit> {
-        return BackupExportStorageSupport.testWritePermission(context, directoryUri).fold(
-            onSuccess = { Result.success(Unit) },
-            onFailure = { Result.failure(it) }
-        )
+    override suspend fun testDirectoryWritePermission(directoryUri: String) {
+        BackupExportStorageSupport.testWritePermission(context, directoryUri)
+            .onFailure { throw mapToAppError("backup.permission.test", it) }
     }
 }

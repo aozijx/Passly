@@ -10,11 +10,14 @@ import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
+import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.backup.BackupImportMode
 import com.aozijx.passly.domain.model.core.BackupException
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.features.backup.contract.BackupUiState
+import com.aozijx.passly.features.common.toUiMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -74,10 +77,11 @@ class BackupCoordinator(
         }
         scope.launch {
             val result = backupUseCases.testDirectoryWritePermission(directoryUri)
-            backupMessage = if (result.isSuccess) {
-                text(R.string.backup_directory_permission_ok)
-            } else {
-                text(R.string.backup_directory_permission_failed)
+            backupMessage = when (result) {
+                is AppResult.Success -> text(R.string.backup_directory_permission_ok)
+                is AppResult.Failure -> result.error.toUiMessage(
+                    text(R.string.backup_directory_permission_failed)
+                )
             }
         }
     }
@@ -145,8 +149,15 @@ class BackupCoordinator(
                         backupUseCases.importBackup(finalUri, password, currentState.importMode)
                     }
 
-                    if (outcome.isSuccess) handleSuccess(context, currentState)
-                    else handleFailure(context, outcome.exceptionOrNull(), finalUri, currentState)
+                    when (outcome) {
+                        is AppResult.Success -> handleSuccess(context, currentState)
+                        is AppResult.Failure -> handleFailure(
+                            context,
+                            outcome.error,
+                            finalUri,
+                            currentState
+                        )
+                    }
 
                     dismissPasswordDialog()
                 } finally {
@@ -190,10 +201,10 @@ class BackupCoordinator(
         }
 
         scope.launch {
-            backupUseCases.exportPlainBackup(uri).fold(
-                onSuccess = { backupMessage = "明文备份已导出" },
-                onFailure = { backupMessage = it.message ?: "导出失败" }
-            )
+            when (val result = backupUseCases.exportPlainBackup(uri)) {
+                is AppResult.Success -> backupMessage = "明文备份已导出"
+                is AppResult.Failure -> backupMessage = result.error.toUiMessage("导出失败")
+            }
         }
     }
 
@@ -202,13 +213,17 @@ class BackupCoordinator(
      */
     fun exportEmergencyBackup() {
         scope.launch {
-            backupUseCases.exportEmergencyBackup().fold(
-                onSuccess = { file ->
+            when (val result = backupUseCases.exportEmergencyBackup()) {
+                is AppResult.Success -> {
+                    val file = result.data
                     state = state.copy(emergencyBackupFile = file)
                     backupMessage = "紧急备份已导出: ${file.name}"
-                },
-                onFailure = { backupMessage = "紧急备份导出失败: ${it.message}" }
-            )
+                }
+
+                is AppResult.Failure -> {
+                    backupMessage = "紧急备份导出失败: ${result.error.toUiMessage()}"
+                }
+            }
         }
     }
 
@@ -228,13 +243,13 @@ class BackupCoordinator(
 
     private fun handleFailure(
         context: Context,
-        error: Throwable?,
+        error: AppError,
         finalUri: Uri,
         oldState: BackupUiState
     ) {
         if (oldState.isExporting && oldState.pendingExportAllowFallback) {
             BackupExportStorageSupport.deleteDocument(context, finalUri)
         }
-        backupMessage = (error as? BackupException)?.message ?: text(R.string.backup_error_unknown)
+        backupMessage = error.toUiMessage(text(R.string.backup_error_unknown))
     }
 }

@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.usecase.backup
 
 import android.net.Uri
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.backup.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 
@@ -8,16 +9,28 @@ class BackupUseCases(private val repository: BackupRepository) {
 
     suspend fun exportBackup(
         uri: Uri, password: CharArray, includeImages: Boolean
-    ): Result<Unit> = repository.exportEncryptedBackup(uri, password, includeImages)
+    ): AppResult<Unit> = AppResult.runSuspendCatching("domain.backup.exportEncrypted") {
+        repository.exportEncryptedBackup(uri, password, includeImages)
+    }
 
     suspend fun importBackup(
         uri: Uri, password: CharArray, mode: BackupImportMode
-    ): Result<Unit> = repository.importBackup(uri, password, mode)
+    ): AppResult<Unit> = AppResult.runSuspendCatching("domain.backup.import") {
+        repository.importBackup(uri, password, mode)
+    }
 
-    suspend fun exportPlainBackup(uri: Uri) = repository.exportPlainBackup(uri)
+    suspend fun exportPlainBackup(uri: Uri): AppResult<Unit> =
+        AppResult.runSuspendCatching("domain.backup.exportPlain") {
+            repository.exportPlainBackup(uri)
+        }
 
-    suspend fun exportEmergencyBackup() = repository.exportEmergencyBackup()
+    suspend fun exportEmergencyBackup() =
+        AppResult.runSuspendCatching("domain.backup.exportEmergency") {
+            repository.exportEmergencyBackup()
+        }
 
-    suspend fun testDirectoryWritePermission(directoryUri: String) =
-        repository.testDirectoryWritePermission(directoryUri)
+    suspend fun testDirectoryWritePermission(directoryUri: String): AppResult<Unit> =
+        AppResult.runSuspendCatching("domain.backup.testDirectoryWrite") {
+            repository.testDirectoryWritePermission(directoryUri)
+        }
 }

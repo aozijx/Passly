@@ -24,6 +24,7 @@ class VaultDataRepository(
         return if (DatabasePassphraseManager.isLocked) onLocked() else block()
     }
 
+
     override val allEntries: Flow<List<VaultEntry>> = withLockGuard({ emptyFlow() }) {
         entryDao.observeAll().map { entities ->
             entities.map { it.toDomain() }

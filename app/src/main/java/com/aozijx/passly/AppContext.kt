@@ -1,8 +1,10 @@
 package com.aozijx.passly
 
 import android.app.Application
+import android.os.StrictMode
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import kotlinx.coroutines.CoroutineExceptionHandler
 
 class AppContext : Application() {
 
@@ -15,7 +17,21 @@ class AppContext : Application() {
         }
     }
 
+    val globalExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Logcat.e(TAG, "Uncaught coroutine exception", throwable)
+    }
+
     override fun onCreate() {
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectDiskReads()
+                    .detectDiskWrites()
+                    .penaltyLog()
+                    .build()
+            )
+        }
+
         super.onCreate()
         _instance = this
         try {

@@ -16,17 +16,17 @@ interface BackupRepository {
         uri: Uri,
         password: CharArray,
         includeImages: Boolean
-    ): Result<Unit>
+    )
 
     /**
      * 导出明文 JSON 备份。
      */
-    suspend fun exportPlainBackup(uri: Uri): Result<Unit>
+    suspend fun exportPlainBackup(uri: Uri)
 
     /**
      * 导出紧急备份文件。
      */
-    suspend fun exportEmergencyBackup(): Result<File>
+    suspend fun exportEmergencyBackup(): File
 
     /**
      * 从备份文件中导入。
@@ -35,10 +35,10 @@ interface BackupRepository {
         uri: Uri,
         password: CharArray,
         mode: BackupImportMode
-    ): Result<Unit>
+    )
 
     /**
      * 测试目录写入权限。
      */
-    suspend fun testDirectoryWritePermission(directoryUri: String): Result<Unit>
+    suspend fun testDirectoryWritePermission(directoryUri: String)
 }

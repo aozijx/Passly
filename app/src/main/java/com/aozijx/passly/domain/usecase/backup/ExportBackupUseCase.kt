@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.usecase.backup
 
 import android.net.Uri
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 
 class ExportBackupUseCase(private val repository: BackupRepository) {
@@ -8,5 +9,7 @@ class ExportBackupUseCase(private val repository: BackupRepository) {
         uri: Uri,
         password: CharArray,
         includeImages: Boolean
-    ): Result<Unit> = repository.exportEncryptedBackup(uri, password, includeImages)
+    ): AppResult<Unit> = AppResult.runSuspendCatching("domain.backup.exportEncrypted") {
+        repository.exportEncryptedBackup(uri, password, includeImages)
+    }
 }

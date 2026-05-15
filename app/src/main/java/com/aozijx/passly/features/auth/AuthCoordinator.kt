@@ -1,11 +1,13 @@
 package com.aozijx.passly.features.auth
 
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.security.auth.AuthValidationResult
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.features.auth.ui.AuthScreenAuthGateway
 import com.aozijx.passly.features.auth.ui.SettingsAuthGateway
+import com.aozijx.passly.features.common.toUiMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -13,15 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
-/**
- * 认证模块协调器：负责 UI 层的认证流程调度。
- */
 class AuthCoordinator(
     private val scope: CoroutineScope,
     private val authUseCases: AuthUseCases,
     private val validationSupport: AuthValidationSupport = AuthValidationSupport()
 ) : AuthScreenAuthGateway, SettingsAuthGateway {
-    /** 观察全局授权状态 */
     val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
     override val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
 
@@ -37,17 +35,16 @@ class AuthCoordinator(
     ) {
         when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
             is AuthValidationResult.Invalid -> {
-                emitAuthError(validation.message, onError, sanitize = false)
+                emitAuthError(validation.message, onError)
                 return
             }
-
             AuthValidationResult.Valid -> Unit
         }
 
         scope.launch {
-            authUseCases.authenticate(activity, title, subtitle).fold(
-                onSuccess = { onSuccess() },
-                onFailure = { error -> emitAuthError(error.message, onError) })
+            authUseCases.authenticate(activity, title, subtitle)
+                .onSuccess { onSuccess() }
+                .onFailure { emitAuthError(it.toUiMessage(), onError) }
         }
     }
 
@@ -55,27 +52,27 @@ class AuthCoordinator(
         password: CharArray, onSuccess: () -> Unit, onError: ((String) -> Unit)?
     ) {
         scope.launch {
-            authUseCases.authenticateWithAppPassword(password).fold(
-                onSuccess = { onSuccess() },
-                onFailure = { error -> emitAuthError(error.message, onError) })
+            authUseCases.authenticateWithAppPassword(password)
+                .onSuccess { onSuccess() }
+                .onFailure { emitAuthError(it.toUiMessage(), onError) }
         }
     }
 
-    override fun setAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
+    override fun setAppPassword(password: CharArray, onResult: (AppResult<Unit>) -> Unit) {
         launchResult(onResult) { authUseCases.setAppPassword(password) }
     }
 
-    override fun bootstrapAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
+    override fun bootstrapAppPassword(password: CharArray, onResult: (AppResult<Unit>) -> Unit) {
         launchResult(onResult) { authUseCases.bootstrapAppPassword(password) }
     }
 
     override fun changeAppPassword(
-        oldPassword: CharArray, newPassword: CharArray, onResult: (Result<Unit>) -> Unit
+        oldPassword: CharArray, newPassword: CharArray, onResult: (AppResult<Unit>) -> Unit
     ) {
         launchResult(onResult) { authUseCases.changeAppPassword(oldPassword, newPassword) }
     }
 
-    override fun disableAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit) {
+    override fun disableAppPassword(password: CharArray, onResult: (AppResult<Unit>) -> Unit) {
         launchResult(onResult) { authUseCases.disableAppPassword(password) }
     }
 
@@ -83,7 +80,7 @@ class AuthCoordinator(
         activity: FragmentActivity,
         title: String,
         subtitle: String,
-        onResult: (Result<Unit>) -> Unit
+        onResult: (AppResult<Unit>) -> Unit
     ) {
         launchResult(onResult) { authUseCases.verifyIdentity(activity, title, subtitle) }
     }
@@ -91,23 +88,22 @@ class AuthCoordinator(
     fun rekeyWithInvalidationPolicy(
         activity: FragmentActivity,
         invalidateOnBiometricChange: Boolean,
-        onResult: (Result<Unit>) -> Unit
+        onResult: (AppResult<Unit>) -> Unit
     ) {
         launchResult(onResult) {
             authUseCases.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
         }
     }
 
-    private fun emitAuthError(
-        message: String?, onError: ((String) -> Unit)?, sanitize: Boolean = true
-    ) {
-        val resolved =
-            if (sanitize) validationSupport.sanitizeMessage(message) else message.orEmpty()
+    private fun emitAuthError(message: String?, onError: ((String) -> Unit)?) {
+        val resolved = validationSupport.sanitizeMessage(message)
         _authMessage.tryEmit(resolved)
         onError?.invoke(resolved)
     }
 
-    private fun launchResult(onResult: (Result<Unit>) -> Unit, block: suspend () -> Result<Unit>) {
+    private fun launchResult(
+        onResult: (AppResult<Unit>) -> Unit, block: suspend () -> AppResult<Unit>
+    ) {
         scope.launch { onResult(block()) }
     }
 

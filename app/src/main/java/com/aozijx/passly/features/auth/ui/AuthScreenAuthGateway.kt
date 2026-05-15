@@ -1,11 +1,9 @@
 package com.aozijx.passly.features.auth.ui
 
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.error.AppResult
 import kotlinx.coroutines.flow.StateFlow
 
-/**
- * AuthScreen 使用的最小认证能力边界，避免 UI 直接依赖具体协调器实现。
- */
 interface AuthScreenAuthGateway {
     val isAppPasswordEnabled: StateFlow<Boolean>
 
@@ -13,15 +11,17 @@ interface AuthScreenAuthGateway {
         activity: FragmentActivity,
         title: String,
         subtitle: String,
-        onSuccess: () -> Unit = {},
-        onError: ((String) -> Unit)? = null
+        onSuccess: () -> Unit,
+        onError: ((String) -> Unit)?
     )
 
     fun authenticateWithAppPassword(
         password: CharArray,
-        onSuccess: () -> Unit = {},
-        onError: ((String) -> Unit)? = null
+        onSuccess: () -> Unit,
+        onError: ((String) -> Unit)?
     )
 
-    fun bootstrapAppPassword(password: CharArray, onResult: (Result<Unit>) -> Unit)
+    fun setAppPassword(password: CharArray, onResult: (AppResult<Unit>) -> Unit)
+
+    fun bootstrapAppPassword(password: CharArray, onResult: (AppResult<Unit>) -> Unit)
 }
