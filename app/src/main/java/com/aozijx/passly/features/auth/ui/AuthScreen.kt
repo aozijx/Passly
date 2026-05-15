@@ -175,14 +175,6 @@ fun AuthScreen(
                     authInProgress = authInProgress,
                     onClick = { requestBiometricAuth() }
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = stringResource(R.string.auth_enable_password_in_settings_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }
