@@ -11,7 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 // 自定义圆角逻辑封装
-private val PoopShapes = Shapes(
+private val PasslyShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(12.dp),
@@ -40,7 +40,7 @@ fun AppTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = PoopShapes,
+        shapes = PasslyShapes,
         content = content
     )
 }
