@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.core.designsystem.base.LoadingMask
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
@@ -49,7 +50,9 @@ fun VaultPagerContent(
         val currentTab = uiState.visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
         val displayItems = uiState.vaultItemsByTab[currentTab] ?: emptyList()
 
-        if (displayItems.isEmpty() && !uiState.isVaultItemsLoading) {
+        if (uiState.isVaultItemsLoading) {
+            LoadingMask(modifier = Modifier.fillMaxSize())
+        } else if (displayItems.isEmpty()) {
             EmptyVaultPlaceholder()
         } else {
             LazyColumn(

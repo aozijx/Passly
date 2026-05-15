@@ -1,6 +1,7 @@
 package com.aozijx.passly.core.designsystem.base
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,21 +18,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun LoadingMask(message: String) {
+fun LoadingMask(
+    modifier: Modifier = Modifier,
+    message: String? = null
+) {
+    val maskAlpha = if (isSystemInDarkTheme()) 0.5f else 0.3f
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.3f)),
+            .background(Color.Black.copy(alpha = maskAlpha)),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = message,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+            if (message != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = message,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
