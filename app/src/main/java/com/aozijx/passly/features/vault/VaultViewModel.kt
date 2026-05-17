@@ -214,7 +214,6 @@ class VaultViewModel(
     fun showDetail(entry: VaultSummary) = loadEntryById(entry.id) { showDetail(it) }
 
     fun dismissDetail() {
-        detail.coordinatorState.request?.entry?.id?.let { totp.clearSensitiveState(it) }
         detail.dismissDetail()
     }
 

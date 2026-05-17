@@ -133,7 +133,6 @@ fun DetailCardDialog(
         onDismissRequest = {
             detailViewModel.onEvent(DetailEvent.ClearSensitiveState)
             ClipboardUtils.clear(context)
-            vaultViewModel.clearDetailSensitiveState(entry.id)
             onDismiss()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
