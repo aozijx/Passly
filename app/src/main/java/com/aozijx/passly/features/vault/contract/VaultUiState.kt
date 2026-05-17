@@ -3,12 +3,14 @@ package com.aozijx.passly.features.vault.contract
 import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
+import com.aozijx.passly.features.vault.model.SortOption
 import com.aozijx.passly.features.vault.model.VaultTab
 
 data class VaultUiState(
     val searchQuery: String = "",
     val selectedCategory: String? = null,
     val selectedTab: VaultTab = VaultTab.ALL,
+    val selectedSort: SortOption = SortOption.DEFAULT,
     val isSearchActive: Boolean = false,
     val isMoreMenuExpanded: Boolean = false,
     val isVaultItemsLoading: Boolean = true,

@@ -19,6 +19,8 @@ fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     totpDigits = totpDigits,
     totpAlgorithm = totpAlgorithm,
     favorite = favorite,
+    usageCount = usageCount,
+    lastUsedAt = lastUsedAt,
     createdAt = createdAt,
     updatedAt = updatedAt
 )

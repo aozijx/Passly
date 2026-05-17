@@ -23,8 +23,10 @@ import com.aozijx.passly.features.vault.internal.SearchFilterState
 import com.aozijx.passly.features.vault.internal.TotpCoordinator
 import com.aozijx.passly.features.vault.internal.VaultQueryCoordinator
 import com.aozijx.passly.features.vault.model.AddType
+import com.aozijx.passly.features.vault.model.SortOption
 import com.aozijx.passly.features.vault.model.VaultTab
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -86,7 +88,7 @@ class VaultViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val vaultItems: StateFlow<List<VaultSummary>> = queryCoordinator.observeItems(
+    private val rawVaultItems: Flow<List<VaultSummary>> = queryCoordinator.observeItems(
         debouncedSearchQuery = searchFilter.debouncedSearchQuery,
         normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
         distinctSelectedTab = searchFilter.distinctSelectedTab
@@ -95,6 +97,13 @@ class VaultViewModel(
         if (isAutoDownloadIcons.value) {
             entryManager.downloadMissingIcons(items)
         }
+    }
+
+    private val vaultItems: StateFlow<List<VaultSummary>> = combine(
+        rawVaultItems,
+        searchFilter.selectedSort
+    ) { items, sort ->
+        sort.apply(items)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val loadingTrigger = combine(
@@ -148,6 +157,7 @@ class VaultViewModel(
             searchQuery = search.searchQuery,
             selectedCategory = search.selectedCategory,
             selectedTab = search.selectedTab,
+            selectedSort = search.selectedSort,
             isSearchActive = search.isSearchActive,
             isMoreMenuExpanded = search.isMoreMenuExpanded,
             isVaultItemsLoading = loading,
@@ -175,6 +185,7 @@ class VaultViewModel(
     fun onSearchQueryChange(q: String) = searchFilter.updateSearchQuery(q)
     fun setSelectedCategory(category: String?) = searchFilter.updateSelectedCategory(category)
     fun clearSelectedCategory() = setSelectedCategory(null)
+    fun selectSortOption(sort: SortOption) = searchFilter.updateSelectedSort(sort)
     fun selectTab(tab: VaultTab) = searchFilter.updateSelectedTab(tab)
     fun toggleSearch(active: Boolean) = searchFilter.toggleSearch(active)
     fun toggleShowTOTPCode() {

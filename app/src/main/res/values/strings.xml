@@ -85,6 +85,12 @@
     <string name="vault_title_default">安全保险箱</string>
     <string name="vault_clear_filter">清除筛选</string>
     <string name="vault_menu_filter">分类筛选</string>
+    <string name="vault_menu_sort">排序方式</string>
+    <string name="sort_default">默认排序</string>
+    <string name="sort_name">名称</string>
+    <string name="sort_created">创建时间</string>
+    <string name="sort_updated">修改时间</string>
+    <string name="sort_usage">使用次数</string>
     <string name="vault_menu_hide_totp">隐藏验证码</string>
     <string name="vault_menu_show_totp">显示验证码</string>
     <string name="vault_menu_enable_autofill">开启自动填充</string>

@@ -22,6 +22,8 @@ data class VaultSummary(
     val totpDigits: Int = 6,
     val totpAlgorithm: String = "SHA1",
     val favorite: Boolean = false,
+    val usageCount: Int = 0,
+    val lastUsedAt: Long? = null,
     val createdAt: Long? = null,
     val updatedAt: Long? = null
 ) : VaultIconable

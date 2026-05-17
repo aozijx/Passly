@@ -142,7 +142,9 @@ fun VaultTopBar(
                             onImportClick = onImportClick,
                             availableCategories = uiState.availableCategories,
                             selectedCategory = uiState.selectedCategory,
-                            onCategorySelected = { vaultViewModel.setSelectedCategory(it) })
+                            onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
+                            selectedSort = uiState.selectedSort,
+                            onSortSelected = { vaultViewModel.selectSortOption(it) })
                     }
                 }
             })

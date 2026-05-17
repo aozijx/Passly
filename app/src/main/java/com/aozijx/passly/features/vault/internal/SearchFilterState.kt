@@ -1,5 +1,6 @@
 package com.aozijx.passly.features.vault.internal
 
+import com.aozijx.passly.features.vault.model.SortOption
 import com.aozijx.passly.features.vault.model.VaultTab
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -17,6 +18,7 @@ internal data class SearchFilterUiState(
     val searchQuery: String = "",
     val selectedCategory: String? = null,
     val selectedTab: VaultTab = VaultTab.ALL,
+    val selectedSort: SortOption = SortOption.DEFAULT,
     val isSearchActive: Boolean = false,
     val isMoreMenuExpanded: Boolean = false
 )
@@ -37,15 +39,38 @@ internal class SearchFilterState(scope: CoroutineScope) {
     private val _isMoreMenuExpanded = MutableStateFlow(false)
     val isMoreMenuExpanded: StateFlow<Boolean> = _isMoreMenuExpanded
 
+    private val _selectedSort = MutableStateFlow(SortOption.DEFAULT)
+    val selectedSort: StateFlow<SortOption> = _selectedSort
+
     val uiStateFlow: StateFlow<SearchFilterUiState> = combine(
-        _searchQuery,
-        _selectedCategory,
-        _selectedTab,
-        _isSearchActive,
-        _isMoreMenuExpanded
-    ) { query, category, tab, active, expanded ->
-        SearchFilterUiState(query, category, tab, active, expanded)
+        combine(
+            _searchQuery,
+            _selectedCategory,
+            _selectedTab,
+            _isSearchActive,
+            _isMoreMenuExpanded
+        ) { query, category, tab, active, expanded ->
+            PartialState(query, category, tab, active, expanded)
+        },
+        _selectedSort
+    ) { partial, sort ->
+        SearchFilterUiState(
+            searchQuery = partial.query,
+            selectedCategory = partial.category,
+            selectedTab = partial.tab,
+            selectedSort = sort,
+            isSearchActive = partial.active,
+            isMoreMenuExpanded = partial.expanded
+        )
     }.stateIn(scope, SharingStarted.Eagerly, SearchFilterUiState())
+
+    private data class PartialState(
+        val query: String,
+        val category: String?,
+        val tab: VaultTab,
+        val active: Boolean,
+        val expanded: Boolean
+    )
 
     @OptIn(FlowPreview::class)
     val debouncedSearchQuery: Flow<String> =
@@ -60,6 +85,9 @@ internal class SearchFilterState(scope: CoroutineScope) {
     fun updateSearchQuery(query: String) { _searchQuery.value = query }
     fun updateSelectedTab(tab: VaultTab) { _selectedTab.value = tab }
     fun updateSelectedCategory(category: String?) { _selectedCategory.value = category }
+    fun updateSelectedSort(sort: SortOption) {
+        _selectedSort.value = sort
+    }
 
     fun toggleSearch(active: Boolean) {
         _isSearchActive.value = active
