@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.base.LoadingMask
 import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
@@ -44,16 +43,13 @@ fun VaultPagerContent(
     modifier: Modifier = Modifier
 ) {
     HorizontalPager(
-        state = pagerState,
-        modifier = modifier
+        state = pagerState, modifier = modifier
     ) { pageIndex ->
         val currentTab = uiState.visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
         val displayItems = uiState.vaultItemsByTab[currentTab] ?: emptyList()
 
-        if (uiState.isVaultItemsLoading) {
-            LoadingMask(modifier = Modifier.fillMaxSize())
-        } else if (displayItems.isEmpty()) {
-            EmptyVaultPlaceholder()
+        if (displayItems.isEmpty()) {
+            if (!uiState.isVaultItemsLoading) EmptyVaultPlaceholder()
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -107,8 +103,7 @@ private fun VaultListItemRow(
                     onAction = { onSwipeTriggered(swipeLeftAction, item) },
                     backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.primary,
                     iconTint = Color.White
-                ),
-                createSwipeAction(
+                ), createSwipeAction(
                     actionType = swipeRightAction,
                     direction = SwipeDirection.RIGHT,
                     onAction = { onSwipeTriggered(swipeRightAction, item) },

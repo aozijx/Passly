@@ -21,16 +21,18 @@ internal class VaultQueryCoordinator(
     ): Flow<List<VaultSummary>> = combine(
         debouncedSearchQuery, normalizedSelectedCategory, distinctSelectedTab
     ) { query, category, tab ->
-        QueryParams(query = query, category = category, filter = tab.entryFilter)
+        QueryParams(query = query, category = category, tab = tab)
     }.distinctUntilChanged().flatMapLatest { params ->
         vaultUseCases.observeEntrySummaries(
-            query = params.query, category = params.category, filter = params.filter
+            query = params.query,
+            category = params.category,
+            filter = VaultSearchRepository.EntryFilter.ALL
         )
     }
 
     private data class QueryParams(
         val query: String,
         val category: String?,
-        val filter: VaultSearchRepository.EntryFilter
+        val tab: VaultTab
     )
 }

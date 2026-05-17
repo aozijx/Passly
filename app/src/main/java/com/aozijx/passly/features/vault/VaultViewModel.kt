@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -90,7 +89,7 @@ class VaultViewModel(
     private val vaultItems: StateFlow<List<VaultSummary>> = queryCoordinator.observeItems(
         debouncedSearchQuery = searchFilter.debouncedSearchQuery,
         normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
-        distinctSelectedTab = flowOf(VaultTab.ALL)
+        distinctSelectedTab = searchFilter.distinctSelectedTab
     ).onEach { items ->
         _isVaultItemsLoading.value = false
         if (isAutoDownloadIcons.value) {
@@ -100,9 +99,8 @@ class VaultViewModel(
 
     private val loadingTrigger = combine(
         searchFilter.searchQuery,
-        searchFilter.selectedCategory,
-        searchFilter.selectedTab
-    ) { query, category, tab -> Triple(query.trim(), category?.trim(), tab) }
+        searchFilter.selectedCategory
+    ) { query, category -> Pair(query.trim(), category?.trim()) }
         .distinctUntilChanged()
 
     private val settingsState: StateFlow<Triple<List<VaultTab>, Boolean, Boolean>> =
