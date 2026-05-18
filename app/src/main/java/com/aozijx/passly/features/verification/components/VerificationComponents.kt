@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.crypto.memory.SecureString
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDialog
 import com.aozijx.passly.features.verification.VerificationViewModel
 
@@ -44,7 +45,7 @@ internal fun BiometricUnlockButton(
 
 @Composable
 internal fun PasswordUnlockSection(
-    appPassword: String,
+    appPassword: SecureString,
     showPasswordInput: Boolean,
     authInProgress: Boolean,
     onPasswordChange: (String) -> Unit,
@@ -53,14 +54,14 @@ internal fun PasswordUnlockSection(
 ) {
     if (showPasswordInput) {
         OutlinedTextField(
-            value = appPassword,
+            value = appPassword.toPlainString(),
             onValueChange = onPasswordChange,
             singleLine = true,
             label = { Text(stringResource(R.string.auth_app_password_label)) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
-                onDone = { if (appPassword.isNotBlank() && !authInProgress) onUnlockRequest() }
+                onDone = { if (!appPassword.isEmpty && !authInProgress) onUnlockRequest() }
             ),
             enabled = !authInProgress,
             modifier = Modifier.fillMaxWidth()
@@ -79,7 +80,7 @@ internal fun PasswordUnlockSection(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
-        enabled = if (showPasswordInput) appPassword.isNotBlank() && !authInProgress else !authInProgress,
+        enabled = if (showPasswordInput) !appPassword.isEmpty && !authInProgress else !authInProgress,
         shape = RoundedCornerShape(16.dp)
     ) {
         Text(
@@ -114,26 +115,26 @@ internal fun SetPasswordDialogSection(
     activity: FragmentActivity,
     viewModel: VerificationViewModel,
     authInProgress: Boolean,
-    appPassword: String,
-    appPasswordConfirm: String,
+    appPassword: SecureString,
+    appPasswordConfirm: SecureString,
     passwordMismatchMessage: String,
     emptyPasswordMessage: String,
     passwordSetSuccessMessage: String,
     passwordSetFailedMessage: String
 ) {
     AppPasswordSetDialog(
-        newPassword = appPassword,
-        confirmPassword = appPasswordConfirm,
+        newPassword = appPassword.toPlainString(),
+        confirmPassword = appPasswordConfirm.toPlainString(),
         onNewPasswordChange = viewModel::onPasswordChange,
         onConfirmPasswordChange = viewModel::onPasswordConfirmChange,
         onConfirm = {
             viewModel.bootstrapAppPassword(
                 validation = {
-                    if (appPassword != appPasswordConfirm) {
+                    if (appPassword.toPlainString() != appPasswordConfirm.toPlainString()) {
                         Toast.makeText(activity, passwordMismatchMessage, Toast.LENGTH_SHORT).show()
                         return@bootstrapAppPassword false
                     }
-                    if (appPassword.isBlank()) {
+                    if (appPassword.isEmpty) {
                         Toast.makeText(activity, emptyPasswordMessage, Toast.LENGTH_SHORT).show()
                         return@bootstrapAppPassword false
                     }

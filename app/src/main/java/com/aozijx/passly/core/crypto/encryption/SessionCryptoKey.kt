@@ -1,5 +1,7 @@
-package com.aozijx.passly.core.crypto
+package com.aozijx.passly.core.crypto.encryption
 
+import com.aozijx.passly.core.crypto.cryptoconstants.CryptoConstants
+import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -9,7 +11,6 @@ import javax.crypto.spec.SecretKeySpec
  * 解锁时派生并持有，锁定时清零——再次解密必须重新认证。
  */
 object SessionCryptoKey {
-    private const val DERIVE_LABEL = "passly-vault-field-key-v1"
     private val lock = Any()
 
     @Volatile
@@ -27,13 +28,13 @@ object SessionCryptoKey {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(dbPassphrase, "HmacSHA256"))
         synchronized(lock) {
-            _sessionDek = mac.doFinal(DERIVE_LABEL.toByteArray())
+            _sessionDek = mac.doFinal(CryptoConstants.DERIVE_LABEL.toByteArray())
         }
     }
 
     fun clearSessionKey() {
         synchronized(lock) {
-            _sessionDek?.fill(0)
+            MemoryCleaner.wipeByteArray(_sessionDek)
             _sessionDek = null
         }
     }

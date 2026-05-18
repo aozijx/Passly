@@ -9,8 +9,8 @@ import com.aozijx.passly.core.auth.biometric.BiometricAuthenticator
 import com.aozijx.passly.core.auth.session.SessionAutoLockScheduler
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator.AuthRequestValidationResult
-import com.aozijx.passly.core.crypto.DatabasePassphraseManager
-import com.aozijx.passly.core.crypto.SessionCryptoKey
+import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat

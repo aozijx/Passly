@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.mapper
 
-import com.aozijx.passly.core.crypto.CryptoManager
+import com.aozijx.passly.core.crypto.encryption.FieldEncryptor
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
 import com.aozijx.passly.data.entity.VaultPayload
@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 
 fun VaultEntryEntity.toDomain(): VaultEntry {
-    val json = CryptoManager.decrypt(encryptedBlob)
+    val json = FieldEncryptor.decrypt(encryptedBlob)
     val p = VaultPayload.fromJson(json)
     return VaultEntry(
         id = id,
@@ -104,7 +104,7 @@ fun VaultEntry.toEntity(): VaultEntryEntity {
     return VaultEntryEntity(
         id = id,
         entryType = entryType,
-        encryptedBlob = CryptoManager.encrypt(payload.toJson()),
+        encryptedBlob = FieldEncryptor.encrypt(payload.toJson()),
         updatedAt = updatedAt ?: System.currentTimeMillis()
     )
 }

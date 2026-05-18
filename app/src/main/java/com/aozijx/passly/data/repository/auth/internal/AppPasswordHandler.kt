@@ -3,8 +3,8 @@ package com.aozijx.passly.data.repository.auth.internal
 import android.app.Application
 import com.aozijx.passly.core.auth.apppassword.AppPasswordComplexityPolicy
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
-import com.aozijx.passly.core.crypto.DatabasePassphraseManager
-import com.aozijx.passly.core.crypto.SessionCryptoKey
+import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 

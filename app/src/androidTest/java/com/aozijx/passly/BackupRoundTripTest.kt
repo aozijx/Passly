@@ -5,8 +5,8 @@ import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.aozijx.passly.core.crypto.DatabasePassphraseManager
-import com.aozijx.passly.core.crypto.SessionCryptoKey
+import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.data.entity.VaultPayload
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl

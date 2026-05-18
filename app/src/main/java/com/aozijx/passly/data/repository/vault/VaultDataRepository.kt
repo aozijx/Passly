@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.crypto.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.data.entity.VaultHistoryEntity
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao

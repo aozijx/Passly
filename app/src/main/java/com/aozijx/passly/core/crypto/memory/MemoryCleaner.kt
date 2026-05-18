@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.crypto
+package com.aozijx.passly.core.crypto.memory
 
 object MemoryCleaner {
 

@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.crypto.memory.MemoryCleaner
+import com.aozijx.passly.core.crypto.memory.SecureString
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.features.common.toUiMessage
@@ -38,21 +40,24 @@ class VerificationViewModel(
     private val _passwordSetEvent = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
     val passwordSetEvent: SharedFlow<Boolean> = _passwordSetEvent.asSharedFlow()
 
-    fun onPasswordChange(value: String) = _uiState.update { it.copy(appPassword = value) }
+    fun onPasswordChange(value: String) =
+        _uiState.update { it.copy(appPassword = SecureString.fromString(value)) }
 
     fun onPasswordConfirmChange(value: String) =
-        _uiState.update { it.copy(appPasswordConfirm = value) }
+        _uiState.update { it.copy(appPasswordConfirm = SecureString.fromString(value)) }
 
     fun onShowPasswordInput() = _uiState.update { it.copy(showPasswordInput = true) }
 
     fun onShowSetPasswordDialog() = _uiState.update { it.copy(showSetPasswordDialog = true) }
 
     fun onDismissSetPasswordDialog() {
+        val current = _uiState.value
+        MemoryCleaner.wipe(listOf(current.appPassword, current.appPasswordConfirm))
         _uiState.update {
             it.copy(
                 showSetPasswordDialog = false,
-                appPassword = "",
-                appPasswordConfirm = ""
+                appPassword = SecureString.EMPTY,
+                appPasswordConfirm = SecureString.EMPTY
             )
         }
     }
@@ -78,7 +83,7 @@ class VerificationViewModel(
                     _uiState.update {
                         it.copy(
                             authInProgress = false,
-                            appPassword = "",
+                            appPassword = SecureString.EMPTY,
                             showPasswordInput = false
                         )
                     }
@@ -97,7 +102,7 @@ class VerificationViewModel(
         _uiState.update { it.copy(authInProgress = true) }
         val password = _uiState.value.appPassword.toCharArray()
         gateway.bootstrapAppPassword(password) { result ->
-            password.fill('\u0000')
+            MemoryCleaner.wipeCharArray(password)
             _uiState.update { it.copy(authInProgress = false) }
             val success = result.isSuccess
             if (!success) {

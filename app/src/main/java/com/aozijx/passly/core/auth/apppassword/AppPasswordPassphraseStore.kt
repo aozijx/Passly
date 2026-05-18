@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import com.aozijx.passly.core.auth.authconstants.AppPasswordConstants
 import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
 import com.aozijx.passly.core.backup.BackupManager
+import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import java.security.MessageDigest
 import java.security.SecureRandom
 
@@ -59,7 +60,7 @@ object AppPasswordPassphraseStore {
                 throw IllegalArgumentException("应用密码校验失败，请重新解锁后再试")
             }
         } finally {
-            decryptedPassphrase.fill(0)
+            MemoryCleaner.wipeByteArray(decryptedPassphrase)
         }
 
         val salt = BackupManager.generateSalt()
@@ -86,7 +87,7 @@ object AppPasswordPassphraseStore {
                     throw IllegalArgumentException("应用密码校验失败")
                 }
             } finally {
-                decryptedPassphrase.fill(0)
+                MemoryCleaner.wipeByteArray(decryptedPassphrase)
             }
 
             context.getSharedPreferences(AppPasswordConstants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -104,7 +105,7 @@ object AppPasswordPassphraseStore {
         val lockedUntil = prefs.getLong(KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
         val now = System.currentTimeMillis()
         if (lockedUntil > now) {
-            throw IllegalStateException("尝试过于频繁，请在 ${lockedUntil - now} 秒后重试")
+            throw IllegalStateException("尝试过于频繁，请 ${lockedUntil - now} 秒后重试")
         }
 
         runCatching { decryptWrappedPassphrase(context, password) }

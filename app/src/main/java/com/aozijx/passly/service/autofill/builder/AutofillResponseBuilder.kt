@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.crypto.CryptoAccess
+import com.aozijx.passly.core.crypto.encryption.CryptoAccess
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.core.platform.PackageUtils
 import com.aozijx.passly.domain.model.AutofillCandidate
