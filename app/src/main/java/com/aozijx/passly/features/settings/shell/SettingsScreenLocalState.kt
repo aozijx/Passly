@@ -64,7 +64,7 @@ internal class SettingsScreenLocalState {
     }
 
     fun openAppPasswordActionDialog() {
-        setActiveAppPasswordDialog(AppPasswordDialogState.Action)
+        activeAppPasswordDialog = AppPasswordDialogState.Action
     }
 
     fun dismissAppPasswordActionDialog() {
@@ -72,15 +72,15 @@ internal class SettingsScreenLocalState {
     }
 
     fun openSetAppPasswordDialog() {
-        setActiveAppPasswordDialog(AppPasswordDialogState.Set)
+        activeAppPasswordDialog = AppPasswordDialogState.Set
     }
 
     fun openChangeAppPasswordDialog() {
-        setActiveAppPasswordDialog(AppPasswordDialogState.Change)
+        activeAppPasswordDialog = AppPasswordDialogState.Change
     }
 
     fun openDisableAppPasswordDialog() {
-        setActiveAppPasswordDialog(AppPasswordDialogState.Disable)
+        activeAppPasswordDialog = AppPasswordDialogState.Disable
     }
 
     fun dismissSetAppPasswordDialog() {
@@ -117,10 +117,6 @@ internal class SettingsScreenLocalState {
 
     fun lastExportFileLabel(fileName: String?): String =
         BackupPathSettingsConfig.displayRecentFileName(fileName)
-
-    private fun setActiveAppPasswordDialog(dialog: AppPasswordDialogState) {
-        activeAppPasswordDialog = dialog
-    }
 }
 
 @Composable
