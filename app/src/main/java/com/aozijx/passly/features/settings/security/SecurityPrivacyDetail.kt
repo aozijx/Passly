@@ -17,20 +17,25 @@ internal fun SecurityPrivacyDetail(
 ) {
     Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
-        SecurityPrivacySettingsSection(
+        LockAuthSettingsSection(
             lockTimeout = state.lockTimeout,
             isAppPasswordEnabled = state.isAppPasswordEnabled,
             isPasswordPreferredAuthFirst = state.isPasswordPreferredAuthFirst,
             isDeviceCredentialFallbackEnabled = state.isDeviceCredentialFallbackEnabled,
             isInvalidateKeyOnBioChange = state.isInvalidateKeyOnBioChange,
-            isSecureContentEnabled = state.isSecureContentEnabled,
-            isFlipToLockEnabled = state.isFlipToLockEnabled,
-            isFlipExitAndClearStackEnabled = state.isFlipExitAndClearStackEnabled,
             onLockTimeoutClick = actions.onShowLockTimeoutDialog,
             onAppPasswordClick = actions.onAppPasswordClick,
             onPasswordPreferredAuthFirstChange = actions.onPasswordPreferredAuthFirstChange,
             onDeviceCredentialFallbackToggleRequested = actions.onDeviceCredentialFallbackToggleRequested,
-            onInvalidateKeyOnBioChangeToggle = actions.onInvalidateKeyOnBioChangeToggle,
+            onInvalidateKeyOnBioChangeToggle = actions.onInvalidateKeyOnBioChangeToggle
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        SecurityProtectionSettingsSection(
+            isSecureContentEnabled = state.isSecureContentEnabled,
+            isFlipToLockEnabled = state.isFlipToLockEnabled,
+            isFlipExitAndClearStackEnabled = state.isFlipExitAndClearStackEnabled,
             onSecureContentEnabledChange = actions.onSecureContentEnabledChange,
             onFlipToLockEnabledChange = actions.onFlipToLockEnabledChange,
             onFlipExitAndClearStackEnabledChange = actions.onFlipExitAndClearStackEnabledChange

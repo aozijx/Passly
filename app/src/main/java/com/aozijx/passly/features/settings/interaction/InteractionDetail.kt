@@ -18,14 +18,19 @@ internal fun InteractionDetail(
     Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        InteractionHabitsSettingsSection(
+        SwipeGestureSettingsSection(
             isSwipeEnabled = state.isSwipeEnabled,
             swipeLeftAction = state.swipeLeftAction,
             swipeRightAction = state.swipeRightAction,
-            autofillUiMode = state.autofillUiMode,
             onSwipeEnabledChange = actions.onSwipeEnabledChange,
             onLeftSwipeActionClick = actions.onLeftSwipeActionClick,
-            onRightSwipeActionClick = actions.onRightSwipeActionClick,
+            onRightSwipeActionClick = actions.onRightSwipeActionClick
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        AutofillSettingsSection(
+            autofillUiMode = state.autofillUiMode,
             onToggleAutofillUiMode = actions.onToggleAutofillUiMode
         )
     }

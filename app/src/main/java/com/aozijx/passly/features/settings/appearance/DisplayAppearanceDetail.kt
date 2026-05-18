@@ -18,10 +18,12 @@ internal fun DisplayAppearanceDetail(
     Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        ImmersiveExperienceSettingsSection(
+        VisualDynamicsSettingsSection(
+            isDarkMode = false,
             isStatusBarAutoHide = state.isStatusBarAutoHide,
             isTopBarCollapsible = state.isTopBarCollapsible,
             isTabBarCollapsible = state.isTabBarCollapsible,
+            onDarkModeChange = {},
             onStatusBarAutoHideChange = actions.onStatusBarAutoHideChange,
             onTopBarCollapsibleChange = actions.onTopBarCollapsibleChange,
             onTabBarCollapsibleChange = actions.onTabBarCollapsibleChange
@@ -35,13 +37,6 @@ internal fun DisplayAppearanceDetail(
             totpSelectedStyle = state.totpSelectedStyle,
             onPasswordStyleSelected = actions.onPasswordStyleSelected,
             onTotpStyleSelected = actions.onTotpStyleSelected
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        DarkModeSettingsSection(
-            isDarkMode = false,
-            onDarkModeChange = {}
         )
 
         Spacer(modifier = Modifier.height(24.dp))

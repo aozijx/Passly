@@ -2,7 +2,9 @@ package com.aozijx.passly.features.settings.appearance
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.material3.HorizontalDivider
@@ -14,16 +16,26 @@ import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.features.settings.shell.SwitchSettingItem
 
 @Composable
-fun ImmersiveExperienceSettingsSection(
+fun VisualDynamicsSettingsSection(
+    isDarkMode: Boolean,
     isStatusBarAutoHide: Boolean,
     isTopBarCollapsible: Boolean,
     isTabBarCollapsible: Boolean,
+    onDarkModeChange: (Boolean) -> Unit,
     onStatusBarAutoHideChange: (Boolean) -> Unit,
     onTopBarCollapsibleChange: (Boolean) -> Unit,
     onTabBarCollapsibleChange: (Boolean) -> Unit
 ) {
-    SettingsGroupTitle(text = "沉浸式体验")
+    SettingsGroupTitle(text = "视觉动态")
     SettingsCard {
+        SwitchSettingItem(
+            icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+            title = "深色模式",
+            subtitle = if (isDarkMode) "当前为深色主题" else "当前为浅色主题",
+            checked = isDarkMode,
+            onCheckedChange = onDarkModeChange
+        )
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
         SwitchSettingItem(
             icon = Icons.Default.Fullscreen,
             title = "自动隐藏系统状态栏",

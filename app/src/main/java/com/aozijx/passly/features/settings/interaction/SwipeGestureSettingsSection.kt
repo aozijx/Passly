@@ -9,12 +9,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Swipe
-import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.features.settings.shell.ClickableSettingItem
 import com.aozijx.passly.features.settings.shell.SettingsCard
@@ -22,17 +20,15 @@ import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.features.settings.shell.SwitchSettingItem
 
 @Composable
-fun InteractionHabitsSettingsSection(
+fun SwipeGestureSettingsSection(
     isSwipeEnabled: Boolean,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
-    autofillUiMode: AutofillUiMode,
     onSwipeEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
-    onRightSwipeActionClick: () -> Unit,
-    onToggleAutofillUiMode: () -> Unit
+    onRightSwipeActionClick: () -> Unit
 ) {
-    SettingsGroupTitle(text = "交互习惯")
+    SettingsGroupTitle(text = "快捷手势")
     SettingsCard {
         SwitchSettingItem(
             icon = Icons.Default.Swipe,
@@ -66,13 +62,5 @@ fun InteractionHabitsSettingsSection(
                 )
             }
         }
-
-        HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
-        ClickableSettingItem(
-            icon = Icons.Default.ViewDay,
-            title = "自动填充展示",
-            value = autofillUiMode.displayName,
-            onClick = onToggleAutofillUiMode
-        )
     }
 }
