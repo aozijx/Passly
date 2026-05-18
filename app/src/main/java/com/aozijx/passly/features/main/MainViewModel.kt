@@ -14,7 +14,6 @@ import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.main.contract.MainUiState
 import com.aozijx.passly.features.main.internal.MainDatabaseInitializer
-import com.aozijx.passly.features.verification.contract.VerificationGateway
 import com.aozijx.passly.features.verification.internal.VerificationCoordinator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +41,6 @@ class MainViewModel(
         authUseCases = authUseCases,
         validationSupport = authValidationSupport
     )
-    val authScreenGateway: VerificationGateway = authCoordinator
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -52,7 +50,6 @@ class MainViewModel(
 
     init {
         observeSettings()
-        // 注意：此处不再调用 initializeDatabase()，由 observeAuthStates 驱动
         observeAuthStates()
     }
 
