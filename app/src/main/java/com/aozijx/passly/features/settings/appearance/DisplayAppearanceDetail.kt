@@ -39,6 +39,20 @@ internal fun DisplayAppearanceDetail(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        DarkModeSettingsSection(
+            isDarkMode = false,
+            onDarkModeChange = {}
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        LanguageSettingsSection(
+            currentLanguage = "简体中文",
+            onLanguageClick = {}
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         VaultTabsSettingsSection(
             visibleVaultTabs = state.visibleVaultTabs,
             tabBarMaxTabsWithoutScroll = state.tabBarMaxTabsWithoutScroll,

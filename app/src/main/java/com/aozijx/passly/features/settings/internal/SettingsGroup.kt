@@ -1,6 +1,7 @@
 package com.aozijx.passly.features.settings.internal
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
@@ -37,5 +38,11 @@ internal enum class SettingsGroup(
         subtitle = "自动下载与备份恢复",
         icon = Icons.Default.Storage,
         accentColor = Color(0xFF43A047)
+    ),
+    GENERAL(
+        title = "通用",
+        subtitle = "关于、缓存与应用信息",
+        icon = Icons.Default.Info,
+        accentColor = Color(0xFF607D8B)
     )
 }

@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.features.settings.appearance.DisplayAppearanceDetail
 import com.aozijx.passly.features.settings.data.DataManagementDetail
+import com.aozijx.passly.features.settings.general.GeneralDetail
 import com.aozijx.passly.features.settings.interaction.InteractionDetail
 import com.aozijx.passly.features.settings.internal.SettingsContentActions
 import com.aozijx.passly.features.settings.internal.SettingsContentState
@@ -112,6 +113,13 @@ internal fun SettingsScreenContent(
                 onBack = { selectedGroup = null }
             ) {
                 item { DataManagementDetail(state, actions) }
+            }
+
+            SettingsGroup.GENERAL -> SettingsSecondaryPage(
+                title = group.title,
+                onBack = { selectedGroup = null }
+            ) {
+                item { GeneralDetail(state, actions) }
             }
         }
     }
