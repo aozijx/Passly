@@ -31,10 +31,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.core.designsystem.base.VaultItemIcon
-import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
+import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
+import com.aozijx.passly.features.vault.components.VaultCardStyleTokens
 
 private object TotpBehaviorTokens {
     const val FALLBACK_CODE = "------"

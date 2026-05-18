@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.components
+package com.aozijx.passly.features.backup.components
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
@@ -10,11 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 enum class PlainExportDialogType {
-    DatabaseError,   // 数据库迁移失败场景
-    NormalExport     // 普通明文导出场景
+    DatabaseError,
+    NormalExport
 }
 
-// 定义对话框配置数据类（推荐方式）
 data class PlainExportDialogConfig(
     val title: String,
     val message: String,
@@ -29,7 +28,7 @@ fun PlainExportDialog(
     type: PlainExportDialogType,
     onExportBackup: () -> Unit,
     onResetOrCancel: () -> Unit,
-    onDismissRequest: () -> Unit = {}   // 默认不处理外部关闭
+    onDismissRequest: () -> Unit = {}
 ) {
     val config: PlainExportDialogConfig = when (type) {
         PlainExportDialogType.DatabaseError -> PlainExportDialogConfig(

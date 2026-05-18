@@ -1,11 +1,8 @@
-package com.aozijx.passly.core.designsystem.model
+package com.aozijx.passly.features.vault.components
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * Shared visual tokens for vault list cards.
- */
 object VaultCardStyleTokens {
 
     object Base {
@@ -43,7 +40,7 @@ object VaultCardStyleTokens {
         val corner = 24.dp
         val elevation = 1.dp
         val contentPadding = 16.dp
-        
+
         val marginHorizontal = 16.dp
         val marginVertical = 6.dp
 

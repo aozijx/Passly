@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.widgets
+package com.aozijx.passly.features.vault.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,9 +18,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 
-/**
- * 通用占位符组件
- */
 @Composable
 fun EmptyVaultPlaceholder() {
     Column(
@@ -42,5 +39,3 @@ fun EmptyVaultPlaceholder() {
         )
     }
 }
-
-

@@ -6,10 +6,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.designsystem.base.VaultItem
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
+import com.aozijx.passly.features.vault.components.VaultItem
 import com.aozijx.passly.features.vault.components.items.AutoFillItem
 import com.aozijx.passly.features.vault.components.items.TwoFAItem
 

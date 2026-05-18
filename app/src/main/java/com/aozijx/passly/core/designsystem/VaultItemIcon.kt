@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.base
+package com.aozijx.passly.core.designsystem
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -18,7 +18,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.aozijx.passly.core.designsystem.icons.getCategoryIcon
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.core.platform.rememberAppIcon
@@ -32,19 +31,15 @@ fun VaultItemIcon(
 ) {
     val context = LocalContext.current
 
-    // 1. 获取包名图标 (异步加载)
     val appIconPainter = rememberAppIcon(iconable.associatedAppPackage)
 
-    // 2. 获取分类兜底图标 (矢量图转 Painter)
     val fallbackIconVector = remember(iconable.iconName, iconable.category) {
         getCategoryIcon(context, iconable.category)
     }
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
 
-    // 3. 确定占位符：有包名图标用包名，没有用分类兜底
     val placeholderPainter = appIconPainter ?: fallbackPainter
 
-    // 4. 自定义/域名图标路径
     val customModel = remember(iconable.iconCustomPath) { toLocalIconImageModel(iconable.iconCustomPath) }
     val domainUrl = remember(iconable.associatedDomain) {
         iconable.associatedDomain?.let { "https://${FaviconUtils.cleanDomain(it)}/favicon.ico" }
@@ -54,7 +49,6 @@ fun VaultItemIcon(
         modifier = modifier.size(36.dp), contentAlignment = Alignment.Center
     ) {
         when {
-            // 情况 A: 存在自定义图标或域名，使用 AsyncImage 渲染，并带上动态占位符
             customModel != null || domainUrl != null -> {
                 AsyncImage(
                     model = customModel ?: domainUrl,
@@ -68,7 +62,6 @@ fun VaultItemIcon(
                 )
             }
 
-            // 情况 B: 没有自定义路径，但包名图标已加载成功
             appIconPainter != null -> {
                 Image(
                     painter = appIconPainter,
@@ -80,7 +73,6 @@ fun VaultItemIcon(
                 )
             }
 
-            // 情况 C: 最终兜底，显示分类矢量图标
             else -> {
                 Icon(
                     imageVector = fallbackIconVector,

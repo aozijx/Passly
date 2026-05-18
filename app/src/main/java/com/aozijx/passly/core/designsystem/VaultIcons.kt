@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.icons
+package com.aozijx.passly.core.designsystem
 
 import android.content.Context
 import androidx.compose.material.icons.Icons
@@ -45,10 +45,6 @@ import androidx.compose.material.icons.filled.Work
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
 
-/**
- * 集中管理所有可选图标映射
- * 优化：使用资源 ID 作为 Key，支持多语言且更规范
- */
 object VaultIcons {
     val allIcons = mapOf(
         R.string.icon_bank to Icons.Default.AccountBalance,
@@ -106,9 +102,6 @@ object VaultIcons {
     }
 }
 
-/**
- * 类别到图标的语义映射
- */
 fun getCategoryIcon(context: Context, category: String): ImageVector {
     val input = category.trim()
     val res = context.resources

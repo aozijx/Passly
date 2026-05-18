@@ -48,7 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.settings.components.pages.DataManagementDetail
 import com.aozijx.passly.features.settings.components.pages.DisplayAppearanceDetail
 import com.aozijx.passly.features.settings.components.pages.InteractionDetail

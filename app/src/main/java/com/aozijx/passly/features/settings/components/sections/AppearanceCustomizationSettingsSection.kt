@@ -7,7 +7,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.settings.components.common.ClickableSettingItem
 import com.aozijx.passly.features.settings.components.common.SettingsCard
 import com.aozijx.passly.features.settings.components.common.SettingsGroupTitle

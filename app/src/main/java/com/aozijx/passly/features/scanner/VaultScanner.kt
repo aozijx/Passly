@@ -49,12 +49,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.components.ScannerView
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.scanner.components.ScannerView
 import com.aozijx.passly.features.vault.VaultViewModel
 
 /**

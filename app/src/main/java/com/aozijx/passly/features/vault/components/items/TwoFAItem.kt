@@ -1,4 +1,4 @@
-﻿package com.aozijx.passly.features.vault.components.items
+package com.aozijx.passly.features.vault.components.items
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.core.designsystem.base.VaultItemIcon
+import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 

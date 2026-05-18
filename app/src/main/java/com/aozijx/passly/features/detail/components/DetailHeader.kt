@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.aozijx.passly.core.designsystem.base.VaultItemIcon
+import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.domain.model.core.VaultEntry
 

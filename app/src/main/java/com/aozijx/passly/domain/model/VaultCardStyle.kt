@@ -1,12 +1,9 @@
-package com.aozijx.passly.core.designsystem.model
+package com.aozijx.passly.domain.model
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 
-/**
- * 列表卡片样式定义
- */
 enum class VaultCardStyle(
     val key: String,
     @field:StringRes val displayNameRes: Int,
@@ -49,7 +46,6 @@ enum class VaultCardStyle(
             val entryTypeValue: Int get() = entryType.value
         }
 
-        // 数据结构驱动的分类样式策略。
         private val typeStylePolicyMap: Map<EntryType, TypeStylePolicy> =
             EntryType.entries.associateWith {
                 TypeStylePolicy(

@@ -6,8 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases

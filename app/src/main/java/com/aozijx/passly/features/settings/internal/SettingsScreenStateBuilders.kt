@@ -2,7 +2,7 @@ package com.aozijx.passly.features.settings.internal
 
 import android.content.Context
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.settings.AppPasswordDialogEvent
 import com.aozijx.passly.features.settings.SettingsContentActions
 import com.aozijx.passly.features.settings.SettingsContentState

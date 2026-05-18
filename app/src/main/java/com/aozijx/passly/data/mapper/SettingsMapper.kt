@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.mapper
 
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.domain.model.VaultCardStyle
 
 /**
  * 设置相关的映射逻辑，将存储格式与业务/UI模型解耦

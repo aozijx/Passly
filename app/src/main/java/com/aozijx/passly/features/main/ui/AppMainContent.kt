@@ -11,10 +11,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.components.PlainExportDialog
-import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
 import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.navigation.PasslyNavHost
+import com.aozijx.passly.features.backup.components.PlainExportDialog
+import com.aozijx.passly.features.backup.components.PlainExportDialogType
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel

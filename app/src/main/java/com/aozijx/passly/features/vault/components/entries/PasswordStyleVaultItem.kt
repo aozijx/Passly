@@ -40,11 +40,11 @@ import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.aozijx.passly.core.designsystem.base.VaultItemIcon
-import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
+import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
+import com.aozijx.passly.features.vault.components.VaultCardStyleTokens
 
 private object PasswordCardPaletteCache {
     private const val MAX = 48

@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.sections
+package com.aozijx.passly.features.vault.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +26,6 @@ fun TotpConfigForm(
     onAlgorithmChange: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // TOTP 密钥输入框
         OutlinedTextField(
             value = secret,
             onValueChange = onSecretChange,
@@ -38,7 +37,6 @@ fun TotpConfigForm(
         Row(
             modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 更新周期 (通常为 30s)
             OutlinedTextField(
                 value = period,
                 onValueChange = onPeriodChange,
@@ -47,7 +45,6 @@ fun TotpConfigForm(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
             )
-            // 验证码位数 (通常为 6位)
             OutlinedTextField(
                 value = digits,
                 onValueChange = onDigitsChange,
@@ -56,7 +53,6 @@ fun TotpConfigForm(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
             )
-            // 加密算法 (如 SHA1, SHA256)
             OutlinedTextField(
                 value = algorithm,
                 onValueChange = onAlgorithmChange,

@@ -8,7 +8,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.model.TotpState
+import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases

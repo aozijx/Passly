@@ -35,8 +35,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.domain.model.FieldKey
-import com.aozijx.passly.domain.model.presentation.VaultSummary
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -208,31 +206,4 @@ fun createSwipeAction(
         onAction = onAction,
         direction = direction
     )
-}
-
-fun handleSwipeAction(
-    actionType: SwipeActionType,
-    item: VaultSummary,
-    onAuthRequired: (onSuccess: () -> Unit) -> Unit,
-    onQuickDelete: (VaultSummary) -> Unit,
-    onShowDetail: (VaultSummary) -> Unit,
-    onCopy: (FieldKey) -> Unit
-) {
-    if (actionType == SwipeActionType.DISABLED) return
-
-    // 定义一个执行动作的辅助函数
-    val performAction = {
-        when (actionType) {
-            SwipeActionType.DELETE -> onQuickDelete(item)
-            SwipeActionType.DETAIL -> onShowDetail(item)
-            else -> actionType.copyField?.let { onCopy(it) }
-        }
-    }
-
-    // 根据枚举中的属性配置，自动决定是否需要生物识别验证
-    if (actionType.requiresConfirm) {
-        onAuthRequired { performAction() }
-    } else {
-        performAction()
-    }
 }

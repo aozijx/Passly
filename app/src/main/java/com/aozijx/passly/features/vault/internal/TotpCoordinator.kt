@@ -1,9 +1,9 @@
 package com.aozijx.passly.features.vault.internal
 
-import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.TotpConfig
+import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import kotlinx.coroutines.CoroutineScope

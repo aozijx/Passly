@@ -2,7 +2,7 @@ package com.aozijx.passly.features.settings.contract
 
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.domain.model.VaultCardStyle
 
 data class SettingsUiState(
     val lockTimeout: Long = 60000L,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.base
+package com.aozijx.passly.features.vault.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import com.aozijx.passly.core.designsystem.model.VaultCardStyleTokens
+import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 
 @Composable

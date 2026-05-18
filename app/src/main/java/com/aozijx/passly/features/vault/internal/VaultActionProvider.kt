@@ -17,7 +17,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.widgets.handleSwipeAction
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.FieldKey
 import com.aozijx.passly.domain.model.core.VaultEntry

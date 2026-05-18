@@ -31,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.base.VaultItemIcon
+import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 

@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.base
+package com.aozijx.passly.core.designsystem
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,19 +8,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 
-/**
- * 统一的弹窗脚手架（插槽架构的核心）
- *
- * 规范了所有新增/编辑弹窗的UI风格（圆角、按钮位置、间距等），
- * 后续添加新类型（例如信用卡、笔记）只需要关注表单内容（content）即可，
- * 彻底消除了每次写弹窗都要重复写 AlertDialog、TextButton 等样板代码的问题。
- */
 @Composable
-fun BaseVaultDialog(
+fun AppDialog(
     title: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
@@ -31,11 +25,11 @@ fun BaseVaultDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = androidx.compose.ui.Modifier.padding(horizontal = 16.dp),
+        modifier = Modifier.padding(horizontal = 16.dp),
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
         text = {
             Column(
-                modifier = androidx.compose.ui.Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 content()
@@ -58,5 +52,3 @@ fun BaseVaultDialog(
         }
     )
 }
-
-

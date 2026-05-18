@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.components
+package com.aozijx.passly.features.scanner.components
 
 import android.Manifest
 import android.content.ClipData
@@ -68,8 +68,8 @@ fun ScannerView(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboard.current
-    
-    val previewView = remember { 
+
+    val previewView = remember {
         PreviewView(context).apply {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
@@ -122,9 +122,9 @@ fun ScannerView(
                                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
                                 barcodeScanner.process(image)
                                     .addOnSuccessListener { barcodes ->
-                                        barcodes.firstOrNull()?.rawValue?.let { 
+                                        barcodes.firstOrNull()?.rawValue?.let {
                                             Log.d("ScannerView", "Detected barcode: $it")
-                                            onBarcodeDetected(it) 
+                                            onBarcodeDetected(it)
                                         }
                                     }
                                     .addOnCompleteListener { imageProxy.close() }
@@ -159,8 +159,8 @@ fun ScannerView(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
         ) {
-            val isUrl = remember(scanResult) { 
-                scanResult.startsWith("http://") || scanResult.startsWith("https://") 
+            val isUrl = remember(scanResult) {
+                scanResult.startsWith("http://") || scanResult.startsWith("https://")
             }
 
             Column(
@@ -176,11 +176,19 @@ fun ScannerView(
                                     val intent = Intent(Intent.ACTION_VIEW, scanResult.toUri())
                                     context.startActivity(intent)
                                 } catch (_: Exception) {
-                                    Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT)
+                                        .show()
                                 }
                             } else {
                                 scope.launch {
-                                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("scan_result", scanResult)))
+                                    clipboard.setClipEntry(
+                                        ClipEntry(
+                                            ClipData.newPlainText(
+                                                "scan_result",
+                                                scanResult
+                                            )
+                                        )
+                                    )
                                 }
                                 Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
                             }
@@ -207,5 +215,3 @@ fun ScannerView(
         }
     }
 }
-
-

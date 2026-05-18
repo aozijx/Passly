@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.fields
+package com.aozijx.passly.features.vault.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
@@ -45,7 +45,6 @@ fun CategoryDropdown(
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
         )
 
-        // 仅当可用分类不为空时显示下拉选项
         if (availableCategories.isNotEmpty()) {
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -64,5 +63,3 @@ fun CategoryDropdown(
         }
     }
 }
-
-

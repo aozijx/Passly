@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.fields
+package com.aozijx.passly.core.designsystem
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,7 +20,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import com.aozijx.passly.R
 
 @Composable
-fun VaultTextField(
+fun AppTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -72,5 +72,3 @@ fun PasswordInput(
         }
     )
 }
-
-

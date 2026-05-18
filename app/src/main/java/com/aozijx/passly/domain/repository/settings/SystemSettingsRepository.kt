@@ -2,7 +2,7 @@ package com.aozijx.passly.domain.repository.settings
 
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.domain.model.VaultCardStyle
 import kotlinx.coroutines.flow.Flow
 
 interface SystemSettingsRepository {

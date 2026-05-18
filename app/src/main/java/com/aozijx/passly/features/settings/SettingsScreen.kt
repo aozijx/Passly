@@ -15,7 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
+import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.settings.internal.AppPasswordAction
 import com.aozijx.passly.features.settings.internal.buildSettingsContentActions
 import com.aozijx.passly.features.settings.internal.buildSettingsContentState

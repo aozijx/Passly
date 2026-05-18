@@ -9,8 +9,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.features.detail.components.InfoGroupCard

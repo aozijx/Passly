@@ -18,11 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
-import com.aozijx.passly.core.designsystem.widgets.EmptyVaultPlaceholder
 import com.aozijx.passly.core.designsystem.widgets.SwipeDirection
 import com.aozijx.passly.core.designsystem.widgets.SwipeToAction
 import com.aozijx.passly.core.designsystem.widgets.createSwipeAction
+import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry

@@ -8,10 +8,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
-import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
-import com.aozijx.passly.core.designsystem.fields.PasswordInput
-import com.aozijx.passly.core.designsystem.fields.VaultTextField
+import com.aozijx.passly.core.designsystem.AppDialog
+import com.aozijx.passly.core.designsystem.AppTextField
+import com.aozijx.passly.core.designsystem.PasswordInput
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel
 
@@ -24,7 +23,7 @@ fun AddPasswordDialog(
     val state = remember { PasswordAddState() }
     val unfiledCategory = stringResource(R.string.category_unfiled)
 
-    BaseVaultDialog(
+    AppDialog(
         title = stringResource(R.string.vault_add_password_title),
         onDismiss = { viewModel.setAddType(null) },
         confirmEnabled = state.isValid,
@@ -38,14 +37,14 @@ fun AddPasswordDialog(
             )
             viewModel.addItem(entry)
         }) {
-        VaultTextField(
+        AppTextField(
             value = state.title,
             onValueChange = { state.title = it; onUpdateInteraction() },
             label = stringResource(R.string.label_title_hint),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
-        VaultTextField(
+        AppTextField(
             value = state.username,
             onValueChange = { state.username = it; onUpdateInteraction() },
             label = stringResource(R.string.label_username_hint),

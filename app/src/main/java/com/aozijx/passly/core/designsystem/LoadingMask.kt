@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.designsystem.base
+package com.aozijx.passly.core.designsystem
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme

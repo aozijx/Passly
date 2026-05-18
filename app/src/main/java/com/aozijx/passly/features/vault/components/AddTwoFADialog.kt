@@ -18,10 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.base.BaseVaultDialog
-import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
-import com.aozijx.passly.core.designsystem.fields.VaultTextField
-import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
+import com.aozijx.passly.core.designsystem.AppDialog
+import com.aozijx.passly.core.designsystem.AppTextField
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
@@ -68,7 +66,7 @@ fun AddTwoFADialog(
         }
     }
 
-    BaseVaultDialog(
+    AppDialog(
         title = stringResource(R.string.vault_add_2fa_title),
         onDismiss = { viewModel.setAddType(null) },
         confirmEnabled = state.isValid,
@@ -94,13 +92,13 @@ fun AddTwoFADialog(
                 Toast.makeText(context, "加密保存失败", Toast.LENGTH_SHORT).show()
             }
         }) {
-        VaultTextField(
+        AppTextField(
             value = state.title,
             onValueChange = { state.title = it; onUpdateInteraction() },
             label = stringResource(R.string.label_title)
         )
 
-        VaultTextField(
+        AppTextField(
             value = state.uriText,
             onValueChange = { state.uriText = it; onUpdateInteraction() },
             label = stringResource(R.string.label_2fa_uri_hint),

@@ -15,12 +15,12 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.base.LoadingMask
-import com.aozijx.passly.core.designsystem.components.PlainExportDialog
-import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
+import com.aozijx.passly.core.designsystem.LoadingMask
 import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.local.config.DatabaseConfig
+import com.aozijx.passly.features.backup.components.PlainExportDialog
+import com.aozijx.passly.features.backup.components.PlainExportDialogType
 import com.aozijx.passly.features.main.MainSensorController
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.main.contract.MainEffect

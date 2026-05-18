@@ -31,11 +31,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.core.designsystem.model.TotpState
 import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
+import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailHeader
 import com.aozijx.passly.features.detail.contract.DetailEffect

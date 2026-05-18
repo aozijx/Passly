@@ -9,8 +9,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
 import com.aozijx.passly.data.mapper.SettingsMapper
+import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.BackupSettingsRepository
 import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
