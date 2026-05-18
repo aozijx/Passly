@@ -200,7 +200,7 @@ private fun SettingsMainPage(
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 navigationIcon = {

@@ -37,7 +37,7 @@ class VerificationCoordinator(
                 val msg = validationSupport.sanitizeMessage(validation.message)
                 _authMessage.tryEmit(msg)
                 onResult(
-                    AppResult.Companion.failure(
+                    AppResult.failure(
                         AppError.AuthFailed(
                             validation.message
                         )
@@ -111,7 +111,7 @@ class VerificationCoordinator(
             is AuthValidationResult.Invalid -> {
                 val msg = validationSupport.sanitizeMessage(validation.message)
                 _authMessage.tryEmit(msg)
-                return AppResult.Companion.failure(AppError.AuthFailed(validation.message))
+                return AppResult.failure(AppError.AuthFailed(validation.message))
             }
 
             AuthValidationResult.Valid -> Unit

@@ -6,81 +6,13 @@ import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.features.common.toUiMessage
 import com.aozijx.passly.features.verification.contract.VerificationGateway
 
-internal enum class AppPasswordAction {
+enum class AppPasswordAction {
     SET,
     CHANGE,
     DISABLE
-}
-
-internal fun VerificationGateway.executeSetAppPassword(
-    password: CharArray, context: Context
-) {
-    setAppPassword(password) { result ->
-        result.onSuccess {
-            Toast.makeText(context, "应用密码设置成功", Toast.LENGTH_SHORT).show()
-        }.onFailure { error ->
-            Toast.makeText(context, error.toUiMessage(), Toast.LENGTH_SHORT).show()
-        }
-    }
-}
-
-internal fun VerificationGateway.executeChangeAppPassword(
-    oldPassword: CharArray, newPassword: CharArray, context: Context
-) {
-    changeAppPassword(oldPassword, newPassword) { result ->
-        result.onSuccess {
-            Toast.makeText(context, "应用密码修改成功", Toast.LENGTH_SHORT).show()
-        }.onFailure { error ->
-            Toast.makeText(context, error.toUiMessage(), Toast.LENGTH_SHORT).show()
-        }
-    }
-}
-
-internal fun VerificationGateway.executeDisableAppPassword(
-    password: CharArray, context: Context
-) {
-    disableAppPassword(password) { result ->
-        result.onSuccess {
-            Toast.makeText(context, "应用密码已关闭", Toast.LENGTH_SHORT).show()
-        }.onFailure { error ->
-            Toast.makeText(context, error.toUiMessage(), Toast.LENGTH_SHORT).show()
-        }
-    }
-}
-
-internal fun VerificationGateway.executeVerifyIdentity(
-    activity: FragmentActivity,
-    context: Context,
-    onVerified: () -> Unit
-) {
-    verifyWithBiometric(
-        activity = activity,
-        title = "身份验证",
-        subtitle = "请验证身份以继续操作"
-    ) { result ->
-        result.onSuccess { onVerified() }
-            .onFailure { error ->
-                Toast.makeText(context, error.toUiMessage(), Toast.LENGTH_SHORT).show()
-            }
-    }
-}
-
-internal fun VerificationGateway.executeSetLockTimeout(
-    timeoutMs: Long,
-    context: Context
-) {
-    val normalized = AuthValidationSupport().normalizeLockTimeout(timeoutMs)
-    setAppPassword(charArrayOf()) { result ->
-        result.onSuccess {
-            Toast.makeText(context, "锁屏时间已更新", Toast.LENGTH_SHORT).show()
-        }.onFailure {
-            Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
-        }
-    }
 }
 
 internal fun handleInvalidateKeyToggle(
