@@ -16,16 +16,18 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
-import com.aozijx.passly.features.settings.internal.AppPasswordAction
-import com.aozijx.passly.features.settings.internal.buildSettingsContentActions
-import com.aozijx.passly.features.settings.internal.buildSettingsContentState
-import com.aozijx.passly.features.settings.internal.buildSettingsDialogsActions
-import com.aozijx.passly.features.settings.internal.buildSettingsDialogsState
-import com.aozijx.passly.features.settings.internal.handleAppPasswordAction
-import com.aozijx.passly.features.settings.internal.handleAppPasswordEntryClick
-import com.aozijx.passly.features.settings.internal.handleBackupPathPicked
-import com.aozijx.passly.features.settings.internal.handleInvalidateKeyToggle
-import com.aozijx.passly.features.settings.internal.rememberSettingsScreenLocalState
+import com.aozijx.passly.features.settings.apppassword.AppPasswordAction
+import com.aozijx.passly.features.settings.apppassword.handleAppPasswordAction
+import com.aozijx.passly.features.settings.apppassword.handleAppPasswordEntryClick
+import com.aozijx.passly.features.settings.data.handleBackupPathPicked
+import com.aozijx.passly.features.settings.security.handleInvalidateKeyToggle
+import com.aozijx.passly.features.settings.shell.SettingsScreenContent
+import com.aozijx.passly.features.settings.shell.SettingsScreenDialogsHost
+import com.aozijx.passly.features.settings.shell.buildSettingsContentActions
+import com.aozijx.passly.features.settings.shell.buildSettingsContentState
+import com.aozijx.passly.features.settings.shell.buildSettingsDialogsActions
+import com.aozijx.passly.features.settings.shell.buildSettingsDialogsState
+import com.aozijx.passly.features.settings.shell.rememberSettingsScreenLocalState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

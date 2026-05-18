@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.memory.SecureString
-import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDialog
+import com.aozijx.passly.features.settings.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.features.verification.VerificationViewModel
 
 @Composable

@@ -11,7 +11,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.aozijx.passly.R
 import com.aozijx.passly.core.di.AppContainer
-import com.aozijx.passly.features.settings.internal.BackupImportIconSyncSupport
+import com.aozijx.passly.features.settings.data.BackupImportIconSyncSupport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
