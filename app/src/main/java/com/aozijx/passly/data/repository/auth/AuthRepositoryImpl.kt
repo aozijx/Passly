@@ -57,7 +57,10 @@ internal class AuthRepositoryImpl(
         title: String,
         subtitle: String
     ): AppResult<Unit> = authMutex.withLock {
-        if (_isAuthorized.value) return AppResult.success(Unit)
+        if (_isAuthorized.value) {
+            ensureSessionKeyAvailable()
+            return AppResult.success(Unit)
+        }
 
         when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
             is AuthValidationResult.Invalid ->
@@ -412,6 +415,12 @@ internal class AuthRepositoryImpl(
         val strengthGroups = listOf(hasLetter, hasDigit, hasSymbol).count { it }
         if (strengthGroups < 2) {
             throw IllegalArgumentException("请至少混合两种字符类型：字母、数字或符号")
+        }
+    }
+
+    private fun ensureSessionKeyAvailable() {
+        if (!SessionCryptoKey.isSessionKeyAvailable && !DatabasePassphraseManager.isLocked) {
+            SessionCryptoKey.deriveAndSet(DatabasePassphraseManager.getPassphrase())
         }
     }
 
