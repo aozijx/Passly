@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.auth.AuthValidationSupport
+import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
@@ -33,13 +33,13 @@ class MainViewModel(
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases
 ) : AndroidViewModel(application) {
 
-    private val authValidationSupport = AuthValidationSupport()
+    private val authRequestValidator = AuthRequestValidator()
     private val databaseInitializer = MainDatabaseInitializer(databaseLifecycleUseCases)
 
     private val authCoordinator = VerificationCoordinator(
         scope = viewModelScope,
         authUseCases = authUseCases,
-        validationSupport = authValidationSupport
+        requestValidator = authRequestValidator
     )
 
     private val _uiState = MutableStateFlow(MainUiState())

@@ -1,11 +1,11 @@
-package com.aozijx.passly.core.auth
+package com.aozijx.passly.core.auth.session
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-internal class AutoLockScheduler(
+internal class SessionAutoLockScheduler(
     private val scope: CoroutineScope,
     private val onTimeout: () -> Unit
 ) {

@@ -72,10 +72,7 @@ object DataModule {
     }
 
     internal val authRepository: AuthRepository by lazy {
-        AuthRepositoryImpl(
-            application = appContext,
-            securitySettingsRepository = securitySettingsRepository
-        )
+        AuthRepositoryImpl(application = appContext)
     }
 
     internal val databaseLifecycleRepository: DatabaseLifecycleRepository by lazy {

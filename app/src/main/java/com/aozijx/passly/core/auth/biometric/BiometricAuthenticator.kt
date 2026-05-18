@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.auth
+package com.aozijx.passly.core.auth.biometric
 
 import android.widget.Toast
 import androidx.biometric.BiometricManager
@@ -8,7 +8,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
-object BiometricHelper {
+object BiometricAuthenticator {
     fun authenticate(
         activity: FragmentActivity,
         title: String,

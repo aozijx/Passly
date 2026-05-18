@@ -1,8 +1,8 @@
 package com.aozijx.passly.features.verification.internal
 
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.core.auth.AuthValidationResult
-import com.aozijx.passly.core.auth.AuthValidationSupport
+import com.aozijx.passly.core.auth.validation.AuthRequestValidator
+import com.aozijx.passly.core.auth.validation.AuthRequestValidator.AuthRequestValidationResult
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 class VerificationCoordinator(
     private val scope: CoroutineScope,
     private val authUseCases: AuthUseCases,
-    private val validationSupport: AuthValidationSupport = AuthValidationSupport()
+    private val requestValidator: AuthRequestValidator = AuthRequestValidator()
 ) : VerificationGateway {
     override val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
     override val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
@@ -32,9 +32,9 @@ class VerificationCoordinator(
         subtitle: String,
         onResult: (AppResult<Unit>) -> Unit
     ) {
-        when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
-            is AuthValidationResult.Invalid -> {
-                val msg = validationSupport.sanitizeMessage(validation.message)
+        when (val validation = requestValidator.validateRequest(activity, title)) {
+            is AuthRequestValidationResult.Invalid -> {
+                val msg = requestValidator.sanitizeMessage(validation.message)
                 _authMessage.tryEmit(msg)
                 onResult(
                     AppResult.failure(
@@ -46,12 +46,12 @@ class VerificationCoordinator(
                 return
             }
 
-            AuthValidationResult.Valid -> Unit
+            AuthRequestValidationResult.Valid -> Unit
         }
 
         scope.launch {
             val result = authUseCases.authenticate(activity, title, subtitle)
-            result.onFailure { _authMessage.tryEmit(validationSupport.sanitizeMessage(it.toUiMessage())) }
+            result.onFailure { _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage())) }
             onResult(result)
         }
     }
@@ -62,7 +62,7 @@ class VerificationCoordinator(
     ) {
         scope.launch {
             val result = authUseCases.authenticateWithAppPassword(password)
-            result.onFailure { _authMessage.tryEmit(validationSupport.sanitizeMessage(it.toUiMessage())) }
+            result.onFailure { _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage())) }
             onResult(result)
         }
     }
@@ -107,18 +107,18 @@ class VerificationCoordinator(
         title: String,
         subtitle: String
     ): AppResult<Unit> {
-        when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
-            is AuthValidationResult.Invalid -> {
-                val msg = validationSupport.sanitizeMessage(validation.message)
+        when (val validation = requestValidator.validateRequest(activity, title)) {
+            is AuthRequestValidationResult.Invalid -> {
+                val msg = requestValidator.sanitizeMessage(validation.message)
                 _authMessage.tryEmit(msg)
                 return AppResult.failure(AppError.AuthFailed(validation.message))
             }
 
-            AuthValidationResult.Valid -> Unit
+            AuthRequestValidationResult.Valid -> Unit
         }
 
         val result = authUseCases.authenticate(activity, title, subtitle)
-        result.onFailure { _authMessage.tryEmit(validationSupport.sanitizeMessage(it.toUiMessage())) }
+        result.onFailure { _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage())) }
         return result
     }
 
