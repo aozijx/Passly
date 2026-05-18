@@ -1,11 +1,13 @@
-package com.aozijx.passly.features.verification
+package com.aozijx.passly.features.verification.internal
 
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.security.auth.AuthValidationResult
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.features.common.toUiMessage
+import com.aozijx.passly.features.verification.contract.VerificationGateway
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -35,14 +37,15 @@ class VerificationCoordinator(
                 val msg = validationSupport.sanitizeMessage(validation.message)
                 _authMessage.tryEmit(msg)
                 onResult(
-                    AppResult.failure(
-                        com.aozijx.passly.core.error.AppError.AuthFailed(
+                    AppResult.Companion.failure(
+                        AppError.AuthFailed(
                             validation.message
                         )
                     )
                 )
                 return
             }
+
             AuthValidationResult.Valid -> Unit
         }
 
@@ -108,7 +111,7 @@ class VerificationCoordinator(
             is AuthValidationResult.Invalid -> {
                 val msg = validationSupport.sanitizeMessage(validation.message)
                 _authMessage.tryEmit(msg)
-                return AppResult.failure(com.aozijx.passly.core.error.AppError.AuthFailed(validation.message))
+                return AppResult.Companion.failure(AppError.AuthFailed(validation.message))
             }
 
             AuthValidationResult.Valid -> Unit

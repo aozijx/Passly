@@ -27,6 +27,7 @@ import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.verification.VerificationScreen
+import com.aozijx.passly.features.verification.VerificationViewModel
 import kotlin.system.exitProcess
 
 @Composable
@@ -41,6 +42,10 @@ internal fun MainScreen(
         factory = appViewModelFactory(activity.application)
     )
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+    val verificationViewModel: VerificationViewModel = viewModel(
+        factory = appViewModelFactory(activity.application)
+    )
 
     LaunchedEffect(settingsViewModel.backup.backupMessage) {
         settingsViewModel.backup.backupMessage?.let {
@@ -122,7 +127,7 @@ internal fun MainScreen(
 
             else -> {
                 VerificationScreen(
-                    gateway = viewModel.authScreenGateway,
+                    viewModel = verificationViewModel,
                     activity = activity,
                     preferPasswordFirst = settingsUiState.isPasswordPreferredAuthFirst
                 )

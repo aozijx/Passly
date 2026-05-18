@@ -19,7 +19,7 @@ import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.otp.TwoFAUtils
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.features.verification.VerificationCoordinator
+import com.aozijx.passly.features.verification.internal.VerificationCoordinator
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet

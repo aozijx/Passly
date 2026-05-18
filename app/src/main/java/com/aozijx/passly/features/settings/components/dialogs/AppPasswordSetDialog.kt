@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.verification
+package com.aozijx.passly.features.settings.components.dialogs
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

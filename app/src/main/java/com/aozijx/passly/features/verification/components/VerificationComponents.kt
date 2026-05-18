@@ -19,9 +19,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.features.common.toUiMessage
-import com.aozijx.passly.features.verification.AppPasswordSetDialog
-import com.aozijx.passly.features.verification.VerificationGateway
+import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDialog
+import com.aozijx.passly.features.verification.VerificationViewModel
 
 @Composable
 internal fun BiometricUnlockButton(
@@ -113,62 +112,44 @@ internal fun SetPasswordEntrySection(
 @Composable
 internal fun SetPasswordDialogSection(
     activity: FragmentActivity,
-    gateway: VerificationGateway,
+    viewModel: VerificationViewModel,
     authInProgress: Boolean,
     appPassword: String,
     appPasswordConfirm: String,
     passwordMismatchMessage: String,
     emptyPasswordMessage: String,
     passwordSetSuccessMessage: String,
-    passwordSetFailedMessage: String,
-    onAuthInProgressChange: (Boolean) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onPasswordConfirmChange: (String) -> Unit,
-    onDialogVisibilityChange: (Boolean) -> Unit,
-    onPasswordInputVisibilityChange: (Boolean) -> Unit
+    passwordSetFailedMessage: String
 ) {
     AppPasswordSetDialog(
         newPassword = appPassword,
         confirmPassword = appPasswordConfirm,
-        onNewPasswordChange = onPasswordChange,
-        onConfirmPasswordChange = onPasswordConfirmChange,
+        onNewPasswordChange = viewModel::onPasswordChange,
+        onConfirmPasswordChange = viewModel::onPasswordConfirmChange,
         onConfirm = {
-            if (appPassword != appPasswordConfirm) {
-                Toast.makeText(activity, passwordMismatchMessage, Toast.LENGTH_SHORT).show()
-                return@AppPasswordSetDialog
-            }
-            if (appPassword.isBlank()) {
-                Toast.makeText(activity, emptyPasswordMessage, Toast.LENGTH_SHORT).show()
-                return@AppPasswordSetDialog
-            }
-            if (authInProgress) return@AppPasswordSetDialog
-
-            onAuthInProgressChange(true)
-            val password = appPassword.toCharArray()
-            gateway.bootstrapAppPassword(password) { result ->
-                password.fill('\u0000')
-                onAuthInProgressChange(false)
-                result.onSuccess {
-                    onPasswordChange("")
-                    onPasswordConfirmChange("")
-                    onDialogVisibilityChange(false)
-                    onPasswordInputVisibilityChange(false)
-                    Toast.makeText(activity, passwordSetSuccessMessage, Toast.LENGTH_SHORT).show()
-                }.onFailure { error ->
-                    Toast.makeText(
-                        activity,
-                        error.toUiMessage(passwordSetFailedMessage),
-                        Toast.LENGTH_SHORT
-                    ).show()
+            viewModel.bootstrapAppPassword(
+                validation = {
+                    if (appPassword != appPasswordConfirm) {
+                        Toast.makeText(activity, passwordMismatchMessage, Toast.LENGTH_SHORT).show()
+                        return@bootstrapAppPassword false
+                    }
+                    if (appPassword.isBlank()) {
+                        Toast.makeText(activity, emptyPasswordMessage, Toast.LENGTH_SHORT).show()
+                        return@bootstrapAppPassword false
+                    }
+                    true
+                },
+                onComplete = { success ->
+                    if (success) {
+                        Toast.makeText(activity, passwordSetSuccessMessage, Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
+                        Toast.makeText(activity, passwordSetFailedMessage, Toast.LENGTH_SHORT)
+                            .show()
+                    }
                 }
-            }
+            )
         },
-        onDismiss = {
-            if (!authInProgress) {
-                onDialogVisibilityChange(false)
-                onPasswordChange("")
-                onPasswordConfirmChange("")
-            }
-        }
+        onDismiss = viewModel::onDismissSetPasswordDialog
     )
 }

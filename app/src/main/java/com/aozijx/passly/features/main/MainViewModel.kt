@@ -14,8 +14,8 @@ import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.main.contract.MainUiState
 import com.aozijx.passly.features.main.internal.MainDatabaseInitializer
-import com.aozijx.passly.features.verification.VerificationCoordinator
-import com.aozijx.passly.features.verification.VerificationGateway
+import com.aozijx.passly.features.verification.contract.VerificationGateway
+import com.aozijx.passly.features.verification.internal.VerificationCoordinator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow

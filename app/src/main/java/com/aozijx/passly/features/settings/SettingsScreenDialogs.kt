@@ -12,10 +12,10 @@ import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordActionDialog
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordChangeDialog
 import com.aozijx.passly.features.settings.components.dialogs.AppPasswordDisableDialog
+import com.aozijx.passly.features.settings.components.dialogs.AppPasswordSetDialog
 import com.aozijx.passly.features.settings.components.dialogs.LockTimeoutDialog
 import com.aozijx.passly.features.settings.components.dialogs.SwipeActionSelectDialog
 import com.aozijx.passly.features.settings.internal.AppPasswordDialog
-import com.aozijx.passly.features.verification.AppPasswordSetDialog
 
 internal data class SettingsDialogsState(
     val showRightActionDialog: Boolean,

@@ -8,6 +8,7 @@ import com.aozijx.passly.features.detail.DetailViewModel
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
+import com.aozijx.passly.features.verification.VerificationViewModel
 
 fun appViewModelFactory(application: Application): ViewModelProvider.Factory {
     return object : ViewModelProvider.Factory {
@@ -49,6 +50,13 @@ fun appViewModelFactory(application: Application): ViewModelProvider.Factory {
                         application = application,
                         detailUseCases = domain.detailUseCases,
                         userConfigUseCases = domain.userConfigUseCases
+                    ) as T
+                }
+
+                modelClass.isAssignableFrom(VerificationViewModel::class.java) -> {
+                    VerificationViewModel(
+                        application = application,
+                        authUseCases = domain.authUseCases
                     ) as T
                 }
 

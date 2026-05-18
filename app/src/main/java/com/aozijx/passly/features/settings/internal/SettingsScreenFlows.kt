@@ -8,7 +8,7 @@ import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.features.common.toUiMessage
-import com.aozijx.passly.features.verification.VerificationGateway
+import com.aozijx.passly.features.verification.contract.VerificationGateway
 
 internal enum class AppPasswordAction {
     SET,

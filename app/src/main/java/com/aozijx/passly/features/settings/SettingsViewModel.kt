@@ -16,8 +16,8 @@ import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.features.backup.BackupCoordinator
 import com.aozijx.passly.features.settings.contract.SettingsUiState
 import com.aozijx.passly.features.settings.internal.SettingsStateCoordinator
-import com.aozijx.passly.features.verification.VerificationCoordinator
-import com.aozijx.passly.features.verification.VerificationGateway
+import com.aozijx.passly.features.verification.contract.VerificationGateway
+import com.aozijx.passly.features.verification.internal.VerificationCoordinator
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 

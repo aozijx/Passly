@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.verification
+package com.aozijx.passly.features.verification.contract
 
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.error.AppResult
