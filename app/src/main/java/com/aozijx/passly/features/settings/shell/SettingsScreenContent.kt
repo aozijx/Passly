@@ -46,67 +46,13 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.common.AutofillUiMode
-import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.settings.appearance.DisplayAppearanceDetail
 import com.aozijx.passly.features.settings.data.DataManagementDetail
 import com.aozijx.passly.features.settings.interaction.InteractionDetail
+import com.aozijx.passly.features.settings.internal.SettingsContentActions
+import com.aozijx.passly.features.settings.internal.SettingsContentState
 import com.aozijx.passly.features.settings.internal.SettingsGroup
 import com.aozijx.passly.features.settings.security.SecurityPrivacyDetail
-
-internal data class SettingsContentState(
-    val lockTimeout: Long,
-    val isAppPasswordEnabled: Boolean,
-    val isPasswordPreferredAuthFirst: Boolean,
-    val isDeviceCredentialFallbackEnabled: Boolean,
-    val isInvalidateKeyOnBioChange: Boolean,
-    val isSecureContentEnabled: Boolean,
-    val isFlipToLockEnabled: Boolean,
-    val isFlipExitAndClearStackEnabled: Boolean,
-    val isStatusBarAutoHide: Boolean,
-    val isTopBarCollapsible: Boolean,
-    val isTabBarCollapsible: Boolean,
-    val isSwipeEnabled: Boolean,
-    val swipeLeftAction: SwipeActionType,
-    val swipeRightAction: SwipeActionType,
-    val autofillUiMode: AutofillUiMode,
-    val visibleVaultTabs: Set<String>?,
-    val tabBarMaxTabsWithoutScroll: Int,
-    val isAutoDownloadIcons: Boolean,
-    val availableCardStyles: List<VaultCardStyle>,
-    val passwordSelectedStyle: VaultCardStyle,
-    val totpSelectedStyle: VaultCardStyle,
-    val backupPathLabel: String,
-    val lastExportFileLabel: String
-)
-
-internal data class SettingsContentActions(
-    val onBack: () -> Unit,
-    val onShowLockTimeoutDialog: () -> Unit,
-    val onAppPasswordClick: () -> Unit,
-    val onPasswordPreferredAuthFirstChange: (Boolean) -> Unit,
-    val onDeviceCredentialFallbackToggleRequested: (Boolean) -> Unit,
-    val onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
-    val onSecureContentEnabledChange: (Boolean) -> Unit,
-    val onFlipToLockEnabledChange: (Boolean) -> Unit,
-    val onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit,
-    val onStatusBarAutoHideChange: (Boolean) -> Unit,
-    val onTopBarCollapsibleChange: (Boolean) -> Unit,
-    val onTabBarCollapsibleChange: (Boolean) -> Unit,
-    val onSwipeEnabledChange: (Boolean) -> Unit,
-    val onLeftSwipeActionClick: () -> Unit,
-    val onRightSwipeActionClick: () -> Unit,
-    val onToggleAutofillUiMode: () -> Unit,
-    val onVisibleVaultTabsChange: (Set<String>) -> Unit,
-    val onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit,
-    val onAutoDownloadIconsChange: (Boolean) -> Unit,
-    val onPickBackupPath: () -> Unit,
-    val onTestBackupWrite: () -> Unit,
-    val onClearBackupPath: (() -> Unit)?,
-    val onPasswordStyleSelected: (VaultCardStyle) -> Unit,
-    val onTotpStyleSelected: (VaultCardStyle) -> Unit
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

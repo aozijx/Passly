@@ -7,14 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.features.backup.ui.BackupPathSettingsConfig
 import com.aozijx.passly.features.settings.apppassword.AppPasswordAction
-
-internal sealed interface AppPasswordDialog {
-    data object None : AppPasswordDialog
-    data object Action : AppPasswordDialog
-    data object Set : AppPasswordDialog
-    data object Change : AppPasswordDialog
-    data object Disable : AppPasswordDialog
-}
+import com.aozijx.passly.features.settings.internal.AppPasswordDialogState
 
 internal class SettingsScreenLocalState {
     var showLeftActionDialog by mutableStateOf(false)
@@ -22,7 +15,7 @@ internal class SettingsScreenLocalState {
     var showLockTimeoutDialog by mutableStateOf(false)
     var showClearBackupDirConfirmDialog by mutableStateOf(false)
     var showDeviceCredentialFallbackWarningDialog by mutableStateOf(false)
-    var activeAppPasswordDialog by mutableStateOf<AppPasswordDialog>(AppPasswordDialog.None)
+    var activeAppPasswordDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
 
     var appPasswordCurrent by mutableStateOf("")
     var appPasswordNew by mutableStateOf("")
@@ -71,37 +64,37 @@ internal class SettingsScreenLocalState {
     }
 
     fun openAppPasswordActionDialog() {
-        setActiveAppPasswordDialog(AppPasswordDialog.Action, clearInputs = false)
+        setActiveAppPasswordDialog(AppPasswordDialogState.Action)
     }
 
     fun dismissAppPasswordActionDialog() {
-        activeAppPasswordDialog = AppPasswordDialog.None
+        activeAppPasswordDialog = AppPasswordDialogState.None
     }
 
     fun openSetAppPasswordDialog() {
-        setActiveAppPasswordDialog(AppPasswordDialog.Set, clearInputs = false)
+        setActiveAppPasswordDialog(AppPasswordDialogState.Set)
     }
 
     fun openChangeAppPasswordDialog() {
-        setActiveAppPasswordDialog(AppPasswordDialog.Change, clearInputs = false)
+        setActiveAppPasswordDialog(AppPasswordDialogState.Change)
     }
 
     fun openDisableAppPasswordDialog() {
-        setActiveAppPasswordDialog(AppPasswordDialog.Disable, clearInputs = false)
+        setActiveAppPasswordDialog(AppPasswordDialogState.Disable)
     }
 
     fun dismissSetAppPasswordDialog() {
-        activeAppPasswordDialog = AppPasswordDialog.None
+        activeAppPasswordDialog = AppPasswordDialogState.None
         clearAppPasswordInputs()
     }
 
     fun dismissChangeAppPasswordDialog() {
-        activeAppPasswordDialog = AppPasswordDialog.None
+        activeAppPasswordDialog = AppPasswordDialogState.None
         clearAppPasswordInputs()
     }
 
     fun dismissDisableAppPasswordDialog() {
-        activeAppPasswordDialog = AppPasswordDialog.None
+        activeAppPasswordDialog = AppPasswordDialogState.None
         clearAppPasswordInputs()
     }
 
@@ -115,7 +108,7 @@ internal class SettingsScreenLocalState {
         when (action) {
             AppPasswordAction.SET,
             AppPasswordAction.CHANGE,
-            AppPasswordAction.DISABLE -> activeAppPasswordDialog = AppPasswordDialog.None
+            AppPasswordAction.DISABLE -> activeAppPasswordDialog = AppPasswordDialogState.None
         }
         clearAppPasswordInputs()
     }
@@ -125,9 +118,8 @@ internal class SettingsScreenLocalState {
     fun lastExportFileLabel(fileName: String?): String =
         BackupPathSettingsConfig.displayRecentFileName(fileName)
 
-    private fun setActiveAppPasswordDialog(dialog: AppPasswordDialog, clearInputs: Boolean) {
+    private fun setActiveAppPasswordDialog(dialog: AppPasswordDialogState) {
         activeAppPasswordDialog = dialog
-        if (clearInputs) clearAppPasswordInputs()
     }
 }
 

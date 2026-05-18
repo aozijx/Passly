@@ -3,9 +3,10 @@ package com.aozijx.passly.features.settings.contract
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
+import com.aozijx.passly.features.settings.internal.SettingsConstants
 
 data class SettingsUiState(
-    val lockTimeout: Long = 60000L,
+    val lockTimeout: Long = SettingsConstants.DEFAULT_LOCK_TIMEOUT_MS,
     val isInvalidateKeyOnBioChange: Boolean = true,
     val isStatusBarAutoHide: Boolean = true,
     val isTopBarCollapsible: Boolean = true,
@@ -24,6 +25,6 @@ data class SettingsUiState(
     val backupDirectoryUri: String? = null,
     val lastBackupExportFileName: String? = null,
     val visibleVaultTabs: Set<String>? = null,
-    val tabBarMaxTabsWithoutScroll: Int = 4,
+    val tabBarMaxTabsWithoutScroll: Int = SettingsConstants.DEFAULT_TAB_BAR_MAX_TABS,
     val isAutoDownloadIcons: Boolean = true
 )

@@ -1,6 +1,5 @@
 package com.aozijx.passly.features.settings.shell
 
-import android.content.Context
 import android.content.Intent
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -8,63 +7,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.core.net.toUri
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.features.settings.apppassword.AppPasswordActionDialog
 import com.aozijx.passly.features.settings.apppassword.AppPasswordChangeDialog
 import com.aozijx.passly.features.settings.apppassword.AppPasswordDisableDialog
 import com.aozijx.passly.features.settings.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.features.settings.interaction.SwipeActionSelectDialog
+import com.aozijx.passly.features.settings.internal.AppPasswordDialogEvent
+import com.aozijx.passly.features.settings.internal.AppPasswordDialogState
+import com.aozijx.passly.features.settings.internal.SettingsDialogEvent
+import com.aozijx.passly.features.settings.internal.SettingsDialogsActions
+import com.aozijx.passly.features.settings.internal.SettingsDialogsState
 import com.aozijx.passly.features.settings.security.LockTimeoutDialog
-
-internal data class SettingsDialogsState(
-    val showRightActionDialog: Boolean,
-    val showLeftActionDialog: Boolean,
-    val showLockTimeoutDialog: Boolean,
-    val showClearBackupDirConfirmDialog: Boolean,
-    val showDeviceCredentialFallbackWarningDialog: Boolean,
-    val activeAppPasswordDialog: AppPasswordDialog,
-    val swipeLeftAction: SwipeActionType,
-    val swipeRightAction: SwipeActionType,
-    val lockTimeout: Long,
-    val backupDirectoryUri: String?,
-    val context: Context,
-    val appPasswordCurrent: String,
-    val appPasswordNew: String,
-    val appPasswordConfirm: String
-)
-
-internal sealed interface AppPasswordDialogEvent {
-    data object DismissAction : AppPasswordDialogEvent
-    data object ShowChange : AppPasswordDialogEvent
-    data object ShowDisable : AppPasswordDialogEvent
-    data object DismissSet : AppPasswordDialogEvent
-    data object DismissChange : AppPasswordDialogEvent
-    data object DismissDisable : AppPasswordDialogEvent
-    data class CurrentChanged(val value: String) : AppPasswordDialogEvent
-    data class NewChanged(val value: String) : AppPasswordDialogEvent
-    data class ConfirmChanged(val value: String) : AppPasswordDialogEvent
-    data object ConfirmSet : AppPasswordDialogEvent
-    data object ConfirmChange : AppPasswordDialogEvent
-    data object ConfirmDisable : AppPasswordDialogEvent
-}
-
-internal sealed interface SettingsDialogEvent {
-    data class SetSwipeRightAction(val action: SwipeActionType) : SettingsDialogEvent
-    data class SetSwipeLeftAction(val action: SwipeActionType) : SettingsDialogEvent
-    data class SetLockTimeout(val timeoutMs: Long) : SettingsDialogEvent
-    data object ClearBackupDirectory : SettingsDialogEvent
-    data object DismissRightActionDialog : SettingsDialogEvent
-    data object DismissLeftActionDialog : SettingsDialogEvent
-    data object DismissLockTimeoutDialog : SettingsDialogEvent
-    data object DismissClearBackupDirConfirmDialog : SettingsDialogEvent
-    data object DismissDeviceCredentialFallbackWarningDialog : SettingsDialogEvent
-    data object ConfirmEnableDeviceCredentialFallback : SettingsDialogEvent
-    data class AppPassword(val event: AppPasswordDialogEvent) : SettingsDialogEvent
-}
-
-internal data class SettingsDialogsActions(
-    val onDialogEvent: (SettingsDialogEvent) -> Unit
-)
 
 @Composable
 internal fun SettingsScreenDialogsHost(
@@ -167,8 +120,8 @@ internal fun SettingsScreenDialogsHost(
     }
 
     when (state.activeAppPasswordDialog) {
-        AppPasswordDialog.None -> Unit
-        AppPasswordDialog.Action -> {
+        AppPasswordDialogState.None -> Unit
+        AppPasswordDialogState.Action -> {
             AppPasswordActionDialog(
                 onDismiss = {
                     actions.onDialogEvent(
@@ -188,7 +141,7 @@ internal fun SettingsScreenDialogsHost(
             )
         }
 
-        AppPasswordDialog.Set -> {
+        AppPasswordDialogState.Set -> {
             AppPasswordSetDialog(
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
@@ -215,7 +168,7 @@ internal fun SettingsScreenDialogsHost(
             )
         }
 
-        AppPasswordDialog.Change -> {
+        AppPasswordDialogState.Change -> {
             AppPasswordChangeDialog(
                 currentPassword = state.appPasswordCurrent,
                 newPassword = state.appPasswordNew,
@@ -248,7 +201,7 @@ internal fun SettingsScreenDialogsHost(
             )
         }
 
-        AppPasswordDialog.Disable -> {
+        AppPasswordDialogState.Disable -> {
             AppPasswordDisableDialog(
                 currentPassword = state.appPasswordCurrent,
                 onCurrentPasswordChange = {

@@ -121,7 +121,11 @@ internal class SettingsStateCoordinator(
             backupDirectoryUri = backupDirectoryUri,
             lastBackupExportFileName = lastBackupExportFileName
         )
-    }.stateIn(scope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+    }.stateIn(
+        scope,
+        SharingStarted.WhileSubscribed(SettingsConstants.STATE_SUBSCRIPTION_TIMEOUT_MS),
+        SettingsUiState()
+    )
 }
 
 private data class CoreSettings(

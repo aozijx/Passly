@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCas
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.features.backup.BackupCoordinator
 import com.aozijx.passly.features.settings.contract.SettingsUiState
+import com.aozijx.passly.features.settings.internal.SettingsConstants
 import com.aozijx.passly.features.settings.internal.SettingsStateCoordinator
 import com.aozijx.passly.features.verification.contract.VerificationGateway
 import com.aozijx.passly.features.verification.internal.VerificationCoordinator
@@ -94,7 +95,7 @@ class SettingsViewModel(
 
     fun setLockTimeout(timeoutMs: Long) = viewModelScope.launch {
         securitySettingsUseCases.setLockTimeout(
-            timeoutMs.coerceAtLeast(5000L)
+            timeoutMs.coerceAtLeast(SettingsConstants.MIN_LOCK_TIMEOUT_MS)
         )
     }
 

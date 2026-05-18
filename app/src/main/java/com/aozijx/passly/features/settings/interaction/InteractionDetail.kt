@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.features.settings.shell.SettingsContentActions
-import com.aozijx.passly.features.settings.shell.SettingsContentState
+import com.aozijx.passly.features.settings.internal.SettingsContentActions
+import com.aozijx.passly.features.settings.internal.SettingsContentState
 import com.aozijx.passly.features.settings.shell.sectionSpacing
 
 @Composable

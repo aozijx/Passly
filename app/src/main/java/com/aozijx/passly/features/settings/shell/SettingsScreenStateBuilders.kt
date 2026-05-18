@@ -6,6 +6,12 @@ import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.features.settings.contract.SettingsUiState
+import com.aozijx.passly.features.settings.internal.AppPasswordDialogEvent
+import com.aozijx.passly.features.settings.internal.SettingsContentActions
+import com.aozijx.passly.features.settings.internal.SettingsContentState
+import com.aozijx.passly.features.settings.internal.SettingsDialogEvent
+import com.aozijx.passly.features.settings.internal.SettingsDialogsActions
+import com.aozijx.passly.features.settings.internal.SettingsDialogsState
 
 internal fun buildSettingsContentState(
     uiState: SettingsUiState,
