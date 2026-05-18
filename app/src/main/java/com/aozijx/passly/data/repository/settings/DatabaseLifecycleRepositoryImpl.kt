@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.database
+package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import com.aozijx.passly.core.logging.Logcat
@@ -71,7 +71,6 @@ internal class DatabaseLifecycleRepositoryImpl(
 
     private fun attemptAutoRecovery(): Boolean {
         runCatching {
-            // Ensure all handles are closed before touching files.
             AppDatabase.close()
             AppDatabase.reset()
 
@@ -129,7 +128,6 @@ internal class DatabaseLifecycleRepositoryImpl(
             return false
         }
 
-        // Keep only latest snapshots to avoid unbounded growth.
         val backups =
             recoveryDir.listFiles()?.sortedByDescending { it.lastModified() } ?: return true
         backups.drop(MAX_RECOVERY_BACKUPS * 4).forEach { it.delete() }
