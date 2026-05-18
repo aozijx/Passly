@@ -23,7 +23,6 @@ import com.aozijx.passly.features.vault.components.TotpConfigForm
 fun EditTotpSection(
     item: VaultEntry,
     editState: TotpEditState,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     LaunchedEffect(editState.secret) {

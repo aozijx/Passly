@@ -57,7 +57,6 @@ fun TotpSection(
                 EditTotpSection(
                     item = entry,
                     editState = totpEditState,
-                    onUpdateVaultEntry = onUpdateVaultEntry,
                     onEntryUpdated = onEntryUpdated
                 )
             }

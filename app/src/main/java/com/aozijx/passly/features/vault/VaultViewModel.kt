@@ -157,7 +157,6 @@ class VaultViewModel(
 
     fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry)
     fun autoUnlockTotp(entry: VaultSummary) = totp.autoUnlock(entry)
-    fun clearDetailSensitiveState(entryId: Int) = totp.clearSensitiveState(entryId)
 
     init {
         totp.start { listCoordinator.state.value.items }
