@@ -13,11 +13,11 @@ import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
-import com.aozijx.passly.features.auth.AuthCoordinator
-import com.aozijx.passly.features.auth.ui.SettingsAuthGateway
 import com.aozijx.passly.features.backup.BackupCoordinator
 import com.aozijx.passly.features.settings.contract.SettingsUiState
 import com.aozijx.passly.features.settings.internal.SettingsStateCoordinator
+import com.aozijx.passly.features.verification.VerificationCoordinator
+import com.aozijx.passly.features.verification.VerificationGateway
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -46,10 +46,10 @@ class SettingsViewModel(
         application = application
     )
 
-    private val authCoordinator = AuthCoordinator(
+    private val authCoordinator = VerificationCoordinator(
         scope = viewModelScope, authUseCases = authUseCases
     )
-    val authGateway: SettingsAuthGateway = authCoordinator
+    val authGateway: VerificationGateway = authCoordinator
 
     fun switchKeyInvalidationPolicy(
         activity: FragmentActivity,

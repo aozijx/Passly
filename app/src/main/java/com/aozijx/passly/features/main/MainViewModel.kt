@@ -9,13 +9,13 @@ import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
-import com.aozijx.passly.features.auth.AuthCoordinator
-import com.aozijx.passly.features.auth.ui.AuthScreenAuthGateway
 import com.aozijx.passly.features.common.toUiMessage
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.main.contract.MainUiState
 import com.aozijx.passly.features.main.internal.MainDatabaseInitializer
+import com.aozijx.passly.features.verification.VerificationCoordinator
+import com.aozijx.passly.features.verification.VerificationGateway
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -37,12 +37,12 @@ class MainViewModel(
     private val authValidationSupport = AuthValidationSupport()
     private val databaseInitializer = MainDatabaseInitializer(databaseLifecycleUseCases)
 
-    private val authCoordinator = AuthCoordinator(
+    private val authCoordinator = VerificationCoordinator(
         scope = viewModelScope,
         authUseCases = authUseCases,
         validationSupport = authValidationSupport
     )
-    val authScreenGateway: AuthScreenAuthGateway = authCoordinator
+    val authScreenGateway: VerificationGateway = authCoordinator
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -79,13 +79,10 @@ class MainViewModel(
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        authCoordinator.authenticate(
-            activity = activity,
-            title = title,
-            subtitle = subtitle,
-            onSuccess = onSuccess,
-            onError = onError
-        )
+        authCoordinator.verifyWithBiometric(activity, title, subtitle) { result ->
+            result.onSuccess { onSuccess() }
+                .onFailure { error -> onError?.invoke(error.toUiMessage()) }
+        }
     }
 
     private fun observeAuthStates() {

@@ -7,8 +7,8 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
-import com.aozijx.passly.features.auth.ui.SettingsAuthGateway
 import com.aozijx.passly.features.common.toUiMessage
+import com.aozijx.passly.features.verification.VerificationGateway
 
 internal enum class AppPasswordAction {
     SET,
@@ -16,7 +16,7 @@ internal enum class AppPasswordAction {
     DISABLE
 }
 
-internal fun SettingsAuthGateway.executeSetAppPassword(
+internal fun VerificationGateway.executeSetAppPassword(
     password: CharArray, context: Context
 ) {
     setAppPassword(password) { result ->
@@ -28,7 +28,7 @@ internal fun SettingsAuthGateway.executeSetAppPassword(
     }
 }
 
-internal fun SettingsAuthGateway.executeChangeAppPassword(
+internal fun VerificationGateway.executeChangeAppPassword(
     oldPassword: CharArray, newPassword: CharArray, context: Context
 ) {
     changeAppPassword(oldPassword, newPassword) { result ->
@@ -40,7 +40,7 @@ internal fun SettingsAuthGateway.executeChangeAppPassword(
     }
 }
 
-internal fun SettingsAuthGateway.executeDisableAppPassword(
+internal fun VerificationGateway.executeDisableAppPassword(
     password: CharArray, context: Context
 ) {
     disableAppPassword(password) { result ->
@@ -52,12 +52,12 @@ internal fun SettingsAuthGateway.executeDisableAppPassword(
     }
 }
 
-internal fun SettingsAuthGateway.executeVerifyIdentity(
+internal fun VerificationGateway.executeVerifyIdentity(
     activity: FragmentActivity,
     context: Context,
     onVerified: () -> Unit
 ) {
-    verifyIdentity(
+    verifyWithBiometric(
         activity = activity,
         title = "身份验证",
         subtitle = "请验证身份以继续操作"
@@ -69,7 +69,7 @@ internal fun SettingsAuthGateway.executeVerifyIdentity(
     }
 }
 
-internal fun SettingsAuthGateway.executeSetLockTimeout(
+internal fun VerificationGateway.executeSetLockTimeout(
     timeoutMs: Long,
     context: Context
 ) {
@@ -108,7 +108,7 @@ internal fun handleAppPasswordAction(
     currentPassword: String,
     newPassword: String,
     confirmPassword: String,
-    authGateway: SettingsAuthGateway,
+    authGateway: VerificationGateway,
     onSuccess: (AppPasswordAction) -> Unit
 ) {
     when (action) {
@@ -167,7 +167,7 @@ internal fun handleAppPasswordEntryClick(
     context: Context,
     activity: FragmentActivity?,
     isAppPasswordEnabled: Boolean,
-    authGateway: SettingsAuthGateway,
+    authGateway: VerificationGateway,
     title: String,
     subtitle: String,
     authFailedMsg: String,
@@ -182,7 +182,7 @@ internal fun handleAppPasswordEntryClick(
         Toast.makeText(context, "无法进行身份验证", Toast.LENGTH_SHORT).show()
         return
     }
-    authGateway.verifyIdentity(activity, title, subtitle) { result ->
+    authGateway.verifyWithBiometric(activity, title, subtitle) { result ->
         result.onSuccess { onVerified() }
             .onFailure { error ->
                 val msg = error.toUiMessage(authFailedMsg)

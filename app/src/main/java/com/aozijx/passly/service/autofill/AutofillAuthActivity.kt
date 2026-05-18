@@ -19,6 +19,7 @@ import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.otp.TwoFAUtils
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.features.verification.VerificationCoordinator
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet
@@ -31,7 +32,10 @@ class AutofillAuthActivity : FragmentActivity() {
 
     private var selectionInProgress = false
     private val autofillRepository = AppContainer.domain.autofillUseCases
-    private val authUseCases = AppContainer.domain.authUseCases
+    private val verificationCoordinator = VerificationCoordinator(
+        scope = lifecycleScope,
+        authUseCases = AppContainer.domain.authUseCases
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))
@@ -106,7 +110,7 @@ class AutofillAuthActivity : FragmentActivity() {
         webDomain: String?
     ) {
         lifecycleScope.launch {
-            val authResult = authUseCases.authenticate(
+            val authResult = verificationCoordinator.verifyWithBiometricSuspended(
                 this@AutofillAuthActivity,
                 getString(R.string.vault_auth_decrypt_title),
                 getString(R.string.vault_auth_decrypt_subtitle_generic)
@@ -137,7 +141,7 @@ class AutofillAuthActivity : FragmentActivity() {
     ) {
         Logcat.d(TAG, "authenticateAndFill: entryId=${entry.id}, uiMode=$uiMode")
         lifecycleScope.launch {
-            val authResult = authUseCases.authenticate(
+            val authResult = verificationCoordinator.verifyWithBiometricSuspended(
                 this@AutofillAuthActivity,
                 getString(R.string.autofill_auth_title),
                 getString(R.string.autofill_auth_subtitle)

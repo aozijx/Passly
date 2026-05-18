@@ -21,12 +21,12 @@ import com.aozijx.passly.core.designsystem.components.PlainExportDialogType
 import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.local.config.DatabaseConfig
-import com.aozijx.passly.features.auth.ui.AuthScreen
 import com.aozijx.passly.features.main.MainSensorController
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
 import com.aozijx.passly.features.settings.SettingsViewModel
+import com.aozijx.passly.features.verification.VerificationScreen
 import kotlin.system.exitProcess
 
 @Composable
@@ -121,8 +121,8 @@ internal fun MainScreen(
             }
 
             else -> {
-                AuthScreen(
-                    authGateway = viewModel.authScreenGateway,
+                VerificationScreen(
+                    gateway = viewModel.authScreenGateway,
                     activity = activity,
                     preferPasswordFirst = settingsUiState.isPasswordPreferredAuthFirst
                 )

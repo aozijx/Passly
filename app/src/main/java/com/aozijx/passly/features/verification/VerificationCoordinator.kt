@@ -1,12 +1,10 @@
-package com.aozijx.passly.features.auth
+package com.aozijx.passly.features.verification
 
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.security.auth.AuthValidationResult
 import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
-import com.aozijx.passly.features.auth.ui.AuthScreenAuthGateway
-import com.aozijx.passly.features.auth.ui.SettingsAuthGateway
 import com.aozijx.passly.features.common.toUiMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,46 +13,54 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
-class AuthCoordinator(
+class VerificationCoordinator(
     private val scope: CoroutineScope,
     private val authUseCases: AuthUseCases,
     private val validationSupport: AuthValidationSupport = AuthValidationSupport()
-) : AuthScreenAuthGateway, SettingsAuthGateway {
-    val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
+) : VerificationGateway {
+    override val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
     override val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
 
     private val _authMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val authMessage: SharedFlow<String> = _authMessage.asSharedFlow()
 
-    override fun authenticate(
+    override fun verifyWithBiometric(
         activity: FragmentActivity,
         title: String,
         subtitle: String,
-        onSuccess: () -> Unit,
-        onError: ((String) -> Unit)?
+        onResult: (AppResult<Unit>) -> Unit
     ) {
         when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
             is AuthValidationResult.Invalid -> {
-                emitAuthError(validation.message, onError)
+                val msg = validationSupport.sanitizeMessage(validation.message)
+                _authMessage.tryEmit(msg)
+                onResult(
+                    AppResult.failure(
+                        com.aozijx.passly.core.error.AppError.AuthFailed(
+                            validation.message
+                        )
+                    )
+                )
                 return
             }
             AuthValidationResult.Valid -> Unit
         }
 
         scope.launch {
-            authUseCases.authenticate(activity, title, subtitle)
-                .onSuccess { onSuccess() }
-                .onFailure { emitAuthError(it.toUiMessage(), onError) }
+            val result = authUseCases.authenticate(activity, title, subtitle)
+            result.onFailure { _authMessage.tryEmit(validationSupport.sanitizeMessage(it.toUiMessage())) }
+            onResult(result)
         }
     }
 
-    override fun authenticateWithAppPassword(
-        password: CharArray, onSuccess: () -> Unit, onError: ((String) -> Unit)?
+    override fun verifyWithAppPassword(
+        password: CharArray,
+        onResult: (AppResult<Unit>) -> Unit
     ) {
         scope.launch {
-            authUseCases.authenticateWithAppPassword(password)
-                .onSuccess { onSuccess() }
-                .onFailure { emitAuthError(it.toUiMessage(), onError) }
+            val result = authUseCases.authenticateWithAppPassword(password)
+            result.onFailure { _authMessage.tryEmit(validationSupport.sanitizeMessage(it.toUiMessage())) }
+            onResult(result)
         }
     }
 
@@ -67,22 +73,15 @@ class AuthCoordinator(
     }
 
     override fun changeAppPassword(
-        oldPassword: CharArray, newPassword: CharArray, onResult: (AppResult<Unit>) -> Unit
+        oldPassword: CharArray,
+        newPassword: CharArray,
+        onResult: (AppResult<Unit>) -> Unit
     ) {
         launchResult(onResult) { authUseCases.changeAppPassword(oldPassword, newPassword) }
     }
 
     override fun disableAppPassword(password: CharArray, onResult: (AppResult<Unit>) -> Unit) {
         launchResult(onResult) { authUseCases.disableAppPassword(password) }
-    }
-
-    override fun verifyIdentity(
-        activity: FragmentActivity,
-        title: String,
-        subtitle: String,
-        onResult: (AppResult<Unit>) -> Unit
-    ) {
-        launchResult(onResult) { authUseCases.verifyIdentity(activity, title, subtitle) }
     }
 
     fun rekeyWithInvalidationPolicy(
@@ -95,20 +94,35 @@ class AuthCoordinator(
         }
     }
 
-    private fun emitAuthError(message: String?, onError: ((String) -> Unit)?) {
-        val resolved = validationSupport.sanitizeMessage(message)
-        _authMessage.tryEmit(resolved)
-        onError?.invoke(resolved)
-    }
-
-    private fun launchResult(
-        onResult: (AppResult<Unit>) -> Unit, block: suspend () -> AppResult<Unit>
-    ) {
-        scope.launch { onResult(block()) }
-    }
-
     fun lock() = authUseCases.lock()
     fun onUserInteraction() = authUseCases.onUserInteraction()
     fun checkAndLock() = authUseCases.checkAndLock()
     fun updateLockTimeout(timeoutMs: Long) = authUseCases.updateLockTimeout(timeoutMs)
+
+    suspend fun verifyWithBiometricSuspended(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String
+    ): AppResult<Unit> {
+        when (val validation = validationSupport.validateAuthenticationRequest(activity, title)) {
+            is AuthValidationResult.Invalid -> {
+                val msg = validationSupport.sanitizeMessage(validation.message)
+                _authMessage.tryEmit(msg)
+                return AppResult.failure(com.aozijx.passly.core.error.AppError.AuthFailed(validation.message))
+            }
+
+            AuthValidationResult.Valid -> Unit
+        }
+
+        val result = authUseCases.authenticate(activity, title, subtitle)
+        result.onFailure { _authMessage.tryEmit(validationSupport.sanitizeMessage(it.toUiMessage())) }
+        return result
+    }
+
+    private fun launchResult(
+        onResult: (AppResult<Unit>) -> Unit,
+        block: suspend () -> AppResult<Unit>
+    ) {
+        scope.launch { onResult(block()) }
+    }
 }
