@@ -19,8 +19,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.crypto.CryptoAccess
+import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.core.platform.PackageUtils
-import com.aozijx.passly.core.security.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory

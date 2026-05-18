@@ -3,16 +3,16 @@ package com.aozijx.passly.data.repository.auth
 import android.app.Application
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.core.crypto.BiometricHelper
+import com.aozijx.passly.core.auth.AppPasswordStore
+import com.aozijx.passly.core.auth.AuthValidationResult
+import com.aozijx.passly.core.auth.AuthValidationSupport
+import com.aozijx.passly.core.auth.AutoLockScheduler
+import com.aozijx.passly.core.auth.BiometricHelper
+import com.aozijx.passly.core.crypto.DatabasePassphraseManager
 import com.aozijx.passly.core.crypto.SessionCryptoKey
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.core.security.AppPasswordStore
-import com.aozijx.passly.core.security.AutoLockScheduler
-import com.aozijx.passly.core.security.DatabasePassphraseManager
-import com.aozijx.passly.core.security.auth.AuthValidationResult
-import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
 import kotlinx.coroutines.CoroutineScope
@@ -213,7 +213,6 @@ internal class AuthRepositoryImpl(
                             } finally {
                                 generatedPassphrase.fill(0)
                             }
-                            Unit
                         }
                         .onSuccess { _isAppPasswordEnabled.update { true } }
                         .map { AppResult.success(Unit) }

@@ -4,8 +4,8 @@ import android.content.Context
 import android.database.Cursor
 import android.util.JsonWriter
 import com.aozijx.passly.BuildConfig
+import com.aozijx.passly.core.crypto.DatabasePassphraseManager
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.data.local.config.DatabaseConfig
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.ByteArrayOutputStream

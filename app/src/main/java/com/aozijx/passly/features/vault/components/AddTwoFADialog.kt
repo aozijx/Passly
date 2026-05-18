@@ -23,8 +23,8 @@ import com.aozijx.passly.core.designsystem.fields.CategoryDropdown
 import com.aozijx.passly.core.designsystem.fields.VaultTextField
 import com.aozijx.passly.core.designsystem.sections.TotpConfigForm
 import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.core.security.otp.TotpUtils
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel
 

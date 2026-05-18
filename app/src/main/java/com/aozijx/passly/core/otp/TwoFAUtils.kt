@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.security.otp
+package com.aozijx.passly.core.otp
 
 import android.util.Base64
 import com.aozijx.passly.core.crypto.CryptoAccess
@@ -142,6 +142,3 @@ object TwoFAUtils {
         return output.copyOf(index)
     }
 }
-
-
-

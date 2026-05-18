@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.otp
 
-import com.aozijx.passly.core.security.otp.TwoFAUtils
+import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.TotpConfig
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 

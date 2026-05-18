@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.security
+package com.aozijx.passly.core.auth
 
 import android.content.Context
 import android.util.Base64
@@ -11,9 +11,6 @@ import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 
-/**
- * 应用密码凭据存储：独立管理应用密码包装数据，不依赖主数据库 schema。
- */
 object AppPasswordStore {
     private const val PREFS_NAME = "secure_db_prefs"
     private const val KEY_APP_PASSWORD_WRAP = "db_phrase_app_wrap"
@@ -102,7 +99,7 @@ object AppPasswordStore {
         val now = System.currentTimeMillis()
         if (lockedUntil > now) {
             val remainSeconds = ((lockedUntil - now) / 1000L).coerceAtLeast(1L)
-            throw IllegalStateException("尝试过于频繁，请在 ${remainSeconds} 秒后重试")
+            throw IllegalStateException("尝试过于频繁，请在 $remainSeconds 秒后重试")
         }
 
         runCatching { decryptPassphrase(context, password) }

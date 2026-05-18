@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.security.auth
+package com.aozijx.passly.core.auth
 
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle

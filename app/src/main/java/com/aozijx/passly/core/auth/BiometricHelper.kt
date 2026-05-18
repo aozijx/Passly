@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.crypto
+package com.aozijx.passly.core.auth
 
 import android.widget.Toast
 import androidx.biometric.BiometricManager
@@ -8,9 +8,6 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
-/**
- * 生物识别辅助类：已优化以支持硬件级解密绑定（Hard Lock）。
- */
 object BiometricHelper {
     fun authenticate(
         activity: FragmentActivity,
@@ -23,7 +20,6 @@ object BiometricHelper {
     ) {
         val biometricManager = BiometricManager.from(activity)
 
-        // 如果有 CryptoObject，必须使用 BIOMETRIC_STRONG；否则由设置控制是否允许设备凭据兜底。
         val authenticators =
             if (cryptoObject != null || !allowDeviceCredentialFallback) {
                 BIOMETRIC_STRONG
@@ -52,7 +48,6 @@ object BiometricHelper {
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     val error = errString.toString()
-                    // 仅对非主动取消的错误进行提示
                     if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
                         errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON &&
                         errorCode != BiometricPrompt.ERROR_CANCELED
@@ -63,7 +58,6 @@ object BiometricHelper {
                 }
 
                 override fun onAuthenticationFailed() {
-                    // 指纹不匹配时触发，BiometricPrompt 会自动处理重试
                 }
             })
 

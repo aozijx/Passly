@@ -16,7 +16,7 @@ import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.core.security.otp.TwoFAUtils
+import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.features.verification.internal.VerificationCoordinator

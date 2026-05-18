@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.security.auth
+package com.aozijx.passly.core.auth
 
 /**
  * 认证相关的校验结果（Core层）。

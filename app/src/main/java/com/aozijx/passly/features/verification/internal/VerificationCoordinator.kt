@@ -1,10 +1,10 @@
 package com.aozijx.passly.features.verification.internal
 
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.auth.AuthValidationResult
+import com.aozijx.passly.core.auth.AuthValidationSupport
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.security.auth.AuthValidationResult
-import com.aozijx.passly.core.security.auth.AuthValidationSupport
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.features.common.toUiMessage
 import com.aozijx.passly.features.verification.contract.VerificationGateway

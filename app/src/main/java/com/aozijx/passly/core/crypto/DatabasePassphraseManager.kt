@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.security
+package com.aozijx.passly.core.crypto
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
@@ -15,10 +15,6 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
-/**
- * 管理加密数据库所需的口令。
- * 保持硬件级认证绑定，支持配置生物识别变更时是否销毁密钥。
- */
 object DatabasePassphraseManager {
     private const val TAG = "PassphraseManager"
     private const val PREFS_NAME = "secure_db_prefs"
@@ -128,7 +124,8 @@ object DatabasePassphraseManager {
     }
 
     private fun generateMasterKey(alias: String, invalidateOnBiometricChange: Boolean) {
-        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        val keyGenerator =
+            KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
         val spec = KeyGenParameterSpec.Builder(
             alias,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
@@ -147,9 +144,6 @@ object DatabasePassphraseManager {
         keyGenerator.generateKey()
     }
 
-    /**
-     * 重要：返回克隆副本，防止 fill(0) 破坏正在运行的数据库连接密钥
-     */
     fun getPassphrase(): ByteArray {
         return synchronized(lock) {
             _decryptedPassphrase?.clone()

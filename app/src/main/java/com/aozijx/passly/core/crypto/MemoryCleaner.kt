@@ -1,9 +1,5 @@
-package com.aozijx.passly.core.security
+package com.aozijx.passly.core.crypto
 
-/**
- * 内存清理工具：批量擦除敏感数据。
- * 在锁定、切后台、超时等场景下调用，确保敏感字段不残留在堆内存中。
- */
 object MemoryCleaner {
 
     fun wipe(targets: List<SecureString?>) {

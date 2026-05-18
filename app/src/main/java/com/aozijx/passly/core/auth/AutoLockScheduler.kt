@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.security
+package com.aozijx.passly.core.auth
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

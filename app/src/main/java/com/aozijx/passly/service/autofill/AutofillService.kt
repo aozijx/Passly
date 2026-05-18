@@ -6,9 +6,9 @@ import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.R
+import com.aozijx.passly.core.crypto.DatabasePassphraseManager
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
