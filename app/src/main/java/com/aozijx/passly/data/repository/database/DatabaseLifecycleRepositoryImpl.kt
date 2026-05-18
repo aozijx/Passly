@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.database
 import android.content.Context
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
-import com.aozijx.passly.data.local.config.DatabaseConfig
+import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

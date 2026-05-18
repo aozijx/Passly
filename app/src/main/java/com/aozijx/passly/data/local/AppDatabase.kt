@@ -9,7 +9,6 @@ import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
-import com.aozijx.passly.data.local.config.DatabaseConfig
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory

@@ -4,7 +4,7 @@ import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.TotpConfig
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 
-class OtpDataRepository : OtpRepository {
+class OtpRepositoryImpl : OtpRepository {
     override fun generateTotp(config: TotpConfig): String {
         val normalizedDigits = if (config.algorithm.uppercase() == "STEAM") 5 else config.digits
         return TwoFAUtils.generateTotp(

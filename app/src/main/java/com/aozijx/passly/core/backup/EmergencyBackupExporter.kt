@@ -6,7 +6,7 @@ import android.util.JsonWriter
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.data.local.config.DatabaseConfig
+import com.aozijx.passly.data.local.DatabaseConfig
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.ByteArrayOutputStream
 import java.io.File

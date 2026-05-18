@@ -1,8 +1,5 @@
-package com.aozijx.passly.data.local.config
+package com.aozijx.passly.data.local
 
-/**
- * 数据库全局配置常量
- */
 object DatabaseConfig {
     const val DATABASE_NAME = "vault_database"
     const val TABLE_ENTRIES = "vault_entries"

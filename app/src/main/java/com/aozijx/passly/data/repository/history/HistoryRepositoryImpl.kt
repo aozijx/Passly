@@ -9,13 +9,17 @@ import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class HistoryDataRepository(
+class HistoryRepositoryImpl(
     private val historyDao: VaultHistoryDao
 ) : HistoryRepository {
     override fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistory>> =
         historyDao.getHistoryByEntryId(entryId).map { it.toDomainHistoryList() }
 
-    override suspend fun getHistoryPaged(entryId: Int, limit: Int, offset: Int): List<VaultHistory> =
+    override suspend fun getHistoryPaged(
+        entryId: Int,
+        limit: Int,
+        offset: Int
+    ): List<VaultHistory> =
         historyDao.getHistoryPaged(entryId, limit, offset).map { it.toDomain() }
 
     override suspend fun countByEntryId(entryId: Int): Int =

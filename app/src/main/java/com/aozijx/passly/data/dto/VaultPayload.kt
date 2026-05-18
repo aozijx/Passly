@@ -1,12 +1,8 @@
-package com.aozijx.passly.data.entity
+package com.aozijx.passly.data.dto
 
 import org.json.JSONArray
 import org.json.JSONObject
 
-/**
- * Encrypted Blob 的明文载荷：保险库条目的全量业务数据。
- * 序列化为 JSON 后整体加密存入 encrypted_blob 列。
- */
 data class VaultPayload(
     val title: String,
     val username: String,
@@ -170,7 +166,8 @@ data class VaultPayload(
                 customFieldsJson = json.optStringOrNull("customFieldsJson"),
                 autoSubmit = json.optBoolean("autoSubmit", false),
 
-                strengthScore = if (json.has("strengthScore")) json.getDouble("strengthScore").toFloat() else null,
+                strengthScore = if (json.has("strengthScore")) json.getDouble("strengthScore")
+                    .toFloat() else null,
                 lastUsedAt = if (json.has("lastUsedAt")) json.getLong("lastUsedAt") else null,
                 usageCount = json.optInt("usageCount", 0),
 

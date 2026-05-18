@@ -12,26 +12,23 @@ import com.aozijx.passly.core.backup.BackupManager.SALT_LENGTH
 import com.aozijx.passly.core.backup.BackupManager.deriveKeyArgon2id
 import com.aozijx.passly.core.backup.BackupManager.generateSalt
 import com.aozijx.passly.core.backup.BackupManager.getCipher
-import com.aozijx.passly.core.backup.BackupManager.mapImportFailure
 import com.aozijx.passly.core.backup.BackupManager.readFullyOrThrow
 import com.aozijx.passly.core.backup.BackupManager.readSingleByteOrThrow
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
-import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.core.error.ErrorLayer
-import com.aozijx.passly.core.error.ErrorTrace
-import com.aozijx.passly.data.entity.VaultPayload
+import com.aozijx.passly.data.dto.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
 import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
+import com.aozijx.passly.data.repository.backup.internal.mapToAppError
+import com.aozijx.passly.data.repository.backup.internal.openBackupInputStream
+import com.aozijx.passly.data.repository.backup.internal.openBackupOutputStream
 import com.aozijx.passly.domain.model.backup.BackupImportMode
 import com.aozijx.passly.domain.model.core.BackupException
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.InputStream
-import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -72,7 +69,7 @@ internal class BackupRepositoryImpl(
             val cipher = getCipher(Cipher.ENCRYPT_MODE, key)
             val iv = cipher.iv
 
-            openOutputStreamOrThrow(uri).use { output ->
+            context.openBackupOutputStream(uri).use { output ->
                 output.write(MAGIC_NUMBER)
                 output.write(BACKUP_VERSION)
                 output.write(salt)
@@ -104,7 +101,7 @@ internal class BackupRepositoryImpl(
         try {
             val entities = dataSource.readAllEntries()
             val payloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
-            openOutputStreamOrThrow(uri).use { output ->
+            context.openBackupOutputStream(uri).use { output ->
                 BackupVSerializer.writeEntries(output, payloads)
             }
         } catch (e: Throwable) {
@@ -128,7 +125,7 @@ internal class BackupRepositoryImpl(
         mode: BackupImportMode
     ) = withContext(Dispatchers.IO) {
         try {
-            openInputStreamOrThrow(uri).use { input ->
+            context.openBackupInputStream(uri).use { input ->
                 val readMagic = ByteArray(MAGIC_NUMBER.size)
                 val readCount = input.read(readMagic)
                 val isEncrypted = readCount == MAGIC_NUMBER.size &&
@@ -193,53 +190,12 @@ internal class BackupRepositoryImpl(
     }
 
     private suspend fun importPlainJson(uri: Uri, mode: BackupImportMode) {
-        val plainPayloads = openInputStreamOrThrow(uri).use {
+        val plainPayloads = context.openBackupInputStream(uri).use {
             BackupVSerializer.readEntries(it)
         }
 
         val entities = plainPayloads.map { BackupFieldEncryptor.toImportEntity(it) }
         dataSource.writeEntries(entities, mode)
-    }
-
-    private fun mapException(e: Throwable): BackupException {
-        val raw = mapImportFailure(e as? Exception ?: Exception(e))
-        return when {
-            raw.message?.contains("密码错误") == true -> BackupException.PasswordIncorrect()
-            raw.message?.contains("文件损坏") == true -> BackupException.FileCorrupted()
-            e is BackupException -> e
-            else -> BackupException.Unknown(e)
-        }
-    }
-
-    private fun mapToAppError(operation: String, e: Throwable): AppError {
-        if (e is AppError) return e
-        val backupException = if (e is BackupException) e else mapException(e)
-        return AppError.BackupFailed(
-            message = backupException.message ?: "备份操作失败",
-            errorTrace = ErrorTrace(originLayer = ErrorLayer.DATA, operation = operation),
-            cause = backupException
-        )
-    }
-
-    private fun openInputStreamOrThrow(uri: Uri): InputStream {
-        return try {
-            context.contentResolver.openInputStream(uri) ?: throw BackupException.FileCorrupted()
-        } catch (_: SecurityException) {
-            throw BackupException.StoragePermissionDenied()
-        } catch (_: FileNotFoundException) {
-            throw BackupException.FileCorrupted()
-        }
-    }
-
-    private fun openOutputStreamOrThrow(uri: Uri): OutputStream {
-        return try {
-            context.contentResolver.openOutputStream(uri)
-                ?: throw BackupException.StoragePermissionDenied()
-        } catch (_: SecurityException) {
-            throw BackupException.StoragePermissionDenied()
-        } catch (_: FileNotFoundException) {
-            throw BackupException.StoragePermissionDenied()
-        }
     }
 
     override suspend fun testDirectoryWritePermission(directoryUri: String) {

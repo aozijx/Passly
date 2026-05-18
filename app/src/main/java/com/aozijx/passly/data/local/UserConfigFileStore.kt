@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.local.config
+package com.aozijx.passly.data.local
 
 import android.content.Context
 import com.aozijx.passly.core.logging.Logcat

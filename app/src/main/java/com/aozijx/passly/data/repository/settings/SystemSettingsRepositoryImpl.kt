@@ -1,113 +1,34 @@
 package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.data.mapper.SettingsMapper
+import com.aozijx.passly.data.repository.settings.internal.AUTOFILL_UI_MODE_KEY
+import com.aozijx.passly.data.repository.settings.internal.AUTO_DOWNLOAD_ICONS_KEY
+import com.aozijx.passly.data.repository.settings.internal.AUTO_HIDE_STATUS_BAR_KEY
+import com.aozijx.passly.data.repository.settings.internal.CARD_STYLE_KEY
+import com.aozijx.passly.data.repository.settings.internal.CARD_STYLE_MAP_KEY
+import com.aozijx.passly.data.repository.settings.internal.COLLAPSE_TAB_BAR_KEY
+import com.aozijx.passly.data.repository.settings.internal.COLLAPSE_TOP_BAR_KEY
+import com.aozijx.passly.data.repository.settings.internal.DARK_MODE_KEY
+import com.aozijx.passly.data.repository.settings.internal.DEFAULT_STYLE_KEY
+import com.aozijx.passly.data.repository.settings.internal.DYNAMIC_COLOR_KEY
+import com.aozijx.passly.data.repository.settings.internal.SWIPE_ENABLED_KEY
+import com.aozijx.passly.data.repository.settings.internal.SWIPE_LEFT_ACTION_KEY
+import com.aozijx.passly.data.repository.settings.internal.SWIPE_RIGHT_ACTION_KEY
+import com.aozijx.passly.data.repository.settings.internal.TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY
+import com.aozijx.passly.data.repository.settings.internal.VISIBLE_VAULT_TABS_KEY
+import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import com.aozijx.passly.domain.model.VaultCardStyle
-import com.aozijx.passly.domain.repository.settings.BackupSettingsRepository
-import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.settingsDataStore by preferencesDataStore(name = "vault_settings")
-
-class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
-    SystemSettingsRepository, BackupSettingsRepository {
+class SystemSettingsRepositoryImpl(context: Context) : SystemSettingsRepository {
     private val appContext = context.applicationContext
 
-    private companion object {
-        const val DEFAULT_STYLE_KEY = -1
-
-        val LOCK_TIMEOUT_KEY = longPreferencesKey("vault_lock_timeout")
-        val BIOMETRIC_AUTH_KEY = booleanPreferencesKey("vault_biometric_auth")
-        val INVALIDATE_KEY_ON_BIO_CHANGE_KEY =
-            booleanPreferencesKey("security_invalidate_key_on_bio_change")
-        val DARK_MODE_KEY = booleanPreferencesKey("vault_dark_mode")
-        val DYNAMIC_COLOR_KEY = booleanPreferencesKey("vault_dynamic_color")
-        val SWIPE_ENABLED_KEY = booleanPreferencesKey("vault_swipe_enabled")
-        val SWIPE_LEFT_ACTION_KEY = stringPreferencesKey("vault_swipe_left_action")
-        val SWIPE_RIGHT_ACTION_KEY = stringPreferencesKey("vault_swipe_right_action")
-        val AUTO_HIDE_STATUS_BAR_KEY = booleanPreferencesKey("ui_auto_hide_status_bar")
-        val COLLAPSE_TOP_BAR_KEY = booleanPreferencesKey("ui_collapse_top_bar")
-        val COLLAPSE_TAB_BAR_KEY = booleanPreferencesKey("ui_collapse_tab_bar")
-        val SECURE_CONTENT_KEY = booleanPreferencesKey("ui_secure_content")
-        val FLIP_TO_LOCK_KEY = booleanPreferencesKey("security_flip_to_lock")
-        val FLIP_EXIT_AND_CLEAR_STACK_KEY =
-            booleanPreferencesKey("security_flip_exit_and_clear_stack")
-        val PASSWORD_PREFERRED_AUTH_FIRST_KEY =
-            booleanPreferencesKey("security_password_preferred_auth_first")
-        val DEVICE_CREDENTIAL_FALLBACK_KEY =
-            booleanPreferencesKey("security_device_credential_fallback")
-        val CARD_STYLE_KEY = stringPreferencesKey("ui_card_style")
-        val CARD_STYLE_MAP_KEY = stringPreferencesKey("ui_card_style_map_v2")
-        val AUTOFILL_UI_MODE_KEY = stringPreferencesKey("autofill_ui_mode")
-        val BACKUP_DIRECTORY_URI_KEY = stringPreferencesKey("backup_directory_uri")
-        val LAST_BACKUP_EXPORT_FILE_NAME_KEY = stringPreferencesKey("last_backup_export_file_name")
-        val VISIBLE_VAULT_TABS_KEY = stringPreferencesKey("vault_visible_tabs")
-        val TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY =
-            intPreferencesKey("vault_tab_bar_max_tabs_without_scroll")
-        val AUTO_DOWNLOAD_ICONS_KEY = booleanPreferencesKey("data_auto_download_icons")
-    }
-
-    // --- SecuritySettingsRepository ---
-    override val lockTimeout: Flow<Long> =
-        appContext.settingsDataStore.data.map { it[LOCK_TIMEOUT_KEY] ?: 60000L }
-    override val isBiometricEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[BIOMETRIC_AUTH_KEY] ?: true }
-    override val isInvalidateKeyOnBioChange: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[INVALIDATE_KEY_ON_BIO_CHANGE_KEY] ?: true }
-    override val isSecureContentEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[SECURE_CONTENT_KEY] ?: true }
-    override val isFlipToLockEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[FLIP_TO_LOCK_KEY] ?: false }
-    override val isFlipExitAndClearStackEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] ?: false }
-    override val isPasswordPreferredAuthFirst: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[PASSWORD_PREFERRED_AUTH_FIRST_KEY] ?: true }
-    override val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[DEVICE_CREDENTIAL_FALLBACK_KEY] ?: true }
-
-    override suspend fun setLockTimeout(timeoutMs: Long) {
-        appContext.settingsDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
-    }
-
-    override suspend fun setBiometricEnabled(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[BIOMETRIC_AUTH_KEY] = enabled }
-    }
-
-    override suspend fun setInvalidateKeyOnBioChange(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[INVALIDATE_KEY_ON_BIO_CHANGE_KEY] = enabled }
-    }
-
-    override suspend fun setSecureContentEnabled(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[SECURE_CONTENT_KEY] = enabled }
-    }
-
-    override suspend fun setFlipToLockEnabled(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[FLIP_TO_LOCK_KEY] = enabled }
-    }
-
-    override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] = enabled }
-    }
-
-    override suspend fun setPasswordPreferredAuthFirst(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[PASSWORD_PREFERRED_AUTH_FIRST_KEY] = enabled }
-    }
-
-    override suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[DEVICE_CREDENTIAL_FALLBACK_KEY] = enabled }
-    }
-
-    // --- SystemSettingsRepository ---
     override val isDarkMode: Flow<Boolean?> =
         appContext.settingsDataStore.data.map { it[DARK_MODE_KEY] }
     override val isDynamicColor: Flow<Boolean> =
@@ -226,23 +147,5 @@ class SettingsRepositoryImpl(context: Context) : SecuritySettingsRepository,
 
     override suspend fun setAutoDownloadIcons(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[AUTO_DOWNLOAD_ICONS_KEY] = enabled }
-    }
-
-    // --- BackupSettingsRepository ---
-    override val backupDirectoryUri: Flow<String?> =
-        appContext.settingsDataStore.data.map { it[BACKUP_DIRECTORY_URI_KEY] }
-    override val lastBackupExportFileName: Flow<String?> =
-        appContext.settingsDataStore.data.map { it[LAST_BACKUP_EXPORT_FILE_NAME_KEY] }
-
-    override suspend fun setBackupDirectoryUri(uri: String) {
-        appContext.settingsDataStore.edit { it[BACKUP_DIRECTORY_URI_KEY] = uri }
-    }
-
-    override suspend fun clearBackupDirectoryUri() {
-        appContext.settingsDataStore.edit { it.remove(BACKUP_DIRECTORY_URI_KEY) }
-    }
-
-    override suspend fun setLastBackupExportFileName(fileName: String) {
-        appContext.settingsDataStore.edit { it[LAST_BACKUP_EXPORT_FILE_NAME_KEY] = fileName }
     }
 }

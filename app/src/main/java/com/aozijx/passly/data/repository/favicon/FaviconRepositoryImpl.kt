@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.model.icon.FaviconOutcome
 import com.aozijx.passly.domain.model.icon.FaviconResult
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 
-class FaviconDataRepository(
+class FaviconRepositoryImpl(
     private val appContext: Context
 ) : FaviconRepository {
     override suspend fun downloadFavicon(input: String): FaviconOutcome {

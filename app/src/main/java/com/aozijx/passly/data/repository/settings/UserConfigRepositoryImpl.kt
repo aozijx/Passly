@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.local.config.UserConfigFileStore
+import com.aozijx.passly.data.local.UserConfigFileStore
 import com.aozijx.passly.domain.model.UserConfig
 import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
 import kotlinx.coroutines.CoroutineScope
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class UserConfigDataRepository(
+class UserConfigRepositoryImpl(
     private val store: UserConfigFileStore
 ) : UserConfigRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

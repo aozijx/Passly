@@ -8,6 +8,8 @@ import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
+import com.aozijx.passly.data.repository.vault.internal.diffFields
+import com.aozijx.passly.data.repository.vault.internal.withLockGuard
 import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.model.core.VaultHistory
 import com.aozijx.passly.domain.repository.vault.VaultRepository
@@ -15,14 +17,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 
-class VaultDataRepository(
+class VaultRepositoryImpl(
     private val entryDao: VaultEntryDao,
     private val historyDao: VaultHistoryDao? = null
 ) : VaultRepository {
-
-    private inline fun <T> withLockGuard(onLocked: () -> T, block: () -> T): T {
-        return if (DatabasePassphraseManager.isLocked) onLocked() else block()
-    }
 
     override val allEntries: Flow<List<VaultEntry>> = withLockGuard({ emptyFlow() }) {
         entryDao.observeAll().map { entities ->
@@ -107,7 +105,6 @@ class VaultDataRepository(
         )
         entryDao.update(updated.toEntity())
 
-        // 记录为 ACCESS 类型
         historyDao?.insertHistory(
             VaultHistoryEntity(
                 entryId = entryId,
@@ -128,31 +125,5 @@ class VaultDataRepository(
     override suspend fun deleteAll() {
         if (DatabasePassphraseManager.isLocked) return
         entryDao.deleteAll()
-    }
-
-    companion object {
-        private fun diffFields(
-            old: VaultEntry,
-            new: VaultEntry
-        ): List<Triple<String, String?, String?>> {
-            val diffs = mutableListOf<Triple<String, String?, String?>>()
-            fun check(name: String, oldVal: String?, newVal: String?) {
-                if (oldVal != newVal) diffs.add(Triple(name, oldVal, newVal))
-            }
-            check("title", old.title, new.title)
-            check("username", old.username, new.username)
-            check("password", old.password, new.password)
-            check("email", old.email, new.email)
-            check("totpSecret", old.totpSecret, new.totpSecret)
-            check("notes", old.notes, new.notes)
-            check("cardCvv", old.cardCvv, new.cardCvv)
-            check("cardExpiration", old.cardExpiration, new.cardExpiration)
-            check("sshPrivateKey", old.sshPrivateKey, new.sshPrivateKey)
-            check("cryptoSeedPhrase", old.cryptoSeedPhrase, new.cryptoSeedPhrase)
-            check("idNumber", old.idNumber, new.idNumber)
-            check("paymentPin", old.paymentPin, new.paymentPin)
-            check("securityAnswer", old.securityAnswer, new.securityAnswer)
-            return diffs
-        }
     }
 }

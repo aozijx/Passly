@@ -5,7 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.aozijx.passly.data.entity.VaultHistoryEntity
-import com.aozijx.passly.data.local.config.DatabaseConfig
+import com.aozijx.passly.data.local.DatabaseConfig
 import kotlinx.coroutines.flow.Flow
 
 @Dao

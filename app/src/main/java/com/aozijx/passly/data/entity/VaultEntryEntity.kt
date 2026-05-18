@@ -3,7 +3,7 @@ package com.aozijx.passly.data.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.config.DatabaseConfig
+import com.aozijx.passly.data.local.DatabaseConfig
 import java.io.Serializable
 
 @Entity(

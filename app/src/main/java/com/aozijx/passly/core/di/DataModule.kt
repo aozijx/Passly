@@ -2,18 +2,20 @@ package com.aozijx.passly.core.di
 
 import com.aozijx.passly.AppContext
 import com.aozijx.passly.data.local.AppDatabase
-import com.aozijx.passly.data.local.config.UserConfigFileStore
+import com.aozijx.passly.data.local.UserConfigFileStore
 import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
-import com.aozijx.passly.data.repository.autofill.AutofillServiceDataRepository
+import com.aozijx.passly.data.repository.autofill.AutofillServiceRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
 import com.aozijx.passly.data.repository.database.DatabaseLifecycleRepositoryImpl
-import com.aozijx.passly.data.repository.favicon.FaviconDataRepository
-import com.aozijx.passly.data.repository.history.HistoryDataRepository
-import com.aozijx.passly.data.repository.otp.OtpDataRepository
-import com.aozijx.passly.data.repository.settings.SettingsRepositoryImpl
-import com.aozijx.passly.data.repository.settings.UserConfigDataRepository
-import com.aozijx.passly.data.repository.vault.VaultDataRepository
-import com.aozijx.passly.data.repository.vault.VaultSearchDataRepository
+import com.aozijx.passly.data.repository.favicon.FaviconRepositoryImpl
+import com.aozijx.passly.data.repository.history.HistoryRepositoryImpl
+import com.aozijx.passly.data.repository.otp.OtpRepositoryImpl
+import com.aozijx.passly.data.repository.settings.BackupSettingsRepositoryImpl
+import com.aozijx.passly.data.repository.settings.SecuritySettingsRepositoryImpl
+import com.aozijx.passly.data.repository.settings.SystemSettingsRepositoryImpl
+import com.aozijx.passly.data.repository.settings.UserConfigRepositoryImpl
+import com.aozijx.passly.data.repository.vault.VaultRepositoryImpl
+import com.aozijx.passly.data.repository.vault.VaultSearchRepositoryImpl
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
@@ -36,35 +38,43 @@ object DataModule {
     private val database by lazy { AppDatabase.getDatabase(appContext) }
 
     internal val vaultRepository: VaultRepository by lazy {
-        VaultDataRepository(database.vaultEntryDao(), database.vaultHistoryDao())
+        VaultRepositoryImpl(database.vaultEntryDao(), database.vaultHistoryDao())
     }
 
     internal val vaultSearchRepository: VaultSearchRepository by lazy {
-        VaultSearchDataRepository(database.vaultEntryDao())
+        VaultSearchRepositoryImpl(database.vaultEntryDao())
     }
 
     internal val historyRepository: HistoryRepository by lazy {
-        HistoryDataRepository(database.vaultHistoryDao())
+        HistoryRepositoryImpl(database.vaultHistoryDao())
     }
 
     internal val otpRepository: OtpRepository by lazy {
-        OtpDataRepository()
+        OtpRepositoryImpl()
     }
 
     internal val autofillServiceRepository: AutofillServiceRepository by lazy {
-        AutofillServiceDataRepository(appContext)
+        AutofillServiceRepositoryImpl(appContext)
     }
 
-    private val settingsRepository: SettingsRepositoryImpl by lazy {
-        SettingsRepositoryImpl(appContext)
+    private val securitySettingsRepositoryInstance by lazy {
+        SecuritySettingsRepositoryImpl(appContext)
     }
 
-    internal val securitySettingsRepository: SecuritySettingsRepository get() = settingsRepository
-    internal val systemSettingsRepository: SystemSettingsRepository get() = settingsRepository
-    internal val backupSettingsRepository: BackupSettingsRepository get() = settingsRepository
+    private val systemSettingsRepositoryInstance by lazy {
+        SystemSettingsRepositoryImpl(appContext)
+    }
+
+    private val backupSettingsRepositoryInstance by lazy {
+        BackupSettingsRepositoryImpl(appContext)
+    }
+
+    internal val securitySettingsRepository: SecuritySettingsRepository get() = securitySettingsRepositoryInstance
+    internal val systemSettingsRepository: SystemSettingsRepository get() = systemSettingsRepositoryInstance
+    internal val backupSettingsRepository: BackupSettingsRepository get() = backupSettingsRepositoryInstance
 
     internal val faviconRepository: FaviconRepository by lazy {
-        FaviconDataRepository(appContext)
+        FaviconRepositoryImpl(appContext)
     }
 
     internal val backupRepository: BackupRepository by lazy {
@@ -84,6 +94,6 @@ object DataModule {
     }
 
     internal val userConfigRepository: UserConfigRepository by lazy {
-        UserConfigDataRepository(userConfigStore)
+        UserConfigRepositoryImpl(userConfigStore)
     }
 }

@@ -19,7 +19,7 @@ import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class AutofillServiceDataRepository(
+class AutofillServiceRepositoryImpl(
     context: Context
 ) : AutofillServiceRepository {
 
@@ -54,20 +54,21 @@ class AutofillServiceDataRepository(
         }
     }
 
-    override suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntry> = withContext(Dispatchers.IO) {
-        if (entryIds.isEmpty()) return@withContext emptyList()
-        runCatching {
-            val order = entryIds.withIndex().associate { it.value to it.index }
-            AppDatabase.getDatabase(appContext)
-                .vaultEntryDao()
-                .getEntriesByIds(entryIds)
-                .toDomainList()
-                .sortedBy { order[it.id] ?: Int.MAX_VALUE }
-        }.getOrElse {
-            Logcat.e(TAG, "Failed to load entries by ids", it)
-            emptyList()
+    override suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntry> =
+        withContext(Dispatchers.IO) {
+            if (entryIds.isEmpty()) return@withContext emptyList()
+            runCatching {
+                val order = entryIds.withIndex().associate { it.value to it.index }
+                AppDatabase.getDatabase(appContext)
+                    .vaultEntryDao()
+                    .getEntriesByIds(entryIds)
+                    .toDomainList()
+                    .sortedBy { order[it.id] ?: Int.MAX_VALUE }
+            }.getOrElse {
+                Logcat.e(TAG, "Failed to load entries by ids", it)
+                emptyList()
+            }
         }
-    }
 
     override suspend fun findMatchingCandidates(
         packageName: String?,
@@ -84,7 +85,10 @@ class AutofillServiceDataRepository(
             val entries = dao.getAll().toDomainList()
             val queryCost = System.currentTimeMillis() - queryStart
             if (queryCost >= SLOW_DB_QUERY_MS) {
-                Logcat.w(TAG, "findMatchingEntries query slow: ${queryCost}ms, total=${entries.size}")
+                Logcat.w(
+                    TAG,
+                    "findMatchingEntries query slow: ${queryCost}ms, total=${entries.size}"
+                )
             }
 
             val normalizedPackage = normalizePackageName(packageName)
@@ -94,8 +98,16 @@ class AutofillServiceDataRepository(
                 .filter { supportsAutofill(it) }
                 .mapNotNull { entry ->
                     val matchType = when {
-                        isPackageMatch(entry.associatedAppPackage, normalizedPackage) -> AutofillMatchType.APP
-                        isDomainMatch(entry.associatedDomain, normalizedDomain) -> AutofillMatchType.DOMAIN
+                        isPackageMatch(
+                            entry.associatedAppPackage,
+                            normalizedPackage
+                        ) -> AutofillMatchType.APP
+
+                        isDomainMatch(
+                            entry.associatedDomain,
+                            normalizedDomain
+                        ) -> AutofillMatchType.DOMAIN
+
                         else -> return@mapNotNull null
                     }
                     val rank = if (matchType == AutofillMatchType.APP) 0 else 1
@@ -131,7 +143,10 @@ class AutofillServiceDataRepository(
             val allEntries = dao.getAll().toDomainList()
             val queryCost = System.currentTimeMillis() - queryStart
             if (queryCost >= SLOW_DB_QUERY_MS) {
-                Logcat.w(TAG, "saveOrUpdateEntry query slow: ${queryCost}ms, total=${allEntries.size}")
+                Logcat.w(
+                    TAG,
+                    "saveOrUpdateEntry query slow: ${queryCost}ms, total=${allEntries.size}"
+                )
             }
 
             val matchStart = System.currentTimeMillis()
@@ -141,7 +156,7 @@ class AutofillServiceDataRepository(
                 if (!supportsAutofill(entry)) return@find false
 
                 val scopeMatch = isPackageMatch(entry.associatedAppPackage, normalizedPackage) ||
-                    isDomainMatch(entry.associatedDomain, normalizedDomain)
+                        isDomainMatch(entry.associatedDomain, normalizedDomain)
                 if (!scopeMatch) return@find false
 
                 entry.username == usernameValue
@@ -185,13 +200,15 @@ class AutofillServiceDataRepository(
                 )
 
                 val passwordStrategy = resolveStrategy(EntryType.PASSWORD.value)
-                val fallbackCategory = appContext.getString(R.string.category_autofill).ifBlank { "自动填充" }
+                val fallbackCategory =
+                    appContext.getString(R.string.category_autofill).ifBlank { "自动填充" }
 
                 val newEntry = VaultEntry(
                     title = title,
                     username = usernameValue,
                     password = passwordValue,
-                    category = passwordStrategy?.suggestedCategory().orEmpty().ifBlank { fallbackCategory },
+                    category = passwordStrategy?.suggestedCategory().orEmpty()
+                        .ifBlank { fallbackCategory },
                     associatedAppPackage = packageName,
                     associatedDomain = webDomain,
                     entryType = EntryType.PASSWORD.value,

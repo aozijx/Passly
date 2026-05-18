@@ -18,7 +18,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.LoadingMask
 import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.theme.AppTheme
-import com.aozijx.passly.data.local.config.DatabaseConfig
+import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.features.backup.components.PlainExportDialog
 import com.aozijx.passly.features.backup.components.PlainExportDialogType
 import com.aozijx.passly.features.main.MainSensorController
