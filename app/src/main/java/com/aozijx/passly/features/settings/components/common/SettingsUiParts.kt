@@ -33,8 +33,9 @@ import androidx.compose.ui.unit.dp
 fun SettingsGroupTitle(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
     )
 }
