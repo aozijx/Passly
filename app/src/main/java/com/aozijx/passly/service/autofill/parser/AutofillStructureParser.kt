@@ -1,4 +1,4 @@
-package com.aozijx.passly.service.autofill.engine
+package com.aozijx.passly.service.autofill.parser
 
 import android.app.assist.AssistStructure
 import android.text.InputType
@@ -96,4 +96,3 @@ class AutofillStructureParser(structure: AssistStructure) {
     }
 
 }
-

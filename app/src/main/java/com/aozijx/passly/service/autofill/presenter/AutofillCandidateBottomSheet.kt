@@ -1,4 +1,4 @@
-package com.aozijx.passly.service.autofill
+package com.aozijx.passly.service.autofill.presenter
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.base.VaultItemIcon
 import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,7 +92,6 @@ fun AutofillCandidateBottomSheet(
 private fun CandidateItem(
     entry: VaultEntry, onClick: () -> Unit
 ) {
-    // 调用 AutofillCredentialProvider 进行解密以获取明文用户名
     val decryptedUsername = remember(entry) {
         AutofillCredentialProvider.getBasicCredentials(entry)?.username ?: entry.username
     }
@@ -123,7 +123,6 @@ private fun CandidateItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                // 展示解密后的用户名
                 Text(
                     text = decryptedUsername,
                     style = MaterialTheme.typography.bodyMedium,

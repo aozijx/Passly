@@ -1,38 +1,34 @@
 package com.aozijx.passly.service.autofill
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.service.autofill.Dataset
-import android.service.autofill.Field
+import android.os.Parcelable
 import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
-import android.view.autofill.AutofillValue
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.biometric.BiometricPrompt
 import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.AutofillUiMode
 import com.aozijx.passly.core.crypto.BiometricHelper
-import com.aozijx.passly.core.crypto.CryptoAccess
 import com.aozijx.passly.core.crypto.SessionCryptoKey
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.core.security.otp.TwoFAUtils
 import com.aozijx.passly.core.theme.AppTheme
-import com.aozijx.passly.domain.model.AutofillMatchType
 import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.service.autofill.presentation.AutofillRemoteViewFactory
+import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
+import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
+import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.crypto.Cipher
 
-/**
- * 自动填充验证 Activity
- */
 class AutofillAuthActivity : FragmentActivity() {
     private companion object {
         const val TAG = "AutofillAuthActivity"
@@ -58,13 +54,7 @@ class AutofillAuthActivity : FragmentActivity() {
         if (isUnlockOnly) {
             val pkg = intent.getStringExtra("package_name")
             val domain = intent.getStringExtra("web_domain")
-            performUnlock(
-                usernameId,
-                passwordId,
-                otpId,
-                pkg,
-                domain
-            )
+            performUnlock(usernameId, passwordId, otpId, pkg, domain)
             return
         }
 
@@ -83,15 +73,15 @@ class AutofillAuthActivity : FragmentActivity() {
                     AppTheme {
                         AutofillCandidateBottomSheet(
                             entries = candidateEntries,
-                            onCandidateSelected = { selected: VaultEntry ->
+                            onCandidateSelected = { selected ->
                                 if (!selectionInProgress) {
                                     selectionInProgress = true
                                     authenticateAndFill(
-                                        entry = selected,
-                                        usernameId = usernameId,
-                                        passwordId = passwordId,
-                                        otpId = otpId,
-                                        uiMode = uiMode
+                                        selected,
+                                        usernameId,
+                                        passwordId,
+                                        otpId,
+                                        uiMode
                                     )
                                 }
                             },
@@ -105,20 +95,12 @@ class AutofillAuthActivity : FragmentActivity() {
 
         lifecycleScope.launch {
             val entry = directEntryId?.let { autofillRepository.getEntryById(it) }
-
             if (entry == null) {
                 Logcat.e(TAG, "Entry is null")
                 finish()
                 return@launch
             }
-
-            authenticateAndFill(
-                entry = entry,
-                usernameId = usernameId,
-                passwordId = passwordId,
-                otpId = otpId,
-                uiMode = uiMode
-            )
+            authenticateAndFill(entry, usernameId, passwordId, otpId, uiMode)
         }
     }
 
@@ -130,94 +112,26 @@ class AutofillAuthActivity : FragmentActivity() {
         webDomain: String?
     ) {
         lifecycleScope.launch {
-            val cipher = DatabasePassphraseManager.getInitializedCipher(this@AutofillAuthActivity)
-            val allowDeviceCredentialFallback =
-                if (cipher == null) isDeviceCredentialFallbackEnabled() else false
-            BiometricHelper.authenticate(
-                activity = this@AutofillAuthActivity,
-                title = getString(R.string.vault_auth_decrypt_title),
-                subtitle = getString(R.string.vault_auth_decrypt_subtitle_generic),
-                cryptoObject = cipher?.let { androidx.biometric.BiometricPrompt.CryptoObject(it) },
-                allowDeviceCredentialFallback = allowDeviceCredentialFallback,
-                onSuccess = { result ->
-                    val passphrase =
-                        DatabasePassphraseManager.processResult(this@AutofillAuthActivity, result)
-                DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
-                SessionCryptoKey.deriveAndSet(passphrase)
+            withBiometricAuth(
+                R.string.vault_auth_decrypt_title,
+                R.string.vault_auth_decrypt_subtitle_generic
+            ) { result, cipher ->
+                applyCipherAuth(result, cipher!!)
                 authUseCases.onExternalAuthorized()
 
-                // 解锁成功后，查询候选并返回 FillResponse
                 lifecycleScope.launch {
                     val candidates =
                         autofillRepository.findMatchingCandidates(packageName, webDomain)
                     if (candidates.isEmpty()) {
-                        setResult(RESULT_OK) // 成功解锁但无匹配项
-                        finish()
+                        finishWithOk()
                         return@launch
                     }
-
-                    val responseBuilder = FillResponse.Builder()
-                    candidates.forEach { candidate ->
-                        val entry = candidate.entry
-                        val decryptedUsername =
-                            (CryptoAccess.decryptOrNull(entry.username) ?: "").trim()
-                        val subtitle =
-                            AutofillCredentialProvider.buildSubtitle(entry, decryptedUsername)
-                        val badge = when (candidate.matchType) {
-                            AutofillMatchType.APP -> getString(R.string.autofill_match_app)
-                            AutofillMatchType.DOMAIN -> getString(R.string.autofill_match_domain)
-                            AutofillMatchType.UNKNOWN -> getString(R.string.autofill_match_unknown)
-                        }
-
-                        val presentation = AutofillRemoteViewFactory.createDatasetItem(
-                            context = applicationContext,
-                            entry = entry,
-                            subtitle = subtitle,
-                            badge = badge
-                        )
-
-                        // 这种情况下，数据集也需要 auth，或者我们可以直接填入？
-                        // 为了安全，建议解锁后点击具体项仍需二次验证（硬件解密流程要求），
-                        // 或者这里直接生成带值的 Dataset（因为刚刚已经验证过了）。
-                        // 考虑到用户体验，刚才已经指纹解锁了，这里可以直接返回带值的 Dataset。
-
-                        val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
-                        if (basicCred != null) {
-                            val totpCode =
-                                if (otpId != null && entry.totpSecret?.isNotBlank() == true) {
-                                    TwoFAUtils.generateCurrentTotpFromEntry(entry)
-                                } else null
-
-                            val dataset = buildDataset(
-                                usernameId = usernameId,
-                                passwordId = passwordId,
-                                otpId = otpId,
-                                username = basicCred.username,
-                                password = basicCred.password,
-                                totpCode = totpCode,
-                                presentation = presentation
-                            )
-                            if (dataset != null) {
-                                responseBuilder.addDataset(dataset)
-                            }
-                        }
-                    }
-
-                    val resultIntent = Intent().apply {
-                        putExtra(
-                            AutofillManager.EXTRA_AUTHENTICATION_RESULT,
-                            responseBuilder.build()
-                        )
-                    }
-                    setResult(RESULT_OK, resultIntent)
-                    finish()
+                    val response = AutofillResponseBuilder.buildPostUnlockFillResponse(
+                        applicationContext, candidates, usernameId, passwordId, otpId
+                    )
+                    if (response != null) finishWithOk(response) else cancelAndFinish()
                 }
-                },
-                onError = {
-                    setResult(RESULT_CANCELED)
-                    finish()
-                }
-            )
+            }
         }
     }
 
@@ -228,71 +142,48 @@ class AutofillAuthActivity : FragmentActivity() {
         otpId: AutofillId?,
         uiMode: AutofillUiMode
     ) {
-        Logcat.d(
-            TAG,
-            "authenticateAndFill: entryId=${entry.id}, usernameId=${usernameId != null}, passwordId=${passwordId != null}, otpId=${otpId != null}, uiMode=$uiMode"
-        )
-        // 注意：这里需要传入 CryptoObject 以支持硬件解密
+        Logcat.d(TAG, "authenticateAndFill: entryId=${entry.id}, uiMode=$uiMode")
         lifecycleScope.launch {
-            val cipher = DatabasePassphraseManager.getInitializedCipher(this@AutofillAuthActivity)
-            val allowDeviceCredentialFallback =
-                if (cipher == null) isDeviceCredentialFallbackEnabled() else false
-            BiometricHelper.authenticate(
-                activity = this@AutofillAuthActivity,
-                title = getString(R.string.autofill_auth_title),
-                subtitle = getString(R.string.autofill_auth_subtitle),
-                cryptoObject = cipher?.let { androidx.biometric.BiometricPrompt.CryptoObject(it) },
-                allowDeviceCredentialFallback = allowDeviceCredentialFallback,
-                onSuccess = { result ->
-                // 确保解密口令已就绪（如果刚才还没就绪的话）
-                if (DatabasePassphraseManager.isLocked) {
-                    val passphrase =
-                        DatabasePassphraseManager.processResult(this@AutofillAuthActivity, result)
-                    DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
-                }
-                if (!SessionCryptoKey.isSessionKeyAvailable) {
-                    SessionCryptoKey.deriveAndSet(DatabasePassphraseManager.getPassphrase())
+            withBiometricAuth(
+                R.string.autofill_auth_title,
+                R.string.autofill_auth_subtitle,
+                onError = { selectionInProgress = false }
+            ) { result, cipher ->
+                if (cipher != null) {
+                    applyCipherAuth(result, cipher)
+                } else if (!DatabasePassphraseManager.isLocked) {
+                    ensureSessionKey()
+                } else {
+                    Toast.makeText(this@AutofillAuthActivity, "需要重新授权", Toast.LENGTH_SHORT)
+                        .show()
+                    cancelAndFinish()
+                    return@withBiometricAuth
                 }
                 authUseCases.onExternalAuthorized()
 
-                // 调用 getBasicCredentials 触发解密
                 val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
                 if (basicCred == null) {
                     Logcat.e(TAG, "Failed to decrypt credentials")
                     Toast.makeText(this@AutofillAuthActivity, "解密失败", Toast.LENGTH_SHORT).show()
-                    setResult(RESULT_CANCELED)
-                    finish()
-                    return@authenticate
+                    cancelAndFinish()
+                    return@withBiometricAuth
                 }
 
-                val totpCode = if (otpId != null && entry.totpSecret?.isNotBlank() == true) {
-                    TwoFAUtils.generateCurrentTotpFromEntry(entry)
-                } else null
+                val totpCode = if (otpId != null && entry.totpSecret?.isNotBlank() == true)
+                    TwoFAUtils.generateCurrentTotpFromEntry(entry) else null
 
-                val dataset = buildDataset(
-                    usernameId = usernameId,
-                    passwordId = passwordId,
-                    otpId = otpId,
-                    username = basicCred.username,
-                    password = basicCred.password,
-                    totpCode = totpCode
+                val dataset = AutofillResponseBuilder.createFillDataset(
+                    usernameId, passwordId, otpId,
+                    basicCred.username, basicCred.password, totpCode
                 )
 
                 if (dataset != null) {
-                    val resultIntent = Intent()
-                    if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
-                        resultIntent.putExtra(
-                            AutofillManager.EXTRA_AUTHENTICATION_RESULT,
-                            FillResponse.Builder().addDataset(dataset).build()
-                        )
-                    } else {
-                        resultIntent.putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset)
-                    }
-                    setResult(RESULT_OK, resultIntent)
                     Logcat.i(TAG, "Autofill result built successfully (uiMode=$uiMode)")
-
-                    lifecycleScope.launch {
-                        autofillRepository.updateUsageStats(entry)
+                    lifecycleScope.launch { autofillRepository.updateUsageStats(entry) }
+                    if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
+                        finishWithOk(FillResponse.Builder().addDataset(dataset).build())
+                    } else {
+                        finishWithOk(dataset)
                     }
                 } else {
                     Logcat.w(TAG, "Autofill dataset is null, canceling fill")
@@ -301,67 +192,67 @@ class AutofillAuthActivity : FragmentActivity() {
                         "当前页面未识别到可填充字段",
                         Toast.LENGTH_SHORT
                     ).show()
-                    setResult(RESULT_CANCELED)
+                    cancelAndFinish()
                 }
-                finish()
-            },
-                onError = { error ->
-                    Logcat.e(TAG, "Auth failed: $error")
-                    setResult(RESULT_CANCELED)
-                    selectionInProgress = false
-                    finish()
-                }
-            )
+            }
         }
+    }
+
+    private suspend fun withBiometricAuth(
+        titleRes: Int,
+        subtitleRes: Int,
+        onError: (() -> Unit)? = null,
+        onSuccess: (BiometricPrompt.AuthenticationResult, cipher: Cipher?) -> Unit
+    ) {
+        val cipher = DatabasePassphraseManager.getInitializedCipher(this)
+        val allowFallback = if (cipher == null) isDeviceCredentialFallbackEnabled() else false
+        BiometricHelper.authenticate(
+            activity = this,
+            title = getString(titleRes),
+            subtitle = getString(subtitleRes),
+            cryptoObject = cipher?.let { BiometricPrompt.CryptoObject(it) },
+            allowDeviceCredentialFallback = allowFallback,
+            onSuccess = { result -> onSuccess(result, cipher) },
+            onError = { error ->
+                Logcat.e(TAG, "Auth failed: $error")
+                onError?.invoke()
+                cancelAndFinish()
+            }
+        )
+    }
+
+    private fun applyCipherAuth(result: BiometricPrompt.AuthenticationResult, cipher: Cipher) {
+        val passphrase = DatabasePassphraseManager.processResult(this, result)
+        DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+        SessionCryptoKey.deriveAndSet(passphrase)
+    }
+
+    private fun ensureSessionKey() {
+        if (!SessionCryptoKey.isSessionKeyAvailable) {
+            SessionCryptoKey.deriveAndSet(DatabasePassphraseManager.getPassphrase())
+        }
+    }
+
+    private fun finishWithOk() {
+        setResult(RESULT_OK)
+        finish()
+    }
+
+    private fun finishWithOk(extra: Parcelable) {
+        setResult(RESULT_OK, Intent().apply {
+            putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, extra)
+        })
+        finish()
+    }
+
+    private fun cancelAndFinish() {
+        setResult(RESULT_CANCELED)
+        finish()
     }
 
     private suspend fun isDeviceCredentialFallbackEnabled(): Boolean {
         return runCatching {
             securitySettingsUseCases.isDeviceCredentialFallbackEnabled.first()
         }.getOrDefault(true)
-    }
-
-    private fun buildDataset(
-        usernameId: AutofillId?,
-        passwordId: AutofillId?,
-        otpId: AutofillId?,
-        username: String,
-        password: String,
-        totpCode: String?,
-        presentation: android.widget.RemoteViews? = null
-    ): Dataset? {
-        val builder = Dataset.Builder()
-        var added = false
-
-        fun addField(id: AutofillId?, text: String?) {
-            if (id == null || text.isNullOrBlank()) return
-            val value = AutofillValue.forText(text)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val fieldBuilder = Field.Builder().setValue(value)
-                if (presentation != null) {
-                    fieldBuilder.setPresentations(
-                        android.service.autofill.Presentations.Builder()
-                            .setMenuPresentation(presentation)
-                            .build()
-                    )
-                }
-                builder.setField(id, fieldBuilder.build())
-            } else {
-                @Suppress("DEPRECATION")
-                if (presentation != null) {
-                    builder.setValue(id, value, presentation)
-                } else {
-                    builder.setValue(id, value)
-                }
-            }
-            added = true
-        }
-
-        addField(usernameId, username)
-        addField(passwordId, password)
-        addField(otpId, totpCode)
-
-        return if (added) builder.build() else null
     }
 }

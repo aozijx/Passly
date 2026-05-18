@@ -1,4 +1,4 @@
-package com.aozijx.passly.service.autofill
+package com.aozijx.passly.service.autofill.credential
 
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.core.crypto.CryptoAccess
@@ -7,10 +7,6 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 
-/**
- * 自动填充凭据提供器
- * 负责在自动填充流程中解密用户名和密码
- */
 object AutofillCredentialProvider {
     private const val TAG = "AutofillCredentialProvider"
 
@@ -19,9 +15,6 @@ object AutofillCredentialProvider {
         val password: String
     )
 
-    /**
-     * 解密凭据，内部已封装 AES-GCM 解密逻辑
-     */
     fun getBasicCredentials(item: VaultEntry): BasicCredentials? {
         Logcat.d(TAG, "Attempting decryption for item: ${item.title} (ID: ${item.id})")
 
@@ -40,9 +33,6 @@ object AutofillCredentialProvider {
         }
     }
 
-    /**
-     * 构建数据集展示的副标题（用户名 + 策略摘要）
-     */
     fun buildSubtitle(entry: VaultEntry, decryptedUsername: String): String {
         EntryTypeStrategyRegistry.ensureRegistered()
         val strategy = runCatching {

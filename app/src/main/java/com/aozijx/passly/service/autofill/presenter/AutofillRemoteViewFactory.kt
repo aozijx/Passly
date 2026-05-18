@@ -1,4 +1,4 @@
-package com.aozijx.passly.service.autofill.presentation
+package com.aozijx.passly.service.autofill.presenter
 
 import android.content.Context
 import android.widget.RemoteViews
@@ -7,9 +7,6 @@ import com.aozijx.passly.domain.model.core.VaultEntry
 
 object AutofillRemoteViewFactory {
 
-    /**
-     * 创建 SYSTEM_INLINE 模式下每条候选账号的展示行（显示在键盘候选条 / 下拉菜单中）。
-     */
     fun createDatasetItem(
         context: Context,
         entry: VaultEntry,
@@ -23,9 +20,6 @@ object AutofillRemoteViewFactory {
         }
     }
 
-    /**
-     * 创建提示解锁的触发条。
-     */
     fun createUnlockTrigger(context: Context): RemoteViews {
         return RemoteViews(context.packageName, R.layout.autofill_dataset_item).apply {
             setTextViewText(R.id.item_title, context.getString(R.string.vault_locked_title))
@@ -34,12 +28,6 @@ object AutofillRemoteViewFactory {
         }
     }
 
-    /**
-     * 创建 BOTTOM_SHEET 模式下唯一一条"踏板"入口。
-     * 用户点击后由 AutofillAuthActivity 弹出半屏候选列表。
-     *
-     * @param candidateCount 找到的匹配账号数量，用于生成副标题文案
-     */
     fun createBottomSheetTrigger(
         context: Context,
         candidateCount: Int
