@@ -30,6 +30,7 @@ class VerificationCoordinator(
         activity: FragmentActivity,
         title: String,
         subtitle: String,
+        forceReauth: Boolean,
         onResult: (AppResult<Unit>) -> Unit
     ) {
         when (val validation = requestValidator.validateRequest(activity, title)) {
@@ -50,7 +51,11 @@ class VerificationCoordinator(
         }
 
         scope.launch {
-            val result = authUseCases.authenticate(activity, title, subtitle)
+            val result = if (forceReauth) {
+                authUseCases.verifyIdentity(activity, title, subtitle)
+            } else {
+                authUseCases.authenticate(activity, title, subtitle)
+            }
             result.onFailure { _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage())) }
             onResult(result)
         }

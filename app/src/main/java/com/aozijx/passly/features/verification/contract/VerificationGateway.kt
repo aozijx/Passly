@@ -12,6 +12,7 @@ interface VerificationGateway {
         activity: FragmentActivity,
         title: String,
         subtitle: String,
+        forceReauth: Boolean = false,
         onResult: (AppResult<Unit>) -> Unit
     )
 

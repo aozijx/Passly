@@ -104,7 +104,7 @@ fun rememberVaultActionProvider(
                 actionType = action,
                 item = item,
                 onAuthRequired = { ok ->
-                    mainViewModel.requestAuth(
+                    mainViewModel.requestReauth(
                         activity, authTitle, item.title, onSuccess = ok
                     )
                 },

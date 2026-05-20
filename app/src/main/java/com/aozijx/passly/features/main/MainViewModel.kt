@@ -82,6 +82,21 @@ class MainViewModel(
         }
     }
 
+    fun requestReauth(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String,
+        onSuccess: () -> Unit = {},
+        onError: ((String) -> Unit)? = null
+    ) {
+        authCoordinator.verifyWithBiometric(
+            activity, title, subtitle, forceReauth = true
+        ) { result ->
+            result.onSuccess { onSuccess() }
+                .onFailure { error -> onError?.invoke(error.toUiMessage()) }
+        }
+    }
+
     private fun observeAuthStates() {
         viewModelScope.launch {
             authCoordinator.isAuthorized.collect { authorized ->
