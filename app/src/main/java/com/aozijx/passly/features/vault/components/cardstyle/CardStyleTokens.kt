@@ -1,9 +1,9 @@
-package com.aozijx.passly.features.vault.components
+package com.aozijx.passly.features.vault.components.cardstyle
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-object VaultCardStyleTokens {
+object CardStyleTokens {
 
     object Base {
         val corner = 16.dp

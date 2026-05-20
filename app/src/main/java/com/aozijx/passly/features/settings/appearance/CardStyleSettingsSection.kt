@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
-import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
+import com.aozijx.passly.features.vault.components.cardstyle.CardStyleRegistry
 
 @Composable
 fun CardStyleSettingsSection(
@@ -263,7 +263,7 @@ private fun CardStyleOption(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            VaultCardStyleRegistry.RenderPreviewVaultItem(
+            CardStyleRegistry.RenderPreviewVaultItem(
                 style = style, entryTypeValue = entryTypeValue, onClick = onClick
             )
         }

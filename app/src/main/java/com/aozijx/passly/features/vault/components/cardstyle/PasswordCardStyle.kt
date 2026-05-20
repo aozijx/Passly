@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.vault.components.entries
+package com.aozijx.passly.features.vault.components.cardstyle
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -44,7 +44,6 @@ import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.vault.components.VaultCardStyleTokens
 
 private object PasswordCardPaletteCache {
     private const val MAX = 48
@@ -81,7 +80,7 @@ fun PasswordStyleVaultItem(
         else -> "受保护的登录凭据"
     }
     val imageModel = remember(entry.iconCustomPath) { toLocalIconImageModel(entry.iconCustomPath) }
-    val corner = RoundedCornerShape(VaultCardStyleTokens.Password.corner)
+    val corner = RoundedCornerShape(CardStyleTokens.Password.corner)
 
     var accentColor by remember(imageModel) { mutableStateOf<Color?>(null) }
     var onAccentColor by remember(imageModel) { mutableStateOf<Color?>(null) }
@@ -115,21 +114,21 @@ fun PasswordStyleVaultItem(
         }
     }
 
-    val chipBg = accentColor?.copy(alpha = VaultCardStyleTokens.Password.CHIP_BG_ALPHA)
-        ?: MaterialTheme.colorScheme.primaryContainer.copy(alpha = VaultCardStyleTokens.Password.CHIP_FALLBACK_BG_ALPHA)
+    val chipBg = accentColor?.copy(alpha = CardStyleTokens.Password.CHIP_BG_ALPHA)
+        ?: MaterialTheme.colorScheme.primaryContainer.copy(alpha = CardStyleTokens.Password.CHIP_FALLBACK_BG_ALPHA)
     val chipFg = onAccentColor ?: MaterialTheme.colorScheme.onPrimaryContainer
     val overlayTop = (accentColor ?: MaterialTheme.colorScheme.primary).copy(
         alpha = if (imageModel.isNullOrBlank()) {
-            VaultCardStyleTokens.Password.NO_IMAGE_TOP_OVERLAY_ALPHA
+            CardStyleTokens.Password.NO_IMAGE_TOP_OVERLAY_ALPHA
         } else {
-            VaultCardStyleTokens.Password.WITH_IMAGE_TOP_OVERLAY_ALPHA
+            CardStyleTokens.Password.WITH_IMAGE_TOP_OVERLAY_ALPHA
         }
     )
     val overlayBottom = MaterialTheme.colorScheme.surface.copy(
         alpha = if (imageModel.isNullOrBlank()) {
-            VaultCardStyleTokens.Password.NO_IMAGE_BOTTOM_OVERLAY_ALPHA
+            CardStyleTokens.Password.NO_IMAGE_BOTTOM_OVERLAY_ALPHA
         } else {
-            VaultCardStyleTokens.Password.WITH_IMAGE_BOTTOM_OVERLAY_ALPHA
+            CardStyleTokens.Password.WITH_IMAGE_BOTTOM_OVERLAY_ALPHA
         }
     )
 
@@ -140,7 +139,7 @@ fun PasswordStyleVaultItem(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = VaultCardStyleTokens.Password.elevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = CardStyleTokens.Password.elevation)
     ) {
         Box(
             modifier = Modifier
@@ -154,7 +153,7 @@ fun PasswordStyleVaultItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .matchParentSize()
-                        .alpha(VaultCardStyleTokens.Password.IMAGE_OVERLAY_ALPHA)
+                        .alpha(CardStyleTokens.Password.IMAGE_OVERLAY_ALPHA)
                 )
             }
             Box(
@@ -171,10 +170,10 @@ fun PasswordStyleVaultItem(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(VaultCardStyleTokens.Password.contentPadding)
+                    modifier = Modifier.padding(CardStyleTokens.Password.contentPadding)
                 ) {
                     VaultItemIcon(Modifier, entry)
-                    Spacer(modifier = Modifier.width(VaultCardStyleTokens.Password.iconTextSpacing))
+                    Spacer(modifier = Modifier.width(CardStyleTokens.Password.iconTextSpacing))
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -195,7 +194,7 @@ fun PasswordStyleVaultItem(
                             text = tertiaryText,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                alpha = VaultCardStyleTokens.Password.TERTIARY_TEXT_ALPHA
+                                alpha = CardStyleTokens.Password.TERTIARY_TEXT_ALPHA
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -203,23 +202,23 @@ fun PasswordStyleVaultItem(
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(VaultCardStyleTokens.Password.chipCorner),
+                        shape = RoundedCornerShape(CardStyleTokens.Password.chipCorner),
                         color = chipBg
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(
-                                horizontal = VaultCardStyleTokens.Password.chipHorizontalPadding,
-                                vertical = VaultCardStyleTokens.Password.chipVerticalPadding
+                                horizontal = CardStyleTokens.Password.chipHorizontalPadding,
+                                vertical = CardStyleTokens.Password.chipVerticalPadding
                             )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Key,
                                 contentDescription = null,
                                 tint = chipFg,
-                                modifier = Modifier.size(VaultCardStyleTokens.Password.chipIconSize)
+                                modifier = Modifier.size(CardStyleTokens.Password.chipIconSize)
                             )
-                            Spacer(modifier = Modifier.width(VaultCardStyleTokens.Password.chipIconTextSpacing))
+                            Spacer(modifier = Modifier.width(CardStyleTokens.Password.chipIconTextSpacing))
                             Text(
                                 text = "PASSWORD",
                                 style = MaterialTheme.typography.labelSmall,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.vault.components.entries
+package com.aozijx.passly.features.vault.components.cardstyle
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -9,14 +9,8 @@ import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.vault.components.VaultItem
-import com.aozijx.passly.features.vault.components.items.AutoFillItem
-import com.aozijx.passly.features.vault.components.items.TwoFAItem
 
-/**
- * Single source of truth for card-style availability and rendering.
- */
-object VaultCardStyleRegistry {
+object CardStyleRegistry {
     private val previewBaseEntry = VaultSummary(
         id = -100,
         title = "示例账号",
@@ -63,6 +57,7 @@ object VaultCardStyleRegistry {
                             onClick = onClick
                         )
                     }
+
                     isAutofill -> {
                         AutoFillItem(
                             entry = entry,
@@ -70,6 +65,7 @@ object VaultCardStyleRegistry {
                             onClick = onClick
                         )
                     }
+
                     else -> {
                         VaultItem(entry = entry, onClick = onClick)
                     }
@@ -91,7 +87,6 @@ object VaultCardStyleRegistry {
                         onClick = onClick
                     )
                 } else {
-                    // 非 TOTP 条目选了 TOTP 样式，回退到基础款
                     VaultItem(entry = entry, onClick = onClick)
                 }
             }

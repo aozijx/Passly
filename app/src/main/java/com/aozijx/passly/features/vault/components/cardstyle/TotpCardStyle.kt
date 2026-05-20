@@ -1,4 +1,4 @@
-package com.aozijx.passly.features.vault.components.entries
+package com.aozijx.passly.features.vault.components.cardstyle
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -34,7 +34,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.vault.components.VaultCardStyleTokens
 
 private object TotpBehaviorTokens {
     const val FALLBACK_CODE = "------"
@@ -87,47 +86,45 @@ fun TotpStyleVaultItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = VaultCardStyleTokens.Totp.marginHorizontal,
-                vertical = VaultCardStyleTokens.Totp.marginVertical
+                horizontal = CardStyleTokens.Totp.marginHorizontal,
+                vertical = CardStyleTokens.Totp.marginVertical
             ),
-        shape = RoundedCornerShape(VaultCardStyleTokens.Totp.corner),
+        shape = RoundedCornerShape(CardStyleTokens.Totp.corner),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = VaultCardStyleTokens.Totp.elevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = CardStyleTokens.Totp.elevation)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(VaultCardStyleTokens.Totp.corner))
+                .clip(RoundedCornerShape(CardStyleTokens.Totp.corner))
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.surfaceVariant.copy(
-                                alpha = VaultCardStyleTokens.Totp.SURFACE_GRADIENT_TOP_ALPHA
+                                alpha = CardStyleTokens.Totp.SURFACE_GRADIENT_TOP_ALPHA
                             ), MaterialTheme.colorScheme.surface
                         )
                     )
                 )
-                .padding(VaultCardStyleTokens.Totp.contentPadding)
+                .padding(CardStyleTokens.Totp.contentPadding)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(VaultCardStyleTokens.Totp.rowSpacing)
+                horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.rowSpacing)
             ) {
-                // 图标区域
                 Box(
                     modifier = Modifier
-                        .size(VaultCardStyleTokens.Totp.iconContainerSize)
+                        .size(CardStyleTokens.Totp.iconContainerSize)
                         .background(
                             color = MaterialTheme.colorScheme.secondaryContainer.copy(
-                                alpha = VaultCardStyleTokens.Totp.ICON_CONTAINER_ALPHA
+                                alpha = CardStyleTokens.Totp.ICON_CONTAINER_ALPHA
                             ),
-                            shape = RoundedCornerShape(VaultCardStyleTokens.Totp.iconContainerCorner)
+                            shape = RoundedCornerShape(CardStyleTokens.Totp.iconContainerCorner)
                         ), contentAlignment = Alignment.Center
                 ) {
                     VaultItemIcon(Modifier, entry)
                 }
 
-                // 信息区域
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = entry.title,
@@ -145,32 +142,31 @@ fun TotpStyleVaultItem(
                     )
                 }
 
-                // 代码与进度区域
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(VaultCardStyleTokens.Totp.codeColumnSpacing)
+                    verticalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.codeColumnSpacing)
                 ) {
                     if (showCode) {
                         Text(
                             text = shownCode, style = MaterialTheme.typography.titleLarge.copy(
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = VaultCardStyleTokens.Totp.codeLetterSpacing,
-                                fontSize = VaultCardStyleTokens.Totp.codeFontSize
+                                letterSpacing = CardStyleTokens.Totp.codeLetterSpacing,
+                                fontSize = CardStyleTokens.Totp.codeFontSize
                             ), color = MaterialTheme.colorScheme.primary
                         )
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(VaultCardStyleTokens.Totp.progressRowSpacing)
+                            horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.progressRowSpacing)
                         ) {
                             CircularProgressIndicator(
                                 progress = { progress },
-                                modifier = Modifier.size(VaultCardStyleTokens.Totp.progressSize),
-                                strokeWidth = VaultCardStyleTokens.Totp.progressStrokeWidth,
+                                modifier = Modifier.size(CardStyleTokens.Totp.progressSize),
+                                strokeWidth = CardStyleTokens.Totp.progressStrokeWidth,
                                 color = progressColor,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                                    alpha = VaultCardStyleTokens.Totp.PROGRESS_TRACK_ALPHA
+                                    alpha = CardStyleTokens.Totp.PROGRESS_TRACK_ALPHA
                                 )
                             )
                             Text(
@@ -185,9 +181,9 @@ fun TotpStyleVaultItem(
                             imageVector = Icons.Default.LockClock,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary.copy(
-                                alpha = VaultCardStyleTokens.Totp.LOCK_ICON_TINT_ALPHA
+                                alpha = CardStyleTokens.Totp.LOCK_ICON_TINT_ALPHA
                             ),
-                            modifier = Modifier.size(VaultCardStyleTokens.Totp.lockIconSize)
+                            modifier = Modifier.size(CardStyleTokens.Totp.lockIconSize)
                         )
                     }
                 }

@@ -24,7 +24,7 @@ import com.aozijx.passly.core.designsystem.widgets.createSwipeAction
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.model.presentation.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.vault.components.entries.VaultCardStyleRegistry
+import com.aozijx.passly.features.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.features.vault.contract.VaultUiState
 import com.aozijx.passly.features.vault.model.VaultTab
 
@@ -114,7 +114,7 @@ private fun VaultListItemRow(
         modifier = Modifier.fillMaxWidth(),
         isActive = isSwipeEnabled,
     ) {
-        VaultCardStyleRegistry.RenderVaultItem(
+        CardStyleRegistry.RenderVaultItem(
             style = cardStyle, entry = item, viewModel = vaultViewModel
         )
     }
