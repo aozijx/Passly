@@ -141,7 +141,6 @@ fun VaultContent(
             pagerState = pagerState,
             uiState = uiState,
             perTypeStyleMap = perTypeStyleMap,
-            defaultCardStyle = settingsUiState.cardStyle,
             swipeLeftAction = settingsUiState.swipeLeftAction,
             swipeRightAction = settingsUiState.swipeRightAction,
             isSwipeEnabled = settingsUiState.isSwipeEnabled,

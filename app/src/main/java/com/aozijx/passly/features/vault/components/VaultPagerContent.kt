@@ -33,7 +33,6 @@ fun VaultPagerContent(
     pagerState: PagerState,
     uiState: VaultUiState,
     perTypeStyleMap: Map<Int, VaultCardStyle>,
-    defaultCardStyle: VaultCardStyle,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
@@ -59,7 +58,6 @@ fun VaultPagerContent(
                     VaultListItemRow(
                         item = item,
                         perTypeStyleMap = perTypeStyleMap,
-                        defaultCardStyle = defaultCardStyle,
                         swipeLeftAction = swipeLeftAction,
                         swipeRightAction = swipeRightAction,
                         isSwipeEnabled = isSwipeEnabled,
@@ -81,16 +79,15 @@ fun VaultPagerContent(
 private fun VaultListItemRow(
     item: VaultSummary,
     perTypeStyleMap: Map<Int, VaultCardStyle>,
-    defaultCardStyle: VaultCardStyle,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
     onSwipeTriggered: (SwipeActionType, VaultSummary) -> Unit,
     vaultViewModel: VaultViewModel
 ) {
-    val cardStyle = remember(item.entryType, perTypeStyleMap, defaultCardStyle) {
+    val cardStyle = remember(item.entryType, perTypeStyleMap) {
         perTypeStyleMap[item.entryType]?.takeIf { it != VaultCardStyle.DEFAULT }
-            ?: VaultCardStyle.resolveForEntryType(defaultCardStyle, item.entryType)
+            ?: VaultCardStyle.DEFAULT
     }
     val colorScheme = MaterialTheme.colorScheme
     val actions =

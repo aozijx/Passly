@@ -52,10 +52,6 @@ object VaultCardStyleRegistry {
         val isTotp = entry.totpSecret?.isNotBlank() == true
         val isAutofill = entry.category == stringResource(R.string.category_autofill)
 
-        // 核心渲染分发：
-        // 1. DEFAULT 的最终落地样式由 UiTypes.resolveForEntryType 预先决策
-        // 2. 这里仅按传入的最终样式做渲染分发
-
         when (style) {
             VaultCardStyle.DEFAULT -> {
                 when {

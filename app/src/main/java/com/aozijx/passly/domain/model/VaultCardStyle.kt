@@ -84,20 +84,5 @@ enum class VaultCardStyle(
             return if (style in styleConfig.settingsStyles) style else styleConfig.globalDefaultStyle
         }
 
-        fun resolveForEntryType(
-            selectedStyle: VaultCardStyle, entryTypeValue: Int
-        ): VaultCardStyle {
-            val policy = policyFor(EntryType.fromValue(entryTypeValue))
-            val normalizedSelectedStyle = if (selectedStyle in policy.selectableStyles) {
-                selectedStyle
-            } else {
-                DEFAULT
-            }
-            return if (normalizedSelectedStyle == DEFAULT) {
-                policy.defaultStyle
-            } else {
-                normalizedSelectedStyle
-            }
-        }
     }
 }
