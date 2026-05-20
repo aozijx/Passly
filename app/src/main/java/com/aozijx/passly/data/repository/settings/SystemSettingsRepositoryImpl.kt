@@ -21,6 +21,7 @@ import com.aozijx.passly.data.repository.settings.internal.SWIPE_RIGHT_ACTION_KE
 import com.aozijx.passly.data.repository.settings.internal.TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY
 import com.aozijx.passly.data.repository.settings.internal.VISIBLE_VAULT_TABS_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
+import com.aozijx.passly.domain.config.AppDefaults
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -32,50 +33,69 @@ class SystemSettingsRepositoryImpl(context: Context) : SystemSettingsRepository 
     override val isDarkMode: Flow<Boolean?> =
         appContext.settingsDataStore.data.map { it[DARK_MODE_KEY] }
     override val isDynamicColor: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[DYNAMIC_COLOR_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[DYNAMIC_COLOR_KEY] ?: AppDefaults.Display.DEFAULT_DYNAMIC_COLOR
+        }
     override val cardStyle: Flow<VaultCardStyle> = appContext.settingsDataStore.data.map { prefs ->
         val globalStyle =
             SettingsMapper.parseCardStyleMap(prefs[CARD_STYLE_MAP_KEY])[DEFAULT_STYLE_KEY]
                 ?: VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY])
-        VaultCardStyle.normalizeGlobalStyle(globalStyle)
+        AppDefaults.CardStyle.normalizeGlobalStyle(globalStyle)
     }
     override val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>> =
         appContext.settingsDataStore.data.map { prefs ->
             val parsed = SettingsMapper.parseCardStyleMap(prefs[CARD_STYLE_MAP_KEY]).toMutableMap()
             if (parsed[DEFAULT_STYLE_KEY] == null) {
                 parsed[DEFAULT_STYLE_KEY] =
-                    VaultCardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
+                    AppDefaults.CardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
             } else {
                 parsed[DEFAULT_STYLE_KEY] =
-                    VaultCardStyle.normalizeGlobalStyle(parsed[DEFAULT_STYLE_KEY]!!)
+                    AppDefaults.CardStyle.normalizeGlobalStyle(parsed[DEFAULT_STYLE_KEY]!!)
             }
             parsed.toMap()
         }
     override val isStatusBarAutoHide: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[AUTO_HIDE_STATUS_BAR_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[AUTO_HIDE_STATUS_BAR_KEY] ?: AppDefaults.Display.DEFAULT_STATUS_BAR_AUTO_HIDE
+        }
     override val isTopBarCollapsible: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[COLLAPSE_TOP_BAR_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[COLLAPSE_TOP_BAR_KEY] ?: AppDefaults.Display.DEFAULT_TOP_BAR_COLLAPSIBLE
+        }
     override val isTabBarCollapsible: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[COLLAPSE_TAB_BAR_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[COLLAPSE_TAB_BAR_KEY] ?: AppDefaults.Display.DEFAULT_TAB_BAR_COLLAPSIBLE
+        }
     override val isSwipeEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[SWIPE_ENABLED_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[SWIPE_ENABLED_KEY] ?: AppDefaults.Vault.DEFAULT_SWIPE_ENABLED
+        }
     override val swipeLeftAction: Flow<SwipeActionType> = appContext.settingsDataStore.data.map {
-        SwipeActionType.fromString(it[SWIPE_LEFT_ACTION_KEY] ?: SwipeActionType.COPY_PASSWORD.name)
+        SwipeActionType.fromString(
+            it[SWIPE_LEFT_ACTION_KEY] ?: AppDefaults.Vault.DEFAULT_SWIPE_LEFT_ACTION.name
+        )
     }
     override val swipeRightAction: Flow<SwipeActionType> = appContext.settingsDataStore.data.map {
-        SwipeActionType.fromString(it[SWIPE_RIGHT_ACTION_KEY] ?: SwipeActionType.DETAIL.name)
+        SwipeActionType.fromString(
+            it[SWIPE_RIGHT_ACTION_KEY] ?: AppDefaults.Vault.DEFAULT_SWIPE_RIGHT_ACTION.name
+        )
     }
     override val autofillUiMode: Flow<AutofillUiMode> = appContext.settingsDataStore.data.map {
-        AutofillUiMode.fromKey(it[AUTOFILL_UI_MODE_KEY])
+        AutofillUiMode.fromKey(
+            it[AUTOFILL_UI_MODE_KEY] ?: AppDefaults.Vault.DEFAULT_AUTOFILL_UI_MODE.key
+        )
     }
     override val visibleVaultTabs: Flow<Set<String>?> = appContext.settingsDataStore.data.map {
         SettingsMapper.decodeVisibleTabs(it[VISIBLE_VAULT_TABS_KEY])
     }
     override val tabBarMaxTabsWithoutScroll: Flow<Int> = appContext.settingsDataStore.data.map {
-        (it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] ?: 4).coerceIn(2, 8)
+        (it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] ?: AppDefaults.Vault.DEFAULT_TAB_BAR_MAX_TABS)
+            .coerceIn(AppDefaults.Vault.TAB_THRESHOLD_MIN, AppDefaults.Vault.TAB_THRESHOLD_MAX)
     }
     override val isAutoDownloadIcons: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[AUTO_DOWNLOAD_ICONS_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[AUTO_DOWNLOAD_ICONS_KEY] ?: AppDefaults.Display.DEFAULT_AUTO_DOWNLOAD_ICONS
+        }
 
     override suspend fun setDarkMode(enabled: Boolean?) {
         appContext.settingsDataStore.edit {
@@ -102,7 +122,7 @@ class SystemSettingsRepositoryImpl(context: Context) : SystemSettingsRepository 
             if (style == VaultCardStyle.DEFAULT) map.remove(entryTypeValue) else map[entryTypeValue] =
                 style
             if (map[DEFAULT_STYLE_KEY] == null) map[DEFAULT_STYLE_KEY] =
-                VaultCardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
+                AppDefaults.CardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
             prefs[CARD_STYLE_MAP_KEY] = SettingsMapper.encodeCardStyleMap(map)
         }
     }

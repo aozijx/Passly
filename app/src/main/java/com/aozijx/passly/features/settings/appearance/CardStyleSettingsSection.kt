@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.config.AppDefaults
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.vault.components.cardstyle.CardStyleRegistry
 
@@ -60,7 +61,7 @@ fun CardStyleSettingsSection(
         EntryType.PASSWORD.value to onPasswordStyleSelected,
         EntryType.TOTP.value to onTotpStyleSelected
     )
-    val groups = VaultCardStyle.settingsGroupSpecs.map { spec ->
+    val groups = AppDefaults.CardStyle.SETTINGS_GROUP_SPECS.map { spec ->
         spec to spec.styleCandidates.filter { it in availableStyles }
     }
 
@@ -140,7 +141,7 @@ fun CardStyleSettingsSection(
 
 @Composable
 private fun CardStyleGroup(
-    spec: VaultCardStyle.Companion.SettingsGroupSpec,
+    spec: AppDefaults.CardStyle.SettingsGroupSpec,
     styles: List<VaultCardStyle>,
     selectedStyle: VaultCardStyle,
     expanded: Boolean,

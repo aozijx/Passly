@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.config.AppDefaults
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.features.settings.apppassword.handleAppPasswordAction
@@ -39,8 +40,8 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAppPasswordEnabled by viewModel.authGateway.isAppPasswordEnabled.collectAsStateWithLifecycle()
 
-    val availableCardStyles = remember { VaultCardStyle.styleConfig.perTypeStyles }
-    val effectiveCardStyle = VaultCardStyle.normalizeGlobalStyle(uiState.cardStyle)
+    val availableCardStyles = remember { AppDefaults.CardStyle.PER_TYPE_STYLES }
+    val effectiveCardStyle = AppDefaults.CardStyle.normalizeGlobalStyle(uiState.cardStyle)
     val passwordSelectedStyle =
         uiState.cardStyleByEntryType[EntryType.PASSWORD.value] ?: VaultCardStyle.DEFAULT
     val totpSelectedStyle =

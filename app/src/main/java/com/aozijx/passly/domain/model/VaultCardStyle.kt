@@ -2,7 +2,6 @@ package com.aozijx.passly.domain.model
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.EntryType
 
 enum class VaultCardStyle(
     val key: String,
@@ -22,67 +21,9 @@ enum class VaultCardStyle(
     TOTP("totp", R.string.settings_card_style_totp_name, R.string.settings_card_style_totp_desc);
 
     companion object {
-        data class StyleConfig(
-            val settingsStyles: List<VaultCardStyle>,
-            val perTypeStyles: List<VaultCardStyle>,
-            val globalDefaultStyle: VaultCardStyle
-        )
-
-        val styleConfig = StyleConfig(
-            settingsStyles = listOf(DEFAULT, PASSWORD, TOTP),
-            perTypeStyles = listOf(DEFAULT, PASSWORD, TOTP),
-            globalDefaultStyle = DEFAULT
-        )
-
-        data class TypeStylePolicy(
-            val defaultStyle: VaultCardStyle, val selectableStyles: List<VaultCardStyle>
-        )
-
-        data class SettingsGroupSpec(
-            @field:StringRes val titleRes: Int,
-            val entryType: EntryType,
-            val styleCandidates: List<VaultCardStyle>
-        ) {
-            val entryTypeValue: Int get() = entryType.value
-        }
-
-        private val typeStylePolicyMap: Map<EntryType, TypeStylePolicy> =
-            EntryType.entries.associateWith {
-                TypeStylePolicy(
-                    defaultStyle = DEFAULT, selectableStyles = listOf(DEFAULT, PASSWORD)
-                )
-            } + mapOf(
-                EntryType.TOTP to TypeStylePolicy(
-                    defaultStyle = DEFAULT, selectableStyles = listOf(DEFAULT, TOTP)
-                )
-            )
-
-        private val settingsGroupTitleByType: Map<EntryType, Int> = mapOf(
-            EntryType.PASSWORD to R.string.settings_card_style_group_password,
-            EntryType.TOTP to R.string.settings_card_style_group_totp
-        )
-
-        val settingsGroupSpecs: List<SettingsGroupSpec> =
-            settingsGroupTitleByType.map { (entryType, titleRes) ->
-                SettingsGroupSpec(
-                    titleRes = titleRes,
-                    entryType = entryType,
-                    styleCandidates = policyFor(entryType).selectableStyles
-                )
-            }
-
         fun fromKey(key: String?): VaultCardStyle {
             val normalizedKey = key?.trim()?.lowercase()
             return entries.firstOrNull { it.key == normalizedKey } ?: DEFAULT
         }
-
-        fun policyFor(entryType: EntryType): TypeStylePolicy {
-            return typeStylePolicyMap.getValue(entryType)
-        }
-
-        fun normalizeGlobalStyle(style: VaultCardStyle): VaultCardStyle {
-            return if (style in styleConfig.settingsStyles) style else styleConfig.globalDefaultStyle
-        }
-
     }
 }

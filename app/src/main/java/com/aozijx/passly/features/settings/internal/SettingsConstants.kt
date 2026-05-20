@@ -1,21 +1,14 @@
 package com.aozijx.passly.features.settings.internal
 
-internal object SettingsConstants {
-    const val MIN_LOCK_TIMEOUT_MS = 5_000L
-    const val DEFAULT_LOCK_TIMEOUT_MS = 60_000L
+import com.aozijx.passly.domain.config.AppDefaults
 
-    const val TAB_THRESHOLD_MIN = 2
-    const val TAB_THRESHOLD_MAX = 8
-    const val DEFAULT_TAB_BAR_MAX_TABS = 4
+internal object SettingsConstants {
+    val MIN_LOCK_TIMEOUT_MS: Long get() = AppDefaults.Security.MIN_LOCK_TIMEOUT_MS
+    val DEFAULT_LOCK_TIMEOUT_MS: Long get() = AppDefaults.Security.DEFAULT_LOCK_TIMEOUT_MS
+    val TAB_THRESHOLD_MIN: Int get() = AppDefaults.Vault.TAB_THRESHOLD_MIN
+    val TAB_THRESHOLD_MAX: Int get() = AppDefaults.Vault.TAB_THRESHOLD_MAX
+    val DEFAULT_TAB_BAR_MAX_TABS: Int get() = AppDefaults.Vault.DEFAULT_TAB_BAR_MAX_TABS
+    val LOCK_TIMEOUT_PRESETS: List<Pair<Long, String>> get() = AppDefaults.Security.LOCK_TIMEOUT_PRESETS
 
     const val STATE_SUBSCRIPTION_TIMEOUT_MS = 5_000L
-
-    val LOCK_TIMEOUT_PRESETS = listOf(
-        15_000L to "15 秒",
-        30_000L to "30 秒",
-        60_000L to "1 分钟",
-        120_000L to "2 分钟",
-        300_000L to "5 分钟",
-        600_000L to "10 分钟"
-    )
 }
