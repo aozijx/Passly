@@ -4,20 +4,21 @@ Passly 是一款基于 **Jetpack Compose** 构建的离线优先隐私保险库 
 
 ## 核心特性
 
-- 生物识别解锁（系统 KeyStore）
-- 本地强加密存储（AES-256 GCM）
+- 生物识别解锁（系统 KeyStore + BiometricPrompt）
+- AES-256 GCM 本地强加密存储
 - 加密备份与恢复
-- 多条目类型策略引擎（密码、TOTP、Passkey 等）
-- Autofill 候选优化与慢操作监控
+- 多条目类型策略引擎（密码、TOTP、Passkey、银行卡等）
+- Autofill 自动填充支持
 - Material 3 UI（动态色 / 深色模式）
+- 应用密码（App Password）独立于系统锁屏
 
 ## 技术栈
 
 - Jetpack Compose + Material 3
 - Room + SQLCipher
 - Kotlin Coroutines + Flow
-- AppContainer（手写依赖注入）
-- CameraX + ML Kit
+- Koin（依赖注入）
+- CameraX + ML Kit（二维码扫描）
 
 ## 快速开始
 
@@ -28,24 +29,15 @@ Passly 是一款基于 **Jetpack Compose** 构建的离线优先隐私保险库 
 - Gradle 8.13+
 - Android 12+ (API 31+)
 
-### 本地构建
+### 构建命令
 
 ```powershell
-Set-Location "D:\MyApplication\Passly"
-.\gradlew.bat :app:compileFullDebugKotlin
-.\gradlew.bat :app:assembleDebug
+# 编译
+.\gradlew.bat :app:compileVaultDebugKotlin --no-daemon
+
+# 打包
+.\gradlew.bat :app:assembleDebug --no-daemon
 ```
-
-## 文档导航
-
-- 统一入口：`docs/INDEX.md`
-- 项目目录结构：`docs/PROJECT_STRUCTURE.md`
-- 开发者项目文档：`docs/DEVELOPER_GUIDE.md`
-- 改动操作手册：`docs/CHANGE_PLAYBOOK.md`
-- 架构决策记录：`docs/ARCHITECTURE_DECISIONS.md`
-
-> 推荐阅读顺序：先看 `README.md`，再看 `docs/INDEX.md`，随后按场景进入对应文档。
-> 如需完整开发与改动流程，请以 `docs/INDEX.md` 为准，不再以 README 承载详细规则。
 
 ## 项目原则
 
