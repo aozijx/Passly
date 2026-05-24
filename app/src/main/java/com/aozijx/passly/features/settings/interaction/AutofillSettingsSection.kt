@@ -9,18 +9,18 @@ import com.aozijx.passly.features.settings.shell.SettingsCard
 import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
 
 @Composable
-fun AutofillSettingsSection(
+internal fun AutofillSettingsSection(
     autofillUiMode: AutofillUiMode,
     onToggleAutofillUiMode: () -> Unit
 ) {
-    SettingsGroupTitle(text = "自动填充")
+    SettingsGroupTitle(text = "自动填充模式")
     SettingsCard {
         ClickableSettingItem(
             icon = Icons.Default.ViewDay,
-            title = "自动填充展示",
+            title = "填充方式",
             value = when (autofillUiMode) {
                 AutofillUiMode.SYSTEM_INLINE -> "键盘候选"
-                AutofillUiMode.BOTTOM_SHEET -> "底部弹层"
+                AutofillUiMode.BOTTOM_SHEET -> "底部弹窗"
             },
             onClick = onToggleAutofillUiMode
         )

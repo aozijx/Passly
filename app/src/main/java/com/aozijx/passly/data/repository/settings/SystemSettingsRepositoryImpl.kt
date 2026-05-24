@@ -80,15 +80,15 @@ class SystemSettingsRepositoryImpl(context: Context) : SystemSettingsRepository 
         SwipeActionType.entries.find { e -> e.name == it[SWIPE_RIGHT_ACTION_KEY] }
             ?: defaultConfig.vault.swipeRightAction
     }
-    override val autofillUiMode: Flow<AutofillUiMode> = appContext.settingsDataStore.data.map {
-        when (val raw = it[AUTOFILL_UI_MODE_KEY]) {
-            "inline" -> AutofillUiMode.SYSTEM_INLINE
-            "bottom_sheet" -> AutofillUiMode.BOTTOM_SHEET
-            else -> defaultConfig.vault.autofillUiMode
-        }
-    }
     override val visibleVaultTabs: Flow<Set<String>?> = appContext.settingsDataStore.data.map {
         SettingsMapper.decodeVisibleTabs(it[VISIBLE_VAULT_TABS_KEY])
+    }
+    override val autofillUiMode: Flow<AutofillUiMode> = appContext.settingsDataStore.data.map {
+        when (it[AUTOFILL_UI_MODE_KEY]) {
+            "inline", "SYSTEM_INLINE" -> AutofillUiMode.SYSTEM_INLINE
+            "bottom_sheet", "BOTTOM_SHEET" -> AutofillUiMode.BOTTOM_SHEET
+            else -> defaultConfig.vault.autofillUiMode
+        }
     }
     override val tabBarMaxTabsWithoutScroll: Flow<Int> = appContext.settingsDataStore.data.map {
         (it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] ?: defaultConfig.vault.tabBarMaxTabsWithoutScroll)

@@ -209,8 +209,7 @@ fun createSwipeAction(
         SwipeActionType.DETAIL -> Icons.Default.Info
         SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
         SwipeActionType.COPY_USERNAME -> Icons.Default.Person
-        else -> null
-    } ?: return null
+    }
     return SwipeAction(
         icon = icon,
         backgroundColor = backgroundColor,

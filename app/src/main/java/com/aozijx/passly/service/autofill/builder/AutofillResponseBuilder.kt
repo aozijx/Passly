@@ -16,13 +16,13 @@ import android.view.autofill.AutofillValue
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.asAndroidBitmap
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.config.AutofillUiMode
-import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.core.crypto.encryption.CryptoAccess
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.core.platform.PackageUtils
+import com.aozijx.passly.domain.config.AutofillUiMode
 import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.AutofillMatchType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.service.autofill.AutofillAuthActivity
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
@@ -201,26 +201,6 @@ internal object AutofillResponseBuilder {
         }
     }
 
-    private fun applyBottomSheetAuth(
-        context: Context,
-        candidateIds: IntArray,
-        parser: AutofillStructureParser,
-        ids: Array<AutofillId>,
-        uiMode: AutofillUiMode,
-        builder: FillResponse.Builder
-    ) {
-        val presentation = AutofillRemoteViewFactory.createBottomSheetTrigger(
-            context = context, candidateCount = candidateIds.size
-        )
-        val pendingIntent = createAuthIntent(
-            context = context,
-            candidateIds = candidateIds,
-            parser = parser,
-            uiMode = uiMode
-        )
-        builder.setAuthenticationCompat(ids, pendingIntent.intentSender, presentation)
-    }
-
     private fun createAuthIntent(
         context: Context,
         entryId: Int? = null,
@@ -249,6 +229,26 @@ internal object AutofillResponseBuilder {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
+
+    private fun applyBottomSheetAuth(
+        context: Context,
+        candidateIds: IntArray,
+        parser: AutofillStructureParser,
+        ids: Array<AutofillId>,
+        uiMode: AutofillUiMode,
+        builder: FillResponse.Builder
+    ) {
+        val presentation = AutofillRemoteViewFactory.createBottomSheetTrigger(
+            context = context, candidateCount = candidateIds.size
+        )
+        val pendingIntent = createAuthIntent(
+            context = context,
+            candidateIds = candidateIds,
+            parser = parser,
+            uiMode = uiMode
+        )
+        builder.setAuthenticationCompat(ids, pendingIntent.intentSender, presentation)
     }
 
     private fun createInlineDataset(

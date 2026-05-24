@@ -3,6 +3,7 @@ package com.aozijx.passly.domain.config
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.config.UserConfig.Vault.AutofillUiMode
 import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
@@ -100,10 +101,6 @@ class UserConfigProvider(
         }
     }
 
-    fun setInvalidateKeyOnBioChange(enabled: Boolean) {
-        viewModelScope.launch { securitySettingsUseCases.setInvalidateKeyOnBioChange(enabled) }
-    }
-
     fun setStatusBarAutoHide(enabled: Boolean) {
         viewModelScope.launch { systemSettingsUseCases.setStatusBarAutoHide(enabled) }
     }
@@ -142,10 +139,6 @@ class UserConfigProvider(
 
     fun setCardStyleForEntryType(entryType: Int, style: VaultCardStyle) {
         viewModelScope.launch { systemSettingsUseCases.setCardStyleForEntryType(entryType, style) }
-    }
-
-    fun setAutofillUiMode(mode: AutofillUiMode) {
-        viewModelScope.launch { systemSettingsUseCases.setAutofillUiMode(mode) }
     }
 
     fun toggleAutofillUiMode(current: AutofillUiMode) {
