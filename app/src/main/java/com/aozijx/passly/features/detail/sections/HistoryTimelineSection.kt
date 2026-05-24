@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.core.VaultHistory
+import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date

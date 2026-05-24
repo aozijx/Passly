@@ -12,8 +12,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.model.backup.BackupImportMode
-import com.aozijx.passly.domain.model.core.BackupException
+import com.aozijx.passly.domain.model.BackupImportMode
+import com.aozijx.passly.domain.model.BackupException
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.features.backup.contract.BackupUiState
@@ -247,9 +247,8 @@ class BackupCoordinator(
         finalUri: Uri,
         oldState: BackupUiState
     ) {
-        if (oldState.isExporting && oldState.pendingExportAllowFallback) {
+        if (oldState.isExporting && oldState.pendingExportAllowFallback)
             BackupExportStorageSupport.deleteDocument(context, finalUri)
-        }
         backupMessage = error.toUiMessage(text(R.string.backup_error_unknown))
     }
 }

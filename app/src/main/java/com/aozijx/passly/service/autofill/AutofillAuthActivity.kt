@@ -12,13 +12,13 @@ import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.AutofillUiMode
+import com.aozijx.passly.domain.config.AutofillUiMode
 import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.core.theme.AppTheme
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.verification.internal.VerificationCoordinator
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
@@ -38,7 +38,12 @@ class AutofillAuthActivity : FragmentActivity() {
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))
+        val raw = intent?.getStringExtra("autofill_ui_mode")
+        val uiMode = when (raw) {
+            "inline" -> AutofillUiMode.SYSTEM_INLINE
+            "bottom_sheet" -> AutofillUiMode.BOTTOM_SHEET
+            else -> AutofillUiMode.SYSTEM_INLINE
+        }
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
 

@@ -13,6 +13,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -34,7 +39,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -198,9 +203,16 @@ fun createSwipeAction(
     backgroundColor: Color,
     iconTint: Color
 ): SwipeAction? {
-    if (actionType == SwipeActionType.DISABLED || actionType.icon == null) return null
+    if (actionType == SwipeActionType.DISABLED) return null
+    val icon = when (actionType) {
+        SwipeActionType.DELETE -> Icons.Default.Delete
+        SwipeActionType.DETAIL -> Icons.Default.Info
+        SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
+        SwipeActionType.COPY_USERNAME -> Icons.Default.Person
+        else -> null
+    } ?: return null
     return SwipeAction(
-        icon = actionType.icon,
+        icon = icon,
         backgroundColor = backgroundColor,
         iconTint = iconTint,
         onAction = onAction,

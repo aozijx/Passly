@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.detail.internal.TotpEditState
 import com.aozijx.passly.features.vault.components.TotpConfigForm
 

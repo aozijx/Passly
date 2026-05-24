@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.vault
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.domain.mapper.toSummary
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository.EntryFilter
 import kotlinx.coroutines.flow.Flow
@@ -41,7 +41,7 @@ class VaultSearchRepositoryImpl(
                 }
             }
             .sortedWith(
-                compareByDescending<com.aozijx.passly.domain.model.core.VaultEntry> { it.favorite }
+                compareByDescending<com.aozijx.passly.domain.model.VaultEntry> { it.favorite }
                     .thenByDescending { it.usageCount }
                     .thenByDescending { it.createdAt ?: 0L }
             )

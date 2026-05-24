@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.usecase.autofill
 
 import com.aozijx.passly.domain.model.AutofillCandidate
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 
 class AutofillUseCases(private val repository: AutofillServiceRepository) {

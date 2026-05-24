@@ -13,24 +13,26 @@ import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.R
 import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.navigation.PasslyNavHost
+import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.features.backup.components.PlainExportDialog
 import com.aozijx.passly.features.backup.components.PlainExportDialogType
 import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable
 internal fun AppMainContent(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
-    settingsViewModel: SettingsViewModel,
     onPlainExportPickerRequest: (String) -> Unit
 ) {
     val context = LocalContext.current
     val vaultViewModel: VaultViewModel = viewModel(
         factory = appViewModelFactory(activity.application)
     )
-    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val configProvider: UserConfigProvider = viewModel(
+        factory = appViewModelFactory(activity.application)
+    )
+    val userConfig by configProvider.config.collectAsStateWithLifecycle()
     var showPlainExportRiskDialog by remember { mutableStateOf(false) }
     val navController = rememberNavController()
 
@@ -39,7 +41,6 @@ internal fun AppMainContent(
         activity = activity,
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        settingsViewModel = settingsViewModel,
         onPlainExportClick = { showPlainExportRiskDialog = true }
     )
 
@@ -53,10 +54,10 @@ internal fun AppMainContent(
                     title = activity.getString(R.string.vault_backup_auth_title),
                     subtitle = activity.getString(R.string.vault_backup_auth_subtitle_plain_export),
                     onSuccess = {
-                        settingsViewModel.backup.issuePlainExportToken()
-                        settingsViewModel.backup.exportPlainBackup(
+                        configProvider.backup.issuePlainExportToken()
+                        configProvider.backup.exportPlainBackup(
                             context = context,
-                            dirUri = settingsUiState.backupDirectoryUri,
+                            dirUri = userConfig.backup.directoryUri,
                             onPickerRequest = { fileName ->
                                 onPlainExportPickerRequest(fileName)
                             }

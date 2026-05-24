@@ -19,13 +19,13 @@ import com.aozijx.passly.core.designsystem.LoadingMask
 import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.features.backup.components.PlainExportDialog
 import com.aozijx.passly.features.backup.components.PlainExportDialogType
 import com.aozijx.passly.features.main.MainSensorController
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.main.contract.MainEffect
 import com.aozijx.passly.features.main.contract.MainIntent
-import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.verification.VerificationScreen
 import com.aozijx.passly.features.verification.VerificationViewModel
 import kotlin.system.exitProcess
@@ -38,26 +38,24 @@ internal fun MainScreen(
 ) {
     val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val settingsViewModel: SettingsViewModel = viewModel(
-        factory = appViewModelFactory(activity.application)
-    )
-    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val factory = appViewModelFactory(activity.application)
 
-    val verificationViewModel: VerificationViewModel = viewModel(
-        factory = appViewModelFactory(activity.application)
-    )
+    val configProvider: UserConfigProvider = viewModel(factory = factory)
+    val userConfig by configProvider.config.collectAsStateWithLifecycle()
 
-    LaunchedEffect(settingsViewModel.backup.backupMessage) {
-        settingsViewModel.backup.backupMessage?.let {
+    val verificationViewModel: VerificationViewModel = viewModel(factory = factory)
+
+    LaunchedEffect(configProvider.backup.backupMessage) {
+        configProvider.backup.backupMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            settingsViewModel.backup.clearBackupMessage()
+            configProvider.backup.clearBackupMessage()
         }
     }
 
     val plainExportPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
-        uri?.let { settingsViewModel.backup.exportPlainBackupToUri(it) }
+        uri?.let { configProvider.backup.exportPlainBackupToUri(it) }
     }
 
     LaunchedEffect(Unit) {
@@ -118,7 +116,6 @@ internal fun MainScreen(
                 AppMainContent(
                     activity = activity,
                     mainViewModel = viewModel,
-                    settingsViewModel = settingsViewModel,
                     onPlainExportPickerRequest = { fileName ->
                         plainExportPickerLauncher.launch(fileName)
                     }
@@ -129,7 +126,7 @@ internal fun MainScreen(
                 VerificationScreen(
                     viewModel = verificationViewModel,
                     activity = activity,
-                    preferPasswordFirst = settingsUiState.isPasswordPreferredAuthFirst
+                    preferPasswordFirst = userConfig.security.isPasswordPreferredAuthFirst
                 )
             }
         }
@@ -138,12 +135,12 @@ internal fun MainScreen(
     val window = activity.window
 
     LaunchedEffect(
-        settingsUiState.isSecureContentEnabled,
-        settingsUiState.isFlipToLockEnabled,
-        settingsUiState.isFlipExitAndClearStackEnabled,
-        settingsUiState.isStatusBarAutoHide
+        userConfig.security.isSecureContentEnabled,
+        userConfig.security.isFlipToLockEnabled,
+        userConfig.security.isFlipExitAndClearStackEnabled,
+        userConfig.display.isStatusBarAutoHide
     ) {
-        if (settingsUiState.isSecureContentEnabled) {
+        if (userConfig.security.isSecureContentEnabled) {
             window.setFlags(
                 WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE
@@ -152,14 +149,14 @@ internal fun MainScreen(
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
 
-        sensorController.isFlipLockEnabled = settingsUiState.isFlipToLockEnabled
-        if (settingsUiState.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
+        sensorController.isFlipLockEnabled = userConfig.security.isFlipToLockEnabled
+        if (userConfig.security.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
 
         sensorController.isFlipExitAndClearStackEnabled =
-            settingsUiState.isFlipExitAndClearStackEnabled
+            userConfig.security.isFlipExitAndClearStackEnabled
 
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        insetsController.systemBarsBehavior = if (settingsUiState.isStatusBarAutoHide) {
+        insetsController.systemBarsBehavior = if (userConfig.display.isStatusBarAutoHide) {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
             WindowInsetsControllerCompat.BEHAVIOR_DEFAULT

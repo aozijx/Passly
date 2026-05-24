@@ -4,7 +4,7 @@ import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainHistoryList
 import com.aozijx.passly.data.mapper.toEntity
-import com.aozijx.passly.domain.model.core.VaultHistory
+import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

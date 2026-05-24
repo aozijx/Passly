@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.usecase.detail
 
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.core.VaultHistory
-import com.aozijx.passly.domain.model.icon.FaviconOutcome
-import com.aozijx.passly.domain.model.icon.FaviconResult
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultHistory
+import com.aozijx.passly.domain.model.FaviconOutcome
+import com.aozijx.passly.domain.model.FaviconResult
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository

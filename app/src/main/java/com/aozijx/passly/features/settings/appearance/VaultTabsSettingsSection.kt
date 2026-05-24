@@ -20,7 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.features.settings.internal.SettingsConstants
+import com.aozijx.passly.domain.config.AppDefaults
 import com.aozijx.passly.features.settings.shell.SettingsCard
 import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.features.vault.model.VaultTab
@@ -36,12 +36,12 @@ fun VaultTabsSettingsSection(
     val enabledKeys = visibleVaultTabs ?: VaultTab.defaultVisibleKeys
     val toggleableTabs = VaultTab.toggleableVisibleTabs
     val persistedThreshold = tabBarMaxTabsWithoutScroll.coerceIn(
-        SettingsConstants.TAB_THRESHOLD_MIN,
-        SettingsConstants.TAB_THRESHOLD_MAX
+        AppDefaults.TAB_THRESHOLD_MIN,
+        AppDefaults.TAB_THRESHOLD_MAX
     )
     var sliderValue by remember(persistedThreshold) { mutableFloatStateOf(persistedThreshold.toFloat()) }
     val previewThreshold = sliderValue.roundToInt()
-        .coerceIn(SettingsConstants.TAB_THRESHOLD_MIN, SettingsConstants.TAB_THRESHOLD_MAX)
+        .coerceIn(AppDefaults.TAB_THRESHOLD_MIN, AppDefaults.TAB_THRESHOLD_MAX)
 
     SettingsGroupTitle(text = "保险箱 Tab")
     SettingsCard {
@@ -60,16 +60,15 @@ fun VaultTabsSettingsSection(
             value = sliderValue,
             onValueChange = { value ->
                 sliderValue = value.coerceIn(
-                    SettingsConstants.TAB_THRESHOLD_MIN.toFloat(),
-                    SettingsConstants.TAB_THRESHOLD_MAX.toFloat()
+                    AppDefaults.TAB_THRESHOLD_MIN.toFloat(),
+                    AppDefaults.TAB_THRESHOLD_MAX.toFloat()
                 )
             },
             onValueChangeFinished = {
-                if (previewThreshold != persistedThreshold) {
+                if (previewThreshold != persistedThreshold)
                     onTabBarMaxTabsWithoutScrollChange(previewThreshold)
-                }
             },
-            valueRange = SettingsConstants.TAB_THRESHOLD_MIN.toFloat()..SettingsConstants.TAB_THRESHOLD_MAX.toFloat(),
+            valueRange = AppDefaults.TAB_THRESHOLD_MIN.toFloat()..AppDefaults.TAB_THRESHOLD_MAX.toFloat(),
             steps = 5,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )

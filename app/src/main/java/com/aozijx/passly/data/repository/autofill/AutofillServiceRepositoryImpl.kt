@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.autofill
 
 import android.content.Context
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.mapper.toDomain
@@ -10,7 +10,7 @@ import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.AutofillMatchType
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
 import com.aozijx.passly.domain.policy.DomainNormalizer
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository

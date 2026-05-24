@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.model.core
+package com.aozijx.passly.domain.model
 
 sealed class BackupException(message: String, cause: Throwable? = null) : Exception(message, cause) {
     class PasswordIncorrect : BackupException("备份密码错误，请核对后重试")

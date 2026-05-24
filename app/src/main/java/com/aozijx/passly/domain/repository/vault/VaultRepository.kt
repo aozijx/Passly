@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.repository.vault
 
-import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.EntryType
+import com.aozijx.passly.domain.model.VaultEntry
 import kotlinx.coroutines.flow.Flow
 
 /**

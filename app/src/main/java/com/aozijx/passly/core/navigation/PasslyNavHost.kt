@@ -18,7 +18,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aozijx.passly.core.di.appViewModelFactory
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.config.UserConfigProvider
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.detail.DetailViewModel
 import com.aozijx.passly.features.detail.contract.DetailEffect
 import com.aozijx.passly.features.detail.page.DetailScreen
@@ -39,7 +40,6 @@ fun PasslyNavHost(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    settingsViewModel: SettingsViewModel,
     onPlainExportClick: () -> Unit
 ) {
     NavHost(
@@ -56,7 +56,6 @@ fun PasslyNavHost(
                 activity = activity,
                 mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
-                settingsViewModel = settingsViewModel,
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)
                 },
@@ -118,11 +117,19 @@ fun PasslyNavHost(
         }
 
         composable(AppRoute.Settings.route) {
+            val application = LocalContext.current.applicationContext as android.app.Application
+            val configProvider: UserConfigProvider = viewModel(
+                factory = appViewModelFactory(application)
+            )
+            val authViewModel: SettingsViewModel = viewModel(
+                factory = appViewModelFactory(application)
+            )
             val onUpdateInteraction: () -> Unit =
                 { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                viewModel = settingsViewModel,
+                configProvider = configProvider,
+                authViewModel = authViewModel,
                 onUpdateInteraction = onUpdateInteraction
             )
         }

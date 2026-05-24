@@ -21,7 +21,7 @@ import coil.compose.AsyncImage
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.core.platform.rememberAppIcon
-import com.aozijx.passly.domain.model.icon.VaultIconable
+import com.aozijx.passly.domain.model.VaultIconable
 
 @Composable
 fun VaultItemIcon(

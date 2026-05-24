@@ -42,7 +42,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.aozijx.passly.core.designsystem.VaultItemIcon
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
 private object PasswordCardPaletteCache {

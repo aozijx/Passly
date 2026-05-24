@@ -1,11 +1,5 @@
-package com.aozijx.passly.domain.model.presentation
+package com.aozijx.passly.domain.model
 
-import com.aozijx.passly.domain.model.icon.VaultIconable
-
-/**
- * 列表展示用的轻量模型（不依赖 Room）。
- * 仅保留 UI 与交互需要的字段。
- */
 data class VaultSummary(
     val id: Int,
     val title: String,

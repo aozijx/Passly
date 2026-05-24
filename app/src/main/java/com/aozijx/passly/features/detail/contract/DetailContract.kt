@@ -1,8 +1,8 @@
 package com.aozijx.passly.features.detail.contract
 
-import com.aozijx.passly.core.common.EntryType
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.core.VaultHistory
+import com.aozijx.passly.domain.model.EntryType
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultHistory
 
 data class DetailUiState(
     val entry: VaultEntry? = null,

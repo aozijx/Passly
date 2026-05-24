@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.designsystem.VaultItemIcon
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.vault.VaultViewModel
 
 private object TotpBehaviorTokens {

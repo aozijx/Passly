@@ -53,7 +53,7 @@ import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.otp.TotpUtils
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.scanner.components.ScannerView
 import com.aozijx.passly.features.vault.VaultViewModel
 

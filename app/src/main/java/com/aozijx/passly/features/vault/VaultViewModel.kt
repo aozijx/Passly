@@ -9,8 +9,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.TotpState
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState

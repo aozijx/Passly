@@ -4,8 +4,8 @@ import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.TotpConfig
 import com.aozijx.passly.domain.model.TotpState
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay

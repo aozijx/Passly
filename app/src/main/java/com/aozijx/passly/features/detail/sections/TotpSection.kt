@@ -11,8 +11,8 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.TotpState
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.core.VaultHistory
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.features.detail.components.InfoGroupCard
 import com.aozijx.passly.features.detail.components.TotpCodeCard
 import com.aozijx.passly.features.detail.contract.DetailEvent

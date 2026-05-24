@@ -3,8 +3,8 @@ package com.aozijx.passly.features.detail
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.core.VaultHistory
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.domain.usecase.detail.DetailUseCases
 import com.aozijx.passly.domain.usecase.userconfig.UserConfigUseCases

@@ -10,7 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.detail.components.DetailItem
 import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.contract.RevealedFieldKey
@@ -121,7 +121,7 @@ fun PasskeySection(
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     actionHandler.record(
                         "hardware key info",
-                        com.aozijx.passly.domain.model.core.VaultHistory.HistoryType.COPY
+                        com.aozijx.passly.domain.model.VaultHistory.HistoryType.COPY
                     )
                 },
                 onEdit = {}

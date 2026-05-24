@@ -3,8 +3,8 @@ package com.aozijx.passly.features.vault.internal
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope

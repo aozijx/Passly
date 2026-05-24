@@ -1,7 +1,7 @@
 package com.aozijx.passly.features.vault.model
 
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultSummary
 
 enum class SortOption(val labelResId: Int, val group: SortGroup) {
     DEFAULT(R.string.sort_default, SortGroup.STANDALONE),

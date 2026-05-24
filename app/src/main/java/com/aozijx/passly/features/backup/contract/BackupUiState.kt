@@ -1,7 +1,7 @@
 package com.aozijx.passly.features.backup.contract
 
 import android.net.Uri
-import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.BackupImportMode
 import java.io.File
 
 data class BackupUiState(

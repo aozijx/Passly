@@ -1,8 +1,5 @@
-package com.aozijx.passly.domain.model.icon
+package com.aozijx.passly.domain.model
 
-/**
- * 具有图标显示能力的条目接口
- */
 interface VaultIconable {
     val category: String
     val iconName: String?

@@ -1,6 +1,6 @@
 package com.aozijx.passly.features.vault.internal
 
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.detail.page.DetailLaunchMode
 import com.aozijx.passly.features.detail.page.DetailOpenRequest

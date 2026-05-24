@@ -3,7 +3,7 @@ package com.aozijx.passly.features.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 
 /**
  * TOTP 编辑状态（详情页修改配置）

@@ -1,8 +1,8 @@
 package com.aozijx.passly.features.vault.internal
 
-import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.domain.model.FieldKey
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultSummary
 
 fun handleSwipeAction(
     actionType: SwipeActionType,
@@ -14,15 +14,21 @@ fun handleSwipeAction(
 ) {
     if (actionType == SwipeActionType.DISABLED) return
 
+    val copyField = when (actionType) {
+        SwipeActionType.COPY_PASSWORD -> FieldKey.PASSWORD
+        SwipeActionType.COPY_USERNAME -> FieldKey.USERNAME
+        else -> null
+    }
+
     val performAction = {
         when (actionType) {
             SwipeActionType.DELETE -> onQuickDelete(item)
             SwipeActionType.DETAIL -> onShowDetail(item)
-            else -> actionType.copyField?.let { onCopy(it) }
+            else -> copyField?.let { onCopy(it) }
         }
     }
 
-    if (actionType.requiresConfirm) {
+    if (actionType == SwipeActionType.DELETE) {
         onAuthRequired { performAction() }
     } else {
         performAction()

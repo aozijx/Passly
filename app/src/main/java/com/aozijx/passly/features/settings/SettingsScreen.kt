@@ -14,8 +14,9 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.core.common.EntryType
 import com.aozijx.passly.domain.config.AppDefaults
+import com.aozijx.passly.domain.config.UserConfigProvider
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.features.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.features.settings.apppassword.handleAppPasswordAction
@@ -34,30 +35,30 @@ import com.aozijx.passly.features.settings.shell.rememberSettingsScreenLocalStat
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    viewModel: SettingsViewModel,
+    configProvider: UserConfigProvider,
+    authViewModel: SettingsViewModel,
     onUpdateInteraction: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isAppPasswordEnabled by viewModel.authGateway.isAppPasswordEnabled.collectAsStateWithLifecycle()
+    val uiState by configProvider.config.collectAsStateWithLifecycle()
+    val isAppPasswordEnabled by authViewModel.authGateway.isAppPasswordEnabled.collectAsStateWithLifecycle()
 
     val availableCardStyles = remember { AppDefaults.CardStyle.PER_TYPE_STYLES }
-    val effectiveCardStyle = AppDefaults.CardStyle.normalizeGlobalStyle(uiState.cardStyle)
+    val effectiveCardStyle = AppDefaults.CardStyle.normalizeGlobalStyle(uiState.display.cardStyle)
     val passwordSelectedStyle =
-        uiState.cardStyleByEntryType[EntryType.PASSWORD.value] ?: VaultCardStyle.DEFAULT
+        uiState.display.perTypeMap[EntryType.PASSWORD.value] ?: VaultCardStyle.DEFAULT
     val totpSelectedStyle =
-        uiState.cardStyleByEntryType[EntryType.TOTP.value] ?: VaultCardStyle.DEFAULT
+        uiState.display.perTypeMap[EntryType.TOTP.value] ?: VaultCardStyle.DEFAULT
     val context = LocalContext.current
 
-    LaunchedEffect(uiState.cardStyle) {
-        if (uiState.cardStyle != effectiveCardStyle) {
-            viewModel.setCardStyle(effectiveCardStyle)
-        }
+    LaunchedEffect(uiState.display.cardStyle) {
+        if (uiState.display.cardStyle != effectiveCardStyle)
+            configProvider.setCardStyle(effectiveCardStyle)
     }
 
-    LaunchedEffect(viewModel.backup.backupMessage) {
-        viewModel.backup.backupMessage?.let {
+    LaunchedEffect(configProvider.backup.backupMessage) {
+        configProvider.backup.backupMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            viewModel.backup.clearBackupMessage()
+            configProvider.backup.clearBackupMessage()
         }
     }
 
@@ -74,22 +75,22 @@ fun SettingsScreen(
             currentPassword = localState.appPasswordCurrent,
             newPassword = localState.appPasswordNew,
             confirmPassword = localState.appPasswordConfirm,
-            authGateway = viewModel.authGateway,
+            authGateway = authViewModel.authGateway,
             onSuccess = localState::onAppPasswordSuccess
         )
     }
 
-    val backupPathLabel = remember(uiState.backupDirectoryUri) {
-        localState.backupPathLabel(uiState.backupDirectoryUri)
+    val backupPathLabel = remember(uiState.backup.directoryUri) {
+        localState.backupPathLabel(uiState.backup.directoryUri)
     }
-    val lastExportFileLabel = remember(uiState.lastBackupExportFileName) {
-        localState.lastExportFileLabel(uiState.lastBackupExportFileName)
+    val lastExportFileLabel = remember(uiState.backup.lastExportFileName) {
+        localState.lastExportFileLabel(uiState.backup.lastExportFileName)
     }
 
     val backupPathPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             handleBackupPathPicked(context, uri) { resolvedUri ->
-                viewModel.setBackupDirectoryUri(resolvedUri)
+                configProvider.setBackupDirectoryUri(resolvedUri)
             }
         }
 
@@ -107,13 +108,13 @@ fun SettingsScreen(
             uiState = uiState,
             localState = localState,
             onBack = onBack,
-            viewModel = viewModel,
+            configProvider = configProvider,
             onAppPasswordClick = {
                 handleAppPasswordEntryClick(
                     context = context,
                     activity = context as? FragmentActivity,
                     isAppPasswordEnabled = isAppPasswordEnabled,
-                    authGateway = viewModel.authGateway,
+                    authGateway = authViewModel.authGateway,
                     title = authDecryptTitle,
                     subtitle = setAppPasswordSubtitle,
                     authFailedMsg = authFailedMsg,
@@ -126,14 +127,14 @@ fun SettingsScreen(
                     context = context,
                     activity = context as? FragmentActivity,
                     enabled = enabled,
-                    switchPolicy = viewModel::switchKeyInvalidationPolicy
+                    switchPolicy = authViewModel::switchKeyInvalidationPolicy
                 )
             },
             onPickBackupPath = {
                 backupPathPicker.launch(BackupExportStorageSupport.defaultDocumentsTreeUri())
             },
             onTestBackupWrite = {
-                viewModel.testBackupDirectoryWritePermission(uiState.backupDirectoryUri)
+                configProvider.testBackupDirectoryWritePermission(uiState.backup.directoryUri)
             }
         ),
         onUpdateInteraction = onUpdateInteraction
@@ -147,7 +148,7 @@ fun SettingsScreen(
         ),
         actions = buildSettingsDialogsActions(
             localState = localState,
-            viewModel = viewModel,
+            configProvider = configProvider,
             submitAppPasswordAction = ::submitAppPasswordAction
         )
     )

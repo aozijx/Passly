@@ -1,10 +1,7 @@
-package com.aozijx.passly.domain.model.core
+package com.aozijx.passly.domain.model
 
 import java.io.Serializable
 
-/**
- * 领域模型：条目变更历史
- */
 data class VaultHistory(
     val historyId: Int = 0,
     val entryId: Int,
@@ -16,10 +13,10 @@ data class VaultHistory(
     val changedAt: Long = System.currentTimeMillis()
 ) : Serializable {
     enum class HistoryType(val value: Int) {
-        UPDATE(0),   // 内容更新
-        ACCESS(1),   // 访问/查看
-        COPY(2),     // 复制
-        AUTOFILL(3), // 自动填充
-        CREATE(4)    // 初始创建
+        UPDATE(0),
+        ACCESS(1),
+        COPY(2),
+        AUTOFILL(3),
+        CREATE(4)
     }
 }

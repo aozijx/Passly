@@ -1,6 +1,6 @@
 package com.aozijx.passly.features.vault.internal
 
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import com.aozijx.passly.features.vault.model.VaultTab
 import kotlinx.coroutines.CoroutineScope

@@ -15,16 +15,17 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.SwipeActionType
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
+import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.domain.model.FieldKey
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.main.contract.MainIntent
-import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.contract.VaultUiState
 
@@ -42,12 +43,13 @@ fun rememberVaultActionProvider(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    settingsViewModel: SettingsViewModel,
+    configProvider: UserConfigProvider,
     uiState: VaultUiState,
     onShowDetail: (VaultEntry) -> Unit,
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
     val context = LocalContext.current
+    val userConfig by configProvider.config.collectAsStateWithLifecycle()
     val decryptAuthTitle = stringResource(R.string.vault_auth_decrypt_title)
     val decryptAuthSubtitle = stringResource(R.string.vault_auth_decrypt_subtitle_generic)
     val totpCopiedText = stringResource(R.string.vault_totp_copied)
@@ -117,25 +119,25 @@ fun rememberVaultActionProvider(
     var pendingManualExportFileName by remember { mutableStateOf<String?>(null) }
 
     val exportLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
-            it?.let { selectedUri ->
-                settingsViewModel.backup.startExport(
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.CreateDocument("application/octet-stream")) { uri: android.net.Uri? ->
+            uri?.let { selectedUri ->
+                configProvider.backup.startExport(
                     selectedUri, fileNameHint = pendingManualExportFileName
                 )
             }
             pendingManualExportFileName = null
         }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { settingsViewModel.backup.startImport(it) }
+        it?.let { configProvider.backup.startImport(it) }
     }
 
-    val onExportClick = remember(settingsViewModel, exportLauncher) {
+    val onExportClick = remember(configProvider, exportLauncher) {
         {
-            val started = settingsViewModel.backup.tryStartExportInConfiguredDirectory(
-                settingsViewModel.uiState.value.backupDirectoryUri
+            val started = configProvider.backup.tryStartExportInConfiguredDirectory(
+                userConfig.backup.directoryUri
             )
             if (!started) {
-                val manualFileName = settingsViewModel.backup.nextBackupFileName()
+                val manualFileName = configProvider.backup.nextBackupFileName()
                 pendingManualExportFileName = manualFileName
                 exportLauncher.launch(manualFileName)
             }

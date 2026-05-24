@@ -16,8 +16,8 @@ import android.view.autofill.AutofillValue
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.asAndroidBitmap
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.AutofillUiMode
-import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.config.AutofillUiMode
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.core.crypto.encryption.CryptoAccess
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.core.platform.PackageUtils
@@ -238,7 +238,7 @@ internal object AutofillResponseBuilder {
             putExtra("username_id", parser.usernameId)
             putExtra("password_id", parser.passwordId)
             putExtra("otp_id", parser.otpId)
-            putExtra("autofill_ui_mode", uiMode.key)
+            putExtra("autofill_ui_mode", uiMode.name)
             packageName?.let { putExtra("package_name", it) }
             webDomain?.let { putExtra("web_domain", it) }
         }

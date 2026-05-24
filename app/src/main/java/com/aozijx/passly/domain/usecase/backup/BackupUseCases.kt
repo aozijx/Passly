@@ -2,7 +2,7 @@ package com.aozijx.passly.domain.usecase.backup
 
 import android.net.Uri
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 
 class BackupUseCases(private val repository: BackupRepository) {

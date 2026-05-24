@@ -1,9 +1,9 @@
 package com.aozijx.passly.service.autofill.credential
 
-import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.core.crypto.encryption.CryptoAccess
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 

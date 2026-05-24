@@ -1,7 +1,7 @@
 package com.aozijx.passly.features.settings.internal
 
-import com.aozijx.passly.core.common.AutofillUiMode
-import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.domain.config.AutofillUiMode
+import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 
 internal data class SettingsContentState(

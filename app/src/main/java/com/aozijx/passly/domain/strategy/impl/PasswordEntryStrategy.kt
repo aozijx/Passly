@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.FieldDefinition
 import com.aozijx.passly.domain.model.FieldGroup
 import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**

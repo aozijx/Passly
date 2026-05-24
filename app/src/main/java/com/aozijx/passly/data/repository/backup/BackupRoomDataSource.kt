@@ -5,7 +5,7 @@ import androidx.room.withTransaction
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.dao.VaultEntryDao
-import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.BackupImportMode
 
 
 /**

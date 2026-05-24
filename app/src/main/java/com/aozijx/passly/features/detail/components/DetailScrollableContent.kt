@@ -15,9 +15,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.TotpState
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.detail.contract.DetailEvent
 import com.aozijx.passly.features.detail.contract.DetailUiState
 import com.aozijx.passly.features.detail.contract.RevealedFieldKey

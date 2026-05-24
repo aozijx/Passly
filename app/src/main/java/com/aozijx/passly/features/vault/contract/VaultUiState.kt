@@ -1,7 +1,7 @@
 package com.aozijx.passly.features.vault.contract
 
 import com.aozijx.passly.domain.model.TotpState
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.features.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.features.vault.model.SortOption
 import com.aozijx.passly.features.vault.model.VaultTab

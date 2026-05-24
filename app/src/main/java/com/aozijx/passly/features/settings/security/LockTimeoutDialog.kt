@@ -26,7 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.features.settings.internal.SettingsConstants
+import com.aozijx.passly.domain.config.AppDefaults
+import com.aozijx.passly.features.settings.state.SettingsUiState
 import com.aozijx.passly.features.settings.shell.formatLockTimeoutText
 
 @Composable
@@ -35,9 +36,9 @@ fun LockTimeoutDialog(
     onTimeoutSelected: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val presets = SettingsConstants.LOCK_TIMEOUT_PRESETS
+    val presets = SettingsUiState.LOCK_TIMEOUT_PRESETS
     var selectedTimeout by remember(currentTimeoutMs) {
-        mutableLongStateOf(currentTimeoutMs.coerceAtLeast(SettingsConstants.MIN_LOCK_TIMEOUT_MS))
+        mutableLongStateOf(currentTimeoutMs.coerceAtLeast(AppDefaults.MIN_LOCK_TIMEOUT_MS))
     }
     var customSeconds by remember(currentTimeoutMs) { mutableStateOf((currentTimeoutMs / 1000L).toString()) }
 
@@ -90,7 +91,7 @@ fun LockTimeoutDialog(
             TextButton(onClick = {
                 val customMs = customSeconds.toLongOrNull()?.times(1000L)
                 val timeout =
-                    if (customMs != null && customMs >= SettingsConstants.MIN_LOCK_TIMEOUT_MS) customMs else selectedTimeout
+                    if (customMs != null && customMs >= AppDefaults.MIN_LOCK_TIMEOUT_MS) customMs else selectedTimeout
                 onTimeoutSelected(timeout)
             }) {
                 Text("保存")

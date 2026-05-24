@@ -4,11 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.features.backup.ui.BackupPasswordDialog
 import com.aozijx.passly.features.detail.DetailCardDialog
 import com.aozijx.passly.features.main.MainViewModel
 import com.aozijx.passly.features.scanner.VaultScanner
-import com.aozijx.passly.features.settings.SettingsViewModel
 import com.aozijx.passly.features.vault.VaultViewModel
 import com.aozijx.passly.features.vault.dialogs.DeleteConfirmDialog
 import com.aozijx.passly.features.vault.model.AddType
@@ -18,7 +18,7 @@ fun VaultDialogs(
     mainViewModel: MainViewModel,
     activity: FragmentActivity,
     vaultViewModel: VaultViewModel,
-    settingsViewModel: SettingsViewModel,
+    configProvider: UserConfigProvider,
     onUpdateInteraction: () -> Unit
 ) {
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
@@ -85,9 +85,9 @@ fun VaultDialogs(
     }
 
     // --- 备份对话框 ---
-    if (settingsViewModel.backup.state.showPasswordDialog) {
+    if (configProvider.backup.state.showPasswordDialog) {
         BackupPasswordDialog(
-            backupCoordinator = settingsViewModel.backup,
+            backupCoordinator = configProvider.backup,
             onAuthRequired = { title, subtitle, onSuccess ->
                 mainViewModel.requestAuth(
                     activity = activity,

@@ -1,6 +1,6 @@
 package com.aozijx.passly.features.detail.page
 
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 
 enum class DetailLaunchMode {
     VIEW,

@@ -11,7 +11,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.designsystem.AppDialog
 import com.aozijx.passly.core.designsystem.AppTextField
 import com.aozijx.passly.core.designsystem.PasswordInput
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.features.vault.VaultViewModel
 
 @Composable

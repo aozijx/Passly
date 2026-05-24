@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.otp
 
 import androidx.core.net.toUri
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import java.net.URLDecoder
 import java.net.URLEncoder
 

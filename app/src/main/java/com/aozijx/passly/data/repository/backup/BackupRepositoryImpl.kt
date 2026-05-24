@@ -22,8 +22,8 @@ import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
 import com.aozijx.passly.data.repository.backup.internal.mapToAppError
 import com.aozijx.passly.data.repository.backup.internal.openBackupInputStream
 import com.aozijx.passly.data.repository.backup.internal.openBackupOutputStream
-import com.aozijx.passly.domain.model.backup.BackupImportMode
-import com.aozijx.passly.domain.model.core.BackupException
+import com.aozijx.passly.domain.model.BackupImportMode
+import com.aozijx.passly.domain.model.BackupException
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.vault.internal
 
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 
 internal fun diffFields(
     old: VaultEntry,

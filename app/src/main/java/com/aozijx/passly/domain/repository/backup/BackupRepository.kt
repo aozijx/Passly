@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.repository.backup
 
 import android.net.Uri
-import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.BackupImportMode
 import java.io.File
 
 /**

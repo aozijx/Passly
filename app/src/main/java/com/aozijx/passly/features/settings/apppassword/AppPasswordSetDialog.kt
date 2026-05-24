@@ -27,7 +27,7 @@ fun AppPasswordSetDialog(
         title = { Text("设置应用解锁密码") },
         text = {
             Column {
-                Text("安全建议：至少 10 位，并混合字母、数字或符号中的两种。")
+                Text("安全建议：至少 6 位，并混合字母、数字或符号中的两种。")
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = newPassword,

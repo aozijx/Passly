@@ -13,7 +13,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.features.settings.shell.ClickableSettingItem
 import com.aozijx.passly.features.settings.shell.SettingsCard
 import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
@@ -49,7 +49,13 @@ fun SwipeGestureSettingsSection(
                 )
                 ClickableSettingItem(
                     title = "左滑快捷动作",
-                    value = swipeLeftAction.displayName,
+                    value = when (swipeLeftAction) {
+                        SwipeActionType.DELETE -> "删除"
+                        SwipeActionType.DETAIL -> "详情"
+                        SwipeActionType.COPY_PASSWORD -> "复制密码"
+                        SwipeActionType.COPY_USERNAME -> "复制账号"
+                        SwipeActionType.DISABLED -> "禁用"
+                    },
                     onClick = onLeftSwipeActionClick
                 )
                 HorizontalDivider(
@@ -57,7 +63,13 @@ fun SwipeGestureSettingsSection(
                 )
                 ClickableSettingItem(
                     title = "右滑快捷动作",
-                    value = swipeRightAction.displayName,
+                    value = when (swipeRightAction) {
+                        SwipeActionType.DELETE -> "删除"
+                        SwipeActionType.DETAIL -> "详情"
+                        SwipeActionType.COPY_PASSWORD -> "复制密码"
+                        SwipeActionType.COPY_USERNAME -> "复制账号"
+                        SwipeActionType.DISABLED -> "禁用"
+                    },
                     onClick = onRightSwipeActionClick
                 )
             }

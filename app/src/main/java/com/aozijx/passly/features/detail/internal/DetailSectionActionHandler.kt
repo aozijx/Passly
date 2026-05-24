@@ -3,7 +3,7 @@ package com.aozijx.passly.features.detail.internal
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.model.core.VaultHistory
+import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.features.detail.contract.DetailEvent
 
 internal data class DetailSectionActionHandler(

@@ -11,6 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,9 +26,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.common.SwipeActionType
+import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
+
+private val SWIPE_ACTIONS = listOf(
+    SwipeActionType.DELETE,
+    SwipeActionType.DETAIL,
+    SwipeActionType.COPY_PASSWORD,
+    SwipeActionType.COPY_USERNAME,
+    SwipeActionType.DISABLED,
+)
+
+private fun SwipeActionType.displayName(): String = when (this) {
+    SwipeActionType.DELETE -> "删除"
+    SwipeActionType.DETAIL -> "详情"
+    SwipeActionType.COPY_PASSWORD -> "复制密码"
+    SwipeActionType.COPY_USERNAME -> "复制账号"
+    SwipeActionType.DISABLED -> "禁用"
+}
+
+private fun SwipeActionType.icon(): ImageVector? = when (this) {
+    SwipeActionType.DELETE -> Icons.Default.Delete
+    SwipeActionType.DETAIL -> Icons.Default.Info
+    SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
+    SwipeActionType.COPY_USERNAME -> Icons.Default.Person
+    SwipeActionType.DISABLED -> null
+}
 
 @Composable
 fun SwipeActionSelectDialog(
@@ -38,7 +68,7 @@ fun SwipeActionSelectDialog(
         title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
         text = {
             Column(modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp)) {
-                SwipeActionType.entries.forEach { action ->
+                SWIPE_ACTIONS.forEach { action ->
                     val isSelected = action == currentAction
                     val selectedBackground = when (action) {
                         SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer
@@ -64,7 +94,7 @@ fun SwipeActionSelectDialog(
                         verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = isSelected, onClick = { onActionSelected(action) })
                         Spacer(modifier = Modifier.width(8.dp))
-                        action.icon?.let { icon ->
+                        action.icon()?.let { icon ->
                             Icon(
                                 imageVector = icon,
                                 contentDescription = null,
@@ -74,7 +104,7 @@ fun SwipeActionSelectDialog(
                             Spacer(modifier = Modifier.width(12.dp))
                         }
                         Text(
-                            text = action.displayName,
+                            text = action.displayName(),
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurface,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
