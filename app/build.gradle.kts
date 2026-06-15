@@ -32,11 +32,7 @@ android {
         targetSdk = 36
         versionCode = 8
         versionName = "0.3.3"
-        flavorDimensions += listOf("scope")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // 定义 Activity 类名常量
-        buildConfigField("String", "VAULT_ACTIVITY_CLASS", "\"com.aozijx.passly.MainActivity\"")
     }
 
     signingConfigs {
@@ -102,21 +98,6 @@ android {
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
             isUniversalApk = true
-        }
-    }
-
-    productFlavors {
-        // 功能范围 (完整 vs 仅保险箱)
-        create("full") {
-            dimension = "scope"
-            buildConfigField("boolean", "IS_VAULT", "false")
-        }
-        create("vault") {
-            dimension = "scope"
-            applicationIdSuffix = ".vault" // 甚至可以作为独立包名共存
-            versionNameSuffix = "-vault"
-            // 覆盖默认值
-            buildConfigField("boolean", "IS_VAULT", "true")
         }
     }
 
