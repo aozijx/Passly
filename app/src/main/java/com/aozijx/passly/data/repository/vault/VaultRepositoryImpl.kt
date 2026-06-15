@@ -1,6 +1,5 @@
 package com.aozijx.passly.data.repository.vault
 
-import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.data.entity.VaultHistoryEntity
 import com.aozijx.passly.data.local.dao.VaultEntryDao
@@ -10,6 +9,7 @@ import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.data.repository.vault.internal.diffFields
 import com.aozijx.passly.data.repository.vault.internal.withLockGuard
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.repository.vault.VaultRepository
@@ -54,7 +54,9 @@ class VaultRepositoryImpl(
     override suspend fun countByType(type: EntryType): Int =
         withLockGuard({ 0 }) { entryDao.countByType(type.value) }
 
-    override suspend fun insert(entry: VaultEntry): Long = withLockGuard({ -1L }) {
+    override suspend fun insert(entry: VaultEntry): Long = withLockGuard({
+        throw IllegalStateException("数据库未解锁，无法保存条目")
+    }) {
         val id = entryDao.insert(entry.toEntity())
         if (id > 0) {
             historyDao?.insertHistory(

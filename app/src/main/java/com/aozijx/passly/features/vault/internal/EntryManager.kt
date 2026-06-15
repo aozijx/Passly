@@ -28,9 +28,12 @@ internal class EntryManager(
 
     fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
-            vaultUseCases.addEntry(entry, domain)
-            detail.setAddType(null)
-            onComplete()
+            try {
+                vaultUseCases.addEntry(entry, domain)
+            } finally {
+                detail.setAddType(null)
+                onComplete()
+            }
         }
     }
 
