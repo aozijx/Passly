@@ -22,7 +22,7 @@ fun CacheSettingsSection(
         ClickableSettingItem(
             icon = Icons.Default.DeleteSweep,
             title = "清除缓存",
-            longValue = cacheSize,
+            value = cacheSize,
             onClick = onClearCache
         )
     }
@@ -38,7 +38,7 @@ fun AboutSettingsSection(
         ClickableSettingItem(
             icon = Icons.Default.Info,
             title = "关于 Passly",
-            longValue = "版本 $appVersion",
+            value = appVersion,
             onClick = onAboutClick
         )
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
