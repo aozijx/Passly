@@ -14,8 +14,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.R
-import com.aozijx.passly.core.designsystem.LoadingMask
 import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.data.local.DatabaseConfig
@@ -106,10 +104,6 @@ internal fun MainScreen(
                         exitProcess(0)
                     }
                 )
-            }
-
-            mainUiState.isAuthorized && mainUiState.isDatabaseInitializing -> {
-                LoadingMask(message = activity.getString(R.string.loading))
             }
 
             mainUiState.isAuthorized -> {

@@ -6,8 +6,11 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.edit
 import com.aozijx.passly.core.crypto.cryptoconstants.CryptoConstants
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
+import com.aozijx.passly.core.logging.Logcat
 import java.nio.ByteBuffer
+import java.security.KeyStore
 import java.security.SecureRandom
+import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 
 object DatabasePassphraseManager {
@@ -58,13 +61,23 @@ object DatabasePassphraseManager {
             encryptAndStorePassphrase(context, cipher, newPassphrase)
             newPassphrase
         } else {
-            decryptStoredPassphrase(cipher, encryptedBase64)
+            try {
+                decryptStoredPassphrase(cipher, encryptedBase64)
+            } catch (e: AEADBadTagException) {
+                Logcat.e("DBPassphrase", "密钥已失效，正在清理并重置...", e)
+                // 清理已失效的密钥和加密口令
+                val alias = AndroidKeyStoreCipherHelper.getAlias(context)
+                val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+                if (ks.containsAlias(alias)) ks.deleteEntry(alias)
+                prefs.edit { remove(CryptoConstants.KEY_DB_PASSPHRASE) }
+                throw IllegalStateException("密钥已失效，请重新认证")
+            }
         }
     }
 
     fun prepareForRekey(context: Context, invalidateOnBiometricChange: Boolean) {
         val alias = AndroidKeyStoreCipherHelper.getAlias(context)
-        val ks = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         if (ks.containsAlias(alias)) ks.deleteEntry(alias)
         context.getSharedPreferences(CryptoConstants.PREFS_NAME, Context.MODE_PRIVATE).edit {
             remove(CryptoConstants.KEY_DB_PASSPHRASE)
