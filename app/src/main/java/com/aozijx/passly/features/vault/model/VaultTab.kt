@@ -49,12 +49,9 @@ enum class VaultTab(
     );
 
     companion object {
-        fun fromKey(key: String?): VaultTab? =
-            entries.firstOrNull { it.settingsKey == key }
-
         /** 默认启用的 Tab 集合（仅包含仍需展示的 UI 选项 + 必选项）。 */
         val defaultVisibleKeys: Set<String> =
-            entries.filter { !it.isToggleable || it.isUiVisible }
+            entries.filter { !it.isToggleable }
                 .map { it.settingsKey }
                 .toSet()
 
