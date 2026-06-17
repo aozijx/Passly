@@ -3,9 +3,9 @@ package com.aozijx.passly.features.settings.data
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.features.settings.shell.SettingsCard
+import com.aozijx.passly.features.settings.components.switchSettingsItem
 import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
-import com.aozijx.passly.features.settings.shell.SwitchSettingItem
+import com.aozijx.passly.features.settings.shell.SettingsRoundedGroup
 
 @Composable
 fun DataSettingsSection(
@@ -13,11 +13,11 @@ fun DataSettingsSection(
     onAutoDownloadIconsChange: (Boolean) -> Unit
 ) {
     SettingsGroupTitle(text = "数据与下载")
-    SettingsCard {
-        SwitchSettingItem(
+    SettingsRoundedGroup {
+        switchSettingsItem(
             icon = Icons.Default.CloudDownload,
-            title = "自动下载图标",
-            subtitle = "在保险箱列表中自动获取网站图标",
+            title = "下载图标",
+            subtitle = "自动获取网站图标",
             checked = isAutoDownloadIcons,
             onCheckedChange = onAutoDownloadIconsChange
         )

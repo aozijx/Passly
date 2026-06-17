@@ -1,12 +1,10 @@
 package com.aozijx.passly.features.settings.interaction
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.config.AutofillUiMode
-import com.aozijx.passly.features.settings.shell.ClickableSettingItem
-import com.aozijx.passly.features.settings.shell.SettingsCard
+import com.aozijx.passly.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
+import com.aozijx.passly.features.settings.shell.SettingsRoundedGroup
 
 @Composable
 internal fun AutofillSettingsSection(
@@ -14,9 +12,8 @@ internal fun AutofillSettingsSection(
     onToggleAutofillUiMode: () -> Unit
 ) {
     SettingsGroupTitle(text = "自动填充模式")
-    SettingsCard {
-        ClickableSettingItem(
-            icon = Icons.Default.ViewDay,
+    SettingsRoundedGroup {
+        navigationSettingsItem(
             title = "填充方式",
             value = when (autofillUiMode) {
                 AutofillUiMode.SYSTEM_INLINE -> "键盘候选"

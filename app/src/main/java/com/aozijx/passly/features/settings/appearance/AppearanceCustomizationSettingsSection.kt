@@ -1,16 +1,15 @@
 package com.aozijx.passly.features.settings.appearance
 
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.model.VaultCardStyle
-import com.aozijx.passly.features.settings.shell.ClickableSettingItem
-import com.aozijx.passly.features.settings.shell.SettingsCard
+import com.aozijx.passly.features.settings.components.GroupCard
+import com.aozijx.passly.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
+import com.aozijx.passly.features.settings.shell.SettingsRoundedGroup
 
 @Composable
 fun AppearanceCustomizationSettingsSection(
@@ -21,16 +20,19 @@ fun AppearanceCustomizationSettingsSection(
     onTotpStyleSelected: (VaultCardStyle) -> Unit
 ) {
     SettingsGroupTitle(text = "外观定制")
-    SettingsCard {
-        ClickableSettingItem(
+    SettingsRoundedGroup {
+        navigationSettingsItem(
             icon = Icons.Default.Palette, title = "个性化配色", value = "动态取色", onClick = {})
-        HorizontalDivider(Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
-        CardStyleSettingsSection(
-            availableStyles = availableStyles,
-            passwordSelectedStyle = passwordSelectedStyle,
-            totpSelectedStyle = totpSelectedStyle,
-            onPasswordStyleSelected = onPasswordStyleSelected,
-            onTotpStyleSelected = onTotpStyleSelected
-        )
+        item { position ->
+            GroupCard(position = position, contentPadding = PaddingValues(0.dp)) {
+                CardStyleSettingsSection(
+                    availableStyles = availableStyles,
+                    passwordSelectedStyle = passwordSelectedStyle,
+                    totpSelectedStyle = totpSelectedStyle,
+                    onPasswordStyleSelected = onPasswordStyleSelected,
+                    onTotpStyleSelected = onTotpStyleSelected
+                )
+            }
+        }
     }
 }

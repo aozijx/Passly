@@ -28,7 +28,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.config.AppDefaults
 import com.aozijx.passly.features.settings.state.SettingsUiState
-import com.aozijx.passly.features.settings.shell.formatLockTimeoutText
 
 @Composable
 fun LockTimeoutDialog(

@@ -1,8 +1,9 @@
 package com.aozijx.passly.features.settings.data
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.features.settings.shell.SettingsCard
+import com.aozijx.passly.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.features.settings.shell.SettingsGroupTitle
+import com.aozijx.passly.features.settings.shell.SettingsRoundedGroup
 
 @Composable
 fun BackupRestoreSettingsSection(
@@ -13,13 +14,25 @@ fun BackupRestoreSettingsSection(
     onClearPath: (() -> Unit)?
 ) {
     SettingsGroupTitle(text = "备份与恢复")
-    SettingsCard {
-        BackupPathSettingsSection(
-            pathLabel = pathLabel,
-            recentExportFileName = recentExportFileName,
-            onPickPath = onPickPath,
-            onTestWrite = onTestWrite,
-            onClearPath = onClearPath
+    SettingsRoundedGroup {
+        navigationSettingsItem(
+            title = "备份目录",
+            subtitle = pathLabel,
+            onClick = onPickPath
+        )
+        navigationSettingsItem(
+            title = "测试写入权限",
+            onClick = onTestWrite
+        )
+        navigationSettingsItem(
+            title = "最近导出文件",
+            subtitle = recentExportFileName,
+            onClick = {}
+        )
+        navigationSettingsItem(
+            visible = onClearPath != null,
+            title = "清除备份目录",
+            onClick = onClearPath ?: {}
         )
     }
 }

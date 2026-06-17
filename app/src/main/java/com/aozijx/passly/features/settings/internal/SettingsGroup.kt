@@ -6,43 +6,36 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
 internal enum class SettingsGroup(
     val title: String,
     val subtitle: String,
-    val icon: ImageVector,
-    val accentColor: Color
+    val icon: ImageVector
 ) {
     SECURITY_PRIVACY(
-        title = "安全与隐私",
-        subtitle = "密码、锁定、生物识别与防窥保护",
         icon = Icons.Default.Security,
-        accentColor = Color(0xFFE53935)
+        title = "安全与隐私",
+        subtitle = "密码、锁定、生物识别与防窥保护"
     ),
     DISPLAY_APPEARANCE(
-        title = "显示与外观",
-        subtitle = "沉浸式体验、主题配色、卡片样式与标签栏",
         icon = Icons.Default.Palette,
-        accentColor = Color(0xFF7C3AED)
+        title = "显示与外观",
+        subtitle = "沉浸式体验、主题配色、卡片样式与标签栏"
     ),
     INTERACTION(
-        title = "交互与操作",
-        subtitle = "手势控制与自动填充",
         icon = Icons.Default.TouchApp,
-        accentColor = Color(0xFF1E88E5)
+        title = "交互与操作",
+        subtitle = "手势控制与自动填充"
     ),
     DATA_MANAGEMENT(
-        title = "数据管理",
-        subtitle = "自动下载与备份恢复",
         icon = Icons.Default.Storage,
-        accentColor = Color(0xFF43A047)
+        title = "数据管理",
+        subtitle = "自动下载与备份恢复"
     ),
     GENERAL(
-        title = "通用",
-        subtitle = "关于、缓存与应用信息",
         icon = Icons.Default.Info,
-        accentColor = Color(0xFF607D8B)
+        title = "通用",
+        subtitle = "关于、缓存与应用信息"
     )
 }
