@@ -1,7 +1,8 @@
 package com.aozijx.passly.features.settings.internal
 
-import com.aozijx.passly.features.settings.apppassword.AppPasswordAction
-import com.aozijx.passly.features.settings.shell.SettingsScreenLocalState
+import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordAction
+import com.aozijx.passly.ui.features.settings.internal.AppPasswordDialogState
+import com.aozijx.passly.ui.features.settings.shell.SettingsScreenLocalState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

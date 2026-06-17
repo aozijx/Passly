@@ -5,11 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.aozijx.passly.domain.config.UserConfigProvider
-import com.aozijx.passly.features.detail.DetailViewModel
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.settings.SettingsViewModel
-import com.aozijx.passly.features.vault.VaultViewModel
-import com.aozijx.passly.features.verification.VerificationViewModel
+import com.aozijx.passly.ui.features.detail.DetailViewModel
+import com.aozijx.passly.ui.features.main.MainViewModel
+import com.aozijx.passly.ui.features.settings.SettingsViewModel
+import com.aozijx.passly.ui.features.vault.VaultViewModel
+import com.aozijx.passly.ui.features.verification.VerificationViewModel
 
 fun appViewModelFactory(application: Application): ViewModelProvider.Factory {
     val sharedConfigProvider by lazy {

@@ -16,13 +16,13 @@ import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.otp.TwoFAUtils
-import com.aozijx.passly.core.theme.AppTheme
 import com.aozijx.passly.domain.config.AutofillUiMode
 import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.features.verification.internal.VerificationCoordinator
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet
+import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
+import com.aozijx.passly.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 
 class AutofillAuthActivity : FragmentActivity() {

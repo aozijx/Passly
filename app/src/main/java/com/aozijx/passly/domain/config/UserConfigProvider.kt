@@ -10,8 +10,8 @@ import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
-import com.aozijx.passly.features.backup.BackupCoordinator
-import com.aozijx.passly.features.settings.state.SettingsUiState
+import com.aozijx.passly.ui.features.backup.BackupCoordinator
+import com.aozijx.passly.ui.features.settings.state.SettingsUiState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine

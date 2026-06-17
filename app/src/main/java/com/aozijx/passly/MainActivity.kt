@@ -10,11 +10,11 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.di.appViewModelFactory
-import com.aozijx.passly.features.main.MainNotificationPermissionController
-import com.aozijx.passly.features.main.MainSensorController
-import com.aozijx.passly.features.main.MainViewModel
-import com.aozijx.passly.features.main.contract.MainIntent
-import com.aozijx.passly.features.main.ui.MainScreen
+import com.aozijx.passly.ui.features.main.MainNotificationPermissionController
+import com.aozijx.passly.ui.features.main.MainSensorController
+import com.aozijx.passly.ui.features.main.MainViewModel
+import com.aozijx.passly.ui.features.main.contract.MainIntent
+import com.aozijx.passly.ui.features.main.ui.MainScreen
 import kotlin.system.exitProcess
 
 class MainActivity : FragmentActivity() {

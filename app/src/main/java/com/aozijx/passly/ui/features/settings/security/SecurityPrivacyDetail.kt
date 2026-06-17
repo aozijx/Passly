@@ -1,0 +1,44 @@
+package com.aozijx.passly.ui.features.settings.security
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.aozijx.passly.ui.features.settings.internal.SettingsContentActions
+import com.aozijx.passly.ui.features.settings.internal.SettingsContentState
+import com.aozijx.passly.ui.features.settings.shell.sectionSpacing
+
+@Composable
+internal fun SecurityPrivacyDetail(
+    state: SettingsContentState,
+    actions: SettingsContentActions
+) {
+    Column(modifier = Modifier.Companion.sectionSpacing()) {
+        Spacer(modifier = Modifier.height(8.dp))
+        LockAuthSettingsSection(
+            lockTimeout = state.lockTimeout,
+            isAppPasswordEnabled = state.isAppPasswordEnabled,
+            isPasswordPreferredAuthFirst = state.isPasswordPreferredAuthFirst,
+            isDeviceCredentialFallbackEnabled = state.isDeviceCredentialFallbackEnabled,
+            isInvalidateKeyOnBioChange = state.isInvalidateKeyOnBioChange,
+            onLockTimeoutClick = actions.onShowLockTimeoutDialog,
+            onAppPasswordClick = actions.onAppPasswordClick,
+            onPasswordPreferredAuthFirstChange = actions.onPasswordPreferredAuthFirstChange,
+            onDeviceCredentialFallbackToggleRequested = actions.onDeviceCredentialFallbackToggleRequested,
+            onInvalidateKeyOnBioChangeToggle = actions.onInvalidateKeyOnBioChangeToggle
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        SecurityProtectionSettingsSection(
+            isSecureContentEnabled = state.isSecureContentEnabled,
+            isFlipToLockEnabled = state.isFlipToLockEnabled,
+            isFlipExitAndClearStackEnabled = state.isFlipExitAndClearStackEnabled,
+            onSecureContentEnabledChange = actions.onSecureContentEnabledChange,
+            onFlipToLockEnabledChange = actions.onFlipToLockEnabledChange,
+            onFlipExitAndClearStackEnabledChange = actions.onFlipExitAndClearStackEnabledChange
+        )
+    }
+}
