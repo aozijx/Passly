@@ -13,5 +13,6 @@ data class BackupUiState(
     val includeImages: Boolean = true,
     val pendingExportFileName: String? = null,
     val pendingExportAllowFallback: Boolean = false,
-    val emergencyBackupFile: File? = null
+    val emergencyBackupFile: File? = null,
+    val resultMessage: String? = null
 )

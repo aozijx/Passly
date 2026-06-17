@@ -1,5 +1,6 @@
 package com.aozijx.passly.features.backup.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -191,9 +192,18 @@ fun BackupPasswordDialog(
                     val canProceed = if (isExport) state.backupPassword.isNotEmpty() else true
                     if (canProceed) {
                          val authSubtitle = if (isExport) authSubtitleExport else authSubtitleImport
-                         backupCoordinator.processBackupAction(context) { onSuccess ->
-                             onAuthRequired(authTitle, authSubtitle, onSuccess)
-                         }
+                        backupCoordinator.processBackupAction(
+                            context = context,
+                            onAuthRequired = { onSuccess ->
+                                onAuthRequired(authTitle, authSubtitle, onSuccess)
+                            },
+                            onSuccess = { msg ->
+                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                            },
+                            onFailure = { msg ->
+                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                            }
+                        )
                      }
                  }) {
                 Text(confirmText)

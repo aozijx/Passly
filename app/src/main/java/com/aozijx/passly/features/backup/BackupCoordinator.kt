@@ -12,8 +12,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.model.BackupException
+import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.features.backup.contract.BackupUiState
@@ -124,7 +124,12 @@ class BackupCoordinator(
 
     // --- 核心业务执行 ---
 
-    fun processBackupAction(context: Context, onAuthRequired: (onSuccess: () -> Unit) -> Unit) {
+    fun processBackupAction(
+        context: Context,
+        onAuthRequired: (onSuccess: () -> Unit) -> Unit,
+        onSuccess: (String) -> Unit = {},
+        onFailure: (String) -> Unit = {}
+    ) {
         val currentState = state
         val targetUri = currentState.backupUri ?: return
         val password = currentState.backupPassword.toCharArray()
@@ -150,13 +155,17 @@ class BackupCoordinator(
                     }
 
                     when (outcome) {
-                        is AppResult.Success -> handleSuccess(context, currentState)
-                        is AppResult.Failure -> handleFailure(
-                            context,
-                            outcome.error,
-                            finalUri,
-                            currentState
-                        )
+                        is AppResult.Success -> {
+                            handleSuccess(context, currentState)
+                            val msg =
+                                text(if (currentState.isExporting) R.string.backup_export_success else R.string.backup_import_success)
+                            onSuccess(msg)
+                        }
+
+                        is AppResult.Failure -> {
+                            handleFailure(context, outcome.error, finalUri, currentState)
+                            onFailure(outcome.error.toUiMessage(text(R.string.backup_error_unknown)))
+                        }
                     }
 
                     dismissPasswordDialog()
