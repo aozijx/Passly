@@ -25,7 +25,7 @@ fun resolveSigningValue(envName: String, propertyName: String): String? {
 // Android 配置
 android {
     namespace = "com.aozijx.passly"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.aozijx.passly"
@@ -128,6 +128,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.navigation.compose)
 
     // Jetpack Compose & UI

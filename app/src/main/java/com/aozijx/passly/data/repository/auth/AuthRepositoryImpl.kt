@@ -5,7 +5,7 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
 import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
 import com.aozijx.passly.core.auth.biometric.BiometricAuthenticator
-import com.aozijx.passly.core.auth.session.SessionAutoLockScheduler
+import com.aozijx.passly.core.auth.session.AppIdleMonitor
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator.AuthRequestValidationResult
 import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
@@ -17,9 +17,6 @@ import com.aozijx.passly.data.repository.auth.internal.AppPasswordHandler
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,15 +32,14 @@ import kotlin.coroutines.resumeWithException
 @Singleton
 internal class AuthRepositoryImpl @Inject constructor(
     @ApplicationContext private val application: android.content.Context,
-    private val passphraseManager: DatabasePassphraseManager
+    private val passphraseManager: DatabasePassphraseManager,
+    private val idleMonitor: AppIdleMonitor
 ) : AuthRepository {
 
     private val authMutex = Mutex()
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val requestValidator = AuthRequestValidator()
 
     private var currentTimeoutMs: Long = AuthLockConstants.DEFAULT_LOCK_TIMEOUT_MS
-    private var lockScheduler: SessionAutoLockScheduler? = null
 
     private val _isAuthorized = MutableStateFlow(false)
     override val isAuthorized: StateFlow<Boolean> = _isAuthorized.asStateFlow()
@@ -231,12 +227,12 @@ internal class AuthRepositoryImpl @Inject constructor(
         passphraseManager.clearDecryptedPassphrase()
         SessionCryptoKey.clearSessionKey()
         _isAuthorized.update { false }
-        lockScheduler?.cancel()
+        idleMonitor.cancel()
     }
 
     override fun onUserInteraction() {
-        lockScheduler?.cancel()
-        lockScheduler?.schedule(currentTimeoutMs)
+        if (!_isAuthorized.value) return
+        idleMonitor.resetIdleTimer()
     }
 
     override fun checkAndLock() {
@@ -249,9 +245,9 @@ internal class AuthRepositoryImpl @Inject constructor(
     override fun updateLockTimeout(timeoutMs: Long) {
         val normalized = requestValidator.normalizeLockTimeout(timeoutMs)
         currentTimeoutMs = normalized
+        idleMonitor.updateTimeout(normalized)
         if (_isAuthorized.value) {
-            lockScheduler?.cancel()
-            lockScheduler?.schedule(normalized)
+            idleMonitor.resetIdleTimer()
         }
     }
 
@@ -309,8 +305,8 @@ internal class AuthRepositoryImpl @Inject constructor(
 
     private fun onAuthorized() {
         _isAuthorized.update { true }
-        lockScheduler = SessionAutoLockScheduler(scope) { lock() }
-        lockScheduler?.schedule(currentTimeoutMs)
+        idleMonitor.configure(currentTimeoutMs) { lock() }
+        idleMonitor.resetIdleTimer()
     }
 
     private fun recoverFromFailedRekey(invalidateOnBiometricChange: Boolean) {
