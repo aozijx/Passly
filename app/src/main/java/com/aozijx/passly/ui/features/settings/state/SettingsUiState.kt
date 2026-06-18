@@ -8,6 +8,8 @@ data class SettingsUiState(
     val display: UserConfig.Display = UserConfig.Display(),
     val vault: UserConfig.Vault = UserConfig.Vault(),
     val backup: UserConfig.Backup = UserConfig.Backup(),
+    val isDarkMode: Boolean? = null,
+    val isDynamicColor: Boolean = true,
 ) {
     companion object {
         val LOCK_TIMEOUT_PRESETS = listOf(

@@ -71,6 +71,12 @@ class UserConfigProvider @Inject constructor(
     .combine(systemSettingsUseCases.isAutoDownloadIcons) { st, v ->
         st.copy(display = st.display.copy(isAutoDownloadIcons = v))
     }
+        .combine(systemSettingsUseCases.isDarkMode) { st, v ->
+            st.copy(isDarkMode = v)
+        }
+        .combine(systemSettingsUseCases.isDynamicColor) { st, v ->
+            st.copy(isDynamicColor = v)
+        }
     .combine(systemSettingsUseCases.autofillUiMode) { st, v ->
         st.copy(vault = st.vault.copy(autofillUiMode = v))
     }
@@ -177,6 +183,14 @@ class UserConfigProvider @Inject constructor(
 
     fun setAutoDownloadIcons(enabled: Boolean) {
         scope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }
+    }
+
+    fun setDarkMode(enabled: Boolean?) {
+        scope.launch { systemSettingsUseCases.setDarkMode(enabled) }
+    }
+
+    fun setDynamicColor(enabled: Boolean) {
+        scope.launch { systemSettingsUseCases.setDynamicColor(enabled) }
     }
 
     fun setBackupDirectoryUri(uri: String) {

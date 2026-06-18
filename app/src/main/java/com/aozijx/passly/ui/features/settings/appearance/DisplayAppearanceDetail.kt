@@ -19,11 +19,11 @@ internal fun DisplayAppearanceDetail(
         Spacer(modifier = Modifier.height(8.dp))
 
         VisualDynamicsSettingsSection(
-            isDarkMode = false,
+            isDarkMode = state.isDarkMode,
             isStatusBarAutoHide = state.isStatusBarAutoHide,
             isTopBarCollapsible = state.isTopBarCollapsible,
             isTabBarCollapsible = state.isTabBarCollapsible,
-            onDarkModeChange = {},
+            onDarkModeChange = actions.onDarkModeChange,
             onStatusBarAutoHideChange = actions.onStatusBarAutoHideChange,
             onTopBarCollapsibleChange = actions.onTopBarCollapsibleChange,
             onTabBarCollapsibleChange = actions.onTabBarCollapsibleChange
@@ -32,6 +32,8 @@ internal fun DisplayAppearanceDetail(
         Spacer(modifier = Modifier.height(24.dp))
 
         AppearanceCustomizationSettingsSection(
+            isDynamicColor = state.isDynamicColor,
+            onDynamicColorChange = actions.onDynamicColorChange,
             availableStyles = state.availableCardStyles,
             passwordSelectedStyle = state.passwordSelectedStyle,
             totpSelectedStyle = state.totpSelectedStyle,
