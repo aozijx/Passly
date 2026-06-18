@@ -23,7 +23,10 @@ internal data class SearchFilterUiState(
     val isMoreMenuExpanded: Boolean = false
 )
 
-internal class SearchFilterState(scope: CoroutineScope) {
+internal class SearchFilterState(
+    scope: CoroutineScope,
+    initialSort: SortOption = SortOption.DEFAULT
+) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
@@ -39,7 +42,7 @@ internal class SearchFilterState(scope: CoroutineScope) {
     private val _isMoreMenuExpanded = MutableStateFlow(false)
     val isMoreMenuExpanded: StateFlow<Boolean> = _isMoreMenuExpanded
 
-    private val _selectedSort = MutableStateFlow(SortOption.DEFAULT)
+    private val _selectedSort = MutableStateFlow(initialSort)
     val selectedSort: StateFlow<SortOption> = _selectedSort
 
     val uiStateFlow: StateFlow<SearchFilterUiState> = combine(

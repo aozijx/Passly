@@ -17,6 +17,7 @@ import com.aozijx.passly.data.repository.settings.internal.SWIPE_ENABLED_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_LEFT_ACTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_RIGHT_ACTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY
+import com.aozijx.passly.data.repository.settings.internal.VAULT_SORT_OPTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.VISIBLE_VAULT_TABS_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import com.aozijx.passly.domain.config.AppDefaults
@@ -25,6 +26,7 @@ import com.aozijx.passly.domain.config.UserConfig
 import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
+import com.aozijx.passly.ui.features.vault.model.SortOption
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -103,6 +105,11 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         appContext.settingsDataStore.data.map {
             it[AUTO_DOWNLOAD_ICONS_KEY] ?: defaultConfig.display.isAutoDownloadIcons
         }
+    override val vaultSortOption: Flow<SortOption> =
+        appContext.settingsDataStore.data.map { prefs ->
+            prefs[VAULT_SORT_OPTION_KEY]?.let { SortOption.entries.find { s -> s.name == it } }
+                ?: SortOption.DEFAULT
+        }
 
     override suspend fun setDarkMode(enabled: Boolean?) {
         appContext.settingsDataStore.edit {
@@ -177,5 +184,9 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
 
     override suspend fun setAutoDownloadIcons(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[AUTO_DOWNLOAD_ICONS_KEY] = enabled }
+    }
+
+    override suspend fun setVaultSortOption(sort: SortOption) {
+        appContext.settingsDataStore.edit { it[VAULT_SORT_OPTION_KEY] = sort.name }
     }
 }

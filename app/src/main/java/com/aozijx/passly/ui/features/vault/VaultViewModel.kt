@@ -33,16 +33,18 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
 class VaultViewModel @Inject constructor(
     application: Application,
     private val vaultUseCases: VaultUseCases,
-    systemSettingsUseCases: SystemSettingsUseCases
+    private val systemSettingsUseCases: SystemSettingsUseCases
 ) : AndroidViewModel(application) {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
@@ -73,7 +75,10 @@ class VaultViewModel @Inject constructor(
     )
 
     private val queryCoordinator = VaultQueryCoordinator(vaultUseCases)
-    private val searchFilter = SearchFilterState(viewModelScope)
+    private val searchFilter = SearchFilterState(
+        viewModelScope,
+        initialSort = runBlocking { systemSettingsUseCases.vaultSortOption.first() }
+    )
 
     private val isAutoDownloadIcons: StateFlow<Boolean> =
         systemSettingsUseCases.isAutoDownloadIcons
@@ -157,7 +162,10 @@ class VaultViewModel @Inject constructor(
     fun onSearchQueryChange(q: String) = searchFilter.updateSearchQuery(q)
     fun setSelectedCategory(category: String?) = searchFilter.updateSelectedCategory(category)
     fun clearSelectedCategory() = setSelectedCategory(null)
-    fun selectSortOption(sort: SortOption) = searchFilter.updateSelectedSort(sort)
+    fun selectSortOption(sort: SortOption) {
+        searchFilter.updateSelectedSort(sort)
+        viewModelScope.launch { systemSettingsUseCases.setVaultSortOption(sort) }
+    }
     fun selectTab(tab: VaultTab) = searchFilter.updateSelectedTab(tab)
     fun toggleSearch(active: Boolean) = searchFilter.toggleSearch(active)
     fun toggleShowTOTPCode() {

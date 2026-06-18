@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.config.AutofillUiMode
 import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
+import com.aozijx.passly.ui.features.vault.model.SortOption
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -36,6 +37,9 @@ class SystemSettingsUseCases @Inject constructor(private val repository: SystemS
     // 数据与下载
     val isAutoDownloadIcons: Flow<Boolean> = repository.isAutoDownloadIcons
 
+    // 排序
+    val vaultSortOption: Flow<SortOption> = repository.vaultSortOption
+
     // 操作方法
     suspend fun setDarkMode(enabled: Boolean?) = repository.setDarkMode(enabled)
     suspend fun setDynamicColor(enabled: Boolean) = repository.setDynamicColor(enabled)
@@ -55,4 +59,5 @@ class SystemSettingsUseCases @Inject constructor(private val repository: SystemS
     suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) =
         repository.setTabBarMaxTabsWithoutScroll(maxTabs)
     suspend fun setAutoDownloadIcons(enabled: Boolean) = repository.setAutoDownloadIcons(enabled)
+    suspend fun setVaultSortOption(sort: SortOption) = repository.setVaultSortOption(sort)
 }

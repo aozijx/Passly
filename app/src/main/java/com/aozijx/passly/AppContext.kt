@@ -60,11 +60,14 @@ class AppContext : Application() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 activity.findViewById<ViewGroup>(android.R.id.content)
-                    ?.setOnTouchListener { _, event ->
+                    ?.setOnTouchListener { v, event ->
                         if (event.action == MotionEvent.ACTION_DOWN
                             || event.action == MotionEvent.ACTION_MOVE
                             || event.action == MotionEvent.ACTION_UP
                         ) {
+                            if (event.action == MotionEvent.ACTION_UP) {
+                                v.performClick()
+                            }
                             idleMonitor.resetIdleTimer()
                         }
                         false
