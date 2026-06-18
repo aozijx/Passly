@@ -2,6 +2,7 @@ package com.aozijx.passly.ui.features.vault.internal
 
 import android.content.Context
 import android.net.Uri
+import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
@@ -18,10 +19,12 @@ internal class EntryManager(
     private val vaultUseCases: VaultUseCases,
     private val iconHelper: EntryIconHelper,
     private val detail: DetailCoordinator,
-    private val totp: TotpCoordinator
+    private val totp: TotpCoordinator,
+    private val onError: (String) -> Unit = {}
 ) {
     private val handler = CoroutineExceptionHandler { _, throwable ->
         Logcat.e("EntryManager", "Operation failed", throwable)
+        onError("操作失败: ${throwable.message ?: "未知错误"}")
     }
     private val deletingIds = mutableSetOf<Int>()
     private val deletingIdsMutex = Mutex()
@@ -30,6 +33,8 @@ internal class EntryManager(
         scope.launch(Dispatchers.IO + handler) {
             try {
                 vaultUseCases.addEntry(entry, domain)
+            } catch (e: AppError) {
+                onError(e.message)
             } finally {
                 detail.setAddType(null)
                 onComplete()
@@ -39,9 +44,13 @@ internal class EntryManager(
 
     fun updateEntry(entry: VaultEntry) {
         scope.launch(Dispatchers.IO + handler) {
-            vaultUseCases.updateEntry(entry)
-            detail.updateEntry(entry)
-            totp.onEntryUpdated(entry)
+            try {
+                vaultUseCases.updateEntry(entry)
+                detail.updateEntry(entry)
+                totp.onEntryUpdated(entry)
+            } catch (e: AppError) {
+                onError(e.message)
+            }
         }
     }
 
@@ -72,6 +81,8 @@ internal class EntryManager(
             entry?.let { vaultUseCases.deleteEntry(it) }
             detail.setItemToDelete(null)
             totp.clearSensitiveState(entryId)
+        } catch (e: AppError) {
+            onError(e.message)
         } finally {
             deletingIdsMutex.withLock { deletingIds.remove(entryId) }
         }
@@ -79,10 +90,15 @@ internal class EntryManager(
 
     fun saveCustomIcon(context: Context, item: VaultEntry, uri: Uri, onFailed: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
-            val internalPath = iconHelper.saveCustomIcon(context, item, uri)
-            if (internalPath != null) {
-                updateEntry(item.copy(iconName = null, iconCustomPath = internalPath))
-            } else {
+            try {
+                val internalPath = iconHelper.saveCustomIcon(context, item, uri)
+                if (internalPath != null) {
+                    updateEntry(item.copy(iconName = null, iconCustomPath = internalPath))
+                } else {
+                    onFailed()
+                }
+            } catch (e: AppError) {
+                onError(e.message)
                 onFailed()
             }
         }

@@ -3,17 +3,16 @@ package com.aozijx.passly.ui.features.vault
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import com.aozijx.passly.ui.features.detail.internal.VaultDetailCoordinatorState
+import com.aozijx.passly.ui.features.vault.contract.VaultEffect
 import com.aozijx.passly.ui.features.vault.contract.VaultUiState
 import com.aozijx.passly.ui.features.vault.internal.AutofillCoordinator
 import com.aozijx.passly.ui.features.vault.internal.DetailCoordinator
@@ -27,9 +26,12 @@ import com.aozijx.passly.ui.features.vault.model.AddType
 import com.aozijx.passly.ui.features.vault.model.SortOption
 import com.aozijx.passly.ui.features.vault.model.VaultTab
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -43,6 +45,17 @@ class VaultViewModel @Inject constructor(
     systemSettingsUseCases: SystemSettingsUseCases
 ) : AndroidViewModel(application) {
 
+    private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
+    val effects: SharedFlow<VaultEffect> = _effects.asSharedFlow()
+
+    private fun emitError(message: String) {
+        _effects.tryEmit(VaultEffect.ShowError(message))
+    }
+
+    private fun emitToast(message: String) {
+        _effects.tryEmit(VaultEffect.ShowToast(message))
+    }
+
     private val autofill = AutofillCoordinator()
     private val totp = TotpCoordinator(
         scope = viewModelScope,
@@ -55,7 +68,8 @@ class VaultViewModel @Inject constructor(
         vaultUseCases = vaultUseCases,
         iconHelper = EntryIconHelper(),
         detail = detail,
-        totp = totp
+        totp = totp,
+        onError = { emitError(it) }
     )
 
     private val queryCoordinator = VaultQueryCoordinator(vaultUseCases)
@@ -215,11 +229,7 @@ class VaultViewModel @Inject constructor(
             item = item,
             uri = uri,
             onFailed = {
-                Toast.makeText(
-                    getApplication(),
-                    R.string.vault_toast_save_icon_failed,
-                    Toast.LENGTH_SHORT
-                ).show()
+                emitToast("图标保存失败")
             }
         )
     }

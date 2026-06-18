@@ -16,6 +16,7 @@ import com.aozijx.passly.core.backup.BackupManager.readFullyOrThrow
 import com.aozijx.passly.core.backup.BackupManager.readSingleByteOrThrow
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.di.IoDispatcher
 import com.aozijx.passly.data.dto.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
@@ -27,7 +28,7 @@ import com.aozijx.passly.domain.model.BackupException
 import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
@@ -42,7 +43,8 @@ import javax.inject.Inject
 internal class BackupRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val passphraseManager: DatabasePassphraseManager,
-    private val imageStore: BackupVInternalImageStore
+    private val imageStore: BackupVInternalImageStore,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
 
     private val dataSource: BackupDataSource =
@@ -52,7 +54,7 @@ internal class BackupRepositoryImpl @Inject constructor(
         uri: Uri,
         password: CharArray,
         includeImages: Boolean
-    ) = withContext(Dispatchers.IO) {
+    ) = withContext(ioDispatcher) {
         try {
             val entities = dataSource.readAllEntries()
             val exportPayloads = mutableListOf<VaultPayload>()
@@ -103,7 +105,7 @@ internal class BackupRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun exportPlainBackup(uri: Uri) = withContext(Dispatchers.IO) {
+    override suspend fun exportPlainBackup(uri: Uri) = withContext(ioDispatcher) {
         try {
             val entities = dataSource.readAllEntries()
             val payloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
@@ -115,7 +117,7 @@ internal class BackupRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun exportEmergencyBackup(): File = withContext(Dispatchers.IO) {
+    override suspend fun exportEmergencyBackup(): File = withContext(ioDispatcher) {
         try {
             EmergencyBackupExporter.exportOnFailure(context, passphraseManager).getOrElse {
                 throw mapToAppError("backup.export.emergency", it)
@@ -129,7 +131,7 @@ internal class BackupRepositoryImpl @Inject constructor(
         uri: Uri,
         password: CharArray,
         mode: BackupImportMode
-    ) = withContext(Dispatchers.IO) {
+    ) = withContext(ioDispatcher) {
         try {
             context.openBackupInputStream(uri).use { input ->
                 val readMagic = ByteArray(MAGIC_NUMBER.size)

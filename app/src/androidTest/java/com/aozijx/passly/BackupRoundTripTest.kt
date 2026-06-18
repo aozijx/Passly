@@ -12,6 +12,7 @@ import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import org.json.JSONArray
@@ -64,7 +65,8 @@ class BackupRoundTripTest {
         repository = BackupRepositoryImpl(
             context,
             passphraseManager,
-            imageStore = imageStore
+            imageStore = imageStore,
+            ioDispatcher = Dispatchers.IO
         )
     }
 
