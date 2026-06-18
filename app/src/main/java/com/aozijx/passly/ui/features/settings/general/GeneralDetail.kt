@@ -28,7 +28,7 @@ internal fun GeneralDetail(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var cacheSize by remember { mutableStateOf(CacheUtils.calculateSize(context.cacheDir)) }
+    var cacheSize by remember { mutableStateOf(CacheUtils.calculateTotalCacheSize(context)) }
 
     Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
@@ -38,9 +38,9 @@ internal fun GeneralDetail(
             onClearCache = {
                 scope.launch {
                     withContext(Dispatchers.IO) {
-                        CacheUtils.clearDir(context.cacheDir)
+                        CacheUtils.clearAllCache(context)
                     }
-                    cacheSize = CacheUtils.calculateSize(context.cacheDir)
+                    cacheSize = CacheUtils.calculateTotalCacheSize(context)
                 }
             }
         )
