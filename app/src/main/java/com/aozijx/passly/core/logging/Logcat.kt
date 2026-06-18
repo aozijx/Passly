@@ -140,6 +140,36 @@ object Logcat {
             }
         }
     }
+
+    fun readAllLogs(): String {
+        flushLogs()
+        return try {
+            val logDir = getLogFolder() ?: return ""
+            val files = logDir.listFiles()?.sortedByDescending { it.name } ?: return ""
+            val builder = StringBuilder()
+            files.forEach { file ->
+                runCatching { file.readText() }
+                    .onSuccess { builder.append(it).append("\n") }
+                    .onFailure { Log.w(DEFAULT_TAG, "Failed to read log file: ${file.name}") }
+            }
+            builder.toString()
+        } catch (e: Exception) {
+            Log.e(DEFAULT_TAG, "Failed to read logs", e)
+            ""
+        }
+    }
+
+    fun clearAllLogs() {
+        logExecutor.execute {
+            try {
+                val logDir = getLogFolder() ?: return@execute
+                val files = logDir.listFiles() ?: return@execute
+                files.forEach { it.delete() }
+            } catch (e: Exception) {
+                Log.e(DEFAULT_TAG, "Failed to clear logs", e)
+            }
+        }
+    }
 }
 
 

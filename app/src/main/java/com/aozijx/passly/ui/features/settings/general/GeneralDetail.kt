@@ -30,7 +30,7 @@ internal fun GeneralDetail(
     val scope = rememberCoroutineScope()
     var cacheSize by remember { mutableStateOf(CacheUtils.calculateSize(context.cacheDir)) }
 
-    Column(modifier = Modifier.Companion.sectionSpacing()) {
+    Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
 
         CacheSettingsSection(
@@ -44,6 +44,10 @@ internal fun GeneralDetail(
                 }
             }
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        LogSettingsSection()
 
         Spacer(modifier = Modifier.height(24.dp))
 
