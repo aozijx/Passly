@@ -33,7 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.ui.features.settings.appearance.DisplayAppearanceDetail
+import com.aozijx.passly.ui.features.settings.appearance.AppearanceDetail
+import com.aozijx.passly.ui.features.settings.appearance.InterfaceDetail
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.ui.features.settings.data.DataManagementDetail
 import com.aozijx.passly.ui.features.settings.general.GeneralDetail
@@ -41,7 +42,8 @@ import com.aozijx.passly.ui.features.settings.interaction.InteractionDetail
 import com.aozijx.passly.ui.features.settings.internal.SettingsContentActions
 import com.aozijx.passly.ui.features.settings.internal.SettingsContentState
 import com.aozijx.passly.ui.features.settings.internal.SettingsGroup
-import com.aozijx.passly.ui.features.settings.security.SecurityPrivacyDetail
+import com.aozijx.passly.ui.features.settings.security.PrivacyDetail
+import com.aozijx.passly.ui.features.settings.security.SecurityDetail
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,18 +76,32 @@ internal fun SettingsScreenContent(
                 onGroupClick = { selectedGroup = it }
             )
 
-            SettingsGroup.SECURITY_PRIVACY -> SettingsSecondaryPage(
+            SettingsGroup.SECURITY -> SettingsSecondaryPage(
                 title = group.title,
                 onBack = { selectedGroup = null }
             ) {
-                item { SecurityPrivacyDetail(state, actions) }
+                item { SecurityDetail(state, actions) }
             }
 
-            SettingsGroup.DISPLAY_APPEARANCE -> SettingsSecondaryPage(
+            SettingsGroup.PRIVACY -> SettingsSecondaryPage(
                 title = group.title,
                 onBack = { selectedGroup = null }
             ) {
-                item { DisplayAppearanceDetail(state, actions) }
+                item { PrivacyDetail(state, actions) }
+            }
+
+            SettingsGroup.APPEARANCE -> SettingsSecondaryPage(
+                title = group.title,
+                onBack = { selectedGroup = null }
+            ) {
+                item { AppearanceDetail(state, actions) }
+            }
+
+            SettingsGroup.INTERFACE -> SettingsSecondaryPage(
+                title = group.title,
+                onBack = { selectedGroup = null }
+            ) {
+                item { InterfaceDetail(state, actions) }
             }
 
             SettingsGroup.INTERACTION -> SettingsSecondaryPage(
@@ -159,20 +175,34 @@ private fun SettingsMainPage(
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            item {
-                SettingsRoundedGroup {
-                    SettingsGroup.entries.forEach { group ->
-                        navigationSettingsItem(
-                            icon = group.icon,
-                            title = group.title,
-                            subtitle = group.subtitle,
-                            onClick = { onGroupClick(group) }
-                        )
+            val settingSections = listOf(
+                "安全与隐私" to listOf(SettingsGroup.SECURITY, SettingsGroup.PRIVACY),
+                "显示与外观" to listOf(SettingsGroup.APPEARANCE, SettingsGroup.INTERFACE),
+                "交互与操作" to listOf(SettingsGroup.INTERACTION),
+                "数据管理" to listOf(SettingsGroup.DATA_MANAGEMENT),
+                "通用" to listOf(SettingsGroup.GENERAL)
+            )
+
+            settingSections.forEach { (sectionTitle, groups) ->
+                item {
+                    SettingsGroupTitle(text = sectionTitle)
+                }
+                item {
+                    SettingsRoundedGroup {
+                        groups.forEach { group ->
+                            navigationSettingsItem(
+                                icon = group.icon,
+                                title = group.title,
+                                subtitle = group.subtitle,
+                                onClick = { onGroupClick(group) }
+                            )
+                        }
                     }
                 }
+                item { Spacer(modifier = Modifier.height(12.dp)) }
             }
 
-            item { Spacer(modifier = Modifier.height(20.dp)) }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
         }
     }
 }

@@ -35,7 +35,7 @@ fun LockTimeoutDialog(
     onTimeoutSelected: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val presets = SettingsUiState.Companion.LOCK_TIMEOUT_PRESETS
+    val presets = SettingsUiState.LOCK_TIMEOUT_PRESETS
     var selectedTimeout by remember(currentTimeoutMs) {
         mutableLongStateOf(currentTimeoutMs.coerceAtLeast(AppDefaults.MIN_LOCK_TIMEOUT_MS))
     }

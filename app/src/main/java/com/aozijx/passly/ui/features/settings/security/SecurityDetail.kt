@@ -11,11 +11,11 @@ import com.aozijx.passly.ui.features.settings.internal.SettingsContentState
 import com.aozijx.passly.ui.features.settings.shell.sectionSpacing
 
 @Composable
-internal fun SecurityPrivacyDetail(
+internal fun SecurityDetail(
     state: SettingsContentState,
     actions: SettingsContentActions
 ) {
-    Column(modifier = Modifier.Companion.sectionSpacing()) {
+    Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
         LockAuthSettingsSection(
             lockTimeout = state.lockTimeout,
@@ -28,17 +28,6 @@ internal fun SecurityPrivacyDetail(
             onPasswordPreferredAuthFirstChange = actions.onPasswordPreferredAuthFirstChange,
             onDeviceCredentialFallbackToggleRequested = actions.onDeviceCredentialFallbackToggleRequested,
             onInvalidateKeyOnBioChangeToggle = actions.onInvalidateKeyOnBioChangeToggle
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        SecurityProtectionSettingsSection(
-            isSecureContentEnabled = state.isSecureContentEnabled,
-            isFlipToLockEnabled = state.isFlipToLockEnabled,
-            isFlipExitAndClearStackEnabled = state.isFlipExitAndClearStackEnabled,
-            onSecureContentEnabledChange = actions.onSecureContentEnabledChange,
-            onFlipToLockEnabledChange = actions.onFlipToLockEnabledChange,
-            onFlipExitAndClearStackEnabledChange = actions.onFlipExitAndClearStackEnabledChange
         )
     }
 }
