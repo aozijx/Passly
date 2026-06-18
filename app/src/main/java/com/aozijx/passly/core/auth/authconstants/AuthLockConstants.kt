@@ -1,8 +1,10 @@
 package com.aozijx.passly.core.auth.authconstants
 
+import com.aozijx.passly.domain.config.AppDefaults
+
 object AuthLockConstants {
     /** 用户无操作后自动锁定的最短时间（毫秒），不可低于此值 */
-    const val MIN_LOCK_TIMEOUT_MS: Long = 5_000L
+    const val MIN_LOCK_TIMEOUT_MS: Long = AppDefaults.MIN_LOCK_TIMEOUT_MS
 
     /** 用户无操作后自动锁定的默认时间（毫秒），即 1 分钟 */
     const val DEFAULT_LOCK_TIMEOUT_MS: Long = 60_000L

@@ -75,7 +75,7 @@ fun LockTimeoutDialog(
                     onValueChange = { if (it.all(Char::isDigit)) customSeconds = it },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    label = { Text("自定义秒数（最少 5 秒）") },
+                    label = { Text("自定义秒数（最少 ${AppDefaults.MIN_LOCK_TIMEOUT_MS / 1000L} 秒）") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(6.dp))
