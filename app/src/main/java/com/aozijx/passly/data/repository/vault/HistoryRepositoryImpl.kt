@@ -9,7 +9,11 @@ import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class HistoryRepositoryImpl(
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class HistoryRepositoryImpl @Inject constructor(
     private val historyDao: VaultHistoryDao
 ) : HistoryRepository {
     override fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistory>> =

@@ -1,17 +1,16 @@
 package com.aozijx.passly.ui.features.detail
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
-import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
 import com.aozijx.passly.domain.usecase.detail.DetailUseCases
 import com.aozijx.passly.domain.usecase.userconfig.UserConfigUseCases
 import com.aozijx.passly.ui.features.detail.contract.DetailEffect
 import com.aozijx.passly.ui.features.detail.contract.DetailEvent
 import com.aozijx.passly.ui.features.detail.contract.DetailUiState
 import com.aozijx.passly.ui.features.detail.page.internal.DetailEntryAnalyzer
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,12 +19,13 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class DetailViewModel(
-    application: Application,
+@HiltViewModel
+class DetailViewModel @Inject constructor(
     private val detailUseCases: DetailUseCases,
     private val userConfigUseCases: UserConfigUseCases
-) : AndroidViewModel(application) {
+) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer()
 
     companion object {
@@ -38,7 +38,6 @@ class DetailViewModel(
     val effects: SharedFlow<DetailEffect> = _effects.asSharedFlow()
 
     init {
-        EntryTypeStrategyRegistry.ensureRegistered()
         viewModelScope.launch {
             userConfigUseCases.userConfig.collect { config ->
                 val enabled = config.extras[ACCESS_HISTORY_TOGGLE_KEY]

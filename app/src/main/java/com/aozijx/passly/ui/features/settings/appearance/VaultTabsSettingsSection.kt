@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.config.AppDefaults
 import com.aozijx.passly.ui.features.settings.components.GroupCard
-import com.aozijx.passly.ui.features.settings.components.RoundedGroupScope
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
 import com.aozijx.passly.ui.features.vault.model.VaultTab
@@ -48,7 +47,7 @@ fun VaultTabsSettingsSection(
 
     SettingsGroupTitle(text = "保险箱 Tab")
     SettingsRoundedGroup {
-        RoundedGroupScope.item { position ->
+        item { position ->
             GroupCard(position = position, contentPadding = PaddingValues(0.dp)) {
                 Row(
                     modifier = Modifier

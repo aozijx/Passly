@@ -9,7 +9,11 @@ import com.aozijx.passly.domain.repository.vault.VaultSearchRepository.EntryFilt
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class VaultSearchRepositoryImpl(
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class VaultSearchRepositoryImpl @Inject constructor(
     private val entryDao: VaultEntryDao
 ) : VaultSearchRepository {
 

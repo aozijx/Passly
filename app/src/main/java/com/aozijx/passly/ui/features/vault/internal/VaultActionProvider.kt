@@ -44,13 +44,13 @@ fun rememberVaultActionProvider(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    configProvider: UserConfigProvider,
+    userConfigProvider: UserConfigProvider,
     uiState: VaultUiState,
     onShowDetail: (VaultEntry) -> Unit,
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
     val context = LocalContext.current
-    val userConfig by configProvider.config.collectAsStateWithLifecycle()
+    val userConfig by userConfigProvider.config.collectAsStateWithLifecycle()
     val decryptAuthTitle = stringResource(R.string.vault_auth_decrypt_title)
     val decryptAuthSubtitle = stringResource(R.string.vault_auth_decrypt_subtitle_generic)
     val totpCopiedText = stringResource(R.string.vault_totp_copied)
@@ -122,23 +122,23 @@ fun rememberVaultActionProvider(
     val exportLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.CreateDocument("application/octet-stream")) { uri: Uri? ->
             uri?.let { selectedUri ->
-                configProvider.backup.startExport(
+                userConfigProvider.backup.startExport(
                     selectedUri, fileNameHint = pendingManualExportFileName
                 )
             }
             pendingManualExportFileName = null
         }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { configProvider.backup.startImport(it) }
+        it?.let { userConfigProvider.backup.startImport(it) }
     }
 
-    val onExportClick = remember(configProvider, exportLauncher) {
+    val onExportClick = remember(userConfigProvider, exportLauncher) {
         {
-            val started = configProvider.backup.tryStartExportInConfiguredDirectory(
+            val started = userConfigProvider.backup.tryStartExportInConfiguredDirectory(
                 userConfig.backup.directoryUri
             )
             if (!started) {
-                val manualFileName = configProvider.backup.nextBackupFileName()
+                val manualFileName = userConfigProvider.backup.nextBackupFileName()
                 pendingManualExportFileName = manualFileName
                 exportLauncher.launch(manualFileName)
             }

@@ -17,44 +17,51 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 
-class VaultRepositoryImpl(
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class VaultRepositoryImpl @Inject constructor(
     private val entryDao: VaultEntryDao,
-    private val historyDao: VaultHistoryDao? = null
+    private val historyDao: VaultHistoryDao? = null,
+    private val passphraseManager: DatabasePassphraseManager
 ) : VaultRepository {
 
-    override val allEntries: Flow<List<VaultEntry>> = withLockGuard({ emptyFlow() }) {
+    override val allEntries: Flow<List<VaultEntry>> =
+        passphraseManager.withLockGuard({ emptyFlow() }) {
         entryDao.observeAll().map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
     override fun observeByType(type: EntryType): Flow<List<VaultEntry>> =
-        withLockGuard({ emptyFlow() }) {
+        passphraseManager.withLockGuard({ emptyFlow() }) {
             entryDao.observeByType(type.value).map { it.toDomainList() }
         }
 
-    override suspend fun getEntryById(entryId: Int): VaultEntry? = withLockGuard({ null }) {
+    override suspend fun getEntryById(entryId: Int): VaultEntry? =
+        passphraseManager.withLockGuard({ null }) {
         entryDao.getEntryById(entryId)?.toDomain()
     }
 
     override suspend fun getByType(type: EntryType): List<VaultEntry> =
-        withLockGuard({ emptyList() }) {
+        passphraseManager.withLockGuard({ emptyList() }) {
             entryDao.getByType(type.value).toDomainList()
         }
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> =
-        withLockGuard({ emptyList() }) {
+        passphraseManager.withLockGuard({ emptyList() }) {
             entryDao.getAll().toDomainList().filter {
                 !it.associatedDomain.isNullOrEmpty()
             }
         }
 
-    override suspend fun count(): Int = withLockGuard({ 0 }) { entryDao.count() }
+    override suspend fun count(): Int = passphraseManager.withLockGuard({ 0 }) { entryDao.count() }
 
     override suspend fun countByType(type: EntryType): Int =
-        withLockGuard({ 0 }) { entryDao.countByType(type.value) }
+        passphraseManager.withLockGuard({ 0 }) { entryDao.countByType(type.value) }
 
-    override suspend fun insert(entry: VaultEntry): Long = withLockGuard({
+    override suspend fun insert(entry: VaultEntry): Long = passphraseManager.withLockGuard({
         throw IllegalStateException("数据库未解锁，无法保存条目")
     }) {
         val id = entryDao.insert(entry.toEntity())
@@ -74,7 +81,7 @@ class VaultRepositoryImpl(
     }
 
     override suspend fun update(entry: VaultEntry) {
-        if (DatabasePassphraseManager.isLocked) return
+        if (passphraseManager.isLocked) return
         if (historyDao != null) {
             val old = entryDao.getEntryById(entry.id)?.toDomain()
             if (old != null) {
@@ -97,7 +104,7 @@ class VaultRepositoryImpl(
     }
 
     override suspend fun recordUsage(entryId: Int) {
-        if (DatabasePassphraseManager.isLocked) return
+        if (passphraseManager.isLocked) return
         val entity = entryDao.getEntryById(entryId) ?: return
         val entry = entity.toDomain()
 
@@ -120,12 +127,12 @@ class VaultRepositoryImpl(
     }
 
     override suspend fun delete(entry: VaultEntry) {
-        if (DatabasePassphraseManager.isLocked) return
+        if (passphraseManager.isLocked) return
         entryDao.delete(entry.toEntity())
     }
 
     override suspend fun deleteAll() {
-        if (DatabasePassphraseManager.isLocked) return
+        if (passphraseManager.isLocked) return
         entryDao.deleteAll()
     }
 }

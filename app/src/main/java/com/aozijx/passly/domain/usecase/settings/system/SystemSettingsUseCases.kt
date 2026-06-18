@@ -9,7 +9,11 @@ import kotlinx.coroutines.flow.Flow
 /**
  * 系统级设置用例：负责全局行为、界面样式、自动填充模式等非业务逻辑设置
  */
-class SystemSettingsUseCases(private val repository: SystemSettingsRepository) {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SystemSettingsUseCases @Inject constructor(private val repository: SystemSettingsRepository) {
     // 界面相关
     val isDarkMode: Flow<Boolean?> = repository.isDarkMode
     val isDynamicColor: Flow<Boolean> = repository.isDynamicColor

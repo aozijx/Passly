@@ -12,10 +12,15 @@ import com.aozijx.passly.data.repository.settings.internal.PASSWORD_PREFERRED_AU
 import com.aozijx.passly.data.repository.settings.internal.SECURE_CONTENT_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class SecuritySettingsRepositoryImpl(context: Context) : SecuritySettingsRepository {
+@Singleton
+class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext context: Context) :
+    SecuritySettingsRepository {
     private val appContext = context.applicationContext
 
     override val lockTimeout: Flow<Long> =

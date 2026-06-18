@@ -15,6 +15,7 @@ import com.aozijx.passly.core.backup.BackupManager.getCipher
 import com.aozijx.passly.core.backup.BackupManager.readFullyOrThrow
 import com.aozijx.passly.core.backup.BackupManager.readSingleByteOrThrow
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.data.dto.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
@@ -22,9 +23,10 @@ import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
 import com.aozijx.passly.data.repository.backup.internal.mapToAppError
 import com.aozijx.passly.data.repository.backup.internal.openBackupInputStream
 import com.aozijx.passly.data.repository.backup.internal.openBackupOutputStream
-import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.model.BackupException
+import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -35,12 +37,16 @@ import java.util.zip.ZipOutputStream
 import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
+import javax.inject.Inject
 
-internal class BackupRepositoryImpl(
-    private val context: Context,
-    private val dataSource: BackupDataSource = BackupRoomDataSource(context),
-    private val imageStore: BackupVInternalImageStore = BackupVInternalImageStore(context)
+internal class BackupRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val passphraseManager: DatabasePassphraseManager,
+    private val imageStore: BackupVInternalImageStore
 ) : BackupRepository {
+
+    private val dataSource: BackupDataSource =
+        BackupRoomDataSource(context, passphraseManager)
 
     override suspend fun exportEncryptedBackup(
         uri: Uri,
@@ -111,7 +117,7 @@ internal class BackupRepositoryImpl(
 
     override suspend fun exportEmergencyBackup(): File = withContext(Dispatchers.IO) {
         try {
-            EmergencyBackupExporter.exportOnFailure(context).getOrElse {
+            EmergencyBackupExporter.exportOnFailure(context, passphraseManager).getOrElse {
                 throw mapToAppError("backup.export.emergency", it)
             }
         } catch (e: Throwable) {

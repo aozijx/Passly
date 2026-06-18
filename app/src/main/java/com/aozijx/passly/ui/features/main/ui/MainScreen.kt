@@ -12,9 +12,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.ui.features.backup.components.PlainExportDialog
@@ -32,28 +31,27 @@ import kotlin.system.exitProcess
 internal fun MainScreen(
     activity: FragmentActivity,
     viewModel: MainViewModel,
-    sensorController: MainSensorController
+    sensorController: MainSensorController,
+    userConfigProvider: UserConfigProvider
 ) {
     val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val factory = appViewModelFactory(activity.application)
 
-    val configProvider: UserConfigProvider = viewModel(factory = factory)
-    val userConfig by configProvider.config.collectAsStateWithLifecycle()
+    val userConfig by userConfigProvider.config.collectAsStateWithLifecycle()
 
-    val verificationViewModel: VerificationViewModel = viewModel(factory = factory)
+    val verificationViewModel: VerificationViewModel = hiltViewModel()
 
-    LaunchedEffect(configProvider.backup.backupMessage) {
-        configProvider.backup.backupMessage?.let {
+    LaunchedEffect(userConfigProvider.backup.backupMessage) {
+        userConfigProvider.backup.backupMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            configProvider.backup.clearBackupMessage()
+            userConfigProvider.backup.clearBackupMessage()
         }
     }
 
     val plainExportPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
-        uri?.let { configProvider.backup.exportPlainBackupToUri(it) }
+        uri?.let { userConfigProvider.backup.exportPlainBackupToUri(it) }
     }
 
     LaunchedEffect(Unit) {
@@ -110,6 +108,7 @@ internal fun MainScreen(
                 AppMainContent(
                     activity = activity,
                     mainViewModel = viewModel,
+                    userConfigProvider = userConfigProvider,
                     onPlainExportPickerRequest = { fileName ->
                         plainExportPickerLauncher.launch(fileName)
                     }

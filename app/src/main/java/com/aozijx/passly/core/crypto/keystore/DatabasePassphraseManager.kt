@@ -7,13 +7,19 @@ import androidx.core.content.edit
 import com.aozijx.passly.core.crypto.cryptoconstants.CryptoConstants
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.logging.Logcat
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object DatabasePassphraseManager {
+@Singleton
+class DatabasePassphraseManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private val lock = Any()
 
     @Volatile
@@ -35,7 +41,7 @@ object DatabasePassphraseManager {
         }
     }
 
-    fun getInitializedCipher(context: Context): Cipher? =
+    fun getInitializedCipher(): Cipher? =
         AndroidKeyStoreCipherHelper.getInitializedCipher(context)
 
     fun clearDecryptedPassphrase() {
@@ -45,7 +51,7 @@ object DatabasePassphraseManager {
         }
     }
 
-    fun processResult(context: Context, result: BiometricPrompt.AuthenticationResult): ByteArray {
+    fun processResult(result: BiometricPrompt.AuthenticationResult): ByteArray {
         val cipher = result.cryptoObject?.cipher
             ?: throw IllegalStateException("CryptoObject is null")
         val prefs = context.getSharedPreferences(CryptoConstants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -58,7 +64,7 @@ object DatabasePassphraseManager {
                         it
                     )
                 }
-            encryptAndStorePassphrase(context, cipher, newPassphrase)
+            encryptAndStorePassphrase(cipher, newPassphrase)
             newPassphrase
         } else {
             try {
@@ -75,7 +81,7 @@ object DatabasePassphraseManager {
         }
     }
 
-    fun prepareForRekey(context: Context, invalidateOnBiometricChange: Boolean) {
+    fun prepareForRekey(invalidateOnBiometricChange: Boolean) {
         val alias = AndroidKeyStoreCipherHelper.getAlias(context)
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         if (ks.containsAlias(alias)) ks.deleteEntry(alias)
@@ -86,16 +92,15 @@ object DatabasePassphraseManager {
     }
 
     fun completeRekey(
-        context: Context,
         result: BiometricPrompt.AuthenticationResult,
         passphrase: ByteArray
     ) {
         val cipher = result.cryptoObject?.cipher
             ?: throw IllegalStateException("CryptoObject is null")
-        encryptAndStorePassphrase(context, cipher, passphrase)
+        encryptAndStorePassphrase(cipher, passphrase)
     }
 
-    private fun encryptAndStorePassphrase(context: Context, cipher: Cipher, passphrase: ByteArray) {
+    private fun encryptAndStorePassphrase(cipher: Cipher, passphrase: ByteArray) {
         val encrypted = cipher.doFinal(passphrase)
         val combined = ByteBuffer.allocate(cipher.iv.size + encrypted.size)
             .put(cipher.iv).put(encrypted).array()

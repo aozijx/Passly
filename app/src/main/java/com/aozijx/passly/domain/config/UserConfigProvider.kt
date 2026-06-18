@@ -1,8 +1,6 @@
 package com.aozijx.passly.domain.config
 
 import android.app.Application
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.config.UserConfig.Vault.AutofillUiMode
 import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
@@ -12,21 +10,29 @@ import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCas
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.settings.state.SettingsUiState
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class UserConfigProvider(
+@Singleton
+class UserConfigProvider @Inject constructor(
     private val systemSettingsUseCases: SystemSettingsUseCases,
     private val securitySettingsUseCases: SecuritySettingsUseCases,
     private val backupSettingsUseCases: BackupSettingsUseCases,
     backupUseCases: BackupUseCases,
-    application: Application
-) : ViewModel() {
+    @ApplicationContext private val application: Application
+) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    val backup = BackupCoordinator(viewModelScope, backupSettingsUseCases, backupUseCases, application)
+    val backup = BackupCoordinator(scope, backupSettingsUseCases, backupUseCases, application)
 
     val config: StateFlow<SettingsUiState> = combine(
         securitySettingsUseCases.lockTimeout,
@@ -90,55 +96,55 @@ class UserConfigProvider(
         st.copy(backup = st.backup.copy(lastExportFileName = v))
     }
     .stateIn(
-        viewModelScope,
+        scope,
         SharingStarted.WhileSubscribed(5_000L),
         SettingsUiState()
     )
 
     fun setLockTimeout(timeoutMs: Long) {
-        viewModelScope.launch {
+        scope.launch {
             securitySettingsUseCases.setLockTimeout(timeoutMs.coerceAtLeast(AppDefaults.MIN_LOCK_TIMEOUT_MS))
         }
     }
 
     fun setStatusBarAutoHide(enabled: Boolean) {
-        viewModelScope.launch { systemSettingsUseCases.setStatusBarAutoHide(enabled) }
+        scope.launch { systemSettingsUseCases.setStatusBarAutoHide(enabled) }
     }
 
     fun setTopBarCollapsible(enabled: Boolean) {
-        viewModelScope.launch { systemSettingsUseCases.setTopBarCollapsible(enabled) }
+        scope.launch { systemSettingsUseCases.setTopBarCollapsible(enabled) }
     }
 
     fun setTabBarCollapsible(enabled: Boolean) {
-        viewModelScope.launch { systemSettingsUseCases.setTabBarCollapsible(enabled) }
+        scope.launch { systemSettingsUseCases.setTabBarCollapsible(enabled) }
     }
 
     fun setSecureContentEnabled(enabled: Boolean) {
-        viewModelScope.launch { securitySettingsUseCases.setSecureContentEnabled(enabled) }
+        scope.launch { securitySettingsUseCases.setSecureContentEnabled(enabled) }
     }
 
     fun setPasswordPreferredAuthFirst(enabled: Boolean) {
-        viewModelScope.launch { securitySettingsUseCases.setPasswordPreferredAuthFirst(enabled) }
+        scope.launch { securitySettingsUseCases.setPasswordPreferredAuthFirst(enabled) }
     }
 
     fun setDeviceCredentialFallbackEnabled(enabled: Boolean) {
-        viewModelScope.launch { securitySettingsUseCases.setDeviceCredentialFallbackEnabled(enabled) }
+        scope.launch { securitySettingsUseCases.setDeviceCredentialFallbackEnabled(enabled) }
     }
 
     fun setFlipToLockEnabled(enabled: Boolean) {
-        viewModelScope.launch { securitySettingsUseCases.setFlipToLockEnabled(enabled) }
+        scope.launch { securitySettingsUseCases.setFlipToLockEnabled(enabled) }
     }
 
     fun setFlipExitAndClearStackEnabled(enabled: Boolean) {
-        viewModelScope.launch { securitySettingsUseCases.setFlipExitAndClearStackEnabled(enabled) }
+        scope.launch { securitySettingsUseCases.setFlipExitAndClearStackEnabled(enabled) }
     }
 
     fun setCardStyle(style: VaultCardStyle) {
-        viewModelScope.launch { systemSettingsUseCases.setCardStyle(style) }
+        scope.launch { systemSettingsUseCases.setCardStyle(style) }
     }
 
     fun setCardStyleForEntryType(entryType: Int, style: VaultCardStyle) {
-        viewModelScope.launch { systemSettingsUseCases.setCardStyleForEntryType(entryType, style) }
+        scope.launch { systemSettingsUseCases.setCardStyleForEntryType(entryType, style) }
     }
 
     fun toggleAutofillUiMode(current: AutofillUiMode) {
@@ -146,39 +152,39 @@ class UserConfigProvider(
             AutofillUiMode.SYSTEM_INLINE -> AutofillUiMode.BOTTOM_SHEET
             AutofillUiMode.BOTTOM_SHEET -> AutofillUiMode.SYSTEM_INLINE
         }
-        viewModelScope.launch { systemSettingsUseCases.setAutofillUiMode(next) }
+        scope.launch { systemSettingsUseCases.setAutofillUiMode(next) }
     }
 
     fun setSwipeEnabled(enabled: Boolean) {
-        viewModelScope.launch { systemSettingsUseCases.setSwipeEnabled(enabled) }
+        scope.launch { systemSettingsUseCases.setSwipeEnabled(enabled) }
     }
 
     fun setSwipeLeftAction(action: SwipeActionType) {
-        viewModelScope.launch { systemSettingsUseCases.setSwipeLeftAction(action) }
+        scope.launch { systemSettingsUseCases.setSwipeLeftAction(action) }
     }
 
     fun setSwipeRightAction(action: SwipeActionType) {
-        viewModelScope.launch { systemSettingsUseCases.setSwipeRightAction(action) }
+        scope.launch { systemSettingsUseCases.setSwipeRightAction(action) }
     }
 
     fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) {
-        viewModelScope.launch { systemSettingsUseCases.setTabBarMaxTabsWithoutScroll(maxTabs) }
+        scope.launch { systemSettingsUseCases.setTabBarMaxTabsWithoutScroll(maxTabs) }
     }
 
     fun setVisibleVaultTabs(tabs: Set<String>) {
-        viewModelScope.launch { systemSettingsUseCases.setVisibleVaultTabs(tabs) }
+        scope.launch { systemSettingsUseCases.setVisibleVaultTabs(tabs) }
     }
 
     fun setAutoDownloadIcons(enabled: Boolean) {
-        viewModelScope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }
+        scope.launch { systemSettingsUseCases.setAutoDownloadIcons(enabled) }
     }
 
     fun setBackupDirectoryUri(uri: String) {
-        viewModelScope.launch { backupSettingsUseCases.setBackupDirectoryUri(uri) }
+        scope.launch { backupSettingsUseCases.setBackupDirectoryUri(uri) }
     }
 
     fun clearBackupDirectoryUri() {
-        viewModelScope.launch { backupSettingsUseCases.clearBackupDirectoryUri() }
+        scope.launch { backupSettingsUseCases.clearBackupDirectoryUri() }
     }
 
     fun testBackupDirectoryWritePermission(uri: String?) {

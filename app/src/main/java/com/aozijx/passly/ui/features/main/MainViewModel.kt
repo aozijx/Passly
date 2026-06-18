@@ -1,8 +1,7 @@
 package com.aozijx.passly.ui.features.main
 
-import android.app.Application
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
@@ -15,6 +14,7 @@ import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.main.contract.MainUiState
 import com.aozijx.passly.ui.features.main.internal.MainDatabaseInitializer
 import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,17 +24,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MainViewModel(
-    application: Application,
+@HiltViewModel
+class MainViewModel @Inject constructor(
     private val systemSettingsUseCases: SystemSettingsUseCases,
     private val securitySettingsUseCases: SecuritySettingsUseCases,
     private val authUseCases: AuthUseCases,
-    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases
-) : AndroidViewModel(application) {
-
-    private val authRequestValidator = AuthRequestValidator()
-    private val databaseInitializer = MainDatabaseInitializer(databaseLifecycleUseCases)
+    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
+    private val authRequestValidator: AuthRequestValidator,
+    private val databaseInitializer: MainDatabaseInitializer
+) : ViewModel() {
 
     private val authCoordinator = VerificationCoordinator(
         scope = viewModelScope,

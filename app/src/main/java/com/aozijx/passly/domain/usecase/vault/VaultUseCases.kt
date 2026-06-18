@@ -1,18 +1,21 @@
 package com.aozijx.passly.domain.usecase.vault
 
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.domain.model.TotpConfig
-import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.FaviconOutcome
 import com.aozijx.passly.domain.model.FaviconResult
+import com.aozijx.passly.domain.model.TotpConfig
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class VaultUseCases(
+@Singleton
+class VaultUseCases @Inject constructor(
     private val vaultRepository: VaultRepository,
     private val vaultSearchRepository: VaultSearchRepository,
     private val otpRepository: OtpRepository,

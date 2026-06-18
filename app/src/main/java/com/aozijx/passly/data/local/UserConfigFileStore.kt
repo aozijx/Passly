@@ -4,6 +4,8 @@ import android.content.Context
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.model.UserConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -12,27 +14,33 @@ import java.io.File
 class UserConfigFileStore(
     private val appContext: Context
 ) {
+    private val mutex = Mutex()
+
     private val configFile: File by lazy {
         val dir = File(appContext.filesDir, "config").apply { if (!exists()) mkdirs() }
         File(dir, "user_config.json")
     }
 
-    suspend fun read(): UserConfig = withContext(Dispatchers.IO) {
-        if (!configFile.exists()) return@withContext UserConfig()
-        return@withContext try {
-            val raw = configFile.readText()
-            parseConfig(raw)
-        } catch (e: Exception) {
-            Logcat.e("UserConfigFileStore", "Failed to read config file", e)
-            UserConfig()
+    suspend fun read(): UserConfig = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            if (!configFile.exists()) return@withContext UserConfig()
+            try {
+                val raw = configFile.readText()
+                parseConfig(raw)
+            } catch (e: Exception) {
+                Logcat.e("UserConfigFileStore", "Failed to read config file", e)
+                UserConfig()
+            }
         }
     }
 
-    suspend fun write(config: UserConfig) = withContext(Dispatchers.IO) {
-        try {
-            configFile.writeText(config.toJson())
-        } catch (e: Exception) {
-            Logcat.e("UserConfigFileStore", "Failed to write config file", e)
+    suspend fun write(config: UserConfig) = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            try {
+                configFile.writeText(config.toJson())
+            } catch (e: Exception) {
+                Logcat.e("UserConfigFileStore", "Failed to write config file", e)
+            }
         }
     }
 

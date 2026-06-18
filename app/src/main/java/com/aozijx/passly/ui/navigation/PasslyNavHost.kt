@@ -1,6 +1,5 @@
 package com.aozijx.passly.ui.navigation
 
-import android.app.Application
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,16 +8,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.FragmentActivity
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.ui.features.detail.DetailViewModel
@@ -41,6 +38,7 @@ fun PasslyNavHost(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
+    userConfigProvider: UserConfigProvider,
     onPlainExportClick: () -> Unit
 ) {
     NavHost(
@@ -57,6 +55,7 @@ fun PasslyNavHost(
                 activity = activity,
                 mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
+                userConfigProvider = userConfigProvider,
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)
                 },
@@ -77,10 +76,7 @@ fun PasslyNavHost(
                 ?.getInt(AppRoute.Detail.ARG_ENTRY_ID)
                 ?: return@composable
 
-            val application = LocalContext.current.applicationContext as Application
-            val detailViewModel: DetailViewModel = viewModel(
-                factory = appViewModelFactory(application)
-            )
+            val detailViewModel: DetailViewModel = hiltViewModel()
             val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
             val vaultUiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -118,18 +114,12 @@ fun PasslyNavHost(
         }
 
         composable(AppRoute.Settings.route) {
-            val application = LocalContext.current.applicationContext as Application
-            val configProvider: UserConfigProvider = viewModel(
-                factory = appViewModelFactory(application)
-            )
-            val authViewModel: SettingsViewModel = viewModel(
-                factory = appViewModelFactory(application)
-            )
+            val authViewModel: SettingsViewModel = hiltViewModel()
             val onUpdateInteraction: () -> Unit =
                 { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                configProvider = configProvider,
+                configProvider = userConfigProvider,
                 authViewModel = authViewModel,
                 onUpdateInteraction = onUpdateInteraction
             )

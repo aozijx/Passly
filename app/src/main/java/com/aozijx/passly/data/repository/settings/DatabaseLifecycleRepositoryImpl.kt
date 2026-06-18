@@ -1,16 +1,22 @@
 package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
-internal class DatabaseLifecycleRepositoryImpl(
-    context: Context
+@Singleton
+internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
+    @ApplicationContext context: Context,
+    private val passphraseManager: DatabasePassphraseManager
 ) : DatabaseLifecycleRepository {
     private companion object {
         private const val TAG = "DatabaseLifecycle"
@@ -62,7 +68,7 @@ internal class DatabaseLifecycleRepositoryImpl(
     }
 
     private fun warmUpOnce(): Throwable? {
-        return runCatching { AppDatabase.preWarm(appContext) }
+        return runCatching { AppDatabase.preWarm(appContext, passphraseManager) }
             .fold(
                 onSuccess = { AppDatabase.initializationError },
                 onFailure = { it }

@@ -9,16 +9,22 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.core.di.appViewModelFactory
+import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.ui.features.main.MainNotificationPermissionController
 import com.aozijx.passly.ui.features.main.MainSensorController
 import com.aozijx.passly.ui.features.main.MainViewModel
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.main.ui.MainScreen
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlin.system.exitProcess
 
+@AndroidEntryPoint
 class MainActivity : FragmentActivity() {
-    private val viewModel: MainViewModel by viewModels { appViewModelFactory(application) }
+    private val viewModel: MainViewModel by viewModels()
+
+    @Inject
+    lateinit var userConfigProvider: UserConfigProvider
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
@@ -59,7 +65,8 @@ class MainActivity : FragmentActivity() {
             MainScreen(
                 activity = this,
                 viewModel = viewModel,
-                sensorController = sensorController
+                sensorController = sensorController,
+                userConfigProvider = userConfigProvider
             )
         }
     }

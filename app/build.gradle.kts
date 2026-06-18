@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.hilt.android)
 }
 
 // Release 签名优先读取环境变量，其次读取本地未跟踪 keystore.properties
@@ -180,6 +181,11 @@ dependencies {
 
     // Security KDF
     implementation(libs.argon2kt)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.hilt.navigation.compose)
 
     // Testing
     testImplementation(libs.junit)

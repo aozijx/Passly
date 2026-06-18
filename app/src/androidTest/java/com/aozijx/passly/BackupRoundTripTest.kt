@@ -10,8 +10,8 @@ import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.data.dto.VaultPayload
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
-import com.aozijx.passly.data.repository.backup.BackupRoomDataSource
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
+import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import org.json.JSONArray
@@ -36,6 +36,8 @@ class BackupRoundTripTest {
     private lateinit var context: Context
     private lateinit var db: AppDatabase
     private lateinit var repository: BackupRepositoryImpl
+    private lateinit var passphraseManager: DatabasePassphraseManager
+    private lateinit var imageStore: BackupVInternalImageStore
     private val testDbName = "backup_test_${System.currentTimeMillis()}"
     private val tempFiles = mutableListOf<File>()
 
@@ -45,10 +47,11 @@ class BackupRoundTripTest {
 
         // 初始化加密环境
         val testPassphrase = ByteArray(32) { 0x01.toByte() }
-        DatabasePassphraseManager.setDecryptedPassphrase(testPassphrase)
+        passphraseManager = DatabasePassphraseManager(context)
+        passphraseManager.setDecryptedPassphrase(testPassphrase)
         SessionCryptoKey.deriveAndSet(testPassphrase)
 
-        val passphrase = DatabasePassphraseManager.getPassphrase()
+        val passphrase = passphraseManager.getPassphrase()
         db = Room.databaseBuilder(context, AppDatabase::class.java, testDbName)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
             .allowMainThreadQueries().build()
@@ -57,8 +60,12 @@ class BackupRoundTripTest {
         db.openHelper.writableDatabase
 
         // 初始化测试专用的 Repository，注入测试数据库的 DAO
-        val dataSource = BackupRoomDataSource(context, db.vaultEntryDao())
-        repository = BackupRepositoryImpl(context, dataSource = dataSource)
+        imageStore = BackupVInternalImageStore(context)
+        repository = BackupRepositoryImpl(
+            context,
+            passphraseManager,
+            imageStore = imageStore
+        )
     }
 
     @After
@@ -67,7 +74,7 @@ class BackupRoundTripTest {
         context.deleteDatabase(testDbName)
         tempFiles.forEach { it.delete() }
         SessionCryptoKey.clearSessionKey()
-        DatabasePassphraseManager.clearDecryptedPassphrase()
+        passphraseManager.clearDecryptedPassphrase()
     }
 
     // ─── 空库导出 ─────────────────────────────────────────────────────────

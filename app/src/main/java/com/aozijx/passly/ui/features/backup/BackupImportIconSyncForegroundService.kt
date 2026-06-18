@@ -10,20 +10,27 @@ import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.aozijx.passly.R
-import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import com.aozijx.passly.ui.features.settings.data.BackupImportIconSyncSupport
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class BackupImportIconSyncForegroundService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val iconSyncSupport = BackupImportIconSyncSupport(
-        AppContainer.domain.iconResyncUseCases
-    )
+
+    @Inject
+    lateinit var iconResyncUseCases: IconResyncUseCases
+
+    private val iconSyncSupport by lazy {
+        BackupImportIconSyncSupport(iconResyncUseCases)
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         ensureChannel()

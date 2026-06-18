@@ -10,7 +10,11 @@ import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 /**
  * WiFi 类型的业务策略实现
  */
-class WiFiEntryStrategy : EntryTypeStrategy {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class WiFiEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.WIFI
 
     override fun validateRequiredFields(entry: VaultEntry): String? {

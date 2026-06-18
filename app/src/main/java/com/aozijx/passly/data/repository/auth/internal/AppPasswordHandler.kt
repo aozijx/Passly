@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.auth.internal
 
-import android.app.Application
+import android.content.Context
 import com.aozijx.passly.core.auth.apppassword.AppPasswordComplexityPolicy
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
 import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
@@ -9,7 +9,8 @@ import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 
 internal class AppPasswordHandler(
-    private val application: Application,
+    private val application: Context,
+    private val passphraseManager: DatabasePassphraseManager,
     private val isAuthorized: () -> Boolean,
     private val onAuthorized: () -> Unit,
     private val refreshAppPasswordState: () -> Unit
@@ -27,7 +28,7 @@ internal class AppPasswordHandler(
         return runCatching {
             val passphrase = AppPasswordPassphraseStore.unlock(application, password).getOrThrow()
             try {
-                DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+                passphraseManager.setDecryptedPassphrase(passphrase)
                 SessionCryptoKey.deriveAndSet(passphrase)
             } finally {
                 passphrase.fill(0)
@@ -40,12 +41,12 @@ internal class AppPasswordHandler(
     fun setPassword(password: CharArray): AppResult<Unit> {
         AppPasswordComplexityPolicy.validate(password)
 
-        if (DatabasePassphraseManager.isLocked) {
+        if (passphraseManager.isLocked) {
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再设置应用密码"))
         }
 
         return runCatching {
-            val passphrase = DatabasePassphraseManager.getPassphrase()
+            val passphrase = passphraseManager.getPassphrase()
             try {
                 AppPasswordPassphraseStore.configure(application, password, passphrase).getOrThrow()
             } finally {
@@ -59,14 +60,14 @@ internal class AppPasswordHandler(
     fun bootstrapPassword(password: CharArray): AppResult<Unit> {
         AppPasswordComplexityPolicy.validate(password)
 
-        if (!DatabasePassphraseManager.isLocked) {
+        if (!passphraseManager.isLocked) {
             return AppResult.failure(AppError.AuthFailed("应用已解锁，请在设置中管理应用密码"))
         }
 
         return AppPasswordPassphraseStore.configureWithGeneratedPassphrase(application, password)
             .map { generatedPassphrase ->
                 try {
-                    DatabasePassphraseManager.setDecryptedPassphrase(generatedPassphrase)
+                    passphraseManager.setDecryptedPassphrase(generatedPassphrase)
                     SessionCryptoKey.deriveAndSet(generatedPassphrase)
                     onAuthorized()
                 } finally {
@@ -81,12 +82,12 @@ internal class AppPasswordHandler(
     fun changePassword(oldPassword: CharArray, newPassword: CharArray): AppResult<Unit> {
         AppPasswordComplexityPolicy.validate(newPassword)
 
-        if (DatabasePassphraseManager.isLocked) {
+        if (passphraseManager.isLocked) {
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再修改应用密码"))
         }
 
         return runCatching {
-            val passphrase = DatabasePassphraseManager.getPassphrase()
+            val passphrase = passphraseManager.getPassphrase()
             try {
                 AppPasswordPassphraseStore.change(application, oldPassword, newPassword, passphrase)
                     .getOrThrow()
@@ -99,12 +100,12 @@ internal class AppPasswordHandler(
     }
 
     fun disablePassword(password: CharArray): AppResult<Unit> {
-        if (DatabasePassphraseManager.isLocked) {
+        if (passphraseManager.isLocked) {
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再关闭应用密码"))
         }
 
         return runCatching {
-            val passphrase = DatabasePassphraseManager.getPassphrase()
+            val passphrase = passphraseManager.getPassphrase()
             try {
                 AppPasswordPassphraseStore.disable(application, password, passphrase).getOrThrow()
             } finally {

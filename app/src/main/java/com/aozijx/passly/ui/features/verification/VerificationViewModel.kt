@@ -1,9 +1,9 @@
 package com.aozijx.passly.ui.features.verification
 
-import android.app.Application
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.crypto.memory.SecureString
 import com.aozijx.passly.core.error.AppResult
@@ -12,6 +12,7 @@ import com.aozijx.passly.ui.features.common.toUiMessage
 import com.aozijx.passly.ui.features.verification.contract.VerificationGateway
 import com.aozijx.passly.ui.features.verification.contract.VerificationUiState
 import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,14 +20,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import javax.inject.Inject
 
-class VerificationViewModel(
-    application: Application,
-    authUseCases: AuthUseCases
-) : AndroidViewModel(application) {
+@HiltViewModel
+class VerificationViewModel @Inject constructor(
+    authUseCases: AuthUseCases,
+    requestValidator: AuthRequestValidator
+) : ViewModel() {
 
     val gateway: VerificationGateway by lazy {
-        VerificationCoordinator(viewModelScope, authUseCases)
+        VerificationCoordinator(viewModelScope, authUseCases, requestValidator)
     }
 
     val isAppPasswordEnabled: StateFlow<Boolean> = gateway.isAppPasswordEnabled

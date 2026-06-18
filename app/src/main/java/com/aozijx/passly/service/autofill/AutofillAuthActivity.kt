@@ -12,30 +12,47 @@ import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
-import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.config.AutofillUiMode
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.usecase.auth.AuthUseCases
+import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet
 import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
 import com.aozijx.passly.ui.theme.AppTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class AutofillAuthActivity : FragmentActivity() {
     private companion object {
         const val TAG = "AutofillAuthActivity"
     }
 
     private var selectionInProgress = false
-    private val autofillRepository = AppContainer.domain.autofillUseCases
-    private val verificationCoordinator = VerificationCoordinator(
-        scope = lifecycleScope,
-        authUseCases = AppContainer.domain.authUseCases
-    )
+
+    @Inject
+    lateinit var autofillUseCases: AutofillUseCases
+
+    @Inject
+    lateinit var authUseCases: AuthUseCases
+
+    @Inject
+    lateinit var requestValidator: AuthRequestValidator
+
+    private val verificationCoordinator by lazy {
+        VerificationCoordinator(
+            scope = lifecycleScope,
+            authUseCases = authUseCases,
+            requestValidator = requestValidator
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val raw = intent?.getStringExtra("autofill_ui_mode")
@@ -66,7 +83,7 @@ class AutofillAuthActivity : FragmentActivity() {
 
         if (uiMode == AutofillUiMode.BOTTOM_SHEET && candidateEntryIds.isNotEmpty() && directEntryId == null) {
             lifecycleScope.launch {
-                val candidateEntries = autofillRepository.getEntriesByIds(candidateEntryIds)
+                val candidateEntries = autofillUseCases.getEntriesByIds(candidateEntryIds)
                 if (candidateEntries.isEmpty()) {
                     Logcat.e(TAG, "Candidate entries are empty after loading by IDs")
                     finish()
@@ -97,7 +114,7 @@ class AutofillAuthActivity : FragmentActivity() {
         }
 
         lifecycleScope.launch {
-            val entry = directEntryId?.let { autofillRepository.getEntryById(it) }
+            val entry = directEntryId?.let { autofillUseCases.getEntryById(it) }
             if (entry == null) {
                 Logcat.e(TAG, "Entry is null")
                 finish()
@@ -125,7 +142,7 @@ class AutofillAuthActivity : FragmentActivity() {
                 return@launch
             }
 
-            val candidates = autofillRepository.findMatchingCandidates(packageName, webDomain)
+            val candidates = autofillUseCases.findMatchingCandidates(packageName, webDomain)
             if (candidates.isEmpty()) {
                 finishWithOk()
                 return@launch
@@ -175,7 +192,7 @@ class AutofillAuthActivity : FragmentActivity() {
 
             if (dataset != null) {
                 Logcat.i(TAG, "Autofill result built successfully (uiMode=$uiMode)")
-                lifecycleScope.launch { autofillRepository.updateUsageStats(entry) }
+                lifecycleScope.launch { autofillUseCases.updateUsageStats(entry) }
                 if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
                     finishWithOk(FillResponse.Builder().addDataset(dataset).build())
                 } else {

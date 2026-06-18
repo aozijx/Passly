@@ -1,8 +1,12 @@
 package com.aozijx.passly.core.di
 
-import com.aozijx.passly.AppContext
+import android.app.Application
+import android.content.Context
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.UserConfigFileStore
+import com.aozijx.passly.data.local.dao.VaultEntryDao
+import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
 import com.aozijx.passly.data.repository.autofill.AutofillServiceRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
@@ -29,71 +33,174 @@ import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
+import com.aozijx.passly.domain.strategy.EntryTypeStrategy
+import com.aozijx.passly.domain.strategy.impl.BankCardEntryStrategy
+import com.aozijx.passly.domain.strategy.impl.IdCardEntryStrategy
+import com.aozijx.passly.domain.strategy.impl.PasskeyEntryStrategy
+import com.aozijx.passly.domain.strategy.impl.PasswordEntryStrategy
+import com.aozijx.passly.domain.strategy.impl.RecoveryCodeEntryStrategy
+import com.aozijx.passly.domain.strategy.impl.SeedPhraseEntryStrategy
+import com.aozijx.passly.domain.strategy.impl.SshKeyEntryStrategy
+import com.aozijx.passly.domain.strategy.impl.TotpEntryStrategy
+import com.aozijx.passly.domain.strategy.impl.WiFiEntryStrategy
+import dagger.Binds
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntKey
+import dagger.multibindings.IntoMap
+import javax.inject.Singleton
 
-/**
- * 数据层依赖模块：负责所有 Repository 实例的初始化与生命周期管理
- */
+@Module
+@InstallIn(SingletonComponent::class)
 object DataModule {
-    private val appContext = AppContext.get()
-    private val database by lazy { AppDatabase.getDatabase(appContext) }
 
-    internal val vaultRepository: VaultRepository by lazy {
-        VaultRepositoryImpl(database.vaultEntryDao(), database.vaultHistoryDao())
-    }
+    @Provides
+    @Singleton
+    @ApplicationContext
+    fun provideApplicationContext(
+        @ApplicationContext context: Context
+    ): Application = context as Application
 
-    internal val vaultSearchRepository: VaultSearchRepository by lazy {
-        VaultSearchRepositoryImpl(database.vaultEntryDao())
-    }
+    @Provides
+    @Singleton
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+        passphraseManager: DatabasePassphraseManager
+    ): AppDatabase = AppDatabase.getDatabase(context, passphraseManager)
 
-    internal val historyRepository: HistoryRepository by lazy {
-        HistoryRepositoryImpl(database.vaultHistoryDao())
-    }
+    @Provides
+    @Singleton
+    fun provideVaultEntryDao(database: AppDatabase): VaultEntryDao =
+        database.vaultEntryDao()
 
-    internal val otpRepository: OtpRepository by lazy {
-        OtpRepositoryImpl()
-    }
+    @Provides
+    @Singleton
+    fun provideVaultHistoryDao(database: AppDatabase): VaultHistoryDao =
+        database.vaultHistoryDao()
 
-    internal val autofillServiceRepository: AutofillServiceRepository by lazy {
-        AutofillServiceRepositoryImpl(appContext)
-    }
+    @Provides
+    @Singleton
+    fun provideUserConfigFileStore(
+        @ApplicationContext context: Context
+    ): UserConfigFileStore = UserConfigFileStore(context)
 
-    private val securitySettingsRepositoryInstance by lazy {
-        SecuritySettingsRepositoryImpl(appContext)
-    }
+}
 
-    private val systemSettingsRepositoryInstance by lazy {
-        SystemSettingsRepositoryImpl(appContext)
-    }
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class DataModuleBinds {
 
-    private val backupSettingsRepositoryInstance by lazy {
-        BackupSettingsRepositoryImpl(appContext)
-    }
+    @Binds
+    @Singleton
+    internal abstract fun bindBackupRepository(impl: BackupRepositoryImpl): BackupRepository
 
-    internal val securitySettingsRepository: SecuritySettingsRepository get() = securitySettingsRepositoryInstance
-    internal val systemSettingsRepository: SystemSettingsRepository get() = systemSettingsRepositoryInstance
-    internal val backupSettingsRepository: BackupSettingsRepository get() = backupSettingsRepositoryInstance
+    @Binds
+    @Singleton
+    abstract fun bindVaultRepository(impl: VaultRepositoryImpl): VaultRepository
 
-    internal val faviconRepository: FaviconRepository by lazy {
-        FaviconRepositoryImpl(appContext)
-    }
+    @Binds
+    @Singleton
+    abstract fun bindVaultSearchRepository(impl: VaultSearchRepositoryImpl): VaultSearchRepository
 
-    internal val backupRepository: BackupRepository by lazy {
-        BackupRepositoryImpl(appContext)
-    }
+    @Binds
+    @Singleton
+    abstract fun bindHistoryRepository(impl: HistoryRepositoryImpl): HistoryRepository
 
-    internal val authRepository: AuthRepository by lazy {
-        AuthRepositoryImpl(application = appContext)
-    }
+    @Binds
+    @Singleton
+    abstract fun bindOtpRepository(impl: OtpRepositoryImpl): OtpRepository
 
-    internal val databaseLifecycleRepository: DatabaseLifecycleRepository by lazy {
-        DatabaseLifecycleRepositoryImpl(appContext)
-    }
+    @Binds
+    @Singleton
+    abstract fun bindAutofillServiceRepository(impl: AutofillServiceRepositoryImpl): AutofillServiceRepository
 
-    private val userConfigStore by lazy {
-        UserConfigFileStore(appContext)
-    }
+    @Binds
+    @Singleton
+    abstract fun bindSecuritySettingsRepository(impl: SecuritySettingsRepositoryImpl): SecuritySettingsRepository
 
-    internal val userConfigRepository: UserConfigRepository by lazy {
-        UserConfigRepositoryImpl(userConfigStore)
-    }
+    @Binds
+    @Singleton
+    abstract fun bindSystemSettingsRepository(impl: SystemSettingsRepositoryImpl): SystemSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBackupSettingsRepository(impl: BackupSettingsRepositoryImpl): BackupSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFaviconRepository(impl: FaviconRepositoryImpl): FaviconRepository
+
+    @Binds
+    @Singleton
+    internal abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+
+    @Binds
+    @Singleton
+    internal abstract fun bindDatabaseLifecycleRepository(impl: DatabaseLifecycleRepositoryImpl): DatabaseLifecycleRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserConfigRepository(impl: UserConfigRepositoryImpl): UserConfigRepository
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class StrategyModule {
+
+    @Binds
+    @IntoMap
+    @IntKey(0)
+    @Singleton
+    abstract fun bindPasswordStrategy(impl: PasswordEntryStrategy): EntryTypeStrategy
+
+    @Binds
+    @IntoMap
+    @IntKey(1)
+    @Singleton
+    abstract fun bindTotpStrategy(impl: TotpEntryStrategy): EntryTypeStrategy
+
+    @Binds
+    @IntoMap
+    @IntKey(2)
+    @Singleton
+    abstract fun bindPasskeyStrategy(impl: PasskeyEntryStrategy): EntryTypeStrategy
+
+    @Binds
+    @IntoMap
+    @IntKey(4)
+    @Singleton
+    abstract fun bindRecoveryCodeStrategy(impl: RecoveryCodeEntryStrategy): EntryTypeStrategy
+
+    @Binds
+    @IntoMap
+    @IntKey(3)
+    @Singleton
+    abstract fun bindWiFiStrategy(impl: WiFiEntryStrategy): EntryTypeStrategy
+
+    @Binds
+    @IntoMap
+    @IntKey(8)
+    @Singleton
+    abstract fun bindSshKeyStrategy(impl: SshKeyEntryStrategy): EntryTypeStrategy
+
+    @Binds
+    @IntoMap
+    @IntKey(5)
+    @Singleton
+    abstract fun bindBankCardStrategy(impl: BankCardEntryStrategy): EntryTypeStrategy
+
+    @Binds
+    @IntoMap
+    @IntKey(6)
+    @Singleton
+    abstract fun bindSeedPhraseStrategy(impl: SeedPhraseEntryStrategy): EntryTypeStrategy
+
+    @Binds
+    @IntoMap
+    @IntKey(7)
+    @Singleton
+    abstract fun bindIdCardStrategy(impl: IdCardEntryStrategy): EntryTypeStrategy
 }

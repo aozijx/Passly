@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.autofill
 
 import android.content.Context
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.EntryType
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.mapper.toDomain
@@ -10,17 +10,22 @@ import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.AutofillMatchType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
 import com.aozijx.passly.domain.policy.DomainNormalizer
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
-import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class AutofillServiceRepositoryImpl(
-    context: Context
+@Singleton
+class AutofillServiceRepositoryImpl @Inject constructor(
+    @ApplicationContext context: Context,
+    private val passphraseManager: DatabasePassphraseManager
 ) : AutofillServiceRepository {
 
     private val appContext = context.applicationContext
@@ -34,7 +39,7 @@ class AutofillServiceRepositoryImpl(
 
     override suspend fun updateUsageStats(entry: VaultEntry) = withContext(Dispatchers.IO) {
         try {
-            val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
+            val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
             val updatedEntry = entry.copy(
                 lastUsedAt = System.currentTimeMillis(),
                 usageCount = entry.usageCount + 1
@@ -47,7 +52,8 @@ class AutofillServiceRepositoryImpl(
 
     override suspend fun getEntryById(entryId: Int): VaultEntry? = withContext(Dispatchers.IO) {
         runCatching {
-            AppDatabase.getDatabase(appContext).vaultEntryDao().getEntryById(entryId)?.toDomain()
+            AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
+                .getEntryById(entryId)?.toDomain()
         }.getOrElse {
             Logcat.e(TAG, "Failed to load entry by id=$entryId", it)
             null
@@ -59,7 +65,7 @@ class AutofillServiceRepositoryImpl(
             if (entryIds.isEmpty()) return@withContext emptyList()
             runCatching {
                 val order = entryIds.withIndex().associate { it.value to it.index }
-                AppDatabase.getDatabase(appContext)
+                AppDatabase.getDatabase(appContext, passphraseManager)
                     .vaultEntryDao()
                     .getEntriesByIds(entryIds)
                     .toDomainList()
@@ -79,8 +85,7 @@ class AutofillServiceRepositoryImpl(
                 return@withContext emptyList()
             }
 
-            EntryTypeStrategyRegistry.ensureRegistered()
-            val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
+            val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
             val queryStart = System.currentTimeMillis()
             val entries = dao.getAll().toDomainList()
             val queryCost = System.currentTimeMillis() - queryStart
@@ -136,8 +141,7 @@ class AutofillServiceRepositoryImpl(
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val saveStart = System.currentTimeMillis()
-            EntryTypeStrategyRegistry.ensureRegistered()
-            val dao = AppDatabase.getDatabase(appContext).vaultEntryDao()
+            val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
 
             val queryStart = System.currentTimeMillis()
             val allEntries = dao.getAll().toDomainList()

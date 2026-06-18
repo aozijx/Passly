@@ -10,7 +10,11 @@ import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 /**
  * Passkey 类型的业务策略实现
  */
-class PasskeyEntryStrategy : EntryTypeStrategy {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class PasskeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.PASSKEY
 
     override fun validateRequiredFields(entry: VaultEntry): String? {

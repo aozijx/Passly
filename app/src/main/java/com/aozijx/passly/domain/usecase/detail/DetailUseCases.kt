@@ -1,15 +1,18 @@
 package com.aozijx.passly.domain.usecase.detail
 
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.model.FaviconOutcome
 import com.aozijx.passly.domain.model.FaviconResult
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class DetailUseCases(
+@Singleton
+class DetailUseCases @Inject constructor(
     private val vaultRepository: VaultRepository,
     private val faviconRepository: FaviconRepository,
     private val historyRepository: HistoryRepository

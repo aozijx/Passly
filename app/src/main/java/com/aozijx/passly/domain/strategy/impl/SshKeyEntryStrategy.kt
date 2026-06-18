@@ -10,7 +10,11 @@ import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 /**
  * SSH 密钥类型的业务策略实现
  */
-class SshKeyEntryStrategy : EntryTypeStrategy {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SshKeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.SSH_KEY
 
     override fun validateRequiredFields(entry: VaultEntry): String? {

@@ -10,7 +10,11 @@ import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 /**
  * TOTP 类型的业务策略实现
  */
-class TotpEntryStrategy : EntryTypeStrategy {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.TOTP
 
     override fun validateRequiredFields(entry: VaultEntry): String? {

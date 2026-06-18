@@ -20,6 +20,10 @@ import java.util.concurrent.Executors
 object Logcat {
     private const val DEFAULT_TAG = "AppLog"
 
+    // Logcat 是 object 单例，无法使用 Hilt 构造函数注入，此处静态访问是唯一可行方案。
+    @Suppress("DEPRECATION")
+    private val appContext: AppContext by lazy { AppContext.get() }
+
     // 使用单线程池处理文件写入，保证顺序且不阻塞主线程
     private val logExecutor = Executors.newSingleThreadExecutor()
 
@@ -64,7 +68,7 @@ object Logcat {
 
         if (level.ordinal >= fileSinkThreshold.ordinal) {
             try {
-                AppContext.get()
+                appContext
                 saveToFile(level, tag, msg, tr)
             } catch (e: Exception) {
                 Log.w(DEFAULT_TAG, "AppContext not ready, skipping file log: $msg")
@@ -76,9 +80,7 @@ object Logcat {
         logExecutor.execute {
             var writer: PrintWriter? = null
             try {
-                val context = AppContext.get()
-                // 移至应用内部存储，避免 adb / 文件管理器直接读取。
-                val logDir = File(context.filesDir, "logs")
+                val logDir = File(appContext.filesDir, "logs")
                 if (!logDir.exists()) logDir.mkdirs()
 
                 val now = Date()
@@ -106,7 +108,7 @@ object Logcat {
 
     fun getLogFolder(): File? {
         return try {
-            File(AppContext.get().filesDir, "logs").takeIf { it.exists() || it.mkdirs() }
+            File(appContext.filesDir, "logs").takeIf { it.exists() || it.mkdirs() }
         } catch (e: Exception) {
             null
         }

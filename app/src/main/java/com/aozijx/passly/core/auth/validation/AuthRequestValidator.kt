@@ -3,8 +3,11 @@ package com.aozijx.passly.core.auth.validation
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
+import dagger.Reusable
+import javax.inject.Inject
 
-class AuthRequestValidator {
+@Reusable
+class AuthRequestValidator @Inject constructor() {
 
     sealed interface AuthRequestValidationResult {
         data object Valid : AuthRequestValidationResult

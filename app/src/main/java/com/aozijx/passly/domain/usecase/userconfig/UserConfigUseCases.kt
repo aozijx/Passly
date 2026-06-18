@@ -4,7 +4,11 @@ import com.aozijx.passly.domain.model.UserConfig
 import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
 import kotlinx.coroutines.flow.Flow
 
-class UserConfigUseCases(private val repository: UserConfigRepository) {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class UserConfigUseCases @Inject constructor(private val repository: UserConfigRepository) {
     val userConfig: Flow<UserConfig> = repository.userConfig
 
     suspend fun save(config: UserConfig) = repository.save(config)

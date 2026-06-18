@@ -7,42 +7,37 @@ import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
-import com.aozijx.passly.core.di.AppContainer
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.strategy.EntryTypeStrategyRegistry
+import com.aozijx.passly.core.platform.PackageUtils
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.parser.AutofillStructureParser
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class AutofillService : android.service.autofill.AutofillService() {
-    internal data class Dependencies(
-        val autofillUseCases: AutofillUseCases,
-        val systemSettingsUseCases: SystemSettingsUseCases
-    )
 
-    companion object {
-        @Volatile
-        internal var dependenciesProvider: (() -> Dependencies)? = null
-    }
+    @Inject
+    lateinit var autofillUseCases: AutofillUseCases
+
+    @Inject
+    lateinit var systemSettingsUseCases: SystemSettingsUseCases
+
+    @Inject
+    lateinit var passphraseManager: DatabasePassphraseManager
+
+    @Inject
+    lateinit var packageUtils: PackageUtils
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val dependencies by lazy {
-        (dependenciesProvider ?: {
-            Dependencies(
-                autofillUseCases = AppContainer.domain.autofillUseCases,
-                systemSettingsUseCases = AppContainer.domain.systemSettingsUseCases
-            )
-        }).invoke()
-    }
-    private val autofillUseCases by lazy { dependencies.autofillUseCases }
-    private val systemSettingsUseCases by lazy { dependencies.systemSettingsUseCases }
     private val tag = "PasslyAutofill"
     private val slowFillTotalMs = 250L
     private val slowRepositoryMs = 120L
@@ -62,7 +57,6 @@ class AutofillService : android.service.autofill.AutofillService() {
         serviceScope.launch {
             try {
                 val fillStart = System.currentTimeMillis()
-                EntryTypeStrategyRegistry.ensureRegistered()
                 val parser = AutofillStructureParser(structure)
                 val autofillUiMode = systemSettingsUseCases.autofillUiMode.first()
                 Logcat.d(
@@ -81,7 +75,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                     return@launch
                 }
 
-                if (DatabasePassphraseManager.isLocked) {
+                if (passphraseManager.isLocked) {
                     Logcat.i(tag, "Database is locked, suggesting unlock via AuthActivity")
                     val response = AutofillResponseBuilder.buildUnlockResponse(
                         applicationContext, parser, availableIds.toTypedArray(), autofillUiMode
@@ -105,7 +99,12 @@ class AutofillService : android.service.autofill.AutofillService() {
 
                 val buildStart = System.currentTimeMillis()
                 val response = AutofillResponseBuilder.buildFillResponse(
-                    applicationContext, candidates, parser, autofillUiMode, availableIds
+                    applicationContext,
+                    candidates,
+                    parser,
+                    autofillUiMode,
+                    availableIds,
+                    packageUtils
                 )
                 val buildCost = System.currentTimeMillis() - buildStart
                 if (buildCost >= slowDatasetBuildMs) {
@@ -164,7 +163,7 @@ class AutofillService : android.service.autofill.AutofillService() {
 
         serviceScope.launch {
             try {
-                if (DatabasePassphraseManager.isLocked) {
+                if (passphraseManager.isLocked) {
                     Logcat.w(tag, "onSaveRequest: DB locked, cannot save")
                     return@launch callback.onFailure(getString(R.string.autofill_locked))
                 }

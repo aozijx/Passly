@@ -56,7 +56,8 @@ internal object AutofillResponseBuilder {
         candidates: List<AutofillCandidate>,
         parser: AutofillStructureParser,
         uiMode: AutofillUiMode,
-        availableIds: List<AutofillId>
+        availableIds: List<AutofillId>,
+        packageUtils: PackageUtils
     ): FillResponse {
         val builder = FillResponse.Builder()
 
@@ -76,7 +77,7 @@ internal object AutofillResponseBuilder {
             }
         }
 
-        val saveInfo = buildSaveInfo(context, parser)
+        val saveInfo = buildSaveInfo(context, parser, packageUtils)
         if (saveInfo != null) builder.setSaveInfo(saveInfo)
 
         return builder.build()
@@ -285,7 +286,8 @@ internal object AutofillResponseBuilder {
 
     private suspend fun buildSaveInfo(
         context: Context,
-        parser: AutofillStructureParser
+        parser: AutofillStructureParser,
+        packageUtils: PackageUtils
     ): SaveInfo? {
         val saveIds = listOfNotNull(parser.usernameId, parser.passwordId)
         if (saveIds.isEmpty()) return null
@@ -296,12 +298,12 @@ internal object AutofillResponseBuilder {
         )
 
         val pkgName = parser.packageName
-        val appMetadata = pkgName?.let { PackageUtils.getAppMetadata(context, it) }
+        val appMetadata = pkgName?.let { packageUtils.getAppMetadata(it) }
         val appLabel = appMetadata?.appName
             ?: parser.webDomain
             ?: context.getString(R.string.autofill_title_app_fallback)
 
-        val iconBitmap = pkgName?.let { PackageUtils.loadIcon(context, it) }?.asAndroidBitmap()
+        val iconBitmap = pkgName?.let { packageUtils.loadIcon(it) }?.asAndroidBitmap()
         if (iconBitmap != null) {
             val customDescription = CustomDescription.Builder(
                 AutofillRemoteViewFactory.createSaveDescription(

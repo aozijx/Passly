@@ -1,6 +1,5 @@
 package com.aozijx.passly.ui.features.detail
 
-import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,10 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.FragmentActivity
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
@@ -62,10 +60,7 @@ fun DetailCardDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val application = context.applicationContext as Application
-    val detailViewModel: DetailViewModel = viewModel(
-        factory = appViewModelFactory(application)
-    )
+    val detailViewModel: DetailViewModel = hiltViewModel()
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
     val vaultUiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
 

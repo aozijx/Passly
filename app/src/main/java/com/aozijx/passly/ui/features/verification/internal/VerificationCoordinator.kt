@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 class VerificationCoordinator(
     private val scope: CoroutineScope,
     private val authUseCases: AuthUseCases,
-    private val requestValidator: AuthRequestValidator = AuthRequestValidator()
+    private val requestValidator: AuthRequestValidator
 ) : VerificationGateway {
     override val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
     override val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled

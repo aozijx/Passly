@@ -5,7 +5,11 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import kotlinx.coroutines.flow.StateFlow
 
-class AuthUseCases(private val repository: AuthRepository) {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
     val isAuthorized: StateFlow<Boolean> = repository.isAuthorized
     val isAppPasswordEnabled: StateFlow<Boolean> = repository.isAppPasswordEnabled
 

@@ -10,7 +10,11 @@ import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 /**
  * 助记词类型的业务策略实现
  */
-class SeedPhraseEntryStrategy : EntryTypeStrategy {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SeedPhraseEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.SEED_PHRASE
 
     override fun validateRequiredFields(entry: VaultEntry): String? {

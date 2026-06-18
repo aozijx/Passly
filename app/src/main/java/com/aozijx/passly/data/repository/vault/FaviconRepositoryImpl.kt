@@ -6,8 +6,13 @@ import com.aozijx.passly.domain.model.FaviconOutcome
 import com.aozijx.passly.domain.model.FaviconResult
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 
-class FaviconRepositoryImpl(
-    private val appContext: Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class FaviconRepositoryImpl @Inject constructor(
+    @ApplicationContext private val appContext: Context
 ) : FaviconRepository {
     override suspend fun downloadFavicon(input: String): FaviconOutcome {
         val outcome = FaviconUtils.downloadAndSaveFavicon(input, appContext)

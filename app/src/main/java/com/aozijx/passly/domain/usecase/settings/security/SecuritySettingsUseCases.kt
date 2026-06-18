@@ -6,7 +6,11 @@ import kotlinx.coroutines.flow.Flow
 /**
  * 安全级设置用例：负责锁屏超时、生物识别、安全内容等用户敏感设置
  */
-class SecuritySettingsUseCases(private val repository: SecuritySettingsRepository) {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SecuritySettingsUseCases @Inject constructor(private val repository: SecuritySettingsRepository) {
     val lockTimeout: Flow<Long> = repository.lockTimeout
     val isBiometricEnabled: Flow<Boolean> = repository.isBiometricEnabled
     val isInvalidateKeyOnBioChange: Flow<Boolean> = repository.isInvalidateKeyOnBioChange

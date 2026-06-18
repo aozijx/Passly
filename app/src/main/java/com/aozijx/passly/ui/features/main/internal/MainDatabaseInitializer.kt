@@ -2,12 +2,16 @@ package com.aozijx.passly.ui.features.main.internal
 
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 
-internal data class MainDatabaseInitResult(
+import javax.inject.Inject
+import javax.inject.Singleton
+
+data class MainDatabaseInitResult(
     val error: Throwable?,
     val recoveryNotice: String? = null
 )
 
-internal class MainDatabaseInitializer(
+@Singleton
+class MainDatabaseInitializer @Inject constructor(
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases
 ) {
 

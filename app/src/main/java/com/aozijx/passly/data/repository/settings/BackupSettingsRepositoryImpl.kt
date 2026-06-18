@@ -6,10 +6,15 @@ import com.aozijx.passly.data.repository.settings.internal.BACKUP_DIRECTORY_URI_
 import com.aozijx.passly.data.repository.settings.internal.LAST_BACKUP_EXPORT_FILE_NAME_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import com.aozijx.passly.domain.repository.settings.BackupSettingsRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class BackupSettingsRepositoryImpl(context: Context) : BackupSettingsRepository {
+@Singleton
+class BackupSettingsRepositoryImpl @Inject constructor(@ApplicationContext context: Context) :
+    BackupSettingsRepository {
     private val appContext = context.applicationContext
 
     override val backupDirectoryUri: Flow<String?> =

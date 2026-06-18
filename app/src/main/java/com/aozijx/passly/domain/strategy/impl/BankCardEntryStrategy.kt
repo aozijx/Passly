@@ -10,7 +10,11 @@ import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 /**
  * 银行卡类型的业务策略实现
  */
-class BankCardEntryStrategy : EntryTypeStrategy {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class BankCardEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.BANK_CARD
 
     override fun validateRequiredFields(entry: VaultEntry): String? {

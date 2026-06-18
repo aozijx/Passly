@@ -25,10 +25,15 @@ import com.aozijx.passly.domain.config.UserConfig
 import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class SystemSettingsRepositoryImpl(context: Context) : SystemSettingsRepository {
+@Singleton
+class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext context: Context) :
+    SystemSettingsRepository {
     private val appContext = context.applicationContext
     private val defaultConfig = UserConfig()
 

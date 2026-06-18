@@ -5,7 +5,11 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 
-class BackupUseCases(private val repository: BackupRepository) {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class BackupUseCases @Inject constructor(private val repository: BackupRepository) {
 
     suspend fun exportBackup(
         uri: Uri, password: CharArray, includeImages: Boolean

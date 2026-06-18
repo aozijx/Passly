@@ -13,7 +13,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class UserConfigRepositoryImpl(
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class UserConfigRepositoryImpl @Inject constructor(
     private val store: UserConfigFileStore
 ) : UserConfigRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

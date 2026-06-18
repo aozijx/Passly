@@ -34,7 +34,10 @@ object EmergencyBackupExporter {
      * 当应用检测到数据库无法正常初始化时，尝试抢救数据。
      * 仅在 DEBUG 构建导出，并以密文文件保存到 app cache。
      */
-    fun exportOnFailure(context: Context): Result<File> {
+    fun exportOnFailure(
+        context: Context,
+        passphraseManager: DatabasePassphraseManager
+    ): Result<File> {
         if (!BuildConfig.DEBUG) {
             return Result.failure(IllegalStateException("Emergency backup export is disabled in release builds."))
         }
@@ -49,7 +52,7 @@ object EmergencyBackupExporter {
             val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
             if (!dbFile.exists()) return Result.failure(Exception("数据库文件不存在"))
 
-            passphrase = DatabasePassphraseManager.getPassphrase()
+            passphrase = passphraseManager.getPassphrase()
             db = SQLiteDatabase.openDatabase(
                 dbFile.path, passphrase, null, SQLiteDatabase.OPEN_READONLY, null, null
             )

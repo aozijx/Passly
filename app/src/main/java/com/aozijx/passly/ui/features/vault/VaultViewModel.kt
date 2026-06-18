@@ -26,6 +26,7 @@ import com.aozijx.passly.ui.features.vault.internal.VaultQueryCoordinator
 import com.aozijx.passly.ui.features.vault.model.AddType
 import com.aozijx.passly.ui.features.vault.model.SortOption
 import com.aozijx.passly.ui.features.vault.model.VaultTab
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,8 +34,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class VaultViewModel(
+@HiltViewModel
+class VaultViewModel @Inject constructor(
     application: Application,
     private val vaultUseCases: VaultUseCases,
     systemSettingsUseCases: SystemSettingsUseCases

@@ -7,10 +7,14 @@ import com.aozijx.passly.domain.model.FieldType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
+import javax.inject.Inject
+import javax.inject.Singleton
+
 /**
  * 密码类型的业务策略实现
  */
-class PasswordEntryStrategy : EntryTypeStrategy {
+@Singleton
+class PasswordEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.PASSWORD
 
     override fun validateRequiredFields(entry: VaultEntry): String? {

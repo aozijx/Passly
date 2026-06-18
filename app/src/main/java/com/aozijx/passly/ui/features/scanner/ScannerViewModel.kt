@@ -6,11 +6,14 @@ import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
 import com.aozijx.passly.core.qr.QrCodeUtils
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
 
-class ScannerViewModel : ViewModel() {
+@HiltViewModel
+class ScannerViewModel @Inject constructor() : ViewModel() {
     private val _scanResult = MutableStateFlow("")
     val scanResult: StateFlow<String> = _scanResult.asStateFlow()
 

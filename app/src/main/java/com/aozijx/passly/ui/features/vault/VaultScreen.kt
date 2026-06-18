@@ -22,8 +22,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.core.di.appViewModelFactory
 import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.ui.features.main.MainViewModel
@@ -40,6 +38,7 @@ fun VaultContent(
     mainViewModel: MainViewModel,
     activity: FragmentActivity,
     vaultViewModel: VaultViewModel,
+    userConfigProvider: UserConfigProvider,
     onSettingsClick: () -> Unit = {},
     onPlainExportClick: () -> Unit = {},
     onShowDetail: (VaultEntry) -> Unit = {}
@@ -47,10 +46,7 @@ fun VaultContent(
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    val configProvider: UserConfigProvider = viewModel(
-        factory = appViewModelFactory(activity.application)
-    )
-    val userConfig by configProvider.config.collectAsStateWithLifecycle()
+    val userConfig by userConfigProvider.config.collectAsStateWithLifecycle()
 
     val perTypeStyleMap = remember(userConfig.display.perTypeMap) {
         userConfig.display.perTypeMap
@@ -61,7 +57,7 @@ fun VaultContent(
         activity = activity,
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        configProvider = configProvider,
+        userConfigProvider = userConfigProvider,
         uiState = uiState,
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
@@ -161,7 +157,7 @@ fun VaultContent(
         mainViewModel = mainViewModel,
         activity = activity,
         vaultViewModel = vaultViewModel,
-        configProvider = configProvider,
+        configProvider = userConfigProvider,
         onUpdateInteraction = actionProvider.onUpdateInteraction
     )
 }

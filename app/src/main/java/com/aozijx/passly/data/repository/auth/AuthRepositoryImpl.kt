@@ -1,6 +1,5 @@
 package com.aozijx.passly.data.repository.auth
 
-import android.app.Application
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
@@ -16,6 +15,7 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.repository.auth.internal.AppPasswordHandler
 import com.aozijx.passly.domain.repository.auth.AuthRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,11 +27,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-internal class AuthRepositoryImpl(
-    private val application: Application
+@Singleton
+internal class AuthRepositoryImpl @Inject constructor(
+    @ApplicationContext private val application: android.content.Context,
+    private val passphraseManager: DatabasePassphraseManager
 ) : AuthRepository {
 
     private val authMutex = Mutex()
@@ -50,6 +54,7 @@ internal class AuthRepositoryImpl(
 
     private val appPasswordHandler = AppPasswordHandler(
         application = application,
+        passphraseManager = passphraseManager,
         isAuthorized = { _isAuthorized.value },
         onAuthorized = { onAuthorized() },
         refreshAppPasswordState = {
@@ -80,7 +85,7 @@ internal class AuthRepositoryImpl(
 
         if (_isAuthorized.value) return AppResult.success(Unit)
 
-        val cipher = DatabasePassphraseManager.getInitializedCipher(application)
+        val cipher = passphraseManager.getInitializedCipher()
             ?: return AppResult.failure(AppError.AuthFailed("无法准备认证环境，请重试"))
 
         return suspendCancellableCoroutine { continuation ->
@@ -101,10 +106,9 @@ internal class AuthRepositoryImpl(
                     if (!continuation.isActive) return@authenticate
 
                     try {
-                        val passphrase =
-                            DatabasePassphraseManager.processResult(application, result)
+                        val passphrase = passphraseManager.processResult(result)
                         try {
-                            DatabasePassphraseManager.setDecryptedPassphrase(passphrase)
+                            passphraseManager.setDecryptedPassphrase(passphrase)
                             SessionCryptoKey.deriveAndSet(passphrase)
                         } finally {
                             passphrase.fill(0)
@@ -115,7 +119,7 @@ internal class AuthRepositoryImpl(
                         continuation.resumeWithException(e)
                     } catch (e: Exception) {
                         Logcat.e("AuthRepo", "Auth process error", e)
-                        DatabasePassphraseManager.clearDecryptedPassphrase()
+                        passphraseManager.clearDecryptedPassphrase()
                         SessionCryptoKey.clearSessionKey()
                         continuation.resume(
                             AppResult.failure(AppError.AuthFailed(e.message ?: "认证失败"))
@@ -143,7 +147,7 @@ internal class AuthRepositoryImpl(
             AuthRequestValidationResult.Valid -> Unit
         }
 
-        if (DatabasePassphraseManager.isLocked) {
+        if (passphraseManager.isLocked) {
             return AppResult.failure(AppError.AuthFailed("请先解锁应用"))
         }
 
@@ -224,7 +228,7 @@ internal class AuthRepositoryImpl(
 
     override fun lock() {
         Logcat.i("AuthRepo", "Locking. Trim memory + clear secrets.")
-        DatabasePassphraseManager.clearDecryptedPassphrase()
+        passphraseManager.clearDecryptedPassphrase()
         SessionCryptoKey.clearSessionKey()
         _isAuthorized.update { false }
         lockScheduler?.cancel()
@@ -238,7 +242,7 @@ internal class AuthRepositoryImpl(
     override fun checkAndLock() {
         if (_isAuthorized.value) return
         Logcat.i("AuthRepo", "Check: not authorized, ensuring locked state.")
-        DatabasePassphraseManager.clearDecryptedPassphrase()
+        passphraseManager.clearDecryptedPassphrase()
         SessionCryptoKey.clearSessionKey()
     }
 
@@ -256,9 +260,9 @@ internal class AuthRepositoryImpl(
         invalidateOnBiometricChange: Boolean
     ): AppResult<Unit> = authMutex.withLock {
         try {
-            DatabasePassphraseManager.prepareForRekey(application, invalidateOnBiometricChange)
+            passphraseManager.prepareForRekey(invalidateOnBiometricChange)
 
-            val cipher = DatabasePassphraseManager.getInitializedCipher(application)
+            val cipher = passphraseManager.getInitializedCipher()
                 ?: error("无法准备重加密环境")
 
             return suspendCancellableCoroutine { continuation ->
@@ -279,11 +283,9 @@ internal class AuthRepositoryImpl(
                     onSuccess = { result ->
                         if (!continuation.isActive) return@authenticate
                         runCatching {
-                            val passphrase = DatabasePassphraseManager.getPassphrase()
+                            val passphrase = passphraseManager.getPassphrase()
                             try {
-                                DatabasePassphraseManager.completeRekey(
-                                    application, result, passphrase
-                                )
+                                passphraseManager.completeRekey(result, passphrase)
                             } finally {
                                 passphrase.fill(0)
                             }
@@ -313,8 +315,8 @@ internal class AuthRepositoryImpl(
 
     private fun recoverFromFailedRekey(invalidateOnBiometricChange: Boolean) {
         try {
-            DatabasePassphraseManager.prepareForRekey(application, invalidateOnBiometricChange)
-            val cipher = DatabasePassphraseManager.getInitializedCipher(application)
+            passphraseManager.prepareForRekey(invalidateOnBiometricChange)
+            val cipher = passphraseManager.getInitializedCipher()
             if (cipher != null) {
                 Logcat.i("AuthRepo", "Rekey recovery: new key ready.")
             }

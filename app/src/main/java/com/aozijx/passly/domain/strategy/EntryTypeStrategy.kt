@@ -138,6 +138,10 @@ object EntryTypeStrategyFactory {
         strategies[strategy.entryType] = strategy
     }
 
+    fun registerAll(strategies: Map<EntryType, @JvmSuppressWildcards EntryTypeStrategy>) {
+        this.strategies.putAll(strategies)
+    }
+
     fun getStrategy(entryType: EntryType): EntryTypeStrategy {
         return strategies[entryType]
             ?: throw IllegalArgumentException("没有找到类型 $entryType 对应的策略")

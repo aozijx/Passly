@@ -5,7 +5,11 @@ import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
 /**
  * 数据库生命周期用例门面。
  */
-class DatabaseLifecycleUseCases(
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class DatabaseLifecycleUseCases @Inject constructor(
     private val repository: DatabaseLifecycleRepository
 ) {
     suspend fun preWarm(): Throwable? = repository.preWarm()

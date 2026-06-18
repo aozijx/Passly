@@ -4,7 +4,11 @@ import com.aozijx.passly.domain.model.AutofillCandidate
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 
-class AutofillUseCases(private val repository: AutofillServiceRepository) {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class AutofillUseCases @Inject constructor(private val repository: AutofillServiceRepository) {
 
     suspend fun updateUsageStats(entry: VaultEntry) = repository.updateUsageStats(entry)
 
