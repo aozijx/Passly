@@ -23,7 +23,7 @@ internal fun SecurityDetail(
             isPasswordPreferredAuthFirst = state.isPasswordPreferredAuthFirst,
             isDeviceCredentialFallbackEnabled = state.isDeviceCredentialFallbackEnabled,
             isInvalidateKeyOnBioChange = state.isInvalidateKeyOnBioChange,
-            onLockTimeoutClick = actions.onShowLockTimeoutDialog,
+            onLockTimeoutChange = actions.onLockTimeoutChange,
             onAppPasswordClick = actions.onAppPasswordClick,
             onPasswordPreferredAuthFirstChange = actions.onPasswordPreferredAuthFirstChange,
             onDeviceCredentialFallbackToggleRequested = actions.onDeviceCredentialFallbackToggleRequested,

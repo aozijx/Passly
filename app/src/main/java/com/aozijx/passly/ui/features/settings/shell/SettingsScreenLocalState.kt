@@ -12,7 +12,6 @@ import com.aozijx.passly.ui.features.settings.internal.AppPasswordDialogState
 internal class SettingsScreenLocalState {
     var showLeftActionDialog by mutableStateOf(false)
     var showRightActionDialog by mutableStateOf(false)
-    var showLockTimeoutDialog by mutableStateOf(false)
     var showClearBackupDirConfirmDialog by mutableStateOf(false)
     var showDeviceCredentialFallbackWarningDialog by mutableStateOf(false)
     var activeAppPasswordDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
@@ -37,14 +36,6 @@ internal class SettingsScreenLocalState {
 
     fun dismissRightActionDialog() {
         showRightActionDialog = false
-    }
-
-    fun openLockTimeoutDialog() {
-        showLockTimeoutDialog = true
-    }
-
-    fun dismissLockTimeoutDialog() {
-        showLockTimeoutDialog = false
     }
 
     fun openClearBackupDirConfirmDialog() {

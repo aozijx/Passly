@@ -54,14 +54,12 @@ internal fun buildSettingsDialogsState(
 ): SettingsDialogsState = SettingsDialogsState(
     showRightActionDialog = localState.showRightActionDialog,
     showLeftActionDialog = localState.showLeftActionDialog,
-    showLockTimeoutDialog = localState.showLockTimeoutDialog,
     showClearBackupDirConfirmDialog = localState.showClearBackupDirConfirmDialog,
     showDeviceCredentialFallbackWarningDialog =
         localState.showDeviceCredentialFallbackWarningDialog,
     activeAppPasswordDialog = localState.activeAppPasswordDialog,
     swipeLeftAction = uiState.vault.swipeLeftAction,
     swipeRightAction = uiState.vault.swipeRightAction,
-    lockTimeout = uiState.security.lockTimeout,
     backupDirectoryUri = uiState.backup.directoryUri,
     context = context,
     appPasswordCurrent = localState.appPasswordCurrent,
@@ -80,7 +78,7 @@ internal fun buildSettingsContentActions(
     onTestBackupWrite: () -> Unit
 ): SettingsContentActions = SettingsContentActions(
     onBack = onBack,
-    onShowLockTimeoutDialog = localState::openLockTimeoutDialog,
+    onLockTimeoutChange = configProvider::setLockTimeout,
     onAppPasswordClick = onAppPasswordClick,
     onPasswordPreferredAuthFirstChange = configProvider::setPasswordPreferredAuthFirst,
     onDeviceCredentialFallbackToggleRequested = { enabled ->
@@ -131,11 +129,9 @@ internal fun buildSettingsDialogsActions(
         when (event) {
             is SettingsDialogEvent.SetSwipeRightAction -> configProvider.setSwipeRightAction(event.action)
             is SettingsDialogEvent.SetSwipeLeftAction -> configProvider.setSwipeLeftAction(event.action)
-            is SettingsDialogEvent.SetLockTimeout -> configProvider.setLockTimeout(event.timeoutMs)
             SettingsDialogEvent.ClearBackupDirectory -> configProvider.clearBackupDirectoryUri()
             SettingsDialogEvent.DismissRightActionDialog -> localState.dismissRightActionDialog()
             SettingsDialogEvent.DismissLeftActionDialog -> localState.dismissLeftActionDialog()
-            SettingsDialogEvent.DismissLockTimeoutDialog -> localState.dismissLockTimeoutDialog()
             SettingsDialogEvent.DismissClearBackupDirConfirmDialog ->
                 localState.dismissClearBackupDirConfirmDialog()
 

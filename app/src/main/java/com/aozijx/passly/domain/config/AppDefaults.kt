@@ -6,15 +6,15 @@ import com.aozijx.passly.domain.model.VaultCardStyle
 
 object AppDefaults {
     const val MIN_LOCK_TIMEOUT_MS = 10_000L
+    const val MAX_LOCK_TIMEOUT_MS = 300_000L
+    const val LOCK_TIMEOUT_SLIDER_STEP_MS = 5_000L
+    const val SLIDER_MIN_LOCK_TIMEOUT_MS = 15_000L
 
     const val TAB_THRESHOLD_MIN = 2
     const val TAB_THRESHOLD_MAX = 8
 
     object CardStyle {
         val GLOBAL_DEFAULT_STYLE: VaultCardStyle = VaultCardStyle.DEFAULT
-        val GLOBAL_DEFAULT_STYLE_KEY = -1
-        val GLOBAL_DEFAULT_STYLE_ENTRY: Pair<Int, VaultCardStyle> =
-            GLOBAL_DEFAULT_STYLE_KEY to GLOBAL_DEFAULT_STYLE
 
         val SETTINGS_STYLES: List<VaultCardStyle> = listOf(
             VaultCardStyle.DEFAULT, VaultCardStyle.PASSWORD, VaultCardStyle.TOTP

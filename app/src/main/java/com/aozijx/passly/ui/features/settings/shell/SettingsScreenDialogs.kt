@@ -17,7 +17,6 @@ import com.aozijx.passly.ui.features.settings.internal.AppPasswordDialogState
 import com.aozijx.passly.ui.features.settings.internal.SettingsDialogEvent
 import com.aozijx.passly.ui.features.settings.internal.SettingsDialogsActions
 import com.aozijx.passly.ui.features.settings.internal.SettingsDialogsState
-import com.aozijx.passly.ui.features.settings.security.LockTimeoutDialog
 
 @Composable
 internal fun SettingsScreenDialogsHost(
@@ -45,17 +44,6 @@ internal fun SettingsScreenDialogsHost(
                 actions.onDialogEvent(SettingsDialogEvent.DismissLeftActionDialog)
             },
             { actions.onDialogEvent(SettingsDialogEvent.DismissLeftActionDialog) }
-        )
-    }
-
-    if (state.showLockTimeoutDialog) {
-        LockTimeoutDialog(
-            currentTimeoutMs = state.lockTimeout,
-            onTimeoutSelected = {
-                actions.onDialogEvent(SettingsDialogEvent.SetLockTimeout(it))
-                actions.onDialogEvent(SettingsDialogEvent.DismissLockTimeoutDialog)
-            },
-            onDismiss = { actions.onDialogEvent(SettingsDialogEvent.DismissLockTimeoutDialog) }
         )
     }
 

@@ -34,7 +34,7 @@ internal data class SettingsContentState(
 
 internal data class SettingsContentActions(
     val onBack: () -> Unit,
-    val onShowLockTimeoutDialog: () -> Unit,
+    val onLockTimeoutChange: (Long) -> Unit,
     val onAppPasswordClick: () -> Unit,
     val onPasswordPreferredAuthFirstChange: (Boolean) -> Unit,
     val onDeviceCredentialFallbackToggleRequested: (Boolean) -> Unit,

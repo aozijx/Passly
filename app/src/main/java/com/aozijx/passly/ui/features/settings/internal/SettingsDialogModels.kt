@@ -14,13 +14,11 @@ internal sealed interface AppPasswordDialogState {
 internal data class SettingsDialogsState(
     val showRightActionDialog: Boolean,
     val showLeftActionDialog: Boolean,
-    val showLockTimeoutDialog: Boolean,
     val showClearBackupDirConfirmDialog: Boolean,
     val showDeviceCredentialFallbackWarningDialog: Boolean,
     val activeAppPasswordDialog: AppPasswordDialogState,
     val swipeLeftAction: SwipeActionType,
     val swipeRightAction: SwipeActionType,
-    val lockTimeout: Long,
     val backupDirectoryUri: String?,
     val context: Context,
     val appPasswordCurrent: String,
@@ -46,11 +44,9 @@ internal sealed interface AppPasswordDialogEvent {
 internal sealed interface SettingsDialogEvent {
     data class SetSwipeRightAction(val action: SwipeActionType) : SettingsDialogEvent
     data class SetSwipeLeftAction(val action: SwipeActionType) : SettingsDialogEvent
-    data class SetLockTimeout(val timeoutMs: Long) : SettingsDialogEvent
     data object ClearBackupDirectory : SettingsDialogEvent
     data object DismissRightActionDialog : SettingsDialogEvent
     data object DismissLeftActionDialog : SettingsDialogEvent
-    data object DismissLockTimeoutDialog : SettingsDialogEvent
     data object DismissClearBackupDirConfirmDialog : SettingsDialogEvent
     data object DismissDeviceCredentialFallbackWarningDialog : SettingsDialogEvent
     data object ConfirmEnableDeviceCredentialFallback : SettingsDialogEvent
