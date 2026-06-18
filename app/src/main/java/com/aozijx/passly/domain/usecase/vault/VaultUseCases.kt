@@ -54,17 +54,6 @@ class VaultUseCases @Inject constructor(
 
     fun getTotpCode(config: TotpConfig): String = otpRepository.generateTotp(config)
 
-    fun getTotpCode(
-        secret: String, digits: Int, period: Int, algorithm: String
-    ): String = getTotpCode(
-        TotpConfig(
-            secret = secret,
-            digits = digits,
-            period = period,
-            algorithm = algorithm
-        )
-    )
-
     suspend fun downloadFavicon(input: String): FaviconOutcome {
         if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)
         return faviconRepository.downloadFavicon(input)

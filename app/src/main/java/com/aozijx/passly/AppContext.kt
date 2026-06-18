@@ -4,7 +4,6 @@ import android.app.Application
 import android.os.StrictMode
 import com.aozijx.passly.core.logging.Logcat
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.CoroutineExceptionHandler
 
 @HiltAndroidApp
 class AppContext : Application() {
@@ -27,10 +26,6 @@ class AppContext : Application() {
         fun get(): AppContext = checkNotNull(_instance) {
             "AppContext has not been initialized."
         }
-    }
-
-    val globalExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Logcat.e(TAG, "Uncaught coroutine exception", throwable)
     }
 
     override fun onCreate() {

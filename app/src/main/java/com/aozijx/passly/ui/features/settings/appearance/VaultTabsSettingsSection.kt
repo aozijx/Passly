@@ -35,8 +35,8 @@ fun VaultTabsSettingsSection(
     onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit,
     onVisibleVaultTabsChange: (Set<String>) -> Unit
 ) {
-    val enabledKeys = visibleVaultTabs ?: VaultTab.Companion.defaultVisibleKeys
-    val toggleableTabs = VaultTab.Companion.toggleableVisibleTabs
+    val enabledKeys = visibleVaultTabs ?: VaultTab.defaultVisibleKeys
+    val toggleableTabs = VaultTab.toggleableVisibleTabs
     val persistedThreshold = tabBarMaxTabsWithoutScroll.coerceIn(
         AppDefaults.TAB_THRESHOLD_MIN,
         AppDefaults.TAB_THRESHOLD_MAX

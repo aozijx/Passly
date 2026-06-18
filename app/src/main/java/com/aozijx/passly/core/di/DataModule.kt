@@ -33,24 +33,12 @@ import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
-import com.aozijx.passly.domain.strategy.EntryTypeStrategy
-import com.aozijx.passly.domain.strategy.impl.BankCardEntryStrategy
-import com.aozijx.passly.domain.strategy.impl.IdCardEntryStrategy
-import com.aozijx.passly.domain.strategy.impl.PasskeyEntryStrategy
-import com.aozijx.passly.domain.strategy.impl.PasswordEntryStrategy
-import com.aozijx.passly.domain.strategy.impl.RecoveryCodeEntryStrategy
-import com.aozijx.passly.domain.strategy.impl.SeedPhraseEntryStrategy
-import com.aozijx.passly.domain.strategy.impl.SshKeyEntryStrategy
-import com.aozijx.passly.domain.strategy.impl.TotpEntryStrategy
-import com.aozijx.passly.domain.strategy.impl.WiFiEntryStrategy
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import dagger.multibindings.IntKey
-import dagger.multibindings.IntoMap
 import javax.inject.Singleton
 
 @Module
@@ -144,63 +132,4 @@ abstract class DataModuleBinds {
     @Binds
     @Singleton
     abstract fun bindUserConfigRepository(impl: UserConfigRepositoryImpl): UserConfigRepository
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
-abstract class StrategyModule {
-
-    @Binds
-    @IntoMap
-    @IntKey(0)
-    @Singleton
-    abstract fun bindPasswordStrategy(impl: PasswordEntryStrategy): EntryTypeStrategy
-
-    @Binds
-    @IntoMap
-    @IntKey(1)
-    @Singleton
-    abstract fun bindTotpStrategy(impl: TotpEntryStrategy): EntryTypeStrategy
-
-    @Binds
-    @IntoMap
-    @IntKey(2)
-    @Singleton
-    abstract fun bindPasskeyStrategy(impl: PasskeyEntryStrategy): EntryTypeStrategy
-
-    @Binds
-    @IntoMap
-    @IntKey(4)
-    @Singleton
-    abstract fun bindRecoveryCodeStrategy(impl: RecoveryCodeEntryStrategy): EntryTypeStrategy
-
-    @Binds
-    @IntoMap
-    @IntKey(3)
-    @Singleton
-    abstract fun bindWiFiStrategy(impl: WiFiEntryStrategy): EntryTypeStrategy
-
-    @Binds
-    @IntoMap
-    @IntKey(8)
-    @Singleton
-    abstract fun bindSshKeyStrategy(impl: SshKeyEntryStrategy): EntryTypeStrategy
-
-    @Binds
-    @IntoMap
-    @IntKey(5)
-    @Singleton
-    abstract fun bindBankCardStrategy(impl: BankCardEntryStrategy): EntryTypeStrategy
-
-    @Binds
-    @IntoMap
-    @IntKey(6)
-    @Singleton
-    abstract fun bindSeedPhraseStrategy(impl: SeedPhraseEntryStrategy): EntryTypeStrategy
-
-    @Binds
-    @IntoMap
-    @IntKey(7)
-    @Singleton
-    abstract fun bindIdCardStrategy(impl: IdCardEntryStrategy): EntryTypeStrategy
 }

@@ -51,7 +51,7 @@ internal object AutofillResponseBuilder {
         return builder.build()
     }
 
-    suspend fun buildFillResponse(
+    fun buildFillResponse(
         context: Context,
         candidates: List<AutofillCandidate>,
         parser: AutofillStructureParser,
@@ -284,7 +284,7 @@ internal object AutofillResponseBuilder {
         return datasetBuilder.build()
     }
 
-    private suspend fun buildSaveInfo(
+    private fun buildSaveInfo(
         context: Context,
         parser: AutofillStructureParser,
         packageUtils: PackageUtils

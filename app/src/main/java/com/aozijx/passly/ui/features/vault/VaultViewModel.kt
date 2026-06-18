@@ -78,11 +78,11 @@ class VaultViewModel @Inject constructor(
 
     private val visibleTabs: StateFlow<List<VaultTab>> =
         systemSettingsUseCases.visibleVaultTabs
-            .map { VaultTab.Companion.resolveVisible(it ?: VaultTab.Companion.defaultVisibleKeys) }
+            .map { VaultTab.resolveVisible(it ?: VaultTab.defaultVisibleKeys) }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
-                VaultTab.Companion.resolveVisible(VaultTab.Companion.defaultVisibleKeys)
+                VaultTab.resolveVisible(VaultTab.defaultVisibleKeys)
             )
 
     private val settingsState: StateFlow<Triple<List<VaultTab>, Boolean, Boolean>> =
@@ -92,7 +92,7 @@ class VaultViewModel @Inject constructor(
             viewModelScope,
             SharingStarted.WhileSubscribed(5000),
             Triple(
-                VaultTab.Companion.resolveVisible(VaultTab.Companion.defaultVisibleKeys),
+                VaultTab.resolveVisible(VaultTab.defaultVisibleKeys),
                 true,
                 true
             )

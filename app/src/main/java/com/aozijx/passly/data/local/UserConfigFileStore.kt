@@ -43,8 +43,6 @@ class UserConfigFileStore(
             }
         }
     }
-
-    fun getPath(): String = configFile.absolutePath
 }
 
 private fun parseConfig(raw: String): UserConfig {
