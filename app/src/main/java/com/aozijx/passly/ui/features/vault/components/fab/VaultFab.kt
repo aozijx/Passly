@@ -69,22 +69,19 @@ fun VaultFab(
     )
 
     // 用于实现依次弹出的状态控制
-    var item1Visible by remember { mutableStateOf(false) }
-    var item2Visible by remember { mutableStateOf(false) }
-    var item3Visible by remember { mutableStateOf(false) }
+    val fabMenuOptions = AddType.fabMenuOptions
+    var visibleStates by remember { mutableStateOf(List(fabMenuOptions.size) { false }) }
 
     // 监听 showFabMenu 变化，手动控制延迟实现交错效果
     LaunchedEffect(showFabMenu) {
         if (showFabMenu) {
-            item3Visible = true
-            delay(60)
-            item2Visible = true
-            delay(60)
-            item1Visible = true
+            val lastIndex = fabMenuOptions.lastIndex
+            for (i in lastIndex downTo 0) {
+                visibleStates = visibleStates.toMutableList().apply { this[i] = true }
+                if (i > 0) delay(60)
+            }
         } else {
-            item1Visible = false
-            item2Visible = false
-            item3Visible = false
+            visibleStates = visibleStates.toMutableList().apply { replaceAll { false } }
         }
     }
 
@@ -108,36 +105,17 @@ fun VaultFab(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 扫描 (最上方)
-                FabMenuItemWithSpring(
-                    visible = item1Visible,
-                    label = stringResource(AddType.SCAN.labelRes),
-                    icon = AddType.SCAN.icon,
-                    onClick = {
-                        showFabMenu = false
-                        viewModel.setAddType(AddType.SCAN)
-                    }
-                )
-                // 2FA (中间)
-                FabMenuItemWithSpring(
-                    visible = item2Visible,
-                    label = stringResource(AddType.TOTP.labelRes),
-                    icon = AddType.TOTP.icon,
-                    onClick = {
-                        showFabMenu = false
-                        viewModel.setAddType(AddType.TOTP)
-                    }
-                )
-                // 密码 (最下方)
-                FabMenuItemWithSpring(
-                    visible = item3Visible,
-                    label = stringResource(AddType.PASSWORD.labelRes),
-                    icon = AddType.PASSWORD.icon,
-                    onClick = {
-                        showFabMenu = false
-                        viewModel.setAddType(AddType.PASSWORD)
-                    }
-                )
+                fabMenuOptions.forEachIndexed { index, type ->
+                    FabMenuItemWithSpring(
+                        visible = visibleStates[index],
+                        label = stringResource(type.labelRes),
+                        icon = type.icon,
+                        onClick = {
+                            showFabMenu = false
+                            viewModel.setAddType(type)
+                        }
+                    )
+                }
             }
 
             Box(
