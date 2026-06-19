@@ -1,9 +1,16 @@
 package com.aozijx.passly.ui.features.vault.model
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TextSnippet
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
 
@@ -18,5 +25,20 @@ enum class AddType(
 ) {
     PASSWORD(R.string.vault_fab_password, Icons.Default.Key),
     TOTP(R.string.vault_fab_2fa, Icons.Default.Pin),
-    SCAN(R.string.vault_fab_scan, Icons.Default.QrCodeScanner)
+    SCAN(R.string.vault_fab_scan, Icons.Default.QrCodeScanner),
+    BANK_CARD(R.string.vault_fab_bank_card, Icons.Default.CreditCard),
+    WIFI(R.string.vault_fab_wifi, Icons.Default.Wifi),
+    SSH_KEY(R.string.vault_fab_ssh_key, Icons.Default.VpnKey),
+    ID_CARD(R.string.vault_fab_id_card, Icons.Default.Badge),
+    SEED_PHRASE(R.string.vault_fab_seed_phrase, Icons.AutoMirrored.Filled.TextSnippet),
+    PASSKEY(R.string.vault_fab_passkey, Icons.Default.Fingerprint),
+    RECOVERY_CODE(R.string.vault_fab_recovery_code, Icons.Default.Restore);
+
+    companion object {
+        /** FAB 快捷菜单显示的项目（保持原有 3 项） */
+        val fabMenuOptions: List<AddType> = listOf(SCAN, TOTP, PASSWORD)
+
+        /** ModalBottomSheet 中显示的所有添加类型 */
+        val allOptions: List<AddType> = entries.toList()
+    }
 }

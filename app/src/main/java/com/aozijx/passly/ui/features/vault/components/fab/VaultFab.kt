@@ -1,4 +1,4 @@
-﻿package com.aozijx.passly.ui.features.vault.components.fab
+package com.aozijx.passly.ui.features.vault.components.fab
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -9,7 +9,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,11 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Pin
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -38,9 +36,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,7 @@ fun VaultFab(
     isVisible: Boolean = true
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
+    var showAddEntrySheet by remember { mutableStateOf(false) }
 
     // 为 FAB 旋转添加阻尼动画 (Spring)
     val rotation by animateFloatAsState(
@@ -109,8 +111,8 @@ fun VaultFab(
                 // 扫描 (最上方)
                 FabMenuItemWithSpring(
                     visible = item1Visible,
-                    label = stringResource(R.string.vault_fab_scan),
-                    icon = Icons.Default.QrCodeScanner,
+                    label = stringResource(AddType.SCAN.labelRes),
+                    icon = AddType.SCAN.icon,
                     onClick = {
                         showFabMenu = false
                         viewModel.setAddType(AddType.SCAN)
@@ -119,8 +121,8 @@ fun VaultFab(
                 // 2FA (中间)
                 FabMenuItemWithSpring(
                     visible = item2Visible,
-                    label = stringResource(R.string.vault_fab_2fa),
-                    icon = Icons.Default.Pin,
+                    label = stringResource(AddType.TOTP.labelRes),
+                    icon = AddType.TOTP.icon,
                     onClick = {
                         showFabMenu = false
                         viewModel.setAddType(AddType.TOTP)
@@ -129,8 +131,8 @@ fun VaultFab(
                 // 密码 (最下方)
                 FabMenuItemWithSpring(
                     visible = item3Visible,
-                    label = stringResource(R.string.vault_fab_password),
-                    icon = Icons.Default.Key,
+                    label = stringResource(AddType.PASSWORD.labelRes),
+                    icon = AddType.PASSWORD.icon,
                     onClick = {
                         showFabMenu = false
                         viewModel.setAddType(AddType.PASSWORD)
@@ -138,12 +140,22 @@ fun VaultFab(
                 )
             }
 
-            FloatingActionButton(
-                onClick = { showFabMenu = !showFabMenu },
-                containerColor = if (showFabMenu) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(12.dp),
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
-                modifier = Modifier.size(56.dp)
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .shadow(4.dp, RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (showFabMenu) MaterialTheme.colorScheme.secondaryContainer
+                        else MaterialTheme.colorScheme.primaryContainer
+                    )
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { showFabMenu = !showFabMenu },
+                            onLongPress = { showAddEntrySheet = true }
+                        )
+                    },
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Add,
@@ -152,6 +164,16 @@ fun VaultFab(
                 )
             }
         }
+    }
+
+    if (showAddEntrySheet) {
+        AddEntrySheet(
+            onDismiss = { showAddEntrySheet = false },
+            onSelectType = { type ->
+                showFabMenu = false
+                viewModel.setAddType(type)
+            }
+        )
     }
 }
 

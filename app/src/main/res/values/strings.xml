@@ -107,6 +107,15 @@
     <string name="vault_fab_scan">扫码</string>
     <string name="vault_fab_2fa">2FA</string>
     <string name="vault_fab_password">密码</string>
+    <string name="vault_fab_bank_card">银行卡</string>
+    <string name="vault_fab_wifi">WiFi</string>
+    <string name="vault_fab_ssh_key">SSH密钥</string>
+    <string name="vault_fab_id_card">证件</string>
+    <string name="vault_fab_seed_phrase">助记词</string>
+    <string name="vault_fab_passkey">Passkey</string>
+    <string name="vault_fab_recovery_code">恢复码</string>
+    <string name="vault_fab_add_title">添加条目</string>
+    <string name="vault_add_generic_title">添加 %s</string>
     <string name="vault_empty_placeholder">你的保险箱空空如也</string>
     <string name="vault_scanner_error_not_otp">识别成功，但不是有效的 2FA 二维码</string>
     <string name="vault_scanner_action_album">相册导入</string>

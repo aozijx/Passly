@@ -70,6 +70,17 @@ fun VaultDialogs(
                 onDismiss = { vaultViewModel.setAddType(null) }
             )
         }
+        AddType.BANK_CARD,
+        AddType.WIFI,
+        AddType.SSH_KEY,
+        AddType.ID_CARD,
+        AddType.SEED_PHRASE,
+        AddType.PASSKEY,
+        AddType.RECOVERY_CODE -> AddGenericEntryDialog(
+            viewModel = vaultViewModel,
+            addType = vaultViewModel.addType!!,
+            onUpdateInteraction = onUpdateInteraction
+        )
 
         null -> Unit
     }
