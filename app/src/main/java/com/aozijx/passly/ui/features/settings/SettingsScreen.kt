@@ -15,7 +15,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
 import com.aozijx.passly.domain.config.AppDefaults
-import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordAction
@@ -35,12 +34,12 @@ import com.aozijx.passly.ui.features.settings.shell.rememberSettingsScreenLocalS
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    configProvider: UserConfigProvider,
     authViewModel: SettingsViewModel,
     onUpdateInteraction: () -> Unit = {}
 ) {
-    val uiState by configProvider.config.collectAsStateWithLifecycle()
-    val isAppPasswordEnabled by authViewModel.authGateway.isAppPasswordEnabled.collectAsStateWithLifecycle()
+    val uiState by authViewModel.config.collectAsStateWithLifecycle()
+    val isAppPasswordEnabled by authViewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
+    val configProvider = authViewModel.configProvider
 
     val availableCardStyles = remember { AppDefaults.CardStyle.PER_TYPE_STYLES }
     val effectiveCardStyle = AppDefaults.CardStyle.normalizeGlobalStyle(uiState.display.cardStyle)

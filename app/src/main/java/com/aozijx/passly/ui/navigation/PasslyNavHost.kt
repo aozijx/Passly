@@ -119,7 +119,6 @@ fun PasslyNavHost(
                 { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                configProvider = userConfigProvider,
                 authViewModel = authViewModel,
                 onUpdateInteraction = onUpdateInteraction
             )
