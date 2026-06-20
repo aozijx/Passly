@@ -18,20 +18,6 @@ internal enum class SettingsGroup(
     val icon: ImageVector,
     val route: SettingsRoute
 ) {
-    SECURITY(
-        sectionTitle = "安全与隐私",
-        icon = Icons.Default.Lock,
-        title = "安全设置",
-        subtitle = "自动锁定、密码与生物识别",
-        route = SettingsRoute.Security
-    ),
-    PRIVACY(
-        sectionTitle = "安全与隐私",
-        icon = Icons.Default.Visibility,
-        title = "隐私设置",
-        subtitle = "防窥保护、翻转锁定与内容隐藏",
-        route = SettingsRoute.Privacy
-    ),
     APPEARANCE(
         sectionTitle = "显示与外观",
         icon = Icons.Default.Palette,
@@ -45,6 +31,20 @@ internal enum class SettingsGroup(
         title = "界面设置",
         subtitle = "沉浸式体验、状态栏与标签栏",
         route = SettingsRoute.Interface
+    ),
+    SECURITY(
+        sectionTitle = "安全与隐私",
+        icon = Icons.Default.Lock,
+        title = "安全设置",
+        subtitle = "自动锁定、密码与生物识别",
+        route = SettingsRoute.Security
+    ),
+    PRIVACY(
+        sectionTitle = "安全与隐私",
+        icon = Icons.Default.Visibility,
+        title = "隐私设置",
+        subtitle = "防窥保护、翻转锁定与内容隐藏",
+        route = SettingsRoute.Privacy
     ),
     INTERACTION(
         sectionTitle = "交互与操作",
