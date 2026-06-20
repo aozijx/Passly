@@ -28,6 +28,9 @@ import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
 import com.aozijx.passly.ui.features.vault.model.VaultTab
 import kotlin.math.roundToInt
 
+private const val TAB_THRESHOLD_MIN = AppDefaults.TAB_THRESHOLD_MIN
+private const val TAB_THRESHOLD_MAX = AppDefaults.TAB_THRESHOLD_MAX
+
 @Composable
 fun VaultTabsSettingsSection(
     visibleVaultTabs: Set<String>?,
@@ -38,12 +41,12 @@ fun VaultTabsSettingsSection(
     val enabledKeys = visibleVaultTabs ?: VaultTab.defaultVisibleKeys
     val toggleableTabs = VaultTab.toggleableVisibleTabs
     val persistedThreshold = tabBarMaxTabsWithoutScroll.coerceIn(
-        AppDefaults.TAB_THRESHOLD_MIN,
-        AppDefaults.TAB_THRESHOLD_MAX
+        TAB_THRESHOLD_MIN,
+        TAB_THRESHOLD_MAX
     )
     var sliderValue by remember(persistedThreshold) { mutableFloatStateOf(persistedThreshold.toFloat()) }
     val previewThreshold = sliderValue.roundToInt()
-        .coerceIn(AppDefaults.TAB_THRESHOLD_MIN, AppDefaults.TAB_THRESHOLD_MAX)
+        .coerceIn(TAB_THRESHOLD_MIN, TAB_THRESHOLD_MAX)
 
     SettingsGroupTitle(text = "保险箱 Tab")
     SettingsRoundedGroup {
@@ -64,15 +67,15 @@ fun VaultTabsSettingsSection(
                     value = sliderValue,
                     onValueChange = { value ->
                         sliderValue = value.coerceIn(
-                            AppDefaults.TAB_THRESHOLD_MIN.toFloat(),
-                            AppDefaults.TAB_THRESHOLD_MAX.toFloat()
+                            TAB_THRESHOLD_MIN.toFloat(),
+                            TAB_THRESHOLD_MAX.toFloat()
                         )
                     },
                     onValueChangeFinished = {
                         if (previewThreshold != persistedThreshold)
                             onTabBarMaxTabsWithoutScrollChange(previewThreshold)
                     },
-                    valueRange = AppDefaults.TAB_THRESHOLD_MIN.toFloat()..AppDefaults.TAB_THRESHOLD_MAX.toFloat(),
+                    valueRange = TAB_THRESHOLD_MIN.toFloat()..TAB_THRESHOLD_MAX.toFloat(),
                     steps = 5,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )

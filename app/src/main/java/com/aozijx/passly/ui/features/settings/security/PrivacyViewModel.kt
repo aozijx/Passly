@@ -2,7 +2,6 @@ package com.aozijx.passly.ui.features.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,9 +12,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class PrivacyUiState(
-    val isSecureContentEnabled: Boolean = AppDefaults.SECURITY_SECURE_CONTENT_ENABLED,
-    val isFlipToLockEnabled: Boolean = AppDefaults.SECURITY_FLIP_TO_LOCK_ENABLED,
-    val isFlipExitAndClearStackEnabled: Boolean = AppDefaults.SECURITY_FLIP_EXIT_AND_CLEAR_STACK_ENABLED,
+    val isSecureContentEnabled: Boolean = true,
+    val isFlipToLockEnabled: Boolean = false,
+    val isFlipExitAndClearStackEnabled: Boolean = false,
 )
 
 sealed interface PrivacyUiAction {

@@ -2,7 +2,6 @@ package com.aozijx.passly.ui.features.settings.interaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.model.AutofillUiMode
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
@@ -15,10 +14,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class InteractionUiState(
-    val isSwipeEnabled: Boolean = AppDefaults.VAULT_SWIPE_ENABLED,
-    val swipeLeftAction: SwipeActionType = AppDefaults.VAULT_SWIPE_LEFT_ACTION,
-    val swipeRightAction: SwipeActionType = AppDefaults.VAULT_SWIPE_RIGHT_ACTION,
-    val autofillUiMode: AutofillUiMode = AppDefaults.VAULT_AUTOFILL_UI_MODE,
+    val isSwipeEnabled: Boolean = true,
+    val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
+    val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
+    val autofillUiMode: AutofillUiMode = AutofillUiMode.SYSTEM_INLINE,
 )
 
 sealed interface InteractionUiAction {

@@ -25,5 +25,8 @@ enum class VaultCardStyle(
             val normalizedKey = key?.trim()?.lowercase()
             return entries.firstOrNull { it.key == normalizedKey } ?: DEFAULT
         }
+
+        fun normalizeGlobalStyle(style: VaultCardStyle): VaultCardStyle =
+            if (style in entries) style else DEFAULT
     }
 }

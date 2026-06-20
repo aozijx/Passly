@@ -39,10 +39,49 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.ui.features.vault.components.cardstyle.CardStyleRegistry
+
+private val SETTINGS_GROUP_TITLE_BY_TYPE: Map<EntryType, Int> = mapOf(
+    EntryType.PASSWORD to R.string.settings_card_style_group_password,
+    EntryType.TOTP to R.string.settings_card_style_group_totp
+)
+
+private data class SettingsGroupSpec(
+    @field:androidx.annotation.StringRes val titleRes: Int,
+    val entryType: EntryType,
+    val styleCandidates: List<VaultCardStyle>
+) {
+    val entryTypeValue: Int get() = entryType.value
+}
+
+private data class TypeStylePolicy(
+    val defaultStyle: VaultCardStyle,
+    val selectableStyles: List<VaultCardStyle>
+)
+
+private val TYPE_STYLE_POLICY_MAP: Map<EntryType, TypeStylePolicy> =
+    EntryType.entries.associateWith {
+        TypeStylePolicy(
+            defaultStyle = VaultCardStyle.DEFAULT,
+            selectableStyles = listOf(VaultCardStyle.DEFAULT, VaultCardStyle.PASSWORD)
+        )
+    } + mapOf(
+        EntryType.TOTP to TypeStylePolicy(
+            defaultStyle = VaultCardStyle.DEFAULT,
+            selectableStyles = listOf(VaultCardStyle.DEFAULT, VaultCardStyle.TOTP)
+        )
+    )
+
+private val SETTINGS_GROUP_SPECS: List<SettingsGroupSpec> =
+    SETTINGS_GROUP_TITLE_BY_TYPE.map { (entryType, titleRes) ->
+        SettingsGroupSpec(
+            titleRes = titleRes,
+            entryType = entryType,
+            styleCandidates = TYPE_STYLE_POLICY_MAP.getValue(entryType).selectableStyles
+        )
+    }
 
 @Composable
 fun CardStyleSettingsSection(
@@ -61,7 +100,7 @@ fun CardStyleSettingsSection(
         EntryType.PASSWORD.value to onPasswordStyleSelected,
         EntryType.TOTP.value to onTotpStyleSelected
     )
-    val groups = AppDefaults.CardStyle.SETTINGS_GROUP_SPECS.map { spec ->
+    val groups = SETTINGS_GROUP_SPECS.map { spec ->
         spec to spec.styleCandidates.filter { it in availableStyles }
     }
 
@@ -141,7 +180,7 @@ fun CardStyleSettingsSection(
 
 @Composable
 private fun CardStyleGroup(
-    spec: AppDefaults.CardStyle.SettingsGroupSpec,
+    spec: SettingsGroupSpec,
     styles: List<VaultCardStyle>,
     selectedStyle: VaultCardStyle,
     expanded: Boolean,

@@ -20,9 +20,7 @@ class SettingsViewModel @Inject constructor(
     private val systemSettingsUseCases: SystemSettingsUseCases,
     private val securitySettingsUseCases: SecuritySettingsUseCases
 ) : ViewModel() {
-
     val authGateway = VerificationCoordinator(viewModelScope, authUseCases, authRequestValidator)
-
     val isAppPasswordEnabled: StateFlow<Boolean> = authGateway.isAppPasswordEnabled
 
     fun setSwipeLeftAction(action: SwipeActionType) {

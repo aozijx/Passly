@@ -17,7 +17,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.ui.features.settings.SettingsViewModel
@@ -92,8 +91,8 @@ fun SettingsNavGraph(
     val lastExportFileLabel = remember(dataState.lastExportFileName) {
         localState.lastExportFileLabel(dataState.lastExportFileName)
     }
-    val availableCardStyles = remember { AppDefaults.CardStyle.PER_TYPE_STYLES }
-    val effectiveCardStyle = AppDefaults.CardStyle.normalizeGlobalStyle(interfaceState.cardStyle)
+    val availableCardStyles = remember { VaultCardStyle.entries.toList() }
+    val effectiveCardStyle = VaultCardStyle.normalizeGlobalStyle(interfaceState.cardStyle)
     val passwordSelectedStyle =
         interfaceState.perTypeMap[EntryType.PASSWORD.value] ?: VaultCardStyle.DEFAULT
     val totpSelectedStyle =

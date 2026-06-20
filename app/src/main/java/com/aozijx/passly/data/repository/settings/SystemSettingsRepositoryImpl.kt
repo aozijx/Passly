@@ -41,23 +41,23 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         appContext.settingsDataStore.data.map { it[DARK_MODE_KEY] }
     override val isDynamicColor: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[DYNAMIC_COLOR_KEY] ?: true
+            it[DYNAMIC_COLOR_KEY] ?: AppDefaults.DISPLAY_DYNAMIC_COLOR
         }
     override val cardStyle: Flow<VaultCardStyle> = appContext.settingsDataStore.data.map { prefs ->
         val globalStyle =
             SettingsMapper.parseCardStyleMap(prefs[CARD_STYLE_MAP_KEY])[DEFAULT_STYLE_KEY]
                 ?: VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY])
-        AppDefaults.CardStyle.normalizeGlobalStyle(globalStyle)
+        VaultCardStyle.normalizeGlobalStyle(globalStyle)
     }
     override val cardStyleByEntryType: Flow<Map<Int, VaultCardStyle>> =
         appContext.settingsDataStore.data.map { prefs ->
             val parsed = SettingsMapper.parseCardStyleMap(prefs[CARD_STYLE_MAP_KEY]).toMutableMap()
             if (parsed[DEFAULT_STYLE_KEY] == null) {
                 parsed[DEFAULT_STYLE_KEY] =
-                    AppDefaults.CardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
+                    VaultCardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
             } else {
                 parsed[DEFAULT_STYLE_KEY] =
-                    AppDefaults.CardStyle.normalizeGlobalStyle(parsed[DEFAULT_STYLE_KEY]!!)
+                    VaultCardStyle.normalizeGlobalStyle(parsed[DEFAULT_STYLE_KEY]!!)
             }
             parsed.toMap()
         }
@@ -135,7 +135,7 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
             if (style == VaultCardStyle.DEFAULT) map.remove(entryTypeValue) else map[entryTypeValue] =
                 style
             if (map[DEFAULT_STYLE_KEY] == null) map[DEFAULT_STYLE_KEY] =
-                AppDefaults.CardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
+                VaultCardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
             prefs[CARD_STYLE_MAP_KEY] = SettingsMapper.encodeCardStyleMap(map)
         }
     }
@@ -174,10 +174,8 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
 
     override suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) {
         appContext.settingsDataStore.edit {
-            it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] = maxTabs.coerceIn(
-                AppDefaults.TAB_THRESHOLD_MIN,
-                AppDefaults.TAB_THRESHOLD_MAX
-            )
+            it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] =
+                maxTabs.coerceIn(AppDefaults.TAB_THRESHOLD_MIN, AppDefaults.TAB_THRESHOLD_MAX)
         }
     }
 

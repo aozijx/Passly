@@ -3,7 +3,6 @@ package com.aozijx.passly.ui.features.settings.data
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
@@ -16,7 +15,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class DataUiState(
-    val isAutoDownloadIcons: Boolean = AppDefaults.DISPLAY_AUTO_DOWNLOAD_ICONS,
+    val isAutoDownloadIcons: Boolean = true,
     val directoryUri: String? = null,
     val lastExportFileName: String? = null,
     val backupMessage: String? = null,

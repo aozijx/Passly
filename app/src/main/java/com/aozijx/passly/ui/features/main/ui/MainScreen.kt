@@ -59,15 +59,11 @@ internal fun MainScreen(
         viewModel.effects.collect { effect ->
             when (effect) {
                 is MainEffect.ShowToast -> Toast.makeText(
-                    activity,
-                    effect.message,
-                    Toast.LENGTH_SHORT
+                    activity, effect.message, Toast.LENGTH_SHORT
                 ).show()
 
                 is MainEffect.ShowError -> Toast.makeText(
-                    activity,
-                    effect.error,
-                    Toast.LENGTH_LONG
+                    activity, effect.error, Toast.LENGTH_LONG
                 ).show()
 
                 is MainEffect.ShowPlainExportPicker -> plainExportPickerLauncher.launch(
@@ -88,16 +84,12 @@ internal fun MainScreen(
                 PlainExportDialog(
                     type = PlainExportDialogType.DatabaseError,
                     onExportBackup = {
-                        viewModel.handleIntent(
-                            MainIntent.ExportEmergencyBackup(context)
-                        )
+                        viewModel.handleIntent(MainIntent.ExportEmergencyBackup(context))
                     },
                     onResetOrCancel = {
                         context.deleteDatabase(DatabaseConfig.DATABASE_NAME)
                         Toast.makeText(
-                            context,
-                            "数据库已清除，请重启应用",
-                            Toast.LENGTH_SHORT
+                            context, "数据库已清除，请重启应用", Toast.LENGTH_SHORT
                         ).show()
                         activity.finishAffinity()
                         exitProcess(0)
@@ -112,8 +104,7 @@ internal fun MainScreen(
                     backupCoordinator = backupCoordinator,
                     onPlainExportPickerRequest = { fileName ->
                         plainExportPickerLauncher.launch(fileName)
-                    }
-                )
+                    })
             }
 
             else -> {
@@ -136,8 +127,7 @@ internal fun MainScreen(
     ) {
         if (mainConfig.isSecureContentEnabled) {
             window.setFlags(
-                WindowManager.LayoutParams.FLAG_SECURE,
-                WindowManager.LayoutParams.FLAG_SECURE
+                WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE
             )
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
@@ -146,8 +136,7 @@ internal fun MainScreen(
         sensorController.isFlipLockEnabled = mainConfig.isFlipToLockEnabled
         if (mainConfig.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
 
-        sensorController.isFlipExitAndClearStackEnabled =
-            mainConfig.isFlipExitAndClearStackEnabled
+        sensorController.isFlipExitAndClearStackEnabled = mainConfig.isFlipExitAndClearStackEnabled
 
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
         insetsController.systemBarsBehavior = if (mainConfig.isStatusBarAutoHide) {
