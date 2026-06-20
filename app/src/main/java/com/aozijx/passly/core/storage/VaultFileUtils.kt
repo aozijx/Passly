@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.util.UUID
 
 object VaultFileUtils {
@@ -32,6 +33,24 @@ object VaultFileUtils {
             destFile.absolutePath
         } catch (e: Exception) {
             e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 从输入流保存图标到内部存储（通常用于备份恢复场景）。
+     */
+    fun saveImageFromStream(context: Context, fileName: String, input: InputStream): String? {
+        return try {
+            val directory = File(context.filesDir, "vault_images").apply {
+                if (!exists()) mkdirs()
+            }
+            val destFile = File(directory, fileName)
+            FileOutputStream(destFile).use { output ->
+                input.copyTo(output)
+            }
+            destFile.absolutePath
+        } catch (_: Exception) {
             null
         }
     }

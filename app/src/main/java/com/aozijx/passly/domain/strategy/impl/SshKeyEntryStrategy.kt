@@ -1,16 +1,20 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.FieldDefinition
 import com.aozijx.passly.domain.model.FieldGroup
 import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
  * SSH 密钥类型的业务策略实现
  */
-class SshKeyEntryStrategy : EntryTypeStrategy {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SshKeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.SSH_KEY
 
     override fun validateRequiredFields(entry: VaultEntry): String? {

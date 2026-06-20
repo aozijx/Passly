@@ -3,6 +3,7 @@ package com.aozijx.passly.core.logging
 import android.security.keystore.UserNotAuthenticatedException
 import android.util.Log
 import com.aozijx.passly.AppContext
+import com.aozijx.passly.BuildConfig
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
@@ -18,6 +19,10 @@ import java.util.concurrent.Executors
  */
 object Logcat {
     private const val DEFAULT_TAG = "AppLog"
+
+    // Logcat 是 object 单例，无法使用 Hilt 构造函数注入，此处静态访问是唯一可行方案。
+    @Suppress("DEPRECATION")
+    private val appContext: AppContext by lazy { AppContext.get() }
 
     // 使用单线程池处理文件写入，保证顺序且不阻塞主线程
     private val logExecutor = Executors.newSingleThreadExecutor()
@@ -46,6 +51,10 @@ object Logcat {
         }
     }
 
+    // 发布构建下仅落盘 WARN/ERROR，减少常规业务日志泄漏到外部的风险。
+    private val fileSinkThreshold: Level =
+        if (BuildConfig.DEBUG) Level.INFO else Level.WARN
+
     private fun log(level: Level, tag: String, msg: String, tr: Throwable? = null) {
         if (level.ordinal >= Level.INFO.ordinal) {
             when (level) {
@@ -57,9 +66,9 @@ object Logcat {
             }
         }
 
-        if (level.ordinal >= Level.INFO.ordinal) {
+        if (level.ordinal >= fileSinkThreshold.ordinal) {
             try {
-                AppContext.get()
+                appContext
                 saveToFile(level, tag, msg, tr)
             } catch (e: Exception) {
                 Log.w(DEFAULT_TAG, "AppContext not ready, skipping file log: $msg")
@@ -71,8 +80,7 @@ object Logcat {
         logExecutor.execute {
             var writer: PrintWriter? = null
             try {
-                val context = AppContext.get()
-                val logDir = context.getExternalFilesDir("logs") ?: return@execute
+                val logDir = File(appContext.filesDir, "logs")
                 if (!logDir.exists()) logDir.mkdirs()
 
                 val now = Date()
@@ -100,7 +108,7 @@ object Logcat {
 
     fun getLogFolder(): File? {
         return try {
-            AppContext.get().getExternalFilesDir("logs")
+            File(appContext.filesDir, "logs").takeIf { it.exists() || it.mkdirs() }
         } catch (e: Exception) {
             null
         }
@@ -129,6 +137,36 @@ object Logcat {
                 }
             } catch (e: Exception) {
                 Log.e(DEFAULT_TAG, "Failed to clear old logs", e)
+            }
+        }
+    }
+
+    fun readAllLogs(): String {
+        flushLogs()
+        return try {
+            val logDir = getLogFolder() ?: return ""
+            val files = logDir.listFiles()?.sortedByDescending { it.name } ?: return ""
+            val builder = StringBuilder()
+            files.forEach { file ->
+                runCatching { file.readText() }
+                    .onSuccess { builder.append(it).append("\n") }
+                    .onFailure { Log.w(DEFAULT_TAG, "Failed to read log file: ${file.name}") }
+            }
+            builder.toString()
+        } catch (e: Exception) {
+            Log.e(DEFAULT_TAG, "Failed to read logs", e)
+            ""
+        }
+    }
+
+    fun clearAllLogs() {
+        logExecutor.execute {
+            try {
+                val logDir = getLogFolder() ?: return@execute
+                val files = logDir.listFiles() ?: return@execute
+                files.forEach { it.delete() }
+            } catch (e: Exception) {
+                Log.e(DEFAULT_TAG, "Failed to clear logs", e)
             }
         }
     }

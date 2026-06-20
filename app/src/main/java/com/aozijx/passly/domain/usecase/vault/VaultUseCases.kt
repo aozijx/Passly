@@ -1,33 +1,91 @@
 package com.aozijx.passly.domain.usecase.vault
 
+import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.domain.model.FaviconOutcome
+import com.aozijx.passly.domain.model.FaviconResult
+import com.aozijx.passly.domain.model.TotpConfig
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
-import com.aozijx.passly.domain.usecase.vault.impl.DeleteEntryUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.DownloadFaviconUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.GetEntryByIdUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.GetTotpCodeUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.InsertEntryUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.ObserveCategoriesByFilterUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.ObserveEntrySummariesByDemandUseCase
-import com.aozijx.passly.domain.usecase.vault.impl.UpdateEntryUseCase
+import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-/**
- * 保险箱主页专用用例聚合
- */
-class VaultUseCases(
-    vaultRepository: VaultRepository,
-    vaultSearchRepository: VaultSearchRepository,
-    otpRepository: OtpRepository,
-    faviconRepository: FaviconRepository
+@Singleton
+class VaultUseCases @Inject constructor(
+    private val vaultRepository: VaultRepository,
+    private val vaultSearchRepository: VaultSearchRepository,
+    private val otpRepository: OtpRepository,
+    private val faviconRepository: FaviconRepository
 ) {
-    val observeEntrySummariesByDemand = ObserveEntrySummariesByDemandUseCase(vaultSearchRepository)
-    val getCategoriesByFilter = ObserveCategoriesByFilterUseCase(vaultSearchRepository)
-    val getEntryById = GetEntryByIdUseCase(vaultRepository)
-    val insertEntry = InsertEntryUseCase(vaultRepository)
-    val updateEntry = UpdateEntryUseCase(vaultRepository)
-    val deleteEntry = DeleteEntryUseCase(vaultRepository)
-    val getTotpCode = GetTotpCodeUseCase(otpRepository)
-    val downloadFavicon = DownloadFaviconUseCase(faviconRepository)
+
+    fun observeEntrySummaries(
+        query: String, category: String?, filter: VaultSearchRepository.EntryFilter
+    ): Flow<List<VaultSummary>> =
+        vaultSearchRepository.observeEntrySummariesByDemand(query, category, filter)
+
+    fun observeCategoriesByFilter(
+        filter: VaultSearchRepository.EntryFilter
+    ): Flow<List<String>> = vaultSearchRepository.getCategoriesByFilter(filter)
+
+    suspend fun getEntryById(entryId: Int): VaultEntry? = vaultRepository.getEntryById(entryId)
+
+    suspend fun addEntry(entry: VaultEntry, domain: String? = null): Long {
+        val id = vaultRepository.insert(entry)
+        if (!domain.isNullOrBlank()) {
+            val outcome = downloadFavicon(domain)
+            if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                vaultRepository.update(
+                    entry.copy(id = id.toInt(), iconName = null, iconCustomPath = outcome.filePath)
+                )
+            }
+        }
+        return id
+    }
+
+    suspend fun updateEntry(entry: VaultEntry) = vaultRepository.update(entry)
+
+    suspend fun deleteEntry(entry: VaultEntry) = vaultRepository.delete(entry)
+
+    suspend fun recordUsage(entryId: Int) = vaultRepository.recordUsage(entryId)
+
+    fun getTotpCode(config: TotpConfig): String = otpRepository.generateTotp(config)
+
+    suspend fun downloadFavicon(input: String): FaviconOutcome {
+        if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)
+        return faviconRepository.downloadFavicon(input)
+    }
+
+    fun decryptSingleWithAuth(
+        activity: FragmentActivity,
+        encryptedData: String,
+        promptTitle: String,
+        promptSubtitle: String,
+        authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
+        onResult: (String?) -> Unit
+    ) {
+        if (encryptedData.isEmpty()) {
+            onResult("")
+            return
+        }
+        authenticate(activity, promptTitle, promptSubtitle, null) {
+            onResult(encryptedData)
+        }
+    }
+
+    suspend fun downloadMissingFavicons(summaries: List<VaultSummary>) {
+        summaries
+            .filter { !it.associatedDomain.isNullOrBlank() && it.iconCustomPath.isNullOrBlank() }
+            .forEach { summary ->
+                val outcome = downloadFavicon(summary.associatedDomain!!)
+                if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                    vaultRepository.getEntryById(summary.id)?.let { entry ->
+                        vaultRepository.update(entry.copy(iconCustomPath = outcome.filePath))
+                    }
+                }
+            }
+    }
 }

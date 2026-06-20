@@ -224,12 +224,118 @@ Set-Location "D:\MyApplication\Passly"
 
 ---
 
-## 7. 后续扩展
+## 7. 加密链路改动（Crypto / SessionCryptoKey）
+
+适用范围：字段级加密算法、密钥派生方式、认证绑定策略、加密格式变更。
+
+关键文件：
+
+- `core/crypto/CryptoManager.kt` — 字段级 AES-256-GCM 加解密
+- `core/crypto/SessionCryptoKey.kt` — 会话 DEK 的 HKDF 派生与生命周期
+- `core/crypto/CryptoAccess.kt` — 统一解密门面（吞异常返 null）
+- `core/security/DatabasePassphraseManager.kt` — DB passphrase 的 Keystore 绑定与解锁
+- `data/repository/auth/AuthRepositoryImpl.kt` — DEK 加载 / 清除时机
+- `data/repository/backup/internal/BackupFieldEncryptor.kt` — 备份导入导出的加解密桥
+
+### 7.1 当前架构
+
+```
+BiometricPrompt
+  └─ CryptoObject(DB passphrase KEK, per-use)
+       └─ processResult → 32-byte DB passphrase
+            ├─ setDecryptedPassphrase (SQLCipher 口令)
+            └─ SessionCryptoKey.deriveAndSet(passphrase)
+                 └─ HMAC-SHA256(passphrase, label) → 32-byte field DEK
+                      └─ CryptoManager.encrypt / decrypt 使用此 DEK
+```
+
+- DEK 与 DB passphrase 同生命周期：`lock()` 同时清除两者。
+- DEK 无持久化：每次解锁从 passphrase 重新派生。
+- 不支持跨设备密钥迁移：备份以明文导出、导入时用当前设备 DEK 重新加密。
+
+### 7.2 改动步骤
+
+1. 明确是否改变密文格式或密钥派生方式。
+2. 若改格式：引入版本前缀 + 双读兼容路径。
+3. 同步修改 `BackupFieldEncryptor`（导出需能解旧格式，导入需用新格式加密）。
+4. 确认三条解锁路径都调用了新的 DEK 加载：
+   - `AuthRepositoryImpl.authenticate`
+   - `AutofillAuthActivity.performUnlock`
+   - `AutofillAuthActivity.authenticateAndFill`
+5. 确认 `lock()` 清除所有内存密钥。
+
+### 7.3 风险点
+
+- DEK 加载失败导致认证流程中断（B3 初版即踩此坑：Keystore timeout 窗口不稳定）。
+- 改密文格式后旧数据不可解 — 必须提前确认迁移策略或清数据。
+- `CryptoAccess.decryptOrNull` 吞异常：解密失败在 UI 层无反馈（已在 CredentialSection 修复）。
+- 备份导入忘记 re-encrypt：明文写入 DB 后 UI 尝试解密会失败。
+
+### 7.4 验证清单
+
+- [ ] 冷启动 → 生物识别 → 进入主页，无异常日志。
+- [ ] 新建条目 → 详情页验证并显示 → 明文正确。
+- [ ] 添加 TOTP 条目 → 列表实时显示验证码。
+- [ ] 明文导出 → 导出文件为可读 JSON。
+- [ ] 明文导入 → 条目正常显示、可解密。
+- [ ] 加密导出 → 加密导入 → 条目与导出前一致。
+- [ ] 自动锁定后 → 解密操作应抛出 / 返回 null，不泄漏明文。
+- [ ] Autofill 触发 → 指纹 → 正确填充用户名密码。
+
+### 7.5 回滚建议
+
+1. 若 DEK 派生方式改坏：回退 `SessionCryptoKey.deriveAndSet` 到上一个已知可用版本。
+2. 若密文格式改坏：恢复旧解密路径，保留新路径作为 fallback。
+3. 不要删除旧密文兼容逻辑，除非确认线上无旧格式数据（或在开发期已声明清数据）。
+
+---
+
+## 8. 证书 Pin 轮换（Favicon）
+
+适用范围：`network_security_config.xml` pin 即将到期、favicon 提供方证书链变更、紧急证书重签。
+
+关键文件：
+
+- `app/src/main/res/xml/network_security_config.xml` — pin-set 与过期时间
+- `app/src/main/java/com/aozijx/passly/core/media/FaviconUtils.kt` — release 下的 provider allowlist
+  路由
+- `docs/PROJECT_ISSUES_AND_SOLUTIONS.md` — SEC-05 处置记录与维护要求
+
+### 8.1 改动步骤
+
+1. 先确认触发原因：到期预警 / 证书链变更 / 紧急重签。
+2. 为每个 provider 重新采集至少 2 个有效 SPKI pin（建议 leaf + intermediate）。
+3. 更新 `network_security_config.xml` 对应 `<pin-set>`，不要一次性删除全部旧 pin。
+4. 确认 `FaviconUtils` 的 release allowlist 与 pin 的 provider 域名保持一致。
+5. 提交前完成双 flavor 构建，并记录 pin 来源与采集时间。
+
+### 8.2 风险点
+
+- 仅保留单 pin，provider 换证后会导致线上 favicon 全量失败。
+- allowlist 域名与 pin 域名不一致，release 下载会被策略拒绝。
+- 临近到期才处理，发布窗口不足会放大回滚压力。
+
+### 8.3 验证清单
+
+- [ ] `network_security_config.xml` 中每个 pinned 域名至少 2 个有效 pin。
+- [ ] pin 过期时间距离当前 >= 30 天（建议提前轮换）。
+- [ ] `:app:assembleFullDebug` 与 `:app:assembleVaultDebug` 通过。
+- [ ] release 路径下两家 provider favicon 下载均可成功。
+- [ ] `docs/PROJECT_ISSUES_AND_SOLUTIONS.md` 的维护说明与本节一致。
+
+### 8.4 回滚建议
+
+1. 保留上一版可用 pin 作为回滚提交，不要在同一次改动中清空旧 pin 池。
+2. 若新 pin 生效后出现大面积失败，优先回滚到上一版 pin-set。
+3. 回滚后立即复盘 provider 证书链变化，补充新的双 pin 再二次发布。
+
+---
+
+## 9. 后续扩展
 
 可继续新增章节：
 
 - 条目类型策略改动（`domain/strategy`）
-- 加密链路改动（`core/crypto`）
 - 扫码链路改动（`features/scanner` + `core/qr`）
 
 这样能把项目所有高风险改动都纳入统一 playbook。

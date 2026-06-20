@@ -23,6 +23,7 @@ local.properties
 *.jks
 *.keystore
 key.properties
+keystore.properties
 
 # =========================
 # Android Studio / IntelliJ

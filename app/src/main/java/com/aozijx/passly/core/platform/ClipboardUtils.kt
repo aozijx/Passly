@@ -17,6 +17,9 @@ object ClipboardUtils {
     private const val CLEAR_DELAY_MS = 60000L // 60秒自动清除
 
     private val handler = Handler(Looper.getMainLooper())
+    private val clearLock = Any()
+
+    @Volatile
     private var lastClearRunnable: Runnable? = null
 
     /**
@@ -35,19 +38,23 @@ object ClipboardUtils {
         }
         clipboard.setPrimaryClip(clipData)
 
-        lastClearRunnable?.let { handler.removeCallbacks(it) }
+        synchronized(clearLock) {
+            lastClearRunnable?.let { handler.removeCallbacks(it) }
+        }
 
         val clearRunnable = Runnable {
             try {
                 if (clipboard.hasPrimaryClip() && clipboard.primaryClipDescription?.label == CLIP_LABEL) {
-                    clear(context)
+                    clear(appContext)
                 }
             } catch (e: Exception) {
                 Logcat.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
             }
         }
 
-        lastClearRunnable = clearRunnable
+        synchronized(clearLock) {
+            lastClearRunnable = clearRunnable
+        }
         handler.postDelayed(clearRunnable, CLEAR_DELAY_MS)
     }
 
@@ -56,10 +63,18 @@ object ClipboardUtils {
      */
     fun clear(context: Context) {
         try {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clipboard = context.applicationContext
+                .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             clipboard.clearPrimaryClip()
         } catch (e: Exception) {
             Logcat.e("ClipboardUtils", "Clear clipboard failed", e)
+        }
+    }
+
+    fun cancelPendingAutoClear() {
+        synchronized(clearLock) {
+            lastClearRunnable?.let { handler.removeCallbacks(it) }
+            lastClearRunnable = null
         }
     }
 
@@ -73,6 +88,3 @@ object ClipboardUtils {
         return item?.text?.toString() ?: ""
     }
 }
-
-
-

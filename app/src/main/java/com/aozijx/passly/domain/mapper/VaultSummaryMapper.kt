@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.mapper
 
-import com.aozijx.passly.domain.model.core.VaultEntry
-import com.aozijx.passly.domain.model.presentation.VaultSummary
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.VaultSummary
 
 fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     id = id,
@@ -9,6 +9,7 @@ fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     category = category,
     entryType = entryType,
     username = username,
+    email = email,
     iconName = iconName,
     iconCustomPath = iconCustomPath,
     associatedAppPackage = associatedAppPackage,
@@ -18,6 +19,8 @@ fun VaultEntry.toSummary(): VaultSummary = VaultSummary(
     totpDigits = totpDigits,
     totpAlgorithm = totpAlgorithm,
     favorite = favorite,
+    usageCount = usageCount,
+    lastUsedAt = lastUsedAt,
     createdAt = createdAt,
     updatedAt = updatedAt
 )

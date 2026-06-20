@@ -1,58 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 修改 AppLightTheme 和 AppNightTheme 继承自 Theme.AppCompat，以支持 AppCompatActivity -->
-    <style name="AppLightTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/transparent</item>
-    </style>
 
-    <style name="AppNightTheme" parent="Theme.AppCompat.NoActionBar">
-        <item name="android:windowBackground">@android:color/transparent</item>
-    </style>
-
-    <style name="SplashScreenLightTheme" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/launcher_logo</item>
+    <style name="SplashScreenTheme" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/launcher_logo_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/launcher_logo_background</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
-        <item name="postSplashScreenTheme">@style/AppLightTheme</item>
+        <item name="windowSplashScreenBackground">?android:attr/colorBackground</item>
+<!--        <item name="android:windowSplashScreenBrandingImage">@mipmap/image</item>-->
+        <item name="postSplashScreenTheme">@style/AppContentTheme</item>
     </style>
 
-    <style name="SplashScreenNightTheme" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/launcher_logo</item>
-        <item name="windowSplashScreenAnimationDuration">1000</item>
-        <item name="postSplashScreenTheme">@style/AppNightTheme</item>
-    </style>
-
-    <style name="TransparentTheme">
+    <style name="AppContentTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:windowIsTranslucent">true</item>
-        <item name="android:colorBackgroundCacheHint">@null</item>
     </style>
 
-    <!-- 透明验证主题：用于 AutofillAuthActivity -->
     <style name="Theme.Passly.TransparentAuth" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- 核心：窗口完全透明 -->
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowIsFloating">true</item>
-
-        <!-- 避免状态栏/导航栏干扰 -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item> <!-- 根据你的主题调整 -->
-
-        <!-- 动画：淡入淡出，更自然 -->
+        <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowAnimationStyle">@style/TransparentAuthAnimation</item>
     </style>
 
-    <!-- 动画定义（可选，但推荐） -->
     <style name="TransparentAuthAnimation">
         <item name="android:activityOpenEnterAnimation">@android:anim/fade_in</item>
         <item name="android:activityOpenExitAnimation">@android:anim/fade_out</item>
         <item name="android:activityCloseEnterAnimation">@android:anim/fade_in</item>
         <item name="android:activityCloseExitAnimation">@android:anim/fade_out</item>
     </style>
-
-    <style name="AppTheme" parent="AppLightTheme" />
-
-    <style name="SplashScreenTheme" parent="SplashScreenLightTheme" />
 </resources>

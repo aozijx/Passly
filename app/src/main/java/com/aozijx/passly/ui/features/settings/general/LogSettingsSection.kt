@@ -1,0 +1,150 @@
+package com.aozijx.passly.ui.features.settings.general
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
+import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
+import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+@Composable
+fun LogSettingsSection() {
+    val scope = rememberCoroutineScope()
+    var showViewerDialog by remember { mutableStateOf(false) }
+    var showClearConfirmDialog by remember { mutableStateOf(false) }
+    var logContent by remember { mutableStateOf("") }
+    var logSize by remember { mutableStateOf("") }
+
+    fun refreshLogInfo() {
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                val content = Logcat.readAllLogs()
+                val size = if (content.isEmpty()) "0 B"
+                else "%d KB".format(content.length / 1024)
+                logContent = content
+                logSize = size
+            }
+        }
+    }
+
+    SettingsGroupTitle(text = "日志")
+    SettingsRoundedGroup {
+        navigationSettingsItem(
+            icon = Icons.Default.BugReport,
+            title = "查看日志",
+            onClick = {
+                refreshLogInfo()
+                showViewerDialog = true
+            }
+        )
+        navigationSettingsItem(
+            icon = Icons.Default.DeleteSweep,
+            title = "清除日志",
+            value = logSize,
+            onClick = { showClearConfirmDialog = true }
+        )
+    }
+
+    if (showViewerDialog) {
+        LogViewerSheet(
+            content = logContent,
+            onDismiss = { showViewerDialog = false }
+
+        )
+    }
+
+    if (showClearConfirmDialog) {
+        ClearLogsConfirmDialog(
+            onConfirm = {
+                scope.launch {
+                    withContext(Dispatchers.IO) { Logcat.clearAllLogs() }
+                    logContent = ""
+                    logSize = "0 B"
+                }
+                showClearConfirmDialog = false
+            },
+            onDismiss = { showClearConfirmDialog = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LogViewerSheet(content: String, onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(),
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        sheetMaxWidth = androidx.compose.ui.unit.Dp.Unspecified,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "日志内容",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Text(
+                text = content.ifBlank { "暂无日志" },
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            )
+        }
+    }
+}
+
+@Composable
+private fun ClearLogsConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("清除日志") },
+        text = { Text("确定要清除所有日志文件吗？此操作不可撤销。") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("清除")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}

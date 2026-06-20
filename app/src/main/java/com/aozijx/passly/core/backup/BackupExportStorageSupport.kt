@@ -42,9 +42,13 @@ object BackupExportStorageSupport {
                 rootDocUri
             } else {
                 findChildDirectoryByName(context, selectedTreeUri, treeDocId, appName)
-                    ?: DocumentsContract.createDocument(
-                        resolver, rootDocUri, DIRECTORY_MIME, appName
-                    ) ?: error("无法创建应用目录")
+                    ?: try {
+                        DocumentsContract.createDocument(
+                            resolver, rootDocUri, DIRECTORY_MIME, appName
+                        ) ?: error("无法创建应用目录")
+                    } catch (e: SecurityException) {
+                        error("目录访问权限不足，请重新选择备份目录")
+                    }
             }
 
             val authority = selectedTreeUri.authority ?: error("目录授权无效")
@@ -58,11 +62,20 @@ object BackupExportStorageSupport {
     ): Result<ExportTarget> = runCatching {
         val treeUri = directoryTreeUri.toUri()
         val resolver = context.contentResolver
+
+        // 检查持久化权限是否仍然有效
+        if (!hasTreeUriPermission(context, treeUri)) {
+            error("目录访问权限已失效，请重新选择备份目录")
+        }
+
         val docId = DocumentsContract.getTreeDocumentId(treeUri)
         val parentDocUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
-        val fileUri =
+        val fileUri = try {
             DocumentsContract.createDocument(resolver, parentDocUri, BACKUP_FILE_MIME, fileName)
                 ?: error("无法创建备份文件")
+        } catch (e: SecurityException) {
+            error("目录访问权限已失效，请重新选择备份目录")
+        }
         ExportTarget(fileUri = fileUri, fileName = fileName, directoryTreeUri = treeUri)
     }
 
@@ -81,9 +94,13 @@ object BackupExportStorageSupport {
             val docId = DocumentsContract.getTreeDocumentId(treeUri)
             val parentDocUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
             val probeName = "permission_probe_${System.currentTimeMillis()}.tmp"
-            val probeUri = DocumentsContract.createDocument(
-                resolver, parentDocUri, BACKUP_FILE_MIME, probeName
-            ) ?: error("无法创建测试文件")
+            val probeUri = try {
+                DocumentsContract.createDocument(
+                    resolver, parentDocUri, BACKUP_FILE_MIME, probeName
+                ) ?: error("无法创建测试文件")
+            } catch (e: SecurityException) {
+                error("目录访问权限已失效，请重新选择备份目录")
+            }
             runCatching { DocumentsContract.deleteDocument(resolver, probeUri) }
             probeName
         }
@@ -125,5 +142,14 @@ object BackupExportStorageSupport {
             }
         }
         return null
+    }
+
+    /**
+     * 检查指定 tree URI 的持久化权限是否仍然有效。
+     */
+    fun hasTreeUriPermission(context: Context, treeUri: Uri): Boolean {
+        return context.contentResolver.persistedUriPermissions.any { permission ->
+            permission.uri == treeUri && permission.isWritePermission
+        }
     }
 }

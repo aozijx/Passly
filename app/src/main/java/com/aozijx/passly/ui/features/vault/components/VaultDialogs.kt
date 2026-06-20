@@ -1,0 +1,112 @@
+package com.aozijx.passly.ui.features.vault.components
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.ui.features.backup.BackupCoordinator
+import com.aozijx.passly.ui.features.backup.ui.BackupPasswordDialog
+import com.aozijx.passly.ui.features.detail.DetailCardDialog
+import com.aozijx.passly.ui.features.main.MainViewModel
+import com.aozijx.passly.ui.features.scanner.VaultScanner
+import com.aozijx.passly.ui.features.vault.VaultViewModel
+import com.aozijx.passly.ui.features.vault.dialogs.DeleteConfirmDialog
+import com.aozijx.passly.ui.features.vault.model.AddType
+
+@Composable
+fun VaultDialogs(
+    mainViewModel: MainViewModel,
+    activity: FragmentActivity,
+    vaultViewModel: VaultViewModel,
+    backupCoordinator: BackupCoordinator,
+    onUpdateInteraction: () -> Unit
+) {
+    val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
+    val detailCoordinator = uiState.detailCoordinatorState
+
+    // --- 详情对话框 ---
+    detailCoordinator.request?.let { request ->
+        val item = request.entry
+        if (detailCoordinator.isIconPickerVisible) {
+            IconPickerDialog(
+                onDismiss = { vaultViewModel.hideDetailIconPicker() },
+                currentIconName = item.iconName,
+                currentCustomPath = item.iconCustomPath,
+                onIconSelected = { name ->
+                    vaultViewModel.updateVaultEntry(
+                        item.copy(
+                            iconName = name, iconCustomPath = null
+                        )
+                    )
+                },
+                onCustomImageSelected = { uri ->
+                    vaultViewModel.saveCustomIcon(item, uri)
+                })
+        }
+
+        DetailCardDialog(
+            initialEntry = item,
+            launchMode = request.launchMode,
+            activity = activity,
+            mainViewModel = mainViewModel,
+            vaultViewModel = vaultViewModel,
+            onDismiss = { vaultViewModel.dismissDetail() })
+    }
+
+    // --- 添加对话框 ---
+    when (vaultViewModel.addType) {
+        AddType.PASSWORD -> AddPasswordDialog(
+            viewModel = vaultViewModel,
+            onUpdateInteraction = onUpdateInteraction
+        )
+
+        AddType.TOTP -> AddTwoFADialog(
+            viewModel = vaultViewModel,
+            onUpdateInteraction = onUpdateInteraction
+        )
+        AddType.SCAN -> {
+            VaultScanner(
+                vaultViewModel = vaultViewModel,
+                onDismiss = { vaultViewModel.setAddType(null) }
+            )
+        }
+        AddType.BANK_CARD,
+        AddType.WIFI,
+        AddType.SSH_KEY,
+        AddType.ID_CARD,
+        AddType.SEED_PHRASE,
+        AddType.PASSKEY,
+        AddType.RECOVERY_CODE -> AddGenericEntryDialog(
+            viewModel = vaultViewModel,
+            addType = vaultViewModel.addType!!,
+            onUpdateInteraction = onUpdateInteraction
+        )
+
+        null -> Unit
+    }
+
+    // --- 全局确认/反馈对话框 ---
+    vaultViewModel.itemToDelete?.let { item ->
+        DeleteConfirmDialog(
+            activity = activity,
+            item = item,
+            mainViewModel = mainViewModel,
+            onConfirm = { vaultViewModel.confirmDelete() },
+            onDismiss = { vaultViewModel.setItemToDelete(null) })
+    }
+
+    // --- 备份对话框 ---
+    if (backupCoordinator.state.showPasswordDialog) {
+        BackupPasswordDialog(
+            backupCoordinator = backupCoordinator,
+            onAuthRequired = { title, subtitle, onSuccess ->
+                mainViewModel.requestAuth(
+                    activity = activity,
+                    title = title,
+                    subtitle = subtitle,
+                    onSuccess = onSuccess
+                )
+            }
+        )
+    }
+}

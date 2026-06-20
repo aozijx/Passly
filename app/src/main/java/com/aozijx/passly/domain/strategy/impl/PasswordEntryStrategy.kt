@@ -1,16 +1,20 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.FieldDefinition
 import com.aozijx.passly.domain.model.FieldGroup
 import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
+
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * 密码类型的业务策略实现
  */
-class PasswordEntryStrategy : EntryTypeStrategy {
+@Singleton
+class PasswordEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.PASSWORD
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
@@ -29,7 +33,7 @@ class PasswordEntryStrategy : EntryTypeStrategy {
     }
 
     override fun getSensitiveFields(): Set<String> {
-        return setOf("password", "username")
+        return setOf("password", "username", "totpSecret")
     }
 
     override fun extractSummary(entry: VaultEntry): String {
@@ -53,6 +57,7 @@ class PasswordEntryStrategy : EntryTypeStrategy {
                 title = "基本信息", fields = listOf(
                     FieldDefinition("title", "标题", isRequired = true),
                     FieldDefinition("username", "用户名", isRequired = true),
+                    FieldDefinition("email", "邮箱"),
                     FieldDefinition(
                         "password",
                         "密码",
@@ -61,6 +66,13 @@ class PasswordEntryStrategy : EntryTypeStrategy {
                         fieldType = FieldType.PASSWORD
                     ),
                     FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
+                )
+            ), FieldGroup(
+                title = "两步验证", fields = listOf(
+                    FieldDefinition("totpSecret", "TOTP 密钥", isSensitive = true),
+                    FieldDefinition("totpDigits", "位数", fieldType = FieldType.SELECT),
+                    FieldDefinition("totpPeriod", "更新周期 (s)", fieldType = FieldType.SELECT),
+                    FieldDefinition("totpAlgorithm", "算法", fieldType = FieldType.SELECT)
                 )
             ), FieldGroup(
                 title = "额外信息", fields = listOf(

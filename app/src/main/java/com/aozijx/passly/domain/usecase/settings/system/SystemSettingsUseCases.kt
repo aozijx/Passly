@@ -1,15 +1,20 @@
 package com.aozijx.passly.domain.usecase.settings.system
 
-import com.aozijx.passly.core.common.AutofillUiMode
-import com.aozijx.passly.core.common.SwipeActionType
-import com.aozijx.passly.core.designsystem.model.VaultCardStyle
-import com.aozijx.passly.domain.repository.settings.SettingsRepository
+import com.aozijx.passly.domain.model.AutofillUiMode
+import com.aozijx.passly.domain.model.SwipeActionType
+import com.aozijx.passly.domain.model.VaultCardStyle
+import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
+import com.aozijx.passly.ui.features.vault.model.SortOption
 import kotlinx.coroutines.flow.Flow
 
 /**
  * 系统级设置用例：负责全局行为、界面样式、自动填充模式等非业务逻辑设置
  */
-class SystemSettingsUseCases(private val repository: SettingsRepository) {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SystemSettingsUseCases @Inject constructor(private val repository: SystemSettingsRepository) {
     // 界面相关
     val isDarkMode: Flow<Boolean?> = repository.isDarkMode
     val isDynamicColor: Flow<Boolean> = repository.isDynamicColor
@@ -24,6 +29,16 @@ class SystemSettingsUseCases(private val repository: SettingsRepository) {
     val swipeLeftAction: Flow<SwipeActionType> = repository.swipeLeftAction
     val swipeRightAction: Flow<SwipeActionType> = repository.swipeRightAction
     val autofillUiMode: Flow<AutofillUiMode> = repository.autofillUiMode
+
+    // 保险箱 Tab 可见性
+    val visibleVaultTabs: Flow<Set<String>?> = repository.visibleVaultTabs
+    val tabBarMaxTabsWithoutScroll: Flow<Int> = repository.tabBarMaxTabsWithoutScroll
+
+    // 数据与下载
+    val isAutoDownloadIcons: Flow<Boolean> = repository.isAutoDownloadIcons
+
+    // 排序
+    val vaultSortOption: Flow<SortOption> = repository.vaultSortOption
 
     // 操作方法
     suspend fun setDarkMode(enabled: Boolean?) = repository.setDarkMode(enabled)
@@ -40,4 +55,9 @@ class SystemSettingsUseCases(private val repository: SettingsRepository) {
     suspend fun setSwipeLeftAction(action: SwipeActionType) = repository.setSwipeLeftAction(action)
     suspend fun setSwipeRightAction(action: SwipeActionType) = repository.setSwipeRightAction(action)
     suspend fun setAutofillUiMode(mode: AutofillUiMode) = repository.setAutofillUiMode(mode)
+    suspend fun setVisibleVaultTabs(keys: Set<String>) = repository.setVisibleVaultTabs(keys)
+    suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) =
+        repository.setTabBarMaxTabsWithoutScroll(maxTabs)
+    suspend fun setAutoDownloadIcons(enabled: Boolean) = repository.setAutoDownloadIcons(enabled)
+    suspend fun setVaultSortOption(sort: SortOption) = repository.setVaultSortOption(sort)
 }

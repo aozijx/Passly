@@ -1,56 +1,89 @@
 package com.aozijx.passly.service.autofill
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.service.autofill.Dataset
-import android.service.autofill.Field
+import android.os.Parcelable
 import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
-import android.view.autofill.AutofillValue
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
-import com.aozijx.passly.core.common.AutofillUiMode
-import com.aozijx.passly.core.crypto.BiometricHelper
-import com.aozijx.passly.core.di.AppContainer
+import com.aozijx.passly.core.auth.validation.AuthRequestValidator
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.core.security.otp.TwoFAUtils
-import com.aozijx.passly.core.theme.AppTheme
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.core.otp.TwoFAUtils
+import com.aozijx.passly.domain.model.AutofillUiMode
+import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.usecase.auth.AuthUseCases
+import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
+import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
+import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
+import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet
+import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
+import com.aozijx.passly.ui.theme.AppTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-/**
- * 自动填充验证 Activity
- */
+@AndroidEntryPoint
 class AutofillAuthActivity : FragmentActivity() {
     private companion object {
         const val TAG = "AutofillAuthActivity"
     }
 
     private var selectionInProgress = false
-    private val autofillRepository = AppContainer.domain.autofillUseCases
+
+    @Inject
+    lateinit var autofillUseCases: AutofillUseCases
+
+    @Inject
+    lateinit var authUseCases: AuthUseCases
+
+    @Inject
+    lateinit var requestValidator: AuthRequestValidator
+
+    private val verificationCoordinator by lazy {
+        VerificationCoordinator(
+            scope = lifecycleScope,
+            authUseCases = authUseCases,
+            requestValidator = requestValidator
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val uiMode = AutofillUiMode.fromKey(intent?.getStringExtra("autofill_ui_mode"))
+        val raw = intent?.getStringExtra("autofill_ui_mode")
+        val uiMode = when (raw) {
+            "inline" -> AutofillUiMode.SYSTEM_INLINE
+            "bottom_sheet" -> AutofillUiMode.BOTTOM_SHEET
+            else -> AutofillUiMode.SYSTEM_INLINE
+        }
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
 
+        val isUnlockOnly = intent.getBooleanExtra("unlock_only", false)
         val usernameId =
             IntentCompat.getParcelableExtra(intent, "username_id", AutofillId::class.java)
         val passwordId =
             IntentCompat.getParcelableExtra(intent, "password_id", AutofillId::class.java)
         val otpId = IntentCompat.getParcelableExtra(intent, "otp_id", AutofillId::class.java)
+
+        if (isUnlockOnly) {
+            val pkg = intent.getStringExtra("package_name")
+            val domain = intent.getStringExtra("web_domain")
+            performUnlock(usernameId, passwordId, otpId, pkg, domain)
+            return
+        }
+
         val directEntryId = intent.getIntExtra("vault_item_id", -1).takeIf { it > 0 }
         val candidateEntryIds = intent.getIntArrayExtra("vault_item_ids")?.toList().orEmpty()
 
         if (uiMode == AutofillUiMode.BOTTOM_SHEET && candidateEntryIds.isNotEmpty() && directEntryId == null) {
             lifecycleScope.launch {
-                val candidateEntries = autofillRepository.getEntriesByIds(candidateEntryIds)
+                val candidateEntries = autofillUseCases.getEntriesByIds(candidateEntryIds)
                 if (candidateEntries.isEmpty()) {
                     Logcat.e(TAG, "Candidate entries are empty after loading by IDs")
                     finish()
@@ -60,15 +93,15 @@ class AutofillAuthActivity : FragmentActivity() {
                     AppTheme {
                         AutofillCandidateBottomSheet(
                             entries = candidateEntries,
-                            onCandidateSelected = { selected: VaultEntry ->
+                            onCandidateSelected = { selected ->
                                 if (!selectionInProgress) {
                                     selectionInProgress = true
                                     authenticateAndFill(
-                                        entry = selected,
-                                        usernameId = usernameId,
-                                        passwordId = passwordId,
-                                        otpId = otpId,
-                                        uiMode = uiMode
+                                        selected,
+                                        usernameId,
+                                        passwordId,
+                                        otpId,
+                                        uiMode
                                     )
                                 }
                             },
@@ -81,22 +114,43 @@ class AutofillAuthActivity : FragmentActivity() {
         }
 
         lifecycleScope.launch {
-            val entry = directEntryId?.let { autofillRepository.getEntryById(it) }
-                ?: IntentCompat.getSerializableExtra(intent, "vault_item", VaultEntry::class.java)
-
+            val entry = directEntryId?.let { autofillUseCases.getEntryById(it) }
             if (entry == null) {
                 Logcat.e(TAG, "Entry is null")
                 finish()
                 return@launch
             }
+            authenticateAndFill(entry, usernameId, passwordId, otpId, uiMode)
+        }
+    }
 
-            authenticateAndFill(
-                entry = entry,
-                usernameId = usernameId,
-                passwordId = passwordId,
-                otpId = otpId,
-                uiMode = uiMode
+    private fun performUnlock(
+        usernameId: AutofillId?,
+        passwordId: AutofillId?,
+        otpId: AutofillId?,
+        packageName: String?,
+        webDomain: String?
+    ) {
+        lifecycleScope.launch {
+            val authResult = verificationCoordinator.verifyWithBiometricSuspended(
+                this@AutofillAuthActivity,
+                getString(R.string.vault_auth_decrypt_title),
+                getString(R.string.vault_auth_decrypt_subtitle_generic)
             )
+            if (authResult is AppResult.Failure) {
+                cancelAndFinish()
+                return@launch
+            }
+
+            val candidates = autofillUseCases.findMatchingCandidates(packageName, webDomain)
+            if (candidates.isEmpty()) {
+                finishWithOk()
+                return@launch
+            }
+            val response = AutofillResponseBuilder.buildPostUnlockFillResponse(
+                applicationContext, candidates, usernameId, passwordId, otpId
+            )
+            if (response != null) finishWithOk(response) else cancelAndFinish()
         }
     }
 
@@ -107,103 +161,69 @@ class AutofillAuthActivity : FragmentActivity() {
         otpId: AutofillId?,
         uiMode: AutofillUiMode
     ) {
-        Logcat.d(
-            TAG,
-            "authenticateAndFill: entryId=${entry.id}, usernameId=${usernameId != null}, passwordId=${passwordId != null}, otpId=${otpId != null}, uiMode=$uiMode"
-        )
-        BiometricHelper.authenticate(
-            activity = this,
-            title = getString(R.string.autofill_auth_title),
-            subtitle = getString(R.string.autofill_auth_subtitle),
-            onSuccess = {
-                // 调用 getBasicCredentials 触发解密
-                val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
-                if (basicCred == null) {
-                    Logcat.e(TAG, "Failed to decrypt credentials")
-                    Toast.makeText(this, "解密失败", Toast.LENGTH_SHORT).show()
-                    setResult(RESULT_CANCELED)
-                    finish()
-                    return@authenticate
-                }
-
-                val totpCode = if (otpId != null && entry.totpSecret?.isNotBlank() == true) {
-                    TwoFAUtils.generateCurrentTotpFromEntry(entry)
-                } else null
-
-                val dataset = buildDataset(
-                    usernameId = usernameId,
-                    passwordId = passwordId,
-                    otpId = otpId,
-                    username = basicCred.username,
-                    password = basicCred.password,
-                    totpCode = totpCode
-                )
-
-                if (dataset != null) {
-                    // FillResponse-level auth (BOTTOM_SHEET) requires a FillResponse back;
-                    // Dataset-level auth (SYSTEM_INLINE) requires a Dataset back.
-                    val resultIntent = Intent()
-                    if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
-                        resultIntent.putExtra(
-                            AutofillManager.EXTRA_AUTHENTICATION_RESULT,
-                            FillResponse.Builder().addDataset(dataset).build()
-                        )
-                    } else {
-                        resultIntent.putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset)
-                    }
-                    setResult(RESULT_OK, resultIntent)
-                    Logcat.i(TAG, "Autofill result built successfully (uiMode=$uiMode)")
-
-                    lifecycleScope.launch {
-                        autofillRepository.updateUsageStats(entry)
-                    }
-                } else {
-                    Logcat.w(TAG, "Autofill dataset is null, canceling fill")
-                    Toast.makeText(this, "当前页面未识别到可填充字段", Toast.LENGTH_SHORT).show()
-                    setResult(RESULT_CANCELED)
-                }
-                finish()
-            },
-            onError = { error ->
-                Logcat.e(TAG, "Auth failed: $error")
-                setResult(RESULT_CANCELED)
+        Logcat.d(TAG, "authenticateAndFill: entryId=${entry.id}, uiMode=$uiMode")
+        lifecycleScope.launch {
+            val authResult = verificationCoordinator.verifyWithBiometricSuspended(
+                this@AutofillAuthActivity,
+                getString(R.string.autofill_auth_title),
+                getString(R.string.autofill_auth_subtitle)
+            )
+            if (authResult is AppResult.Failure) {
                 selectionInProgress = false
-                finish()
+                cancelAndFinish()
+                return@launch
             }
-        )
+
+            val basicCred = AutofillCredentialProvider.getBasicCredentials(entry)
+            if (basicCred == null) {
+                Logcat.e(TAG, "Failed to decrypt credentials")
+                Toast.makeText(this@AutofillAuthActivity, "解密失败", Toast.LENGTH_SHORT).show()
+                cancelAndFinish()
+                return@launch
+            }
+
+            val totpCode = if (otpId != null && entry.totpSecret?.isNotBlank() == true)
+                TwoFAUtils.generateCurrentTotpFromEntry(entry) else null
+
+            val dataset = AutofillResponseBuilder.createFillDataset(
+                usernameId, passwordId, otpId,
+                basicCred.username, basicCred.password, totpCode
+            )
+
+            if (dataset != null) {
+                Logcat.i(TAG, "Autofill result built successfully (uiMode=$uiMode)")
+                lifecycleScope.launch { autofillUseCases.updateUsageStats(entry) }
+                if (uiMode == AutofillUiMode.BOTTOM_SHEET) {
+                    finishWithOk(FillResponse.Builder().addDataset(dataset).build())
+                } else {
+                    finishWithOk(dataset)
+                }
+            } else {
+                Logcat.w(TAG, "Autofill dataset is null, canceling fill")
+                Toast.makeText(
+                    this@AutofillAuthActivity,
+                    "当前页面未识别到可填充字段",
+                    Toast.LENGTH_SHORT
+                ).show()
+                cancelAndFinish()
+            }
+        }
     }
 
-    private fun buildDataset(
-        usernameId: AutofillId?,
-        passwordId: AutofillId?,
-        otpId: AutofillId?,
-        username: String,
-        password: String,
-        totpCode: String?
-    ): Dataset? {
-        val builder = Dataset.Builder()
-        var added = false
+    private fun finishWithOk() {
+        setResult(RESULT_OK)
+        finish()
+    }
 
-        fun addField(id: AutofillId?, text: String?) {
-            if (id == null || text.isNullOrBlank()) return
-            val value = AutofillValue.forText(text)
+    private fun finishWithOk(extra: Parcelable) {
+        setResult(RESULT_OK, Intent().apply {
+            putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, extra)
+        })
+        finish()
+    }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val field = Field.Builder()
-                    .setValue(value)
-                    .build()
-                builder.setField(id, field)
-            } else {
-                @Suppress("DEPRECATION")
-                builder.setValue(id, value)
-            }
-            added = true
-        }
-
-        addField(usernameId, username)
-        addField(passwordId, password)
-        addField(otpId, totpCode)
-
-        return if (added) builder.build() else null
+    private fun cancelAndFinish() {
+        setResult(RESULT_CANCELED)
+        finish()
     }
 }

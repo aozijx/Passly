@@ -1,16 +1,20 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.core.common.EntryType
+import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.FieldDefinition
 import com.aozijx.passly.domain.model.FieldGroup
 import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.core.VaultEntry
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
  * TOTP 类型的业务策略实现
  */
-class TotpEntryStrategy : EntryTypeStrategy {
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override val entryType = EntryType.TOTP
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
@@ -47,6 +51,7 @@ class TotpEntryStrategy : EntryTypeStrategy {
                 title = "基本信息", fields = listOf(
                     FieldDefinition("title", "标题", isRequired = true),
                     FieldDefinition("totpSecret", "密钥", isSensitive = true, isRequired = true),
+                    FieldDefinition("totpIssuer", "发行方"),
                     FieldDefinition("username", "账户名"),
                     FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
                 )

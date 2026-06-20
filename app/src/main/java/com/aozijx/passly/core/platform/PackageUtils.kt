@@ -1,11 +1,12 @@
 package com.aozijx.passly.core.platform
 
 import android.content.Context
-import android.content.pm.ApplicationInfo
-import androidx.collection.LruCache
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.util.LruCache
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -13,130 +14,118 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.graphics.scale
 import com.aozijx.passly.core.logging.Logcat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Inject
+import javax.inject.Singleton
 
-/**
- * 应用元数据模型
- */
-data class AppMetadata(
-    val packageName: String,
-    val appName: String,
-    val targetSdk: Int,
-    val versionName: String,
-    val architecture: String
-)
+@Singleton
+class PackageUtils @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    private val packageManager: PackageManager = context.packageManager
 
-object PackageUtils {
-    private val iconCache = LruCache<String, ImageBitmap>(50)
+    private val iconCache = LruCache<String, Bitmap>(MAX_ICON_CACHE_SIZE)
+    private val metadataCache =
+        LruCache<String, AppMetadata>(MAX_METADATA_CACHE_SIZE)
 
-    /**
-     * 异步获取应用元数据
-     * 这里的 Result 处理了应用未安装的情况，不再需要手动判断
-     */
-    suspend fun getAppMetadata(context: Context, packageName: String): AppMetadata? =
-        withContext(Dispatchers.IO) {
-            if (packageName.isBlank()) return@withContext null
-            runCatching {
-                val pm = context.packageManager
-                val pkgInfo = pm.getPackageInfo(packageName, 0)
-                val appInfo = pkgInfo.applicationInfo ?: return@runCatching null
+    companion object {
+        private const val TAG = "PackageUtils"
+        private const val MAX_ICON_CACHE_SIZE = 60
+        private const val MAX_METADATA_CACHE_SIZE = 60
+        private const val DEFAULT_ICON_SIZE_DP = 48
+    }
 
-                AppMetadata(
-                    packageName = packageName,
-                    appName = appInfo.loadLabel(pm).toString(),
-                    targetSdk = appInfo.targetSdkVersion,
-                    versionName = pkgInfo.versionName ?: "N/A",
-                    architecture = getAppArchitecture(appInfo)
-                )
-            }.getOrNull()
-        }
+    data class AppMetadata(
+        val appName: String,
+        val packageName: String
+    )
 
-    /**
-     * 异步加载图标并缓存
-     */
-    suspend fun loadIcon(context: Context, packageName: String): ImageBitmap? =
-        withContext(Dispatchers.IO) {
-            if (packageName.isBlank()) return@withContext null
-            iconCache[packageName]?.let { return@withContext it }
+    fun getAppMetadata(packageName: String): AppMetadata? {
+        val cached = metadataCache.get(packageName)
+        if (cached != null) return cached
 
-            runCatching {
-                val pm = context.packageManager
-                val appInfo = pm.getApplicationInfo(packageName, 0)
-                val bitmap = appInfo.loadIcon(pm).toBitmap().asImageBitmap()
-                iconCache.put(packageName, bitmap)
-                bitmap
-            }.onFailure {
-                Logcat.d("PackageUtils", "加载图标失败: $packageName")
-            }.getOrNull()
-        }
-
-    private fun getAppArchitecture(appInfo: ApplicationInfo): String {
         return try {
-            val primaryCpuAbi =
-                ApplicationInfo::class.java.getField("primaryCpuAbi").get(appInfo) as? String
-
-            when {
-                primaryCpuAbi != null -> {
-                    when {
-                        primaryCpuAbi.contains("arm64-v8a") -> "arm64-v8a"
-                        primaryCpuAbi.contains("armeabi-v7a") -> "armeabi-v7a"
-                        primaryCpuAbi.contains("x86_64") -> "x86_64"
-                        primaryCpuAbi.contains("x86") -> "x86"
-                        primaryCpuAbi.contains("64") -> "64-bit"
-                        else -> primaryCpuAbi
-                    }
-                }
-
-                appInfo.nativeLibraryDir.contains("arm64") -> "arm64-v8a"
-                appInfo.nativeLibraryDir.contains("arm") -> "armeabi-v7a"
-                else -> "32-bit"
-            }
-        } catch (e: Exception) {
-            Logcat.d("PackageUtils", "获取应用架构失败: ${e.message}")
-            "Unknown"
+            val appInfo = packageManager.getApplicationInfo(packageName, 0)
+            val appName = packageManager.getApplicationLabel(appInfo).toString()
+            val metadata = AppMetadata(appName = appName, packageName = packageName)
+            metadataCache.put(packageName, metadata)
+            metadata
+        } catch (e: PackageManager.NameNotFoundException) {
+            Logcat.w(TAG, "App not found for package: $packageName", e)
+            null
         }
     }
-    /**
-     * 获取所有已安装的应用
-     */
-    fun getAllInstalledApps(context: Context, includeSystem: Boolean = false): List<AppMetadata> {
-        val pm = context.packageManager
-        val packages = pm.getInstalledPackages(0)
 
-        return packages.mapNotNull { pkg ->
-            val appInfo = pkg.applicationInfo ?: return@mapNotNull null
+    fun loadIcon(packageName: String): ImageBitmap? {
+        val cachedBitmap = iconCache.get(packageName)
+        if (cachedBitmap != null) {
+            return cachedBitmap.asImageBitmap()
+        }
 
-            val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-            if (!includeSystem && isSystem) return@mapNotNull null
+        return try {
+            val appIcon = packageManager.getApplicationIcon(packageName)
+            val bitmap = convertDrawableToBitmap(appIcon)
+            if (bitmap != null) {
+                iconCache.put(packageName, bitmap)
+                bitmap.asImageBitmap()
+            } else {
+                null
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            Logcat.w(TAG, "Icon not found for package: $packageName", e)
+            null
+        }
+    }
 
-            AppMetadata(
-                packageName = pkg.packageName,
-                appName = appInfo.loadLabel(pm).toString(),
-                targetSdk = appInfo.targetSdkVersion,
-                versionName = pkg.versionName ?: "N/A",
-                architecture = getAppArchitecture(appInfo)
-            )
+    private fun convertDrawableToBitmap(drawable: Drawable): Bitmap? {
+        return when (drawable) {
+            is BitmapDrawable -> {
+                val bitmap = drawable.bitmap
+                val density = context.resources.displayMetrics.density
+                val targetSize = (DEFAULT_ICON_SIZE_DP * density).toInt()
+                if (bitmap.width == targetSize && bitmap.height == targetSize) {
+                    bitmap
+                } else {
+                    bitmap.scale(targetSize, targetSize)
+                }
+            }
+
+            else -> {
+                val density = context.resources.displayMetrics.density
+                val targetSize = (DEFAULT_ICON_SIZE_DP * density).toInt()
+                try {
+                    drawable.toBitmap(targetSize, targetSize)
+                } catch (e: Exception) {
+                    Logcat.e(TAG, "Failed to convert drawable to bitmap", e)
+                    null
+                }
+            }
         }
     }
 }
 
-/**
- * Compose 专用图标加载 Hook
- * 返回 null 表示正在加载或应用不存在。
- */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface PackageUtilsProvider {
+    fun getPackageUtils(): PackageUtils
+}
+
 @Composable
 fun rememberAppIcon(packageName: String?): Painter? {
-    if (packageName.isNullOrBlank()) return null
-    val context = LocalContext.current.applicationContext
-
-    // 使用 produceState 自动处理协程加载，packageName 变化时自动重载
-    val bitmap by produceState<ImageBitmap?>(initialValue = null, packageName) {
-        value = PackageUtils.loadIcon(context, packageName)
+    val context = LocalContext.current
+    val packageUtils = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            PackageUtilsProvider::class.java
+        ).getPackageUtils()
     }
-
-    return remember(bitmap) {
-        bitmap?.let { BitmapPainter(it) }
+    return remember(packageName) {
+        packageName?.let { packageUtils.loadIcon(it)?.let { BitmapPainter(it) } }
     }
 }

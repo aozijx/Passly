@@ -6,14 +6,20 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.hilt.android)
 }
 
-// 读取 local.properties（放在文件顶部或根项目）
-val localProperties = Properties().apply {
-    val localPropFile = rootProject.file("local.properties")
-    if (localPropFile.exists()) {
-        load(FileInputStream(localPropFile))
+// Release 签名优先读取环境变量，其次读取本地未跟踪 keystore.properties
+val keystoreProperties = Properties().apply {
+    val keystoreFile = rootProject.file("keystore.properties")
+    if (keystoreFile.exists()) {
+        load(FileInputStream(keystoreFile))
     }
+}
+
+fun resolveSigningValue(envName: String, propertyName: String): String? {
+    return System.getenv(envName)?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
 }
 
 // Android 配置
@@ -27,27 +33,36 @@ android {
         targetSdk = 36
         versionCode = 8
         versionName = "0.3.3"
-        flavorDimensions += listOf("scope")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // 定义 Activity 类名常量
-        buildConfigField("String", "VAULT_ACTIVITY_CLASS", "\"com.aozijx.passly.MainActivity\"")
     }
 
     signingConfigs {
         create("release") {
-            val storeFilePath = localProperties.getProperty("signing.store.file")
-            if (storeFilePath != null) {
-                storeFile = file(storeFilePath)
-                storePassword = localProperties.getProperty("signing.store.password")
-                keyAlias = localProperties.getProperty("signing.key.alias")
-                keyPassword = localProperties.getProperty("signing.key.password")
+            val storeFilePath = resolveSigningValue("SIGNING_STORE_FILE", "signing.store.file")
+            val storePasswordValue =
+                resolveSigningValue("SIGNING_STORE_PASSWORD", "signing.store.password")
+            val keyAliasValue = resolveSigningValue("SIGNING_KEY_ALIAS", "signing.key.alias")
+            val keyPasswordValue =
+                resolveSigningValue("SIGNING_KEY_PASSWORD", "signing.key.password")
+
+            val hasCompleteSigningConfig = listOf(
+                storeFilePath,
+                storePasswordValue,
+                keyAliasValue,
+                keyPasswordValue
+            ).all { !it.isNullOrBlank() }
+
+            if (hasCompleteSigningConfig) {
+                storeFile = file(requireNotNull(storeFilePath))
+                storePassword = requireNotNull(storePasswordValue)
+                keyAlias = requireNotNull(keyAliasValue)
+                keyPassword = requireNotNull(keyPasswordValue)
 
                 // 显式启用签名方案 (v2 和 v3)
                 enableV2Signing = true   // 启用 APK 签名方案 v2 (默认 true，显式写出)
                 enableV3Signing = true    // 启用 APK 签名方案 v3
             } else {
-                // 如果没有签名配置（如在 CI/CodeQL 环境中），回退到 debug 签名以保证编译通过
+                // 签名信息不完整时回退到 debug 签名，保证本地/CI 可构建 release 产物
                 initWith(getByName("debug"))
             }
         }
@@ -87,21 +102,6 @@ android {
         }
     }
 
-    productFlavors {
-        // 功能范围 (完整 vs 仅保险箱)
-        create("full") {
-            dimension = "scope"
-            buildConfigField("boolean", "IS_VAULT", "false")
-        }
-        create("vault") {
-            dimension = "scope"
-            applicationIdSuffix = ".vault" // 甚至可以作为独立包名共存
-            versionNameSuffix = "-vault"
-            // 覆盖默认值
-            buildConfigField("boolean", "IS_VAULT", "true")
-        }
-    }
-
     // 让 androidTest 能读到 schemas/ 目录下的版本 JSON（用于 MigrationTestHelper）
     sourceSets.getByName("androidTest") {
         assets.directories.add("$projectDir/schemas")
@@ -128,6 +128,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.navigation.compose)
 
     // Jetpack Compose & UI
@@ -181,6 +182,11 @@ dependencies {
 
     // Security KDF
     implementation(libs.argon2kt)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.hilt.navigation.compose)
 
     // Testing
     testImplementation(libs.junit)

@@ -4,16 +4,13 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import com.aozijx.passly.BuildConfig
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.core.security.DatabasePassphraseManager
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
-import com.aozijx.passly.data.local.config.DatabaseConfig
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
-import com.aozijx.passly.data.local.migration.Migrations
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(
@@ -21,7 +18,6 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
     version = DatabaseConfig.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
 )
-@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun vaultEntryDao(): VaultEntryDao
@@ -37,14 +33,20 @@ abstract class AppDatabase : RoomDatabase() {
         var initializationError: Throwable? = null
             private set
 
-        fun getDatabase(context: Context): AppDatabase {
+        fun getDatabase(
+            context: Context,
+            passphraseManager: DatabasePassphraseManager
+        ): AppDatabase {
             INSTANCE?.let { return it }
 
             return synchronized(this) {
                 INSTANCE?.let { return@synchronized it }
 
+                // 新的构建尝试，先清除上一轮残留的错误，避免重试成功后仍误报。
+                initializationError = null
+
                 try {
-                    val passphrase = DatabasePassphraseManager.getPassphrase(context)
+                    val passphrase = passphraseManager.getPassphrase()
                     val factory = SupportOpenHelperFactory(passphrase)
 
                     val instance = Room.databaseBuilder(
@@ -53,7 +55,6 @@ abstract class AppDatabase : RoomDatabase() {
                         DatabaseConfig.DATABASE_NAME
                     )
                         .openHelperFactory(factory)
-                        .addMigrations(*Migrations.getAll())
                         .build()
 
                     // 仅探测，不让探测的异常直接杀掉 getDatabase
@@ -62,7 +63,7 @@ abstract class AppDatabase : RoomDatabase() {
                             Logcat.e(TAG, "Database probe failed, recording error", error)
                             initializationError = wrapError(error)
                         }
-                    
+
                     INSTANCE = instance
                     instance
                 } catch (e: Exception) {
@@ -85,8 +86,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        fun preWarm(context: Context) {
-            getDatabase(context)
+        fun preWarm(context: Context, passphraseManager: DatabasePassphraseManager) {
+            getDatabase(context, passphraseManager)
+        }
+
+        fun close() {
+            INSTANCE?.close()
+            INSTANCE = null
+        }
+
+        /**
+         * 重置数据库单例状态：关闭当前实例、清除初始化错误。
+         * 用于初始化失败后的显式重试。
+         */
+        fun reset() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
+                initializationError = null
+            }
         }
     }
 }

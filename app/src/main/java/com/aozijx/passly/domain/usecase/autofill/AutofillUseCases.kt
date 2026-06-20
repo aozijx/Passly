@@ -1,16 +1,37 @@
 package com.aozijx.passly.domain.usecase.autofill
 
+import com.aozijx.passly.domain.model.AutofillCandidate
+import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
-import com.aozijx.passly.domain.usecase.autofill.impl.FindMatchingCandidatesUseCase
-import com.aozijx.passly.domain.usecase.autofill.impl.GetEntriesByIdsUseCase
-import com.aozijx.passly.domain.usecase.autofill.impl.GetEntryByIdUseCase
-import com.aozijx.passly.domain.usecase.autofill.impl.SaveOrUpdateEntryUseCase
-import com.aozijx.passly.domain.usecase.autofill.impl.UpdateUsageStatsUseCase
 
-class AutofillUseCases(repository: AutofillServiceRepository) {
-    val updateUsageStats = UpdateUsageStatsUseCase(repository)
-    val getEntryById = GetEntryByIdUseCase(repository)
-    val getEntriesByIds = GetEntriesByIdsUseCase(repository)
-    val findMatchingCandidates = FindMatchingCandidatesUseCase(repository)
-    val saveOrUpdateEntry = SaveOrUpdateEntryUseCase(repository)
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class AutofillUseCases @Inject constructor(private val repository: AutofillServiceRepository) {
+
+    suspend fun updateUsageStats(entry: VaultEntry) = repository.updateUsageStats(entry)
+
+    suspend fun getEntryById(entryId: Int): VaultEntry? = repository.getEntryById(entryId)
+
+    suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntry> =
+        repository.getEntriesByIds(entryIds)
+
+    suspend fun findMatchingCandidates(
+        packageName: String?, webDomain: String?
+    ): List<AutofillCandidate> = repository.findMatchingCandidates(packageName, webDomain)
+
+    suspend fun saveOrUpdateEntry(
+        packageName: String?,
+        webDomain: String?,
+        pageTitle: String?,
+        usernameValue: String,
+        passwordValue: String
+    ): Boolean = repository.saveOrUpdateEntry(
+        packageName,
+        webDomain,
+        pageTitle,
+        usernameValue,
+        passwordValue
+    )
 }

@@ -116,8 +116,8 @@
     <string name="vault_backup_auth_subtitle_import">Please verify identity to import and decrypt data</string>
     <string name="loading_export">Exporting backup…</string>
     <string name="loading_import">Importing backup…</string>
-    <string name="backup_action_export_success">Export successful</string>
-    <string name="backup_action_import_success">Import successful (icons will sync in background)</string>
+    <string name="backup_export_success">Export successful</string>
+    <string name="backup_import_success">Import successful (icons will sync in background)</string>
     <string name="backup_error_with_reason">Operation failed: %s</string>
     <string name="backup_error_unknown">Operation failed: Unknown error</string>
     <string name="backup_error_password_incorrect">Incorrect backup password. Please try again.</string>
