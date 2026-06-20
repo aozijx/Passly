@@ -9,7 +9,7 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.domain.config.UserConfigProvider
+import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.main.MainNotificationPermissionController
 import com.aozijx.passly.ui.features.main.MainSensorController
 import com.aozijx.passly.ui.features.main.MainViewModel
@@ -24,7 +24,7 @@ class MainActivity : FragmentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     @Inject
-    lateinit var userConfigProvider: UserConfigProvider
+    lateinit var backupCoordinator: BackupCoordinator
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
@@ -66,7 +66,7 @@ class MainActivity : FragmentActivity() {
                 activity = this,
                 viewModel = viewModel,
                 sensorController = sensorController,
-                userConfigProvider = userConfigProvider
+                backupCoordinator = backupCoordinator
             )
         }
     }

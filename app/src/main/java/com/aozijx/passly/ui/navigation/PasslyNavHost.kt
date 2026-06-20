@@ -16,8 +16,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.detail.DetailViewModel
 import com.aozijx.passly.ui.features.detail.contract.DetailEffect
 import com.aozijx.passly.ui.features.detail.page.DetailScreen
@@ -25,6 +25,7 @@ import com.aozijx.passly.ui.features.main.MainViewModel
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.settings.SettingsScreen
 import com.aozijx.passly.ui.features.settings.SettingsViewModel
+import com.aozijx.passly.ui.features.settings.data.DataViewModel
 import com.aozijx.passly.ui.features.vault.VaultContent
 import com.aozijx.passly.ui.features.vault.VaultViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -38,9 +39,12 @@ fun PasslyNavHost(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    userConfigProvider: UserConfigProvider,
+    backupCoordinator: BackupCoordinator,
     onPlainExportClick: () -> Unit
 ) {
+    val dataViewModel: DataViewModel = hiltViewModel()
+    val dataState by dataViewModel.config.collectAsStateWithLifecycle()
+
     NavHost(
         modifier = Modifier.fillMaxSize(),
         navController = navController,
@@ -55,7 +59,8 @@ fun PasslyNavHost(
                 activity = activity,
                 mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
-                userConfigProvider = userConfigProvider,
+                backupCoordinator = backupCoordinator,
+                backupDirectoryUri = dataState.directoryUri,
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)
                 },
@@ -114,12 +119,12 @@ fun PasslyNavHost(
         }
 
         composable(AppRoute.Settings.route) {
-            val authViewModel: SettingsViewModel = hiltViewModel()
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
             val onUpdateInteraction: () -> Unit =
                 { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                authViewModel = authViewModel,
+                settingsViewModel = settingsViewModel,
                 onUpdateInteraction = onUpdateInteraction
             )
         }

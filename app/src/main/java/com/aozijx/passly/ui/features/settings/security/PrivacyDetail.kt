@@ -6,14 +6,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.ui.features.settings.internal.SettingsContentActions
-import com.aozijx.passly.ui.features.settings.internal.SettingsContentState
 import com.aozijx.passly.ui.features.settings.shell.sectionSpacing
 
 @Composable
 internal fun PrivacyDetail(
-    state: SettingsContentState,
-    actions: SettingsContentActions
+    state: PrivacyUiState,
+    onSecureContentEnabledChange: (Boolean) -> Unit,
+    onFlipToLockEnabledChange: (Boolean) -> Unit,
+    onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit
 ) {
     Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
@@ -21,9 +21,9 @@ internal fun PrivacyDetail(
             isSecureContentEnabled = state.isSecureContentEnabled,
             isFlipToLockEnabled = state.isFlipToLockEnabled,
             isFlipExitAndClearStackEnabled = state.isFlipExitAndClearStackEnabled,
-            onSecureContentEnabledChange = actions.onSecureContentEnabledChange,
-            onFlipToLockEnabledChange = actions.onFlipToLockEnabledChange,
-            onFlipExitAndClearStackEnabledChange = actions.onFlipExitAndClearStackEnabledChange
+            onSecureContentEnabledChange = onSecureContentEnabledChange,
+            onFlipToLockEnabledChange = onFlipToLockEnabledChange,
+            onFlipExitAndClearStackEnabledChange = onFlipExitAndClearStackEnabledChange
         )
     }
 }

@@ -20,18 +20,22 @@ import com.aozijx.passly.ui.features.backup.contract.BackupUiState
 import com.aozijx.passly.ui.features.common.toUiMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * 备份/恢复流程协调器。
  */
-class BackupCoordinator(
-    private val scope: CoroutineScope,
+@Singleton
+class BackupCoordinator @Inject constructor(
     private val backupSettingsUseCases: BackupSettingsUseCases,
     private val backupUseCases: BackupUseCases,
     private val application: Application
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var plainExportTokenIssuedAt: Long = 0L
     private var plainExportTokenTtlMs: Long = 0L
 

@@ -6,31 +6,34 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.ui.features.settings.internal.SettingsContentActions
-import com.aozijx.passly.ui.features.settings.internal.SettingsContentState
 import com.aozijx.passly.ui.features.settings.shell.sectionSpacing
 
 @Composable
 internal fun DataManagementDetail(
-    state: SettingsContentState,
-    actions: SettingsContentActions
+    state: DataUiState,
+    backupPathLabel: String,
+    lastExportFileLabel: String,
+    onAutoDownloadIconsChange: (Boolean) -> Unit,
+    onPickBackupPath: () -> Unit,
+    onTestBackupWrite: () -> Unit,
+    onClearBackupPath: (() -> Unit)?
 ) {
-    Column(modifier = Modifier.Companion.sectionSpacing()) {
+    Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
 
         DataSettingsSection(
             isAutoDownloadIcons = state.isAutoDownloadIcons,
-            onAutoDownloadIconsChange = actions.onAutoDownloadIconsChange
+            onAutoDownloadIconsChange = onAutoDownloadIconsChange
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         BackupRestoreSettingsSection(
-            pathLabel = state.backupPathLabel,
-            recentExportFileName = state.lastExportFileLabel,
-            onPickPath = actions.onPickBackupPath,
-            onTestWrite = actions.onTestBackupWrite,
-            onClearPath = actions.onClearBackupPath
+            pathLabel = backupPathLabel,
+            recentExportFileName = lastExportFileLabel,
+            onPickPath = onPickBackupPath,
+            onTestWrite = onTestBackupWrite,
+            onClearPath = onClearBackupPath
         )
     }
 }

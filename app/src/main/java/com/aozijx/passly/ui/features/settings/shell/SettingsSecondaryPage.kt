@@ -60,5 +60,3 @@ internal fun SettingsSecondaryPage(
         )
     }
 }
-
-internal fun Modifier.sectionSpacing(): Modifier = this.then(Modifier.padding(bottom = 24.dp))

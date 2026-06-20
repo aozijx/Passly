@@ -14,18 +14,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.platform.CacheUtils
-import com.aozijx.passly.ui.features.settings.internal.SettingsContentActions
-import com.aozijx.passly.ui.features.settings.internal.SettingsContentState
 import com.aozijx.passly.ui.features.settings.shell.sectionSpacing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-internal fun GeneralDetail(
-    state: SettingsContentState,
-    actions: SettingsContentActions
-) {
+internal fun GeneralDetail() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var cacheSize by remember { mutableStateOf(CacheUtils.calculateTotalCacheSize(context)) }

@@ -21,9 +21,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.main.MainViewModel
 import com.aozijx.passly.ui.features.vault.components.VaultContentTopBar
 import com.aozijx.passly.ui.features.vault.components.VaultDialogs
@@ -38,7 +39,8 @@ fun VaultContent(
     mainViewModel: MainViewModel,
     activity: FragmentActivity,
     vaultViewModel: VaultViewModel,
-    userConfigProvider: UserConfigProvider,
+    backupCoordinator: BackupCoordinator,
+    backupDirectoryUri: String?,
     onSettingsClick: () -> Unit = {},
     onPlainExportClick: () -> Unit = {},
     onShowDetail: (VaultEntry) -> Unit = {}
@@ -46,10 +48,11 @@ fun VaultContent(
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    val userConfig by userConfigProvider.config.collectAsStateWithLifecycle()
+    val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
+    val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
 
-    val perTypeStyleMap = remember(userConfig.display.perTypeMap) {
-        userConfig.display.perTypeMap
+    val perTypeStyleMap = remember(vaultDisplayConfig.perTypeMap) {
+        vaultDisplayConfig.perTypeMap
     }
     var isFabVisible by remember { mutableStateOf(true) }
 
@@ -57,7 +60,8 @@ fun VaultContent(
         activity = activity,
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        userConfigProvider = userConfigProvider,
+        backupCoordinator = backupCoordinator,
+        backupDirectoryUri = backupDirectoryUri,
         uiState = uiState,
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
@@ -88,10 +92,10 @@ fun VaultContent(
         }
     }
 
-    LaunchedEffect(scrollBehavior.state.collapsedFraction, userConfig.display.isStatusBarAutoHide) {
+    LaunchedEffect(scrollBehavior.state.collapsedFraction, vaultDisplayConfig.isStatusBarAutoHide) {
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        if (!userConfig.display.isStatusBarAutoHide) {
+        if (!vaultDisplayConfig.isStatusBarAutoHide) {
             insetsController.show(WindowInsetsCompat.Type.statusBars())
             return@LaunchedEffect
         }
@@ -111,9 +115,9 @@ fun VaultContent(
                 onClick = actionProvider.onUpdateInteraction
             )
             .then(
-                if (userConfig.display.isTopBarCollapsible
-                    || userConfig.display.isTabBarCollapsible
-                    || userConfig.display.isStatusBarAutoHide
+                if (vaultDisplayConfig.isTopBarCollapsible
+                    || vaultDisplayConfig.isTabBarCollapsible
+                    || vaultDisplayConfig.isStatusBarAutoHide
                 ) {
                     Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
                 } else Modifier
@@ -128,9 +132,9 @@ fun VaultContent(
                 onPlainJsonExportClick = onPlainExportClick,
                 onImportClick = actionProvider.onImportClick,
                 onSettingsClick = onSettingsClick,
-                isStatusBarAutoHide = userConfig.display.isStatusBarAutoHide,
-                isTopBarCollapsible = userConfig.display.isTopBarCollapsible,
-                isTabBarCollapsible = userConfig.display.isTabBarCollapsible
+                isStatusBarAutoHide = vaultDisplayConfig.isStatusBarAutoHide,
+                isTopBarCollapsible = vaultDisplayConfig.isTopBarCollapsible,
+                isTabBarCollapsible = vaultDisplayConfig.isTabBarCollapsible
             )
         },
         floatingActionButton = {
@@ -142,9 +146,9 @@ fun VaultContent(
             pagerState = pagerState,
             uiState = uiState,
             perTypeStyleMap = perTypeStyleMap,
-            swipeLeftAction = userConfig.vault.swipeLeftAction,
-            swipeRightAction = userConfig.vault.swipeRightAction,
-            isSwipeEnabled = userConfig.vault.isSwipeEnabled,
+            swipeLeftAction = vaultDisplayConfig.swipeLeftAction,
+            swipeRightAction = vaultDisplayConfig.swipeRightAction,
+            isSwipeEnabled = vaultDisplayConfig.isSwipeEnabled,
             onSwipeTriggered = actionProvider.onSwipeTriggered,
             vaultViewModel = vaultViewModel,
             modifier = Modifier
@@ -157,7 +161,7 @@ fun VaultContent(
         mainViewModel = mainViewModel,
         activity = activity,
         vaultViewModel = vaultViewModel,
-        configProvider = userConfigProvider,
+        backupCoordinator = backupCoordinator,
         onUpdateInteraction = actionProvider.onUpdateInteraction
     )
 }

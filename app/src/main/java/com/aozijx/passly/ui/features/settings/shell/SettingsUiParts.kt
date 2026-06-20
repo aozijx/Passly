@@ -28,3 +28,6 @@ fun SettingsRoundedGroup(
 ) {
     RoundedGroup(modifier = modifier, content = content)
 }
+
+fun Modifier.sectionSpacing(): Modifier =
+    this.padding(vertical = 8.dp)

@@ -15,7 +15,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.data.local.DatabaseConfig
-import com.aozijx.passly.domain.config.UserConfigProvider
+import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.backup.components.PlainExportDialog
 import com.aozijx.passly.ui.features.backup.components.PlainExportDialogType
 import com.aozijx.passly.ui.features.main.MainSensorController
@@ -32,26 +32,27 @@ internal fun MainScreen(
     activity: FragmentActivity,
     viewModel: MainViewModel,
     sensorController: MainSensorController,
-    userConfigProvider: UserConfigProvider
+    backupCoordinator: BackupCoordinator
 ) {
     val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val userConfig by userConfigProvider.config.collectAsStateWithLifecycle()
+    val mainConfigViewModel: MainConfigViewModel = hiltViewModel()
+    val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
 
     val verificationViewModel: VerificationViewModel = hiltViewModel()
 
-    LaunchedEffect(userConfigProvider.backup.backupMessage) {
-        userConfigProvider.backup.backupMessage?.let {
+    LaunchedEffect(backupCoordinator.backupMessage) {
+        backupCoordinator.backupMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            userConfigProvider.backup.clearBackupMessage()
+            backupCoordinator.clearBackupMessage()
         }
     }
 
     val plainExportPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
-        uri?.let { userConfigProvider.backup.exportPlainBackupToUri(it) }
+        uri?.let { backupCoordinator.exportPlainBackupToUri(it) }
     }
 
     LaunchedEffect(Unit) {
@@ -108,7 +109,7 @@ internal fun MainScreen(
                 AppMainContent(
                     activity = activity,
                     mainViewModel = viewModel,
-                    userConfigProvider = userConfigProvider,
+                    backupCoordinator = backupCoordinator,
                     onPlainExportPickerRequest = { fileName ->
                         plainExportPickerLauncher.launch(fileName)
                     }
@@ -119,7 +120,7 @@ internal fun MainScreen(
                 VerificationScreen(
                     viewModel = verificationViewModel,
                     activity = activity,
-                    preferPasswordFirst = userConfig.security.isPasswordPreferredAuthFirst
+                    preferPasswordFirst = mainConfig.isPasswordPreferredAuthFirst
                 )
             }
         }
@@ -128,12 +129,12 @@ internal fun MainScreen(
     val window = activity.window
 
     LaunchedEffect(
-        userConfig.security.isSecureContentEnabled,
-        userConfig.security.isFlipToLockEnabled,
-        userConfig.security.isFlipExitAndClearStackEnabled,
-        userConfig.display.isStatusBarAutoHide
+        mainConfig.isSecureContentEnabled,
+        mainConfig.isFlipToLockEnabled,
+        mainConfig.isFlipExitAndClearStackEnabled,
+        mainConfig.isStatusBarAutoHide
     ) {
-        if (userConfig.security.isSecureContentEnabled) {
+        if (mainConfig.isSecureContentEnabled) {
             window.setFlags(
                 WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE
@@ -142,14 +143,14 @@ internal fun MainScreen(
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
 
-        sensorController.isFlipLockEnabled = userConfig.security.isFlipToLockEnabled
-        if (userConfig.security.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
+        sensorController.isFlipLockEnabled = mainConfig.isFlipToLockEnabled
+        if (mainConfig.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
 
         sensorController.isFlipExitAndClearStackEnabled =
-            userConfig.security.isFlipExitAndClearStackEnabled
+            mainConfig.isFlipExitAndClearStackEnabled
 
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        insetsController.systemBarsBehavior = if (userConfig.display.isStatusBarAutoHide) {
+        insetsController.systemBarsBehavior = if (mainConfig.isStatusBarAutoHide) {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
             WindowInsetsControllerCompat.BEHAVIOR_DEFAULT

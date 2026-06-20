@@ -16,22 +16,20 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
-import com.aozijx.passly.domain.config.UserConfigProvider
 import com.aozijx.passly.domain.model.FieldKey
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
+import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.main.MainViewModel
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.vault.VaultViewModel
 import com.aozijx.passly.ui.features.vault.contract.VaultUiState
 
 class VaultActionProvider(
-    val performCopy: (FieldKey, VaultSummary) -> Unit,
     val onSwipeTriggered: (SwipeActionType, VaultSummary) -> Unit,
     val onUpdateInteraction: () -> Unit,
     val fabScrollConnection: NestedScrollConnection,
@@ -44,13 +42,13 @@ fun rememberVaultActionProvider(
     activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    userConfigProvider: UserConfigProvider,
+    backupCoordinator: BackupCoordinator,
+    backupDirectoryUri: String?,
     uiState: VaultUiState,
     onShowDetail: (VaultEntry) -> Unit,
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
     val context = LocalContext.current
-    val userConfig by userConfigProvider.config.collectAsStateWithLifecycle()
     val decryptAuthTitle = stringResource(R.string.vault_auth_decrypt_title)
     val decryptAuthSubtitle = stringResource(R.string.vault_auth_decrypt_subtitle_generic)
     val totpCopiedText = stringResource(R.string.vault_totp_copied)
@@ -122,23 +120,23 @@ fun rememberVaultActionProvider(
     val exportLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.CreateDocument("application/octet-stream")) { uri: Uri? ->
             uri?.let { selectedUri ->
-                userConfigProvider.backup.startExport(
+                backupCoordinator.startExport(
                     selectedUri, fileNameHint = pendingManualExportFileName
                 )
             }
             pendingManualExportFileName = null
         }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { userConfigProvider.backup.startImport(it) }
+        it?.let { backupCoordinator.startImport(it) }
     }
 
-    val onExportClick = remember(userConfigProvider, exportLauncher) {
+    val onExportClick = remember(backupCoordinator, exportLauncher) {
         {
-            val started = userConfigProvider.backup.tryStartExportInConfiguredDirectory(
-                userConfig.backup.directoryUri
+            val started = backupCoordinator.tryStartExportInConfiguredDirectory(
+                backupDirectoryUri
             )
             if (!started) {
-                val manualFileName = userConfigProvider.backup.nextBackupFileName()
+                val manualFileName = backupCoordinator.nextBackupFileName()
                 pendingManualExportFileName = manualFileName
                 exportLauncher.launch(manualFileName)
             }
@@ -166,7 +164,6 @@ fun rememberVaultActionProvider(
     }
 
     return VaultActionProvider(
-        performCopy = performCopy,
         onSwipeTriggered = onSwipeTriggered,
         onUpdateInteraction = onUpdateInteraction,
         fabScrollConnection = fabScrollConnection,
