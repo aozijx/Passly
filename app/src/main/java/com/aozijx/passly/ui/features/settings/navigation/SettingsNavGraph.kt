@@ -17,7 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.domain.config.AppDefaults
+import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.ui.features.settings.SettingsViewModel
@@ -104,10 +104,10 @@ fun SettingsNavGraph(
             interfaceViewModel.onAction(InterfaceUiAction.SetPasswordCardStyle(effectiveCardStyle))
     }
 
-    LaunchedEffect(dataViewModel.backupCoordinator.backupMessage) {
-        dataViewModel.backupCoordinator.backupMessage?.let {
+    LaunchedEffect(dataState.backupMessage) {
+        dataState.backupMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            dataViewModel.backupCoordinator.clearBackupMessage()
+            dataViewModel.onAction(DataUiAction.ClearBackupMessage)
         }
     }
 

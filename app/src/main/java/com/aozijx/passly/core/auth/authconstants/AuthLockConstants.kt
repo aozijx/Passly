@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.auth.authconstants
 
-import com.aozijx.passly.domain.config.AppDefaults
+import com.aozijx.passly.domain.AppDefaults
 
 object AuthLockConstants {
     /** 用户无操作后自动锁定的最短时间（毫秒），不可低于此值 */

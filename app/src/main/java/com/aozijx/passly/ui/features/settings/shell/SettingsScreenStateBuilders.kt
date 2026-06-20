@@ -1,7 +1,7 @@
 package com.aozijx.passly.ui.features.settings.shell
 
 import android.content.Context
-import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
+import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.ui.features.settings.internal.AppPasswordDialogEvent
 import com.aozijx.passly.ui.features.settings.internal.SettingsDialogEvent

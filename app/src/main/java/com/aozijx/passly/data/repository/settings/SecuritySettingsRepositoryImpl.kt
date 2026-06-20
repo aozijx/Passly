@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
 import com.aozijx.passly.data.repository.settings.internal.BIOMETRIC_AUTH_KEY
 import com.aozijx.passly.data.repository.settings.internal.DEVICE_CREDENTIAL_FALLBACK_KEY
 import com.aozijx.passly.data.repository.settings.internal.FLIP_EXIT_AND_CLEAR_STACK_KEY
@@ -11,6 +12,7 @@ import com.aozijx.passly.data.repository.settings.internal.LOCK_TIMEOUT_KEY
 import com.aozijx.passly.data.repository.settings.internal.PASSWORD_PREFERRED_AUTH_FIRST_KEY
 import com.aozijx.passly.data.repository.settings.internal.SECURE_CONTENT_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
+import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -24,21 +26,41 @@ class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext con
     private val appContext = context.applicationContext
 
     override val lockTimeout: Flow<Long> =
-        appContext.settingsDataStore.data.map { it[LOCK_TIMEOUT_KEY] ?: 60000L }
+        appContext.settingsDataStore.data.map {
+            it[LOCK_TIMEOUT_KEY] ?: AuthLockConstants.DEFAULT_LOCK_TIMEOUT_MS
+        }
     override val isBiometricEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[BIOMETRIC_AUTH_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[BIOMETRIC_AUTH_KEY] ?: AppDefaults.SECURITY_BIOMETRIC_ENABLED
+        }
     override val isInvalidateKeyOnBioChange: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[INVALIDATE_KEY_ON_BIO_CHANGE_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[INVALIDATE_KEY_ON_BIO_CHANGE_KEY]
+                ?: AppDefaults.SECURITY_INVALIDATE_KEY_ON_BIO_CHANGE
+        }
     override val isSecureContentEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[SECURE_CONTENT_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[SECURE_CONTENT_KEY] ?: AppDefaults.SECURITY_SECURE_CONTENT_ENABLED
+        }
     override val isFlipToLockEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[FLIP_TO_LOCK_KEY] ?: false }
+        appContext.settingsDataStore.data.map {
+            it[FLIP_TO_LOCK_KEY] ?: AppDefaults.SECURITY_FLIP_TO_LOCK_ENABLED
+        }
     override val isFlipExitAndClearStackEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] ?: false }
+        appContext.settingsDataStore.data.map {
+            it[FLIP_EXIT_AND_CLEAR_STACK_KEY]
+                ?: AppDefaults.SECURITY_FLIP_EXIT_AND_CLEAR_STACK_ENABLED
+        }
     override val isPasswordPreferredAuthFirst: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[PASSWORD_PREFERRED_AUTH_FIRST_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[PASSWORD_PREFERRED_AUTH_FIRST_KEY]
+                ?: AppDefaults.SECURITY_PASSWORD_PREFERRED_AUTH_FIRST
+        }
     override val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map { it[DEVICE_CREDENTIAL_FALLBACK_KEY] ?: true }
+        appContext.settingsDataStore.data.map {
+            it[DEVICE_CREDENTIAL_FALLBACK_KEY]
+                ?: AppDefaults.SECURITY_DEVICE_CREDENTIAL_FALLBACK_ENABLED
+        }
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         appContext.settingsDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }

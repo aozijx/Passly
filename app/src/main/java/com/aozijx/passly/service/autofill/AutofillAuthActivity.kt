@@ -16,7 +16,7 @@ import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.otp.TwoFAUtils
-import com.aozijx.passly.domain.config.AutofillUiMode
+import com.aozijx.passly.domain.model.AutofillUiMode
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases

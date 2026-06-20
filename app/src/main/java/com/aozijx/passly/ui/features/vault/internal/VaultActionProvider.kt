@@ -18,8 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
 import com.aozijx.passly.domain.model.FieldKey
+import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory

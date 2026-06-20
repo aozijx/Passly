@@ -3,7 +3,7 @@ package com.aozijx.passly.ui.features.settings.interaction
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
+import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.ui.features.settings.components.switchSettingsItem
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle

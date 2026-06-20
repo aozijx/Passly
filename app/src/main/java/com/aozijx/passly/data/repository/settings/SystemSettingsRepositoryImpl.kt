@@ -20,10 +20,9 @@ import com.aozijx.passly.data.repository.settings.internal.TAB_BAR_MAX_TABS_WITH
 import com.aozijx.passly.data.repository.settings.internal.VAULT_SORT_OPTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.VISIBLE_VAULT_TABS_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
-import com.aozijx.passly.domain.config.AppDefaults
-import com.aozijx.passly.domain.config.AutofillUiMode
-import com.aozijx.passly.domain.config.UserConfig
-import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
+import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AutofillUiMode
+import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import com.aozijx.passly.ui.features.vault.model.SortOption
@@ -37,7 +36,6 @@ import javax.inject.Singleton
 class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext context: Context) :
     SystemSettingsRepository {
     private val appContext = context.applicationContext
-    private val defaultConfig = UserConfig()
 
     override val isDarkMode: Flow<Boolean?> =
         appContext.settingsDataStore.data.map { it[DARK_MODE_KEY] }
@@ -65,27 +63,27 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         }
     override val isStatusBarAutoHide: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[AUTO_HIDE_STATUS_BAR_KEY] ?: defaultConfig.display.isStatusBarAutoHide
+            it[AUTO_HIDE_STATUS_BAR_KEY] ?: AppDefaults.DISPLAY_STATUS_BAR_AUTO_HIDE
         }
     override val isTopBarCollapsible: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[COLLAPSE_TOP_BAR_KEY] ?: defaultConfig.display.isTopBarCollapsible
+            it[COLLAPSE_TOP_BAR_KEY] ?: AppDefaults.DISPLAY_TOP_BAR_COLLAPSIBLE
         }
     override val isTabBarCollapsible: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[COLLAPSE_TAB_BAR_KEY] ?: defaultConfig.display.isTabBarCollapsible
+            it[COLLAPSE_TAB_BAR_KEY] ?: AppDefaults.DISPLAY_TAB_BAR_COLLAPSIBLE
         }
     override val isSwipeEnabled: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[SWIPE_ENABLED_KEY] ?: defaultConfig.vault.isSwipeEnabled
+            it[SWIPE_ENABLED_KEY] ?: AppDefaults.VAULT_SWIPE_ENABLED
         }
     override val swipeLeftAction: Flow<SwipeActionType> = appContext.settingsDataStore.data.map {
         SwipeActionType.entries.find { e -> e.name == it[SWIPE_LEFT_ACTION_KEY] }
-            ?: defaultConfig.vault.swipeLeftAction
+            ?: AppDefaults.VAULT_SWIPE_LEFT_ACTION
     }
     override val swipeRightAction: Flow<SwipeActionType> = appContext.settingsDataStore.data.map {
         SwipeActionType.entries.find { e -> e.name == it[SWIPE_RIGHT_ACTION_KEY] }
-            ?: defaultConfig.vault.swipeRightAction
+            ?: AppDefaults.VAULT_SWIPE_RIGHT_ACTION
     }
     override val visibleVaultTabs: Flow<Set<String>?> = appContext.settingsDataStore.data.map {
         SettingsMapper.decodeVisibleTabs(it[VISIBLE_VAULT_TABS_KEY])
@@ -94,16 +92,17 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         when (it[AUTOFILL_UI_MODE_KEY]) {
             "inline", "SYSTEM_INLINE" -> AutofillUiMode.SYSTEM_INLINE
             "bottom_sheet", "BOTTOM_SHEET" -> AutofillUiMode.BOTTOM_SHEET
-            else -> defaultConfig.vault.autofillUiMode
+            else -> AppDefaults.VAULT_AUTOFILL_UI_MODE
         }
     }
     override val tabBarMaxTabsWithoutScroll: Flow<Int> = appContext.settingsDataStore.data.map {
-        (it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] ?: defaultConfig.vault.tabBarMaxTabsWithoutScroll)
+        (it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY]
+            ?: AppDefaults.VAULT_TAB_BAR_MAX_TABS_WITHOUT_SCROLL)
             .coerceIn(AppDefaults.TAB_THRESHOLD_MIN, AppDefaults.TAB_THRESHOLD_MAX)
     }
     override val isAutoDownloadIcons: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[AUTO_DOWNLOAD_ICONS_KEY] ?: defaultConfig.display.isAutoDownloadIcons
+            it[AUTO_DOWNLOAD_ICONS_KEY] ?: AppDefaults.DISPLAY_AUTO_DOWNLOAD_ICONS
         }
     override val vaultSortOption: Flow<SortOption> =
         appContext.settingsDataStore.data.map { prefs ->

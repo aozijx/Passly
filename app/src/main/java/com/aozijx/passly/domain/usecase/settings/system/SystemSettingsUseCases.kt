@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.usecase.settings.system
 
-import com.aozijx.passly.domain.config.AutofillUiMode
-import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
+import com.aozijx.passly.domain.model.AutofillUiMode
+import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import com.aozijx.passly.ui.features.vault.model.SortOption

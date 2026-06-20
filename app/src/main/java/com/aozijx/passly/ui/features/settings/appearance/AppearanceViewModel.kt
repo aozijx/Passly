@@ -2,6 +2,7 @@ package com.aozijx.passly.ui.features.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,7 +14,7 @@ import javax.inject.Inject
 
 data class AppearanceUiState(
     val isDarkMode: Boolean? = null,
-    val isDynamicColor: Boolean = true,
+    val isDynamicColor: Boolean = AppDefaults.DISPLAY_DYNAMIC_COLOR,
 )
 
 sealed interface AppearanceUiAction {

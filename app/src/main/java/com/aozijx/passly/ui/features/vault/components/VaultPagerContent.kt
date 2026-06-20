@@ -17,7 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
+import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.ui.components.widgets.SwipeDirection

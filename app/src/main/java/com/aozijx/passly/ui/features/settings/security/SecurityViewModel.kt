@@ -3,8 +3,10 @@ package com.aozijx.passly.ui.features.settings.security
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
@@ -17,10 +19,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SecurityUiState(
-    val lockTimeout: Long = 60_000L,
-    val isPasswordPreferredAuthFirst: Boolean = true,
-    val isDeviceCredentialFallbackEnabled: Boolean = true,
-    val isInvalidateKeyOnBioChange: Boolean = true,
+    val lockTimeout: Long = AuthLockConstants.DEFAULT_LOCK_TIMEOUT_MS,
+    val isPasswordPreferredAuthFirst: Boolean = AppDefaults.SECURITY_PASSWORD_PREFERRED_AUTH_FIRST,
+    val isDeviceCredentialFallbackEnabled: Boolean = AppDefaults.SECURITY_DEVICE_CREDENTIAL_FALLBACK_ENABLED,
+    val isInvalidateKeyOnBioChange: Boolean = AppDefaults.SECURITY_INVALIDATE_KEY_ON_BIO_CHANGE,
 )
 
 sealed interface SecurityUiAction {

@@ -39,7 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.config.AppDefaults
+import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.ui.features.vault.components.cardstyle.CardStyleRegistry

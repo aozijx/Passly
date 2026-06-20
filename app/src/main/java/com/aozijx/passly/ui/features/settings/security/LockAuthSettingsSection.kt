@@ -26,7 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.config.AppDefaults
+import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.ui.features.settings.components.switchSettingsItem
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle

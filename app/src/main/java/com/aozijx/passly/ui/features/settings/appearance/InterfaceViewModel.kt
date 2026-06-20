@@ -2,6 +2,7 @@ package com.aozijx.passly.ui.features.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,13 +14,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class InterfaceUiState(
-    val isStatusBarAutoHide: Boolean = true,
-    val isTopBarCollapsible: Boolean = true,
-    val isTabBarCollapsible: Boolean = true,
-    val cardStyle: VaultCardStyle = VaultCardStyle.DEFAULT,
-    val perTypeMap: Map<Int, VaultCardStyle> = mapOf(-1 to VaultCardStyle.DEFAULT),
+    val isStatusBarAutoHide: Boolean = AppDefaults.DISPLAY_STATUS_BAR_AUTO_HIDE,
+    val isTopBarCollapsible: Boolean = AppDefaults.DISPLAY_TOP_BAR_COLLAPSIBLE,
+    val isTabBarCollapsible: Boolean = AppDefaults.DISPLAY_TAB_BAR_COLLAPSIBLE,
+    val cardStyle: VaultCardStyle = AppDefaults.CardStyle.GLOBAL_DEFAULT_STYLE,
+    val perTypeMap: Map<Int, VaultCardStyle> = mapOf(-1 to AppDefaults.CardStyle.GLOBAL_DEFAULT_STYLE),
     val visibleVaultTabs: Set<String>? = null,
-    val tabBarMaxTabsWithoutScroll: Int = 4,
+    val tabBarMaxTabsWithoutScroll: Int = AppDefaults.VAULT_TAB_BAR_MAX_TABS_WITHOUT_SCROLL,
 )
 
 sealed interface InterfaceUiAction {

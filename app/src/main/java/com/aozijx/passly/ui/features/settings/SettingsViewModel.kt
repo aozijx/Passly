@@ -1,11 +1,9 @@
 package com.aozijx.passly.ui.features.settings
 
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.config.UserConfig.Vault.SwipeActionType
+import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
@@ -37,13 +35,5 @@ class SettingsViewModel @Inject constructor(
 
     fun setDeviceCredentialFallbackEnabled(enabled: Boolean) {
         viewModelScope.launch { securitySettingsUseCases.setDeviceCredentialFallbackEnabled(enabled) }
-    }
-
-    fun switchKeyInvalidationPolicy(
-        activity: FragmentActivity,
-        enabled: Boolean,
-        onResult: (AppResult<Unit>) -> Unit
-    ) {
-        authGateway.rekeyWithInvalidationPolicy(activity, enabled, onResult)
     }
 }

@@ -1,7 +1,7 @@
 package com.aozijx.passly.ui.features.settings.interaction
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.domain.config.AutofillUiMode
+import com.aozijx.passly.domain.model.AutofillUiMode
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
