@@ -25,7 +25,7 @@ fun resolveSigningValue(envName: String, propertyName: String): String? {
 // Android 配置
 android {
     namespace = "com.aozijx.passly"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.aozijx.passly"
