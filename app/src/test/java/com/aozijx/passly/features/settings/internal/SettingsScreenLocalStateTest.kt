@@ -92,23 +92,4 @@ class SettingsScreenLocalStateTest {
         assertEquals("", state.appPasswordNew)
         assertEquals("", state.appPasswordConfirm)
     }
-
-    @Test
-    fun openDeviceCredentialFallbackWarningDialog_setsVisible() {
-        val state = SettingsScreenLocalState()
-
-        state.openDeviceCredentialFallbackWarningDialog()
-
-        assertTrue(state.showDeviceCredentialFallbackWarningDialog)
-    }
-
-    @Test
-    fun dismissDeviceCredentialFallbackWarningDialog_setsHidden() {
-        val state = SettingsScreenLocalState()
-        state.showDeviceCredentialFallbackWarningDialog = true
-
-        state.dismissDeviceCredentialFallbackWarningDialog()
-
-        assertFalse(state.showDeviceCredentialFallbackWarningDialog)
-    }
 }

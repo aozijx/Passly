@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.data.local.AppDatabase
-import com.aozijx.passly.data.local.UserConfigFileStore
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
@@ -39,11 +38,23 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class IoDispatcher
 
 @Module
 @InstallIn(SingletonComponent::class)
 object DataModule {
+
+    @Provides
+    @Singleton
+    @IoDispatcher
+    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     @Provides
     @Singleton
@@ -68,13 +79,6 @@ object DataModule {
     @Singleton
     fun provideVaultHistoryDao(database: AppDatabase): VaultHistoryDao =
         database.vaultHistoryDao()
-
-    @Provides
-    @Singleton
-    fun provideUserConfigFileStore(
-        @ApplicationContext context: Context
-    ): UserConfigFileStore = UserConfigFileStore(context)
-
 }
 
 @Module

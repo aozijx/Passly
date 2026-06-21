@@ -3,6 +3,7 @@ package com.aozijx.passly.data.local
 import android.content.Context
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.model.UserConfig
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -10,9 +11,12 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class UserConfigFileStore(
-    private val appContext: Context
+@Singleton
+class UserConfigFileStore @Inject constructor(
+    @ApplicationContext private val appContext: Context
 ) {
     private val mutex = Mutex()
 
