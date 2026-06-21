@@ -1,8 +1,5 @@
 package com.aozijx.passly.ui.features.settings.security
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -63,64 +60,58 @@ fun LockAuthSettingsSection(
             value = formatLockTimeoutText(lockTimeout),
             onClick = { expanded = !expanded }
         )
-    }
-    AnimatedVisibility(
-        visible = expanded,
-        enter = expandVertically(),
-        exit = shrinkVertically()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        item(visible = expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
             ) {
-                Text(
-                    text = "自动锁定时间",
-                    style = MaterialTheme.typography.bodyMedium
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "自动锁定时间",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = formatLockTimeoutText((sliderValue.toLong() * 1000L)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Slider(
+                    value = sliderValue,
+                    onValueChange = { sliderValue = it },
+                    onValueChangeFinished = {
+                        val rounded =
+                            ((sliderValue / SLIDER_STEP_SECONDS).roundToInt() * SLIDER_STEP_SECONDS)
+                                .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
+                        sliderValue = rounded
+                        onLockTimeoutChange(rounded.toLong() * 1000L)
+                    },
+                    valueRange = SLIDER_MIN_SECONDS..SLIDER_MAX_SECONDS,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Text(
-                    text = formatLockTimeoutText((sliderValue.toLong() * 1000L)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${SLIDER_MIN_SECONDS.roundToInt()} 秒",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        text = "${(SLIDER_MAX_SECONDS / 60f).roundToInt()} 分钟",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
             }
-            Slider(
-                value = sliderValue,
-                onValueChange = { sliderValue = it },
-                onValueChangeFinished = {
-                    val rounded =
-                        ((sliderValue / SLIDER_STEP_SECONDS).roundToInt() * SLIDER_STEP_SECONDS)
-                            .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
-                    sliderValue = rounded
-                    onLockTimeoutChange(rounded.toLong() * 1000L)
-                },
-                valueRange = SLIDER_MIN_SECONDS..SLIDER_MAX_SECONDS,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "${SLIDER_MIN_SECONDS.roundToInt()} 秒",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                Text(
-                    text = "${(SLIDER_MAX_SECONDS / 60f).roundToInt()} 分钟",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
         }
-    }
-    SettingsRoundedGroup {
         navigationSettingsItem(
             icon = Icons.Default.Lock,
             title = "设置密码",

@@ -119,25 +119,25 @@ fun SettingsNavGraph(
         enterTransition = {
             slideInHorizontally(
                 initialOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(300)
+                animationSpec = tween(350)
             )
         },
         exitTransition = {
             slideOutHorizontally(
                 targetOffsetX = { fullWidth -> -fullWidth / 4 },
-                animationSpec = tween(300)
+                animationSpec = tween(350)
             )
         },
         popEnterTransition = {
             slideInHorizontally(
                 initialOffsetX = { fullWidth -> -fullWidth / 4 },
-                animationSpec = tween(300)
+                animationSpec = tween(350)
             )
         },
         popExitTransition = {
             slideOutHorizontally(
                 targetOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(300)
+                animationSpec = tween(350)
             )
         }
     ) {
