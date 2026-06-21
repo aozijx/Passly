@@ -52,4 +52,16 @@ object AppDefaults {
         const val PASSPHRASE_IV_LENGTH: Int = 12
         const val PASSPHRASE_GCM_TAG_BITS: Int = 128
     }
+
+    object Crypto {
+        const val ALGORITHM: String = "AES/GCM/NoPadding"
+        const val AES_KEY_ALGORITHM: String = "AES"
+        const val IV_LENGTH: Int = 12
+        const val GCM_TAG_BITS: Int = 128
+        const val KEY_SIZE_BITS: Int = 256
+        const val KEY_DB_PASSPHRASE: String = "db_phrase"
+        const val KEYSTORE_ALIAS_SUFFIX: String = "vault_db_hard_auth"
+        const val DERIVE_LABEL: String = "passly-vault-field-key-v1"
+        const val GENERATED_PASSPHRASE_BYTES: Int = 32
+    }
 }

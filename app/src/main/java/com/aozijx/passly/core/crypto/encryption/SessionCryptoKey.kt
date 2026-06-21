@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.crypto.encryption
 
-import com.aozijx.passly.core.crypto.cryptoconstants.CryptoConstants
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
+import com.aozijx.passly.domain.AppDefaults
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -16,9 +16,6 @@ object SessionCryptoKey {
     @Volatile
     private var _sessionDek: ByteArray? = null
 
-    val isSessionKeyAvailable: Boolean
-        get() = synchronized(lock) { _sessionDek != null }
-
     fun getSessionKey(): ByteArray = synchronized(lock) {
         _sessionDek?.clone()
             ?: throw IllegalStateException("Field DEK not loaded; vault is locked.")
@@ -28,7 +25,7 @@ object SessionCryptoKey {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(dbPassphrase, "HmacSHA256"))
         synchronized(lock) {
-            _sessionDek = mac.doFinal(CryptoConstants.DERIVE_LABEL.toByteArray())
+            _sessionDek = mac.doFinal(AppDefaults.Crypto.DERIVE_LABEL.toByteArray())
         }
     }
 

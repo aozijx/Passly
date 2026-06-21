@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.crypto.encryption
 
 import android.util.Base64
-import com.aozijx.passly.core.crypto.cryptoconstants.CryptoConstants
+import com.aozijx.passly.domain.AppDefaults
 import java.nio.ByteBuffer
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -13,8 +13,9 @@ import javax.crypto.spec.SecretKeySpec
  */
 object FieldEncryptor {
     fun encrypt(data: String): String {
-        val key = SecretKeySpec(SessionCryptoKey.getSessionKey(), CryptoConstants.AES_KEY_ALGORITHM)
-        val cipher = Cipher.getInstance(CryptoConstants.ALGORITHM)
+        val key =
+            SecretKeySpec(SessionCryptoKey.getSessionKey(), AppDefaults.Crypto.AES_KEY_ALGORITHM)
+        val cipher = Cipher.getInstance(AppDefaults.Crypto.ALGORITHM)
         cipher.init(Cipher.ENCRYPT_MODE, key)
         val encrypted = cipher.doFinal(data.toByteArray())
         val combined = ByteBuffer.allocate(cipher.iv.size + encrypted.size)
@@ -25,13 +26,14 @@ object FieldEncryptor {
     }
 
     fun decrypt(encryptedData: String): String {
-        val key = SecretKeySpec(SessionCryptoKey.getSessionKey(), CryptoConstants.AES_KEY_ALGORITHM)
+        val key =
+            SecretKeySpec(SessionCryptoKey.getSessionKey(), AppDefaults.Crypto.AES_KEY_ALGORITHM)
         val combined = Base64.decode(encryptedData, Base64.NO_WRAP)
         val buffer = ByteBuffer.wrap(combined)
-        val iv = ByteArray(CryptoConstants.IV_LENGTH).also { buffer.get(it) }
+        val iv = ByteArray(AppDefaults.Crypto.IV_LENGTH).also { buffer.get(it) }
         val encrypted = ByteArray(buffer.remaining()).also { buffer.get(it) }
-        val cipher = Cipher.getInstance(CryptoConstants.ALGORITHM)
-        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(CryptoConstants.GCM_TAG_BITS, iv))
+        val cipher = Cipher.getInstance(AppDefaults.Crypto.ALGORITHM)
+        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(AppDefaults.Crypto.GCM_TAG_BITS, iv))
         return String(cipher.doFinal(encrypted))
     }
 }

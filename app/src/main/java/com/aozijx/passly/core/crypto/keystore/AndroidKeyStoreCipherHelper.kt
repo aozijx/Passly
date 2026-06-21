@@ -6,7 +6,6 @@ import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.edit
-import com.aozijx.passly.core.crypto.cryptoconstants.CryptoConstants
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.AppDefaults
 import java.nio.ByteBuffer
@@ -19,7 +18,7 @@ internal object AndroidKeyStoreCipherHelper {
     private const val TAG = "KeystoreCipher"
 
     fun getAlias(context: Context) =
-        "${context.packageName}.${CryptoConstants.KEYSTORE_ALIAS_SUFFIX}"
+        "${context.packageName}.${AppDefaults.Crypto.KEYSTORE_ALIAS_SUFFIX}"
 
     fun getInitializedCipher(context: Context): Cipher? =
         getInitializedCipher(context, isRetry = false)
@@ -32,22 +31,22 @@ internal object AndroidKeyStoreCipherHelper {
 
         val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
         val prefs = context.getSharedPreferences(AppDefaults.Auth.PREFS_NAME, Context.MODE_PRIVATE)
-        val encryptedBase64 = prefs.getString(CryptoConstants.KEY_DB_PASSPHRASE, null)
+        val encryptedBase64 = prefs.getString(AppDefaults.Crypto.KEY_DB_PASSPHRASE, null)
 
         return try {
-            val cipher = Cipher.getInstance(CryptoConstants.ALGORITHM)
+            val cipher = Cipher.getInstance(AppDefaults.Crypto.ALGORITHM)
             if (encryptedBase64 == null) {
                 Logcat.i(TAG, "Init ENCRYPT mode for new passphrase.")
                 cipher.init(Cipher.ENCRYPT_MODE, secretKey)
             } else {
                 Logcat.i(TAG, "Init DECRYPT mode for existing passphrase.")
                 val combined = Base64.decode(encryptedBase64, Base64.NO_WRAP)
-                val iv = ByteArray(CryptoConstants.IV_LENGTH).also {
+                val iv = ByteArray(AppDefaults.Crypto.IV_LENGTH).also {
                     ByteBuffer.wrap(combined).get(it)
                 }
                 cipher.init(
                     Cipher.DECRYPT_MODE, secretKey,
-                    GCMParameterSpec(CryptoConstants.GCM_TAG_BITS, iv)
+                    GCMParameterSpec(AppDefaults.Crypto.GCM_TAG_BITS, iv)
                 )
             }
             cipher
@@ -58,7 +57,7 @@ internal object AndroidKeyStoreCipherHelper {
             }
             Logcat.e(TAG, "Key invalidated. Resetting...", e)
             ks.deleteEntry(alias)
-            prefs.edit { remove(CryptoConstants.KEY_DB_PASSPHRASE) }
+            prefs.edit { remove(AppDefaults.Crypto.KEY_DB_PASSPHRASE) }
             getInitializedCipher(context, isRetry = true)
         } catch (e: Exception) {
             Logcat.e(TAG, "Failed to init cipher", e)
@@ -75,7 +74,7 @@ internal object AndroidKeyStoreCipherHelper {
         )
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setKeySize(CryptoConstants.KEY_SIZE_BITS)
+            .setKeySize(AppDefaults.Crypto.KEY_SIZE_BITS)
             .setUserAuthenticationRequired(true)
             .setUserAuthenticationParameters(
                 0,

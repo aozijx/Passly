@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Base64
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.edit
-import com.aozijx.passly.core.crypto.cryptoconstants.CryptoConstants
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.AppDefaults
@@ -56,11 +55,11 @@ class DatabasePassphraseManager @Inject constructor(
         val cipher = result.cryptoObject?.cipher
             ?: throw IllegalStateException("CryptoObject is null")
         val prefs = context.getSharedPreferences(AppDefaults.Auth.PREFS_NAME, Context.MODE_PRIVATE)
-        val encryptedBase64 = prefs.getString(CryptoConstants.KEY_DB_PASSPHRASE, null)
+        val encryptedBase64 = prefs.getString(AppDefaults.Crypto.KEY_DB_PASSPHRASE, null)
 
         return if (encryptedBase64 == null) {
             val newPassphrase =
-                ByteArray(CryptoConstants.GENERATED_PASSPHRASE_BYTES).also {
+                ByteArray(AppDefaults.Crypto.GENERATED_PASSPHRASE_BYTES).also {
                     SecureRandom().nextBytes(
                         it
                     )
@@ -76,7 +75,7 @@ class DatabasePassphraseManager @Inject constructor(
                 val alias = AndroidKeyStoreCipherHelper.getAlias(context)
                 val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
                 if (ks.containsAlias(alias)) ks.deleteEntry(alias)
-                prefs.edit { remove(CryptoConstants.KEY_DB_PASSPHRASE) }
+                prefs.edit { remove(AppDefaults.Crypto.KEY_DB_PASSPHRASE) }
                 throw IllegalStateException("密钥已失效，请重新认证")
             }
         }
@@ -87,7 +86,7 @@ class DatabasePassphraseManager @Inject constructor(
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         if (ks.containsAlias(alias)) ks.deleteEntry(alias)
         context.getSharedPreferences(AppDefaults.Auth.PREFS_NAME, Context.MODE_PRIVATE).edit {
-            remove(CryptoConstants.KEY_DB_PASSPHRASE)
+            remove(AppDefaults.Crypto.KEY_DB_PASSPHRASE)
         }
         AndroidKeyStoreCipherHelper.generateMasterKey(alias, invalidateOnBiometricChange)
     }
@@ -107,7 +106,7 @@ class DatabasePassphraseManager @Inject constructor(
             .put(cipher.iv).put(encrypted).array()
         context.getSharedPreferences(AppDefaults.Auth.PREFS_NAME, Context.MODE_PRIVATE).edit {
             putString(
-                CryptoConstants.KEY_DB_PASSPHRASE,
+                AppDefaults.Crypto.KEY_DB_PASSPHRASE,
                 Base64.encodeToString(combined, Base64.NO_WRAP)
             )
         }
@@ -116,7 +115,7 @@ class DatabasePassphraseManager @Inject constructor(
     private fun decryptStoredPassphrase(cipher: Cipher, encryptedBase64: String): ByteArray {
         val combined = Base64.decode(encryptedBase64, Base64.NO_WRAP)
         val buffer = ByteBuffer.wrap(combined)
-        buffer.position(CryptoConstants.IV_LENGTH)
+        buffer.position(AppDefaults.Crypto.IV_LENGTH)
         val encryptedData = ByteArray(buffer.remaining()).also { buffer.get(it) }
         return cipher.doFinal(encryptedData)
     }
