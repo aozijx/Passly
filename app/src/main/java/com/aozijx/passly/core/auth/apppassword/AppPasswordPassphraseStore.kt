@@ -13,9 +13,6 @@ import java.security.SecureRandom
 
 object AppPasswordPassphraseStore {
 
-    private const val KEY_APP_PASSWORD_FAILED_COUNT = "db_phrase_app_failed_count"
-    private const val KEY_APP_PASSWORD_LOCKED_UNTIL = "db_phrase_app_locked_until"
-
     fun isEnabled(context: Context): Boolean {
         val prefs =
             context.getSharedPreferences(AppDefaults.Auth.PREFS_NAME, Context.MODE_PRIVATE)
@@ -37,8 +34,8 @@ object AppPasswordPassphraseStore {
                         AppDefaults.Auth.KEY_APP_PASSWORD_WRAP,
                         Base64.encodeToString(wrapped, Base64.NO_WRAP)
                     )
-                    putInt(KEY_APP_PASSWORD_FAILED_COUNT, 0)
-                    putLong(KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
+                    putInt(AppDefaults.Auth.KEY_APP_PASSWORD_FAILED_COUNT, 0)
+                    putLong(AppDefaults.Auth.KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
                 }
         }
 
@@ -75,8 +72,8 @@ object AppPasswordPassphraseStore {
                 AppDefaults.Auth.KEY_APP_PASSWORD_WRAP,
                 Base64.encodeToString(wrapped, Base64.NO_WRAP)
             )
-            putInt(KEY_APP_PASSWORD_FAILED_COUNT, 0)
-            putLong(KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
+            putInt(AppDefaults.Auth.KEY_APP_PASSWORD_FAILED_COUNT, 0)
+            putLong(AppDefaults.Auth.KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
         }
     }
 
@@ -95,15 +92,15 @@ object AppPasswordPassphraseStore {
                 .edit {
                     remove(AppDefaults.Auth.KEY_APP_PASSWORD_SALT)
                     remove(AppDefaults.Auth.KEY_APP_PASSWORD_WRAP)
-                    remove(KEY_APP_PASSWORD_FAILED_COUNT)
-                    remove(KEY_APP_PASSWORD_LOCKED_UNTIL)
+                    remove(AppDefaults.Auth.KEY_APP_PASSWORD_FAILED_COUNT)
+                    remove(AppDefaults.Auth.KEY_APP_PASSWORD_LOCKED_UNTIL)
                 }
         }
 
     fun unlock(context: Context, password: CharArray): Result<ByteArray> = runCatching {
         val prefs =
             context.getSharedPreferences(AppDefaults.Auth.PREFS_NAME, Context.MODE_PRIVATE)
-        val lockedUntil = prefs.getLong(KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
+        val lockedUntil = prefs.getLong(AppDefaults.Auth.KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
         val now = System.currentTimeMillis()
         if (lockedUntil > now) {
             throw IllegalStateException("尝试过于频繁，请 ${lockedUntil - now} 秒后重试")
@@ -112,8 +109,8 @@ object AppPasswordPassphraseStore {
         runCatching { decryptWrappedPassphrase(context, password) }
             .onSuccess {
                 prefs.edit {
-                    putInt(KEY_APP_PASSWORD_FAILED_COUNT, 0)
-                    putLong(KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
+                    putInt(AppDefaults.Auth.KEY_APP_PASSWORD_FAILED_COUNT, 0)
+                    putLong(AppDefaults.Auth.KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
                 }
             }
             .onFailure { error ->
@@ -121,13 +118,16 @@ object AppPasswordPassphraseStore {
                     throw error
                 }
 
-                val nextCount = prefs.getInt(KEY_APP_PASSWORD_FAILED_COUNT, 0) + 1
+                val nextCount = prefs.getInt(AppDefaults.Auth.KEY_APP_PASSWORD_FAILED_COUNT, 0) + 1
                 val shouldLock = nextCount >= AppDefaults.Lock.APP_PASSWORD_MAX_FAILED_ATTEMPTS
                 prefs.edit {
-                    putInt(KEY_APP_PASSWORD_FAILED_COUNT, if (shouldLock) 0 else nextCount)
+                    putInt(
+                        AppDefaults.Auth.KEY_APP_PASSWORD_FAILED_COUNT,
+                        if (shouldLock) 0 else nextCount
+                    )
                     if (shouldLock) {
                         putLong(
-                            KEY_APP_PASSWORD_LOCKED_UNTIL,
+                            AppDefaults.Auth.KEY_APP_PASSWORD_LOCKED_UNTIL,
                             now + AppDefaults.Lock.MIN_APP_PASSWORD_LOCKOUT_MS
                         )
                     }

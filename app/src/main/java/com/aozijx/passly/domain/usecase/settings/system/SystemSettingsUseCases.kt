@@ -6,12 +6,12 @@ import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import com.aozijx.passly.ui.features.vault.model.SortOption
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * 系统级设置用例：负责全局行为、界面样式、自动填充模式等非业务逻辑设置
  */
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class SystemSettingsUseCases @Inject constructor(private val repository: SystemSettingsRepository) {

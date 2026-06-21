@@ -57,7 +57,7 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
                     VaultCardStyle.normalizeGlobalStyle(VaultCardStyle.fromKey(prefs[CARD_STYLE_KEY]))
             } else {
                 parsed[DEFAULT_STYLE_KEY] =
-                    VaultCardStyle.normalizeGlobalStyle(parsed[DEFAULT_STYLE_KEY]!!)
+                    VaultCardStyle.normalizeGlobalStyle(parsed.getValue(DEFAULT_STYLE_KEY))
             }
             parsed.toMap()
         }

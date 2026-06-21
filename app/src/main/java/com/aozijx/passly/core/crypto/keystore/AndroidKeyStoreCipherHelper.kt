@@ -8,6 +8,7 @@ import android.util.Base64
 import androidx.core.content.edit
 import com.aozijx.passly.core.crypto.cryptoconstants.CryptoConstants
 import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.domain.AppDefaults
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -30,7 +31,7 @@ internal object AndroidKeyStoreCipherHelper {
         if (!ks.containsAlias(alias)) generateMasterKey(alias, invalidateOnBiometricChange = true)
 
         val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
-        val prefs = context.getSharedPreferences(CryptoConstants.PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(AppDefaults.Auth.PREFS_NAME, Context.MODE_PRIVATE)
         val encryptedBase64 = prefs.getString(CryptoConstants.KEY_DB_PASSPHRASE, null)
 
         return try {

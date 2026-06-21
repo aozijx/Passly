@@ -76,11 +76,14 @@ fun VaultDialogs(
         AddType.ID_CARD,
         AddType.SEED_PHRASE,
         AddType.PASSKEY,
-        AddType.RECOVERY_CODE -> AddGenericEntryDialog(
-            viewModel = vaultViewModel,
-            addType = vaultViewModel.addType!!,
-            onUpdateInteraction = onUpdateInteraction
-        )
+        AddType.RECOVERY_CODE -> {
+            val type = vaultViewModel.addType ?: return@VaultDialogs
+            AddGenericEntryDialog(
+                viewModel = vaultViewModel,
+                addType = type,
+                onUpdateInteraction = onUpdateInteraction
+            )
+        }
 
         null -> Unit
     }

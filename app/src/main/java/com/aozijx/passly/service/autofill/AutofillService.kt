@@ -146,8 +146,10 @@ class AutofillService : android.service.autofill.AutofillService() {
             if (pkg == null) pkg = p.packageName
             if (domain == null) domain = p.webDomain
             if (title == null) title = p.pageTitle
-            if (!p.usernameValue.isNullOrBlank()) username = p.usernameValue!!
-            if (!p.passwordValue.isNullOrBlank()) password = p.passwordValue!!
+            val userVal = p.usernameValue
+            if (!userVal.isNullOrBlank()) username = userVal
+            val passVal = p.passwordValue
+            if (!passVal.isNullOrBlank()) password = passVal
         }
 
         Logcat.d(

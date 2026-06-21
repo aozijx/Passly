@@ -46,6 +46,8 @@ object AppDefaults {
         const val PREFS_NAME: String = "secure_db_prefs"
         const val KEY_APP_PASSWORD_WRAP: String = "db_phrase_app_wrap"
         const val KEY_APP_PASSWORD_SALT: String = "db_phrase_app_salt"
+        const val KEY_APP_PASSWORD_FAILED_COUNT: String = "db_phrase_app_failed_count"
+        const val KEY_APP_PASSWORD_LOCKED_UNTIL: String = "db_phrase_app_locked_until"
         const val ERROR_APP_PASSWORD_MISMATCH: String = "应用密码错误"
         const val PASSPHRASE_IV_LENGTH: Int = 12
         const val PASSPHRASE_GCM_TAG_BITS: Int = 128

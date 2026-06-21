@@ -80,7 +80,8 @@ class VaultUseCases @Inject constructor(
         summaries
             .filter { !it.associatedDomain.isNullOrBlank() && it.iconCustomPath.isNullOrBlank() }
             .forEach { summary ->
-                val outcome = downloadFavicon(summary.associatedDomain!!)
+                val domain = summary.associatedDomain ?: return@forEach
+                val outcome = downloadFavicon(domain)
                 if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                     vaultRepository.getEntryById(summary.id)?.let { entry ->
                         vaultRepository.update(entry.copy(iconCustomPath = outcome.filePath))

@@ -3,7 +3,6 @@ package com.aozijx.passly.ui.features.scanner.components
 import android.Manifest
 import android.content.ClipData
 import android.content.Intent
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -123,7 +122,7 @@ fun ScannerView(
                                 barcodeScanner.process(image)
                                     .addOnSuccessListener { barcodes ->
                                         barcodes.firstOrNull()?.rawValue?.let {
-                                            Log.d("ScannerView", "Detected barcode: $it")
+                                            Logcat.d("ScannerView", "Detected barcode: $it")
                                             onBarcodeDetected(it)
                                         }
                                     }

@@ -16,9 +16,6 @@ object CryptoConstants {
     /** AES 密钥长度（256 位） */
     const val KEY_SIZE_BITS: Int = 256
 
-    /** SharedPreferences 文件名，用于持久化数据库口令 */
-    const val PREFS_NAME: String = "secure_db_prefs"
-
     /** SharedPreferences 中数据库口令的 Base64 编码键名 */
     const val KEY_DB_PASSPHRASE: String = "db_phrase"
 
