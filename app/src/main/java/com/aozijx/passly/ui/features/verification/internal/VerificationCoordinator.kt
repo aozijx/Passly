@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.ui.features.common.toUiMessage
 import com.aozijx.passly.ui.features.verification.contract.VerificationGateway
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,8 @@ class VerificationCoordinator(
 ) : VerificationGateway {
     override val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
     override val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
+    override val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
+        authUseCases.isDeviceCredentialFallbackEnabled
 
     private val _authMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val authMessage: SharedFlow<String> = _authMessage.asSharedFlow()
@@ -56,6 +59,19 @@ class VerificationCoordinator(
             } else {
                 authUseCases.authenticate(activity, title, subtitle)
             }
+            result.onFailure { _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage())) }
+            onResult(result)
+        }
+    }
+
+    override fun verifyWithDeviceCredential(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String,
+        onResult: (AppResult<Unit>) -> Unit
+    ) {
+        scope.launch {
+            val result = authUseCases.authenticateWithDeviceCredential(activity, title, subtitle)
             result.onFailure { _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage())) }
             onResult(result)
         }

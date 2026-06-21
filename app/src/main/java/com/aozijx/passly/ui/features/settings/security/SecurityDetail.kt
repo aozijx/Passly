@@ -14,7 +14,6 @@ internal fun SecurityDetail(
     isAppPasswordEnabled: Boolean,
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
-    onPasswordPreferredAuthFirstChange: (Boolean) -> Unit,
     onDeviceCredentialFallbackToggleRequested: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
     onLockOnBackgroundChange: (Boolean) -> Unit
@@ -24,13 +23,11 @@ internal fun SecurityDetail(
         LockAuthSettingsSection(
             lockTimeout = state.lockTimeout,
             isAppPasswordEnabled = isAppPasswordEnabled,
-            isPasswordPreferredAuthFirst = state.isPasswordPreferredAuthFirst,
             isDeviceCredentialFallbackEnabled = state.isDeviceCredentialFallbackEnabled,
             isInvalidateKeyOnBioChange = state.isInvalidateKeyOnBioChange,
             isLockOnBackground = state.isLockOnBackground,
             onLockTimeoutChange = onLockTimeoutChange,
             onAppPasswordClick = onAppPasswordClick,
-            onPasswordPreferredAuthFirstChange = onPasswordPreferredAuthFirstChange,
             onDeviceCredentialFallbackToggleRequested = onDeviceCredentialFallbackToggleRequested,
             onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
             onLockOnBackgroundChange = onLockOnBackgroundChange

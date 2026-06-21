@@ -38,13 +38,11 @@ private const val SLIDER_STEP_SECONDS = (AppDefaults.LOCK_TIMEOUT_SLIDER_STEP_MS
 fun LockAuthSettingsSection(
     lockTimeout: Long,
     isAppPasswordEnabled: Boolean,
-    isPasswordPreferredAuthFirst: Boolean,
     isDeviceCredentialFallbackEnabled: Boolean,
     isInvalidateKeyOnBioChange: Boolean,
     isLockOnBackground: Boolean,
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
-    onPasswordPreferredAuthFirstChange: (Boolean) -> Unit,
     onDeviceCredentialFallbackToggleRequested: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
     onLockOnBackgroundChange: (Boolean) -> Unit
@@ -122,20 +120,6 @@ fun LockAuthSettingsSection(
             onClick = onAppPasswordClick
         )
         switchSettingsItem(
-            icon = Icons.Default.Lock,
-            title = "优先验证应用密码",
-            subtitle = "解锁页优先显示应用密码入口",
-            checked = isPasswordPreferredAuthFirst,
-            onCheckedChange = onPasswordPreferredAuthFirstChange
-        )
-        switchSettingsItem(
-            icon = Icons.Default.Fingerprint,
-            title = "设备凭据作为兜底",
-            subtitle = "使用系统PIN/图案/密码验证",
-            checked = isDeviceCredentialFallbackEnabled,
-            onCheckedChange = onDeviceCredentialFallbackToggleRequested
-        )
-        switchSettingsItem(
             icon = Icons.Default.Fingerprint,
             title = "生物识别变更时销毁密钥",
             subtitle = if (isInvalidateKeyOnBioChange)
@@ -144,6 +128,13 @@ fun LockAuthSettingsSection(
                 "新增或移除指纹/面部时，保险箱密钥保持有效",
             checked = isInvalidateKeyOnBioChange,
             onCheckedChange = onInvalidateKeyOnBioChangeToggle
+        )
+        switchSettingsItem(
+            icon = Icons.Default.Lock,
+            title = "设备凭据作为兜底",
+            subtitle = "生物识别不可用时，使用手机锁屏密码/手势验证",
+            checked = isDeviceCredentialFallbackEnabled,
+            onCheckedChange = onDeviceCredentialFallbackToggleRequested
         )
         switchSettingsItem(
             icon = Icons.Default.Lock,

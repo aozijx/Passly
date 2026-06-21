@@ -21,10 +21,10 @@ object BiometricAuthenticator {
         val biometricManager = BiometricManager.from(activity)
 
         val authenticators =
-            if (cryptoObject != null || !allowDeviceCredentialFallback) {
-                BIOMETRIC_STRONG
-            } else {
+            if (allowDeviceCredentialFallback) {
                 BIOMETRIC_STRONG or DEVICE_CREDENTIAL
+            } else {
+                BIOMETRIC_STRONG
             }
 
         val canAuthenticate = biometricManager.canAuthenticate(authenticators)
@@ -66,8 +66,12 @@ object BiometricAuthenticator {
             .setSubtitle(subtitle)
 
         if (cryptoObject != null) {
-            promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
-            promptBuilder.setNegativeButtonText("取消")
+            if (allowDeviceCredentialFallback) {
+                promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+            } else {
+                promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
+                promptBuilder.setNegativeButtonText("取消")
+            }
         } else {
             if (allowDeviceCredentialFallback) {
                 promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)

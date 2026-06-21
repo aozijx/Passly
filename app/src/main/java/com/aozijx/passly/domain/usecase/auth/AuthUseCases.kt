@@ -3,6 +3,7 @@ package com.aozijx.passly.domain.usecase.auth
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.repository.auth.AuthRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 import javax.inject.Inject
@@ -12,6 +13,8 @@ import javax.inject.Singleton
 class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
     val isAuthorized: StateFlow<Boolean> = repository.isAuthorized
     val isAppPasswordEnabled: StateFlow<Boolean> = repository.isAppPasswordEnabled
+    val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
+        repository.isDeviceCredentialFallbackEnabled
 
     suspend fun authenticate(
         activity: FragmentActivity,
@@ -42,6 +45,12 @@ class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
         subtitle: String
     ): AppResult<Unit> = repository.verifyIdentity(activity, title, subtitle)
 
+    suspend fun authenticateWithDeviceCredential(
+        activity: FragmentActivity,
+        title: String,
+        subtitle: String
+    ): AppResult<Unit> = repository.authenticateWithDeviceCredential(activity, title, subtitle)
+
     suspend fun rekeyWithInvalidationPolicy(
         activity: FragmentActivity,
         invalidateOnBiometricChange: Boolean
@@ -52,5 +61,4 @@ class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
     fun onUserInteraction() = repository.onUserInteraction()
     fun checkAndLock() = repository.checkAndLock()
     fun updateLockTimeout(timeoutMs: Long) = repository.updateLockTimeout(timeoutMs)
-    fun onExternalAuthorized() = repository.onExternalAuthorized()
 }

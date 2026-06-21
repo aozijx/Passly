@@ -27,8 +27,6 @@ internal val SECURE_CONTENT_KEY = booleanPreferencesKey("ui_secure_content")
 internal val FLIP_TO_LOCK_KEY = booleanPreferencesKey("security_flip_to_lock")
 internal val FLIP_EXIT_AND_CLEAR_STACK_KEY =
     booleanPreferencesKey("security_flip_exit_and_clear_stack")
-internal val PASSWORD_PREFERRED_AUTH_FIRST_KEY =
-    booleanPreferencesKey("security_password_preferred_auth_first")
 internal val DEVICE_CREDENTIAL_FALLBACK_KEY =
     booleanPreferencesKey("security_device_credential_fallback")
 internal val LOCK_ON_BACKGROUND_KEY =

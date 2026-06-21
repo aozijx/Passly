@@ -110,8 +110,7 @@ internal fun MainScreen(
             else -> {
                 VerificationScreen(
                     viewModel = verificationViewModel,
-                    activity = activity,
-                    preferPasswordFirst = mainConfig.isPasswordPreferredAuthFirst
+                    activity = activity
                 )
             }
         }

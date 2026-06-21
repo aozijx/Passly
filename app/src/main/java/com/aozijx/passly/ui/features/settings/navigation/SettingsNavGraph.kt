@@ -186,9 +186,6 @@ fun SettingsNavGraph(
                                 onVerified = localState::openSetAppPasswordDialog
                             )
                         },
-                        onPasswordPreferredAuthFirstChange = {
-                            vm.onAction(SecurityUiAction.SetPasswordPreferredAuthFirst(it))
-                        },
                         onDeviceCredentialFallbackToggleRequested = { enabled ->
                             if (enabled && !state.isDeviceCredentialFallbackEnabled) {
                                 localState.openDeviceCredentialFallbackWarningDialog()

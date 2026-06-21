@@ -10,7 +10,6 @@ import com.aozijx.passly.data.repository.settings.internal.FLIP_TO_LOCK_KEY
 import com.aozijx.passly.data.repository.settings.internal.INVALIDATE_KEY_ON_BIO_CHANGE_KEY
 import com.aozijx.passly.data.repository.settings.internal.LOCK_ON_BACKGROUND_KEY
 import com.aozijx.passly.data.repository.settings.internal.LOCK_TIMEOUT_KEY
-import com.aozijx.passly.data.repository.settings.internal.PASSWORD_PREFERRED_AUTH_FIRST_KEY
 import com.aozijx.passly.data.repository.settings.internal.SECURE_CONTENT_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import com.aozijx.passly.domain.AppDefaults
@@ -52,11 +51,6 @@ class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext con
             it[FLIP_EXIT_AND_CLEAR_STACK_KEY]
                 ?: AppDefaults.SECURITY_FLIP_EXIT_AND_CLEAR_STACK_ENABLED
         }
-    override val isPasswordPreferredAuthFirst: Flow<Boolean> =
-        appContext.settingsDataStore.data.map {
-            it[PASSWORD_PREFERRED_AUTH_FIRST_KEY]
-                ?: AppDefaults.SECURITY_PASSWORD_PREFERRED_AUTH_FIRST
-        }
     override val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
             it[DEVICE_CREDENTIAL_FALLBACK_KEY]
@@ -89,10 +83,6 @@ class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext con
 
     override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] = enabled }
-    }
-
-    override suspend fun setPasswordPreferredAuthFirst(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[PASSWORD_PREFERRED_AUTH_FIRST_KEY] = enabled }
     }
 
     override suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean) {

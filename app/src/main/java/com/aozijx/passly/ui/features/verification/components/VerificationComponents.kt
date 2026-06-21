@@ -4,10 +4,17 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Password
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -36,8 +43,40 @@ internal fun BiometricUnlockButton(
         enabled = !authInProgress,
         shape = RoundedCornerShape(16.dp)
     ) {
+        Icon(
+            imageVector = Icons.Default.Fingerprint,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.size(8.dp))
         Text(
             text = if (authInProgress) "..." else stringResource(R.string.auth_verify_now),
+            style = MaterialTheme.typography.titleMedium
+        )
+    }
+}
+
+@Composable
+internal fun DeviceCredentialButton(
+    authInProgress: Boolean,
+    onClick: () -> Unit
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        enabled = !authInProgress,
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.PhoneAndroid,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(
+            text = "手机密码验证",
             style = MaterialTheme.typography.titleMedium
         )
     }
@@ -83,6 +122,12 @@ internal fun PasswordUnlockSection(
         enabled = if (showPasswordInput) !appPassword.isEmpty && !authInProgress else !authInProgress,
         shape = RoundedCornerShape(16.dp)
     ) {
+        Icon(
+            imageVector = Icons.Default.Key,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.size(8.dp))
         Text(
             text = if (authInProgress) "..." else stringResource(R.string.auth_unlock_with_app_password),
             style = MaterialTheme.typography.titleMedium
@@ -103,6 +148,12 @@ internal fun SetPasswordEntrySection(
         enabled = !authInProgress,
         shape = RoundedCornerShape(16.dp)
     ) {
+        Icon(
+            imageVector = Icons.Default.Password,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.size(8.dp))
         Text(
             text = stringResource(R.string.auth_set_app_password),
             style = MaterialTheme.typography.titleMedium
@@ -114,7 +165,6 @@ internal fun SetPasswordEntrySection(
 internal fun SetPasswordDialogSection(
     activity: FragmentActivity,
     viewModel: VerificationViewModel,
-    authInProgress: Boolean,
     appPassword: SecureString,
     appPasswordConfirm: SecureString,
     passwordMismatchMessage: String,

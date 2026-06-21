@@ -20,7 +20,6 @@ import javax.inject.Inject
 
 data class SecurityUiState(
     val lockTimeout: Long = AuthLockConstants.DEFAULT_LOCK_TIMEOUT_MS,
-    val isPasswordPreferredAuthFirst: Boolean = AppDefaults.SECURITY_PASSWORD_PREFERRED_AUTH_FIRST,
     val isDeviceCredentialFallbackEnabled: Boolean = AppDefaults.SECURITY_DEVICE_CREDENTIAL_FALLBACK_ENABLED,
     val isInvalidateKeyOnBioChange: Boolean = AppDefaults.SECURITY_INVALIDATE_KEY_ON_BIO_CHANGE,
     val isLockOnBackground: Boolean = AppDefaults.SECURITY_LOCK_ON_BACKGROUND,
@@ -28,7 +27,6 @@ data class SecurityUiState(
 
 sealed interface SecurityUiAction {
     data class SetLockTimeout(val timeoutMs: Long) : SecurityUiAction
-    data class SetPasswordPreferredAuthFirst(val enabled: Boolean) : SecurityUiAction
     data class ToggleDeviceCredentialFallback(val enabled: Boolean) : SecurityUiAction
     data class ToggleLockOnBackground(val enabled: Boolean) : SecurityUiAction
 }
@@ -44,14 +42,12 @@ class SecurityViewModel @Inject constructor(
 
     val config: StateFlow<SecurityUiState> = combine(
         securitySettingsUseCases.lockTimeout,
-        securitySettingsUseCases.isPasswordPreferredAuthFirst,
         securitySettingsUseCases.isDeviceCredentialFallbackEnabled,
         securitySettingsUseCases.isInvalidateKeyOnBioChange,
         securitySettingsUseCases.isLockOnBackground
-    ) { lt, pfa, dcf, ibc, lob ->
+    ) { lt, dcf, ibc, lob ->
         SecurityUiState(
             lockTimeout = lt,
-            isPasswordPreferredAuthFirst = pfa,
             isDeviceCredentialFallbackEnabled = dcf,
             isInvalidateKeyOnBioChange = ibc,
             isLockOnBackground = lob,
@@ -68,10 +64,6 @@ class SecurityViewModel @Inject constructor(
         when (action) {
             is SecurityUiAction.SetLockTimeout -> viewModelScope.launch {
                 securitySettingsUseCases.setLockTimeout(action.timeoutMs)
-            }
-
-            is SecurityUiAction.SetPasswordPreferredAuthFirst -> viewModelScope.launch {
-                securitySettingsUseCases.setPasswordPreferredAuthFirst(action.enabled)
             }
 
             is SecurityUiAction.ToggleDeviceCredentialFallback -> viewModelScope.launch {
