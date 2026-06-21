@@ -3,7 +3,6 @@ package com.aozijx.passly.core.auth.biometric
 import android.widget.Toast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -14,20 +13,12 @@ object BiometricAuthenticator {
         title: String,
         subtitle: String = "",
         cryptoObject: BiometricPrompt.CryptoObject? = null,
-        allowDeviceCredentialFallback: Boolean = true,
         onError: ((String) -> Unit)? = null,
         onSuccess: (BiometricPrompt.AuthenticationResult) -> Unit
     ) {
         val biometricManager = BiometricManager.from(activity)
 
-        val authenticators =
-            if (allowDeviceCredentialFallback) {
-                BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-            } else {
-                BIOMETRIC_STRONG
-            }
-
-        val canAuthenticate = biometricManager.canAuthenticate(authenticators)
+        val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG)
         if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
             val errorMsg = when (canAuthenticate) {
                 BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> "设备不支持生物识别"
@@ -64,22 +55,8 @@ object BiometricAuthenticator {
         val promptBuilder = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
-
-        if (cryptoObject != null) {
-            if (allowDeviceCredentialFallback) {
-                promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-            } else {
-                promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
-                promptBuilder.setNegativeButtonText("取消")
-            }
-        } else {
-            if (allowDeviceCredentialFallback) {
-                promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-            } else {
-                promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
-                promptBuilder.setNegativeButtonText("取消")
-            }
-        }
+            .setAllowedAuthenticators(BIOMETRIC_STRONG)
+            .setNegativeButtonText("取消")
 
         runCatching {
             if (cryptoObject != null) {

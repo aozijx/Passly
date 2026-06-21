@@ -15,13 +15,11 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.repository.auth.internal.AppPasswordHandler
 import com.aozijx.passly.domain.repository.auth.AuthRepository
-import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
@@ -35,8 +33,7 @@ import kotlin.coroutines.resumeWithException
 internal class AuthRepositoryImpl @Inject constructor(
     @ApplicationContext private val application: android.content.Context,
     private val passphraseManager: DatabasePassphraseManager,
-    private val idleMonitor: AppIdleMonitor,
-    private val securitySettingsUseCases: SecuritySettingsUseCases
+    private val idleMonitor: AppIdleMonitor
 ) : AuthRepository {
 
     private val authMutex = Mutex()
@@ -50,9 +47,6 @@ internal class AuthRepositoryImpl @Inject constructor(
     private val _isAppPasswordEnabled =
         MutableStateFlow(AppPasswordPassphraseStore.isEnabled(application))
     override val isAppPasswordEnabled: StateFlow<Boolean> = _isAppPasswordEnabled.asStateFlow()
-
-    override val isDeviceCredentialFallbackEnabled =
-        securitySettingsUseCases.isDeviceCredentialFallbackEnabled
 
     private val appPasswordHandler = AppPasswordHandler(
         application = application,
@@ -90,16 +84,12 @@ internal class AuthRepositoryImpl @Inject constructor(
         val cipher = passphraseManager.getInitializedCipher()
             ?: return AppResult.failure(AppError.AuthFailed("无法准备认证环境，请重试"))
 
-        val allowDeviceCredential =
-            securitySettingsUseCases.isDeviceCredentialFallbackEnabled.first()
-
         return suspendCancellableCoroutine { continuation ->
             BiometricAuthenticator.authenticate(
                 activity = activity,
                 title = title,
                 subtitle = subtitle,
                 cryptoObject = BiometricPrompt.CryptoObject(cipher),
-                allowDeviceCredentialFallback = allowDeviceCredential,
                 onError = { error ->
                     if (continuation.isActive) {
                         continuation.resume(
@@ -156,15 +146,11 @@ internal class AuthRepositoryImpl @Inject constructor(
             return AppResult.failure(AppError.AuthFailed("请先解锁应用"))
         }
 
-        val allowDeviceCredential =
-            securitySettingsUseCases.isDeviceCredentialFallbackEnabled.first()
-
         suspendCancellableCoroutine { continuation ->
             BiometricAuthenticator.authenticate(
                 activity = activity,
                 title = title,
                 subtitle = subtitle,
-                allowDeviceCredentialFallback = allowDeviceCredential,
                 onError = { error ->
                     if (continuation.isActive) {
                         continuation.resume(AppResult.failure(AppError.AuthFailed(error)))
@@ -173,74 +159,6 @@ internal class AuthRepositoryImpl @Inject constructor(
                 onSuccess = {
                     if (continuation.isActive) {
                         continuation.resume(AppResult.success(Unit))
-                    }
-                }
-            )
-        }
-    }
-
-    override suspend fun authenticateWithDeviceCredential(
-        activity: FragmentActivity,
-        title: String,
-        subtitle: String
-    ): AppResult<Unit> = authMutex.withLock {
-        when (val validation = requestValidator.validateRequest(activity, title)) {
-            is AuthRequestValidationResult.Invalid -> {
-                return AppResult.failure(
-                    AppError.AuthFailed(
-                        requestValidator.sanitizeMessage(validation.message)
-                    )
-                )
-            }
-
-            AuthRequestValidationResult.Valid -> Unit
-        }
-
-        if (_isAuthorized.value) return AppResult.success(Unit)
-
-        if (!securitySettingsUseCases.isDeviceCredentialFallbackEnabled.first()) {
-            return AppResult.failure(AppError.AuthFailed("设备凭据验证已关闭，请在设置中开启"))
-        }
-
-        val cipher = passphraseManager.getInitializedCipher()
-            ?: return AppResult.failure(AppError.AuthFailed("无法准备认证环境，请重试"))
-
-        suspendCancellableCoroutine { continuation ->
-            BiometricAuthenticator.authenticate(
-                activity = activity,
-                title = title,
-                subtitle = subtitle,
-                cryptoObject = BiometricPrompt.CryptoObject(cipher),
-                allowDeviceCredentialFallback = true,
-                onError = { error ->
-                    if (continuation.isActive) {
-                        continuation.resume(
-                            AppResult.failure(AppError.AuthFailed(error))
-                        )
-                    }
-                },
-                onSuccess = { result ->
-                    if (!continuation.isActive) return@authenticate
-
-                    try {
-                        val passphrase = passphraseManager.processResult(result)
-                        try {
-                            passphraseManager.setDecryptedPassphrase(passphrase)
-                            SessionCryptoKey.deriveAndSet(passphrase)
-                        } finally {
-                            passphrase.fill(0)
-                        }
-                        onAuthorized()
-                        continuation.resume(AppResult.success(Unit))
-                    } catch (e: CancellationException) {
-                        continuation.resumeWithException(e)
-                    } catch (e: Exception) {
-                        Logcat.e("AuthRepo", "DeviceCredential auth process error", e)
-                        passphraseManager.clearDecryptedPassphrase()
-                        SessionCryptoKey.clearSessionKey()
-                        continuation.resume(
-                            AppResult.failure(AppError.AuthFailed(e.message ?: "认证失败"))
-                        )
                     }
                 }
             )
@@ -347,7 +265,6 @@ internal class AuthRepositoryImpl @Inject constructor(
                     title = "重加密身份验证",
                     subtitle = "请验证身份以更新安全策略",
                     cryptoObject = BiometricPrompt.CryptoObject(cipher),
-                    allowDeviceCredentialFallback = false,
                     onError = { error ->
                         if (continuation.isActive) {
                             val msg = requestValidator.sanitizeMessage(error)

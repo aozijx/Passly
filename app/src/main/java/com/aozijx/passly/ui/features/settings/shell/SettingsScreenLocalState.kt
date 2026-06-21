@@ -13,7 +13,6 @@ internal class SettingsScreenLocalState {
     var showLeftActionDialog by mutableStateOf(false)
     var showRightActionDialog by mutableStateOf(false)
     var showClearBackupDirConfirmDialog by mutableStateOf(false)
-    var showDeviceCredentialFallbackWarningDialog by mutableStateOf(false)
     var activeAppPasswordDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
 
     var appPasswordCurrent by mutableStateOf("")
@@ -44,14 +43,6 @@ internal class SettingsScreenLocalState {
 
     fun dismissClearBackupDirConfirmDialog() {
         showClearBackupDirConfirmDialog = false
-    }
-
-    fun openDeviceCredentialFallbackWarningDialog() {
-        showDeviceCredentialFallbackWarningDialog = true
-    }
-
-    fun dismissDeviceCredentialFallbackWarningDialog() {
-        showDeviceCredentialFallbackWarningDialog = false
     }
 
     fun openAppPasswordActionDialog() {

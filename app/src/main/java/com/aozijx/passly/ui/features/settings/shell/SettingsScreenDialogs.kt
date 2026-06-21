@@ -6,7 +6,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.core.net.toUri
-import com.aozijx.passly.R
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordActionDialog
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordChangeDialog
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordDisableDialog
@@ -78,30 +77,6 @@ internal fun SettingsScreenDialogsHost(
                     actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
                 }) {
                     Text("取消")
-                }
-            }
-        )
-    }
-
-    if (state.showDeviceCredentialFallbackWarningDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                actions.onDialogEvent(SettingsDialogEvent.DismissDeviceCredentialFallbackWarningDialog)
-            },
-            title = { Text(state.context.getString(R.string.settings_device_credential_warning_title)) },
-            text = { Text(state.context.getString(R.string.settings_device_credential_warning_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    actions.onDialogEvent(SettingsDialogEvent.ConfirmEnableDeviceCredentialFallback)
-                }) {
-                    Text(state.context.getString(R.string.settings_device_credential_warning_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    actions.onDialogEvent(SettingsDialogEvent.DismissDeviceCredentialFallbackWarningDialog)
-                }) {
-                    Text(state.context.getString(R.string.action_cancel))
                 }
             }
         )

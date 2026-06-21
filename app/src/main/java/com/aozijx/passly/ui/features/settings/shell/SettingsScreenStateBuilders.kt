@@ -18,8 +18,6 @@ internal fun buildSettingsDialogsState(
     showRightActionDialog = localState.showRightActionDialog,
     showLeftActionDialog = localState.showLeftActionDialog,
     showClearBackupDirConfirmDialog = localState.showClearBackupDirConfirmDialog,
-    showDeviceCredentialFallbackWarningDialog =
-        localState.showDeviceCredentialFallbackWarningDialog,
     activeAppPasswordDialog = localState.activeAppPasswordDialog,
     swipeLeftAction = swipeLeftAction,
     swipeRightAction = swipeRightAction,
@@ -34,7 +32,6 @@ internal fun buildSettingsDialogsActions(
     localState: SettingsScreenLocalState,
     onSetSwipeRightAction: (SwipeActionType) -> Unit,
     onSetSwipeLeftAction: (SwipeActionType) -> Unit,
-    onSetDeviceCredentialFallback: (Boolean) -> Unit,
     submitAppPasswordAction: (AppPasswordAction) -> Unit,
     onClearBackupDirectory: () -> Unit
 ): SettingsDialogsActions = SettingsDialogsActions(
@@ -47,14 +44,6 @@ internal fun buildSettingsDialogsActions(
             SettingsDialogEvent.DismissLeftActionDialog -> localState.dismissLeftActionDialog()
             SettingsDialogEvent.DismissClearBackupDirConfirmDialog ->
                 localState.dismissClearBackupDirConfirmDialog()
-
-            SettingsDialogEvent.DismissDeviceCredentialFallbackWarningDialog ->
-                localState.dismissDeviceCredentialFallbackWarningDialog()
-
-            SettingsDialogEvent.ConfirmEnableDeviceCredentialFallback -> {
-                onSetDeviceCredentialFallback(true)
-                localState.dismissDeviceCredentialFallbackWarningDialog()
-            }
 
             is SettingsDialogEvent.AppPassword -> {
                 when (event.event) {

@@ -38,12 +38,10 @@ private const val SLIDER_STEP_SECONDS = (AppDefaults.LOCK_TIMEOUT_SLIDER_STEP_MS
 fun LockAuthSettingsSection(
     lockTimeout: Long,
     isAppPasswordEnabled: Boolean,
-    isDeviceCredentialFallbackEnabled: Boolean,
     isInvalidateKeyOnBioChange: Boolean,
     isLockOnBackground: Boolean,
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
-    onDeviceCredentialFallbackToggleRequested: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
     onLockOnBackgroundChange: (Boolean) -> Unit
 ) {
@@ -128,13 +126,6 @@ fun LockAuthSettingsSection(
                 "新增或移除指纹/面部时，保险箱密钥保持有效",
             checked = isInvalidateKeyOnBioChange,
             onCheckedChange = onInvalidateKeyOnBioChangeToggle
-        )
-        switchSettingsItem(
-            icon = Icons.Default.Lock,
-            title = "设备凭据作为兜底",
-            subtitle = "生物识别不可用时，使用手机锁屏密码/手势验证",
-            checked = isDeviceCredentialFallbackEnabled,
-            onCheckedChange = onDeviceCredentialFallbackToggleRequested
         )
         switchSettingsItem(
             icon = Icons.Default.Lock,

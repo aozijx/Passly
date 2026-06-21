@@ -20,14 +20,12 @@ import javax.inject.Inject
 
 data class SecurityUiState(
     val lockTimeout: Long = AuthLockConstants.DEFAULT_LOCK_TIMEOUT_MS,
-    val isDeviceCredentialFallbackEnabled: Boolean = AppDefaults.SECURITY_DEVICE_CREDENTIAL_FALLBACK_ENABLED,
     val isInvalidateKeyOnBioChange: Boolean = AppDefaults.SECURITY_INVALIDATE_KEY_ON_BIO_CHANGE,
     val isLockOnBackground: Boolean = AppDefaults.SECURITY_LOCK_ON_BACKGROUND,
 )
 
 sealed interface SecurityUiAction {
     data class SetLockTimeout(val timeoutMs: Long) : SecurityUiAction
-    data class ToggleDeviceCredentialFallback(val enabled: Boolean) : SecurityUiAction
     data class ToggleLockOnBackground(val enabled: Boolean) : SecurityUiAction
 }
 
@@ -42,13 +40,11 @@ class SecurityViewModel @Inject constructor(
 
     val config: StateFlow<SecurityUiState> = combine(
         securitySettingsUseCases.lockTimeout,
-        securitySettingsUseCases.isDeviceCredentialFallbackEnabled,
         securitySettingsUseCases.isInvalidateKeyOnBioChange,
         securitySettingsUseCases.isLockOnBackground
-    ) { lt, dcf, ibc, lob ->
+    ) { lt, ibc, lob ->
         SecurityUiState(
             lockTimeout = lt,
-            isDeviceCredentialFallbackEnabled = dcf,
             isInvalidateKeyOnBioChange = ibc,
             isLockOnBackground = lob,
         )
@@ -64,10 +60,6 @@ class SecurityViewModel @Inject constructor(
         when (action) {
             is SecurityUiAction.SetLockTimeout -> viewModelScope.launch {
                 securitySettingsUseCases.setLockTimeout(action.timeoutMs)
-            }
-
-            is SecurityUiAction.ToggleDeviceCredentialFallback -> viewModelScope.launch {
-                securitySettingsUseCases.setDeviceCredentialFallbackEnabled(action.enabled)
             }
 
             is SecurityUiAction.ToggleLockOnBackground -> viewModelScope.launch {

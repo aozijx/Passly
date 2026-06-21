@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
 import com.aozijx.passly.data.repository.settings.internal.BIOMETRIC_AUTH_KEY
-import com.aozijx.passly.data.repository.settings.internal.DEVICE_CREDENTIAL_FALLBACK_KEY
 import com.aozijx.passly.data.repository.settings.internal.FLIP_EXIT_AND_CLEAR_STACK_KEY
 import com.aozijx.passly.data.repository.settings.internal.FLIP_TO_LOCK_KEY
 import com.aozijx.passly.data.repository.settings.internal.INVALIDATE_KEY_ON_BIO_CHANGE_KEY
@@ -51,11 +50,6 @@ class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext con
             it[FLIP_EXIT_AND_CLEAR_STACK_KEY]
                 ?: AppDefaults.SECURITY_FLIP_EXIT_AND_CLEAR_STACK_ENABLED
         }
-    override val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
-        appContext.settingsDataStore.data.map {
-            it[DEVICE_CREDENTIAL_FALLBACK_KEY]
-                ?: AppDefaults.SECURITY_DEVICE_CREDENTIAL_FALLBACK_ENABLED
-        }
     override val isLockOnBackground: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
             it[LOCK_ON_BACKGROUND_KEY] ?: AppDefaults.SECURITY_LOCK_ON_BACKGROUND
@@ -83,10 +77,6 @@ class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext con
 
     override suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[FLIP_EXIT_AND_CLEAR_STACK_KEY] = enabled }
-    }
-
-    override suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean) {
-        appContext.settingsDataStore.edit { it[DEVICE_CREDENTIAL_FALLBACK_KEY] = enabled }
     }
 
     override suspend fun setLockOnBackground(enabled: Boolean) {

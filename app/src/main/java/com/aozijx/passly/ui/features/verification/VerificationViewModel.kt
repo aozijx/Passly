@@ -13,7 +13,6 @@ import com.aozijx.passly.ui.features.verification.contract.VerificationGateway
 import com.aozijx.passly.ui.features.verification.contract.VerificationUiState
 import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -34,7 +33,6 @@ class VerificationViewModel @Inject constructor(
     }
 
     val isAppPasswordEnabled: StateFlow<Boolean> = gateway.isAppPasswordEnabled
-    val isDeviceCredentialFallbackEnabled: Flow<Boolean> = gateway.isDeviceCredentialFallbackEnabled
 
     private val _uiState = MutableStateFlow(VerificationUiState())
     val uiState: StateFlow<VerificationUiState> = _uiState.asStateFlow()
@@ -70,17 +68,6 @@ class VerificationViewModel @Inject constructor(
         if (_uiState.value.authInProgress) return
         _uiState.update { it.copy(authInProgress = true) }
         gateway.verifyWithBiometric(activity, title, subtitle) { result ->
-            _uiState.update { it.copy(authInProgress = false) }
-            if (result is AppResult.Failure) {
-                _errorEvent.tryEmit(result.error.toUiMessage())
-            }
-        }
-    }
-
-    fun verifyWithDeviceCredential(activity: FragmentActivity, title: String, subtitle: String) {
-        if (_uiState.value.authInProgress) return
-        _uiState.update { it.copy(authInProgress = true) }
-        gateway.verifyWithDeviceCredential(activity, title, subtitle) { result ->
             _uiState.update { it.copy(authInProgress = false) }
             if (result is AppResult.Failure) {
                 _errorEvent.tryEmit(result.error.toUiMessage())

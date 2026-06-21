@@ -3,7 +3,6 @@ package com.aozijx.passly.ui.features.verification
 import android.widget.Toast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,14 +31,12 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.ui.features.verification.components.BiometricUnlockButton
-import com.aozijx.passly.ui.features.verification.components.DeviceCredentialButton
 import com.aozijx.passly.ui.features.verification.components.PasswordUnlockSection
 import com.aozijx.passly.ui.features.verification.components.SetPasswordDialogSection
 import com.aozijx.passly.ui.features.verification.components.SetPasswordEntrySection
 
 private enum class AuthChannel {
     Biometric,
-    DeviceCredential,
     Password,
     SetPassword
 }
@@ -51,21 +48,15 @@ fun VerificationScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
-    val deviceCredentialEnabled by viewModel.isDeviceCredentialFallbackEnabled.collectAsStateWithLifecycle(
-        initialValue = true
-    )
 
     val biometricAvailable = BiometricManager.from(activity)
         .canAuthenticate(BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
-    val deviceCredentialAvailable = BiometricManager.from(activity)
-        .canAuthenticate(DEVICE_CREDENTIAL) == BiometricManager.BIOMETRIC_SUCCESS
 
     val title = stringResource(R.string.vault_auth_decrypt_title)
     val subtitle = stringResource(R.string.vault_auth_subtitle)
 
     val mainChannel = when {
         biometricAvailable -> AuthChannel.Biometric
-        deviceCredentialAvailable && deviceCredentialEnabled -> AuthChannel.DeviceCredential
         appPasswordEnabled -> AuthChannel.Password
         else -> AuthChannel.SetPassword
     }
@@ -136,12 +127,6 @@ fun VerificationScreen(
                             onExpandInput = viewModel::onShowPasswordInput,
                             onUnlockRequest = viewModel::verifyWithAppPassword
                         )
-                    }
-                }
-
-                AuthChannel.DeviceCredential -> {
-                    DeviceCredentialButton(state.authInProgress) {
-                        viewModel.verifyWithDeviceCredential(activity, title, subtitle)
                     }
                 }
 

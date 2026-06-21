@@ -186,13 +186,6 @@ fun SettingsNavGraph(
                                 onVerified = localState::openSetAppPasswordDialog
                             )
                         },
-                        onDeviceCredentialFallbackToggleRequested = { enabled ->
-                            if (enabled && !state.isDeviceCredentialFallbackEnabled) {
-                                localState.openDeviceCredentialFallbackWarningDialog()
-                            } else {
-                                vm.onAction(SecurityUiAction.ToggleDeviceCredentialFallback(enabled))
-                            }
-                        },
                         onInvalidateKeyOnBioChangeToggle = { enabled ->
                             handleInvalidateKeyToggle(
                                 context = context,
@@ -382,7 +375,6 @@ fun SettingsNavGraph(
             localState = localState,
             onSetSwipeRightAction = settingsViewModel::setSwipeRightAction,
             onSetSwipeLeftAction = settingsViewModel::setSwipeLeftAction,
-            onSetDeviceCredentialFallback = settingsViewModel::setDeviceCredentialFallbackEnabled,
             submitAppPasswordAction = ::submitAppPasswordAction,
             onClearBackupDirectory = { dataViewModel.onAction(DataUiAction.ClearBackupDirectory) }
         )

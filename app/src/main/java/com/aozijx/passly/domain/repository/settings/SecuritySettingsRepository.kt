@@ -9,7 +9,6 @@ interface SecuritySettingsRepository {
     val isSecureContentEnabled: Flow<Boolean>
     val isFlipToLockEnabled: Flow<Boolean>
     val isFlipExitAndClearStackEnabled: Flow<Boolean>
-    val isDeviceCredentialFallbackEnabled: Flow<Boolean>
     val isLockOnBackground: Flow<Boolean>
 
     suspend fun setLockTimeout(timeoutMs: Long)
@@ -18,6 +17,5 @@ interface SecuritySettingsRepository {
     suspend fun setSecureContentEnabled(enabled: Boolean)
     suspend fun setFlipToLockEnabled(enabled: Boolean)
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean)
-    suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean)
     suspend fun setLockOnBackground(enabled: Boolean)
 }

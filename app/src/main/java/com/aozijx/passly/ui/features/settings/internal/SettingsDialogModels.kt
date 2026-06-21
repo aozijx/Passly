@@ -15,7 +15,6 @@ internal data class SettingsDialogsState(
     val showRightActionDialog: Boolean,
     val showLeftActionDialog: Boolean,
     val showClearBackupDirConfirmDialog: Boolean,
-    val showDeviceCredentialFallbackWarningDialog: Boolean,
     val activeAppPasswordDialog: AppPasswordDialogState,
     val swipeLeftAction: SwipeActionType,
     val swipeRightAction: SwipeActionType,
@@ -48,8 +47,6 @@ internal sealed interface SettingsDialogEvent {
     data object DismissRightActionDialog : SettingsDialogEvent
     data object DismissLeftActionDialog : SettingsDialogEvent
     data object DismissClearBackupDirConfirmDialog : SettingsDialogEvent
-    data object DismissDeviceCredentialFallbackWarningDialog : SettingsDialogEvent
-    data object ConfirmEnableDeviceCredentialFallback : SettingsDialogEvent
     data class AppPassword(val event: AppPasswordDialogEvent) : SettingsDialogEvent
 }
 

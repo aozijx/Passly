@@ -16,8 +16,6 @@ class SecuritySettingsUseCases @Inject constructor(private val repository: Secur
     val isSecureContentEnabled: Flow<Boolean> = repository.isSecureContentEnabled
     val isFlipToLockEnabled: Flow<Boolean> = repository.isFlipToLockEnabled
     val isFlipExitAndClearStackEnabled: Flow<Boolean> = repository.isFlipExitAndClearStackEnabled
-    val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
-        repository.isDeviceCredentialFallbackEnabled
     val isLockOnBackground: Flow<Boolean> = repository.isLockOnBackground
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
@@ -26,8 +24,6 @@ class SecuritySettingsUseCases @Inject constructor(private val repository: Secur
     suspend fun setFlipToLockEnabled(enabled: Boolean) = repository.setFlipToLockEnabled(enabled)
     suspend fun setFlipExitAndClearStackEnabled(enabled: Boolean) =
         repository.setFlipExitAndClearStackEnabled(enabled)
-    suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean) =
-        repository.setDeviceCredentialFallbackEnabled(enabled)
     suspend fun setLockOnBackground(enabled: Boolean) =
         repository.setLockOnBackground(enabled)
 }

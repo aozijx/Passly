@@ -78,7 +78,7 @@ internal object AndroidKeyStoreCipherHelper {
             .setUserAuthenticationRequired(true)
             .setUserAuthenticationParameters(
                 0,
-                KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
+                KeyProperties.AUTH_BIOMETRIC_STRONG
             )
             .setInvalidatedByBiometricEnrollment(invalidateOnBiometricChange)
             .build()

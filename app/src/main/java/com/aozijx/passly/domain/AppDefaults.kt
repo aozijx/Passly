@@ -30,7 +30,6 @@ object AppDefaults {
 
     // 安全设置默认值
     const val SECURITY_BIOMETRIC_ENABLED = true
-    const val SECURITY_DEVICE_CREDENTIAL_FALLBACK_ENABLED = true
     const val SECURITY_INVALIDATE_KEY_ON_BIO_CHANGE = true
     const val SECURITY_SECURE_CONTENT_ENABLED = true
     const val SECURITY_FLIP_TO_LOCK_ENABLED = false

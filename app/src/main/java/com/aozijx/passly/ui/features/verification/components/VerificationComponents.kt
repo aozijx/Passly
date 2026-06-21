@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Password
-import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,32 +50,6 @@ internal fun BiometricUnlockButton(
         Spacer(modifier = Modifier.size(8.dp))
         Text(
             text = if (authInProgress) "..." else stringResource(R.string.auth_verify_now),
-            style = MaterialTheme.typography.titleMedium
-        )
-    }
-}
-
-@Composable
-internal fun DeviceCredentialButton(
-    authInProgress: Boolean,
-    onClick: () -> Unit
-) {
-    FilledTonalButton(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        enabled = !authInProgress,
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.PhoneAndroid,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.size(8.dp))
-        Text(
-            text = "手机密码验证",
             style = MaterialTheme.typography.titleMedium
         )
     }

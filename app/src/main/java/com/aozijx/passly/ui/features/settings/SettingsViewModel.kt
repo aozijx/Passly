@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
-import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,8 +16,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     authUseCases: AuthUseCases,
     authRequestValidator: AuthRequestValidator,
-    private val systemSettingsUseCases: SystemSettingsUseCases,
-    private val securitySettingsUseCases: SecuritySettingsUseCases
+    private val systemSettingsUseCases: SystemSettingsUseCases
 ) : ViewModel() {
     val authGateway = VerificationCoordinator(viewModelScope, authUseCases, authRequestValidator)
     val isAppPasswordEnabled: StateFlow<Boolean> = authGateway.isAppPasswordEnabled
@@ -29,9 +27,5 @@ class SettingsViewModel @Inject constructor(
 
     fun setSwipeRightAction(action: SwipeActionType) {
         viewModelScope.launch { systemSettingsUseCases.setSwipeRightAction(action) }
-    }
-
-    fun setDeviceCredentialFallbackEnabled(enabled: Boolean) {
-        viewModelScope.launch { securitySettingsUseCases.setDeviceCredentialFallbackEnabled(enabled) }
     }
 }
