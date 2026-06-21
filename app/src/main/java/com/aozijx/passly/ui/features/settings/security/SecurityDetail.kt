@@ -16,7 +16,8 @@ internal fun SecurityDetail(
     onAppPasswordClick: () -> Unit,
     onPasswordPreferredAuthFirstChange: (Boolean) -> Unit,
     onDeviceCredentialFallbackToggleRequested: (Boolean) -> Unit,
-    onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit
+    onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
+    onLockOnBackgroundChange: (Boolean) -> Unit
 ) {
     Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
@@ -26,11 +27,13 @@ internal fun SecurityDetail(
             isPasswordPreferredAuthFirst = state.isPasswordPreferredAuthFirst,
             isDeviceCredentialFallbackEnabled = state.isDeviceCredentialFallbackEnabled,
             isInvalidateKeyOnBioChange = state.isInvalidateKeyOnBioChange,
+            isLockOnBackground = state.isLockOnBackground,
             onLockTimeoutChange = onLockTimeoutChange,
             onAppPasswordClick = onAppPasswordClick,
             onPasswordPreferredAuthFirstChange = onPasswordPreferredAuthFirstChange,
             onDeviceCredentialFallbackToggleRequested = onDeviceCredentialFallbackToggleRequested,
-            onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle
+            onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
+            onLockOnBackgroundChange = onLockOnBackgroundChange
         )
     }
 }

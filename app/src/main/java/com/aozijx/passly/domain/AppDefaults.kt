@@ -36,4 +36,5 @@ object AppDefaults {
     const val SECURITY_SECURE_CONTENT_ENABLED = true
     const val SECURITY_FLIP_TO_LOCK_ENABLED = false
     const val SECURITY_FLIP_EXIT_AND_CLEAR_STACK_ENABLED = false
+    const val SECURITY_LOCK_ON_BACKGROUND = true
 }

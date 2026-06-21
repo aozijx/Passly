@@ -31,6 +31,8 @@ internal val PASSWORD_PREFERRED_AUTH_FIRST_KEY =
     booleanPreferencesKey("security_password_preferred_auth_first")
 internal val DEVICE_CREDENTIAL_FALLBACK_KEY =
     booleanPreferencesKey("security_device_credential_fallback")
+internal val LOCK_ON_BACKGROUND_KEY =
+    booleanPreferencesKey("security_lock_on_background")
 internal val CARD_STYLE_KEY = stringPreferencesKey("ui_card_style")
 internal val CARD_STYLE_MAP_KEY = stringPreferencesKey("ui_card_style_map_v2")
 internal val AUTOFILL_UI_MODE_KEY = stringPreferencesKey("autofill_ui_mode")

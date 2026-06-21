@@ -203,6 +203,9 @@ fun SettingsNavGraph(
                                 enabled = enabled,
                                 switchPolicy = vm::switchKeyInvalidationPolicy
                             )
+                        },
+                        onLockOnBackgroundChange = { enabled ->
+                            vm.onAction(SecurityUiAction.ToggleLockOnBackground(enabled))
                         }
                     )
                 }

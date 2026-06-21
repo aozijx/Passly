@@ -8,6 +8,7 @@ import com.aozijx.passly.data.repository.settings.internal.DEVICE_CREDENTIAL_FAL
 import com.aozijx.passly.data.repository.settings.internal.FLIP_EXIT_AND_CLEAR_STACK_KEY
 import com.aozijx.passly.data.repository.settings.internal.FLIP_TO_LOCK_KEY
 import com.aozijx.passly.data.repository.settings.internal.INVALIDATE_KEY_ON_BIO_CHANGE_KEY
+import com.aozijx.passly.data.repository.settings.internal.LOCK_ON_BACKGROUND_KEY
 import com.aozijx.passly.data.repository.settings.internal.LOCK_TIMEOUT_KEY
 import com.aozijx.passly.data.repository.settings.internal.PASSWORD_PREFERRED_AUTH_FIRST_KEY
 import com.aozijx.passly.data.repository.settings.internal.SECURE_CONTENT_KEY
@@ -61,6 +62,10 @@ class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext con
             it[DEVICE_CREDENTIAL_FALLBACK_KEY]
                 ?: AppDefaults.SECURITY_DEVICE_CREDENTIAL_FALLBACK_ENABLED
         }
+    override val isLockOnBackground: Flow<Boolean> =
+        appContext.settingsDataStore.data.map {
+            it[LOCK_ON_BACKGROUND_KEY] ?: AppDefaults.SECURITY_LOCK_ON_BACKGROUND
+        }
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         appContext.settingsDataStore.edit { it[LOCK_TIMEOUT_KEY] = timeoutMs }
@@ -92,5 +97,9 @@ class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext con
 
     override suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[DEVICE_CREDENTIAL_FALLBACK_KEY] = enabled }
+    }
+
+    override suspend fun setLockOnBackground(enabled: Boolean) {
+        appContext.settingsDataStore.edit { it[LOCK_ON_BACKGROUND_KEY] = enabled }
     }
 }

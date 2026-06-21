@@ -41,11 +41,13 @@ fun LockAuthSettingsSection(
     isPasswordPreferredAuthFirst: Boolean,
     isDeviceCredentialFallbackEnabled: Boolean,
     isInvalidateKeyOnBioChange: Boolean,
+    isLockOnBackground: Boolean,
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
     onPasswordPreferredAuthFirstChange: (Boolean) -> Unit,
     onDeviceCredentialFallbackToggleRequested: (Boolean) -> Unit,
-    onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit
+    onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
+    onLockOnBackgroundChange: (Boolean) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     val currentSeconds = (lockTimeout / 1000L).toFloat()
@@ -142,6 +144,13 @@ fun LockAuthSettingsSection(
                 "新增或移除指纹/面部时，保险箱密钥保持有效",
             checked = isInvalidateKeyOnBioChange,
             onCheckedChange = onInvalidateKeyOnBioChangeToggle
+        )
+        switchSettingsItem(
+            icon = Icons.Default.Lock,
+            title = "立即锁定",
+            subtitle = "退出 app 后将在设定的锁定时间后锁定",
+            checked = isLockOnBackground,
+            onCheckedChange = onLockOnBackgroundChange
         )
     }
 }

@@ -20,6 +20,7 @@ class SecuritySettingsUseCases @Inject constructor(private val repository: Secur
     val isPasswordPreferredAuthFirst: Flow<Boolean> = repository.isPasswordPreferredAuthFirst
     val isDeviceCredentialFallbackEnabled: Flow<Boolean> =
         repository.isDeviceCredentialFallbackEnabled
+    val isLockOnBackground: Flow<Boolean> = repository.isLockOnBackground
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
     suspend fun setBiometricEnabled(enabled: Boolean) = repository.setBiometricEnabled(enabled)
@@ -34,4 +35,6 @@ class SecuritySettingsUseCases @Inject constructor(private val repository: Secur
         repository.setPasswordPreferredAuthFirst(enabled)
     suspend fun setDeviceCredentialFallbackEnabled(enabled: Boolean) =
         repository.setDeviceCredentialFallbackEnabled(enabled)
+    suspend fun setLockOnBackground(enabled: Boolean) =
+        repository.setLockOnBackground(enabled)
 }

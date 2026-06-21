@@ -3,6 +3,7 @@ package com.aozijx.passly.core.auth.session
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -17,23 +18,41 @@ import javax.inject.Singleton
  *
  * 生命周期：@Singleton，与 App 进程共存。
  * 外部调用 [resetIdleTimer] 重置倒计时；超时触发 [onLockRequested] 回调。
- * 通过 [ProcessLifecycleOwner] 监听前后台切换：退后台立即锁定，回前台重启计时。
+ * 通过 [ProcessLifecycleOwner] 监听前后台切换：
+ * - [lockOnBackground] 为 true 时退后台立即锁定
+ * - [lockOnBackground] 为 false 时退后台启动空闲计时器，超时后锁定
  */
 @Singleton
-class AppIdleMonitor @Inject constructor() {
+class AppIdleMonitor @Inject constructor(
+    securitySettingsUseCases: SecuritySettingsUseCases
+) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var idleJob: Job? = null
     private var timeoutMs: Long = 30_000L
     private var onLockRequested: (() -> Unit)? = null
+    private var lockOnBackground: Boolean = true
 
     init {
+        scope.launch {
+            securitySettingsUseCases.isLockOnBackground.collect {
+                lockOnBackground = it
+            }
+        }
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStop(owner: LifecycleOwner) {
                 idleJob?.cancel()
-                onLockRequested?.invoke()
+                if (lockOnBackground) {
+                    onLockRequested?.invoke()
+                } else {
+                    idleJob = scope.launch {
+                        delay(timeoutMs)
+                        onLockRequested?.invoke()
+                    }
+                }
             }
 
             override fun onStart(owner: LifecycleOwner) {
+                idleJob?.cancel()
                 resetIdleTimer()
             }
         })
