@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,16 +31,12 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.ui.features.verification.components.BiometricUnlockButton
 import com.aozijx.passly.ui.features.verification.components.PasswordUnlockSection
-import com.aozijx.passly.ui.features.verification.components.SetPasswordDialogSection
 import com.aozijx.passly.ui.features.verification.components.SetPasswordEntrySection
 
-private enum class AuthChannel {
-    Biometric,
-    Password,
-    SetPassword
-}
+private enum class AuthChannel { Biometric, Password, SetPassword }
 
 @Composable
 fun VerificationScreen(
@@ -49,8 +46,10 @@ fun VerificationScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
 
-    val biometricAvailable = BiometricManager.from(activity)
-        .canAuthenticate(BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+    val biometricAvailable = remember {
+        BiometricManager.from(activity)
+            .canAuthenticate(BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+    }
 
     val title = stringResource(R.string.vault_auth_decrypt_title)
     val subtitle = stringResource(R.string.vault_auth_subtitle)
@@ -72,9 +71,9 @@ fun VerificationScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
+        // 居中图标和标题
         Column(
-            modifier = Modifier
-                .align(Alignment.Center),
+            modifier = Modifier.align(Alignment.Center),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -84,9 +83,7 @@ fun VerificationScreen(
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
-
             Spacer(modifier = Modifier.height(24.dp))
-
             Text(
                 text = stringResource(R.string.vault_locked_title),
                 style = MaterialTheme.typography.headlineMedium,
@@ -95,6 +92,7 @@ fun VerificationScreen(
             )
         }
 
+        // 底部操作区
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -109,7 +107,6 @@ fun VerificationScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
             Spacer(modifier = Modifier.height(24.dp))
 
             when (mainChannel) {
@@ -119,28 +116,11 @@ fun VerificationScreen(
                     }
                     if (appPasswordEnabled) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        PasswordUnlockSection(
-                            appPassword = state.appPassword,
-                            showPasswordInput = state.showPasswordInput,
-                            authInProgress = state.authInProgress,
-                            onPasswordChange = viewModel::onPasswordChange,
-                            onExpandInput = viewModel::onShowPasswordInput,
-                            onUnlockRequest = viewModel::verifyWithAppPassword
-                        )
+                        PasswordSection(state, viewModel)
                     }
                 }
 
-                AuthChannel.Password -> {
-                    PasswordUnlockSection(
-                        appPassword = state.appPassword,
-                        showPasswordInput = state.showPasswordInput,
-                        authInProgress = state.authInProgress,
-                        onPasswordChange = viewModel::onPasswordChange,
-                        onExpandInput = viewModel::onShowPasswordInput,
-                        onUnlockRequest = viewModel::verifyWithAppPassword
-                    )
-                }
-
+                AuthChannel.Password -> PasswordSection(state, viewModel)
                 AuthChannel.SetPassword -> {
                     SetPasswordEntrySection(state.authInProgress) {
                         viewModel.onShowSetPasswordDialog()
@@ -158,15 +138,51 @@ fun VerificationScreen(
     }
 
     if (state.showSetPasswordDialog) {
-        SetPasswordDialogSection(
-            activity = activity,
-            viewModel = viewModel,
-            appPassword = state.appPassword,
-            appPasswordConfirm = state.appPasswordConfirm,
-            passwordMismatchMessage = stringResource(R.string.auth_password_mismatch),
-            emptyPasswordMessage = stringResource(R.string.auth_password_empty),
-            passwordSetSuccessMessage = stringResource(R.string.auth_password_set_success),
-            passwordSetFailedMessage = stringResource(R.string.auth_password_set_failed)
+        val mismatchMsg = stringResource(R.string.auth_password_mismatch)
+        val emptyMsg = stringResource(R.string.auth_password_empty)
+        val successMsg = stringResource(R.string.auth_password_set_success)
+        val failedMsg = stringResource(R.string.auth_password_set_failed)
+
+        AppPasswordSetDialog(
+            newPassword = state.appPassword.toPlainString(),
+            confirmPassword = state.appPasswordConfirm.toPlainString(),
+            onNewPasswordChange = viewModel::onPasswordChange,
+            onConfirmPasswordChange = viewModel::onPasswordConfirmChange,
+            onConfirm = {
+                val pwd = state.appPassword.toPlainString()
+                val confirm = state.appPasswordConfirm.toPlainString()
+                if (pwd != confirm) {
+                    Toast.makeText(activity, mismatchMsg, Toast.LENGTH_SHORT).show()
+                    return@AppPasswordSetDialog
+                }
+                if (pwd.isEmpty()) {
+                    Toast.makeText(activity, emptyMsg, Toast.LENGTH_SHORT).show()
+                    return@AppPasswordSetDialog
+                }
+                viewModel.bootstrapAppPassword { success ->
+                    Toast.makeText(
+                        activity,
+                        if (success) successMsg else failedMsg,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            },
+            onDismiss = viewModel::onDismissSetPasswordDialog
         )
     }
+}
+
+@Composable
+private fun PasswordSection(
+    state: VerificationUiState,
+    viewModel: VerificationViewModel
+) {
+    PasswordUnlockSection(
+        appPassword = state.appPassword,
+        showPasswordInput = state.showPasswordInput,
+        authInProgress = state.authInProgress,
+        onPasswordChange = viewModel::onPasswordChange,
+        onExpandInput = viewModel::onShowPasswordInput,
+        onUnlockRequest = viewModel::verifyWithAppPassword
+    )
 }

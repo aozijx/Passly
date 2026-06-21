@@ -3,15 +3,13 @@ package com.aozijx.passly.ui.features.verification
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.VerificationGatewayImpl
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.crypto.memory.SecureString
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.ui.features.common.toUiMessage
-import com.aozijx.passly.ui.features.verification.contract.VerificationGateway
-import com.aozijx.passly.ui.features.verification.contract.VerificationUiState
-import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,15 +20,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
+data class VerificationUiState(
+    val authInProgress: Boolean = false,
+    val appPassword: SecureString = SecureString.EMPTY,
+    val appPasswordConfirm: SecureString = SecureString.EMPTY,
+    val showPasswordInput: Boolean = false,
+    val showSetPasswordDialog: Boolean = false
+)
+
 @HiltViewModel
 class VerificationViewModel @Inject constructor(
     authUseCases: AuthUseCases,
     requestValidator: AuthRequestValidator
 ) : ViewModel() {
 
-    val gateway: VerificationGateway by lazy {
-        VerificationCoordinator(viewModelScope, authUseCases, requestValidator)
-    }
+    private val gateway = VerificationGatewayImpl(viewModelScope, authUseCases, requestValidator)
 
     val isAppPasswordEnabled: StateFlow<Boolean> = gateway.isAppPasswordEnabled
 
@@ -39,8 +43,6 @@ class VerificationViewModel @Inject constructor(
 
     private val _errorEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
-
-    private val _passwordSetEvent = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
 
     fun onPasswordChange(value: String) =
         _uiState.update { it.copy(appPassword = SecureString.fromString(value)) }
@@ -89,7 +91,6 @@ class VerificationViewModel @Inject constructor(
                             showPasswordInput = false
                         )
                     }
-
                 is AppResult.Failure -> {
                     _uiState.update { it.copy(authInProgress = false) }
                     _errorEvent.tryEmit(result.error.toUiMessage())
@@ -98,9 +99,8 @@ class VerificationViewModel @Inject constructor(
         }
     }
 
-    fun bootstrapAppPassword(validation: () -> Boolean, onComplete: (Boolean) -> Unit) {
+    fun bootstrapAppPassword(onComplete: (Boolean) -> Unit) {
         if (_uiState.value.authInProgress) return
-        if (!validation()) return
         _uiState.update { it.copy(authInProgress = true) }
         val password = _uiState.value.appPassword.toCharArray()
         gateway.bootstrapAppPassword(password) { result ->
@@ -112,7 +112,6 @@ class VerificationViewModel @Inject constructor(
                     (result as? AppResult.Failure)?.error?.toUiMessage() ?: ""
                 )
             }
-            _passwordSetEvent.tryEmit(success)
             onComplete(success)
         }
     }

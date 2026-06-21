@@ -12,6 +12,7 @@ import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
+import com.aozijx.passly.core.auth.VerificationGatewayImpl
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
@@ -23,7 +24,6 @@ import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet
-import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
 import com.aozijx.passly.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -46,8 +46,8 @@ class AutofillAuthActivity : FragmentActivity() {
     @Inject
     lateinit var requestValidator: AuthRequestValidator
 
-    private val verificationCoordinator by lazy {
-        VerificationCoordinator(
+    private val verificationGateway by lazy {
+        VerificationGatewayImpl(
             scope = lifecycleScope,
             authUseCases = authUseCases,
             requestValidator = requestValidator
@@ -132,7 +132,7 @@ class AutofillAuthActivity : FragmentActivity() {
         webDomain: String?
     ) {
         lifecycleScope.launch {
-            val authResult = verificationCoordinator.verifyWithBiometricSuspended(
+            val authResult = verificationGateway.verifyWithBiometricSuspended(
                 this@AutofillAuthActivity,
                 getString(R.string.vault_auth_decrypt_title),
                 getString(R.string.vault_auth_decrypt_subtitle_generic)
@@ -163,7 +163,7 @@ class AutofillAuthActivity : FragmentActivity() {
     ) {
         Logcat.d(TAG, "authenticateAndFill: entryId=${entry.id}, uiMode=$uiMode")
         lifecycleScope.launch {
-            val authResult = verificationCoordinator.verifyWithBiometricSuspended(
+            val authResult = verificationGateway.verifyWithBiometricSuspended(
                 this@AutofillAuthActivity,
                 getString(R.string.autofill_auth_title),
                 getString(R.string.autofill_auth_subtitle)

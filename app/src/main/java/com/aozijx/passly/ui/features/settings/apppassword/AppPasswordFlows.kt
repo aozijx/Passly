@@ -3,8 +3,8 @@ package com.aozijx.passly.ui.features.settings.apppassword
 import android.content.Context
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.auth.VerificationGateway
 import com.aozijx.passly.ui.features.common.toUiMessage
-import com.aozijx.passly.ui.features.verification.contract.VerificationGateway
 
 enum class AppPasswordAction {
     SET,

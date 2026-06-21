@@ -3,6 +3,7 @@ package com.aozijx.passly.ui.features.main
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.VerificationGatewayImpl
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
@@ -13,7 +14,6 @@ import com.aozijx.passly.ui.features.main.contract.MainEffect
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.main.contract.MainUiState
 import com.aozijx.passly.ui.features.main.internal.MainDatabaseInitializer
-import com.aozijx.passly.ui.features.verification.internal.VerificationCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +36,7 @@ class MainViewModel @Inject constructor(
     private val databaseInitializer: MainDatabaseInitializer
 ) : ViewModel() {
 
-    private val authCoordinator = VerificationCoordinator(
+    private val authGateway = VerificationGatewayImpl(
         scope = viewModelScope,
         authUseCases = authUseCases,
         requestValidator = authRequestValidator
@@ -56,18 +56,18 @@ class MainViewModel @Inject constructor(
     fun handleIntent(intent: MainIntent) {
         when (intent) {
             MainIntent.Lock -> {
-                authCoordinator.lock()
+                authGateway.lock()
                 databaseLifecycleUseCases.close()
             }
 
-            MainIntent.UpdateInteraction -> authCoordinator.onUserInteraction()
-            MainIntent.CheckAndLock -> authCoordinator.checkAndLock()
+            MainIntent.UpdateInteraction -> authGateway.onUserInteraction()
+            MainIntent.CheckAndLock -> authGateway.checkAndLock()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase(isRetry = true)
             else -> Unit
         }
     }
 
-    fun isAuthorizedNow(): Boolean = authCoordinator.isAuthorized.value
+    fun isAuthorizedNow(): Boolean = authGateway.isAuthorized.value
 
     fun requestAuth(
         activity: FragmentActivity,
@@ -76,7 +76,7 @@ class MainViewModel @Inject constructor(
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        authCoordinator.verifyWithBiometric(activity, title, subtitle) { result ->
+        authGateway.verifyWithBiometric(activity, title, subtitle) { result ->
             result.onSuccess { onSuccess() }
                 .onFailure { error -> onError?.invoke(error.toUiMessage()) }
         }
@@ -89,7 +89,7 @@ class MainViewModel @Inject constructor(
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        authCoordinator.verifyWithBiometric(
+        authGateway.verifyWithBiometric(
             activity, title, subtitle, forceReauth = true
         ) { result ->
             result.onSuccess { onSuccess() }
@@ -99,7 +99,7 @@ class MainViewModel @Inject constructor(
 
     private fun observeAuthStates() {
         viewModelScope.launch {
-            authCoordinator.isAuthorized.collect { authorized ->
+            authGateway.isAuthorized.collect { authorized ->
                 if (authorized) {
                     _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
                 }
@@ -112,7 +112,7 @@ class MainViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            authCoordinator.authMessage.collect { message ->
+            authGateway.authMessage.collect { message ->
                 _uiState.update { it.copy(validationMessage = message) }
                 emitEffect(MainEffect.ShowError(message))
             }
@@ -133,7 +133,7 @@ class MainViewModel @Inject constructor(
                         isDarkMode = isDarkMode, isDynamicColor = isDynamicColor
                     )
                 }
-                authCoordinator.updateLockTimeout(lockTimeout)
+                authGateway.updateLockTimeout(lockTimeout)
             }
         }
     }
