@@ -3,7 +3,6 @@ package com.aozijx.passly.data.repository.auth
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
-import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
 import com.aozijx.passly.core.auth.biometric.BiometricAuthenticator
 import com.aozijx.passly.core.auth.session.AppIdleMonitor
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
@@ -14,6 +13,7 @@ import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.repository.auth.internal.AppPasswordHandler
+import com.aozijx.passly.domain.AppDefaults
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -39,7 +39,7 @@ internal class AuthRepositoryImpl @Inject constructor(
     private val authMutex = Mutex()
     private val requestValidator = AuthRequestValidator()
 
-    private var currentTimeoutMs: Long = AuthLockConstants.DEFAULT_LOCK_TIMEOUT_MS
+    private var currentTimeoutMs: Long = AppDefaults.Lock.DEFAULT_TIMEOUT_MS
 
     private val _isAuthorized = MutableStateFlow(false)
     override val isAuthorized: StateFlow<Boolean> = _isAuthorized.asStateFlow()

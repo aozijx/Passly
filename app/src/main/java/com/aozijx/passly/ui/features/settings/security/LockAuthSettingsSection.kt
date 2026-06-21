@@ -30,9 +30,9 @@ import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
 import kotlin.math.roundToInt
 
-private const val SLIDER_MIN_SECONDS = (AppDefaults.SLIDER_MIN_LOCK_TIMEOUT_MS / 1000L).toFloat()
-private const val SLIDER_MAX_SECONDS = (AppDefaults.MAX_LOCK_TIMEOUT_MS / 1000L).toFloat()
-private const val SLIDER_STEP_SECONDS = (AppDefaults.LOCK_TIMEOUT_SLIDER_STEP_MS / 1000L).toFloat()
+private const val SLIDER_MIN_SECONDS = (AppDefaults.Lock.SLIDER_MIN_TIMEOUT_MS / 1000L).toFloat()
+private const val SLIDER_MAX_SECONDS = (AppDefaults.Lock.MAX_TIMEOUT_MS / 1000L).toFloat()
+private const val SLIDER_STEP_SECONDS = (AppDefaults.Lock.SLIDER_STEP_MS / 1000L).toFloat()
 
 @Composable
 fun LockAuthSettingsSection(

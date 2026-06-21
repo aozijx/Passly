@@ -4,35 +4,50 @@ import com.aozijx.passly.domain.model.AutofillUiMode
 import com.aozijx.passly.domain.model.SwipeActionType
 
 object AppDefaults {
-    // 锁定超时
-    const val MIN_LOCK_TIMEOUT_MS = 10_000L
-    const val MAX_LOCK_TIMEOUT_MS = 300_000L
-    const val LOCK_TIMEOUT_SLIDER_STEP_MS = 5_000L
-    const val SLIDER_MIN_LOCK_TIMEOUT_MS = 15_000L
+    object Lock {
+        const val MIN_TIMEOUT_MS: Long = 10_000L
+        const val MAX_TIMEOUT_MS: Long = 300_000L
+        const val SLIDER_STEP_MS: Long = 5_000L
+        const val SLIDER_MIN_TIMEOUT_MS: Long = 15_000L
+        const val DEFAULT_TIMEOUT_MS: Long = 60_000L
+        const val MIN_APP_PASSWORD_LOCKOUT_MS: Long = 30_000L
+        const val APP_PASSWORD_MAX_FAILED_ATTEMPTS: Int = 5
+    }
 
-    // 标签页阈值
-    const val TAB_THRESHOLD_MIN = 2
-    const val TAB_THRESHOLD_MAX = 8
+    object Display {
+        const val TAB_THRESHOLD_MIN: Int = 2
+        const val TAB_THRESHOLD_MAX: Int = 8
+        const val STATUS_BAR_AUTO_HIDE: Boolean = true
+        const val TOP_BAR_COLLAPSIBLE: Boolean = true
+        const val TAB_BAR_COLLAPSIBLE: Boolean = true
+        const val AUTO_DOWNLOAD_ICONS: Boolean = true
+        const val DYNAMIC_COLOR: Boolean = true
+    }
 
-    // 界面显示默认值
-    const val DISPLAY_STATUS_BAR_AUTO_HIDE = true
-    const val DISPLAY_TOP_BAR_COLLAPSIBLE = true
-    const val DISPLAY_TAB_BAR_COLLAPSIBLE = true
-    const val DISPLAY_AUTO_DOWNLOAD_ICONS = true
-    const val DISPLAY_DYNAMIC_COLOR = true
+    object Vault {
+        const val SWIPE_ENABLED: Boolean = true
+        val SWIPE_LEFT_ACTION: SwipeActionType = SwipeActionType.COPY_PASSWORD
+        val SWIPE_RIGHT_ACTION: SwipeActionType = SwipeActionType.DETAIL
+        val AUTOFILL_UI_MODE: AutofillUiMode = AutofillUiMode.SYSTEM_INLINE
+        const val TAB_BAR_MAX_TABS_WITHOUT_SCROLL: Int = 4
+    }
 
-    // 保险箱交互默认值
-    const val VAULT_SWIPE_ENABLED = true
-    val VAULT_SWIPE_LEFT_ACTION: SwipeActionType = SwipeActionType.COPY_PASSWORD
-    val VAULT_SWIPE_RIGHT_ACTION: SwipeActionType = SwipeActionType.DETAIL
-    val VAULT_AUTOFILL_UI_MODE: AutofillUiMode = AutofillUiMode.SYSTEM_INLINE
-    const val VAULT_TAB_BAR_MAX_TABS_WITHOUT_SCROLL = 4
+    object Security {
+        const val BIOMETRIC_ENABLED: Boolean = true
+        const val INVALIDATE_KEY_ON_BIO_CHANGE: Boolean = true
+        const val SECURE_CONTENT_ENABLED: Boolean = true
+        const val FLIP_TO_LOCK_ENABLED: Boolean = false
+        const val FLIP_EXIT_AND_CLEAR_STACK: Boolean = false
+        const val LOCK_ON_BACKGROUND: Boolean = true
+    }
 
-    // 安全设置默认值
-    const val SECURITY_BIOMETRIC_ENABLED = true
-    const val SECURITY_INVALIDATE_KEY_ON_BIO_CHANGE = true
-    const val SECURITY_SECURE_CONTENT_ENABLED = true
-    const val SECURITY_FLIP_TO_LOCK_ENABLED = false
-    const val SECURITY_FLIP_EXIT_AND_CLEAR_STACK_ENABLED = false
-    const val SECURITY_LOCK_ON_BACKGROUND = true
+    object Auth {
+        const val MIN_PASSWORD_LENGTH: Int = 6
+        const val PREFS_NAME: String = "secure_db_prefs"
+        const val KEY_APP_PASSWORD_WRAP: String = "db_phrase_app_wrap"
+        const val KEY_APP_PASSWORD_SALT: String = "db_phrase_app_salt"
+        const val ERROR_APP_PASSWORD_MISMATCH: String = "应用密码错误"
+        const val PASSPHRASE_IV_LENGTH: Int = 12
+        const val PASSPHRASE_GCM_TAG_BITS: Int = 128
+    }
 }

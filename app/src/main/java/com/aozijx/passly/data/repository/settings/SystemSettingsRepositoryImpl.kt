@@ -41,7 +41,7 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         appContext.settingsDataStore.data.map { it[DARK_MODE_KEY] }
     override val isDynamicColor: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[DYNAMIC_COLOR_KEY] ?: AppDefaults.DISPLAY_DYNAMIC_COLOR
+            it[DYNAMIC_COLOR_KEY] ?: AppDefaults.Display.DYNAMIC_COLOR
         }
     override val cardStyle: Flow<VaultCardStyle> = appContext.settingsDataStore.data.map { prefs ->
         val globalStyle =
@@ -63,27 +63,27 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         }
     override val isStatusBarAutoHide: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[AUTO_HIDE_STATUS_BAR_KEY] ?: AppDefaults.DISPLAY_STATUS_BAR_AUTO_HIDE
+            it[AUTO_HIDE_STATUS_BAR_KEY] ?: AppDefaults.Display.STATUS_BAR_AUTO_HIDE
         }
     override val isTopBarCollapsible: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[COLLAPSE_TOP_BAR_KEY] ?: AppDefaults.DISPLAY_TOP_BAR_COLLAPSIBLE
+            it[COLLAPSE_TOP_BAR_KEY] ?: AppDefaults.Display.TOP_BAR_COLLAPSIBLE
         }
     override val isTabBarCollapsible: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[COLLAPSE_TAB_BAR_KEY] ?: AppDefaults.DISPLAY_TAB_BAR_COLLAPSIBLE
+            it[COLLAPSE_TAB_BAR_KEY] ?: AppDefaults.Display.TAB_BAR_COLLAPSIBLE
         }
     override val isSwipeEnabled: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[SWIPE_ENABLED_KEY] ?: AppDefaults.VAULT_SWIPE_ENABLED
+            it[SWIPE_ENABLED_KEY] ?: AppDefaults.Vault.SWIPE_ENABLED
         }
     override val swipeLeftAction: Flow<SwipeActionType> = appContext.settingsDataStore.data.map {
         SwipeActionType.entries.find { e -> e.name == it[SWIPE_LEFT_ACTION_KEY] }
-            ?: AppDefaults.VAULT_SWIPE_LEFT_ACTION
+            ?: AppDefaults.Vault.SWIPE_LEFT_ACTION
     }
     override val swipeRightAction: Flow<SwipeActionType> = appContext.settingsDataStore.data.map {
         SwipeActionType.entries.find { e -> e.name == it[SWIPE_RIGHT_ACTION_KEY] }
-            ?: AppDefaults.VAULT_SWIPE_RIGHT_ACTION
+            ?: AppDefaults.Vault.SWIPE_RIGHT_ACTION
     }
     override val visibleVaultTabs: Flow<Set<String>?> = appContext.settingsDataStore.data.map {
         SettingsMapper.decodeVisibleTabs(it[VISIBLE_VAULT_TABS_KEY])
@@ -92,17 +92,17 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         when (it[AUTOFILL_UI_MODE_KEY]) {
             "inline", "SYSTEM_INLINE" -> AutofillUiMode.SYSTEM_INLINE
             "bottom_sheet", "BOTTOM_SHEET" -> AutofillUiMode.BOTTOM_SHEET
-            else -> AppDefaults.VAULT_AUTOFILL_UI_MODE
+            else -> AppDefaults.Vault.AUTOFILL_UI_MODE
         }
     }
     override val tabBarMaxTabsWithoutScroll: Flow<Int> = appContext.settingsDataStore.data.map {
         (it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY]
-            ?: AppDefaults.VAULT_TAB_BAR_MAX_TABS_WITHOUT_SCROLL)
-            .coerceIn(AppDefaults.TAB_THRESHOLD_MIN, AppDefaults.TAB_THRESHOLD_MAX)
+            ?: AppDefaults.Vault.TAB_BAR_MAX_TABS_WITHOUT_SCROLL)
+            .coerceIn(AppDefaults.Display.TAB_THRESHOLD_MIN, AppDefaults.Display.TAB_THRESHOLD_MAX)
     }
     override val isAutoDownloadIcons: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[AUTO_DOWNLOAD_ICONS_KEY] ?: AppDefaults.DISPLAY_AUTO_DOWNLOAD_ICONS
+            it[AUTO_DOWNLOAD_ICONS_KEY] ?: AppDefaults.Display.AUTO_DOWNLOAD_ICONS
         }
     override val vaultSortOption: Flow<SortOption> =
         appContext.settingsDataStore.data.map { prefs ->
@@ -175,7 +175,10 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
     override suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) {
         appContext.settingsDataStore.edit {
             it[TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY] =
-                maxTabs.coerceIn(AppDefaults.TAB_THRESHOLD_MIN, AppDefaults.TAB_THRESHOLD_MAX)
+                maxTabs.coerceIn(
+                    AppDefaults.Display.TAB_THRESHOLD_MIN,
+                    AppDefaults.Display.TAB_THRESHOLD_MAX
+                )
         }
     }
 

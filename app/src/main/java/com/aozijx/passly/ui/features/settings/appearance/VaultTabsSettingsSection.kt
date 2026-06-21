@@ -28,8 +28,8 @@ import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
 import com.aozijx.passly.ui.features.vault.model.VaultTab
 import kotlin.math.roundToInt
 
-private const val TAB_THRESHOLD_MIN = AppDefaults.TAB_THRESHOLD_MIN
-private const val TAB_THRESHOLD_MAX = AppDefaults.TAB_THRESHOLD_MAX
+private const val TAB_THRESHOLD_MIN = AppDefaults.Display.TAB_THRESHOLD_MIN
+private const val TAB_THRESHOLD_MAX = AppDefaults.Display.TAB_THRESHOLD_MAX
 
 @Composable
 fun VaultTabsSettingsSection(

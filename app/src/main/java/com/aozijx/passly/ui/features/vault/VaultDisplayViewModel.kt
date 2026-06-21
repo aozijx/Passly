@@ -14,16 +14,16 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 data class VaultDisplayUiState(
-    val isStatusBarAutoHide: Boolean = AppDefaults.DISPLAY_STATUS_BAR_AUTO_HIDE,
-    val isTopBarCollapsible: Boolean = AppDefaults.DISPLAY_TOP_BAR_COLLAPSIBLE,
-    val isTabBarCollapsible: Boolean = AppDefaults.DISPLAY_TAB_BAR_COLLAPSIBLE,
+    val isStatusBarAutoHide: Boolean = AppDefaults.Display.STATUS_BAR_AUTO_HIDE,
+    val isTopBarCollapsible: Boolean = AppDefaults.Display.TOP_BAR_COLLAPSIBLE,
+    val isTabBarCollapsible: Boolean = AppDefaults.Display.TAB_BAR_COLLAPSIBLE,
     val cardStyle: VaultCardStyle = VaultCardStyle.DEFAULT,
     val perTypeMap: Map<Int, VaultCardStyle> = mapOf(-1 to VaultCardStyle.DEFAULT),
-    val isSwipeEnabled: Boolean = AppDefaults.VAULT_SWIPE_ENABLED,
-    val swipeLeftAction: SwipeActionType = AppDefaults.VAULT_SWIPE_LEFT_ACTION,
-    val swipeRightAction: SwipeActionType = AppDefaults.VAULT_SWIPE_RIGHT_ACTION,
+    val isSwipeEnabled: Boolean = AppDefaults.Vault.SWIPE_ENABLED,
+    val swipeLeftAction: SwipeActionType = AppDefaults.Vault.SWIPE_LEFT_ACTION,
+    val swipeRightAction: SwipeActionType = AppDefaults.Vault.SWIPE_RIGHT_ACTION,
     val visibleVaultTabs: Set<String>? = null,
-    val tabBarMaxTabsWithoutScroll: Int = AppDefaults.VAULT_TAB_BAR_MAX_TABS_WITHOUT_SCROLL,
+    val tabBarMaxTabsWithoutScroll: Int = AppDefaults.Vault.TAB_BAR_MAX_TABS_WITHOUT_SCROLL,
 )
 
 @HiltViewModel

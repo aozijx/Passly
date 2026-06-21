@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 data class AppearanceUiState(
     val isDarkMode: Boolean? = null,
-    val isDynamicColor: Boolean = AppDefaults.DISPLAY_DYNAMIC_COLOR,
+    val isDynamicColor: Boolean = AppDefaults.Display.DYNAMIC_COLOR,
 )
 
 sealed interface AppearanceUiAction {

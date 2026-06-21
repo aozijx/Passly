@@ -4,7 +4,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.VerificationGatewayImpl
-import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
+
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.AppDefaults
@@ -19,9 +19,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SecurityUiState(
-    val lockTimeout: Long = AuthLockConstants.DEFAULT_LOCK_TIMEOUT_MS,
-    val isInvalidateKeyOnBioChange: Boolean = AppDefaults.SECURITY_INVALIDATE_KEY_ON_BIO_CHANGE,
-    val isLockOnBackground: Boolean = AppDefaults.SECURITY_LOCK_ON_BACKGROUND,
+    val lockTimeout: Long = AppDefaults.Lock.DEFAULT_TIMEOUT_MS,
+    val isInvalidateKeyOnBioChange: Boolean = AppDefaults.Security.INVALIDATE_KEY_ON_BIO_CHANGE,
+    val isLockOnBackground: Boolean = AppDefaults.Security.LOCK_ON_BACKGROUND,
 )
 
 sealed interface SecurityUiAction {

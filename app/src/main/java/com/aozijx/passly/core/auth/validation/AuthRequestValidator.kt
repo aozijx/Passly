@@ -2,7 +2,7 @@ package com.aozijx.passly.core.auth.validation
 
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
-import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
+import com.aozijx.passly.domain.AppDefaults
 import dagger.Reusable
 import javax.inject.Inject
 
@@ -34,7 +34,7 @@ class AuthRequestValidator @Inject constructor() {
     }
 
     fun normalizeLockTimeout(timeoutMs: Long): Long {
-        return timeoutMs.coerceAtLeast(AuthLockConstants.MIN_LOCK_TIMEOUT_MS)
+        return timeoutMs.coerceAtLeast(AppDefaults.Lock.MIN_TIMEOUT_MS)
     }
 
     fun sanitizeMessage(message: String?): String {

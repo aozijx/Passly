@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
-import com.aozijx.passly.core.auth.authconstants.AuthLockConstants
+
 import com.aozijx.passly.data.repository.settings.internal.BIOMETRIC_AUTH_KEY
 import com.aozijx.passly.data.repository.settings.internal.FLIP_EXIT_AND_CLEAR_STACK_KEY
 import com.aozijx.passly.data.repository.settings.internal.FLIP_TO_LOCK_KEY
@@ -26,33 +26,33 @@ class SecuritySettingsRepositoryImpl @Inject constructor(@ApplicationContext con
 
     override val lockTimeout: Flow<Long> =
         appContext.settingsDataStore.data.map {
-            it[LOCK_TIMEOUT_KEY] ?: AuthLockConstants.DEFAULT_LOCK_TIMEOUT_MS
+            it[LOCK_TIMEOUT_KEY] ?: AppDefaults.Lock.DEFAULT_TIMEOUT_MS
         }
     override val isBiometricEnabled: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[BIOMETRIC_AUTH_KEY] ?: AppDefaults.SECURITY_BIOMETRIC_ENABLED
+            it[BIOMETRIC_AUTH_KEY] ?: AppDefaults.Security.BIOMETRIC_ENABLED
         }
     override val isInvalidateKeyOnBioChange: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
             it[INVALIDATE_KEY_ON_BIO_CHANGE_KEY]
-                ?: AppDefaults.SECURITY_INVALIDATE_KEY_ON_BIO_CHANGE
+                ?: AppDefaults.Security.INVALIDATE_KEY_ON_BIO_CHANGE
         }
     override val isSecureContentEnabled: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[SECURE_CONTENT_KEY] ?: AppDefaults.SECURITY_SECURE_CONTENT_ENABLED
+            it[SECURE_CONTENT_KEY] ?: AppDefaults.Security.SECURE_CONTENT_ENABLED
         }
     override val isFlipToLockEnabled: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[FLIP_TO_LOCK_KEY] ?: AppDefaults.SECURITY_FLIP_TO_LOCK_ENABLED
+            it[FLIP_TO_LOCK_KEY] ?: AppDefaults.Security.FLIP_TO_LOCK_ENABLED
         }
     override val isFlipExitAndClearStackEnabled: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
             it[FLIP_EXIT_AND_CLEAR_STACK_KEY]
-                ?: AppDefaults.SECURITY_FLIP_EXIT_AND_CLEAR_STACK_ENABLED
+                ?: AppDefaults.Security.FLIP_EXIT_AND_CLEAR_STACK
         }
     override val isLockOnBackground: Flow<Boolean> =
         appContext.settingsDataStore.data.map {
-            it[LOCK_ON_BACKGROUND_KEY] ?: AppDefaults.SECURITY_LOCK_ON_BACKGROUND
+            it[LOCK_ON_BACKGROUND_KEY] ?: AppDefaults.Security.LOCK_ON_BACKGROUND
         }
 
     override suspend fun setLockTimeout(timeoutMs: Long) {

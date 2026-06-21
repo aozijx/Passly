@@ -13,10 +13,10 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 data class MainConfigUiState(
-    val isSecureContentEnabled: Boolean = AppDefaults.SECURITY_SECURE_CONTENT_ENABLED,
-    val isFlipToLockEnabled: Boolean = AppDefaults.SECURITY_FLIP_TO_LOCK_ENABLED,
-    val isFlipExitAndClearStackEnabled: Boolean = AppDefaults.SECURITY_FLIP_EXIT_AND_CLEAR_STACK_ENABLED,
-    val isStatusBarAutoHide: Boolean = AppDefaults.DISPLAY_STATUS_BAR_AUTO_HIDE,
+    val isSecureContentEnabled: Boolean = AppDefaults.Security.SECURE_CONTENT_ENABLED,
+    val isFlipToLockEnabled: Boolean = AppDefaults.Security.FLIP_TO_LOCK_ENABLED,
+    val isFlipExitAndClearStackEnabled: Boolean = AppDefaults.Security.FLIP_EXIT_AND_CLEAR_STACK,
+    val isStatusBarAutoHide: Boolean = AppDefaults.Display.STATUS_BAR_AUTO_HIDE,
 )
 
 @HiltViewModel

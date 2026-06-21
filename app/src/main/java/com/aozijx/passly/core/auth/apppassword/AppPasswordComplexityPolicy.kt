@@ -1,12 +1,12 @@
 package com.aozijx.passly.core.auth.apppassword
 
-import com.aozijx.passly.core.auth.authconstants.AppPasswordConstants
+import com.aozijx.passly.domain.AppDefaults
 
 object AppPasswordComplexityPolicy {
 
     fun validate(password: CharArray) {
-        if (password.size < AppPasswordConstants.MIN_PASSWORD_LENGTH) {
-            throw IllegalArgumentException("应用密码至少需要 ${AppPasswordConstants.MIN_PASSWORD_LENGTH} 位")
+        if (password.size < AppDefaults.Auth.MIN_PASSWORD_LENGTH) {
+            throw IllegalArgumentException("应用密码至少需要 ${AppDefaults.Auth.MIN_PASSWORD_LENGTH} 位")
         }
         var hasLetter = false
         var hasDigit = false
