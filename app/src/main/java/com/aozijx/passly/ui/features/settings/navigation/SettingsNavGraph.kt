@@ -4,8 +4,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
@@ -122,25 +120,25 @@ fun SettingsNavGraph(
             slideInHorizontally(
                 initialOffsetX = { fullWidth -> fullWidth },
                 animationSpec = tween(300)
-            ) + fadeIn(animationSpec = tween(300))
+            )
         },
         exitTransition = {
             slideOutHorizontally(
                 targetOffsetX = { fullWidth -> -fullWidth / 4 },
                 animationSpec = tween(300)
-            ) + fadeOut(animationSpec = tween(300))
+            )
         },
         popEnterTransition = {
             slideInHorizontally(
                 initialOffsetX = { fullWidth -> -fullWidth / 4 },
                 animationSpec = tween(300)
-            ) + fadeIn(animationSpec = tween(300))
+            )
         },
         popExitTransition = {
             slideOutHorizontally(
                 targetOffsetX = { fullWidth -> fullWidth },
                 animationSpec = tween(300)
-            ) + fadeOut(animationSpec = tween(300))
+            )
         }
     ) {
         // 主页面（禁用共享动画，避免从外部进入时也有滑动效果）
