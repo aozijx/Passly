@@ -112,12 +112,26 @@ internal class AuthRepositoryImpl @Inject constructor(
                         continuation.resume(AppResult.success(Unit))
                     } catch (e: CancellationException) {
                         continuation.resumeWithException(e)
-                    } catch (e: Exception) {
-                        Logcat.e("AuthRepo", "Auth process error", e)
+                    } catch (e: IllegalStateException) {
+                        Logcat.e("AuthRepo", "Passphrase state error", e)
                         passphraseManager.clearDecryptedPassphrase()
                         SessionCryptoKey.clearSessionKey()
                         continuation.resume(
-                            AppResult.failure(AppError.AuthFailed(e.message ?: "认证失败"))
+                            AppResult.failure(AppError.AuthFailed("认证状态异常，请重试"))
+                        )
+                    } catch (e: java.security.InvalidKeyException) {
+                        Logcat.e("AuthRepo", "Invalid encryption key", e)
+                        passphraseManager.clearDecryptedPassphrase()
+                        SessionCryptoKey.clearSessionKey()
+                        continuation.resume(
+                            AppResult.failure(AppError.AuthFailed("加密密钥无效，请重新认证"))
+                        )
+                    } catch (e: javax.crypto.BadPaddingException) {
+                        Logcat.e("AuthRepo", "Corrupted encrypted data", e)
+                        passphraseManager.clearDecryptedPassphrase()
+                        SessionCryptoKey.clearSessionKey()
+                        continuation.resume(
+                            AppResult.failure(AppError.AuthFailed("加密数据损坏，请重新认证"))
                         )
                     }
                 }
@@ -294,9 +308,15 @@ internal class AuthRepositoryImpl @Inject constructor(
                     }
                 )
             }
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
             val msg = requestValidator.sanitizeMessage(e.message)
             AppResult.failure(AppError.AuthFailed(msg))
+        } catch (e: java.security.InvalidKeyException) {
+            Logcat.e("AuthRepo", "Invalid key during rekey", e)
+            AppResult.failure(AppError.AuthFailed("加密密钥无效"))
+        } catch (e: java.security.KeyStoreException) {
+            Logcat.e("AuthRepo", "KeyStore error during rekey", e)
+            AppResult.failure(AppError.AuthFailed("密钥存储异常"))
         }
     }
 
@@ -313,8 +333,12 @@ internal class AuthRepositoryImpl @Inject constructor(
             if (cipher != null) {
                 Logcat.i("AuthRepo", "Rekey recovery: new key ready.")
             }
-        } catch (e: Exception) {
-            Logcat.e("AuthRepo", "Rekey recovery failed", e)
+        } catch (e: IllegalStateException) {
+            Logcat.e("AuthRepo", "Rekey recovery state error", e)
+        } catch (e: java.security.InvalidKeyException) {
+            Logcat.e("AuthRepo", "Rekey recovery invalid key", e)
+        } catch (e: java.security.KeyStoreException) {
+            Logcat.e("AuthRepo", "Rekey recovery keystore error", e)
         }
     }
 }

@@ -59,8 +59,26 @@ internal object AndroidKeyStoreCipherHelper {
             ks.deleteEntry(alias)
             prefs.edit { remove(AppDefaults.Crypto.KEY_DB_PASSPHRASE) }
             getInitializedCipher(context, isRetry = true)
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Failed to init cipher", e)
+        } catch (e: java.security.KeyStoreException) {
+            Logcat.e(TAG, "KeyStore access error", e)
+            null
+        } catch (e: java.security.InvalidKeyException) {
+            Logcat.e(TAG, "Invalid key for cipher", e)
+            null
+        } catch (e: javax.crypto.NoSuchPaddingException) {
+            Logcat.e(TAG, "Padding algorithm not available", e)
+            null
+        } catch (e: java.security.NoSuchAlgorithmException) {
+            Logcat.e(TAG, "Encryption algorithm not available", e)
+            null
+        } catch (e: javax.crypto.BadPaddingException) {
+            Logcat.e(TAG, "Corrupted encrypted data", e)
+            null
+        } catch (e: javax.crypto.IllegalBlockSizeException) {
+            Logcat.e(TAG, "Invalid block size in encryption", e)
+            null
+        } catch (e: android.security.keystore.UserNotAuthenticatedException) {
+            Logcat.e(TAG, "User not authenticated for key operation", e)
             null
         }
     }

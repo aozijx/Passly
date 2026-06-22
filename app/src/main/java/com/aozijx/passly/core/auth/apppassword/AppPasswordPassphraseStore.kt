@@ -3,8 +3,6 @@ package com.aozijx.passly.core.auth.apppassword
 import android.content.Context
 import android.util.Base64
 import androidx.core.content.edit
-
-
 import com.aozijx.passly.core.backup.BackupManager
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.domain.AppDefaults
