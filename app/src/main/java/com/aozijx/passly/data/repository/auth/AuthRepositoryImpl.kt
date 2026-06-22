@@ -289,22 +289,25 @@ internal class AuthRepositoryImpl @Inject constructor(
                     },
                     onSuccess = { result ->
                         if (!continuation.isActive) return@authenticate
-                        runCatching {
+                        AppResult.runCatching("auth.rekey.complete") {
                             val passphrase = passphraseManager.getPassphrase()
                             try {
                                 passphraseManager.completeRekey(result, passphrase)
                             } finally {
                                 passphrase.fill(0)
                             }
-                        }.onSuccess {
-                            continuation.resume(AppResult.success(Unit))
-                        }.onFailure { error ->
-                            val msg =
-                                requestValidator.sanitizeMessage(error.message)
-                            Logcat.e("AuthRepo", "Rekey completion error: $msg", error)
-                            recoverFromFailedRekey(false)
-                            continuation.resume(AppResult.failure(AppError.AuthFailed(msg)))
-                        }
+                        }.fold(
+                            onSuccess = {
+                                continuation.resume(AppResult.success(Unit))
+                            },
+                            onFailure = { error ->
+                                val msg =
+                                    requestValidator.sanitizeMessage(error.message)
+                                Logcat.e("AuthRepo", "Rekey completion error: $msg", error)
+                                recoverFromFailedRekey(false)
+                                continuation.resume(AppResult.failure(AppError.AuthFailed(msg)))
+                            }
+                        )
                     }
                 )
             }

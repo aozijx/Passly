@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.core.error.ErrorLayer
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.data.entity.VaultHistoryEntity
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
@@ -18,7 +18,6 @@ import com.aozijx.passly.domain.repository.vault.VaultRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
-
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -63,10 +62,11 @@ class VaultRepositoryImpl @Inject constructor(
     override suspend fun countByType(type: EntryType): Int =
         passphraseManager.withLockGuard({ 0 }) { entryDao.countByType(type.value) }
 
-    override suspend fun insert(entry: VaultEntry): Long = passphraseManager.withLockGuard({
-        throw IllegalStateException("数据库未解锁，无法保存条目")
+    override suspend fun insert(entry: VaultEntry): AppResult<Long> =
+        passphraseManager.withLockGuard({
+            AppResult.failure(AppError.AuthFailed("数据库未解锁，无法保存条目"))
     }) {
-        try {
+            AppResult.runSuspendCatching("vault.insert") {
             val id = entryDao.insert(entry.toEntity())
             if (id > 0) {
                 historyDao?.insertHistory(
@@ -81,14 +81,14 @@ class VaultRepositoryImpl @Inject constructor(
                 )
             }
             id
-        } catch (e: Throwable) {
-            throw AppError.fromThrowable(e, ErrorLayer.DATA, "vault.insert")
         }
     }
 
-    override suspend fun update(entry: VaultEntry) {
-        if (passphraseManager.isLocked) return
-        try {
+    override suspend fun update(entry: VaultEntry): AppResult<Unit> {
+        if (passphraseManager.isLocked) {
+            return AppResult.failure(AppError.AuthFailed("数据库未解锁，无法更新条目"))
+        }
+        return AppResult.runSuspendCatching("vault.update") {
             if (historyDao != null) {
                 val old = entryDao.getEntryById(entry.id)?.toDomain()
                 if (old != null) {
@@ -108,15 +108,15 @@ class VaultRepositoryImpl @Inject constructor(
                 }
             }
             entryDao.update(entry.toEntity())
-        } catch (e: Throwable) {
-            throw AppError.fromThrowable(e, ErrorLayer.DATA, "vault.update")
         }
     }
 
-    override suspend fun recordUsage(entryId: Int) {
-        if (passphraseManager.isLocked) return
-        try {
-            val entity = entryDao.getEntryById(entryId) ?: return
+    override suspend fun recordUsage(entryId: Int): AppResult<Unit> {
+        if (passphraseManager.isLocked) {
+            return AppResult.failure(AppError.AuthFailed("数据库未解锁，无法记录使用次数"))
+        }
+        return AppResult.runSuspendCatching("vault.recordUsage") {
+            val entity = entryDao.getEntryById(entryId) ?: return@runSuspendCatching
             val entry = entity.toDomain()
 
             val updated = entry.copy(
@@ -135,22 +135,24 @@ class VaultRepositoryImpl @Inject constructor(
                     changedAt = System.currentTimeMillis()
                 )
             )
-        } catch (e: Throwable) {
-            throw AppError.fromThrowable(e, ErrorLayer.DATA, "vault.recordUsage")
         }
     }
 
-    override suspend fun delete(entry: VaultEntry) {
-        if (passphraseManager.isLocked) return
-        try {
+    override suspend fun delete(entry: VaultEntry): AppResult<Unit> {
+        if (passphraseManager.isLocked) {
+            return AppResult.failure(AppError.AuthFailed("数据库未解锁，无法删除条目"))
+        }
+        return AppResult.runSuspendCatching("vault.delete") {
             entryDao.delete(entry.toEntity())
-        } catch (e: Throwable) {
-            throw AppError.fromThrowable(e, ErrorLayer.DATA, "vault.delete")
         }
     }
 
-    override suspend fun deleteAll() {
-        if (passphraseManager.isLocked) return
-        entryDao.deleteAll()
+    override suspend fun deleteAll(): AppResult<Unit> {
+        if (passphraseManager.isLocked) {
+            return AppResult.failure(AppError.AuthFailed("数据库未解锁，无法删除所有条目"))
+        }
+        return AppResult.runSuspendCatching("vault.deleteAll") {
+            entryDao.deleteAll()
+        }
     }
 }

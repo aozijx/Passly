@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.repository.backup
 
 import android.net.Uri
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.BackupImportMode
 import java.io.File
 
@@ -16,17 +17,17 @@ interface BackupRepository {
         uri: Uri,
         password: CharArray,
         includeImages: Boolean
-    )
+    ): AppResult<Unit>
 
     /**
      * 导出明文 JSON 备份。
      */
-    suspend fun exportPlainBackup(uri: Uri)
+    suspend fun exportPlainBackup(uri: Uri): AppResult<Unit>
 
     /**
      * 导出紧急备份文件。
      */
-    suspend fun exportEmergencyBackup(): File
+    suspend fun exportEmergencyBackup(): AppResult<File>
 
     /**
      * 从备份文件中导入。
@@ -35,10 +36,10 @@ interface BackupRepository {
         uri: Uri,
         password: CharArray,
         mode: BackupImportMode
-    )
+    ): AppResult<Unit>
 
     /**
      * 测试目录写入权限。
      */
-    suspend fun testDirectoryWritePermission(directoryUri: String)
+    suspend fun testDirectoryWritePermission(directoryUri: String): AppResult<Unit>
 }

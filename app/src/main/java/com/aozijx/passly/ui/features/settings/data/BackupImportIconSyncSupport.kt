@@ -68,14 +68,20 @@ internal class BackupImportIconSyncSupport(
 
             val outcome = FaviconUtils.downloadAndSaveFavicon(source, appContext)
             if (outcome.result == FaviconUtils.DownloadResult.SUCCESS && !outcome.filePath.isNullOrBlank()) {
-                iconResyncUseCases.update(
+                val updateResult = iconResyncUseCases.update(
                     entry.copy(
                         iconName = null,
                         iconCustomPath = outcome.filePath,
                         updatedAt = System.currentTimeMillis()
                     )
                 )
-                successCount++
+                if (updateResult.isSuccess) {
+                    successCount++
+                } else {
+                    failedCount++
+                    failedIds += entry.id
+                    Logcat.w(TAG, "Icon sync update failed: entryId=${entry.id}")
+                }
             } else {
                 failedCount++
                 failedIds += entry.id

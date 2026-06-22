@@ -31,26 +31,29 @@ internal class EntryManager(
 
     fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
-            try {
-                vaultUseCases.addEntry(entry, domain)
-            } catch (e: AppError) {
-                onError(e.message)
-            } finally {
-                detail.setAddType(null)
-                onComplete()
-            }
+            vaultUseCases.addEntry(entry, domain)
+                .onSuccess {
+                    detail.setAddType(null)
+                    onComplete()
+                }
+                .onFailure { error ->
+                    onError(error.message)
+                    detail.setAddType(null)
+                    onComplete()
+                }
         }
     }
 
     fun updateEntry(entry: VaultEntry) {
         scope.launch(Dispatchers.IO + handler) {
-            try {
-                vaultUseCases.updateEntry(entry)
-                detail.updateEntry(entry)
-                totp.onEntryUpdated(entry)
-            } catch (e: AppError) {
-                onError(e.message)
-            }
+            vaultUseCases.updateEntry(entry)
+                .onSuccess {
+                    detail.updateEntry(entry)
+                    totp.onEntryUpdated(entry)
+                }
+                .onFailure { error ->
+                    onError(error.message)
+                }
         }
     }
 

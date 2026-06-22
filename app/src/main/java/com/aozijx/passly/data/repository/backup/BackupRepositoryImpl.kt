@@ -17,6 +17,7 @@ import com.aozijx.passly.core.backup.BackupManager.readSingleByteOrThrow
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.di.IoDispatcher
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.data.dto.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
@@ -54,8 +55,8 @@ internal class BackupRepositoryImpl @Inject constructor(
         uri: Uri,
         password: CharArray,
         includeImages: Boolean
-    ) = withContext(ioDispatcher) {
-        try {
+    ): AppResult<Unit> = withContext(ioDispatcher) {
+        AppResult.runSuspendCatching("backup.export.encrypted") {
             val entities = dataSource.readAllEntries()
             val exportPayloads = mutableListOf<VaultPayload>()
             val imageExports = mutableListOf<Pair<String, File>>()
@@ -99,31 +100,24 @@ internal class BackupRepositoryImpl @Inject constructor(
                     }
                 }
             }
-
-        } catch (e: Throwable) {
-            throw mapToAppError("backup.export.encrypted", e)
         }
     }
 
-    override suspend fun exportPlainBackup(uri: Uri) = withContext(ioDispatcher) {
-        try {
+    override suspend fun exportPlainBackup(uri: Uri): AppResult<Unit> = withContext(ioDispatcher) {
+        AppResult.runSuspendCatching("backup.export.plain") {
             val entities = dataSource.readAllEntries()
             val payloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
             context.openBackupOutputStream(uri).use { output ->
                 BackupVSerializer.writeEntries(output, payloads)
             }
-        } catch (e: Throwable) {
-            throw mapToAppError("backup.export.plain", e)
         }
     }
 
-    override suspend fun exportEmergencyBackup(): File = withContext(ioDispatcher) {
-        try {
+    override suspend fun exportEmergencyBackup(): AppResult<File> = withContext(ioDispatcher) {
+        AppResult.runSuspendCatching("backup.export.emergency") {
             EmergencyBackupExporter.exportOnFailure(context, passphraseManager).getOrElse {
                 throw mapToAppError("backup.export.emergency", it)
             }
-        } catch (e: Throwable) {
-            throw mapToAppError("backup.export.emergency", e)
         }
     }
 
@@ -131,8 +125,8 @@ internal class BackupRepositoryImpl @Inject constructor(
         uri: Uri,
         password: CharArray,
         mode: BackupImportMode
-    ) = withContext(ioDispatcher) {
-        try {
+    ): AppResult<Unit> = withContext(ioDispatcher) {
+        AppResult.runSuspendCatching("backup.import") {
             context.openBackupInputStream(uri).use { input ->
                 val readMagic = ByteArray(MAGIC_NUMBER.size)
                 val readCount = input.read(readMagic)
@@ -147,8 +141,6 @@ internal class BackupRepositoryImpl @Inject constructor(
                     importPlainJson(uri, mode)
                 }
             }
-        } catch (e: Throwable) {
-            throw mapToAppError("backup.import", e)
         }
     }
 
@@ -206,8 +198,10 @@ internal class BackupRepositoryImpl @Inject constructor(
         dataSource.writeEntries(entities, mode)
     }
 
-    override suspend fun testDirectoryWritePermission(directoryUri: String) {
-        BackupExportStorageSupport.testWritePermission(context, directoryUri)
-            .onFailure { throw mapToAppError("backup.permission.test", it) }
+    override suspend fun testDirectoryWritePermission(directoryUri: String): AppResult<Unit> {
+        return AppResult.runSuspendCatching("backup.permission.test") {
+            BackupExportStorageSupport.testWritePermission(context, directoryUri)
+                .onFailure { throw mapToAppError("backup.permission.test", it) }
+        }
     }
 }

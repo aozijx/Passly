@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.usecase.vault
 
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.FaviconOutcome
 import com.aozijx.passly.domain.model.FaviconResult
 import com.aozijx.passly.domain.model.TotpConfig
@@ -33,9 +34,10 @@ class VaultUseCases @Inject constructor(
 
     suspend fun getEntryById(entryId: Int): VaultEntry? = vaultRepository.getEntryById(entryId)
 
-    suspend fun addEntry(entry: VaultEntry, domain: String? = null): Long {
-        val id = vaultRepository.insert(entry)
-        if (!domain.isNullOrBlank()) {
+    suspend fun addEntry(entry: VaultEntry, domain: String? = null): AppResult<Long> {
+        val insertResult = vaultRepository.insert(entry)
+        if (insertResult is AppResult.Success && !domain.isNullOrBlank()) {
+            val id = insertResult.data
             val outcome = downloadFavicon(domain)
             if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                 vaultRepository.update(
@@ -43,14 +45,14 @@ class VaultUseCases @Inject constructor(
                 )
             }
         }
-        return id
+        return insertResult
     }
 
-    suspend fun updateEntry(entry: VaultEntry) = vaultRepository.update(entry)
+    suspend fun updateEntry(entry: VaultEntry): AppResult<Unit> = vaultRepository.update(entry)
 
-    suspend fun deleteEntry(entry: VaultEntry) = vaultRepository.delete(entry)
+    suspend fun deleteEntry(entry: VaultEntry): AppResult<Unit> = vaultRepository.delete(entry)
 
-    suspend fun recordUsage(entryId: Int) = vaultRepository.recordUsage(entryId)
+    suspend fun recordUsage(entryId: Int): AppResult<Unit> = vaultRepository.recordUsage(entryId)
 
     fun getTotpCode(config: TotpConfig): String = otpRepository.generateTotp(config)
 

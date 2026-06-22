@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.repository.vault
 
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultEntry
 import kotlinx.coroutines.flow.Flow
@@ -16,9 +17,9 @@ interface VaultRepository {
     suspend fun getEntriesForIconResync(): List<VaultEntry>
     suspend fun count(): Int
     suspend fun countByType(type: EntryType): Int
-    suspend fun insert(entry: VaultEntry): Long
-    suspend fun update(entry: VaultEntry)
-    suspend fun recordUsage(entryId: Int)
-    suspend fun delete(entry: VaultEntry)
-    suspend fun deleteAll()
+    suspend fun insert(entry: VaultEntry): AppResult<Long>
+    suspend fun update(entry: VaultEntry): AppResult<Unit>
+    suspend fun recordUsage(entryId: Int): AppResult<Unit>
+    suspend fun delete(entry: VaultEntry): AppResult<Unit>
+    suspend fun deleteAll(): AppResult<Unit>
 }

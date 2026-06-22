@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.usecase.vault
 
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 
@@ -16,6 +17,6 @@ class IconResyncUseCases @Inject constructor(
     suspend fun getCandidates(): List<VaultEntry> =
         vaultRepository.getEntriesForIconResync()
 
-    suspend fun update(entry: VaultEntry) =
+    suspend fun update(entry: VaultEntry): AppResult<Unit> =
         vaultRepository.update(entry)
 }

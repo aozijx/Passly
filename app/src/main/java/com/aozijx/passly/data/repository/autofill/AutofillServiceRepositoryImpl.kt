@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.autofill
 import android.content.Context
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.mapper.toDomain
@@ -51,29 +52,35 @@ class AutofillServiceRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getEntryById(entryId: Int): VaultEntry? = withContext(Dispatchers.IO) {
-        runCatching {
+        AppResult.runCatching("autofill.getEntry") {
             AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
                 .getEntryById(entryId)?.toDomain()
-        }.getOrElse {
-            Logcat.e(TAG, "Failed to load entry by id=$entryId", it)
-            null
-        }
+        }.fold(
+            onSuccess = { it },
+            onFailure = {
+                Logcat.e(TAG, "Failed to load entry by id=$entryId", it)
+                null
+            }
+        )
     }
 
     override suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntry> =
         withContext(Dispatchers.IO) {
             if (entryIds.isEmpty()) return@withContext emptyList()
-            runCatching {
+            AppResult.runCatching("autofill.getEntries") {
                 val order = entryIds.withIndex().associate { it.value to it.index }
                 AppDatabase.getDatabase(appContext, passphraseManager)
                     .vaultEntryDao()
                     .getEntriesByIds(entryIds)
                     .toDomainList()
                     .sortedBy { order[it.id] ?: Int.MAX_VALUE }
-            }.getOrElse {
-                Logcat.e(TAG, "Failed to load entries by ids", it)
-                emptyList()
-            }
+            }.fold(
+                onSuccess = { it },
+                onFailure = {
+                    Logcat.e(TAG, "Failed to load entries by ids", it)
+                    emptyList()
+                }
+            )
         }
 
     override suspend fun findMatchingCandidates(
@@ -247,7 +254,8 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun resolveStrategy(entryTypeValue: Int) = runCatching {
+    private fun resolveStrategy(entryTypeValue: Int) =
+        AppResult.runCatching("autofill.resolveStrategy") {
         EntryTypeStrategyFactory.getStrategy(EntryType.fromValue(entryTypeValue))
     }.getOrNull()
 

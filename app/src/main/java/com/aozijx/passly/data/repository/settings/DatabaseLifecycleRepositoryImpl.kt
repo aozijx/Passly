@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.DatabaseConfig
@@ -68,7 +69,12 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
     }
 
     private fun warmUpOnce(): Throwable? {
-        return runCatching { AppDatabase.preWarm(appContext, passphraseManager) }
+        return AppResult.runCatching("db.warmUp") {
+            AppDatabase.preWarm(
+                appContext,
+                passphraseManager
+            )
+        }
             .fold(
                 onSuccess = { AppDatabase.initializationError },
                 onFailure = { it }
@@ -76,23 +82,19 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
     }
 
     private fun attemptAutoRecovery(): Boolean {
-        runCatching {
+        return AppResult.runCatching("db.autoRecovery") {
             AppDatabase.close()
             AppDatabase.reset()
 
             if (!snapshotDatabaseFiles()) {
-                return false
+                return@runCatching false
             }
 
             deleteDatabaseFiles()
             true
         }.onFailure {
             Logcat.e(TAG, "Auto recovery cleanup failed", it)
-        }.getOrElse {
-            return false
-        }
-
-        return true
+        }.getOrDefault(false)
     }
 
     private fun snapshotDatabaseFiles(): Boolean {
@@ -116,7 +118,7 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
         var snapshotFailed = false
 
         filesToBackup.forEach { source ->
-            runCatching {
+            AppResult.runCatching("db.snapshot") {
                 val target = File(recoveryDir, "${source.name}.$timestamp.bak")
                 source.copyTo(target, overwrite = true)
                 copiedTargets += target
