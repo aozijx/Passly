@@ -41,7 +41,9 @@ fun VaultPagerContent(
     modifier: Modifier = Modifier
 ) {
     HorizontalPager(
-        state = pagerState, modifier = modifier
+        modifier = modifier,
+        state = pagerState,
+        beyondViewportPageCount = uiState.visibleTabs.size.coerceAtLeast(1)
     ) { pageIndex ->
         val currentTab = uiState.visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
         val displayItems = uiState.vaultItemsByTab[currentTab] ?: emptyList()
