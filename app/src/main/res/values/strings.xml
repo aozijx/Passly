@@ -246,21 +246,18 @@
 
     <!-- 验证页面新字符串 -->
     <string name="auth_verify_now">立即验证</string>
-    <string name="auth_system_selects_best_mode">系统会自动选择可用验证方式</string>
-    <string name="auth_switch_method">切换验证方式</string>
-    <string name="auth_app_password_label">应用解锁密码</string>
-    <string name="auth_app_password_confirm_label">确认应用解锁密码</string>
+    <string name="auth_app_password_label">应用密码</string>
+    <string name="auth_app_password_confirm_label">确认密码</string>
     <string name="auth_unlock_with_app_password">使用应用密码解锁</string>
     <string name="auth_set_app_password">设置应用密码</string>
-    <string name="auth_password_takes_over_tip">已启用应用密码，将优先使用密码解锁</string>
     <string name="auth_biometric_unavailable_password_required">当前设备无可用生物识别，请先设置应用密码</string>
     <string name="auth_password_mismatch">两次输入的密码不一致</string>
     <string name="auth_password_empty">请输入要设置的密码</string>
+    <string name="auth_password_hint">安全建议：至少 6 位，并混合字母、数字或符号中的一种。</string>
     <string name="auth_password_set_success">应用密码已设置</string>
     <string name="auth_password_set_failed">设置失败</string>
     <string name="settings_auth_before_set_app_password">验证后可继续设置应用密码</string>
     <string name="settings_device_credential_warning_title">安全提示</string>
-    <string name="settings_device_credential_warning_message">开启后可使用系统PIN、图案或密码替代生物识别完成验证，安全性可能低于仅生物识别模式。</string>
     <string name="settings_device_credential_warning_confirm">仍然开启</string> <!-- icon_ 系列 -->
     <string name="icon_bank">银行</string>
     <string name="icon_card">信用卡</string>

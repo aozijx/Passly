@@ -3,6 +3,11 @@ package com.aozijx.passly.ui.features.verification
 import android.widget.Toast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -111,16 +116,37 @@ fun VerificationScreen(
 
             when (mainChannel) {
                 AuthChannel.Biometric -> {
-                    BiometricUnlockButton(state.authInProgress) {
-                        viewModel.verifyWithBiometric(activity, title, subtitle)
+                    AnimatedVisibility(
+                        visible = !state.showPasswordInput,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        BiometricUnlockButton(state.authInProgress) {
+                            viewModel.verifyWithBiometric(activity, title, subtitle)
+                        }
                     }
                     if (appPasswordEnabled) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        PasswordSection(state, viewModel)
+                        PasswordUnlockSection(
+                            appPassword = state.appPassword,
+                            showPasswordInput = state.showPasswordInput,
+                            authInProgress = state.authInProgress,
+                            onPasswordChange = viewModel::onPasswordChange,
+                            onExpandInput = viewModel::onShowPasswordInput,
+                            onUnlockRequest = viewModel::verifyWithAppPassword
+                        )
                     }
                 }
 
-                AuthChannel.Password -> PasswordSection(state, viewModel)
+                AuthChannel.Password -> PasswordUnlockSection(
+                    appPassword = state.appPassword,
+                    showPasswordInput = state.showPasswordInput,
+                    authInProgress = state.authInProgress,
+                    onPasswordChange = viewModel::onPasswordChange,
+                    onExpandInput = viewModel::onShowPasswordInput,
+                    onUnlockRequest = viewModel::verifyWithAppPassword
+                )
+
                 AuthChannel.SetPassword -> {
                     SetPasswordEntrySection(state.authInProgress) {
                         viewModel.onShowSetPasswordDialog()
@@ -170,19 +196,4 @@ fun VerificationScreen(
             onDismiss = viewModel::onDismissSetPasswordDialog
         )
     }
-}
-
-@Composable
-private fun PasswordSection(
-    state: VerificationUiState,
-    viewModel: VerificationViewModel
-) {
-    PasswordUnlockSection(
-        appPassword = state.appPassword,
-        showPasswordInput = state.showPasswordInput,
-        authInProgress = state.authInProgress,
-        onPasswordChange = viewModel::onPasswordChange,
-        onExpandInput = viewModel::onShowPasswordInput,
-        onUnlockRequest = viewModel::verifyWithAppPassword
-    )
 }
