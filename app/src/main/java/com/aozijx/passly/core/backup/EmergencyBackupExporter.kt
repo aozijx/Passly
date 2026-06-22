@@ -5,6 +5,9 @@ import android.database.Cursor
 import android.util.JsonWriter
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.DatabaseConfig
 import net.zetetic.database.sqlcipher.SQLiteDatabase
@@ -37,9 +40,15 @@ object EmergencyBackupExporter {
     fun exportOnFailure(
         context: Context,
         passphraseManager: DatabasePassphraseManager
-    ): Result<File> {
+    ): AppResult<File> {
         if (!BuildConfig.DEBUG) {
-            return Result.failure(IllegalStateException("Emergency backup export is disabled in release builds."))
+            return AppResult.failure(
+                AppError.fromThrowable(
+                    IllegalStateException("Emergency backup export is disabled in release builds."),
+                    layer = ErrorLayer.DATA,
+                    operation = "emergencyBackup.export"
+                )
+            )
         }
 
         var db: SQLiteDatabase? = null
@@ -50,7 +59,13 @@ object EmergencyBackupExporter {
             deleteExpiredBackups(context.cacheDir)
 
             val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
-            if (!dbFile.exists()) return Result.failure(Exception("数据库文件不存在"))
+            if (!dbFile.exists()) return AppResult.failure(
+                AppError.fromThrowable(
+                    Exception("数据库文件不存在"),
+                    layer = ErrorLayer.DATA,
+                    operation = "emergencyBackup.export"
+                )
+            )
 
             passphrase = passphraseManager.getPassphrase()
             db = SQLiteDatabase.openDatabase(
@@ -71,10 +86,16 @@ object EmergencyBackupExporter {
             }
 
             Logcat.i(TAG, "紧急救灾备份已生成(密文): ${backupFile.absolutePath}")
-            Result.success(backupFile)
+            AppResult.success(backupFile)
         } catch (e: Exception) {
             Logcat.e(TAG, "紧急救灾备份失败", e)
-            Result.failure(e)
+            AppResult.failure(
+                AppError.fromThrowable(
+                    e,
+                    layer = ErrorLayer.DATA,
+                    operation = "emergencyBackup.export"
+                )
+            )
         } finally {
             passphrase?.fill(0)
             plainJson?.fill(0)

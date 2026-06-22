@@ -39,16 +39,17 @@ class AutofillServiceRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateUsageStats(entry: VaultEntry) = withContext(Dispatchers.IO) {
-        try {
+        AppResult.runCatching("autofill.updateUsage") {
             val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
             val updatedEntry = entry.copy(
                 lastUsedAt = System.currentTimeMillis(),
                 usageCount = entry.usageCount + 1
             )
             dao.update(updatedEntry.toEntity())
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Failed to update usage count for ${entry.id}", e)
+        }.onFailure {
+            Logcat.e(TAG, "Failed to update usage count for ${entry.id}", it)
         }
+        Unit
     }
 
     override suspend fun getEntryById(entryId: Int): VaultEntry? = withContext(Dispatchers.IO) {
@@ -87,9 +88,9 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         packageName: String?,
         webDomain: String?
     ): List<AutofillCandidate> = withContext(Dispatchers.IO) {
-        try {
+        AppResult.runCatching("autofill.findCandidates") {
             if (packageName.isNullOrBlank() && webDomain.isNullOrBlank()) {
-                return@withContext emptyList()
+                return@runCatching emptyList()
             }
 
             val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
@@ -133,10 +134,13 @@ class AutofillServiceRepositoryImpl @Inject constructor(
                 )
                 .take(5)
                 .toList()
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Failed to find matching entries", e)
-            emptyList()
-        }
+        }.fold(
+            onSuccess = { it },
+            onFailure = {
+                Logcat.e(TAG, "Failed to find matching entries", it)
+                emptyList()
+            }
+        )
     }
 
     override suspend fun saveOrUpdateEntry(
@@ -146,7 +150,7 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         usernameValue: String,
         passwordValue: String
     ): Boolean = withContext(Dispatchers.IO) {
-        try {
+        AppResult.runCatching("autofill.saveOrUpdate") {
             val saveStart = System.currentTimeMillis()
             val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
 
@@ -248,10 +252,13 @@ class AutofillServiceRepositoryImpl @Inject constructor(
                 Logcat.w(TAG, "saveOrUpdateEntry slow: ${saveCost}ms")
             }
             true
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Save to database failed!", e)
-            false
-        }
+        }.fold(
+            onSuccess = { it },
+            onFailure = {
+                Logcat.e(TAG, "Save to database failed!", it)
+                false
+            }
+        )
     }
 
     private fun resolveStrategy(entryTypeValue: Int) =

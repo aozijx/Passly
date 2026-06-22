@@ -114,11 +114,8 @@ internal class BackupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun exportEmergencyBackup(): AppResult<File> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching("backup.export.emergency") {
-            EmergencyBackupExporter.exportOnFailure(context, passphraseManager).getOrElse {
-                throw mapToAppError("backup.export.emergency", it)
-            }
-        }
+        EmergencyBackupExporter.exportOnFailure(context, passphraseManager)
+            .mapFailure { mapToAppError("backup.export.emergency", it) }
     }
 
     override suspend fun importBackup(

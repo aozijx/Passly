@@ -25,16 +25,17 @@ internal class AppPasswordHandler(
             return AppResult.failure(AppError.AuthFailed("请输入应用密码"))
         }
 
-        return AppResult.runCatching("appPassword.authenticate") {
-            val passphrase = AppPasswordPassphraseStore.unlock(application, password).getOrThrow()
-            try {
-                passphraseManager.setDecryptedPassphrase(passphrase)
-                SessionCryptoKey.deriveAndSet(passphrase)
-            } finally {
-                passphrase.fill(0)
+        return AppPasswordPassphraseStore.unlock(application, password)
+            .map { passphrase ->
+                try {
+                    passphraseManager.setDecryptedPassphrase(passphrase)
+                    SessionCryptoKey.deriveAndSet(passphrase)
+                } finally {
+                    passphrase.fill(0)
+                }
+                onAuthorized()
             }
-            onAuthorized()
-        }.mapFailure { AppError.AuthFailed(it.message ?: "应用密码验证失败") }
+            .mapFailure { AppError.AuthFailed(it.message ?: "应用密码验证失败") }
     }
 
     fun setPassword(password: CharArray): AppResult<Unit> {
@@ -44,15 +45,14 @@ internal class AppPasswordHandler(
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再设置应用密码"))
         }
 
-        return AppResult.runCatching("appPassword.set") {
-            val passphrase = passphraseManager.getPassphrase()
-            try {
-                AppPasswordPassphraseStore.configure(application, password, passphrase).getOrThrow()
-            } finally {
-                passphrase.fill(0)
-            }
-        }.onSuccess { refreshAppPasswordState() }
-            .mapFailure { AppError.AuthFailed(it.message ?: "设置应用密码失败") }
+        val passphrase = passphraseManager.getPassphrase()
+        try {
+            return AppPasswordPassphraseStore.configure(application, password, passphrase)
+                .onSuccess { refreshAppPasswordState() }
+                .mapFailure { AppError.AuthFailed(it.message ?: "设置应用密码失败") }
+        } finally {
+            passphrase.fill(0)
+        }
     }
 
     fun bootstrapPassword(password: CharArray): AppResult<Unit> {
@@ -62,18 +62,17 @@ internal class AppPasswordHandler(
             return AppResult.failure(AppError.AuthFailed("应用已解锁，请在设置中管理应用密码"))
         }
 
-        return AppResult.runCatching("appPassword.bootstrap") {
-            AppPasswordPassphraseStore.configureWithGeneratedPassphrase(application, password)
-                .getOrThrow()
-        }.map { generatedPassphrase ->
-            try {
-                passphraseManager.setDecryptedPassphrase(generatedPassphrase)
-                SessionCryptoKey.deriveAndSet(generatedPassphrase)
-                onAuthorized()
-            } finally {
-                generatedPassphrase.fill(0)
+        return AppPasswordPassphraseStore.configureWithGeneratedPassphrase(application, password)
+            .map { generatedPassphrase ->
+                try {
+                    passphraseManager.setDecryptedPassphrase(generatedPassphrase)
+                    SessionCryptoKey.deriveAndSet(generatedPassphrase)
+                    onAuthorized()
+                } finally {
+                    generatedPassphrase.fill(0)
+                }
             }
-        }.onSuccess { refreshAppPasswordState() }
+            .onSuccess { refreshAppPasswordState() }
             .mapFailure { AppError.AuthFailed(it.message ?: "设置应用密码失败") }
     }
 
@@ -84,16 +83,19 @@ internal class AppPasswordHandler(
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再修改应用密码"))
         }
 
-        return AppResult.runCatching("appPassword.change") {
-            val passphrase = passphraseManager.getPassphrase()
-            try {
-                AppPasswordPassphraseStore.change(application, oldPassword, newPassword, passphrase)
-                    .getOrThrow()
-            } finally {
-                passphrase.fill(0)
-            }
-        }.onSuccess { refreshAppPasswordState() }
-            .mapFailure { AppError.AuthFailed(it.message ?: "修改应用密码失败") }
+        val passphrase = passphraseManager.getPassphrase()
+        try {
+            return AppPasswordPassphraseStore.change(
+                application,
+                oldPassword,
+                newPassword,
+                passphrase
+            )
+                .onSuccess { refreshAppPasswordState() }
+                .mapFailure { AppError.AuthFailed(it.message ?: "修改应用密码失败") }
+        } finally {
+            passphrase.fill(0)
+        }
     }
 
     fun disablePassword(password: CharArray): AppResult<Unit> {
@@ -101,14 +103,13 @@ internal class AppPasswordHandler(
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再关闭应用密码"))
         }
 
-        return AppResult.runCatching("appPassword.disable") {
-            val passphrase = passphraseManager.getPassphrase()
-            try {
-                AppPasswordPassphraseStore.disable(application, password, passphrase).getOrThrow()
-            } finally {
-                passphrase.fill(0)
-            }
-        }.onSuccess { refreshAppPasswordState() }
-            .mapFailure { AppError.AuthFailed(it.message ?: "关闭应用密码失败") }
+        val passphrase = passphraseManager.getPassphrase()
+        try {
+            return AppPasswordPassphraseStore.disable(application, password, passphrase)
+                .onSuccess { refreshAppPasswordState() }
+                .mapFailure { AppError.AuthFailed(it.message ?: "关闭应用密码失败") }
+        } finally {
+            passphrase.fill(0)
+        }
     }
 }
