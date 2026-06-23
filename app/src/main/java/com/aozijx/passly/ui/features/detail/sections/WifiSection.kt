@@ -77,7 +77,7 @@ fun WifiSection(
             OutlinedTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = { Text(stringResource(R.string.label_edit_field, wifiPasswordLabel)) },
+                label = { Text(stringResource(R.string.edit_field, wifiPasswordLabel)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
@@ -96,7 +96,7 @@ fun WifiSection(
         } else {
             DetailItem(
                 label = wifiPasswordLabel,
-                value = revealedPassword ?: stringResource(R.string.label_hidden_mask),
+                value = revealedPassword ?: stringResource(R.string.hidden_mask),
                 isRevealed = revealedPassword != null,
                 onCopy = {
                     copySensitiveField(

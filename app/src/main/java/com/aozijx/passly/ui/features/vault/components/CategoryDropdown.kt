@@ -35,7 +35,7 @@ fun CategoryDropdown(
         OutlinedTextField(
             value = selectedCategory,
             onValueChange = onCategorySelected,
-            label = { Text(stringResource(R.string.label_category_optional)) },
+            label = { Text(stringResource(R.string.category_optional)) },
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true)
                 .fillMaxWidth(),

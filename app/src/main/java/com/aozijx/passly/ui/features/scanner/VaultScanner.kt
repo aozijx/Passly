@@ -142,7 +142,7 @@ fun VaultScanner(
             ) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = stringResource(R.string.action_close),
+                    contentDescription = stringResource(R.string.close),
                     tint = Color.White
                 )
             }
@@ -236,7 +236,7 @@ fun VaultScanner(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.action_save))
+                                Text(stringResource(R.string.save))
                             }
                         }
                     }

@@ -114,7 +114,7 @@ fun VaultTopBar(
                 IconButton(onClick = { vaultViewModel.toggleSearch(!uiState.isSearchActive) }) {
                     Icon(
                         if (uiState.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
-                        contentDescription = stringResource(if (uiState.isSearchActive) R.string.action_back else R.string.action_search)
+                        contentDescription = stringResource(if (uiState.isSearchActive) R.string.back else R.string.search)
                     )
                 }
             },
@@ -124,7 +124,7 @@ fun VaultTopBar(
                         IconButton(onClick = { vaultViewModel.expandMoreMenu(true) }) {
                             Icon(
                                 Icons.Default.MoreVert,
-                                contentDescription = stringResource(R.string.action_more)
+                                contentDescription = stringResource(R.string.more)
                             )
                         }
                         VaultDropdownMenu(

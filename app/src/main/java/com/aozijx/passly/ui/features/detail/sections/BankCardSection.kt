@@ -69,7 +69,14 @@ fun BankCardSection(
             OutlinedTextField(
                 value = editState.editedUsername,
                 onValueChange = { editState.editedUsername = it },
-                label = { Text(stringResource(R.string.label_edit_field, stringResource(R.string.cardholder))) },
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.edit_field,
+                            stringResource(R.string.cardholder)
+                        )
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
@@ -115,7 +122,14 @@ fun BankCardSection(
             OutlinedTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = { Text(stringResource(R.string.label_edit_field, stringResource(R.string.card_number))) },
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.edit_field,
+                            stringResource(R.string.card_number)
+                        )
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
@@ -133,7 +147,7 @@ fun BankCardSection(
         } else {
             BankCardNumberItem(
                 label = stringResource(R.string.card_number),
-                value = revealedCardNumber ?: stringResource(R.string.label_hidden_mask),
+                value = revealedCardNumber ?: stringResource(R.string.hidden_mask),
                 isRevealed = revealedCardNumber != null,
                 onCopy = {
                     copySensitiveField(
@@ -159,7 +173,14 @@ fun BankCardSection(
                 OutlinedTextField(
                     value = editState.editedTotp,
                     onValueChange = { editState.editedTotp = it },
-                    label = { Text(stringResource(R.string.label_edit_field, stringResource(R.string.card_cvv))) },
+                    label = {
+                        Text(
+                            stringResource(
+                                R.string.edit_field,
+                                stringResource(R.string.card_cvv)
+                            )
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     trailingIcon = {
@@ -177,7 +198,7 @@ fun BankCardSection(
             } else {
                 DetailItem(
                     label = stringResource(R.string.card_cvv),
-                    value = revealedCvv ?: stringResource(R.string.label_hidden_mask),
+                    value = revealedCvv ?: stringResource(R.string.hidden_mask),
                     isRevealed = revealedCvv != null,
                     onCopy = {
                         copySensitiveField(
@@ -218,7 +239,7 @@ fun BankCardSection(
         entry.paymentPin?.let { pin ->
             DetailItem(
                 label = stringResource(R.string.payment_pin),
-                value = revealedPaymentPin ?: stringResource(R.string.label_hidden_mask),
+                value = revealedPaymentPin ?: stringResource(R.string.hidden_mask),
                 isRevealed = revealedPaymentPin != null,
                 onCopy = {
                     copySensitiveField(

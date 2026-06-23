@@ -43,9 +43,9 @@ fun BackupPasswordDialog(
     val authTitle = stringResource(R.string.vault_backup_auth_title)
     val authSubtitleExport = stringResource(R.string.vault_backup_auth_subtitle_export)
     val authSubtitleImport = stringResource(R.string.vault_backup_auth_subtitle_import)
-    val confirmText = stringResource(R.string.action_confirm)
-    val cancelText = stringResource(R.string.action_cancel)
-    val passwordLabel = stringResource(R.string.label_password)
+    val confirmText = stringResource(R.string.confirm)
+    val cancelText = stringResource(R.string.cancel)
+    val passwordLabel = stringResource(R.string.password)
 
     AlertDialog(
         onDismissRequest = { backupCoordinator.dismissPasswordDialog() },

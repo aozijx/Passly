@@ -50,7 +50,7 @@ fun CredentialSection(
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         CredentialRow(
-            label = stringResource(R.string.label_username),
+            label = stringResource(R.string.username),
             isEditing = editState.isEditingUsername,
             editedValue = editState.editedUsername,
             revealedValue = revealedUsername,
@@ -79,7 +79,7 @@ fun CredentialSection(
         val showPassword = item.password.isNotEmpty() || item.entryType != 1
         if (showPassword) {
             CredentialRow(
-                label = stringResource(R.string.label_password),
+                label = stringResource(R.string.password),
                 isEditing = editState.isEditingPassword,
                 editedValue = editState.editedPassword,
                 revealedValue = revealedPassword,
@@ -155,7 +155,7 @@ private fun CredentialRow(
             EditTextField(
                 value = editedValue,
                 onValueChange = onValueChange,
-                label = stringResource(R.string.label_edit_field, label),
+                label = stringResource(R.string.edit_field, label),
                 onSave = { onSave(editedValue) })
             if (revealedValue != null && editedValue != revealedValue) {
                 Text(
@@ -168,7 +168,7 @@ private fun CredentialRow(
     } else {
         DetailItem(
             label = label,
-            value = revealedValue ?: stringResource(R.string.label_hidden_mask),
+            value = revealedValue ?: stringResource(R.string.hidden_mask),
             isRevealed = revealedValue != null,
             onCopy = onCopy,
             onEdit = {

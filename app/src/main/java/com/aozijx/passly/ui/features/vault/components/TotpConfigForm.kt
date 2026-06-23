@@ -29,7 +29,7 @@ fun TotpConfigForm(
         OutlinedTextField(
             value = secret,
             onValueChange = onSecretChange,
-            label = { Text(stringResource(R.string.label_totp_secret)) },
+            label = { Text(stringResource(R.string.totp_secret)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -40,7 +40,7 @@ fun TotpConfigForm(
             OutlinedTextField(
                 value = period,
                 onValueChange = onPeriodChange,
-                label = { Text(stringResource(R.string.label_totp_period)) },
+                label = { Text(stringResource(R.string.totp_period)) },
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
@@ -48,7 +48,7 @@ fun TotpConfigForm(
             OutlinedTextField(
                 value = digits,
                 onValueChange = onDigitsChange,
-                label = { Text(stringResource(R.string.label_totp_digits)) },
+                label = { Text(stringResource(R.string.totp_digits)) },
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
@@ -56,7 +56,7 @@ fun TotpConfigForm(
             OutlinedTextField(
                 value = algorithm,
                 onValueChange = onAlgorithmChange,
-                label = { Text(stringResource(R.string.label_totp_algorithm)) },
+                label = { Text(stringResource(R.string.totp_algorithm)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true
             )

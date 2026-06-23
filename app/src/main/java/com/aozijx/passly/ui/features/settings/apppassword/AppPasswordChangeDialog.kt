@@ -10,8 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 
 @Composable
 fun AppPasswordChangeDialog(
@@ -26,13 +28,13 @@ fun AppPasswordChangeDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("修改应用解锁密码") },
+        title = { Text(stringResource(R.string.auth_change_app_password)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = currentPassword,
                     onValueChange = onCurrentPasswordChange,
-                    label = { Text("当前密码") },
+                    label = { Text(stringResource(R.string.auth_current_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
@@ -41,7 +43,7 @@ fun AppPasswordChangeDialog(
                 OutlinedTextField(
                     value = newPassword,
                     onValueChange = onNewPasswordChange,
-                    label = { Text("新密码") },
+                    label = { Text(stringResource(R.string.auth_new_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
@@ -50,7 +52,7 @@ fun AppPasswordChangeDialog(
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = onConfirmPasswordChange,
-                    label = { Text("确认新密码") },
+                    label = { Text(stringResource(R.string.auth_new_password_confirm)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
@@ -58,10 +60,10 @@ fun AppPasswordChangeDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text("保存") }
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

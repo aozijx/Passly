@@ -18,8 +18,8 @@ fun AppDialog(
     title: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    confirmText: String = stringResource(R.string.action_save),
-    dismissText: String = stringResource(R.string.action_cancel),
+    confirmText: String = stringResource(R.string.save),
+    dismissText: String = stringResource(R.string.cancel),
     confirmEnabled: Boolean = true,
     content: @Composable () -> Unit
 ) {

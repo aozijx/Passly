@@ -51,7 +51,7 @@ fun PasswordInput(
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
-        label = { Text(stringResource(R.string.label_password)) },
+        label = { Text(stringResource(R.string.password)) },
         singleLine = true,
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = keyboardOptions,

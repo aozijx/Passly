@@ -1,53 +1,57 @@
 <resources>
-
-    <!-- 通用字符串 -->
-    <string name="vault">保险库</string>
-    <string name="login">登录</string>
-    <string name="scan">扫一扫</string>
-    <string name="auth_title">安全验证</string>
-    <string name="category">分类</string>
-    <string name="username">账号</string>
-    <string name="password">密码</string>
-    <string name="verify">验证</string>
-    <string name="loading">加载中…</string>
-    <string name="unknown">未知</string>
-
-    <!-- action 类 -->
-    <string name="action_save">保存</string>
-    <string name="action_cancel">取消</string>
-    <string name="action_close">关闭</string>
-    <string name="action_back">返回</string>
-    <string name="action_search">搜索</string>
-    <string name="action_more">更多</string>
-    <string name="action_settings">设置</string>
-    <string name="action_add">添加</string>
-    <string name="action_delete">删除</string>
-    <string name="action_confirm">确定</string>
-    <string name="action_paste">粘贴</string>
-    <string name="action_advanced_config">高级配置</string>
-    <string name="follow_system">跟随系统</string>
-
     <!-- 应用基本信息 -->
     <string name="app_name">Passly</string>
-    <string name="title_login">登录</string>
-    <string name="title_vault">保险库</string>
-    <string name="title_scanner">扫一扫</string>
+
+    <!-- 通用字符串 -->
+    <string name="auth_title">安全验证</string>
+    <string name="category">分类</string>
+    <string name="verify">验证</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="close">关闭</string>
+    <string name="back">返回</string>
+    <string name="search">搜索</string>
+    <string name="more">更多</string>
+    <string name="settings">设置</string>
+    <string name="add">添加</string>
+    <string name="confirm">确定</string>
+    <string name="paste">粘贴</string>
+    <string name="advanced_config">高级配置</string>
+    <string name="follow_system">跟随系统</string>
+    <string name="username">账号</string>
+    <string name="password">密码</string>
+    <string name="title">标题</string>
+    <string name="remark">备注</string>
+    <string name="default_label">默认</string>
+    <string name="category_label">分类</string>
+    <string name="category_optional">分类 (可选)</string>
+    <string name="edit_field">编辑%s</string>
+    <string name="hidden_mask">••••••••</string>
+    <string name="show_password">显示密码</string>
+    <string name="hide_password">隐藏密码</string>
+    <string name="title_hint">标题 (如: Google, GitHub)</string>
+    <string name="username_hint">账号/邮箱</string>
+    <string name="sort_default">默认排序</string>
+    <string name="sort_name">名称</string>
+    <string name="sort_created">创建时间</string>
+    <string name="sort_updated">修改时间</string>
+    <string name="sort_usage">使用次数</string>
 
     <!-- Autofill 服务相关 -->
     <string name="autofill_service_name">Passly 自动填充</string>
     <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">安全验证</string>
-    <string name="autofill_auth_subtitle">验证身份以自动填充凭据</string>
+    <string name="autofill_auth_subtitle">验证以自动填充</string>
     <string name="autofill_entry_compact_title">选择账号</string>
-    <string name="autofill_candidate_sheet_title">选择要填充的账号</string>
-    <string name="autofill_candidate_sheet_subtitle">从下方列表中选择一个账号继续</string>
+    <string name="autofill_candidate_sheet_title">选择账号</string>
+    <string name="autofill_candidate_sheet_subtitle">选择一个账号</string>
     <string name="autofill_save_prompt_title">保存 %s ？</string>
-    <string name="autofill_save_prompt_description">是否将 %s 的账号密码保存到 Passly？</string>
+    <string name="autofill_save_prompt_description">保存 %s 到 Passly？</string>
     <string name="autofill_save_icon_description">应用图标</string>
     <string name="autofill_no_suggestions">Passly 暂无匹配建议</string>
     <string name="autofill_locked">Passly 已锁定</string>
     <string name="autofill_save_failed_repository">保存失败</string>
-    <string name="autofill_pending_verification">待验证的自动填充项</string>
+    <string name="autofill_pending_verification">待验证项</string>
     <string name="autofill_match_app">应用匹配</string>
     <string name="autofill_match_domain">域名匹配</string>
     <string name="autofill_match_unknown">候选</string>
@@ -66,17 +70,17 @@
     <string name="autofill_title_new_entry">新记录</string>
 
     <!-- Vault 相关 -->
-    <string name="vault_auth_subtitle">验证身份以访问保险箱</string>
+    <string name="vault_auth_subtitle">验证以访问保险箱</string>
     <string name="vault_auth_error">安全验证失败: %s</string>
     <string name="vault_auth_failed">验证未通过</string>
-    <string name="main_notification_permission_denied">通知权限未开启，后台同步进度将不可见</string>
+    <string name="main_notification_permission_denied">通知权限未开启，同步进度不可见</string>
     <string name="vault_locked_title">保险箱已锁定</string>
-    <string name="vault_locked_subtitle">点击屏幕或下方按钮以解锁</string>
+    <string name="vault_locked_subtitle">点击以解锁</string>
     <string name="vault_auth_encrypt_title">验证加密</string>
-    <string name="vault_auth_encrypt_subtitle">请验证以保护信息</string>
+    <string name="vault_auth_encrypt_subtitle">验证以保护信息</string>
     <string name="vault_auth_decrypt_title">验证身份</string>
-    <string name="vault_auth_decrypt_subtitle_reveal">请验证以显示敏感信息</string>
-    <string name="vault_auth_decrypt_subtitle_generic">请验证以继续操作</string>
+    <string name="vault_auth_decrypt_subtitle_reveal">验证以显示敏感信息</string>
+    <string name="vault_auth_decrypt_subtitle_generic">验证以继续操作</string>
     <string name="vault_error_encrypt_failed">加密失败</string>
 
     <!-- 其余 vault 相关 -->
@@ -86,15 +90,10 @@
     <string name="vault_clear_filter">清除筛选</string>
     <string name="vault_menu_filter">分类筛选</string>
     <string name="vault_menu_sort">排序方式</string>
-    <string name="sort_default">默认排序</string>
-    <string name="sort_name">名称</string>
-    <string name="sort_created">创建时间</string>
-    <string name="sort_updated">修改时间</string>
-    <string name="sort_usage">使用次数</string>
     <string name="vault_menu_hide_totp">隐藏验证码</string>
     <string name="vault_menu_show_totp">显示验证码</string>
     <string name="vault_menu_enable_autofill">开启自动填充</string>
-    <string name="vault_toast_enable_autofill_manual">请在系统设置中开启自动填充</string>
+    <string name="vault_toast_enable_autofill_manual">在系统设置中开启自动填充</string>
     <string name="vault_toast_save_icon_failed">图片保存失败</string>
     <string name="vault_field_copied_format">%1$s已复制</string>
     <string name="vault_menu_export">导出备份</string>
@@ -117,7 +116,7 @@
     <string name="vault_fab_add_title">添加条目</string>
     <string name="vault_add_generic_title">添加 %s</string>
     <string name="vault_empty_placeholder">你的保险箱空空如也</string>
-    <string name="vault_scanner_error_not_otp">识别成功，但不是有效的 2FA 二维码</string>
+    <string name="vault_scanner_error_not_otp">非有效 2FA 二维码</string>
     <string name="vault_scanner_action_album">相册导入</string>
     <string name="vault_scanner_result_title">发现 2FA 密钥</string>
     <string name="vault_scanner_result_account">账户: %s</string>
@@ -128,45 +127,45 @@
     <string name="vault_delete_message">确定要删除 “%s” 吗？此操作不可撤销。</string>
     <string name="vault_backup_title_export">设置备份密码</string>
     <string name="vault_backup_title_import">输入备份密码</string>
-    <string name="vault_backup_message_export">请设置一个密码来加密备份文件。恢复时需要此密码。</string>
-    <string name="vault_backup_message_import">请输入备份文件的密码以解密数据。若导入紧急备份（.json），可留空密码继续。</string>
+    <string name="vault_backup_message_export">设置备份加密密码，恢复时需验证</string>
+    <string name="vault_backup_message_import">输入备份密码解密。JSON 格式可留空。</string>
     <string name="vault_backup_success">备份/恢复成功</string>
     <string name="vault_backup_failed">备份/恢复失败: %s</string>
     <string name="vault_backup_auth_title">备份安全验证</string>
-    <string name="vault_backup_auth_subtitle_export">请验证身份以导出加密备份</string>
-    <string name="vault_backup_auth_subtitle_plain_export">请验证身份以导出明文 JSON 备份</string>
-    <string name="backup_plain_export_auth_required">请先完成安全验证，再执行明文导出</string>
-    <string name="vault_backup_auth_subtitle_import">请验证身份以导入并解密数据</string>
+    <string name="vault_backup_auth_subtitle_export">验证以导出加密备份</string>
+    <string name="vault_backup_auth_subtitle_plain_export">验证以导出明文备份</string>
+    <string name="backup_plain_export_auth_required">完成安全验证后执行明文导出</string>
+    <string name="vault_backup_auth_subtitle_import">验证以导入数据</string>
     <string name="loading_export">正在导出备份…</string>
     <string name="loading_import">正在导入备份…</string>
     <string name="backup_export_success">导出成功</string>
-    <string name="backup_import_success">导入成功（图标将在后台自动同步）</string>
+    <string name="backup_import_success">导入成功，图标后台同步中</string>
     <string name="backup_error_with_reason">操作失败：%s</string>
     <string name="backup_error_unknown">操作失败：未知错误</string>
     <string name="backup_error_password_incorrect">备份密码错误，请核对后重试</string>
     <string name="backup_error_invalid_file">该文件不是有效的 Passly 备份文件</string>
     <string name="backup_error_incompatible_version">备份版本不兼容，仅支持当前格式</string>
-    <string name="backup_error_corrupted">备份文件损坏或格式不正确</string>
+    <string name="backup_error_corrupted">备份文件损坏</string>
     <string name="backup_error_create_file_failed">无法创建备份文件</string>
     <string name="backup_export_failed_cleanup_done">导出失败，已自动移除无效文件</string>
-    <string name="backup_directory_set_first">请先设置备份目录</string>
+    <string name="backup_directory_set_first">先设置备份目录</string>
     <string name="backup_directory_permission_ok">目录写入权限正常</string>
-    <string name="backup_directory_permission_failed">目录写入测试失败，请重新选择目录</string>
+    <string name="backup_directory_permission_failed">目录写入失败，请重新选择</string>
     <string name="backup_import_mode_title">导入模式</string>
     <string name="backup_import_mode_overwrite_title">覆盖现有数据</string>
-    <string name="backup_import_mode_overwrite_desc">删除所有现有数据，然后导入备份内容</string>
+    <string name="backup_import_mode_overwrite_desc">删除现有数据，导入备份</string>
     <string name="backup_import_mode_append_title">追加新数据</string>
-    <string name="backup_import_mode_append_desc">保留现有数据，将备份内容追加到数据库中</string>
+    <string name="backup_import_mode_append_desc">保留现有数据，追加备份内容</string>
     <string name="backup_include_media_title">包含媒体文件</string>
-    <string name="backup_include_media_desc">备份自定义图标和附件图片</string>
+    <string name="backup_include_media_desc">备份图标和附件</string>
 
     <!-- 详情与编辑 -->
     <string name="vault_add_password_title">添加密码项</string>
     <string name="vault_upgrade_security">验证并升级安全性</string>
     <string name="vault_reveal_info">验证并显示详情</string>
     <string name="vault_decrypt_failed">解密失败，请重新验证</string>
-    <string name="vault_reveal_password_subtitle">验证身份以显示密码</string>
-    <string name="vault_reveal_username_subtitle">验证身份以显示账号</string>
+    <string name="vault_reveal_password_subtitle">验证以显示密码</string>
+    <string name="vault_reveal_username_subtitle">验证以显示账号</string>
     <string name="vault_encrypt_failed">加密失败，保存已取消</string>
     <string name="vault_edit_modify_category">修改分类</string>
     <string name="vault_edit_save_category">保存分类</string>
@@ -178,51 +177,36 @@
     <string name="vault_totp_label">动态验证码</string>
     <string name="vault_totp_copied">验证码已复制</string>
     <string name="vault_edit_totp_title">编辑 2FA 配置</string>
-    <string name="vault_auth_reveal_subtitle">验证身份以编辑 2FA 密钥</string>
+    <string name="vault_auth_reveal_subtitle">验证以编辑 2FA 密钥</string>
     <string name="vault_auth_qr_title">身份验证</string>
-    <string name="vault_auth_qr_subtitle">验证身份以显示导出二维码</string>
+    <string name="vault_auth_qr_subtitle">验证以导出二维码</string>
     <string name="vault_export_qr_title">导出 2FA 密钥</string>
-    <string name="vault_export_qr_message">请使用其他设备的身份验证器扫描此二维码</string>
+    <string name="vault_export_qr_message">用其他设备扫描此二维码</string>
     <string name="auth_to_show">点击以验证并显示</string>
 
     <string name="vault_add_2fa_title">添加 2FA</string>
     <string name="vault_2fa_uri_parsed">2FA URI 解析成功</string>
     <string name="vault_2fa_uri_parse_failed">2FA URI 解析失败</string>
 
-    <string name="envault_scanner_auth_save_title">验证加密</string>
-    <string name="vault_scanner_auth_save_subtitle">请验证以加密并保存 %s</string>
+    <string name="vault_scanner_auth_save_title">验证加密</string>
+    <string name="vault_scanner_auth_save_subtitle">验证以加密并保存 %s</string>
 
     <!-- 图标选择器 -->
     <string name="icon_picker_title">选择图标</string>
-    <string name="icon_picker_subtitle">为你的账号项选择一个合适的图标</string>
+    <string name="icon_picker_subtitle">为账号项选择图标</string>
     <string name="icon_picker_action_add_photo">添加自定义图片</string>
 
     <!-- TOTP 配置 -->
-    <string name="label_totp_secret">密钥 (Base32)</string>
-    <string name="label_totp_period">更新周期 (秒)</string>
-    <string name="label_totp_digits">验证码位数</string>
-    <string name="label_totp_algorithm">加密算法</string>
-    <string name="label_2fa_uri_hint">2FA URI (otpauth://…)</string>
+    <string name="totp_secret">密钥 (Base32)</string>
+    <string name="totp_period">更新周期 (秒)</string>
+    <string name="totp_digits">验证码位数</string>
+    <string name="totp_algorithm">加密算法</string>
+    <string name="twofa_uri_hint">2FA URI (otpauth://…)</string>
 
-    <!-- label / show/hide 等 -->
-    <string name="label_username">账号</string>
-    <string name="label_password">密码</string>
-    <string name="label_title">标题</string>
-    <string name="label_remark">备注</string>
-    <string name="label_default">默认</string>
-    <string name="label_category">分类</string>
-    <string name="label_category_optional">分类 (可选)</string>
-    <string name="label_edit_field">编辑%s</string>
-    <string name="label_hidden_mask">••••••••</string>
-    <string name="show_password">显示密码</string>
-    <string name="hide_password">隐藏密码</string>
-    <string name="label_title_hint">标题 (如: Google, GitHub)</string>
-    <string name="label_username_hint">账号/邮箱</string>
-    
     <!-- 详情页新字符串 -->
     <string name="vault_detail_totp_label">两步验证码</string>
-    <string name="vault_detail_domain_label">网站域名或图标直链</string>
-    <string name="vault_detail_domain_placeholder">例如: google.com 或 https://example.com/icon.png</string>
+    <string name="vault_detail_domain_label">域名或图标链接</string>
+    <string name="vault_detail_domain_placeholder">如 google.com 或图标链接</string>
     <string name="vault_detail_domain_and_icon">域名与图标</string>
     <string name="vault_detail_not_set">未设置</string>
     <string name="vault_detail_copied">已复制</string>
@@ -242,23 +226,55 @@
     <string name="vault_detail_history_all">全部</string>
     <string name="vault_detail_history_updates">变更</string>
     <string name="vault_detail_history_actions">使用</string>
-    <string name="vault_detail_history_empty_filtered">当前筛选下暂无记录</string>
+    <string name="vault_detail_history_empty_filtered">暂无记录</string>
 
-    <!-- 验证页面新字符串 -->
+    <!-- 验证页面字符串 -->
+    <string name="auth_biometric_unlock">生物识别解锁</string>
     <string name="auth_verify_now">立即验证</string>
+    <string name="auth_password_verify">验证密码</string>
+    <string name="auth_password_unlock">使用密码解锁</string>
     <string name="auth_app_password_label">应用密码</string>
     <string name="auth_app_password_confirm_label">确认密码</string>
-    <string name="auth_unlock_with_app_password">使用应用密码解锁</string>
     <string name="auth_set_app_password">设置应用密码</string>
-    <string name="auth_biometric_unavailable_password_required">当前设备无可用生物识别，请先设置应用密码</string>
-    <string name="auth_password_mismatch">两次输入的密码不一致</string>
-    <string name="auth_password_empty">请输入要设置的密码</string>
-    <string name="auth_password_hint">安全建议：至少 6 位，并混合字母、数字或符号中的一种。</string>
+    <string name="auth_change_app_password">修改应用密码</string>
+    <string name="auth_disable_app_password">关闭应用密码</string>
+    <string name="auth_disable_app_password_desc">关闭后仅使用系统认证解锁</string>
+    <string name="auth_current_password">当前密码</string>
+    <string name="auth_new_password">新密码</string>
+    <string name="auth_new_password_confirm">确认新密码</string>
+    <string name="auth_biometric_unavailable_password_required">无可用生物识别，请先设置应用密码</string>
+    <string name="auth_password_mismatch">密码不一致</string>
+    <string name="auth_password_empty">请输入密码</string>
+    <string name="auth_password_hint">至少6位，建议混合字母、数字或符号</string>
     <string name="auth_password_set_success">应用密码已设置</string>
     <string name="auth_password_set_failed">设置失败</string>
-    <string name="settings_auth_before_set_app_password">验证后可继续设置应用密码</string>
-    <string name="settings_device_credential_warning_title">安全提示</string>
-    <string name="settings_device_credential_warning_confirm">仍然开启</string> <!-- icon_ 系列 -->
+    <string name="auth_password_change_success">密码修改成功</string>
+    <string name="auth_password_disabled">应用密码已关闭</string>
+    <string name="auth_password_fields_required">请填写所有密码字段</string>
+    <string name="auth_current_password_required">请输入当前密码</string>
+    <string name="auth_unavailable">无法进行身份验证</string>
+    <string name="password_strength_weak">弱</string>
+    <string name="password_strength_medium">一般</string>
+    <string name="password_strength_good">较好</string>
+    <string name="password_strength_strong">强</string>
+    <string name="empty" translatable="false"></string>
+    <string name="settings_auth_before_set_app_password">验证后设置密码</string>
+
+    <!-- 设置: 列表卡片样式 -->
+    <string name="settings_card_style_section_title">列表卡片样式</string>
+    <string name="settings_card_style_section_expanded_hint">已展开预览</string>
+    <string name="settings_card_style_section_collapsed_hint">点击展开预览</string>
+    <string name="settings_card_style_group_expanded_label">收起</string>
+    <string name="settings_card_style_group_collapsed_label">展开</string>
+    <string name="settings_card_style_group_password">密码分组</string>
+    <string name="settings_card_style_group_totp">TOTP 分组</string>
+    <string name="settings_card_style_default_name">默认样式</string>
+    <string name="settings_card_style_default_desc">该分类默认样式</string>
+    <string name="settings_card_style_password_name">密码卡片</string>
+    <string name="settings_card_style_password_desc">强调凭据识别</string>
+    <string name="settings_card_style_totp_name">TOTP卡片</string>
+    <string name="settings_card_style_totp_desc">突出验证码与进度环</string>
+
     <string name="icon_bank">银行</string>
     <string name="icon_card">信用卡</string>
     <string name="icon_wallet">钱包</string>
@@ -346,11 +362,9 @@
     <string name="passkey_recovery_codes">恢复码</string>
     <string name="hardware_key_info">硬件密钥信息</string>
 
-    <!-- widget / shortcut / changelog -->
-    <string name="widget_loading">加载中…</string>
-    <string name="widget_description">每日美句欣赏</string>
+    <!-- shortcut / changelog -->
     <string name="shortcut_vault_short">打开保险库</string>
-    <string name="shortcut_vault_long">直接打开保险库并验证身份</string>
+    <string name="shortcut_vault_long">验证并打开保险库</string>
     <string name="shortcut_scanner_short">扫一扫</string>
     <string name="shortcut_scanner_long">扫一扫添加 TOTP</string>
     <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
@@ -441,20 +455,5 @@
         <item>安全</item>
         <item>权限</item>
     </string-array>
-
-    <!-- 设置: 列表卡片样式 -->
-    <string name="settings_card_style_section_title">列表卡片样式</string>
-    <string name="settings_card_style_section_expanded_hint">已展开预览</string>
-    <string name="settings_card_style_section_collapsed_hint">点击展开预览与切换</string>
-    <string name="settings_card_style_group_expanded_label">收起</string>
-    <string name="settings_card_style_group_collapsed_label">展开</string>
-    <string name="settings_card_style_group_password">密码分组</string>
-    <string name="settings_card_style_group_totp">TOTP 分组</string>
-    <string name="settings_card_style_default_name">默认样式</string>
-    <string name="settings_card_style_default_desc">该分类默认样式</string>
-    <string name="settings_card_style_password_name">密码卡片</string>
-    <string name="settings_card_style_password_desc">强调凭据识别的样式</string>
-    <string name="settings_card_style_totp_name">TOTP卡片</string>
-    <string name="settings_card_style_totp_desc">突出动态验证码与进度环</string>
 
 </resources>

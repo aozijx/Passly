@@ -212,7 +212,7 @@ private fun MainMenuContent(
     }
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     DropdownMenuItem(
-        text = { Text(stringResource(R.string.action_settings)) },
+        text = { Text(stringResource(R.string.settings)) },
         onClick = { onDismissRequest(); onSettingsClick() },
         leadingIcon = { Icon(Icons.Default.Settings, null) })
     CustomExportMenuItem(
@@ -233,7 +233,7 @@ private fun SortSubMenu(
     onBack: () -> Unit
 ) {
     DropdownMenuItem(
-        text = { Text(stringResource(R.string.action_back)) },
+        text = { Text(stringResource(R.string.back)) },
         onClick = onBack,
         leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) })
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -280,7 +280,7 @@ private fun FilterSubMenu(
     onBack: () -> Unit
 ) {
     DropdownMenuItem(
-        text = { Text(stringResource(R.string.action_back)) },
+        text = { Text(stringResource(R.string.back)) },
         onClick = onBack,
         leadingIcon = {
             Icon(

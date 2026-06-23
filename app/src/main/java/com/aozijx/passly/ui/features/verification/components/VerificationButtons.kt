@@ -58,7 +58,7 @@ internal fun BiometricUnlockButton(
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
-                        text = stringResource(R.string.auth_verify_now),
+                        text = stringResource(R.string.auth_biometric_unlock),
                         style = MaterialTheme.typography.titleMedium
                     )
                 }

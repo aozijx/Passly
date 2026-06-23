@@ -234,7 +234,7 @@ fun AssociatedInfoSection(
                             ) {
                                 Icon(Icons.Default.Check, null)
                                 Spacer(Modifier.width(4.dp))
-                                Text(stringResource(R.string.action_save))
+                                Text(stringResource(R.string.save))
                             }
                         }
                     }
@@ -318,7 +318,7 @@ fun AssociatedInfoSection(
                     ) {
                         Icon(Icons.Default.Check, null)
                         Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.action_save))
+                        Text(stringResource(R.string.save))
                     }
                 } else {
                     Row(
@@ -377,7 +377,7 @@ fun AssociatedInfoSection(
                     ) {
                         Icon(Icons.Default.Check, null)
                         Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.action_save))
+                        Text(stringResource(R.string.save))
                     }
                 } else {
                     Row(

@@ -10,8 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 
 @Composable
 fun AppPasswordDisableDialog(
@@ -22,15 +24,15 @@ fun AppPasswordDisableDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("关闭应用解锁密码") },
+        title = { Text(stringResource(R.string.auth_disable_app_password)) },
         text = {
             Column {
-                Text("关闭后将只能使用系统认证方式解锁。")
+                Text(stringResource(R.string.auth_disable_app_password_desc))
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = currentPassword,
                     onValueChange = onCurrentPasswordChange,
-                    label = { Text("当前密码") },
+                    label = { Text(stringResource(R.string.auth_current_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
@@ -38,10 +40,10 @@ fun AppPasswordDisableDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text("关闭") }
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.close)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

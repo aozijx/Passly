@@ -61,5 +61,5 @@ fun QrExportDialog(bitmap: Bitmap?, onDismiss: () -> Unit) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } })
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } })
 }

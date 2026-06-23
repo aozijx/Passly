@@ -102,7 +102,10 @@ fun AppPasswordSetDialog(
                             Icon(
                                 imageVector = if (newPasswordVisible) Icons.Outlined.VisibilityOff
                                 else Icons.Outlined.Visibility,
-                                contentDescription = if (newPasswordVisible) "隐藏密码" else "显示密码"
+                                contentDescription = stringResource(
+                                    if (newPasswordVisible) R.string.hide_password
+                                    else R.string.show_password
+                                )
                             )
                         }
                     },
@@ -117,7 +120,7 @@ fun AppPasswordSetDialog(
                     PasswordStrengthBar(
                         fraction = strengthFraction,
                         color = strengthColor,
-                        label = strength.label
+                        labelRes = strength.labelRes
                     )
                 }
 
@@ -139,7 +142,10 @@ fun AppPasswordSetDialog(
                             Icon(
                                 imageVector = if (confirmPasswordVisible) Icons.Outlined.VisibilityOff
                                 else Icons.Outlined.Visibility,
-                                contentDescription = if (confirmPasswordVisible) "隐藏密码" else "显示密码"
+                                contentDescription = stringResource(
+                                    if (confirmPasswordVisible) R.string.hide_password
+                                    else R.string.show_password
+                                )
                             )
                         }
                     },
@@ -159,12 +165,12 @@ fun AppPasswordSetDialog(
                 onClick = onConfirm,
                 enabled = newPassword.isNotEmpty() && confirmPassword.isNotEmpty()
             ) {
-                Text(stringResource(R.string.action_save))
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -174,7 +180,7 @@ fun AppPasswordSetDialog(
 private fun PasswordStrengthBar(
     fraction: Float,
     color: Color,
-    label: String,
+    labelRes: Int,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -184,7 +190,7 @@ private fun PasswordStrengthBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = label,
+                text = stringResource(labelRes),
                 style = MaterialTheme.typography.labelSmall,
                 color = color
             )
@@ -211,12 +217,15 @@ private fun PasswordStrengthBar(
 private data class PasswordStrength(
     val fraction: Float,
     val color: Color,
-    val label: String
+    val labelRes: Int
 )
 
-
 private fun evaluatePasswordStrength(password: String, colorScheme: ColorScheme): PasswordStrength {
-    if (password.isEmpty()) return PasswordStrength(0f, colorScheme.onSurfaceVariant, "")
+    if (password.isEmpty()) return PasswordStrength(
+        0f,
+        colorScheme.onSurfaceVariant,
+        R.string.empty
+    )
     val length = password.length
     val hasLetter = password.any { it.isLetter() }
     val hasDigit = password.any { it.isDigit() }
@@ -227,25 +236,25 @@ private fun evaluatePasswordStrength(password: String, colorScheme: ColorScheme)
         length < 6 -> PasswordStrength(
             0.25f,
             colorScheme.error,
-            "弱 - 建议至少 6 位"
+            R.string.password_strength_weak
         )
 
         length >= 6 && variety == 1 -> PasswordStrength(
             0.5f,
             colorScheme.error.copy(alpha = 0.7f),
-            "一般 - 建议混合多种字符"
+            R.string.password_strength_medium
         )
 
         length >= 6 && variety == 2 -> PasswordStrength(
             0.75f,
             colorScheme.tertiary,
-            "较好"
+            R.string.password_strength_good
         )
 
         else -> PasswordStrength(
             1f,
             colorScheme.primary,
-            "强"
+            R.string.password_strength_strong
         )
     }
 }

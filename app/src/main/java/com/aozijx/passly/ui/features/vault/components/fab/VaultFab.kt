@@ -137,7 +137,7 @@ fun VaultFab(
             ) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = stringResource(R.string.action_add),
+                    contentDescription = stringResource(R.string.add),
                     modifier = Modifier.rotate(rotation)
                 )
             }

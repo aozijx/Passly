@@ -95,17 +95,17 @@ fun AddTwoFADialog(
         AppTextField(
             value = state.title,
             onValueChange = { state.title = it; onUpdateInteraction() },
-            label = stringResource(R.string.label_title)
+            label = stringResource(R.string.title)
         )
 
         AppTextField(
             value = state.uriText,
             onValueChange = { state.uriText = it; onUpdateInteraction() },
-            label = stringResource(R.string.label_2fa_uri_hint),
+            label = stringResource(R.string.twofa_uri_hint),
             trailingIcon = {
                 TextButton(onClick = { state.uriText = ClipboardUtils.getText(context) }) {
                     Icon(Icons.Default.ContentPaste, null, modifier = Modifier.padding(end = 4.dp))
-                    Text(stringResource(R.string.action_paste))
+                    Text(stringResource(R.string.paste))
                 }
             })
 
@@ -128,7 +128,7 @@ fun AddTwoFADialog(
                 onAlgorithmChange = { state.algorithm = it; onUpdateInteraction() })
         } else {
             TextButton(onClick = { state.showAdvanced = true }) {
-                Text(stringResource(R.string.action_advanced_config))
+                Text(stringResource(R.string.advanced_config))
             }
         }
     }

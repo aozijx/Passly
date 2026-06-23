@@ -13,7 +13,6 @@ room = "2.8.4"
 navigationCompose = "2.9.7"
 datastorePreferences = "1.2.1"
 coreSplashscreen = "1.2.0"
-glanceAppwidget = "1.1.1"
 exifinterface = "1.4.2"
 
 # UI & Material Design
@@ -88,9 +87,8 @@ androidx-biometric = { group = "androidx.biometric", name = "biometric", version
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 
-# Data Persistence & Widgets
+# Data Persistence
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
-androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glanceAppwidget" }
 
 # CameraX
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraxVersion" }

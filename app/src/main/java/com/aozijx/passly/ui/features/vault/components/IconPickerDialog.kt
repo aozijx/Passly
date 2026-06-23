@@ -116,7 +116,7 @@ fun IconPickerDialog(
         }
     }, confirmButton = {
         TextButton(onClick = onDismiss) {
-            Text(stringResource(R.string.action_cancel))
+            Text(stringResource(R.string.cancel))
         }
     })
 }
@@ -152,7 +152,7 @@ private fun IconItem(
         ) {
             Icon(
                 imageVector = VaultIcons.getIconByRes(name),
-                contentDescription = if (name != null) stringResource(name) else stringResource(R.string.label_default),
+                contentDescription = if (name != null) stringResource(name) else stringResource(R.string.default_label),
                 tint = iconColor,
                 modifier = Modifier.size(24.dp)
             )

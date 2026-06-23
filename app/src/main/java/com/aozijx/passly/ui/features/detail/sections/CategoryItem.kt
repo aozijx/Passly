@@ -62,7 +62,7 @@ fun CategoryItem(
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        stringResource(R.string.label_category),
+                        stringResource(R.string.category_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -106,7 +106,7 @@ fun CategoryItem(
             ) {
                 Icon(Icons.Default.Check, null)
                 Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.action_save))
+                Text(stringResource(R.string.save))
             }
         }
     } else {
@@ -127,7 +127,7 @@ fun CategoryItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                stringResource(R.string.label_category),
+                stringResource(R.string.category_label),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.outline
             )

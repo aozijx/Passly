@@ -76,7 +76,7 @@ fun SshKeySection(
             EditTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = stringResource(R.string.label_edit_field, passphraseLabel),
+                label = stringResource(R.string.edit_field, passphraseLabel),
                 onSave = {
                     if (editState.editedPassword != revealedPassword) {
                         onEntryUpdated(entry.copy(password = editState.editedPassword))
@@ -88,7 +88,7 @@ fun SshKeySection(
         } else {
             DetailItem(
                 label = passphraseLabel,
-                value = revealedPassword ?: stringResource(R.string.label_hidden_mask),
+                value = revealedPassword ?: stringResource(R.string.hidden_mask),
                 isRevealed = revealedPassword != null,
                 onCopy = {
                     copySensitiveField(
@@ -142,7 +142,7 @@ fun SshKeySection(
                     text = if (revealedSshPrivateKey != null) {
                         revealedSshPrivateKey.take(60) + "..."
                     } else {
-                        stringResource(R.string.label_hidden_mask)
+                        stringResource(R.string.hidden_mask)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontFamily = if (revealedSshPrivateKey != null) FontFamily.Monospace else FontFamily.Default,

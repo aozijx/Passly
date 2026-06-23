@@ -64,14 +64,14 @@ fun AddGenericEntryDialog(
         AppTextField(
             value = state.title,
             onValueChange = { state.title = it; onUpdateInteraction() },
-            label = stringResource(R.string.label_title_hint),
+            label = stringResource(R.string.title_hint),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
         AppTextField(
             value = state.username,
             onValueChange = { state.username = it; onUpdateInteraction() },
-            label = stringResource(R.string.label_username_hint),
+            label = stringResource(R.string.username_hint),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 
@@ -86,7 +86,7 @@ fun AddGenericEntryDialog(
         AppTextField(
             value = state.notes,
             onValueChange = { state.notes = it; onUpdateInteraction() },
-            label = stringResource(R.string.label_remark),
+            label = stringResource(R.string.remark),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
         )
 

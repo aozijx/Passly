@@ -92,8 +92,8 @@ internal fun PasswordUnlockSection(
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
                         text = stringResource(
-                            if (expanded) R.string.auth_verify_now
-                            else R.string.auth_unlock_with_app_password
+                            if (expanded) R.string.auth_password_verify
+                            else R.string.auth_password_unlock
                         ),
                         style = MaterialTheme.typography.titleMedium
                     )

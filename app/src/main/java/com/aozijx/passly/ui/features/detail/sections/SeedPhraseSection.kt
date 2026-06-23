@@ -63,7 +63,7 @@ fun SeedPhraseSection(
         DetailItem(
             label = stringResource(R.string.seed_phrase_title),
             value = if (revealedSeedPhrase != null) stringResource(R.string.seed_phrase_revealed) else stringResource(
-                R.string.label_hidden_mask
+                R.string.hidden_mask
             ),
             isRevealed = revealedSeedPhrase != null,
             onCopy = {

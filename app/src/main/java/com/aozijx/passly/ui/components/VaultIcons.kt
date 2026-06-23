@@ -60,7 +60,7 @@ object VaultIcons {
         R.string.icon_badge to Icons.Default.Badge,
         R.string.icon_key to Icons.Default.VpnKey,
         R.string.icon_email to Icons.Default.Email,
-        R.string.label_username to Icons.Default.AlternateEmail,
+        R.string.username to Icons.Default.AlternateEmail,
         R.string.icon_game to Icons.Default.SportsEsports,
         R.string.icon_video to Icons.Default.Subscriptions,
         R.string.icon_movie to Icons.Default.Movie,

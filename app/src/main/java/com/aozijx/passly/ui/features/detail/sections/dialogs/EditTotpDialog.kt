@@ -45,7 +45,7 @@ fun EditTotpSection(
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = { editState.isEditing = false }) {
-                Text(stringResource(R.string.action_cancel))
+                Text(stringResource(R.string.cancel))
             }
             Button(onClick = {
                 if (editState.secret.isNotBlank()) {
@@ -63,7 +63,7 @@ fun EditTotpSection(
                     }
                 }
             }) {
-                Text(stringResource(R.string.action_save))
+                Text(stringResource(R.string.save))
             }
         }
     }

@@ -158,9 +158,8 @@ dependencies {
     implementation(libs.sqlcipher)
     implementation(libs.androidx.sqlite)
 
-    // Data Persistence & Widgets
+    // Data Persistence
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.glance.appwidget)
 
     // CameraX
     implementation(libs.androidx.camera.core)
