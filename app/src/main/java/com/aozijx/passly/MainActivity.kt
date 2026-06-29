@@ -1,5 +1,6 @@
 package com.aozijx.passly
 
+import android.content.Context
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
@@ -8,7 +9,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.LocaleHelper
+import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.main.MainNotificationPermissionController
 import com.aozijx.passly.ui.features.main.MainSensorController
@@ -16,6 +20,7 @@ import com.aozijx.passly.ui.features.main.MainViewModel
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.main.ui.MainScreen
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import kotlin.system.exitProcess
 
@@ -46,6 +51,22 @@ class MainActivity : FragmentActivity() {
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        val code = runCatching {
+            kotlinx.coroutines.runBlocking {
+                newBase.settingsDataStore.data.first()[
+                    stringPreferencesKey("app_language_code")
+                ] ?: ""
+            }
+        }.getOrDefault("")
+        val ctx = if (code.isNotEmpty()) {
+            LocaleHelper.applyLanguage(newBase, code)
+        } else {
+            newBase
+        }
+        super.attachBaseContext(ctx)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

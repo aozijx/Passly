@@ -22,6 +22,7 @@ interface SystemSettingsRepository {
     val tabBarMaxTabsWithoutScroll: Flow<Int>
     val isAutoDownloadIcons: Flow<Boolean>
     val vaultSortOption: Flow<SortOption>
+    val languageCode: Flow<String>
 
     suspend fun setDarkMode(enabled: Boolean?)
     suspend fun setDynamicColor(enabled: Boolean)
@@ -38,4 +39,5 @@ interface SystemSettingsRepository {
     suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int)
     suspend fun setAutoDownloadIcons(enabled: Boolean)
     suspend fun setVaultSortOption(sort: SortOption)
+    suspend fun setLanguageCode(code: String)
 }

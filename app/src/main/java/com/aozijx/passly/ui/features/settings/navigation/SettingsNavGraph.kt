@@ -241,7 +241,8 @@ fun SettingsNavGraph(
                     AppearanceDetail(
                         state = state,
                         onDarkModeChange = { vm.onAction(AppearanceUiAction.SetDarkMode(it)) },
-                        onDynamicColorChange = { vm.onAction(AppearanceUiAction.SetDynamicColor(it)) }
+                        onDynamicColorChange = { vm.onAction(AppearanceUiAction.SetDynamicColor(it)) },
+                        onLanguageChange = { vm.onAction(AppearanceUiAction.SetLanguageCode(it)) }
                     )
                 }
             }

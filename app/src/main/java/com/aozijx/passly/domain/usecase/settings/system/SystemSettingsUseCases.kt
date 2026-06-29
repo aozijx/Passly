@@ -40,10 +40,12 @@ class SystemSettingsUseCases @Inject constructor(private val repository: SystemS
     // 排序
     val vaultSortOption: Flow<SortOption> = repository.vaultSortOption
 
+    // 语言
+    val languageCode: Flow<String> = repository.languageCode
+
     // 操作方法
     suspend fun setDarkMode(enabled: Boolean?) = repository.setDarkMode(enabled)
     suspend fun setDynamicColor(enabled: Boolean) = repository.setDynamicColor(enabled)
-    suspend fun setCardStyle(style: VaultCardStyle) = repository.setCardStyle(style)
     suspend fun setCardStyleForEntryType(entryTypeValue: Int, style: VaultCardStyle) =
         repository.setCardStyleForEntryType(entryTypeValue, style)
     suspend fun setStatusBarAutoHide(autoHide: Boolean) = repository.setStatusBarAutoHide(autoHide)
@@ -60,4 +62,5 @@ class SystemSettingsUseCases @Inject constructor(private val repository: SystemS
         repository.setTabBarMaxTabsWithoutScroll(maxTabs)
     suspend fun setAutoDownloadIcons(enabled: Boolean) = repository.setAutoDownloadIcons(enabled)
     suspend fun setVaultSortOption(sort: SortOption) = repository.setVaultSortOption(sort)
+    suspend fun setLanguageCode(code: String) = repository.setLanguageCode(code)
 }

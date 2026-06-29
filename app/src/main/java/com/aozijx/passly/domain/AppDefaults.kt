@@ -38,7 +38,7 @@ object AppDefaults {
         const val SECURE_CONTENT_ENABLED: Boolean = true
         const val FLIP_TO_LOCK_ENABLED: Boolean = false
         const val FLIP_EXIT_AND_CLEAR_STACK: Boolean = false
-        const val LOCK_ON_BACKGROUND: Boolean = true
+        const val LOCK_ON_BACKGROUND: Boolean = false
     }
 
     object Auth {

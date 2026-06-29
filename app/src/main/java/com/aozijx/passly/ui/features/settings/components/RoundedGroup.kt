@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 fun RoundedGroup(
     modifier: Modifier = Modifier,
     itemSpacing: Dp = 2.dp,
-    content: RoundedGroupScope.() -> Unit
+    content: (RoundedGroupScope.() -> Unit)
 ) {
     val scope = remember {
         RoundedGroupScope()

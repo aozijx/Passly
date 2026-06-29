@@ -15,11 +15,13 @@ import javax.inject.Inject
 data class AppearanceUiState(
     val isDarkMode: Boolean? = null,
     val isDynamicColor: Boolean = AppDefaults.Display.DYNAMIC_COLOR,
+    val languageCode: String = "",
 )
 
 sealed interface AppearanceUiAction {
     data class SetDarkMode(val enabled: Boolean?) : AppearanceUiAction
     data class SetDynamicColor(val enabled: Boolean) : AppearanceUiAction
+    data class SetLanguageCode(val code: String) : AppearanceUiAction
 }
 
 @HiltViewModel
@@ -29,9 +31,10 @@ class AppearanceViewModel @Inject constructor(
 
     val config: StateFlow<AppearanceUiState> = combine(
         systemSettingsUseCases.isDarkMode,
-        systemSettingsUseCases.isDynamicColor
-    ) { dm, dc ->
-        AppearanceUiState(isDarkMode = dm, isDynamicColor = dc)
+        systemSettingsUseCases.isDynamicColor,
+        systemSettingsUseCases.languageCode
+    ) { dm, dc, lang ->
+        AppearanceUiState(isDarkMode = dm, isDynamicColor = dc, languageCode = lang)
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
@@ -46,6 +49,10 @@ class AppearanceViewModel @Inject constructor(
 
             is AppearanceUiAction.SetDynamicColor -> viewModelScope.launch {
                 systemSettingsUseCases.setDynamicColor(action.enabled)
+            }
+
+            is AppearanceUiAction.SetLanguageCode -> viewModelScope.launch {
+                systemSettingsUseCases.setLanguageCode(action.code)
             }
         }
     }

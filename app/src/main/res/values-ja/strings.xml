@@ -202,13 +202,45 @@
     <string name="auth_app_password_label">アプリパスワード</string>
     <string name="auth_app_password_confirm_label">パスワード確認</string>
     <string name="auth_set_app_password">アプリパスワードを設定</string>
+    <string name="auth_change_app_password">アプリパスワードを変更</string>
+    <string name="auth_disable_app_password">アプリパスワードを無効化</string>
+    <string name="auth_disable_app_password_desc">無効化後はシステム認証のみでロック解除します</string>
+    <string name="auth_current_password">現在のパスワード</string>
+    <string name="auth_new_password">新しいパスワード</string>
+    <string name="auth_new_password_confirm">新しいパスワードを確認</string>
     <string name="auth_biometric_unavailable_password_required">生体認証が利用できません。先にアプリパスワードを設定してください。</string>
     <string name="auth_password_mismatch">パスワードが一致しません</string>
     <string name="auth_password_empty">パスワードを入力してください</string>
     <string name="auth_password_hint">6文字以上で、英字・数字・記号を組み合わせてください。</string>
     <string name="auth_password_set_success">アプリパスワードを設定しました</string>
     <string name="auth_password_set_failed">設定に失敗しました</string>
+    <string name="auth_password_change_success">パスワードを変更しました</string>
+    <string name="auth_password_disabled">アプリパスワードを無効化しました</string>
+    <string name="auth_password_fields_required">すべてのパスワード欄を入力してください</string>
+    <string name="auth_current_password_required">現在のパスワードを入力してください</string>
+    <string name="auth_unavailable">認証を利用できません</string>
+    <string name="password_strength_weak">弱</string>
+    <string name="password_strength_medium">中</string>
+    <string name="password_strength_good">良</string>
+    <string name="password_strength_strong">強</string>
+    <string name="empty" translatable="false"></string>
     <string name="settings_auth_before_set_app_password">認証後にアプリパスワードの設定を続行します</string>
+
+    <!-- 設定: 外観 -->
+    <string name="settings_group_theme">テーマ</string>
+    <string name="settings_dark_mode">ダークモード</string>
+    <string name="settings_dark_mode_on">現在ダークテーマです</string>
+    <string name="settings_dark_mode_off">現在ライトテーマです</string>
+    <string name="settings_dynamic_color">ダイナミックカラー</string>
+    <string name="settings_dynamic_color_desc">壁紙の色をアプリのテーマに適用</string>
+    <string name="settings_group_language">言語</string>
+    <string name="settings_app_language">アプリの言語</string>
+    <string name="language_select_title">言語を選択</string>
+    <string name="language_follow_system">システムに従う</string>
+    <string name="language_zh">简体中文</string>
+    <string name="language_en">English</string>
+    <string name="language_ja">日本語</string>
+    <string name="language_restart_hint">言語切り替え後はアプリの再起動をおすすめします</string>
 
     <!-- アイコン -->
     <string name="icon_bank">銀行</string>

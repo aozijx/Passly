@@ -13,6 +13,7 @@ import com.aozijx.passly.data.repository.settings.internal.COLLAPSE_TOP_BAR_KEY
 import com.aozijx.passly.data.repository.settings.internal.DARK_MODE_KEY
 import com.aozijx.passly.data.repository.settings.internal.DEFAULT_STYLE_KEY
 import com.aozijx.passly.data.repository.settings.internal.DYNAMIC_COLOR_KEY
+import com.aozijx.passly.data.repository.settings.internal.LANGUAGE_CODE_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_ENABLED_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_LEFT_ACTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_RIGHT_ACTION_KEY
@@ -109,6 +110,10 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
             prefs[VAULT_SORT_OPTION_KEY]?.let { SortOption.entries.find { s -> s.name == it } }
                 ?: SortOption.DEFAULT
         }
+    override val languageCode: Flow<String> =
+        appContext.settingsDataStore.data.map { prefs ->
+            prefs[LANGUAGE_CODE_KEY] ?: ""
+        }
 
     override suspend fun setDarkMode(enabled: Boolean?) {
         appContext.settingsDataStore.edit {
@@ -188,5 +193,9 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
 
     override suspend fun setVaultSortOption(sort: SortOption) {
         appContext.settingsDataStore.edit { it[VAULT_SORT_OPTION_KEY] = sort.name }
+    }
+
+    override suspend fun setLanguageCode(code: String) {
+        appContext.settingsDataStore.edit { it[LANGUAGE_CODE_KEY] = code }
     }
 }

@@ -58,7 +58,7 @@ class AppIdleMonitor @Inject constructor(
         })
     }
 
-    /** 配置超时时间和锁定回调，由 [AuthRepositoryImpl] 在认证成功时调用 */
+    /** 配置超时时间和锁定回调，由 AuthRepositoryImpl 在认证成功时调用 */
     fun configure(timeoutMs: Long, onLock: () -> Unit) {
         this.timeoutMs = timeoutMs
         this.onLockRequested = onLock
