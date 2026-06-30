@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class FaviconRepositoryImpl @Inject constructor(
-    @ApplicationContext private val appContext: Context
+    @param:ApplicationContext private val appContext: Context
 ) : FaviconRepository {
     override suspend fun downloadFavicon(input: String): FaviconOutcome {
         val outcome = FaviconUtils.downloadAndSaveFavicon(input, appContext)

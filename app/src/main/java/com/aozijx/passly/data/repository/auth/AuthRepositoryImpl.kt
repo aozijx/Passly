@@ -31,7 +31,7 @@ import kotlin.coroutines.resumeWithException
 
 @Singleton
 internal class AuthRepositoryImpl @Inject constructor(
-    @ApplicationContext private val application: android.content.Context,
+    @param:ApplicationContext private val application: android.content.Context,
     private val passphraseManager: DatabasePassphraseManager,
     private val idleMonitor: AppIdleMonitor
 ) : AuthRepository {

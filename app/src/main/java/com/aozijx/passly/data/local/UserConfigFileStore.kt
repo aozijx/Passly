@@ -16,7 +16,7 @@ import javax.inject.Singleton
 
 @Singleton
 class UserConfigFileStore @Inject constructor(
-    @ApplicationContext private val appContext: Context
+    @param:ApplicationContext private val appContext: Context
 ) {
     private val mutex = Mutex()
 

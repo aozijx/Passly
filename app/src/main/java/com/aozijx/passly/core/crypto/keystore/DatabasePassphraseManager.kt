@@ -18,7 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class DatabasePassphraseManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private val lock = Any()
 

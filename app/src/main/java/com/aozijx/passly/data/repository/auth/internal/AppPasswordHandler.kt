@@ -35,7 +35,7 @@ internal class AppPasswordHandler(
                 }
                 onAuthorized()
             }
-            .mapFailure { AppError.AuthFailed(it.message ?: "应用密码验证失败") }
+            .mapFailure { AppError.AuthFailed(it.message) }
     }
 
     fun setPassword(password: CharArray): AppResult<Unit> {
@@ -49,7 +49,7 @@ internal class AppPasswordHandler(
         try {
             return AppPasswordPassphraseStore.configure(application, password, passphrase)
                 .onSuccess { refreshAppPasswordState() }
-                .mapFailure { AppError.AuthFailed(it.message ?: "设置应用密码失败") }
+                .mapFailure { AppError.AuthFailed(it.message) }
         } finally {
             passphrase.fill(0)
         }
@@ -73,7 +73,7 @@ internal class AppPasswordHandler(
                 }
             }
             .onSuccess { refreshAppPasswordState() }
-            .mapFailure { AppError.AuthFailed(it.message ?: "设置应用密码失败") }
+            .mapFailure { AppError.AuthFailed(it.message) }
     }
 
     fun changePassword(oldPassword: CharArray, newPassword: CharArray): AppResult<Unit> {
@@ -92,7 +92,7 @@ internal class AppPasswordHandler(
                 passphrase
             )
                 .onSuccess { refreshAppPasswordState() }
-                .mapFailure { AppError.AuthFailed(it.message ?: "修改应用密码失败") }
+                .mapFailure { AppError.AuthFailed(it.message) }
         } finally {
             passphrase.fill(0)
         }
@@ -107,7 +107,7 @@ internal class AppPasswordHandler(
         try {
             return AppPasswordPassphraseStore.disable(application, password, passphrase)
                 .onSuccess { refreshAppPasswordState() }
-                .mapFailure { AppError.AuthFailed(it.message ?: "关闭应用密码失败") }
+                .mapFailure { AppError.AuthFailed(it.message) }
         } finally {
             passphrase.fill(0)
         }

@@ -42,10 +42,10 @@ import javax.crypto.CipherOutputStream
 import javax.inject.Inject
 
 internal class BackupRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val passphraseManager: DatabasePassphraseManager,
     private val imageStore: BackupVInternalImageStore,
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
 
     private val dataSource: BackupDataSource =
