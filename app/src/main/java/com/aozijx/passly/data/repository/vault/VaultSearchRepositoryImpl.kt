@@ -1,23 +1,28 @@
 package com.aozijx.passly.data.repository.vault
 
-import com.aozijx.passly.data.local.dao.VaultEntryDao
+import android.content.Context
+import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository.EntryFilter
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class VaultSearchRepositoryImpl @Inject constructor(
-    private val entryDao: VaultEntryDao
+    @param:ApplicationContext private val appContext: Context,
+    private val passphraseManager: DatabasePassphraseManager
 ) : VaultSearchRepository {
 
-    override val allCategories: Flow<List<String>> = entryDao.observeAll().map { entities ->
+    private fun entryDao() = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
+
+    override val allCategories: Flow<List<String>> = entryDao().observeAll().map { entities ->
         entities.map { it.toDomain() }
             .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }
             .distinct()
@@ -25,7 +30,7 @@ class VaultSearchRepositoryImpl @Inject constructor(
 
     override fun observeEntrySummariesByDemand(
         query: String, category: String?, filter: EntryFilter
-    ): Flow<List<VaultSummary>> = entryDao.observeAll().map { entities ->
+    ): Flow<List<VaultSummary>> = entryDao().observeAll().map { entities ->
         entities.map { it.toDomain() }
             .filter { entry ->
                 (query.isEmpty() || entry.title.contains(query, ignoreCase = true)
@@ -53,7 +58,7 @@ class VaultSearchRepositoryImpl @Inject constructor(
     }
 
     override fun getCategoriesByFilter(filter: EntryFilter): Flow<List<String>> =
-        entryDao.observeAll().map { entities ->
+        entryDao().observeAll().map { entities ->
             entities.map { it.toDomain() }
                 .filter { entry ->
                     when (filter) {
