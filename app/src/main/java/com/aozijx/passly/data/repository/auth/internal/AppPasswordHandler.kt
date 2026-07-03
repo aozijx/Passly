@@ -62,7 +62,16 @@ internal class AppPasswordHandler(
             return AppResult.failure(AppError.AuthFailed("应用已解锁，请在设置中管理应用密码"))
         }
 
-        return AppPasswordPassphraseStore.configureWithGeneratedPassphrase(application, password)
+        if (AppPasswordPassphraseStore.isEnabled(application)) {
+            return AppResult.failure(AppError.AuthFailed("应用密码已存在，请直接输入密码解锁"))
+        }
+
+        val result =
+            AppPasswordPassphraseStore.configureWithGeneratedPassphrase(application, password)
+        // 即使后续 setPassphrase/deriveAndSet 失败，passphrase 已存入 SharedPreferences，
+        // 必须刷新 isAppPasswordEnabled 状态，否则下次锁定后会再次显示"设置密码"按钮。
+        refreshAppPasswordState()
+        return result
             .map { generatedPassphrase ->
                 try {
                     passphraseManager.setDecryptedPassphrase(generatedPassphrase)
@@ -72,7 +81,6 @@ internal class AppPasswordHandler(
                     generatedPassphrase.fill(0)
                 }
             }
-            .onSuccess { refreshAppPasswordState() }
             .mapFailure { AppError.AuthFailed(it.message) }
     }
 
