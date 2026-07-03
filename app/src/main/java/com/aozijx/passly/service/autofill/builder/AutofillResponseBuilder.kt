@@ -16,7 +16,6 @@ import android.view.autofill.AutofillValue
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.asAndroidBitmap
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.encryption.CryptoAccess
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.core.platform.PackageUtils
 import com.aozijx.passly.domain.model.AutofillCandidate
@@ -95,8 +94,7 @@ internal object AutofillResponseBuilder {
 
         candidates.forEach { candidate ->
             val entry = candidate.entry
-            val decryptedUsername = (CryptoAccess.decryptOrNull(entry.username) ?: "").trim()
-            val subtitle = AutofillCredentialProvider.buildSubtitle(entry, decryptedUsername)
+            val subtitle = AutofillCredentialProvider.buildSubtitle(entry, entry.username)
             val badge = when (candidate.matchType) {
                 AutofillMatchType.APP -> context.getString(R.string.autofill_match_app)
                 AutofillMatchType.DOMAIN -> context.getString(R.string.autofill_match_domain)
@@ -263,8 +261,7 @@ internal object AutofillResponseBuilder {
         val strategy = resolveEntryTypeStrategy(entry.entryType)
         if (strategy != null && !strategy.supportsAutofill()) return null
 
-        val decryptedUsername = (CryptoAccess.decryptOrNull(entry.username) ?: "").trim()
-        val subtitle = AutofillCredentialProvider.buildSubtitle(entry, decryptedUsername)
+        val subtitle = AutofillCredentialProvider.buildSubtitle(entry, entry.username)
         val badge = when (candidate.matchType) {
             AutofillMatchType.APP -> context.getString(R.string.autofill_match_app)
             AutofillMatchType.DOMAIN -> context.getString(R.string.autofill_match_domain)

@@ -1,13 +1,10 @@
 package com.aozijx.passly.service.autofill.credential
 
-import com.aozijx.passly.core.crypto.encryption.CryptoAccess
-import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 
 object AutofillCredentialProvider {
-    private const val TAG = "AutofillCredentialProvider"
 
     data class BasicCredentials(
         val username: String,
@@ -15,21 +12,13 @@ object AutofillCredentialProvider {
     )
 
     fun getBasicCredentials(item: VaultEntry): BasicCredentials? {
-        Logcat.d(TAG, "Attempting decryption for item: ${item.title} (ID: ${item.id})")
+        val username = item.username
+        val password = item.password
 
-        return try {
-            val username = CryptoAccess.decryptOrNull(item.username) ?: return null
-            val password = CryptoAccess.decryptOrNull(item.password) ?: return null
-
-            if (username.isBlank() && password.isBlank()) {
-                null
-            } else {
-                BasicCredentials(username, password)
-            }
-        } catch (e: Exception) {
-            Logcat.e(TAG, "Decryption failed for item: ${item.title}", e)
-            null
+        if (username.isBlank() && password.isBlank()) {
+            return null
         }
+        return BasicCredentials(username, password)
     }
 
     fun buildSubtitle(entry: VaultEntry, decryptedUsername: String): String {
