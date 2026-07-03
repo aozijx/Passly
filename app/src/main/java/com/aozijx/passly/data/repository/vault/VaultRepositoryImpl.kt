@@ -143,7 +143,7 @@ class VaultRepositoryImpl @Inject constructor(
             return AppResult.failure(AppError.AuthFailed("数据库未解锁，无法删除条目"))
         }
         return AppResult.runSuspendCatching("vault.delete") {
-            entryDao.delete(entry.toEntity())
+            entryDao.deleteById(entry.id)
         }
     }
 

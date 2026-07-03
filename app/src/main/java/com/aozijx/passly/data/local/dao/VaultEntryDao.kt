@@ -49,6 +49,9 @@ interface VaultEntryDao {
     @Delete
     suspend fun delete(entry: VaultEntryEntity)
 
+    @Query("DELETE FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE id = :entryId")
+    suspend fun deleteById(entryId: Int)
+
     @Query("DELETE FROM ${DatabaseConfig.TABLE_ENTRIES}")
     suspend fun deleteAll()
 }
