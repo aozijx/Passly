@@ -43,7 +43,8 @@ fun VaultContent(
     backupDirectoryUri: String?,
     onSettingsClick: () -> Unit = {},
     onPlainExportClick: () -> Unit = {},
-    onShowDetail: (VaultEntry) -> Unit = {}
+    onShowDetail: (VaultEntry) -> Unit = {},
+    isDatabaseInitializing: Boolean = false
 ) {
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -134,7 +135,8 @@ fun VaultContent(
                 onSettingsClick = onSettingsClick,
                 isStatusBarAutoHide = vaultDisplayConfig.isStatusBarAutoHide,
                 isTopBarCollapsible = vaultDisplayConfig.isTopBarCollapsible,
-                isTabBarCollapsible = vaultDisplayConfig.isTabBarCollapsible
+                isTabBarCollapsible = vaultDisplayConfig.isTabBarCollapsible,
+                isDatabaseInitializing = isDatabaseInitializing
             )
         },
         floatingActionButton = {

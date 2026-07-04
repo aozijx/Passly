@@ -42,7 +42,8 @@ fun PasslyNavHost(
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
     backupCoordinator: BackupCoordinator,
-    onPlainExportClick: () -> Unit
+    onPlainExportClick: () -> Unit,
+    isDatabaseInitializing: Boolean = false
 ) {
     val dataViewModel: DataViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
@@ -73,7 +74,8 @@ fun PasslyNavHost(
                 onPlainExportClick = onPlainExportClick,
                 onShowDetail = { entry ->
                     navController.navigate(AppRoute.Detail.createRoute(entry.id))
-                }
+                },
+                isDatabaseInitializing = isDatabaseInitializing
             )
         }
 

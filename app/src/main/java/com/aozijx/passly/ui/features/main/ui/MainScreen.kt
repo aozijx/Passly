@@ -4,6 +4,8 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -80,39 +82,49 @@ internal fun MainScreen(
         dynamicColor = mainUiState.isDynamicColor,
         themeColor = mainUiState.themeColor
     ) {
-        when {
-            mainUiState.databaseError != null -> {
-                PlainExportDialog(
-                    type = PlainExportDialogType.DatabaseError,
-                    onExportBackup = {
-                        viewModel.handleIntent(MainIntent.ExportEmergencyBackup(context))
-                    },
-                    onResetOrCancel = {
-                        context.deleteDatabase(DatabaseConfig.DATABASE_NAME)
-                        Toast.makeText(
-                            context, "数据库已清除，请重启应用", Toast.LENGTH_SHORT
-                        ).show()
-                        activity.finishAffinity()
-                        exitProcess(0)
-                    }
-                )
-            }
+        Crossfade(
+            targetState = when {
+                mainUiState.databaseError != null -> "error"
+                mainUiState.isAuthorized -> "main"
+                else -> "verification"
+            },
+            animationSpec = tween(300),
+            label = "auth_transition"
+        ) { state ->
+            when (state) {
+                "error" -> {
+                    PlainExportDialog(
+                        type = PlainExportDialogType.DatabaseError,
+                        onExportBackup = {
+                            viewModel.handleIntent(MainIntent.ExportEmergencyBackup(context))
+                        },
+                        onResetOrCancel = {
+                            context.deleteDatabase(DatabaseConfig.DATABASE_NAME)
+                            Toast.makeText(
+                                context, "数据库已清除，请重启应用", Toast.LENGTH_SHORT
+                            ).show()
+                            activity.finishAffinity()
+                            exitProcess(0)
+                        }
+                    )
+                }
 
-            mainUiState.isAuthorized -> {
-                AppMainContent(
-                    activity = activity,
-                    mainViewModel = viewModel,
-                    backupCoordinator = backupCoordinator,
-                    onPlainExportPickerRequest = { fileName ->
-                        plainExportPickerLauncher.launch(fileName)
-                    })
-            }
+                "main" -> {
+                    AppMainContent(
+                        activity = activity,
+                        mainViewModel = viewModel,
+                        backupCoordinator = backupCoordinator,
+                        onPlainExportPickerRequest = { fileName ->
+                            plainExportPickerLauncher.launch(fileName)
+                        })
+                }
 
-            else -> {
-                VerificationScreen(
-                    viewModel = verificationViewModel,
-                    activity = activity
-                )
+                else -> {
+                    VerificationScreen(
+                        viewModel = verificationViewModel,
+                        activity = activity
+                    )
+                }
             }
         }
     }

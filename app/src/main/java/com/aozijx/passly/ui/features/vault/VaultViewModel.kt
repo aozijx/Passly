@@ -37,7 +37,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
@@ -77,7 +76,7 @@ class VaultViewModel @Inject constructor(
     private val queryCoordinator = VaultQueryCoordinator(vaultUseCases)
     private val searchFilter = SearchFilterState(
         viewModelScope,
-        initialSort = runBlocking { systemSettingsUseCases.vaultSortOption.first() }
+        initialSort = SortOption.DEFAULT
     )
 
     private val isAutoDownloadIcons: StateFlow<Boolean> =
@@ -190,6 +189,11 @@ class VaultViewModel @Inject constructor(
     init {
         totp.start { listCoordinator.state.value.items }
         autofill.refreshStatus(getApplication())
+        viewModelScope.launch {
+            systemSettingsUseCases.vaultSortOption.first().let {
+                searchFilter.updateSelectedSort(it)
+            }
+        }
     }
 
     // --- 业务协调 ---

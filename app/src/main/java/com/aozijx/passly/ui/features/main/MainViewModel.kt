@@ -101,12 +101,12 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             authGateway.isAuthorized.collect { authorized ->
                 if (authorized) {
-                    _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
-                }
-                _uiState.update { it.copy(isAuthorized = authorized) }
-                if (authorized) {
+                    _uiState.update { it.copy(isAuthorized = true, databaseError = null) }
+                    _uiState.update { it.copy(isDatabaseInitializing = true) }
                     initializeDatabase()
                     emitEffect(MainEffect.NavigateToVault)
+                } else {
+                    _uiState.update { it.copy(isAuthorized = false) }
                 }
             }
         }

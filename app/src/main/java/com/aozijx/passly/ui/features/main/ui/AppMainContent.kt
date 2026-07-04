@@ -30,6 +30,7 @@ internal fun AppMainContent(
     val vaultViewModel: VaultViewModel = hiltViewModel()
     val dataViewModel: DataViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
+    val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     var showPlainExportRiskDialog by remember { mutableStateOf(false) }
     val navController = rememberNavController()
 
@@ -39,7 +40,8 @@ internal fun AppMainContent(
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
         backupCoordinator = backupCoordinator,
-        onPlainExportClick = { showPlainExportRiskDialog = true }
+        onPlainExportClick = { showPlainExportRiskDialog = true },
+        isDatabaseInitializing = mainUiState.isDatabaseInitializing
     )
 
     if (showPlainExportRiskDialog) {

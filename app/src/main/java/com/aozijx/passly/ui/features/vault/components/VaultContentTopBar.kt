@@ -24,7 +24,8 @@ fun VaultContentTopBar(
     onSettingsClick: () -> Unit,
     isStatusBarAutoHide: Boolean,
     isTopBarCollapsible: Boolean,
-    isTabBarCollapsible: Boolean
+    isTabBarCollapsible: Boolean,
+    isDatabaseInitializing: Boolean = false
 ) {
     Column {
         VaultTopBar(
@@ -40,7 +41,7 @@ fun VaultContentTopBar(
             isTabBarCollapsible = isTabBarCollapsible
         )
 
-        if (uiState.isVaultItemsLoading) {
+        if (uiState.isVaultItemsLoading || isDatabaseInitializing) {
             LinearProgressIndicator(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary,
