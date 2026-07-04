@@ -28,10 +28,8 @@ import com.aozijx.passly.ui.features.vault.model.VaultTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -47,14 +45,9 @@ class VaultViewModel @Inject constructor(
 ) : AndroidViewModel(application) {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
-    val effects: SharedFlow<VaultEffect> = _effects.asSharedFlow()
 
     private fun emitError(message: String) {
         _effects.tryEmit(VaultEffect.ShowError(message))
-    }
-
-    private fun emitToast(message: String) {
-        _effects.tryEmit(VaultEffect.ShowToast(message))
     }
 
     private val autofill = AutofillCoordinator()
@@ -241,7 +234,7 @@ class VaultViewModel @Inject constructor(
             item = item,
             uri = uri,
             onFailed = {
-                emitToast("图标保存失败")
+                _effects.tryEmit(VaultEffect.ShowToast("图标保存失败"))
             }
         )
     }
