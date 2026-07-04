@@ -62,7 +62,7 @@ class MainViewModel @Inject constructor(
 
             MainIntent.UpdateInteraction -> authGateway.onUserInteraction()
             MainIntent.CheckAndLock -> authGateway.checkAndLock()
-            MainIntent.RetryDatabaseInitialization -> initializeDatabase(isRetry = true)
+            MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             else -> Unit
         }
     }
@@ -101,9 +101,24 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             authGateway.isAuthorized.collect { authorized ->
                 if (authorized) {
-                    _uiState.update { it.copy(isAuthorized = true, databaseError = null) }
-                    _uiState.update { it.copy(isDatabaseInitializing = true) }
-                    initializeDatabase()
+                    _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
+                    val initResult = databaseInitializer.initialize()
+                    _uiState.update {
+                        it.copy(
+                            isDatabaseInitializing = false,
+                            databaseError = initResult.error
+                        )
+                    }
+
+                    initResult.recoveryNotice?.let { notice ->
+                        emitEffect(MainEffect.ShowToast(notice))
+                    }
+                    initResult.error?.let { error ->
+                        val msg = "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
+                        emitEffect(MainEffect.ShowError(msg))
+                    }
+
+                    _uiState.update { it.copy(isAuthorized = true) }
                     emitEffect(MainEffect.NavigateToVault)
                 } else {
                     _uiState.update { it.copy(isAuthorized = false) }
@@ -142,11 +157,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun initializeDatabase(isRetry: Boolean = false) {
+    private fun initializeDatabase() {
         viewModelScope.launch {
             _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
-            val initResult =
-                if (isRetry) databaseInitializer.retry() else databaseInitializer.initialize()
+            val initResult = databaseInitializer.retry()
             _uiState.update {
                 it.copy(
                     isDatabaseInitializing = false, databaseError = initResult.error
