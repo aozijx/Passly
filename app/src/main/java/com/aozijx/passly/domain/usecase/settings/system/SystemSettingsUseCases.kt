@@ -42,6 +42,7 @@ class SystemSettingsUseCases @Inject constructor(private val repository: SystemS
 
     // 语言
     val languageCode: Flow<String> = repository.languageCode
+    val themeColor: Flow<String> = repository.themeColor
 
     // 操作方法
     suspend fun setDarkMode(enabled: Boolean?) = repository.setDarkMode(enabled)
@@ -63,4 +64,5 @@ class SystemSettingsUseCases @Inject constructor(private val repository: SystemS
     suspend fun setAutoDownloadIcons(enabled: Boolean) = repository.setAutoDownloadIcons(enabled)
     suspend fun setVaultSortOption(sort: SortOption) = repository.setVaultSortOption(sort)
     suspend fun setLanguageCode(code: String) = repository.setLanguageCode(code)
+    suspend fun setThemeColor(color: String) = repository.setThemeColor(color)
 }

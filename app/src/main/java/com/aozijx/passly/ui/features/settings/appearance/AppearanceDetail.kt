@@ -9,12 +9,15 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -23,21 +26,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.aozijx.passly.R
 import com.aozijx.passly.core.utils.restartApp
+import com.aozijx.passly.ui.theme.themePresetByColor
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.ui.features.settings.components.switchSettingsItem
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
 import com.aozijx.passly.ui.features.settings.shell.sectionSpacing
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AppearanceDetail(
     state: AppearanceUiState,
     onDarkModeChange: (Boolean?) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
-    onLanguageChange: (String) -> Unit
+    onLanguageChange: (String) -> Unit,
+    onThemeColorChange: (Long) -> Unit
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showRestartDialog by remember { mutableStateOf(false) }
+    var showThemeColorSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     // 预加载资源字符串
@@ -47,6 +57,7 @@ internal fun AppearanceDetail(
     val settingsDarkModeOff = stringResource(R.string.settings_dark_mode_off)
     val settingsDynamicColor = stringResource(R.string.settings_dynamic_color)
     val settingsDynamicColorDesc = stringResource(R.string.settings_dynamic_color_desc)
+    val settingsThemeColor = stringResource(R.string.settings_theme_color)
     val settingsGroupLanguage = stringResource(R.string.settings_group_language)
     val settingsAppLanguage = stringResource(R.string.settings_app_language)
     val languageFollowSystem = stringResource(R.string.language_follow_system)
@@ -55,6 +66,9 @@ internal fun AppearanceDetail(
     val languageLabelMap = languageOptions.associate { option ->
         option.code to stringResource(option.labelRes)
     }
+
+    // 预加载主题色标签
+    val themeColorLabel = stringResource(themePresetByColor(state.themeColor).nameKey)
 
     Column(modifier = Modifier.sectionSpacing()) {
         Spacer(modifier = Modifier.height(8.dp))
@@ -75,6 +89,12 @@ internal fun AppearanceDetail(
                 subtitle = settingsDynamicColorDesc,
                 checked = state.isDynamicColor,
                 onCheckedChange = onDynamicColorChange
+            )
+            navigationSettingsItem(
+                icon = Icons.Default.Palette,
+                title = settingsThemeColor,
+                value = themeColorLabel,
+                onClick = { showThemeColorSheet = true }
             )
         }
 
@@ -132,6 +152,20 @@ internal fun AppearanceDetail(
                     Text(text = stringResource(R.string.language_restart_later))
                 }
             }
+        )
+    }
+
+    if (showThemeColorSheet) {
+        ThemeColorSheet(
+            selectedColor = state.themeColor,
+            sheetState = sheetState,
+            onSelect = { color ->
+                onThemeColorChange(color)
+                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                    showThemeColorSheet = false
+                }
+            },
+            onDismiss = { showThemeColorSheet = false }
         )
     }
 }

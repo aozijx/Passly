@@ -267,6 +267,16 @@
     <string name="settings_dark_mode_off">当前为浅色主题</string>
     <string name="settings_dynamic_color">动态取色</string>
     <string name="settings_dynamic_color_desc">使用系统壁纸颜色作为应用主题</string>
+    <string name="settings_theme_color">主题色</string>
+    <string name="settings_theme_color_default">默认</string>
+    <string name="settings_theme_color_blue">蓝色</string>
+    <string name="settings_theme_color_green">绿色</string>
+    <string name="settings_theme_color_red">红色</string>
+    <string name="settings_theme_color_purple">紫色</string>
+    <string name="settings_theme_color_orange">橙色</string>
+    <string name="settings_theme_color_teal">青色</string>
+    <string name="settings_theme_color_pink">粉色</string>
+    <string name="settings_theme_color_select_title">选择主题色</string>
     <string name="settings_group_language">语言</string>
     <string name="settings_app_language">应用语言</string>
     <string name="language_select_title">选择语言</string>

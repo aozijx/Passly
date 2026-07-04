@@ -16,12 +16,14 @@ data class AppearanceUiState(
     val isDarkMode: Boolean? = null,
     val isDynamicColor: Boolean = AppDefaults.Display.DYNAMIC_COLOR,
     val languageCode: String = "",
+    val themeColor: Long = 0,
 )
 
 sealed interface AppearanceUiAction {
     data class SetDarkMode(val enabled: Boolean?) : AppearanceUiAction
     data class SetDynamicColor(val enabled: Boolean) : AppearanceUiAction
     data class SetLanguageCode(val code: String) : AppearanceUiAction
+    data class SetThemeColor(val color: Long) : AppearanceUiAction
 }
 
 @HiltViewModel
@@ -32,9 +34,11 @@ class AppearanceViewModel @Inject constructor(
     val config: StateFlow<AppearanceUiState> = combine(
         systemSettingsUseCases.isDarkMode,
         systemSettingsUseCases.isDynamicColor,
-        systemSettingsUseCases.languageCode
-    ) { dm, dc, lang ->
-        AppearanceUiState(isDarkMode = dm, isDynamicColor = dc, languageCode = lang)
+        systemSettingsUseCases.languageCode,
+        systemSettingsUseCases.themeColor
+    ) { dm, dc, lang, tc ->
+        val themeColorLong = tc.toLongOrNull() ?: 0L
+        AppearanceUiState(isDarkMode = dm, isDynamicColor = dc, languageCode = lang, themeColor = themeColorLong)
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
@@ -53,6 +57,11 @@ class AppearanceViewModel @Inject constructor(
 
             is AppearanceUiAction.SetLanguageCode -> viewModelScope.launch {
                 systemSettingsUseCases.setLanguageCode(action.code)
+            }
+
+            is AppearanceUiAction.SetThemeColor -> viewModelScope.launch {
+                val colorStr = if (action.color == 0L) "" else action.color.toString()
+                systemSettingsUseCases.setThemeColor(colorStr)
             }
         }
     }

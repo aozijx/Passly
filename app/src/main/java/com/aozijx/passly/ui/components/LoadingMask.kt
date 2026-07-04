@@ -35,7 +35,7 @@ fun LoadingMask(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = message,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
             }

@@ -123,10 +123,7 @@ fun VaultFab(
                     .size(56.dp)
                     .shadow(4.dp, RoundedCornerShape(12.dp))
                     .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        if (showFabMenu) MaterialTheme.colorScheme.secondaryContainer
-                        else MaterialTheme.colorScheme.primaryContainer
-                    )
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { showFabMenu = !showFabMenu },
@@ -138,7 +135,8 @@ fun VaultFab(
                 Icon(
                     Icons.Default.Add,
                     contentDescription = stringResource(R.string.add),
-                    modifier = Modifier.rotate(rotation)
+                    modifier = Modifier.rotate(rotation),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -191,7 +189,7 @@ fun FabMenuItem(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 6.dp,
         modifier = Modifier.height(48.dp)
     ) {

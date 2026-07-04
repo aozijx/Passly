@@ -7,6 +7,7 @@ data class MainUiState(
     val isAuthorized: Boolean = false,
     val isDarkMode: Boolean? = null,
     val isDynamicColor: Boolean = AppDefaults.Display.DYNAMIC_COLOR,
+    val themeColor: Long = 0,
     val isDatabaseInitializing: Boolean = false,
     val databaseError: Throwable? = null,
     val validationMessage: String? = null,

@@ -22,14 +22,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.R
 import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
@@ -92,9 +90,6 @@ fun DetailCardDialog(
             vaultViewModel.autoUnlockTotp(entry)
         }
     }
-
-    val authQrTitle = stringResource(R.string.vault_auth_qr_title)
-    val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
 
     LaunchedEffect(detailViewModel) {
         detailViewModel.effects.collectLatest { effect ->
@@ -192,15 +187,8 @@ fun DetailCardDialog(
                             )
                         },
                         onShowQrDialog = {
-                            mainViewModel.requestAuth(
-                                activity = activity,
-                                title = authQrTitle,
-                                subtitle = authQrSubtitle,
-                                onSuccess = {
-                                    totpEditState.isEditing = false
-                                    showQrDialog = true
-                                }
-                            )
+                            totpEditState.isEditing = false
+                            showQrDialog = true
                         },
                         activity = activity,
                         mainViewModel = mainViewModel,

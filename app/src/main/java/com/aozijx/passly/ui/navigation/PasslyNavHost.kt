@@ -1,6 +1,8 @@
 package com.aozijx.passly.ui.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,15 +47,19 @@ fun PasslyNavHost(
     val dataViewModel: DataViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
 
-    NavHost(
+    Surface(
         modifier = Modifier.fillMaxSize(),
-        navController = navController,
-        startDestination = AppRoute.Vault.route,
-        enterTransition = PasslyNavigationAnim.enterTransition,
-        exitTransition = PasslyNavigationAnim.exitTransition,
-        popEnterTransition = PasslyNavigationAnim.popEnterTransition,
-        popExitTransition = PasslyNavigationAnim.popExitTransition
+        color = MaterialTheme.colorScheme.background
     ) {
+        NavHost(
+            modifier = Modifier.fillMaxSize(),
+            navController = navController,
+            startDestination = AppRoute.Vault.route,
+            enterTransition = PasslyNavigationAnim.enterTransition,
+            exitTransition = PasslyNavigationAnim.exitTransition,
+            popEnterTransition = PasslyNavigationAnim.popEnterTransition,
+            popExitTransition = PasslyNavigationAnim.popExitTransition
+        ) {
         composable(AppRoute.Vault.route) {
             VaultContent(
                 activity = activity,
@@ -127,6 +133,7 @@ fun PasslyNavHost(
                 settingsViewModel = settingsViewModel,
                 onUpdateInteraction = onUpdateInteraction
             )
+        }
         }
     }
 }

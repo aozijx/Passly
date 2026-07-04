@@ -18,6 +18,7 @@ import com.aozijx.passly.data.repository.settings.internal.SWIPE_ENABLED_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_LEFT_ACTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_RIGHT_ACTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY
+import com.aozijx.passly.data.repository.settings.internal.THEME_COLOR_KEY
 import com.aozijx.passly.data.repository.settings.internal.VAULT_SORT_OPTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.VISIBLE_VAULT_TABS_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
@@ -114,6 +115,10 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         appContext.settingsDataStore.data.map { prefs ->
             prefs[LANGUAGE_CODE_KEY] ?: ""
         }
+    override val themeColor: Flow<String> =
+        appContext.settingsDataStore.data.map { prefs ->
+            prefs[THEME_COLOR_KEY] ?: ""
+        }
 
     override suspend fun setDarkMode(enabled: Boolean?) {
         appContext.settingsDataStore.edit {
@@ -197,5 +202,9 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
 
     override suspend fun setLanguageCode(code: String) {
         appContext.settingsDataStore.edit { it[LANGUAGE_CODE_KEY] = code }
+    }
+
+    override suspend fun setThemeColor(color: String) {
+        appContext.settingsDataStore.edit { it[THEME_COLOR_KEY] = color }
     }
 }

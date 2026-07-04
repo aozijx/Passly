@@ -17,6 +17,7 @@ object CardStyleTokens {
         val elevation = 3.dp
         val contentPadding = 16.dp
         val iconTextSpacing = 20.dp
+        val maxWidth = 480.dp
 
         const val IMAGE_OVERLAY_ALPHA = 0.22f
         const val CHIP_BG_ALPHA = 0.82f

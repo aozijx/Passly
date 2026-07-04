@@ -23,6 +23,7 @@ interface SystemSettingsRepository {
     val isAutoDownloadIcons: Flow<Boolean>
     val vaultSortOption: Flow<SortOption>
     val languageCode: Flow<String>
+    val themeColor: Flow<String>
 
     suspend fun setDarkMode(enabled: Boolean?)
     suspend fun setDynamicColor(enabled: Boolean)
@@ -40,4 +41,5 @@ interface SystemSettingsRepository {
     suspend fun setAutoDownloadIcons(enabled: Boolean)
     suspend fun setVaultSortOption(sort: SortOption)
     suspend fun setLanguageCode(code: String)
+    suspend fun setThemeColor(color: String)
 }

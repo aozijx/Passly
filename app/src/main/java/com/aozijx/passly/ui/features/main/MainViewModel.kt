@@ -124,13 +124,17 @@ class MainViewModel @Inject constructor(
             combine(
                 systemSettingsUseCases.isDarkMode,
                 systemSettingsUseCases.isDynamicColor,
+                systemSettingsUseCases.themeColor,
                 securitySettingsUseCases.lockTimeout
-            ) { isDarkMode, isDynamicColor, lockTimeout ->
-                Triple(isDarkMode, isDynamicColor, lockTimeout)
-            }.collect { (isDarkMode, isDynamicColor, lockTimeout) ->
+            ) { isDarkMode, isDynamicColor, themeColor, lockTimeout ->
+                Pair(Triple(isDarkMode, isDynamicColor, themeColor), lockTimeout)
+            }.collect { (triple, lockTimeout) ->
+                val (isDarkMode, isDynamicColor, themeColorStr) = triple
+                val themeColorLong = themeColorStr.toLongOrNull() ?: 0L
                 _uiState.update {
                     it.copy(
-                        isDarkMode = isDarkMode, isDynamicColor = isDynamicColor
+                        isDarkMode = isDarkMode, isDynamicColor = isDynamicColor,
+                        themeColor = themeColorLong
                     )
                 }
                 authGateway.updateLockTimeout(lockTimeout)

@@ -19,7 +19,7 @@ fun GroupCard(
     modifier: Modifier = Modifier,
     radius: Dp = 18.dp,
     innerRadius: Dp = 2.dp,
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    backgroundColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     enabled: Boolean = true,
     onClick: (() -> Unit)? = null,

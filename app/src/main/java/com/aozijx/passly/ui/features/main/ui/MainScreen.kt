@@ -77,7 +77,8 @@ internal fun MainScreen(
 
     AppTheme(
         darkTheme = if (mainUiState.isDarkMode == true) true else null,
-        dynamicColor = mainUiState.isDynamicColor
+        dynamicColor = mainUiState.isDynamicColor,
+        themeColor = mainUiState.themeColor
     ) {
         when {
             mainUiState.databaseError != null -> {
