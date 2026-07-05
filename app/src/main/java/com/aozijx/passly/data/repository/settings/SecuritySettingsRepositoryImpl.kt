@@ -11,7 +11,7 @@ import com.aozijx.passly.data.repository.settings.internal.LOCK_ON_BACKGROUND_KE
 import com.aozijx.passly.data.repository.settings.internal.LOCK_TIMEOUT_KEY
 import com.aozijx.passly.data.repository.settings.internal.SECURE_CONTENT_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow

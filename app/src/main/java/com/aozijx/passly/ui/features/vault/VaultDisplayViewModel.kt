@@ -2,7 +2,7 @@ package com.aozijx.passly.ui.features.vault
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases

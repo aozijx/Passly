@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.vault.components.topbar.components
+package com.aozijx.passly.ui.features.vault.components.topbar
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility

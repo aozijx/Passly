@@ -4,7 +4,7 @@ import com.aozijx.passly.core.auth.session.AppIdleMonitor
 import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

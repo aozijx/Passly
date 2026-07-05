@@ -1,4 +1,4 @@
-package com.aozijx.passly.core
+package com.aozijx.passly.core.platform
 
 import android.content.Context
 import android.content.res.Configuration

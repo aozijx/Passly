@@ -2,7 +2,7 @@ package com.aozijx.passly.core.auth.validation
 
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import dagger.Reusable
 import javax.inject.Inject
 

@@ -6,7 +6,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.edit
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.nio.ByteBuffer
 import java.security.KeyStore

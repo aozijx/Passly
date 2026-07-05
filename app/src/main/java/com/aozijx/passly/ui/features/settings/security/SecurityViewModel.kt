@@ -7,7 +7,7 @@ import com.aozijx.passly.core.auth.VerificationGatewayImpl
 
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel

@@ -11,7 +11,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.core.LocaleHelper
+import com.aozijx.passly.core.platform.LocaleHelper
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.main.MainNotificationPermissionController

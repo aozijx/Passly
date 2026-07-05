@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.auth.apppassword
 
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 
 object AppPasswordComplexityPolicy {
 

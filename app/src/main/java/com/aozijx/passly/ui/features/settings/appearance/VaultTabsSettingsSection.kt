@@ -21,7 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.ui.features.settings.components.GroupCard
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup

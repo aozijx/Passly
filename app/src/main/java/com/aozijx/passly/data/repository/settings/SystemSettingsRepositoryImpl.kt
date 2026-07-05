@@ -22,7 +22,7 @@ import com.aozijx.passly.data.repository.settings.internal.THEME_COLOR_KEY
 import com.aozijx.passly.data.repository.settings.internal.VAULT_SORT_OPTION_KEY
 import com.aozijx.passly.data.repository.settings.internal.VISIBLE_VAULT_TABS_KEY
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.domain.model.AutofillUiMode
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle

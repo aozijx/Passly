@@ -1,7 +1,4 @@
-package com.aozijx.passly.domain
-
-import com.aozijx.passly.domain.model.AutofillUiMode
-import com.aozijx.passly.domain.model.SwipeActionType
+package com.aozijx.passly.domain.model
 
 object AppDefaults {
     object Lock {

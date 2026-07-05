@@ -36,9 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.ui.features.vault.VaultViewModel
-import com.aozijx.passly.ui.features.vault.components.topbar.components.VaultDropdownMenu
-import com.aozijx.passly.ui.features.vault.components.topbar.components.VaultSearchBar
-import com.aozijx.passly.ui.features.vault.components.topbar.components.VaultTabRow
 import com.aozijx.passly.ui.features.vault.contract.VaultUiState
 
 @OptIn(ExperimentalMaterial3Api::class)

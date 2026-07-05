@@ -7,7 +7,7 @@ import com.aozijx.passly.core.backup.BackupManager
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import java.security.MessageDigest
 import java.security.SecureRandom
 

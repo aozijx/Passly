@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.crypto.encryption
 
 import android.util.Base64
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import java.nio.ByteBuffer
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec

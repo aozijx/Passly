@@ -7,7 +7,7 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.edit
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import javax.crypto.Cipher

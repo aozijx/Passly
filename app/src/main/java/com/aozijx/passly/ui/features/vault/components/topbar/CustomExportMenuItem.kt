@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.vault.components.topbar.components
+package com.aozijx.passly.ui.features.vault.components.topbar
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row

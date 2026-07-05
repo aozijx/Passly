@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Base64
 
 import com.aozijx.passly.core.backup.BackupManager
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import java.nio.ByteBuffer
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec

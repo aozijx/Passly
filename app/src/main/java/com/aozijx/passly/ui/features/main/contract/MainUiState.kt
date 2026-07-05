@@ -1,6 +1,6 @@
 package com.aozijx.passly.ui.features.main.contract
 
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import java.io.File
 
 data class MainUiState(

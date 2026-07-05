@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.crypto.encryption
 
 import com.aozijx.passly.core.crypto.memory.MemoryCleaner
-import com.aozijx.passly.domain.AppDefaults
+import com.aozijx.passly.domain.model.AppDefaults
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
