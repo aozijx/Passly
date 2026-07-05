@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.local.UserConfigFileStore
+import com.aozijx.passly.data.local.datastore.UserConfigFileStore
 import com.aozijx.passly.domain.model.UserConfig
 import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
 import kotlinx.coroutines.CoroutineScope
