@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.backup
+package com.aozijx.passly.service.backup
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -47,22 +47,23 @@ class BackupImportIconSyncForegroundService : Service() {
         )
 
         serviceScope.launch {
-            val result = iconSyncSupport.syncRemoteIcons(this@BackupImportIconSyncForegroundService) { processed, total, success, failed ->
-                val content = if (total > 0) {
-                    "正在同步图标：$processed/$total（成功 $success，失败 $failed）"
-                } else {
-                    "正在同步备份图标..."
-                }
-                notificationManager().notify(
-                    NOTIFICATION_ID,
-                    buildNotification(
-                        content = content,
-                        ongoing = true,
-                        processed = processed,
-                        total = total
+            val result =
+                iconSyncSupport.syncRemoteIcons(this@BackupImportIconSyncForegroundService) { processed, total, success, failed ->
+                    val content = if (total > 0) {
+                        "正在同步图标：$processed/$total（成功 $success，失败 $failed）"
+                    } else {
+                        "正在同步备份图标..."
+                    }
+                    notificationManager().notify(
+                        NOTIFICATION_ID,
+                        buildNotification(
+                            content = content,
+                            ongoing = true,
+                            processed = processed,
+                            total = total
+                        )
                     )
-                )
-            }
+                }
             val content = when {
                 result.skippedByNoNetwork -> "未联网，图标同步已跳过"
                 result.total == 0 -> "没有需要下载的远程图标"

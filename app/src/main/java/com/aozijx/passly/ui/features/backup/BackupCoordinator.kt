@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.model.BackupException
 import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
+import com.aozijx.passly.service.backup.BackupImportIconSyncForegroundService
 import com.aozijx.passly.ui.features.backup.contract.BackupUiState
 import com.aozijx.passly.ui.features.common.toUiMessage
 import kotlinx.coroutines.CoroutineScope
@@ -214,9 +215,9 @@ class BackupCoordinator @Inject constructor(
         }
 
         scope.launch {
-            when (val result = backupUseCases.exportPlainBackup(uri)) {
-                is AppResult.Success -> backupMessage = "明文备份已导出"
-                is AppResult.Failure -> backupMessage = result.error.toUiMessage("导出失败")
+            backupMessage = when (val result = backupUseCases.exportPlainBackup(uri)) {
+                is AppResult.Success -> "明文备份已导出"
+                is AppResult.Failure -> result.error.toUiMessage("导出失败")
             }
         }
     }
