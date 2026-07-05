@@ -13,7 +13,7 @@ object BiometricAuthenticator {
         title: String,
         subtitle: String = "",
         cryptoObject: BiometricPrompt.CryptoObject? = null,
-        onError: ((String) -> Unit)? = null,
+        onError: ((Int, String) -> Unit)? = null,
         onSuccess: (BiometricPrompt.AuthenticationResult) -> Unit
     ) {
         val biometricManager = BiometricManager.from(activity)
@@ -26,7 +26,7 @@ object BiometricAuthenticator {
                 BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "请先在系统设置中录入指纹或面部"
                 else -> "认证不可用 (错误码: $canAuthenticate)"
             }
-            onError?.invoke(errorMsg)
+            onError?.invoke(canAuthenticate, errorMsg)
             return
         }
 
@@ -45,7 +45,7 @@ object BiometricAuthenticator {
                     ) {
                         Toast.makeText(activity, error, Toast.LENGTH_SHORT).show()
                     }
-                    onError?.invoke(error)
+                    onError?.invoke(errorCode, error)
                 }
 
                 override fun onAuthenticationFailed() {
@@ -65,7 +65,7 @@ object BiometricAuthenticator {
                 biometricPrompt.authenticate(promptBuilder.build())
             }
         }.onFailure { e ->
-            onError?.invoke("启动认证失败: ${e.message}")
+            onError?.invoke(-1, "启动认证失败: ${e.message}")
         }
     }
 }

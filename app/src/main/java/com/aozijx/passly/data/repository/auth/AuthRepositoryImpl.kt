@@ -80,10 +80,15 @@ internal class AuthRepositoryImpl @Inject constructor(
                 title = title,
                 subtitle = subtitle,
                 cryptoObject = BiometricPrompt.CryptoObject(cipher),
-                onError = { error ->
+                onError = { errorCode, error ->
                     if (continuation.isActive) {
                         errorHandler.cleanupSensitiveState()
-                        continuation.resume(AppResult.failure(AppError.AuthFailed(error)))
+                        val authError = errorHandler.classifyBiometricError(errorCode, error)
+                        // 如果可降级且有 App Password，记录日志提示
+                        if (authError.canFallback() && isAppPasswordEnabled.value) {
+                            Logcat.w("AuthRepo", "Biometric error [$errorCode], fallback available")
+                        }
+                        continuation.resume(AppResult.failure(AppError.AuthFailed(authError.toUserMessage())))
                     }
                 },
                 onSuccess = { result ->
@@ -138,9 +143,10 @@ internal class AuthRepositoryImpl @Inject constructor(
                 activity = activity,
                 title = title,
                 subtitle = subtitle,
-                onError = { error ->
+                onError = { errorCode, error ->
                     if (continuation.isActive) {
-                        continuation.resume(AppResult.failure(AppError.AuthFailed(error)))
+                        val authError = errorHandler.classifyBiometricError(errorCode, error)
+                        continuation.resume(AppResult.failure(AppError.AuthFailed(authError.toUserMessage())))
                     }
                 },
                 onSuccess = {
@@ -230,10 +236,10 @@ internal class AuthRepositoryImpl @Inject constructor(
                     title = "重加密身份验证",
                     subtitle = "请验证身份以更新安全策略",
                     cryptoObject = BiometricPrompt.CryptoObject(cipher),
-                    onError = { error ->
+                    onError = { errorCode, error ->
                         if (continuation.isActive) {
                             val msg = requestValidator.sanitizeMessage(error)
-                            Logcat.e("AuthRepo", "Rekey auth error: $msg")
+                            Logcat.e("AuthRepo", "Rekey auth error [$errorCode]: $msg")
                             recoverFromFailedRekey(invalidateOnBiometricChange)
                             continuation.resume(AppResult.failure(AppError.AuthFailed(msg)))
                         }

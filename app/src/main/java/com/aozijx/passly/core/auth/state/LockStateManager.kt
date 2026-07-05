@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -87,17 +86,5 @@ class LockStateManager @Inject constructor(
         Logcat.i(TAG, "Ensuring locked state")
         passphraseManager.clearDecryptedPassphrase()
         SessionCryptoKey.clearSessionKey()
-    }
-
-    /**
-     * 外部认证成功回调（如 AutofillAuthActivity）。
-     */
-    suspend fun onExternalAuthorized() = stateMutex.withLock {
-        if (!_isAuthorized.value) {
-            Logcat.i(TAG, "External auth: marking authorized")
-            _isAuthorized.update { true }
-            idleMonitor.configure(currentTimeoutMs) { lock() }
-            idleMonitor.resetIdleTimer()
-        }
     }
 }
