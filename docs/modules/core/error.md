@@ -65,30 +65,29 @@
     - 捕获底层异常并映射为 `AppError.BackupFailed`
 2. `domain/usecase/backup/BackupUseCases.kt`
     - 使用 `AppResult.runSuspendCatching(...)` 返回 `AppResult`
-3. `features/backup/BackupCoordinator.kt`
+3. `ui/features/backup/BackupCoordinator.kt`
     - 消费 `AppResult`，失败分支走 `error.toUiMessage(...)`
 
 ### 4.2 通用 UI 映射
 
-- `features/common/AppErrorUiMapper.kt`
+- `ui/features/common/AppErrorUiMapper.kt`
     - `AppError.toUiMessage(...)`
     - `Throwable.toUiMessage(...)`（兜底统一转 `AppError`）
 
 ## 5. 已完成改造
 
-- `AppError` 增加 `code/layer/recoverable/trace`
+- `AppError` 增加 `code/layer/recoverable/trace`，错误码已标准化（`AUTH_FAILED`、`DATABASE_LOCKED`、`DATABASE_INIT_FAILED`、`BACKUP_FAILED`、`UNEXPECTED`）
 - 引入 `ErrorTrace`，支持 `traceId` 与 `operation` 追踪
 - `AppResult.runSuspendCatching(...)` 已支持挂起函数包装
 - Backup 主链路已改为：Data 产出 `AppError`，Domain 返回 `AppResult`
-- UI 层 `features/**` 已完成 `error.message`/`Throwable.message` 展示点收口到 `toUiMessage(...)`
+- UI 层 `toUiMessage(...)` 已收口到 `ui/features/common/AppErrorUiMapper.kt`
 
 ## 6. 待修改项
 
 ### P0（优先处理）
 
 1. 统一 `AppError.layer` 与 `ErrorTrace.originLayer` 语义
-    - 现状：`AppError.Unexpected` 等类型内部 `layer` 固定为 `DATA`，而 `fromThrowable(layer=...)` 可能传入
-      `DOMAIN/UI`，存在语义不一致风险
+    - 现状：`AppError.Unexpected` 等类型内部 `layer` 固定为 `DATA`，而 `fromThrowable(layer=...)` 可能传入 `DOMAIN`/`UI`，存在语义不一致风险
     - 建议：允许子类接收 `layer`，或将 `layer` 统一由 `trace.originLayer` 推导
 
 2. 完成 Data 层全链路收口
@@ -98,8 +97,8 @@
 ### P1（中期优化）
 
 1. 错误码治理
-    - 将 `code` 统一为可检索规范（例如 `AUTH_FAILED`、`DB_LOCKED`、`BACKUP_IMPORT_FAILED`）
-    - 建立错误码到埋点/日志字段的映射表
+    - 当前 `code` 已统一为可检索规范（`AUTH_FAILED`、`DATABASE_LOCKED`、`DATABASE_INIT_FAILED`、`BACKUP_FAILED`、`UNEXPECTED`）
+    - 建议建立错误码到埋点/日志字段的映射表
 
 2. UI 文案资源化
     - 当前 `toUiMessage(...)` 仍包含硬编码中文
@@ -122,7 +121,7 @@
 
 ## 7. 验证清单
 
-- 编译检查：`fullDebug` / `vaultDebug`
+- 编译检查：`compileDebugKotlin`
 - 静态检查：UI 层不再直接显示 `Throwable.message`
 - 回归检查：备份、认证、数据库初始化三条关键路径错误提示一致
 - 追踪检查：失败场景能拿到 `traceId + operation + code`
@@ -131,7 +130,7 @@
 
 - `app/src/main/java/com/aozijx/passly/core/error/AppError.kt`
 - `app/src/main/java/com/aozijx/passly/core/error/AppResult.kt`
-- `app/src/main/java/com/aozijx/passly/features/common/AppErrorUiMapper.kt`
+- `app/src/main/java/com/aozijx/passly/ui/features/common/AppErrorUiMapper.kt`
 - `app/src/main/java/com/aozijx/passly/data/repository/backup/BackupRepositoryImpl.kt`
 - `app/src/main/java/com/aozijx/passly/domain/usecase/backup/BackupUseCases.kt`
-- `app/src/main/java/com/aozijx/passly/features/backup/BackupCoordinator.kt`
+- `app/src/main/java/com/aozijx/passly/ui/features/backup/BackupCoordinator.kt`

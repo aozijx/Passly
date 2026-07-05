@@ -1,6 +1,6 @@
 # Passly 改动操作手册（Change Playbook）
 
-本文档是 `getting-started/DEVELOPER_GUIDE.md` 的执行版补充，面向以下场景：
+本文档是项目目的执行版补充，面向以下场景：
 
 - 你准备改数据库结构
 - 你准备改备份格式/导入导出
@@ -24,7 +24,7 @@
 
 ```powershell
 Set-Location "D:\MyApplication\Passly"
-.\gradlew.bat :app:compileFullDebugKotlin
+.\gradlew.bat :app:compileDebugKotlin
 ```
 
 ### 0.1 执行准入（DoD）
@@ -45,8 +45,8 @@ Set-Location "D:\MyApplication\Passly"
 关键文件：
 
 - `data/local/AppDatabase.kt`
-- `data/entity/` 下实体
-- `data/mapper/VaultEntryMapper.kt`
+- `data/local/entity/` 下实体
+- `data/mapper/` 下映射器
 - `core/backup/BackupManager.kt`（联动）
 
 ### 1.1 改动步骤
@@ -88,7 +88,7 @@ Set-Location "D:\MyApplication\Passly"
 关键文件：
 
 - `core/backup/BackupManager.kt`
-- `data/mapper/VaultEntryMapper.kt`
+- `data/mapper/` 下映射器
 - `data/local/AppDatabase.kt`（联动）
 
 ### 2.1 改动步骤
@@ -127,18 +127,17 @@ Set-Location "D:\MyApplication\Passly"
 
 关键文件：
 
-- `core/designsystem/model/VaultCardStyleTokens.kt`
-- `core/designsystem/base/VaultItem.kt`
-- `features/vault/components/entries/PasswordStyleVaultItem.kt`
-- `features/vault/components/entries/TotpStyleVaultItem.kt`
-- `features/vault/components/entries/VaultCardStyleRegistry.kt`
-- `features/settings/components/CardStyleSettingsSection.kt`
+- `ui/features/vault/components/cardstyle/CardStyleTokens.kt`
+- `ui/features/vault/components/cardstyle/DefaultCardStyle.kt`
+- `ui/features/vault/components/cardstyle/PasswordCardStyle.kt`
+- `ui/features/vault/components/cardstyle/TotpCardStyle.kt`
+- `ui/features/settings/appearance/CardStyleSettingsSection.kt`
 
 ### 3.1 改动步骤
 
-1. 优先修改 `VaultCardStyleTokens.kt`，避免散落硬编码。
-2. 仅在必要时改具体组件结构（`VaultItem` / `Password` / `Totp`）。
-3. 通过 `VaultCardStyleRegistry` 检查所有 style 分支都可渲染。
+1. 优先修改 `CardStyleTokens.kt`，避免散落硬编码。
+2. 仅在必要时改具体组件结构（`DefaultCardStyle` / `PasswordCardStyle` / `TotpCardStyle`）。
+3. 检查所有 card style 分支都可渲染。
 4. 验证设置页预览与真实列表视觉一致。
 
 ### 3.2 风险点
@@ -149,7 +148,7 @@ Set-Location "D:\MyApplication\Passly"
 
 ### 3.3 验证清单
 
-- [ ] `DEFAULT` / `BASE` / `PASSWORD` / `TOTP` 都可正常渲染。
+- [ ] `DEFAULT` / `PASSWORD` / `TOTP` 都可正常渲染。
 - [ ] 列表页与设置页预览一致。
 - [ ] 深色模式、浅色模式都可读。
 - [ ] 关键信息（标题、副标题、标签、进度）无遮挡。
@@ -158,26 +157,27 @@ Set-Location "D:\MyApplication\Passly"
 ### 3.4 回滚建议
 
 1. 保留 token 结构，先回滚 token 数值，不急于回滚组件代码。
-2. 出现局部异常时，先恢复 `VaultCardStyleRegistry` 对应分支。
+2. 出现局部异常时，先恢复对应 card style 分支。
 3. 若仅预览异常，优先修复设置页调用链，避免影响主列表。
 
 ---
 
-## 4. Autofill 改动（Service / Engine）
+## 4. Autofill 改动（Service / Builder / Parser）
 
 适用范围：匹配规则、候选筛选、填充展示、保存请求处理。
 
 关键文件（按模块）：
 
 - `service/autofill/`
-- `service/autofill/engine/`
-- `service/autofill/presentation/`
+- `service/autofill/builder/`
+- `service/autofill/parser/`
+- `service/autofill/presenter/`
 
 ### 4.1 改动步骤
 
 1. 先定义匹配策略变化（域名、包名、权重规则）。
-2. 在 `engine` 层实现，不在 UI 展示层写业务规则。
-3. 在 `presentation` 层只做展示映射与 RemoteViews 组装。
+2. 在 `builder`/`parser` 层实现，不在 UI 展示层写业务规则。
+3. 在 `presenter` 层只做展示映射与 RemoteViews 组装。
 4. 评估慢操作日志与超时路径，必要时加保护。
 
 ### 4.2 风险点
@@ -197,7 +197,7 @@ Set-Location "D:\MyApplication\Passly"
 ### 4.4 回滚建议
 
 1. 优先回滚匹配规则变更，保留日志增强代码。
-2. 若表现层异常，先恢复旧 presentation 组装逻辑。
+2. 若表现层异常，先恢复旧 presenter 组装逻辑。
 3. 对线上问题优先"降低风险面"而不是"扩展功能"。
 
 ---
@@ -206,7 +206,7 @@ Set-Location "D:\MyApplication\Passly"
 
 - [ ] 已说明改动属于哪一类（数据库/备份/卡片/Autofill）。
 - [ ] 已按对应章节步骤执行。
-- [ ] 已完成本地编译：`:app:compileFullDebugKotlin`。
+- [ ] 已完成本地编译：`:app:compileDebugKotlin`。
 - [ ] 已完成对应章节验证清单。
 - [ ] 已评估回滚路径且可执行。
 
@@ -230,10 +230,10 @@ Set-Location "D:\MyApplication\Passly"
 
 关键文件：
 
-- `core/crypto/CryptoManager.kt` — 字段级 AES-256-GCM 加解密
-- `core/crypto/SessionCryptoKey.kt` — 会话 DEK 的 HKDF 派生与生命周期
-- `core/crypto/CryptoAccess.kt` — 统一解密门面（吞异常返 null）
-- `core/security/DatabasePassphraseManager.kt` — DB passphrase 的 Keystore 绑定与解锁
+- `core/crypto/encryption/FieldEncryptor.kt` — 字段级 AES-256-GCM 加解密
+- `core/crypto/encryption/SessionCryptoKey.kt` — 会话 DEK 的 HKDF 派生与生命周期
+- `core/crypto/encryption/CryptoAccess.kt` — 统一解密门面（吞异常返 null）
+- `core/crypto/keystore/DatabasePassphraseManager.kt` — DB passphrase 的 Keystore 绑定与解锁
 - `data/repository/auth/AuthRepositoryImpl.kt` — DEK 加载 / 清除时机
 - `data/repository/backup/internal/BackupFieldEncryptor.kt` — 备份导入导出的加解密桥
 
@@ -246,7 +246,7 @@ BiometricPrompt
             ├─ setDecryptedPassphrase (SQLCipher 口令)
             └─ SessionCryptoKey.deriveAndSet(passphrase)
                  └─ HMAC-SHA256(passphrase, label) → 32-byte field DEK
-                      └─ CryptoManager.encrypt / decrypt 使用此 DEK
+                      └─ FieldEncryptor.encrypt / decrypt 使用此 DEK
 ```
 
 - DEK 与 DB passphrase 同生命周期：`lock()` 同时清除两者。
@@ -297,9 +297,7 @@ BiometricPrompt
 关键文件：
 
 - `app/src/main/res/xml/network_security_config.xml` — pin-set 与过期时间
-- `app/src/main/java/com/aozijx/passly/core/media/FaviconUtils.kt` — release 下的 provider allowlist
-  路由
-- `docs/PROJECT_ISSUES_AND_SOLUTIONS.md` — SEC-05 处置记录与维护要求
+- `app/src/main/java/com/aozijx/passly/core/media/FaviconUtils.kt` — release 下的 provider allowlist 路由
 
 ### 8.1 改动步骤
 
@@ -319,9 +317,8 @@ BiometricPrompt
 
 - [ ] `network_security_config.xml` 中每个 pinned 域名至少 2 个有效 pin。
 - [ ] pin 过期时间距离当前 >= 30 天（建议提前轮换）。
-- [ ] `:app:assembleFullDebug` 与 `:app:assembleVaultDebug` 通过。
+- [ ] `:app:assembleDebug` 通过。
 - [ ] release 路径下两家 provider favicon 下载均可成功。
-- [ ] `docs/PROJECT_ISSUES_AND_SOLUTIONS.md` 的维护说明与本节一致。
 
 ### 8.4 回滚建议
 
@@ -336,6 +333,6 @@ BiometricPrompt
 可继续新增章节：
 
 - 条目类型策略改动（`domain/strategy`）
-- 扫码链路改动（`features/scanner` + `core/qr`）
+- 扫码链路改动（`ui/features/scanner` + `core/qr`）
 
 这样能把项目所有高风险改动都纳入统一 playbook。

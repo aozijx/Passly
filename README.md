@@ -17,7 +17,7 @@ Passly 是一款基于 **Jetpack Compose** 构建的离线优先隐私保险库 
 - Jetpack Compose + Material 3
 - Room + SQLCipher
 - Kotlin Coroutines + Flow
-- Koin（依赖注入）
+- Hilt（依赖注入）
 - CameraX + ML Kit（二维码扫描）
 
 ## 快速开始
@@ -26,14 +26,14 @@ Passly 是一款基于 **Jetpack Compose** 构建的离线优先隐私保险库 
 
 - Android Studio Otter (2024.2.2)+
 - JDK 21
-- Gradle 8.13+
+- Gradle 9.4.1+
 - Android 12+ (API 31+)
 
 ### 构建命令
 
 ```powershell
 # 编译
-.\gradlew.bat :app:compileVaultDebugKotlin --no-daemon
+.\gradlew.bat :app:compileDebugKotlin --no-daemon
 
 # 打包
 .\gradlew.bat :app:assembleDebug --no-daemon

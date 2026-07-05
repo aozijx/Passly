@@ -82,31 +82,32 @@ Passly 的产品定位是本地隐私保险库，核心价值来自"用户数据
 
 ---
 
-## ADR-002 手写 AppContainer 作为依赖注入方案
+## ADR-002 Hilt 作为依赖注入方案
 
 - **Status**: Accepted
 - **Date**: 2026-04-05
 
 ### Context
 
-项目规模中等，模块边界清晰，团队偏好可追踪、低魔法的依赖构建方式。
+项目规模中等，模块边界清晰，需兼顾可维护性与标准化的依赖管理。
 
 ### Decision
 
-使用手写 `AppContainer` 管理核心依赖，不强制引入 Hilt/Dagger。
+使用 Hilt 管理核心依赖，通过 `@HiltAndroidApp`、`@AndroidEntryPoint`、`@HiltViewModel` 等注解自动注入。
 
 ### Consequences
 
-- 正向：依赖关系可读性高，调试成本低。
-- 代价：容器文件随模块增长会变长，需要定期整理分组。
+- 正向：依赖关系声明式、可读性高，与 Jetpack 生态集成良好。
+- 代价：编译期代码生成增加构建时间，需理解 Hilt 生命周期语义。
 
 ### Revisit Trigger
 
-- 依赖图复杂度显著提升，手工维护成本超过收益。
+- 依赖图复杂度显著提升，编译速度成为瓶颈时重新评估。
 
 ### Related
 
-- `core/di/AppContainer.kt`
+- `core/di/DataModule.kt`
+- `app/src/main/java/com/aozijx/passly/AppContext.kt`
 
 ---
 
@@ -135,7 +136,7 @@ Passly 的产品定位是本地隐私保险库，核心价值来自"用户数据
 ### Related
 
 - `data/local/AppDatabase.kt`
-- `core/crypto/CryptoManager.kt`
+- `core/crypto/encryption/FieldEncryptor.kt`
 
 ---
 
@@ -208,7 +209,7 @@ Passly 的产品定位是本地隐私保险库，核心价值来自"用户数据
 
 ### Decision
 
-统一使用 `VaultCardStyleTokens` 管理可调样式参数；组件仅消费 token。
+统一使用 `CardStyleTokens` 管理可调样式参数；组件仅消费 token。
 
 ### Consequences
 
@@ -221,8 +222,9 @@ Passly 的产品定位是本地隐私保险库，核心价值来自"用户数据
 
 ### Related
 
-- `core/designsystem/model/VaultCardStyleTokens.kt`
-- `features/vault/components/entries/VaultCardStyleRegistry.kt`
+- `ui/features/vault/components/cardstyle/CardStyleTokens.kt`
+- `ui/features/vault/components/cardstyle/PasswordCardStyle.kt`
+- `ui/features/vault/components/cardstyle/TotpCardStyle.kt`
 
 ---
 
@@ -237,7 +239,7 @@ Passly 的产品定位是本地隐私保险库，核心价值来自"用户数据
 
 ### Decision
 
-设置页通过 `VaultCardStyleRegistry` 复用真实卡片渲染分支，避免重复实现。
+设置页通过复用 `CardStyleTokens` 和真实卡片渲染分支，避免重复实现。
 
 ### Consequences
 
@@ -250,12 +252,12 @@ Passly 的产品定位是本地隐私保险库，核心价值来自"用户数据
 
 ### Related
 
-- `features/settings/components/CardStyleSettingsSection.kt`
-- `features/vault/components/entries/VaultCardStyleRegistry.kt`
+- `ui/features/settings/appearance/CardStyleSettingsSection.kt`
+- `ui/features/vault/components/cardstyle/CardStyleTokens.kt`
 
 ---
 
-## ADR-008 Autofill 规则在 Engine 层，Presentation 仅负责展示
+## ADR-008 Autofill 规则在 Builder/Parser 层，Presenter 仅负责展示
 
 - **Status**: Accepted
 - **Date**: 2026-04-05
@@ -266,7 +268,7 @@ Autofill 若将匹配逻辑与展示混写，容易造成维护困难与隐私�
 
 ### Decision
 
-匹配/排序/筛选规则集中在 `engine`，`presentation` 仅做 RemoteViews 展示组装。
+匹配/排序/筛选规则集中在 `builder`/`parser`，`presenter` 仅做 RemoteViews 展示组装。
 
 ### Consequences
 
@@ -279,8 +281,9 @@ Autofill 若将匹配逻辑与展示混写，容易造成维护困难与隐私�
 
 ### Related
 
-- `service/autofill/engine/`
-- `service/autofill/presentation/`
+- `service/autofill/builder/`
+- `service/autofill/parser/`
+- `service/autofill/presenter/`
 
 ---
 
