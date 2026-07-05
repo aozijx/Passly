@@ -1,9 +1,8 @@
-package com.aozijx.passly.data.repository.otp
+package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.TotpConfig
 import com.aozijx.passly.domain.repository.vault.OtpRepository
-
 import javax.inject.Inject
 import javax.inject.Singleton
 

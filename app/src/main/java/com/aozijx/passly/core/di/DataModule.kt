@@ -9,7 +9,6 @@ import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
 import com.aozijx.passly.data.repository.autofill.AutofillServiceRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
-import com.aozijx.passly.data.repository.otp.OtpRepositoryImpl
 import com.aozijx.passly.data.repository.settings.BackupSettingsRepositoryImpl
 import com.aozijx.passly.data.repository.settings.DatabaseLifecycleRepositoryImpl
 import com.aozijx.passly.data.repository.settings.SecuritySettingsRepositoryImpl
@@ -17,6 +16,7 @@ import com.aozijx.passly.data.repository.settings.SystemSettingsRepositoryImpl
 import com.aozijx.passly.data.repository.settings.UserConfigRepositoryImpl
 import com.aozijx.passly.data.repository.vault.FaviconRepositoryImpl
 import com.aozijx.passly.data.repository.vault.HistoryRepositoryImpl
+import com.aozijx.passly.data.repository.vault.OtpRepositoryImpl
 import com.aozijx.passly.data.repository.vault.VaultRepositoryImpl
 import com.aozijx.passly.data.repository.vault.VaultSearchRepositoryImpl
 import com.aozijx.passly.domain.repository.auth.AuthRepository
