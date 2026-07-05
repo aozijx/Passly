@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.backup.ui
+package com.aozijx.passly.ui.features.backup.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,7 +38,7 @@ fun BackupPasswordDialog(
 ) {
     val context = LocalContext.current
     val state = backupCoordinator.state
-    
+
     val authTitle = stringResource(R.string.vault_backup_auth_title)
     val authSubtitleExport = stringResource(R.string.vault_backup_auth_subtitle_export)
     val authSubtitleImport = stringResource(R.string.vault_backup_auth_subtitle_import)
@@ -190,15 +190,15 @@ fun BackupPasswordDialog(
                     val isExport = state.isExporting
                     val canProceed = if (isExport) state.backupPassword.isNotEmpty() else true
                     if (canProceed) {
-                         val authSubtitle = if (isExport) authSubtitleExport else authSubtitleImport
+                        val authSubtitle = if (isExport) authSubtitleExport else authSubtitleImport
                         backupCoordinator.processBackupAction(
                             context = context,
                             onAuthRequired = { onSuccess ->
                                 onAuthRequired(authTitle, authSubtitle, onSuccess)
                             }
                         )
-                     }
-                 }) {
+                    }
+                }) {
                 Text(confirmText)
             }
         },

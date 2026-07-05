@@ -5,7 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.ui.features.backup.ui.BackupPathSettingsConfig
+import com.aozijx.passly.ui.features.backup.internal.BackupPathSettingsConfig
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.ui.features.settings.internal.AppPasswordDialogState
 

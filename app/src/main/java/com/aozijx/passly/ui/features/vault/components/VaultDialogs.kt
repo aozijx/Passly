@@ -5,7 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
-import com.aozijx.passly.ui.features.backup.ui.BackupPasswordDialog
+import com.aozijx.passly.ui.features.backup.components.BackupPasswordDialog
 import com.aozijx.passly.ui.features.detail.DetailCardDialog
 import com.aozijx.passly.ui.features.main.MainViewModel
 import com.aozijx.passly.ui.features.scanner.VaultScanner
