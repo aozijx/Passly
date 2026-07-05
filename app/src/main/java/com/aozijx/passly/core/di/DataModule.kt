@@ -22,7 +22,6 @@ import com.aozijx.passly.data.repository.vault.VaultSearchRepositoryImpl
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
-import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
 import com.aozijx.passly.domain.repository.settings.BackupSettingsRepository
 import com.aozijx.passly.domain.repository.settings.SecuritySettingsRepository
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
@@ -30,6 +29,7 @@ import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
+import com.aozijx.passly.domain.repository.vault.VaultAutofillRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import dagger.Binds
@@ -107,7 +107,7 @@ abstract class DataModuleBinds {
 
     @Binds
     @Singleton
-    abstract fun bindAutofillServiceRepository(impl: AutofillServiceRepositoryImpl): AutofillServiceRepository
+    abstract fun bindVaultAutofillRepository(impl: AutofillServiceRepositoryImpl): VaultAutofillRepository
 
     @Binds
     @Singleton

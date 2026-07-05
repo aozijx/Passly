@@ -13,7 +13,6 @@ import com.aozijx.passly.ui.features.common.toUiMessage
 import com.aozijx.passly.ui.features.main.contract.MainEffect
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.main.contract.MainUiState
-import com.aozijx.passly.ui.features.main.internal.MainDatabaseInitializer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,8 +31,7 @@ class MainViewModel @Inject constructor(
     private val securitySettingsUseCases: SecuritySettingsUseCases,
     private val authUseCases: AuthUseCases,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
-    private val authRequestValidator: AuthRequestValidator,
-    private val databaseInitializer: MainDatabaseInitializer
+    private val authRequestValidator: AuthRequestValidator
 ) : ViewModel() {
 
     private val authGateway = VerificationGatewayImpl(
@@ -102,18 +100,18 @@ class MainViewModel @Inject constructor(
             authGateway.isAuthorized.collect { authorized ->
                 if (authorized) {
                     _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
-                    val initResult = databaseInitializer.initialize()
+                    val outcome = databaseLifecycleUseCases.preWarmAndReport()
                     _uiState.update {
                         it.copy(
                             isDatabaseInitializing = false,
-                            databaseError = initResult.error
+                            databaseError = outcome.error
                         )
                     }
 
-                    initResult.recoveryNotice?.let { notice ->
+                    outcome.recoveryNotice?.let { notice ->
                         emitEffect(MainEffect.ShowToast(notice))
                     }
-                    initResult.error?.let { error ->
+                    outcome.error?.let { error ->
                         val msg = "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
                         emitEffect(MainEffect.ShowError(msg))
                     }
@@ -160,19 +158,19 @@ class MainViewModel @Inject constructor(
     private fun initializeDatabase() {
         viewModelScope.launch {
             _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
-            val initResult = databaseInitializer.retry()
+            val outcome = databaseLifecycleUseCases.retryAndReport()
             _uiState.update {
                 it.copy(
-                    isDatabaseInitializing = false, databaseError = initResult.error
+                    isDatabaseInitializing = false, databaseError = outcome.error
                 )
             }
 
-            initResult.recoveryNotice?.let { notice ->
+            outcome.recoveryNotice?.let { notice ->
                 emitEffect(MainEffect.ShowToast(notice))
             }
 
-            initResult.error?.let { error ->
-                val msg = "数据库错误: ${error.toUiMessage("数据库初始化失败")}" 
+            outcome.error?.let { error ->
+                val msg = "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
                 emitEffect(MainEffect.ShowError(msg))
             }
         }

@@ -15,7 +15,7 @@ import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.policy.AutofillTitlePolicy
 import com.aozijx.passly.domain.policy.DomainNormalizer
-import com.aozijx.passly.domain.repository.service.AutofillServiceRepository
+import com.aozijx.passly.domain.repository.vault.VaultAutofillRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +27,7 @@ import javax.inject.Singleton
 class AutofillServiceRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context,
     private val passphraseManager: DatabasePassphraseManager
-) : AutofillServiceRepository {
+) : VaultAutofillRepository {
 
     private val appContext = context.applicationContext
 
