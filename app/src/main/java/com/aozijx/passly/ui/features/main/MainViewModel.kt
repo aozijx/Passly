@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
-import com.aozijx.passly.ui.features.common.toUiMessage
+import com.aozijx.passly.ui.components.toUiMessage
 import com.aozijx.passly.ui.features.main.contract.MainEffect
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.main.contract.MainUiState

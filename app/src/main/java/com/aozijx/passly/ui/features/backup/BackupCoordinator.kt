@@ -17,8 +17,8 @@ import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.domain.usecase.settings.backup.BackupSettingsUseCases
 import com.aozijx.passly.service.backup.BackupImportIconSyncForegroundService
+import com.aozijx.passly.ui.components.toUiMessage
 import com.aozijx.passly.ui.features.backup.contract.BackupUiState
-import com.aozijx.passly.ui.features.common.toUiMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

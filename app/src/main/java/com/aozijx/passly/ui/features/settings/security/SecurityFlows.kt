@@ -4,7 +4,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.ui.features.common.toUiMessage
+import com.aozijx.passly.ui.components.toUiMessage
 
 internal fun handleInvalidateKeyToggle(
     context: Context,

@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import com.aozijx.passly.core.backup.BackupExportStorageSupport
-import com.aozijx.passly.ui.features.common.toUiMessage
+import com.aozijx.passly.ui.components.toUiMessage
 
 internal fun handleBackupPathPicked(
     context: Context,

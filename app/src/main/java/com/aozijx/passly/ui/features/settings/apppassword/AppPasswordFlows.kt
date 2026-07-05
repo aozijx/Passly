@@ -5,7 +5,7 @@ import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.auth.VerificationGateway
-import com.aozijx.passly.ui.features.common.toUiMessage
+import com.aozijx.passly.ui.components.toUiMessage
 
 enum class AppPasswordAction {
     SET,

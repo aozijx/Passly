@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.common
+package com.aozijx.passly.ui.components
 
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.ErrorLayer

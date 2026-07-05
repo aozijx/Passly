@@ -9,7 +9,7 @@ import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.crypto.memory.SecureString
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
-import com.aozijx.passly.ui.features.common.toUiMessage
+import com.aozijx.passly.ui.components.toUiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
