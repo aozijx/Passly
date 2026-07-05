@@ -18,10 +18,10 @@ import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
 import com.aozijx.passly.core.di.IoDispatcher
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.data.dto.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
 import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
+import com.aozijx.passly.data.repository.backup.internal.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.mapToAppError
 import com.aozijx.passly.data.repository.backup.internal.openBackupInputStream
 import com.aozijx.passly.data.repository.backup.internal.openBackupOutputStream

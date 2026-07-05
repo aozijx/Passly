@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.repository.backup.internal
 
 import com.aozijx.passly.core.crypto.encryption.FieldEncryptor
-import com.aozijx.passly.data.dto.VaultPayload
 import com.aozijx.passly.data.entity.VaultEntryEntity
 
 internal object BackupFieldEncryptor {

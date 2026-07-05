@@ -1,9 +1,9 @@
 package com.aozijx.passly.data.mapper
 
 import com.aozijx.passly.core.crypto.encryption.FieldEncryptor
-import com.aozijx.passly.data.dto.VaultPayload
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
+import com.aozijx.passly.data.repository.backup.internal.VaultPayload
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
 
