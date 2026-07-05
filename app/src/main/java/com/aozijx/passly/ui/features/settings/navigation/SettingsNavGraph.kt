@@ -32,6 +32,8 @@ import com.aozijx.passly.ui.features.settings.appearance.InterfaceViewModel
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.ui.features.settings.apppassword.handleAppPasswordAction
 import com.aozijx.passly.ui.features.settings.apppassword.handleAppPasswordEntryClick
+import com.aozijx.passly.ui.features.settings.contract.SettingsEffect
+import com.aozijx.passly.ui.features.settings.contract.SettingsIntent
 import com.aozijx.passly.ui.features.settings.datamanagement.DataManagementDetail
 import com.aozijx.passly.ui.features.settings.datamanagement.DataUiAction
 import com.aozijx.passly.ui.features.settings.datamanagement.DataViewModel
@@ -110,6 +112,20 @@ fun SettingsNavGraph(
         dataState.backupMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             dataViewModel.onAction(DataUiAction.ClearBackupMessage)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        settingsViewModel.effects.collect { effect ->
+            when (effect) {
+                is SettingsEffect.ShowError -> {
+                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                }
+
+                is SettingsEffect.SettingsSaved -> {
+                    Toast.makeText(context, "设置已保存", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -375,8 +391,20 @@ fun SettingsNavGraph(
         ),
         actions = buildSettingsDialogsActions(
             localState = localState,
-            onSetSwipeRightAction = settingsViewModel::setSwipeRightAction,
-            onSetSwipeLeftAction = settingsViewModel::setSwipeLeftAction,
+            onSetSwipeRightAction = { action ->
+                settingsViewModel.handleIntent(
+                    SettingsIntent.SetSwipeRightAction(
+                        action
+                    )
+                )
+            },
+            onSetSwipeLeftAction = { action ->
+                settingsViewModel.handleIntent(
+                    SettingsIntent.SetSwipeLeftAction(
+                        action
+                    )
+                )
+            },
             submitAppPasswordAction = ::submitAppPasswordAction,
             onClearBackupDirectory = { dataViewModel.onAction(DataUiAction.ClearBackupDirectory) }
         )

@@ -10,6 +10,7 @@ import com.aozijx.passly.core.crypto.memory.SecureString
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.ui.components.toUiMessage
+import com.aozijx.passly.ui.features.verification.contract.VerificationUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,14 +20,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
-
-data class VerificationUiState(
-    val authInProgress: Boolean = false,
-    val appPassword: SecureString = SecureString.EMPTY,
-    val appPasswordConfirm: SecureString = SecureString.EMPTY,
-    val showPasswordInput: Boolean = false,
-    val showSetPasswordDialog: Boolean = false
-)
 
 @HiltViewModel
 class VerificationViewModel @Inject constructor(

@@ -34,10 +34,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,15 +47,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
+import com.aozijx.passly.core.otp.OtpAuthData
 import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.ui.features.scanner.components.ScannerView
+import com.aozijx.passly.ui.features.scanner.contract.ScannerEffect
+import com.aozijx.passly.ui.features.scanner.contract.ScannerIntent
 import com.aozijx.passly.ui.features.vault.VaultViewModel
 
 /**
@@ -67,33 +70,36 @@ fun VaultScanner(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-
     // 适配系统返回手势：优先关闭扫码层，而不是直接退出上层页面。
     BackHandler(onBack = onDismiss)
 
-    // 每次进入扫码页面或退出时，清除之前的扫码结果，防止隐私泄露
-    DisposableEffect(Unit) {
-        onDispose {
-            scannerViewModel.clearScanResult()
-        }
-    }
-
     val errorNotOtp = stringResource(R.string.vault_scanner_error_not_otp)
     val successSaveMsg = stringResource(R.string.vault_scanner_success_save)
-    val scanResult by scannerViewModel.scanResult.collectAsStateWithLifecycle()
 
-    val scannedTotp = remember(scanResult) { TotpUtils.parseOtpAuthUri(scanResult) }
+    // 使用 Effect 接收一次性扫描结果
+    var scanResult by remember { mutableStateOf("") }
+    var scannedTotp by remember { mutableStateOf<OtpAuthData?>(null) }
 
-    LaunchedEffect(scanResult) {
-        if (scanResult.isNotEmpty() && scannedTotp == null) {
-            if (!scanResult.startsWith("otpauth://")) {
-                Toast.makeText(context, errorNotOtp, Toast.LENGTH_SHORT).show()
+    LaunchedEffect(Unit) {
+        scannerViewModel.effects.collect { effect ->
+            when (effect) {
+                is ScannerEffect.ScanSuccess -> {
+                    scanResult = effect.result
+                    scannedTotp = TotpUtils.parseOtpAuthUri(effect.result)
+                    if (scannedTotp == null && !effect.result.startsWith("otpauth://")) {
+                        Toast.makeText(context, errorNotOtp, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                is ScannerEffect.ShowError -> {
+                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
     val pickPhoto = rememberImagePicker { uri, _ ->
-        scannerViewModel.decodeImage(context, uri)
+        scannerViewModel.handleIntent(ScannerIntent.DecodeImage(uri, context))
     }
 
     Box(
@@ -106,7 +112,7 @@ fun VaultScanner(
             showResultCard = scannedTotp == null,
             onBarcodeDetected = { barcode ->
                 if (scannedTotp != null) return@ScannerView
-                scannerViewModel.onBarcodeDetected(context, barcode)
+                scannerViewModel.handleIntent(ScannerIntent.BarcodeDetected(barcode, context))
             },
             onPermissionDenied = { onDismiss() })
 
@@ -120,7 +126,9 @@ fun VaultScanner(
         ) {
             IconButton(
                 onClick = {
-                    scannerViewModel.onBarcodeDetected(context, "")
+                    scanResult = ""
+                    scannedTotp = null
+                    scannerViewModel.handleIntent(ScannerIntent.StartScanning)
                     pickPhoto(ImageType.SCREEN)
                 },
                 modifier = Modifier
@@ -189,7 +197,11 @@ fun VaultScanner(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { scannerViewModel.onBarcodeDetected(context, "") },
+                                onClick = {
+                                    scanResult = ""
+                                    scannedTotp = null
+                                    scannerViewModel.handleIntent(ScannerIntent.StartScanning)
+                                },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.filledTonalButtonColors()
@@ -204,7 +216,6 @@ fun VaultScanner(
                                     ) == true) || (totp.label.contains("Steam", ignoreCase = true))
 
                                     try {
-                                        // 核心修复：直接使用简化后的加密逻辑
                                         val entry = VaultEntry(
                                             title = totp.issuer ?: totp.label.split(":")
                                                 .firstOrNull() ?: "2FA",

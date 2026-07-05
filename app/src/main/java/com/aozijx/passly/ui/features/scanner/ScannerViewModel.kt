@@ -6,43 +6,73 @@ import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
 import com.aozijx.passly.core.qr.QrCodeUtils
+import com.aozijx.passly.ui.features.scanner.contract.ScannerEffect
+import com.aozijx.passly.ui.features.scanner.contract.ScannerIntent
+import com.aozijx.passly.ui.features.scanner.contract.ScannerUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
 class ScannerViewModel @Inject constructor() : ViewModel() {
-    private val _scanResult = MutableStateFlow("")
-    val scanResult: StateFlow<String> = _scanResult.asStateFlow()
 
-    fun onBarcodeDetected(context: Context, barcode: String) {
-        if (barcode.isNotBlank() && _scanResult.value != barcode) {
-            _scanResult.value = barcode
-            vibrate(context)
-        } else if (barcode.isBlank()) {
-            _scanResult.value = ""
+    private val _uiState = MutableStateFlow(ScannerUiState())
+    val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
+
+    private val _effects = MutableSharedFlow<ScannerEffect>(extraBufferCapacity = 1)
+    val effects: SharedFlow<ScannerEffect> = _effects.asSharedFlow()
+
+    // 防抖：缓存上次扫描结果
+    private var lastScannedBarcode: String? = null
+
+    fun handleIntent(intent: ScannerIntent) {
+        when (intent) {
+            is ScannerIntent.BarcodeDetected -> onBarcodeDetected(intent.context, intent.barcode)
+            is ScannerIntent.DecodeImage -> decodeImage(intent.context, intent.uri)
+            is ScannerIntent.StartScanning -> resetAndStart()
+            is ScannerIntent.StopScanning -> stopScanning()
         }
     }
 
-    fun clearScanResult() {
-        _scanResult.value = ""
+    private fun onBarcodeDetected(context: Context, barcode: String) {
+        // 防抖：相同结果不重复触发
+        if (barcode.isBlank() || barcode == lastScannedBarcode) return
+        lastScannedBarcode = barcode
+        vibrate(context)
+        _effects.tryEmit(ScannerEffect.ScanSuccess(barcode))
+        _uiState.update { it.copy(isScanning = false) }
+    }
+
+    private fun resetAndStart() {
+        lastScannedBarcode = null
+        _uiState.value = ScannerUiState()
+    }
+
+    private fun stopScanning() {
+        _uiState.update { it.copy(isScanning = false) }
     }
 
     private fun vibrate(context: Context) {
-        val vibratorManager =
-            context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        val vibrator = vibratorManager.defaultVibrator
-        vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+        (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager)
+            .defaultVibrator
+            .vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
     }
 
-    fun decodeImage(context: Context, uri: Uri) {
+    private fun decodeImage(context: Context, uri: Uri) {
         QrCodeUtils.decodeFromUri(
             context = context,
             uri = uri,
-            onSuccess = { result -> onBarcodeDetected(context, result) },
-            onFailure = { message -> _scanResult.value = message }
+            onSuccess = { onBarcodeDetected(context, it) },
+            onFailure = { message ->
+                _uiState.update { it.copy(error = message) }
+                _effects.tryEmit(ScannerEffect.ShowError(message))
+            }
         )
     }
 }
