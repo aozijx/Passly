@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.settings.data
+package com.aozijx.passly.ui.features.settings.datamanagement
 
 import android.content.Context
 import android.content.Intent

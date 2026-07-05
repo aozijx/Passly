@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.settings.data
+package com.aozijx.passly.ui.features.settings.datamanagement
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem

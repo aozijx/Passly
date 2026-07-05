@@ -15,7 +15,7 @@ import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.backup.components.PlainExportDialog
 import com.aozijx.passly.ui.features.backup.components.PlainExportDialogType
 import com.aozijx.passly.ui.features.main.MainViewModel
-import com.aozijx.passly.ui.features.settings.data.DataViewModel
+import com.aozijx.passly.ui.features.settings.datamanagement.DataViewModel
 import com.aozijx.passly.ui.features.vault.VaultViewModel
 import com.aozijx.passly.ui.navigation.PasslyNavHost
 

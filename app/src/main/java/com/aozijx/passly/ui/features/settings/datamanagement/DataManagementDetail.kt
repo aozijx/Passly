@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.settings.data
+package com.aozijx.passly.ui.features.settings.datamanagement
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

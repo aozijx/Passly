@@ -11,7 +11,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
-import com.aozijx.passly.ui.features.settings.data.BackupImportIconSyncSupport
+import com.aozijx.passly.ui.features.settings.datamanagement.BackupImportIconSyncSupport
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

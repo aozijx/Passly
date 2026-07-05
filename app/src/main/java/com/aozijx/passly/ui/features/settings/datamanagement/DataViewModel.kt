@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.features.settings.data
+package com.aozijx.passly.ui.features.settings.datamanagement
 
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel

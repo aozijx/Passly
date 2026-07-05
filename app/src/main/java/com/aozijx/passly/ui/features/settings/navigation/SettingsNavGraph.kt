@@ -32,10 +32,10 @@ import com.aozijx.passly.ui.features.settings.appearance.InterfaceViewModel
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.ui.features.settings.apppassword.handleAppPasswordAction
 import com.aozijx.passly.ui.features.settings.apppassword.handleAppPasswordEntryClick
-import com.aozijx.passly.ui.features.settings.data.DataManagementDetail
-import com.aozijx.passly.ui.features.settings.data.DataUiAction
-import com.aozijx.passly.ui.features.settings.data.DataViewModel
-import com.aozijx.passly.ui.features.settings.data.handleBackupPathPicked
+import com.aozijx.passly.ui.features.settings.datamanagement.DataManagementDetail
+import com.aozijx.passly.ui.features.settings.datamanagement.DataUiAction
+import com.aozijx.passly.ui.features.settings.datamanagement.DataViewModel
+import com.aozijx.passly.ui.features.settings.datamanagement.handleBackupPathPicked
 import com.aozijx.passly.ui.features.settings.general.GeneralDetail
 import com.aozijx.passly.ui.features.settings.interaction.InteractionDetail
 import com.aozijx.passly.ui.features.settings.interaction.InteractionUiAction

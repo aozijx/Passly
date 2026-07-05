@@ -27,7 +27,7 @@ import com.aozijx.passly.ui.features.main.MainViewModel
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.settings.SettingsScreen
 import com.aozijx.passly.ui.features.settings.SettingsViewModel
-import com.aozijx.passly.ui.features.settings.data.DataViewModel
+import com.aozijx.passly.ui.features.settings.datamanagement.DataViewModel
 import com.aozijx.passly.ui.features.vault.VaultContent
 import com.aozijx.passly.ui.features.vault.VaultViewModel
 import kotlinx.coroutines.flow.collectLatest
