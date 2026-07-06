@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
@@ -39,7 +40,6 @@ import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 @Composable
 fun LogSettingsSection() {
@@ -49,11 +49,8 @@ fun LogSettingsSection() {
     var showClearConfirmDialog by remember { mutableStateOf(false) }
     var logContent by remember { mutableStateOf("") }
     var logSize by remember { mutableStateOf("") }
-    var exportedLogFile by remember { mutableStateOf<File?>(null) }
 
     val logManagementTitle = stringResource(R.string.log_management_title)
-    val logExportButton = stringResource(R.string.log_export_button)
-    val logManagementDescription = stringResource(R.string.log_management_description)
 
     fun refreshLogInfo() {
         scope.launch {
@@ -78,17 +75,31 @@ fun LogSettingsSection() {
             }
         )
         navigationSettingsItem(
-            icon = Icons.Default.SaveAlt,
-            title = logExportButton,
-            subtitle = logManagementDescription,
+            icon = Icons.Default.Description,
+            title = "导出所有日志",
+            subtitle = "导出所有日志文件为 ZIP",
             onClick = {
                 scope.launch {
-                    withContext(Dispatchers.IO) {
-                        exportedLogFile =
-                            LogExporter.exportErrorLogs(context, includeCrashLogs = true)
+                    val file = withContext(Dispatchers.IO) {
+                        LogExporter.exportAllLogsAsZip(context)
                     }
-                    if (exportedLogFile != null) {
-                        LogExporter.shareErrorLogs(context, exportedLogFile!!)
+                    if (file != null) {
+                        LogExporter.shareLogsZip(context, file)
+                    }
+                }
+            }
+        )
+        navigationSettingsItem(
+            icon = Icons.Default.SaveAlt,
+            title = "导出错误日志",
+            subtitle = "导出错误日志为文本文件",
+            onClick = {
+                scope.launch {
+                    val file = withContext(Dispatchers.IO) {
+                        LogExporter.exportErrorLogsAsTxt(context)
+                    }
+                    if (file != null) {
+                        LogExporter.shareLogsFile(context, file)
                     }
                 }
             }
@@ -118,7 +129,6 @@ fun LogSettingsSection() {
                     }
                     logContent = ""
                     logSize = "0 B"
-                    exportedLogFile = null
                 }
                 showClearConfirmDialog = false
             },

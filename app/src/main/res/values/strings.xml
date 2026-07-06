@@ -257,7 +257,6 @@
     <string name="password_strength_medium">一般</string>
     <string name="password_strength_good">较好</string>
     <string name="password_strength_strong">强</string>
-    <string name="empty" translatable="false"></string>
     <string name="settings_auth_before_set_app_password">验证后设置密码</string>
 
     <!-- 设置: 外观 -->
@@ -495,5 +494,6 @@
     <string name="log_export_title">分享错误日志</string>
     <string name="log_export_subject">Passly 错误日志</string>
     <string name="log_export_message">Passly 错误日志导出文件</string>
+    <string name="empty"></string>
 
 </resources>
