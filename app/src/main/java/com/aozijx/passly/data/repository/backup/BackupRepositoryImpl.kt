@@ -15,7 +15,7 @@ import com.aozijx.passly.core.backup.BackupManager.getCipher
 import com.aozijx.passly.core.backup.BackupManager.readFullyOrThrow
 import com.aozijx.passly.core.backup.BackupManager.readSingleByteOrThrow
 import com.aozijx.passly.core.backup.EmergencyBackupExporter
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.di.IoDispatcher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
@@ -43,7 +43,7 @@ import javax.inject.Inject
 
 internal class BackupRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val passphraseManager: DatabasePassphraseManager,
+    private val passphraseManager: BiometricPassphraseBridge,
     private val imageStore: BackupVInternalImageStore,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {

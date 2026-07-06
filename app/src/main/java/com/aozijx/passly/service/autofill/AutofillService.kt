@@ -6,7 +6,7 @@ import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.PackageUtils
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
@@ -32,7 +32,7 @@ class AutofillService : android.service.autofill.AutofillService() {
     lateinit var systemSettingsUseCases: SystemSettingsUseCases
 
     @Inject
-    lateinit var passphraseManager: DatabasePassphraseManager
+    lateinit var passphraseManager: BiometricPassphraseBridge
 
     @Inject
     lateinit var packageUtils: PackageUtils

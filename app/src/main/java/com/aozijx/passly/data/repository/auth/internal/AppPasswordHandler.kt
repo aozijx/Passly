@@ -4,13 +4,15 @@ import android.content.Context
 import com.aozijx.passly.core.auth.apppassword.AppPasswordComplexityPolicy
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
 import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
+import com.aozijx.passly.core.crypto.keystore.MasterPassphraseProvider
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 
 internal class AppPasswordHandler(
     private val application: Context,
-    private val passphraseManager: DatabasePassphraseManager,
+    private val passphraseManager: BiometricPassphraseBridge,
+    private val masterPassphraseProvider: MasterPassphraseProvider,
     private val isAuthorized: () -> Boolean,
     private val onAuthorized: () -> Unit,
     private val refreshAppPasswordState: () -> Unit
@@ -66,22 +68,22 @@ internal class AppPasswordHandler(
             return AppResult.failure(AppError.AuthFailed("应用密码已存在，请直接输入密码解锁"))
         }
 
-        val result =
-            AppPasswordPassphraseStore.configureWithGeneratedPassphrase(application, password)
-        // 即使后续 setPassphrase/deriveAndSet 失败，passphrase 已存入 SharedPreferences，
-        // 必须刷新 isAppPasswordEnabled 状态，否则下次锁定后会再次显示"设置密码"按钮。
-        refreshAppPasswordState()
-        return result
-            .map { generatedPassphrase ->
-                try {
-                    passphraseManager.setDecryptedPassphrase(generatedPassphrase)
-                    SessionCryptoKey.deriveAndSet(generatedPassphrase)
+        // 通过 Provider 获取统一的数据库密钥（而非自行生成）
+        val passphrase = masterPassphraseProvider.getOrCreatePassphrase()
+        try {
+            val result =
+                AppPasswordPassphraseStore.configure(application, password, passphrase)
+            refreshAppPasswordState()
+            return result
+                .map {
+                    passphraseManager.setDecryptedPassphrase(passphrase)
+                    SessionCryptoKey.deriveAndSet(passphrase)
                     onAuthorized()
-                } finally {
-                    generatedPassphrase.fill(0)
                 }
-            }
-            .mapFailure { AppError.AuthFailed(it.message) }
+                .mapFailure { AppError.AuthFailed(it.message) }
+        } finally {
+            passphrase.fill(0)
+        }
     }
 
     fun changePassword(oldPassword: CharArray, newPassword: CharArray): AppResult<Unit> {

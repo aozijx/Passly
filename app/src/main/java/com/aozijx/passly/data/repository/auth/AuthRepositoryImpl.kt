@@ -9,7 +9,8 @@ import com.aozijx.passly.core.auth.state.LockStateManager
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator.AuthRequestValidationResult
 import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
+import com.aozijx.passly.core.crypto.keystore.MasterPassphraseProvider
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
@@ -29,7 +30,8 @@ import kotlin.coroutines.resume
 @Singleton
 internal class AuthRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val application: android.content.Context,
-    private val passphraseManager: DatabasePassphraseManager,
+    private val passphraseManager: BiometricPassphraseBridge,
+    private val masterPassphraseProvider: MasterPassphraseProvider,
     private val lockStateManager: LockStateManager,
     private val errorHandler: AuthErrorHandler
 ) : AuthRepository {
@@ -45,6 +47,7 @@ internal class AuthRepositoryImpl @Inject constructor(
     private val appPasswordHandler = AppPasswordHandler(
         application = application,
         passphraseManager = passphraseManager,
+        masterPassphraseProvider = masterPassphraseProvider,
         isAuthorized = { lockStateManager.isAuthorized.value },
         onAuthorized = { lockStateManager.markAuthorizedSync() },
         refreshAppPasswordState = {

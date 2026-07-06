@@ -2,7 +2,7 @@ package com.aozijx.passly.core.di
 
 import android.app.Application
 import android.content.Context
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.dao.VaultEntryDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
@@ -67,7 +67,7 @@ object DataModule {
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context,
-        passphraseManager: DatabasePassphraseManager
+        passphraseManager: BiometricPassphraseBridge
     ): AppDatabase = AppDatabase.getDatabase(context, passphraseManager)
 
     @Provides

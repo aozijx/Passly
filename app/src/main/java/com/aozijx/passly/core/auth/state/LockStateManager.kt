@@ -2,7 +2,7 @@ package com.aozijx.passly.core.auth.state
 
 import com.aozijx.passly.core.auth.session.AppIdleMonitor
 import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.model.AppDefaults
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +23,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class LockStateManager @Inject constructor(
-    private val passphraseManager: DatabasePassphraseManager,
+    private val passphraseManager: BiometricPassphraseBridge,
     private val idleMonitor: AppIdleMonitor
 ) {
     private companion object {

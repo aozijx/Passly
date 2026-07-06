@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.vault
 
 import android.content.Context
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainHistoryList
@@ -17,7 +17,7 @@ import javax.inject.Singleton
 @Singleton
 class HistoryRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
-    private val passphraseManager: DatabasePassphraseManager
+    private val passphraseManager: BiometricPassphraseBridge
 ) : HistoryRepository {
 
     private fun historyDao() =

@@ -9,7 +9,6 @@ import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.AppDefaults
 import java.security.MessageDigest
-import java.security.SecureRandom
 
 object AppPasswordPassphraseStore {
 
@@ -38,14 +37,6 @@ object AppPasswordPassphraseStore {
                     putLong(AppDefaults.Auth.KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
                 }
         }
-
-    fun configureWithGeneratedPassphrase(
-        context: Context,
-        password: CharArray
-    ): AppResult<ByteArray> {
-        val newPassphrase = ByteArray(32).also { SecureRandom().nextBytes(it) }
-        return configure(context, password, newPassphrase).map { newPassphrase }
-    }
 
     fun change(
         context: Context,

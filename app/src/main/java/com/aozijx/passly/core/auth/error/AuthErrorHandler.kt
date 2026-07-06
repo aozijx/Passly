@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.auth.error
 
 import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.logging.Logcat
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,7 +14,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthErrorHandler @Inject constructor(
-    private val passphraseManager: DatabasePassphraseManager
+    private val passphraseManager: BiometricPassphraseBridge
 ) {
     private companion object {
         private const val TAG = "AuthErrorHandler"

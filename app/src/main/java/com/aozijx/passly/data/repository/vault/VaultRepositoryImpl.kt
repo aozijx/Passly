@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.vault
 
 import android.content.Context
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.data.entity.VaultHistoryEntity
@@ -25,7 +25,7 @@ import javax.inject.Singleton
 @Singleton
 class VaultRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
-    private val passphraseManager: DatabasePassphraseManager
+    private val passphraseManager: BiometricPassphraseBridge
 ) : VaultRepository {
 
     private fun entryDao() = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()

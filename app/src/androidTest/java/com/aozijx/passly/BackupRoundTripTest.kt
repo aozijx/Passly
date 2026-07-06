@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.data.repository.backup.internal.VaultPayload
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
@@ -37,7 +37,7 @@ class BackupRoundTripTest {
     private lateinit var context: Context
     private lateinit var db: AppDatabase
     private lateinit var repository: BackupRepositoryImpl
-    private lateinit var passphraseManager: DatabasePassphraseManager
+    private lateinit var passphraseManager: BiometricPassphraseBridge
     private lateinit var imageStore: BackupVInternalImageStore
     private val testDbName = "backup_test_${System.currentTimeMillis()}"
     private val tempFiles = mutableListOf<File>()
@@ -48,7 +48,7 @@ class BackupRoundTripTest {
 
         // 初始化加密环境
         val testPassphrase = ByteArray(32) { 0x01.toByte() }
-        passphraseManager = DatabasePassphraseManager(context)
+        passphraseManager = BiometricPassphraseBridge(context)
         passphraseManager.setDecryptedPassphrase(testPassphrase)
         SessionCryptoKey.deriveAndSet(testPassphrase)
 

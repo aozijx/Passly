@@ -4,7 +4,7 @@ import android.content.Context
 import android.database.Cursor
 import android.util.JsonWriter
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.ErrorLayer
@@ -39,7 +39,7 @@ object EmergencyBackupExporter {
      */
     fun exportOnFailure(
         context: Context,
-        passphraseManager: DatabasePassphraseManager
+        passphraseManager: BiometricPassphraseBridge
     ): AppResult<File> {
         if (!BuildConfig.DEBUG) {
             return AppResult.failure(

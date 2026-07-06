@@ -57,6 +57,7 @@ object AppDefaults {
         const val GCM_TAG_BITS: Int = 128
         const val KEY_SIZE_BITS: Int = 256
         const val KEY_DB_PASSPHRASE: String = "db_phrase"
+        const val KEY_DB_PASSPHRASE_PENDING: String = "db_phrase_pending"
         const val KEYSTORE_ALIAS_SUFFIX: String = "vault_db_hard_auth"
         const val DERIVE_LABEL: String = "passly-vault-field-key-v1"
         const val GENERATED_PASSPHRASE_BYTES: Int = 32

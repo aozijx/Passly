@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
@@ -35,7 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getDatabase(
             context: Context,
-            passphraseManager: DatabasePassphraseManager
+            passphraseManager: BiometricPassphraseBridge
         ): AppDatabase {
             INSTANCE?.let { return it }
 
@@ -86,7 +86,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        fun preWarm(context: Context, passphraseManager: DatabasePassphraseManager) {
+        fun preWarm(context: Context, passphraseManager: BiometricPassphraseBridge) {
             getDatabase(context, passphraseManager)
         }
 

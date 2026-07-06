@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.autofill
 
 import android.content.Context
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.util.DomainNormalizer
@@ -26,7 +26,7 @@ import javax.inject.Singleton
 @Singleton
 class AutofillServiceRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context,
-    private val passphraseManager: DatabasePassphraseManager
+    private val passphraseManager: BiometricPassphraseBridge
 ) : VaultAutofillRepository {
 
     private val appContext = context.applicationContext

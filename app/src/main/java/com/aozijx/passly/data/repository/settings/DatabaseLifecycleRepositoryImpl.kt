@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
-import com.aozijx.passly.core.crypto.keystore.DatabasePassphraseManager
+import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.AppDatabase
@@ -17,7 +17,7 @@ import javax.inject.Singleton
 @Singleton
 internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context,
-    private val passphraseManager: DatabasePassphraseManager
+    private val passphraseManager: BiometricPassphraseBridge
 ) : DatabaseLifecycleRepository {
     private companion object {
         private const val TAG = "DatabaseLifecycle"
