@@ -7,6 +7,7 @@ import android.os.StrictMode
 import android.view.MotionEvent
 import android.view.ViewGroup
 import com.aozijx.passly.core.auth.session.AppIdleMonitor
+import com.aozijx.passly.core.logging.CrashHandler
 import com.aozijx.passly.core.logging.Logcat
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -46,6 +47,10 @@ class AppContext : Application() {
 
         super.onCreate()
         _instance = this
+
+        // 初始化崩溃处理器
+        CrashHandler.init(this)
+
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {

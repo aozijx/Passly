@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,9 +25,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aozijx.passly.R
+import com.aozijx.passly.core.logging.LogExporter
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
@@ -34,14 +39,21 @@ import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 @Composable
 fun LogSettingsSection() {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showViewerDialog by remember { mutableStateOf(false) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
     var logContent by remember { mutableStateOf("") }
     var logSize by remember { mutableStateOf("") }
+    var exportedLogFile by remember { mutableStateOf<File?>(null) }
+
+    val logManagementTitle = stringResource(R.string.log_management_title)
+    val logExportButton = stringResource(R.string.log_export_button)
+    val logManagementDescription = stringResource(R.string.log_management_description)
 
     fun refreshLogInfo() {
         scope.launch {
@@ -55,7 +67,7 @@ fun LogSettingsSection() {
         }
     }
 
-    SettingsGroupTitle(text = "日志")
+    SettingsGroupTitle(text = logManagementTitle)
     SettingsRoundedGroup {
         navigationSettingsItem(
             icon = Icons.Default.BugReport,
@@ -63,6 +75,22 @@ fun LogSettingsSection() {
             onClick = {
                 refreshLogInfo()
                 showViewerDialog = true
+            }
+        )
+        navigationSettingsItem(
+            icon = Icons.Default.SaveAlt,
+            title = logExportButton,
+            subtitle = logManagementDescription,
+            onClick = {
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        exportedLogFile =
+                            LogExporter.exportErrorLogs(context, includeCrashLogs = true)
+                    }
+                    if (exportedLogFile != null) {
+                        LogExporter.shareErrorLogs(context, exportedLogFile!!)
+                    }
+                }
             }
         )
         navigationSettingsItem(
@@ -77,7 +105,6 @@ fun LogSettingsSection() {
         LogViewerSheet(
             content = logContent,
             onDismiss = { showViewerDialog = false }
-
         )
     }
 
@@ -85,9 +112,13 @@ fun LogSettingsSection() {
         ClearLogsConfirmDialog(
             onConfirm = {
                 scope.launch {
-                    withContext(Dispatchers.IO) { Logcat.clearAllLogs() }
+                    withContext(Dispatchers.IO) {
+                        Logcat.clearAllLogs()
+                        LogExporter.clearExportedLogs(context)
+                    }
                     logContent = ""
                     logSize = "0 B"
+                    exportedLogFile = null
                 }
                 showClearConfirmDialog = false
             },

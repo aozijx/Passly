@@ -486,4 +486,14 @@
         <item>权限</item>
     </string-array>
 
+    <!-- 日志管理 -->
+    <string name="log_management_title">日志管理</string>
+    <string name="log_management_description">导出错误和崩溃日志以便排查问题</string>
+    <string name="log_export_button">导出错误日志</string>
+    <string name="log_share_button">分享日志</string>
+    <string name="log_clear_button">清理日志</string>
+    <string name="log_export_title">分享错误日志</string>
+    <string name="log_export_subject">Passly 错误日志</string>
+    <string name="log_export_message">Passly 错误日志导出文件</string>
+
 </resources>
