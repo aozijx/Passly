@@ -3,7 +3,7 @@ package com.aozijx.passly.service.autofill.parser
 import android.app.assist.AssistStructure
 import android.text.InputType
 import android.view.autofill.AutofillId
-import com.aozijx.passly.domain.policy.DomainNormalizer
+import com.aozijx.passly.core.util.DomainNormalizer
 
 class AutofillStructureParser(structure: AssistStructure) {
     var usernameId: AutofillId? = null
