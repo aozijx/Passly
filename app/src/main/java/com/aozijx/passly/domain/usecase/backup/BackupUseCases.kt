@@ -22,6 +22,9 @@ class BackupUseCases @Inject constructor(private val repository: BackupRepositor
     suspend fun exportPlainBackup(uri: Uri): AppResult<Unit> =
         repository.exportPlainBackup(uri)
 
+    suspend fun importPlainBackup(uri: Uri, mode: BackupImportMode): AppResult<Unit> =
+        repository.importPlainBackup(uri, mode)
+
     suspend fun exportEmergencyBackup(): AppResult<File> =
         repository.exportEmergencyBackup()
 

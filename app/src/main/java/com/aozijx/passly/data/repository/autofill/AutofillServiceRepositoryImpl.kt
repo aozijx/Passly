@@ -2,11 +2,9 @@ package com.aozijx.passly.data.repository.autofill
 
 import android.content.Context
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.util.DomainNormalizer
-import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
@@ -17,6 +15,8 @@ import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.repository.vault.VaultAutofillRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
+import com.aozijx.passly.security.crypto.DatabaseSessionManager
+import com.aozijx.passly.security.crypto.VaultLockManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,11 +25,10 @@ import javax.inject.Singleton
 
 @Singleton
 class AutofillServiceRepositoryImpl @Inject constructor(
-    @ApplicationContext context: Context,
-    private val passphraseManager: BiometricPassphraseBridge
+    @param:ApplicationContext private val appContext: Context,
+    private val sessionManager: DatabaseSessionManager,
+    private val lockManager: VaultLockManager
 ) : VaultAutofillRepository {
-
-    private val appContext = context.applicationContext
 
     private companion object {
         private const val TAG = "AutofillRepo"
@@ -39,13 +38,15 @@ class AutofillServiceRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateUsageStats(entry: VaultEntry) = withContext(Dispatchers.IO) {
+        if (lockManager.isLocked()) return@withContext Unit
         AppResult.runCatching("autofill.updateUsage") {
-            val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
             val updatedEntry = entry.copy(
                 lastUsedAt = System.currentTimeMillis(),
                 usageCount = entry.usageCount + 1
             )
-            dao.update(updatedEntry.toEntity())
+            sessionManager.withDatabase {
+                vaultEntryDao().update(updatedEntry.toEntity())
+            }
         }.onFailure {
             Logcat.e(TAG, "Failed to update usage count for ${entry.id}", it)
         }
@@ -53,9 +54,11 @@ class AutofillServiceRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getEntryById(entryId: Int): VaultEntry? = withContext(Dispatchers.IO) {
+        if (lockManager.isLocked()) return@withContext null
         AppResult.runCatching("autofill.getEntry") {
-            AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
-                .getEntryById(entryId)?.toDomain()
+            sessionManager.withDatabase {
+                vaultEntryDao().getEntryById(entryId)?.toDomain()
+            }
         }.fold(
             onSuccess = { it },
             onFailure = {
@@ -67,14 +70,15 @@ class AutofillServiceRepositoryImpl @Inject constructor(
 
     override suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntry> =
         withContext(Dispatchers.IO) {
+            if (lockManager.isLocked()) return@withContext emptyList()
             if (entryIds.isEmpty()) return@withContext emptyList()
             AppResult.runCatching("autofill.getEntries") {
                 val order = entryIds.withIndex().associate { it.value to it.index }
-                AppDatabase.getDatabase(appContext, passphraseManager)
-                    .vaultEntryDao()
-                    .getEntriesByIds(entryIds)
-                    .toDomainList()
-                    .sortedBy { order[it.id] ?: Int.MAX_VALUE }
+                sessionManager.withDatabase {
+                    vaultEntryDao().getEntriesByIds(entryIds)
+                        .toDomainList()
+                        .sortedBy { order[it.id] ?: Int.MAX_VALUE }
+                }
             }.fold(
                 onSuccess = { it },
                 onFailure = {
@@ -88,14 +92,16 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         packageName: String?,
         webDomain: String?
     ): List<AutofillCandidate> = withContext(Dispatchers.IO) {
+        if (lockManager.isLocked()) return@withContext emptyList()
         AppResult.runCatching("autofill.findCandidates") {
             if (packageName.isNullOrBlank() && webDomain.isNullOrBlank()) {
                 return@runCatching emptyList()
             }
 
-            val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
             val queryStart = System.currentTimeMillis()
-            val entries = dao.getAll().toDomainList()
+            val entries = sessionManager.withDatabase {
+                vaultEntryDao().getAll().toDomainList()
+            }
             val queryCost = System.currentTimeMillis() - queryStart
             if (queryCost >= SLOW_DB_QUERY_MS) {
                 Logcat.w(
@@ -150,12 +156,14 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         usernameValue: String,
         passwordValue: String
     ): Boolean = withContext(Dispatchers.IO) {
+        if (lockManager.isLocked()) return@withContext false
         AppResult.runCatching("autofill.saveOrUpdate") {
             val saveStart = System.currentTimeMillis()
-            val dao = AppDatabase.getDatabase(appContext, passphraseManager).vaultEntryDao()
 
             val queryStart = System.currentTimeMillis()
-            val allEntries = dao.getAll().toDomainList()
+            val allEntries = sessionManager.withDatabase {
+                vaultEntryDao().getAll().toDomainList()
+            }
             val queryCost = System.currentTimeMillis() - queryStart
             if (queryCost >= SLOW_DB_QUERY_MS) {
                 Logcat.w(
@@ -186,7 +194,9 @@ class AutofillServiceRepositoryImpl @Inject constructor(
                     password = passwordValue,
                     updatedAt = System.currentTimeMillis()
                 )
-                dao.update(updatedEntry.toEntity())
+                sessionManager.withDatabase {
+                    vaultEntryDao().update(updatedEntry.toEntity())
+                }
                 Logcat.i(TAG, "Updated existing account: id=${existing.id}")
             } else {
                 val appLabel = packageName?.let { pkg ->
@@ -243,7 +253,9 @@ class AutofillServiceRepositoryImpl @Inject constructor(
                     Logcat.w(TAG, "Autofill entry validation warning: $validationError")
                 }
 
-                dao.insert(finalizedEntry.toEntity())
+                sessionManager.withDatabase {
+                    vaultEntryDao().insert(finalizedEntry.toEntity())
+                }
                 Logcat.i(TAG, "Successfully saved new entry to DB: $title")
             }
 

@@ -11,6 +11,7 @@ import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
@@ -25,7 +26,7 @@ object Logcat {
     private val appContext: AppContext by lazy { AppContext.get() }
 
     // 使用单线程池处理文件写入，保证顺序且不阻塞主线程
-    private val logExecutor = Executors.newSingleThreadExecutor()
+    private val logExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private val fileDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val logTimeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
@@ -56,13 +57,12 @@ object Logcat {
         if (BuildConfig.DEBUG) Level.INFO else Level.WARN
 
     private fun log(level: Level, tag: String, msg: String, tr: Throwable? = null) {
-        if (level.ordinal >= Level.INFO.ordinal) {
-            when (level) {
-                Level.VERBOSE -> Log.v(tag, msg)
-                Level.DEBUG -> Log.d(tag, msg)
-                Level.INFO -> Log.i(tag, msg)
-                Level.WARN -> Log.w(tag, msg, tr)
-                Level.ERROR -> Log.e(tag, msg, tr)
+        // VERBOSE/DEBUG 有意不输出到 Android Logcat，避免敏感调试日志泄漏
+        when (level) {
+            Level.INFO -> Log.i(tag, msg)
+            Level.WARN -> Log.w(tag, msg, tr)
+            Level.ERROR -> Log.e(tag, msg, tr)
+            else -> { /* VERBOSE / DEBUG — 不输出到 Logcat */
             }
         }
 
@@ -170,7 +170,16 @@ object Logcat {
             }
         }
     }
+
+    fun shutdown() {
+        logExecutor.shutdown()
+        try {
+            if (!logExecutor.awaitTermination(1, java.util.concurrent.TimeUnit.SECONDS)) {
+                logExecutor.shutdownNow()
+            }
+        } catch (e: InterruptedException) {
+            logExecutor.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
+    }
 }
-
-
-

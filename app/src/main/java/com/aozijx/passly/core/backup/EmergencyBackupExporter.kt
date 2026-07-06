@@ -2,14 +2,15 @@ package com.aozijx.passly.core.backup
 
 import android.content.Context
 import android.database.Cursor
+import android.util.Base64
 import android.util.JsonWriter
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.security.crypto.CryptoEngine
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -37,9 +38,9 @@ object EmergencyBackupExporter {
      * 当应用检测到数据库无法正常初始化时，尝试抢救数据。
      * 仅在 DEBUG 构建导出，并以密文文件保存到 app cache。
      */
-    fun exportOnFailure(
+    suspend fun exportOnFailure(
         context: Context,
-        passphraseManager: BiometricPassphraseBridge
+        cryptoEngine: CryptoEngine
     ): AppResult<File> {
         if (!BuildConfig.DEBUG) {
             return AppResult.failure(
@@ -51,10 +52,6 @@ object EmergencyBackupExporter {
             )
         }
 
-        var db: SQLiteDatabase? = null
-        var passphrase: ByteArray? = null
-        var plainJson: ByteArray? = null
-        var encryptedPayload: ByteArray? = null
         return try {
             deleteExpiredBackups(context.cacheDir)
 
@@ -67,28 +64,46 @@ object EmergencyBackupExporter {
                 )
             )
 
-            passphrase = passphraseManager.getPassphrase()
-            db = SQLiteDatabase.openDatabase(
-                dbFile.path, passphrase, null, SQLiteDatabase.OPEN_READONLY, null, null
-            )
+            cryptoEngine.withUnlockedDek { dek ->
+                var db: SQLiteDatabase? = null
+                var plainJson: ByteArray? = null
+                var encryptedPayload: ByteArray? = null
+                try {
+                    db = SQLiteDatabase.openDatabase(
+                        dbFile.path, dek, null, SQLiteDatabase.OPEN_READONLY, null, null
+                    )
 
-            plainJson = writeEntriesToJsonBytes(db)
-            encryptedPayload = encryptPayload(plainJson, passphrase)
+                    plainJson = writeEntriesToJsonBytes(db)
+                    encryptedPayload = encryptPayload(plainJson, dek)
 
-            // 将文件保存在 cache 目录下，避免暴露在 Downloads 这种公开区域
-            val backupFile = File(
-                context.cacheDir, "emergency_rescue_${System.currentTimeMillis()}.json.enc"
-            )
+                    val backupFile = File(
+                        context.cacheDir, "emergency_rescue_${System.currentTimeMillis()}.json.enc"
+                    )
 
-            FileOutputStream(backupFile).use { output ->
-                output.write(MAGIC)
-                output.write(encryptedPayload)
+                    FileOutputStream(backupFile).use { output ->
+                        output.write(MAGIC)
+                        output.write(encryptedPayload)
+                    }
+
+                    Logcat.i(TAG, "紧急救灾备份已生成(密文): ${backupFile.absolutePath}")
+                    AppResult.success(backupFile)
+                } catch (e: Exception) {
+                    Logcat.e(TAG, "紧急救灾备份失败", e)
+                    AppResult.failure(
+                        AppError.fromThrowable(
+                            e,
+                            layer = ErrorLayer.DATA,
+                            operation = "emergencyBackup.export"
+                        )
+                    )
+                } finally {
+                    plainJson?.fill(0)
+                    encryptedPayload?.fill(0)
+                    db?.close()
+                }
             }
-
-            Logcat.i(TAG, "紧急救灾备份已生成(密文): ${backupFile.absolutePath}")
-            AppResult.success(backupFile)
         } catch (e: Exception) {
-            Logcat.e(TAG, "紧急救灾备份失败", e)
+            Logcat.e(TAG, "紧急救灾备份失败: DEK 不可用", e)
             AppResult.failure(
                 AppError.fromThrowable(
                     e,
@@ -96,11 +111,6 @@ object EmergencyBackupExporter {
                     operation = "emergencyBackup.export"
                 )
             )
-        } finally {
-            passphrase?.fill(0)
-            plainJson?.fill(0)
-            encryptedPayload?.fill(0)
-            db?.close()
         }
     }
 
@@ -126,7 +136,10 @@ object EmergencyBackupExporter {
                     when (cursor.getType(blobIndex)) {
                         Cursor.FIELD_TYPE_NULL -> writer.nullValue()
                         Cursor.FIELD_TYPE_STRING -> writer.value(cursor.getString(blobIndex))
-                        Cursor.FIELD_TYPE_BLOB -> writer.value("[BINARY DATA]")
+                        Cursor.FIELD_TYPE_BLOB -> {
+                            val blob = cursor.getBlob(blobIndex)
+                            writer.value(Base64.encodeToString(blob, Base64.NO_WRAP))
+                        }
                         else -> writer.value(cursor.getString(blobIndex))
                     }
                 }
@@ -149,10 +162,10 @@ object EmergencyBackupExporter {
         }
     }
 
-    private fun encryptPayload(plain: ByteArray, passphrase: ByteArray): ByteArray {
+    private fun encryptPayload(plain: ByteArray, dek: ByteArray): ByteArray {
         val iv = ByteArray(IV_LENGTH).also { SecureRandom().nextBytes(it) }
 
-        val keyMaterial = MessageDigest.getInstance("SHA-256").digest(passphrase + KDF_LABEL)
+        val keyMaterial = MessageDigest.getInstance("SHA-256").digest(dek + KDF_LABEL)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
 
         return try {

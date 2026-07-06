@@ -5,8 +5,12 @@ import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
+import com.aozijx.passly.security.crypto.DatabaseSessionManager
+import com.aozijx.passly.security.crypto.SessionManager
+import com.aozijx.passly.security.crypto.DekManager
+import com.aozijx.passly.security.crypto.CryptoEngine
+import com.aozijx.passly.security.envelope.EnvelopeManager
+import com.aozijx.passly.security.envelope.SharedPrefsEnvelopeStore
 import com.aozijx.passly.data.repository.backup.internal.VaultPayload
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
@@ -35,9 +39,9 @@ import java.io.File
 class BackupRoundTripTest {
 
     private lateinit var context: Context
-    private lateinit var db: AppDatabase
     private lateinit var repository: BackupRepositoryImpl
-    private lateinit var passphraseManager: BiometricPassphraseBridge
+    private lateinit var dekManager: DekManager
+    private lateinit var databaseSessionManager: DatabaseSessionManager
     private lateinit var imageStore: BackupVInternalImageStore
     private val testDbName = "backup_test_${System.currentTimeMillis()}"
     private val tempFiles = mutableListOf<File>()
@@ -46,37 +50,33 @@ class BackupRoundTripTest {
     fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
 
-        // 初始化加密环境
         val testPassphrase = ByteArray(32) { 0x01.toByte() }
-        passphraseManager = BiometricPassphraseBridge(context)
-        passphraseManager.setDecryptedPassphrase(testPassphrase)
-        SessionCryptoKey.deriveAndSet(testPassphrase)
+        val envelopeStore = SharedPrefsEnvelopeStore(context)
+        val envelopeManager = EnvelopeManager(envelopeStore)
+        dekManager = DekManager(context, envelopeManager)
+        runBlocking { dekManager.setDekForMigration(testPassphrase) }
 
-        val passphrase = passphraseManager.getPassphrase()
-        db = Room.databaseBuilder(context, AppDatabase::class.java, testDbName)
-            .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .allowMainThreadQueries().build()
+        databaseSessionManager = DatabaseSessionManager(context, dekManager)
+        runBlocking { databaseSessionManager.withDatabase { } }
 
-        // 确保 schema 已创建
-        db.openHelper.writableDatabase
-
-        // 初始化测试专用的 Repository，注入测试数据库的 DAO
+        val cryptoEngine = CryptoEngine(dekManager)
         imageStore = BackupVInternalImageStore(context)
         repository = BackupRepositoryImpl(
             context,
-            passphraseManager,
-            imageStore = imageStore,
+            cryptoEngine,
+            databaseSessionManager,
+            imageStore,
             ioDispatcher = Dispatchers.IO
         )
     }
 
     @After
     fun tearDown() {
-        runCatching { db.close() }
+        runCatching { databaseSessionManager.close() }
         context.deleteDatabase(testDbName)
         tempFiles.forEach { it.delete() }
-        SessionCryptoKey.clearSessionKey()
-        passphraseManager.clearDecryptedPassphrase()
+        SessionManager.clearSessionKey()
+        runBlocking { dekManager.lock() }
     }
 
     // ─── 空库导出 ─────────────────────────────────────────────────────────
@@ -94,8 +94,10 @@ class BackupRoundTripTest {
 
     @Test
     fun export_withTwoEntries_producesCorrectCount() = runBlocking {
-        db.vaultEntryDao().insert(buildEntry("Entry A", "userA@test.com"))
-        db.vaultEntryDao().insert(buildEntry("Entry B", "userB@test.com"))
+        databaseSessionManager.withDatabase {
+            vaultEntryDao().insert(buildEntry("Entry A", "userA@test.com"))
+            vaultEntryDao().insert(buildEntry("Entry B", "userB@test.com"))
+        }
 
         val file = tempFile("two_entries")
         repository.exportPlainBackup(file.toUri())
@@ -106,7 +108,9 @@ class BackupRoundTripTest {
 
     @Test
     fun export_jsonContainsExpectedFields() = runBlocking {
-        db.vaultEntryDao().insert(buildEntry("Field Test", "field@test.com"))
+        databaseSessionManager.withDatabase {
+            vaultEntryDao().insert(buildEntry("Field Test", "field@test.com"))
+        }
 
         val file = tempFile("fields")
         repository.exportPlainBackup(file.toUri())
@@ -130,7 +134,9 @@ class BackupRoundTripTest {
 
     @Test
     fun export_doesNotIncludeEncryptedImageData() = runBlocking {
-        db.vaultEntryDao().insert(buildEntry("Image Entry", "img@test.com"))
+        databaseSessionManager.withDatabase {
+            vaultEntryDao().insert(buildEntry("Image Entry", "img@test.com"))
+        }
 
         val file = tempFile("no_image")
         repository.exportPlainBackup(file.toUri())
@@ -148,7 +154,9 @@ class BackupRoundTripTest {
 
     @Test
     fun export_booleanColumns_serializedAsBoolean_notInteger() = runBlocking {
-        db.vaultEntryDao().insert(buildEntry("Bool Entry", "bool@test.com"))
+        databaseSessionManager.withDatabase {
+            vaultEntryDao().insert(buildEntry("Bool Entry", "bool@test.com"))
+        }
 
         val file = tempFile("bool")
         repository.exportPlainBackup(file.toUri())

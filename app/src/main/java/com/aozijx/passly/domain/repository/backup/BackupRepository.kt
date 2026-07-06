@@ -39,6 +39,14 @@ interface BackupRepository {
     ): AppResult<Unit>
 
     /**
+     * 从明文 JSON 备份文件导入（无需密码）。
+     */
+    suspend fun importPlainBackup(
+        uri: Uri,
+        mode: BackupImportMode
+    ): AppResult<Unit>
+
+    /**
      * 测试目录写入权限。
      */
     suspend fun testDirectoryWritePermission(directoryUri: String): AppResult<Unit>

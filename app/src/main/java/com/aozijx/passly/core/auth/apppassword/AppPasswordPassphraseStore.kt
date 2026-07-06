@@ -4,10 +4,10 @@ import android.content.Context
 import android.util.Base64
 import androidx.core.content.edit
 import com.aozijx.passly.core.backup.BackupManager
-import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.AppDefaults
+import com.aozijx.passly.security.crypto.MemoryCleaner
 import java.security.MessageDigest
 
 object AppPasswordPassphraseStore {

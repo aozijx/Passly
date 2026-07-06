@@ -39,21 +39,21 @@ internal fun decryptWrappedPassphrase(context: Context, password: CharArray): By
     val passphraseSalt = Base64.decode(passphraseSaltBase64, Base64.NO_WRAP)
     val key = BackupManager.deriveKeyArgon2id(password, passphraseSalt)
     return try {
-        val iv = ByteArray(AppDefaults.Auth.PASSPHRASE_IV_LENGTH).also {
+        val iv = ByteArray(AppDefaults.Crypto.IV_LENGTH).also {
             ByteBuffer.wrap(wrappedPassphrase).get(it)
         }
         val encrypted =
-            ByteArray(wrappedPassphrase.size - AppDefaults.Auth.PASSPHRASE_IV_LENGTH).also {
+            ByteArray(wrappedPassphrase.size - AppDefaults.Crypto.IV_LENGTH).also {
                 ByteBuffer.wrap(
                     wrappedPassphrase,
-                    AppDefaults.Auth.PASSPHRASE_IV_LENGTH,
-                    wrappedPassphrase.size - AppDefaults.Auth.PASSPHRASE_IV_LENGTH
+                    AppDefaults.Crypto.IV_LENGTH,
+                    wrappedPassphrase.size - AppDefaults.Crypto.IV_LENGTH
                 ).get(it)
             }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
             init(
                 Cipher.DECRYPT_MODE, key,
-                GCMParameterSpec(AppDefaults.Auth.PASSPHRASE_GCM_TAG_BITS, iv)
+                GCMParameterSpec(AppDefaults.Crypto.GCM_TAG_BITS, iv)
             )
         }
         cipher.doFinal(encrypted)

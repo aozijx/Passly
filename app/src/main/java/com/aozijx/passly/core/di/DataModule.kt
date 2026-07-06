@@ -1,11 +1,5 @@
 package com.aozijx.passly.core.di
 
-import android.app.Application
-import android.content.Context
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
-import com.aozijx.passly.data.local.AppDatabase
-import com.aozijx.passly.data.local.dao.VaultEntryDao
-import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
 import com.aozijx.passly.data.repository.autofill.AutofillServiceRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
@@ -32,11 +26,14 @@ import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultAutofillRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
+import com.aozijx.passly.security.crypto.VaultLockManager
+import com.aozijx.passly.security.crypto.VaultLockManagerImpl
+import com.aozijx.passly.security.envelope.EnvelopeStore
+import com.aozijx.passly.security.envelope.SharedPrefsEnvelopeStore
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -55,35 +52,19 @@ object DataModule {
     @Singleton
     @IoDispatcher
     fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
-
-    @Provides
-    @Singleton
-    @ApplicationContext
-    fun provideApplicationContext(
-        @ApplicationContext context: Context
-    ): Application = context as Application
-
-    @Provides
-    @Singleton
-    fun provideDatabase(
-        @ApplicationContext context: Context,
-        passphraseManager: BiometricPassphraseBridge
-    ): AppDatabase = AppDatabase.getDatabase(context, passphraseManager)
-
-    @Provides
-    @Singleton
-    fun provideVaultEntryDao(database: AppDatabase): VaultEntryDao =
-        database.vaultEntryDao()
-
-    @Provides
-    @Singleton
-    fun provideVaultHistoryDao(database: AppDatabase): VaultHistoryDao =
-        database.vaultHistoryDao()
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DataModuleBinds {
+
+    @Binds
+    @Singleton
+    internal abstract fun bindVaultLockManager(impl: VaultLockManagerImpl): VaultLockManager
+
+    @Binds
+    @Singleton
+    abstract fun bindEnvelopeStore(impl: SharedPrefsEnvelopeStore): EnvelopeStore
 
     @Binds
     @Singleton

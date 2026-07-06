@@ -6,11 +6,11 @@ import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.platform.PackageUtils
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
+import com.aozijx.passly.security.crypto.VaultLockManager
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.parser.AutofillStructureParser
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,7 +32,7 @@ class AutofillService : android.service.autofill.AutofillService() {
     lateinit var systemSettingsUseCases: SystemSettingsUseCases
 
     @Inject
-    lateinit var passphraseManager: BiometricPassphraseBridge
+    lateinit var lockManager: VaultLockManager
 
     @Inject
     lateinit var packageUtils: PackageUtils
@@ -75,7 +75,7 @@ class AutofillService : android.service.autofill.AutofillService() {
                     return@launch
                 }
 
-                if (passphraseManager.isLocked) {
+                if (lockManager.isLocked()) {
                     Logcat.i(tag, "Database is locked, suggesting unlock via AuthActivity")
                     val response = AutofillResponseBuilder.buildUnlockResponse(
                         applicationContext, parser, availableIds.toTypedArray(), autofillUiMode
@@ -165,7 +165,7 @@ class AutofillService : android.service.autofill.AutofillService() {
 
         serviceScope.launch {
             try {
-                if (passphraseManager.isLocked) {
+                if (lockManager.isLocked()) {
                     Logcat.w(tag, "onSaveRequest: DB locked, cannot save")
                     return@launch callback.onFailure(getString(R.string.autofill_locked))
                 }

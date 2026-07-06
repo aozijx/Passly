@@ -8,14 +8,15 @@ import com.aozijx.passly.core.auth.error.AuthErrorHandler
 import com.aozijx.passly.core.auth.state.LockStateManager
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator.AuthRequestValidationResult
-import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
-import com.aozijx.passly.core.crypto.keystore.MasterPassphraseProvider
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.repository.auth.internal.AppPasswordHandler
 import com.aozijx.passly.domain.repository.auth.AuthRepository
+import com.aozijx.passly.security.crypto.DekManager
+import com.aozijx.passly.security.crypto.UnlockResult
+import com.aozijx.passly.security.crypto.VaultLockManager
+import com.aozijx.passly.security.keystore.BiometricKeyProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,8 +31,9 @@ import kotlin.coroutines.resume
 @Singleton
 internal class AuthRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val application: android.content.Context,
-    private val passphraseManager: BiometricPassphraseBridge,
-    private val masterPassphraseProvider: MasterPassphraseProvider,
+    private val passphraseManager: BiometricKeyProvider,
+    private val dekManager: DekManager,
+    private val lockManager: VaultLockManager,
     private val lockStateManager: LockStateManager,
     private val errorHandler: AuthErrorHandler
 ) : AuthRepository {
@@ -46,8 +48,8 @@ internal class AuthRepositoryImpl @Inject constructor(
 
     private val appPasswordHandler = AppPasswordHandler(
         application = application,
-        passphraseManager = passphraseManager,
-        masterPassphraseProvider = masterPassphraseProvider,
+        lockManager = lockManager,
+        dekManager = dekManager,
         isAuthorized = { lockStateManager.isAuthorized.value },
         onAuthorized = { lockStateManager.markAuthorizedSync() },
         refreshAppPasswordState = {
@@ -60,7 +62,6 @@ internal class AuthRepositoryImpl @Inject constructor(
         title: String,
         subtitle: String
     ): AppResult<Unit> {
-        // 验证请求（不加锁）
         when (val validation = requestValidator.validateRequest(activity, title)) {
             is AuthRequestValidationResult.Invalid -> {
                 return AppResult.failure(
@@ -70,10 +71,8 @@ internal class AuthRepositoryImpl @Inject constructor(
             AuthRequestValidationResult.Valid -> Unit
         }
 
-        // 已认证则直接返回（不加锁）
         if (lockStateManager.isAuthorized.value) return AppResult.success(Unit)
 
-        // 准备加密环境（不加锁）
         val cipher = passphraseManager.getInitializedCipher()
             ?: return AppResult.failure(AppError.AuthFailed("无法准备认证环境，请重试"))
 
@@ -87,7 +86,6 @@ internal class AuthRepositoryImpl @Inject constructor(
                     if (continuation.isActive) {
                         errorHandler.cleanupSensitiveState()
                         val authError = errorHandler.classifyBiometricError(errorCode, error)
-                        // 如果可降级且有 App Password，记录日志提示
                         if (authError.canFallback() && isAppPasswordEnabled.value) {
                             Logcat.w("AuthRepo", "Biometric error [$errorCode], fallback available")
                         }
@@ -98,12 +96,15 @@ internal class AuthRepositoryImpl @Inject constructor(
                     if (!continuation.isActive) return@authenticate
 
                     try {
-                        val passphrase = passphraseManager.processResult(result)
-                        try {
-                            passphraseManager.setDecryptedPassphrase(passphrase)
-                            SessionCryptoKey.deriveAndSet(passphrase)
-                        } finally {
-                            passphrase.fill(0)
+                        val unlockResult =
+                            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                                passphraseManager.processResult(result)
+                            }
+                        if (unlockResult is UnlockResult.Failed) {
+                            continuation.resume(
+                                AppResult.failure(AppError.AuthFailed(unlockResult.reason.name))
+                            )
+                            return@authenticate
                         }
                         lockStateManager.markAuthorizedSync()
                         continuation.resume(AppResult.success(Unit))
@@ -137,7 +138,7 @@ internal class AuthRepositoryImpl @Inject constructor(
             AuthRequestValidationResult.Valid -> Unit
         }
 
-        if (passphraseManager.isLocked) {
+        if (lockManager.isLocked()) {
             return AppResult.failure(AppError.AuthFailed("请先解锁应用"))
         }
 
@@ -250,11 +251,8 @@ internal class AuthRepositoryImpl @Inject constructor(
                     onSuccess = { result ->
                         if (!continuation.isActive) return@authenticate
                         AppResult.runCatching("auth.rekey.complete") {
-                            val passphrase = passphraseManager.getPassphrase()
-                            try {
-                                passphraseManager.completeRekey(result, passphrase)
-                            } finally {
-                                passphrase.fill(0)
+                            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                                passphraseManager.completeRekey(result)
                             }
                         }.fold(
                             onSuccess = { continuation.resume(AppResult.success(Unit)) },

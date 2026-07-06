@@ -1,15 +1,16 @@
 package com.aozijx.passly.core.auth.state
 
 import com.aozijx.passly.core.auth.session.AppIdleMonitor
-import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.domain.model.AppDefaults
+import com.aozijx.passly.security.crypto.DekManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +24,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class LockStateManager @Inject constructor(
-    private val passphraseManager: BiometricPassphraseBridge,
+    private val dekManager: DekManager,
     private val idleMonitor: AppIdleMonitor
 ) {
     private companion object {
@@ -39,52 +40,60 @@ class LockStateManager @Inject constructor(
     /**
      * 标记认证成功，配置自动锁定定时器。
      */
-    fun markAuthorizedSync() {
-        if (_isAuthorized.value) return
+    fun markAuthorizedSync() = runBlocking {
+        stateMutex.withLock {
+            if (_isAuthorized.value) return@withLock
 
-        Logcat.i(TAG, "Marking authorized, configuring idle monitor")
-        _isAuthorized.update { true }
-        idleMonitor.configure(currentTimeoutMs) { lock() }
-        idleMonitor.resetIdleTimer()
+            Logcat.i(TAG, "Marking authorized, configuring idle monitor")
+            _isAuthorized.update { true }
+            idleMonitor.configure(currentTimeoutMs) { lock() }
+            idleMonitor.resetIdleTimer()
+        }
     }
 
     /**
      * 锁定应用，清理敏感状态。
      */
-    fun lock() {
-        Logcat.i(TAG, "Locking application")
-        passphraseManager.clearDecryptedPassphrase()
-        SessionCryptoKey.clearSessionKey()
-        _isAuthorized.update { false }
-        idleMonitor.cancel()
+    fun lock() = runBlocking {
+        stateMutex.withLock {
+            Logcat.i(TAG, "Locking application")
+            dekManager.lock()
+            _isAuthorized.update { false }
+            idleMonitor.cancel()
+        }
     }
 
     /**
      * 更新锁定超时时间。
      */
-    fun updateTimeout(timeoutMs: Long) {
-        currentTimeoutMs = timeoutMs
-        idleMonitor.updateTimeout(timeoutMs)
-        if (_isAuthorized.value) {
-            idleMonitor.resetIdleTimer()
+    fun updateTimeout(timeoutMs: Long) = runBlocking {
+        stateMutex.withLock {
+            currentTimeoutMs = timeoutMs
+            idleMonitor.updateTimeout(timeoutMs)
+            if (_isAuthorized.value) {
+                idleMonitor.resetIdleTimer()
+            }
         }
     }
 
     /**
      * 用户交互时重置空闲定时器。
      */
-    fun onUserInteraction() {
-        if (!_isAuthorized.value) return
-        idleMonitor.resetIdleTimer()
+    fun onUserInteraction() = runBlocking {
+        stateMutex.withLock {
+            if (!_isAuthorized.value) return@withLock
+            idleMonitor.resetIdleTimer()
+        }
     }
 
     /**
      * 检查并确保锁定状态一致。
      */
-    fun ensureLockedState() {
-        if (_isAuthorized.value) return
-        Logcat.i(TAG, "Ensuring locked state")
-        passphraseManager.clearDecryptedPassphrase()
-        SessionCryptoKey.clearSessionKey()
+    fun ensureLockedState() = runBlocking {
+        stateMutex.withLock {
+            if (_isAuthorized.value) return@withLock
+            Logcat.i(TAG, "Ensuring locked state")
+            dekManager.lock()
+        }
     }
 }

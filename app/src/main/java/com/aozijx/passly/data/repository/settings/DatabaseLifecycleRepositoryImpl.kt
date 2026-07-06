@@ -1,12 +1,11 @@
 package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
+import com.aozijx.passly.security.crypto.DatabaseSessionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,7 +16,7 @@ import javax.inject.Singleton
 @Singleton
 internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context,
-    private val passphraseManager: BiometricPassphraseBridge
+    private val sessionManager: DatabaseSessionManager
 ) : DatabaseLifecycleRepository {
     private companion object {
         private const val TAG = "DatabaseLifecycle"
@@ -54,12 +53,12 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
     }
 
     override suspend fun retry(): Throwable? = withContext(Dispatchers.IO) {
-        AppDatabase.reset()
+        sessionManager.close()
         preWarm()
     }
 
     override fun close() {
-        AppDatabase.close()
+        sessionManager.close()
     }
 
     override fun consumeAutoRecoveryNotice(): String? {
@@ -68,23 +67,18 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
         return notice
     }
 
-    private fun warmUpOnce(): Throwable? {
+    private suspend fun warmUpOnce(): Throwable? {
         return AppResult.runCatching("db.warmUp") {
-            AppDatabase.preWarm(
-                appContext,
-                passphraseManager
-            )
-        }
-            .fold(
-                onSuccess = { AppDatabase.initializationError },
-                onFailure = { it }
-            )
+            sessionManager.withDatabase { }
+        }.fold(
+            onSuccess = { null },
+            onFailure = { it }
+        )
     }
 
     private fun attemptAutoRecovery(): Boolean {
         return AppResult.runCatching("db.autoRecovery") {
-            AppDatabase.close()
-            AppDatabase.reset()
+            sessionManager.close()
 
             if (!snapshotDatabaseFiles()) {
                 return@runCatching false

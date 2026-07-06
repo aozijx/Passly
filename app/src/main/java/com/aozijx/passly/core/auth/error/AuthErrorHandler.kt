@@ -1,8 +1,9 @@
 package com.aozijx.passly.core.auth.error
 
-import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
 import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.security.crypto.DekManager
+import com.aozijx.passly.security.crypto.SessionManager
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,7 +15,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthErrorHandler @Inject constructor(
-    private val passphraseManager: BiometricPassphraseBridge
+    private val dekManager: DekManager
 ) {
     private companion object {
         private const val TAG = "AuthErrorHandler"
@@ -79,8 +80,8 @@ class AuthErrorHandler @Inject constructor(
      */
     fun cleanupSensitiveState() {
         try {
-            passphraseManager.clearDecryptedPassphrase()
-            SessionCryptoKey.clearSessionKey()
+            runBlocking { dekManager.lock() }
+            SessionManager.clearSessionKey()
             Logcat.i(TAG, "Sensitive state cleared")
         } catch (e: Exception) {
             Logcat.e(TAG, "Failed to clear sensitive state", e)

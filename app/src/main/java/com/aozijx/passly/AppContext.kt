@@ -6,9 +6,11 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.view.MotionEvent
 import android.view.ViewGroup
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.core.auth.session.AppIdleMonitor
 import com.aozijx.passly.core.logging.CrashHandler
 import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.security.crypto.DatabaseSessionManager
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -17,6 +19,9 @@ class AppContext : Application() {
 
     @Inject
     lateinit var idleMonitor: AppIdleMonitor
+
+    @Inject
+    lateinit var databaseSessionManager: DatabaseSessionManager
 
     companion object {
         private const val TAG = "AppContext"
@@ -57,6 +62,8 @@ class AppContext : Application() {
             Logcat.e(TAG, "Failed to load SQLCipher native library.", e)
             throw e
         }
+
+        ProcessLifecycleOwner.get().lifecycle.addObserver(databaseSessionManager)
         registerGlobalTouchListener()
     }
 
@@ -66,13 +73,7 @@ class AppContext : Application() {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 activity.findViewById<ViewGroup>(android.R.id.content)
                     ?.setOnTouchListener { v, event ->
-                        if (event.action == MotionEvent.ACTION_DOWN
-                            || event.action == MotionEvent.ACTION_MOVE
-                            || event.action == MotionEvent.ACTION_UP
-                        ) {
-                            if (event.action == MotionEvent.ACTION_UP) {
-                                v.performClick()
-                            }
+                        if (event.action == MotionEvent.ACTION_DOWN) {
                             idleMonitor.resetIdleTimer()
                         }
                         false

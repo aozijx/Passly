@@ -46,8 +46,6 @@ object AppDefaults {
         const val KEY_APP_PASSWORD_FAILED_COUNT: String = "db_phrase_app_failed_count"
         const val KEY_APP_PASSWORD_LOCKED_UNTIL: String = "db_phrase_app_locked_until"
         const val ERROR_APP_PASSWORD_MISMATCH: String = "应用密码错误"
-        const val PASSPHRASE_IV_LENGTH: Int = 12
-        const val PASSPHRASE_GCM_TAG_BITS: Int = 128
     }
 
     object Crypto {
@@ -56,10 +54,7 @@ object AppDefaults {
         const val IV_LENGTH: Int = 12
         const val GCM_TAG_BITS: Int = 128
         const val KEY_SIZE_BITS: Int = 256
-        const val KEY_DB_PASSPHRASE: String = "db_phrase"
-        const val KEY_DB_PASSPHRASE_PENDING: String = "db_phrase_pending"
         const val KEYSTORE_ALIAS_SUFFIX: String = "vault_db_hard_auth"
         const val DERIVE_LABEL: String = "passly-vault-field-key-v1"
-        const val GENERATED_PASSPHRASE_BYTES: Int = 32
     }
 }

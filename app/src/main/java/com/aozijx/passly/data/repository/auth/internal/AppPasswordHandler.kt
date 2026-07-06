@@ -3,20 +3,26 @@ package com.aozijx.passly.data.repository.auth.internal
 import android.content.Context
 import com.aozijx.passly.core.auth.apppassword.AppPasswordComplexityPolicy
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
-import com.aozijx.passly.core.crypto.encryption.SessionCryptoKey
-import com.aozijx.passly.core.crypto.keystore.BiometricPassphraseBridge
-import com.aozijx.passly.core.crypto.keystore.MasterPassphraseProvider
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.security.crypto.DekManager
+import com.aozijx.passly.security.crypto.UnlockResult
+import com.aozijx.passly.security.crypto.VaultLockManager
+import com.aozijx.passly.security.envelope.EnvelopeType
+import kotlinx.coroutines.runBlocking
+import java.security.SecureRandom
 
 internal class AppPasswordHandler(
     private val application: Context,
-    private val passphraseManager: BiometricPassphraseBridge,
-    private val masterPassphraseProvider: MasterPassphraseProvider,
+    private val lockManager: VaultLockManager,
+    private val dekManager: DekManager,
     private val isAuthorized: () -> Boolean,
     private val onAuthorized: () -> Unit,
     private val refreshAppPasswordState: () -> Unit
 ) {
+    companion object {
+        private const val DEK_LENGTH = 32
+    }
 
     fun authenticate(password: CharArray): AppResult<Unit> {
         if (isAuthorized()) return AppResult.success(Unit)
@@ -27,99 +33,98 @@ internal class AppPasswordHandler(
             return AppResult.failure(AppError.AuthFailed("请输入应用密码"))
         }
 
-        return AppPasswordPassphraseStore.unlock(application, password)
-            .map { passphrase ->
+        // 通过旧存储解密 DEK
+        val result = AppPasswordPassphraseStore.unlock(application, password)
+            .map { dek ->
+                // 将 DEK 注入 DekManager
                 try {
-                    passphraseManager.setDecryptedPassphrase(passphrase)
-                    SessionCryptoKey.deriveAndSet(passphrase)
+                    val unlockResult = runBlocking {
+                        dekManager.unlockWithVerifiedDek(dek, EnvelopeType.APP_PASSWORD.value)
+                    }
+                    if (unlockResult is UnlockResult.Failed) {
+                        throw IllegalStateException("DEK 校验失败: ${unlockResult.reason}")
+                    }
                 } finally {
-                    passphrase.fill(0)
+                    dek.fill(0)
                 }
                 onAuthorized()
             }
             .mapFailure { AppError.AuthFailed(it.message) }
+
+        return result
     }
 
     fun setPassword(password: CharArray): AppResult<Unit> {
         AppPasswordComplexityPolicy.validate(password)
 
-        if (passphraseManager.isLocked) {
+        if (lockManager.isLocked()) {
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再设置应用密码"))
         }
 
-        val passphrase = passphraseManager.getPassphrase()
-        try {
-            return AppPasswordPassphraseStore.configure(application, password, passphrase)
-                .onSuccess { refreshAppPasswordState() }
-                .mapFailure { AppError.AuthFailed(it.message) }
-        } finally {
-            passphrase.fill(0)
+        return runBlocking {
+            dekManager.withDek { dek ->
+                val appResult = AppPasswordPassphraseStore.configure(application, password, dek)
+                appResult
+                    .onSuccess { refreshAppPasswordState() }
+                    .mapFailure { AppError.AuthFailed(it.message) }
+            }
         }
     }
 
     fun bootstrapPassword(password: CharArray): AppResult<Unit> {
         AppPasswordComplexityPolicy.validate(password)
 
-        if (!passphraseManager.isLocked) {
+        if (!lockManager.isLocked()) {
             return AppResult.failure(AppError.AuthFailed("应用已解锁，请在设置中管理应用密码"))
         }
-
         if (AppPasswordPassphraseStore.isEnabled(application)) {
             return AppResult.failure(AppError.AuthFailed("应用密码已存在，请直接输入密码解锁"))
         }
 
-        // 通过 Provider 获取统一的数据库密钥（而非自行生成）
-        val passphrase = masterPassphraseProvider.getOrCreatePassphrase()
+        // 生成 DEK 并通过 AppPassword Store 包装
+        val dek = ByteArray(DEK_LENGTH).also { SecureRandom().nextBytes(it) }
         try {
-            val result =
-                AppPasswordPassphraseStore.configure(application, password, passphrase)
-            refreshAppPasswordState()
-            return result
-                .map {
-                    passphraseManager.setDecryptedPassphrase(passphrase)
-                    SessionCryptoKey.deriveAndSet(passphrase)
-                    onAuthorized()
-                }
-                .mapFailure { AppError.AuthFailed(it.message) }
+            val result = AppPasswordPassphraseStore.configure(application, password, dek)
+            return result.map {
+                // DEK 注入 DekManager（创建 VerificationTag）
+                runBlocking { dekManager.bootstrapDek(dek) }
+                refreshAppPasswordState()
+                onAuthorized()
+            }.mapFailure { AppError.AuthFailed(it.message) }
         } finally {
-            passphrase.fill(0)
+            dek.fill(0)
         }
     }
 
     fun changePassword(oldPassword: CharArray, newPassword: CharArray): AppResult<Unit> {
         AppPasswordComplexityPolicy.validate(newPassword)
 
-        if (passphraseManager.isLocked) {
+        if (lockManager.isLocked()) {
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再修改应用密码"))
         }
 
-        val passphrase = passphraseManager.getPassphrase()
-        try {
-            return AppPasswordPassphraseStore.change(
-                application,
-                oldPassword,
-                newPassword,
-                passphrase
-            )
-                .onSuccess { refreshAppPasswordState() }
-                .mapFailure { AppError.AuthFailed(it.message) }
-        } finally {
-            passphrase.fill(0)
+        return runBlocking {
+            dekManager.withDek { dek ->
+                AppPasswordPassphraseStore.change(
+                    application, oldPassword, newPassword, dek
+                )
+                    .onSuccess { refreshAppPasswordState() }
+                    .mapFailure { AppError.AuthFailed(it.message) }
+            }
         }
     }
 
     fun disablePassword(password: CharArray): AppResult<Unit> {
-        if (passphraseManager.isLocked) {
+        if (lockManager.isLocked()) {
             return AppResult.failure(AppError.AuthFailed("请先解锁应用后再关闭应用密码"))
         }
 
-        val passphrase = passphraseManager.getPassphrase()
-        try {
-            return AppPasswordPassphraseStore.disable(application, password, passphrase)
-                .onSuccess { refreshAppPasswordState() }
-                .mapFailure { AppError.AuthFailed(it.message) }
-        } finally {
-            passphrase.fill(0)
+        return runBlocking {
+            dekManager.withDek { dek ->
+                AppPasswordPassphraseStore.disable(application, password, dek)
+                    .onSuccess { refreshAppPasswordState() }
+                    .mapFailure { AppError.AuthFailed(it.message) }
+            }
         }
     }
 }

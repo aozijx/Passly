@@ -5,10 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.VerificationGatewayImpl
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
-import com.aozijx.passly.core.crypto.memory.MemoryCleaner
 import com.aozijx.passly.core.crypto.memory.SecureString
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
+import com.aozijx.passly.security.crypto.MemoryCleaner
 import com.aozijx.passly.ui.components.toUiMessage
 import com.aozijx.passly.ui.features.verification.contract.VerificationUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -49,7 +49,8 @@ class VerificationViewModel @Inject constructor(
 
     fun onDismissSetPasswordDialog() {
         val current = _uiState.value
-        MemoryCleaner.wipe(listOf(current.appPassword, current.appPasswordConfirm))
+        current.appPassword.wipe()
+        current.appPasswordConfirm.wipe()
         _uiState.update {
             it.copy(
                 showSetPasswordDialog = false,
