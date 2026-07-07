@@ -16,7 +16,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.security.SecureRandom
 import javax.crypto.Cipher
-import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,7 +45,8 @@ enum class UnlockError {
  */
 sealed interface DekState {
     data object Locked : DekState
-    data class Unlocked(val dek: ByteArray) : DekState
+    class Unlocked(val dek: ByteArray) : DekState
+    data object Locking : DekState  // 中间状态：正在锁定，防止新操作进入
     data object Deleting : DekState
 }
 
@@ -69,9 +69,6 @@ class DekManager @Inject constructor(
     companion object {
         private const val TAG = "DekManager"
         private const val DEK_LENGTH = 32
-        private const val IV_LENGTH = 12
-        private const val GCM_TAG_BITS = 128
-        private const val ALGORITHM = "AES/GCM/NoPadding"
 
         private const val PREFS_NAME = AppDefaults.Auth.PREFS_NAME
         private const val KEY_VERIFY_TAG = "dek_verify_tag"
@@ -110,66 +107,6 @@ class DekManager @Inject constructor(
     //  Vault 初始化（Cipher 版本，用于 Biometric/DeviceCredential）
     // ─────────────────────────────────────────────────────────
 
-    /**
-     * 用 AndroidKeystore Cipher 的加密结果完成 Vault 初始化。
-     *
-     * @param primaryType 信封类型（BIOMETRIC / DEVICE_CREDENTIAL）
-     * @param dek 已生成的 DEK（由调用方负责加密前持有，本方法结束后清理）
-     * @param iv Cipher 使用的 IV
-     * @param dekCiphertext Cipher 对 DEK 加密后的密文+标签
-     */
-    suspend fun initializeVaultWithCipher(
-        primaryType: EnvelopeType,
-        dek: ByteArray,
-        iv: ByteArray,
-        dekCiphertext: ByteArray
-    ) {
-        mutex.withLock {
-            check(envelopeManager.hasAny().not()) { "Vault 已初始化" }
-
-            try {
-                verificationTag.save(dek)
-                envelopeManager.createFromCipher(primaryType, iv, dekCiphertext)
-                val clonedDek = dek.clone()
-                wipeCurrentDek()
-                _state = DekState.Unlocked(clonedDek)
-                onUnlocked()
-                SessionManager.deriveAndSet(dek)
-
-                Logcat.i(TAG, "Vault initialized via cipher: $primaryType")
-            } finally {
-                MemoryCleaner.wipeByteArray(dek)
-            }
-        }
-    }
-
-    /**
-     * 用 AndroidKeystore Cipher 解密信封并解锁 DEK。
-     */
-    suspend fun unlockWithCipher(
-        envelope: Envelope,
-        dek: ByteArray
-    ): UnlockResult {
-        return mutex.withLock {
-            try {
-                verificationTag.verify(dek, envelope.id)
-                SessionManager.deriveAndSet(dek)
-                val clonedDek = dek.clone()
-                wipeCurrentDek()
-                _state = DekState.Unlocked(clonedDek)
-                onUnlocked()
-                Logcat.i(TAG, "Unlocked via cipher: ${envelope.id}")
-                UnlockResult.Success
-            } catch (e: IllegalArgumentException) {
-                Logcat.cryptoError(TAG, "DEK verification", e)
-                UnlockResult.Failed(UnlockError.DEK_VERIFY_FAILED)
-            } catch (e: Exception) {
-                Logcat.cryptoError(TAG, "Unlock via cipher", e)
-                UnlockResult.Failed(UnlockError.UNKNOWN)
-            }
-        }
-    }
-
     suspend fun initializeVault(
         primaryType: EnvelopeType,
         wrappingKey: SecretKeySpec,
@@ -205,68 +142,6 @@ class DekManager @Inject constructor(
     // ─────────────────────────────────────────────────────────
     //  解锁
     // ─────────────────────────────────────────────────────────
-
-    suspend fun unlock(
-        envelope: Envelope,
-        wrappingKey: SecretKeySpec
-    ): UnlockResult {
-        return mutex.withLock {
-            try {
-                val cipher = Cipher.getInstance(ALGORITHM)
-                cipher.init(
-                    Cipher.DECRYPT_MODE, wrappingKey,
-                    GCMParameterSpec(GCM_TAG_BITS, envelope.iv)
-                )
-                val dek = cipher.doFinal(envelope.dekCiphertext)
-
-                try {
-                    verificationTag.verify(dek, envelope.id)
-                    SessionManager.deriveAndSet(dek)
-
-                    val clonedDek = dek.clone()
-                    wipeCurrentDek()
-                    _state = DekState.Unlocked(clonedDek)
-                    onUnlocked()
-
-                    Logcat.i(TAG, "Unlocked via envelope: ${envelope.id}")
-                    UnlockResult.Success
-                } finally {
-                    MemoryCleaner.wipeByteArray(dek)
-                }
-            } catch (e: javax.crypto.AEADBadTagException) {
-                Logcat.cryptoError(TAG, "DEK unlock", e)
-                UnlockResult.Failed(UnlockError.AUTH_FAILED)
-            } catch (e: java.security.InvalidKeyException) {
-                Logcat.cryptoError(TAG, "DEK unlock", e)
-                UnlockResult.Failed(UnlockError.KDF_ERROR)
-            } catch (e: IllegalArgumentException) {
-                Logcat.cryptoError(TAG, "DEK verification", e)
-                UnlockResult.Failed(UnlockError.DEK_VERIFY_FAILED)
-            } catch (e: java.io.IOException) {
-                Logcat.cryptoError(TAG, "DEK unlock", e)
-                UnlockResult.Failed(mapDataError(e))
-            } catch (e: Exception) {
-                Logcat.cryptoError(TAG, "DEK unlock", e)
-                UnlockResult.Failed(UnlockError.UNKNOWN)
-            }
-        }
-    }
-
-    private fun mapDataError(e: Exception): UnlockError = when {
-        e.message?.contains("Base64", ignoreCase = true) == true -> UnlockError.ENVELOPE_CORRUPTED
-        e.message?.contains("corrupt", ignoreCase = true) == true -> UnlockError.DATABASE_CORRUPTED
-        else -> UnlockError.ENVELOPE_CORRUPTED
-    }
-
-    suspend fun setDekForMigration(dek: ByteArray) {
-        mutex.withLock {
-            check(_state is DekState.Locked) { "DEK already loaded" }
-            SessionManager.deriveAndSet(dek)
-            _state = DekState.Unlocked(dek.clone())
-            onUnlocked()
-            Logcat.i(TAG, "DEK set for migration")
-        }
-    }
 
     /**
      * 首次引导 DEK：创建 VerificationTag 并解锁（不创建信封）。
@@ -333,30 +208,10 @@ class DekManager @Inject constructor(
     }
 
     // ─────────────────────────────────────────────────────────
-    //  创建信封
-    // ─────────────────────────────────────────────────────────
-
-    suspend fun createEnvelope(
-        type: EnvelopeType,
-        wrappingKey: SecretKeySpec,
-        kdfParams: KdfParams? = null
-    ): Envelope {
-        return mutex.withLock {
-            val current = _state
-            check(current is DekState.Unlocked) {
-                "DEK 未加载，当前状态: ${current::class.simpleName}"
-            }
-            envelopeManager.create(type, wrappingKey, kdfParams, current.dek)
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────
     //  信封管理委托
     // ─────────────────────────────────────────────────────────
 
     fun getEnvelope(type: EnvelopeType): Envelope? = envelopeManager.get(type)
-    fun getAllEnvelopeIds(): Set<String> = envelopeManager.getAllIds()
-    fun hasAnyEnvelope(): Boolean = envelopeManager.hasAny()
     fun removeEnvelope(type: EnvelopeType) = envelopeManager.remove(type)
 
     /**
@@ -455,29 +310,64 @@ class DekManager @Inject constructor(
     //  生命周期
     // ─────────────────────────────────────────────────────────
 
+    /**
+     * 锁定 Vault，执行以下步骤：
+     * 1. 设置状态为 Locking，发出 LOCKED 信号（防止新操作进入）
+     * 2. 在 mutex 外调用回调（关闭数据库），带异常保护
+     * 3. 在 mutex 内完成密钥擦除（无论回调成功与否）
+     */
     suspend fun lock() {
+        // Step 1: 在 mutex 内设置状态为 Locking，发出 LOCKED
+        mutex.withLock {
+            _state = DekState.Locking
+            onLocked()  // 立即发出 LOCKED，让 UI 响应
+            Logcat.i(TAG, "Lock initiated, state set to Locking")
+        }
+
+        // Step 2: 在 mutex 外调用回调（关闭数据库）
+        try {
+            lockCallback?.invoke()
+        } catch (e: Exception) {
+            Logcat.e(TAG, "Database close failed during lock, continuing with DEK wipe", e)
+        }
+
+        // Step 3: 在 mutex 内完成密钥擦除（无论回调成功与否）
         mutex.withLock {
             wipeCurrentDek()
-            _state = DekState.Locked
-            onLocked()
             SessionManager.clearSessionKey()
-            Logcat.i(TAG, "Locked, DEK cleared from memory")
+            _state = DekState.Locked
+            Logcat.i(TAG, "Lock completed, DEK cleared from memory")
         }
-        lockCallback?.invoke()
     }
 
+    /**
+     * 删除 Vault（不可逆）。
+     * 执行步骤与 lock() 类似，但额外删除所有信封和验证标签。
+     */
     suspend fun deleteVault() {
+        // Step 1: 设置状态为 Deleting，发出 LOCKED
         mutex.withLock {
             _state = DekState.Deleting
+            onLocked()
+            Logcat.i(TAG, "Vault deletion initiated")
+        }
+
+        // Step 2: 在 mutex 外调用回调（关闭数据库）
+        try {
+            lockCallback?.invoke()
+        } catch (e: Exception) {
+            Logcat.e(TAG, "Database close failed during vault deletion, continuing", e)
+        }
+
+        // Step 3: 在 mutex 内完成清理
+        mutex.withLock {
             wipeCurrentDek()
             SessionManager.clearSessionKey()
             envelopeManager.removeAll()
             verificationTag.delete()
             _state = DekState.Locked
-            onLocked()
             Logcat.i(TAG, "Vault deleted")
         }
-        lockCallback?.invoke()
     }
 
     // ─────────────────────────────────────────────────────────

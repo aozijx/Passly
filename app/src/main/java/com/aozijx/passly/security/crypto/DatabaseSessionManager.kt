@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,6 +25,7 @@ class DatabaseSessionManager @Inject constructor(
 
     companion object {
         private const val TAG = "DbSessionMgr"
+        private const val CLOSE_TIMEOUT_MS = 5000L
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -80,15 +82,30 @@ class DatabaseSessionManager @Inject constructor(
         return db
     }
 
+    /**
+     * 关闭数据库会话并等待完成。
+     *
+     * 使用超时保护（5秒），防止数据库因死锁等原因长时间无法关闭。
+     * 超时后强制将 database 置为 null，可能存在资源泄漏但总比永久阻塞好。
+     */
     suspend fun closeAndAwait() {
-        // 快速路径：如果已经为空，直接返回，避免获取锁的开销
+        // 快速路径：如果已经为空，直接返回
         if (database == null) return
 
-        mutex.withLock {
-            database?.let {
-                it.close()
-                Logcat.i(TAG, "Database session closed")
+        val closed = withTimeoutOrNull(CLOSE_TIMEOUT_MS) {
+            mutex.withLock {
+                database?.let {
+                    runCatching { it.close() }
+                        .onFailure { e -> Logcat.e(TAG, "Database close error", e) }
+                    Logcat.i(TAG, "Database session closed")
+                }
+                database = null
             }
+        }
+
+        if (closed == null) {
+            Logcat.e(TAG, "Database close timed out after $CLOSE_TIMEOUT_MS ms, forcing null")
+            // 超时后强制置空，可能存在资源泄漏，但总比永久阻塞好
             database = null
         }
     }
