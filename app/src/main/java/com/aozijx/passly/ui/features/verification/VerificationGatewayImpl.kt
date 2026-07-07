@@ -1,7 +1,7 @@
 package com.aozijx.passly.ui.features.verification
 
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.auth.VerificationGateway
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.ui.components.toUiMessage
@@ -23,7 +23,7 @@ class VerificationGatewayImpl(
     val authMessage: SharedFlow<String> = _authMessage.asSharedFlow()
 
     override fun verifyWithBiometric(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String,
         forceReauth: Boolean,
@@ -31,9 +31,9 @@ class VerificationGatewayImpl(
     ) {
         scope.launch {
             val result = if (forceReauth) {
-                authUseCases.verifyIdentity(activity, title, subtitle)
+                authUseCases.verifyIdentity(launcher, title, subtitle)
             } else {
-                authUseCases.authenticate(activity, title, subtitle)
+                authUseCases.authenticate(launcher, title, subtitle)
             }
             result.onFailure {
                 _authMessage.tryEmit(it.toUiMessage())
@@ -76,12 +76,12 @@ class VerificationGatewayImpl(
     }
 
     fun rekeyWithInvalidationPolicy(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         invalidateOnBiometricChange: Boolean,
         onResult: (AppResult<Unit>) -> Unit
     ) {
         launchResult(onResult) {
-            authUseCases.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
+            authUseCases.rekeyWithInvalidationPolicy(launcher, invalidateOnBiometricChange)
         }
     }
 
@@ -91,11 +91,11 @@ class VerificationGatewayImpl(
     suspend fun updateLockTimeout(timeoutMs: Long) = authUseCases.updateLockTimeout(timeoutMs)
 
     suspend fun verifyWithBiometricSuspended(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String
     ): AppResult<Unit> {
-        val result = authUseCases.authenticate(activity, title, subtitle)
+        val result = authUseCases.authenticate(launcher, title, subtitle)
         result.onFailure {
             _authMessage.tryEmit(it.toUiMessage())
         }

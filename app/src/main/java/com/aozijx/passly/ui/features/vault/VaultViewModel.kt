@@ -3,9 +3,9 @@ package com.aozijx.passly.ui.features.vault
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.domain.model.SortOption
 import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.VaultEntry
@@ -206,14 +206,14 @@ class VaultViewModel @Inject constructor(
     }
 
     fun decryptSingle(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         encryptedData: String,
         promptTitle: String,
         promptSubtitle: String,
-        authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
+        authenticate: (BiometricPromptLauncher, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
         onResult: (String?) -> Unit
     ) = vaultUseCases.decryptSingleWithAuth(
-        activity,
+        launcher,
         encryptedData,
         promptTitle,
         promptSubtitle,

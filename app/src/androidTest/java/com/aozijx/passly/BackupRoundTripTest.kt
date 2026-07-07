@@ -80,7 +80,7 @@ class BackupRoundTripTest {
     @Test
     fun export_emptyDatabase_producesEmptyJsonArray() = runBlocking {
         val file = tempFile("empty")
-        repository.exportPlainBackup(file.toUri())
+        repository.exportPlainBackup(file.toUri().toString())
 
         val array = JSONArray(file.readText(Charsets.UTF_8))
         assertEquals("空库应导出 0 条记录", 0, array.length())
@@ -96,7 +96,7 @@ class BackupRoundTripTest {
         }
 
         val file = tempFile("two_entries")
-        repository.exportPlainBackup(file.toUri())
+        repository.exportPlainBackup(file.toUri().toString())
 
         val array = JSONArray(file.readText(Charsets.UTF_8))
         assertEquals("应导出 2 条记录", 2, array.length())
@@ -109,7 +109,7 @@ class BackupRoundTripTest {
         }
 
         val file = tempFile("fields")
-        repository.exportPlainBackup(file.toUri())
+        repository.exportPlainBackup(file.toUri().toString())
 
         val array = JSONArray(file.readText(Charsets.UTF_8))
         assertTrue(array.length() > 0)
@@ -135,7 +135,7 @@ class BackupRoundTripTest {
         }
 
         val file = tempFile("no_image")
-        repository.exportPlainBackup(file.toUri())
+        repository.exportPlainBackup(file.toUri().toString())
 
         val array = JSONArray(file.readText(Charsets.UTF_8))
         if (array.length() > 0) {
@@ -155,7 +155,7 @@ class BackupRoundTripTest {
         }
 
         val file = tempFile("bool")
-        repository.exportPlainBackup(file.toUri())
+        repository.exportPlainBackup(file.toUri().toString())
 
         val array = JSONArray(file.readText(Charsets.UTF_8))
         assertTrue(array.length() > 0)

@@ -1,8 +1,8 @@
 package com.aozijx.passly.ui.features.settings.security
 
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
@@ -66,10 +66,10 @@ class SecurityViewModel @Inject constructor(
     }
 
     fun switchKeyInvalidationPolicy(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         enabled: Boolean,
         onResult: (AppResult<Unit>) -> Unit
     ) {
-        authGateway.rekeyWithInvalidationPolicy(activity, enabled, onResult)
+        authGateway.rekeyWithInvalidationPolicy(launcher, enabled, onResult)
     }
 }

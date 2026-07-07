@@ -13,8 +13,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.VaultEntry
@@ -50,8 +50,8 @@ fun DetailScrollableContent(
     onInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onShowIconPicker: () -> Unit,
-    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    activity: FragmentActivity
+    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    biometricLauncher: BiometricPromptLauncher
 ) {
     val entry = uiState.entry ?: return
     val vaultType = uiState.vaultType
@@ -75,7 +75,7 @@ fun DetailScrollableContent(
             EntryType.PASSWORD -> {
                 item {
                     CredentialSection(
-                        activity = activity,
+                        biometricLauncher = biometricLauncher,
                         item = entry,
                         onAuthenticate = onAuthenticate,
                         editState = editState,
@@ -108,7 +108,7 @@ fun DetailScrollableContent(
             EntryType.WIFI -> {
                 item {
                     WifiSection(
-                        activity = activity,
+                        launcher = biometricLauncher,
                         entry = entry,
                         editState = editState,
                         revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
@@ -123,7 +123,7 @@ fun DetailScrollableContent(
             EntryType.BANK_CARD -> {
                 item {
                     BankCardSection(
-                        activity = activity,
+                        launcher = biometricLauncher,
                         entry = entry,
                         editState = editState,
                         revealedCardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER),
@@ -141,7 +141,7 @@ fun DetailScrollableContent(
             EntryType.SEED_PHRASE -> {
                 item {
                     SeedPhraseSection(
-                        activity = activity,
+                        launcher = biometricLauncher,
                         entry = entry,
                         revealedSeedPhrase = uiState.revealed(RevealedFieldKey.SEED_PHRASE),
                         onSeedPhraseRevealed = { revealField(RevealedFieldKey.SEED_PHRASE, it) },
@@ -154,7 +154,7 @@ fun DetailScrollableContent(
             EntryType.SSH_KEY -> {
                 item {
                     SshKeySection(
-                        activity = activity,
+                        launcher = biometricLauncher,
                         entry = entry,
                         editState = editState,
                         revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
@@ -176,7 +176,7 @@ fun DetailScrollableContent(
             EntryType.PASSKEY -> {
                 item {
                     PasskeySection(
-                        activity = activity,
+                        launcher = biometricLauncher,
                         entry = entry,
                         revealedPasskeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA),
                         revealedRecoveryCodes = uiState.revealed(RevealedFieldKey.RECOVERY_CODES),
@@ -190,7 +190,7 @@ fun DetailScrollableContent(
             EntryType.RECOVERY_CODE -> {
                 item {
                     RecoveryCodeSection(
-                        activity = activity,
+                        launcher = biometricLauncher,
                         entry = entry,
                         revealedRecoveryCodes = uiState.revealed(RevealedFieldKey.RECOVERY_CODES),
                         onRecoveryCodesRevealed = {
@@ -208,7 +208,7 @@ fun DetailScrollableContent(
             EntryType.ID_CARD -> {
                 item {
                     IdCardSection(
-                        activity = activity,
+                        launcher = biometricLauncher,
                         entry = entry,
                         revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER),
                         onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, it) },

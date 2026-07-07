@@ -1,8 +1,8 @@
 package com.aozijx.passly.ui.features.main
 
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
@@ -67,27 +67,27 @@ class MainViewModel @Inject constructor(
     fun isAuthorizedNow(): Boolean = authGateway.isAuthorized.value
 
     fun requestAuth(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String,
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        authGateway.verifyWithBiometric(activity, title, subtitle) { result ->
+        authGateway.verifyWithBiometric(launcher, title, subtitle) { result ->
             result.onSuccess { onSuccess() }
                 .onFailure { error -> onError?.invoke(error.toUiMessage()) }
         }
     }
 
     fun requestReauth(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String,
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
         authGateway.verifyWithBiometric(
-            activity, title, subtitle, forceReauth = true
+            launcher, title, subtitle, forceReauth = true
         ) { result ->
             result.onSuccess { onSuccess() }
                 .onFailure { error -> onError?.invoke(error.toUiMessage()) }

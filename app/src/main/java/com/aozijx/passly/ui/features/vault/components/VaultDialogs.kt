@@ -2,8 +2,8 @@ package com.aozijx.passly.ui.features.vault.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.backup.components.BackupPasswordDialog
 import com.aozijx.passly.ui.features.detail.DetailCardDialog
@@ -16,7 +16,7 @@ import com.aozijx.passly.ui.features.vault.model.AddType
 @Composable
 fun VaultDialogs(
     mainViewModel: MainViewModel,
-    activity: FragmentActivity,
+    launcher: BiometricPromptLauncher,
     vaultViewModel: VaultViewModel,
     backupCoordinator: BackupCoordinator,
     onUpdateInteraction: () -> Unit
@@ -47,7 +47,7 @@ fun VaultDialogs(
         DetailCardDialog(
             initialEntry = item,
             launchMode = request.launchMode,
-            activity = activity,
+            biometricLauncher = launcher,
             mainViewModel = mainViewModel,
             vaultViewModel = vaultViewModel,
             onDismiss = { vaultViewModel.dismissDetail() })
@@ -91,7 +91,7 @@ fun VaultDialogs(
     // --- 全局确认/反馈对话框 ---
     vaultViewModel.itemToDelete?.let { item ->
         DeleteConfirmDialog(
-            activity = activity,
+            launcher = launcher,
             item = item,
             mainViewModel = mainViewModel,
             onConfirm = { vaultViewModel.confirmDelete() },
@@ -104,7 +104,7 @@ fun VaultDialogs(
             backupCoordinator = backupCoordinator,
             onAuthRequired = { title, subtitle, onSuccess ->
                 mainViewModel.requestAuth(
-                    activity = activity,
+                    launcher = launcher,
                     title = title,
                     subtitle = subtitle,
                     onSuccess = onSuccess

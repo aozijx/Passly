@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.usecase.auth
 
-import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import kotlinx.coroutines.flow.StateFlow
@@ -14,10 +14,10 @@ class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
     val isAppPasswordEnabled: StateFlow<Boolean> = repository.isAppPasswordEnabled
 
     suspend fun authenticate(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String
-    ): AppResult<Unit> = repository.authenticate(activity, title, subtitle)
+    ): AppResult<Unit> = repository.authenticate(launcher, title, subtitle)
 
     suspend fun authenticateWithAppPassword(password: CharArray): AppResult<Unit> =
         repository.authenticateWithAppPassword(password)
@@ -37,16 +37,16 @@ class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
         repository.disableAppPassword(password)
 
     suspend fun verifyIdentity(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String
-    ): AppResult<Unit> = repository.verifyIdentity(activity, title, subtitle)
+    ): AppResult<Unit> = repository.verifyIdentity(launcher, title, subtitle)
 
     suspend fun rekeyWithInvalidationPolicy(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         invalidateOnBiometricChange: Boolean
     ): AppResult<Unit> =
-        repository.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
+        repository.rekeyWithInvalidationPolicy(launcher, invalidateOnBiometricChange)
 
     suspend fun lock() = repository.lock()
     fun onUserInteraction() = repository.onUserInteraction()

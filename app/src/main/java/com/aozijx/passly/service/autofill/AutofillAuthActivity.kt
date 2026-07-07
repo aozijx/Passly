@@ -22,6 +22,7 @@ import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet
+import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.features.verification.VerificationGatewayImpl
 import com.aozijx.passly.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,6 +48,10 @@ class AutofillAuthActivity : FragmentActivity() {
             scope = lifecycleScope,
             authUseCases = authUseCases
         )
+    }
+
+    private val biometricLauncher by lazy {
+        FragmentActivityBiometricLauncher(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,7 +133,7 @@ class AutofillAuthActivity : FragmentActivity() {
     ) {
         lifecycleScope.launch {
             val authResult = verificationGateway.verifyWithBiometricSuspended(
-                this@AutofillAuthActivity,
+                biometricLauncher,
                 getString(R.string.vault_auth_decrypt_title),
                 getString(R.string.vault_auth_decrypt_subtitle_generic)
             )
@@ -159,7 +164,7 @@ class AutofillAuthActivity : FragmentActivity() {
         Logcat.d(TAG, "authenticateAndFill: entryId=${entry.id}, uiMode=$uiMode")
         lifecycleScope.launch {
             val authResult = verificationGateway.verifyWithBiometricSuspended(
-                this@AutofillAuthActivity,
+                biometricLauncher,
                 getString(R.string.autofill_auth_title),
                 getString(R.string.autofill_auth_subtitle)
             )

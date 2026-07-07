@@ -2,9 +2,9 @@ package com.aozijx.passly.ui.features.settings.apppassword
 
 import android.content.Context
 import android.widget.Toast
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
 import com.aozijx.passly.core.auth.VerificationGateway
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.ui.components.toUiMessage
 
 enum class AppPasswordAction {
@@ -106,7 +106,7 @@ internal fun handleAppPasswordAction(
 
 internal fun handleAppPasswordEntryClick(
     context: Context,
-    activity: FragmentActivity?,
+    launcher: BiometricPromptLauncher?,
     isAppPasswordEnabled: Boolean,
     authGateway: VerificationGateway,
     title: String,
@@ -119,12 +119,12 @@ internal fun handleAppPasswordEntryClick(
         onAlreadyEnabled()
         return
     }
-    if (activity == null) {
+    if (launcher == null) {
         Toast.makeText(context, context.getString(R.string.auth_unavailable), Toast.LENGTH_SHORT)
             .show()
         return
     }
-    authGateway.verifyWithBiometric(activity, title, subtitle) { result ->
+    authGateway.verifyWithBiometric(launcher, title, subtitle) { result ->
         result.onSuccess { onVerified() }
             .onFailure { error ->
                 val msg = error.toUiMessage(authFailedMsg)

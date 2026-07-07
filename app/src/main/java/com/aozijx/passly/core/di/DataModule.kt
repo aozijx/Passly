@@ -1,10 +1,12 @@
 package com.aozijx.passly.core.di
 
+import com.aozijx.passly.core.auth.session.IdleTimeoutSettings
 import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
 import com.aozijx.passly.data.repository.autofill.AutofillServiceRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
 import com.aozijx.passly.data.repository.settings.BackupSettingsRepositoryImpl
 import com.aozijx.passly.data.repository.settings.DatabaseLifecycleRepositoryImpl
+import com.aozijx.passly.data.repository.settings.IdleTimeoutSettingsImpl
 import com.aozijx.passly.data.repository.settings.SecuritySettingsRepositoryImpl
 import com.aozijx.passly.data.repository.settings.SystemSettingsRepositoryImpl
 import com.aozijx.passly.data.repository.settings.UserConfigRepositoryImpl
@@ -117,4 +119,8 @@ abstract class DataModuleBinds {
     @Binds
     @Singleton
     abstract fun bindUserConfigRepository(impl: UserConfigRepositoryImpl): UserConfigRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindIdleTimeoutSettings(impl: IdleTimeoutSettingsImpl): IdleTimeoutSettings
 }

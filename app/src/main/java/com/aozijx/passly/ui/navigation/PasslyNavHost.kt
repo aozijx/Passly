@@ -19,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.detail.DetailViewModel
 import com.aozijx.passly.ui.features.detail.contract.DetailEffect
@@ -47,6 +48,9 @@ fun PasslyNavHost(
 ) {
     val dataViewModel: DataViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
+    val biometricLauncher = remember(activity) {
+        FragmentActivityBiometricLauncher(activity)
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -63,7 +67,7 @@ fun PasslyNavHost(
         ) {
         composable(AppRoute.Vault.route) {
             VaultContent(
-                activity = activity,
+                launcher = biometricLauncher,
                 mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
                 backupCoordinator = backupCoordinator,
@@ -118,10 +122,10 @@ fun PasslyNavHost(
                     onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it) },
-                    onAuthenticate = { act, title, subtitle, success ->
-                        mainViewModel.requestAuth(act, title, subtitle, onSuccess = success)
+                    onAuthenticate = { launcher, title, subtitle, success ->
+                        mainViewModel.requestAuth(launcher, title, subtitle, onSuccess = success)
                     },
-                    activity = activity
+                    biometricLauncher = biometricLauncher
                 )
             }
         }

@@ -1,8 +1,8 @@
 package com.aozijx.passly.ui.features.verification
 
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.security.crypto.MemoryCleaner
@@ -57,10 +57,10 @@ class VerificationViewModel @Inject constructor(
         }
     }
 
-    fun verifyWithBiometric(activity: FragmentActivity, title: String, subtitle: String) {
+    fun verifyWithBiometric(launcher: BiometricPromptLauncher, title: String, subtitle: String) {
         if (_uiState.value.authInProgress) return
         _uiState.update { it.copy(authInProgress = true) }
-        gateway.verifyWithBiometric(activity, title, subtitle) { result ->
+        gateway.verifyWithBiometric(launcher, title, subtitle) { result ->
             _uiState.update { it.copy(authInProgress = false) }
             if (result is AppResult.Failure) {
                 _errorEvent.tryEmit(result.error.toUiMessage())

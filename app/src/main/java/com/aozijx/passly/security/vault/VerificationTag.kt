@@ -3,6 +3,7 @@ package com.aozijx.passly.security.vault
 import android.content.Context
 import android.util.Base64
 import androidx.core.content.edit
+import com.aozijx.passly.core.logging.Logcat
 import java.nio.ByteBuffer
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -22,6 +23,7 @@ class VerificationTag(
     private val keyVerifyTag: String
 ) {
     companion object {
+        private const val TAG = "VerificationTag"
         private const val IV_LENGTH = 12
         private const val GCM_TAG_BITS = 128
         private const val ALGORITHM = "AES/GCM/NoPadding"
@@ -61,7 +63,10 @@ class VerificationTag(
         val tagBase64 = prefs.getString(keyVerifyTag, null)
 
         if (tagBase64 == null) {
-            // 迁移场景：旧数据可能没有校验标签，跳过校验
+            Logcat.w(
+                TAG,
+                "Verification tag missing for envelope '$envelopeId', skipping verification (migration scenario)"
+            )
             return
         }
 

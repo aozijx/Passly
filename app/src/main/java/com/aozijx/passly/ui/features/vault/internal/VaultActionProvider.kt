@@ -15,8 +15,8 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.FieldKey
 import com.aozijx.passly.domain.model.SwipeActionType
@@ -39,7 +39,7 @@ class VaultActionProvider(
 
 @Composable
 fun rememberVaultActionProvider(
-    activity: FragmentActivity,
+    launcher: BiometricPromptLauncher,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
     backupCoordinator: BackupCoordinator,
@@ -58,7 +58,7 @@ fun rememberVaultActionProvider(
     val latestTotpStates by rememberUpdatedState(uiState.totpStates)
 
     val performCopy = remember(
-        activity, context, vaultViewModel, mainViewModel,
+        launcher, context, vaultViewModel, mainViewModel,
         decryptAuthTitle, decryptAuthSubtitle, totpCopiedText, fieldCopiedFormat
     ) {
         { fieldKey: FieldKey, item: VaultSummary ->
@@ -68,7 +68,7 @@ fun rememberVaultActionProvider(
             if (fieldKey == FieldKey.PASSWORD && !item.totpSecret.isNullOrBlank()) {
                 latestTotpStates[item.id]?.let { state ->
                     if (state.code.isNotEmpty() && !state.code.contains("-")) {
-                        ClipboardUtils.copy(activity, state.code)
+                        ClipboardUtils.copy(context, state.code)
                         Toast.makeText(context, totpCopiedText, Toast.LENGTH_SHORT).show()
                     }
                 } ?: Unit
@@ -77,16 +77,16 @@ fun rememberVaultActionProvider(
                     val rawValue =
                         strategy.getFieldValue(fullEntry, fieldKey) ?: return@loadEntryById
                     vaultViewModel.decryptSingle(
-                        activity = activity,
+                        launcher = launcher,
                         encryptedData = rawValue,
                         promptTitle = decryptAuthTitle,
                         promptSubtitle = decryptAuthSubtitle,
-                        authenticate = { act, t, s, _, ok ->
-                            mainViewModel.requestAuth(act, t, s, onSuccess = ok)
+                        authenticate = { launcher, t, s, _, ok ->
+                            mainViewModel.requestAuth(launcher, t, s, onSuccess = ok)
                         },
                         onResult = { decrypted ->
                             decrypted?.let {
-                                ClipboardUtils.copy(activity, it)
+                                ClipboardUtils.copy(context, it)
                                 Toast.makeText(
                                     context, fieldCopiedFormat.format(label), Toast.LENGTH_SHORT
                                 ).show()
@@ -98,7 +98,7 @@ fun rememberVaultActionProvider(
     }
 
     val onSwipeTriggered = remember(
-        activity, mainViewModel, vaultViewModel, authTitle, onShowDetail, performCopy
+        launcher, mainViewModel, vaultViewModel, authTitle, onShowDetail, performCopy
     ) {
         { action: SwipeActionType, item: VaultSummary ->
             handleSwipeAction(
@@ -106,7 +106,7 @@ fun rememberVaultActionProvider(
                 item = item,
                 onAuthRequired = { ok ->
                     mainViewModel.requestReauth(
-                        activity, authTitle, item.title, onSuccess = ok
+                        launcher, authTitle, item.title, onSuccess = ok
                     )
                 },
                 onQuickDelete = { vaultViewModel.quickDelete(it) },

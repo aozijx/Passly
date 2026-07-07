@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.repository.backup
 
 import android.content.Context
-import android.net.Uri
 import androidx.core.net.toUri
 import androidx.room.withTransaction
 import com.aozijx.passly.core.backup.BackupManager.DATA_ENTRY_NAME
@@ -16,9 +15,11 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
+import com.aozijx.passly.data.repository.vault.internal.failIfLocked
 import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.security.crypto.CryptoEngine
+import com.aozijx.passly.security.crypto.VaultLockManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -41,93 +42,104 @@ internal class BackupRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val cryptoEngine: CryptoEngine,
     private val sessionManager: DatabaseSessionManager,
+    private val lockManager: VaultLockManager,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
 
     override suspend fun exportEncryptedBackup(
-        uri: Uri,
+        uri: String,
         password: CharArray,
         includeImages: Boolean
-    ): AppResult<Unit> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching("backup.export.encrypted") {
-            val entities = sessionManager.withDatabase {
-                vaultEntryDao().getAll()
-            }
-            val exportPayloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
-
-            val salt = generateSalt()
-            val key = deriveKeyArgon2id(password, salt)
-            val cipher = getCipher(Cipher.ENCRYPT_MODE, key)
-
-            val byteArrayOutputStream = ByteArrayOutputStream()
-            BackupVSerializer.writeEntries(byteArrayOutputStream, exportPayloads)
-            val backupData = byteArrayOutputStream.toByteArray()
-
-            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                ZipOutputStream(outputStream).use { zipOut ->
-                    zipOut.putNextEntry(ZipEntry(DATA_ENTRY_NAME))
-                    // 明文写入 salt 和 iv（解密必需）
-                    zipOut.write(salt)
-                    zipOut.write(cipher.iv)
-                    // 加密写入 magic number 和数据
-                    CipherOutputStream(zipOut, cipher).use { cipherOut ->
-                        cipherOut.write(MAGIC_NUMBER)
-                        cipherOut.write(backupData)
-                    }
-                    zipOut.closeEntry()
+    ): AppResult<Unit> {
+        lockManager.failIfLocked<Unit>()?.let { return it }
+        return withContext(ioDispatcher) {
+            AppResult.runSuspendCatching("backup.export.encrypted") {
+                val entities = sessionManager.withDatabase {
+                    vaultEntryDao().getAll()
                 }
+                val exportPayloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
+
+                val salt = generateSalt()
+                val key = deriveKeyArgon2id(password, salt)
+                val cipher = getCipher(Cipher.ENCRYPT_MODE, key)
+
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                BackupVSerializer.writeEntries(byteArrayOutputStream, exportPayloads)
+                val backupData = byteArrayOutputStream.toByteArray()
+
+                context.contentResolver.openOutputStream(uri.toUri())?.use { outputStream ->
+                    ZipOutputStream(outputStream).use { zipOut ->
+                        zipOut.putNextEntry(ZipEntry(DATA_ENTRY_NAME))
+                        // 明文写入 salt 和 iv（解密必需）
+                        zipOut.write(salt)
+                        zipOut.write(cipher.iv)
+                        // 加密写入 magic number 和数据
+                        CipherOutputStream(zipOut, cipher).use { cipherOut ->
+                            cipherOut.write(MAGIC_NUMBER)
+                            cipherOut.write(backupData)
+                        }
+                        zipOut.closeEntry()
+                    }
+                }
+                Unit
             }
-            Unit
         }
     }
 
-    override suspend fun exportPlainBackup(uri: Uri): AppResult<Unit> =
-        withContext(ioDispatcher) {
+    override suspend fun exportPlainBackup(uri: String): AppResult<Unit> {
+        lockManager.failIfLocked<Unit>()?.let { return it }
+        return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.export.plain") {
                 val entities = sessionManager.withDatabase {
                     vaultEntryDao().getAll()
                 }
                 val payloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
 
-                context.contentResolver.openOutputStream(uri)?.use {
+                context.contentResolver.openOutputStream(uri.toUri())?.use {
                     BackupVSerializer.writeEntries(it, payloads)
                 }
                 Unit
             }
         }
+    }
 
-    override suspend fun exportEmergencyBackup(): AppResult<File> =
-        withContext(ioDispatcher) {
+    override suspend fun exportEmergencyBackup(): AppResult<File> {
+        lockManager.failIfLocked<File>()?.let { return it }
+        return withContext(ioDispatcher) {
             EmergencyBackupExporter.exportOnFailure(context, cryptoEngine)
         }
+    }
 
     override suspend fun importBackup(
-        uri: Uri,
+        uri: String,
         password: CharArray,
         mode: BackupImportMode
-    ): AppResult<Unit> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching("backup.import") {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                // 检测文件类型：ZIP（加密） vs JSON（明文）
-                val header = ByteArray(4)
-                val headerRead = inputStream.read(header)
-                if (headerRead < 4) {
-                    throw IllegalArgumentException("备份文件无效：文件过小")
-                }
+    ): AppResult<Unit> {
+        lockManager.failIfLocked<Unit>()?.let { return it }
+        return withContext(ioDispatcher) {
+            AppResult.runSuspendCatching("backup.import") {
+                context.contentResolver.openInputStream(uri.toUri())?.use { inputStream ->
+                    // 检测文件类型：ZIP（加密） vs JSON（明文）
+                    val header = ByteArray(4)
+                    val headerRead = inputStream.read(header)
+                    if (headerRead < 4) {
+                        throw IllegalArgumentException("备份文件无效：文件过小")
+                    }
 
-                // ZIP 文件头：PK\x03\x04 (0x50 0x4B 0x03 0x04)
-                val isZipFile = header[0] == 0x50.toByte() && header[1] == 0x4B.toByte() &&
-                        header[2] == 0x03.toByte() && header[3] == 0x04.toByte()
+                    // ZIP 文件头：PK\x03\x04 (0x50 0x4B 0x03 0x04)
+                    val isZipFile = header[0] == 0x50.toByte() && header[1] == 0x4B.toByte() &&
+                            header[2] == 0x03.toByte() && header[3] == 0x04.toByte()
 
-                if (isZipFile) {
-                    // 加密备份导入
-                    importEncryptedBackup(inputStream, header, password, mode)
-                } else {
-                    // 明文 JSON 导入
-                    importPlainTextBackup(inputStream, header, mode)
+                    if (isZipFile) {
+                        // 加密备份导入
+                        importEncryptedBackup(inputStream, header, password, mode)
+                    } else {
+                        // 明文 JSON 导入
+                        importPlainTextBackup(inputStream, header, mode)
+                    }
                 }
+                Unit
             }
-            Unit
         }
     }
 
@@ -227,26 +239,29 @@ internal class BackupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun importPlainBackup(
-        uri: Uri,
+        uri: String,
         mode: BackupImportMode
-    ): AppResult<Unit> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching("backup.import.plain") {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val payloads = BackupVSerializer.readEntries(inputStream)
+    ): AppResult<Unit> {
+        lockManager.failIfLocked<Unit>()?.let { return it }
+        return withContext(ioDispatcher) {
+            AppResult.runSuspendCatching("backup.import.plain") {
+                context.contentResolver.openInputStream(uri.toUri())?.use { inputStream ->
+                    val payloads = BackupVSerializer.readEntries(inputStream)
 
-                sessionManager.withDatabase {
-                    withTransaction {
-                        if (mode == BackupImportMode.OVERWRITE) {
-                            vaultEntryDao().deleteAll()
-                        }
-                        payloads.forEach { payload ->
-                            val entity = BackupFieldEncryptor.toImportEntity(payload)
-                            vaultEntryDao().insert(entity)
+                    sessionManager.withDatabase {
+                        withTransaction {
+                            if (mode == BackupImportMode.OVERWRITE) {
+                                vaultEntryDao().deleteAll()
+                            }
+                            payloads.forEach { payload ->
+                                val entity = BackupFieldEncryptor.toImportEntity(payload)
+                                vaultEntryDao().insert(entity)
+                            }
                         }
                     }
                 }
+                Unit
             }
-            Unit
         }
     }
 

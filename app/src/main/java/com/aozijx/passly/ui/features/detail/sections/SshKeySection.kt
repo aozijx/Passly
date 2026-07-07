@@ -25,8 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
@@ -39,14 +39,14 @@ import com.aozijx.passly.ui.features.detail.internal.copySensitiveField
 
 @Composable
 fun SshKeySection(
-    activity: FragmentActivity,
+    launcher: BiometricPromptLauncher,
     entry: VaultEntry,
     editState: EntryEditState,
     revealedPassword: String?,
     revealedSshPrivateKey: String?,
     onPasswordRevealed: (String?) -> Unit,
     onSshPrivateKeyRevealed: (String?) -> Unit,
-    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit
 ) {
@@ -55,7 +55,7 @@ fun SshKeySection(
     val passphraseLabel = stringResource(R.string.passphrase)
     val sshKeyCopiedMsg = stringResource(R.string.ssh_key_copied)
     val actionHandler = DetailSectionActionHandler(
-        activity = activity,
+        launcher = launcher,
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
@@ -182,7 +182,7 @@ fun SshKeySection(
                 onClick = {
                     val sshKey = entry.sshPrivateKey
                     if (!sshKey.isNullOrBlank()) {
-                        onAuthenticate(activity, "解密 SSH 私钥", "验证身份以查看完整条目") {
+                        onAuthenticate(launcher, "解密 SSH 私钥", "验证身份以查看完整条目") {
                             onSshPrivateKeyRevealed(sshKey)
                             onEvent(
                                 DetailEvent.RecordAction(

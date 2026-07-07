@@ -1,6 +1,5 @@
 package com.aozijx.passly.domain.usecase.backup
 
-import android.net.Uri
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
@@ -12,17 +11,17 @@ import javax.inject.Singleton
 class BackupUseCases @Inject constructor(private val repository: BackupRepository) {
 
     suspend fun exportBackup(
-        uri: Uri, password: CharArray, includeImages: Boolean
+        uri: String, password: CharArray, includeImages: Boolean
     ): AppResult<Unit> = repository.exportEncryptedBackup(uri, password, includeImages)
 
     suspend fun importBackup(
-        uri: Uri, password: CharArray, mode: BackupImportMode
+        uri: String, password: CharArray, mode: BackupImportMode
     ): AppResult<Unit> = repository.importBackup(uri, password, mode)
 
-    suspend fun exportPlainBackup(uri: Uri): AppResult<Unit> =
+    suspend fun exportPlainBackup(uri: String): AppResult<Unit> =
         repository.exportPlainBackup(uri)
 
-    suspend fun importPlainBackup(uri: Uri, mode: BackupImportMode): AppResult<Unit> =
+    suspend fun importPlainBackup(uri: String, mode: BackupImportMode): AppResult<Unit> =
         repository.importPlainBackup(uri, mode)
 
     suspend fun exportEmergencyBackup(): AppResult<File> =

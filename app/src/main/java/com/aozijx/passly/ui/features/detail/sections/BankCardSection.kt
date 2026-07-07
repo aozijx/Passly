@@ -30,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
@@ -44,7 +44,7 @@ import com.aozijx.passly.ui.features.detail.internal.copySensitiveField
 
 @Composable
 fun BankCardSection(
-    activity: FragmentActivity,
+    launcher: BiometricPromptLauncher,
     entry: VaultEntry,
     editState: EntryEditState,
     revealedCardholder: String?,
@@ -52,14 +52,14 @@ fun BankCardSection(
     revealedCvv: String?,
     revealedPaymentPin: String?,
     onRevealField: (String, String?) -> Unit,
-    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val cardCopiedMsg = stringResource(R.string.card_copied)
     val actionHandler = DetailSectionActionHandler(
-        activity = activity,
+        launcher = launcher,
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
@@ -263,7 +263,7 @@ fun BankCardSection(
         if (revealedCardNumber == null && !editState.isEditingPassword) {
             Button(
                 onClick = {
-                    onAuthenticate(activity, "解密卡片信息", "验证身份以查看完整信息") {
+                    onAuthenticate(launcher, "解密卡片信息", "验证身份以查看完整信息") {
                         onRevealField(RevealedFieldKey.CARD_NUMBER, entry.password)
                         onEvent(
                             DetailEvent.RecordAction(

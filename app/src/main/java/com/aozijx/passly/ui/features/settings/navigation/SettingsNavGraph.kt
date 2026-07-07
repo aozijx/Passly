@@ -22,6 +22,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.data.repository.backup.BackupExportStorageSupport
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
+import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.features.settings.SettingsViewModel
 import com.aozijx.passly.ui.features.settings.appearance.AppearanceDetail
 import com.aozijx.passly.ui.features.settings.appearance.AppearanceUiAction
@@ -190,9 +191,11 @@ fun SettingsNavGraph(
                         isAppPasswordEnabled = appPwdEnabled,
                         onLockTimeoutChange = { vm.onAction(SecurityUiAction.SetLockTimeout(it)) },
                         onAppPasswordClick = {
+                            val activity = context as? FragmentActivity
+                            val launcher = activity?.let { FragmentActivityBiometricLauncher(it) }
                             handleAppPasswordEntryClick(
                                 context = context,
-                                activity = context as? FragmentActivity,
+                                launcher = launcher,
                                 isAppPasswordEnabled = appPwdEnabled,
                                 authGateway = vm.authGateway,
                                 title = authDecryptTitle,
@@ -203,9 +206,11 @@ fun SettingsNavGraph(
                             )
                         },
                         onInvalidateKeyOnBioChangeToggle = { enabled ->
+                            val activity = context as? FragmentActivity
+                            val launcher = activity?.let { FragmentActivityBiometricLauncher(it) }
                             handleInvalidateKeyToggle(
                                 context = context,
-                                activity = context as? FragmentActivity,
+                                launcher = launcher,
                                 enabled = enabled,
                                 switchPolicy = vm::switchKeyInvalidationPolicy
                             )

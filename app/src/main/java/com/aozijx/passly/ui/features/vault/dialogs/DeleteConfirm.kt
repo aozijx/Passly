@@ -6,19 +6,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.ui.features.main.MainViewModel
 
 @Composable
 fun DeleteConfirmDialog(
     mainViewModel: MainViewModel,
-    activity: FragmentActivity,
+    launcher: BiometricPromptLauncher,
     item: VaultEntry,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val deleteTitle = stringResource(R.string.vault_delete_title)
+    val authSubtitle = stringResource(R.string.vault_auth_decrypt_subtitle_generic)
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.vault_delete_title)) },
@@ -26,9 +29,9 @@ fun DeleteConfirmDialog(
         confirmButton = {
             TextButton(onClick = {
                 mainViewModel.requestAuth(
-                    activity = activity,
-                    title = activity.getString(R.string.vault_delete_title),
-                    subtitle = activity.getString(R.string.vault_auth_decrypt_subtitle_generic),
+                    launcher = launcher,
+                    title = deleteTitle,
+                    subtitle = authSubtitle,
                     onSuccess = { onConfirm() })
             }) {
                 Text(

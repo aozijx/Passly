@@ -17,8 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.ui.features.detail.components.DetailItem
@@ -30,9 +30,9 @@ import com.aozijx.passly.ui.features.detail.internal.copySensitiveField
 
 @Composable
 fun CredentialSection(
-    activity: FragmentActivity,
+    biometricLauncher: BiometricPromptLauncher,
     item: VaultEntry,
-    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     editState: EntryEditState,
     revealedUsername: String?,
     revealedPassword: String?,
@@ -43,7 +43,7 @@ fun CredentialSection(
 ) {
     val context = LocalContext.current
     val actionHandler = DetailSectionActionHandler(
-        activity = activity,
+        launcher = biometricLauncher,
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
@@ -109,7 +109,7 @@ fun CredentialSection(
         if (revealedUsername == null || revealedPassword == null) {
             Button(
                 onClick = {
-                    onAuthenticate(activity, "解密信息", "验证身份以查看完整条目") {
+                    onAuthenticate(biometricLauncher, "解密信息", "验证身份以查看完整条目") {
                         if (revealedUsername == null && item.username.isNotEmpty()) {
                             onUsernameRevealed(item.username)
                             onEvent(

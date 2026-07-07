@@ -1,9 +1,8 @@
 package com.aozijx.passly.data.repository.auth
 
 import androidx.biometric.BiometricPrompt
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
-import com.aozijx.passly.core.auth.biometric.BiometricAuthenticator
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.auth.error.AuthErrorHandler
 import com.aozijx.passly.core.auth.state.LockStateManager
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
@@ -65,11 +64,11 @@ internal class AuthRepositoryImpl @Inject constructor(
     )
 
     override suspend fun authenticate(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String
     ): AppResult<Unit> {
-        when (val validation = requestValidator.validateRequest(activity, title)) {
+        when (val validation = requestValidator.validateRequest(title)) {
             is AuthRequestValidationResult.Invalid -> {
                 return AppResult.failure(
                     AppError.AuthFailed(requestValidator.sanitizeMessage(validation.message))
@@ -85,8 +84,7 @@ internal class AuthRepositoryImpl @Inject constructor(
 
         return suspendCancellableCoroutine { continuation ->
 
-            BiometricAuthenticator.authenticate(
-                activity = activity,
+            launcher.launchPrompt(
                 title = title,
                 subtitle = subtitle,
                 cryptoObject = BiometricPrompt.CryptoObject(cipher),
@@ -103,7 +101,7 @@ internal class AuthRepositoryImpl @Inject constructor(
                     }
                 },
                 onSuccess = { result ->
-                    if (!continuation.isActive) return@authenticate
+                    if (!continuation.isActive) return@launchPrompt
 
                     scope.launch {
                         try {
@@ -140,11 +138,11 @@ internal class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun verifyIdentity(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String
     ): AppResult<Unit> {
-        when (val validation = requestValidator.validateRequest(activity, title)) {
+        when (val validation = requestValidator.validateRequest(title)) {
             is AuthRequestValidationResult.Invalid -> {
                 return AppResult.failure(
                     AppError.AuthFailed(requestValidator.sanitizeMessage(validation.message))
@@ -158,8 +156,7 @@ internal class AuthRepositoryImpl @Inject constructor(
         }
 
         return suspendCancellableCoroutine { continuation ->
-            BiometricAuthenticator.authenticate(
-                activity = activity,
+            launcher.launchPrompt(
                 title = title,
                 subtitle = subtitle,
                 onError = { errorCode, error ->
@@ -240,7 +237,7 @@ internal class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun rekeyWithInvalidationPolicy(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         invalidateOnBiometricChange: Boolean
     ): AppResult<Unit> {
         try {
@@ -250,8 +247,7 @@ internal class AuthRepositoryImpl @Inject constructor(
                 ?: return AppResult.failure(AppError.AuthFailed("无法准备重加密环境"))
 
             return suspendCancellableCoroutine { continuation ->
-                BiometricAuthenticator.authenticate(
-                    activity = activity,
+                launcher.launchPrompt(
                     title = "重加密身份验证",
                     subtitle = "请验证身份以更新安全策略",
                     cryptoObject = BiometricPrompt.CryptoObject(cipher),
@@ -264,7 +260,7 @@ internal class AuthRepositoryImpl @Inject constructor(
                         }
                     },
                     onSuccess = { result ->
-                        if (!continuation.isActive) return@authenticate
+                        if (!continuation.isActive) return@launchPrompt
                         scope.launch {
                             val outcome = AppResult.runCatching("auth.rekey.complete") {
                                 withContext(Dispatchers.IO) {

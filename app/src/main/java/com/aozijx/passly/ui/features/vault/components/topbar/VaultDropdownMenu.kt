@@ -238,7 +238,7 @@ private fun SortSubMenu(
         leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) })
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-    SortOption.Companion.displayOptions().forEach { displayOption ->
+    SortOption.displayOptions().forEach { displayOption ->
         val isInGroup = selectedSort.group == displayOption.group
         val effectiveSort = if (isInGroup) selectedSort else displayOption
         val direction =

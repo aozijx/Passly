@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.repository.auth
 
-import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import kotlinx.coroutines.flow.StateFlow
 
@@ -10,13 +10,13 @@ interface AuthRepository {
     val isAppPasswordEnabled: StateFlow<Boolean>
 
     suspend fun authenticate(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String
     ): AppResult<Unit>
 
     suspend fun verifyIdentity(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String
     ): AppResult<Unit>
@@ -42,7 +42,7 @@ interface AuthRepository {
     suspend fun updateLockTimeout(timeoutMs: Long)
 
     suspend fun rekeyWithInvalidationPolicy(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         invalidateOnBiometricChange: Boolean
     ): AppResult<Unit>
 }

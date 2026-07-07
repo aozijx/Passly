@@ -1,14 +1,14 @@
 package com.aozijx.passly.ui.features.detail.internal
 
 import android.content.Context
-import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.ui.features.detail.contract.DetailEvent
 
 internal data class DetailSectionActionHandler(
-    val activity: FragmentActivity,
-    val onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    val launcher: BiometricPromptLauncher,
+    val onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
     val onEvent: (DetailEvent) -> Unit
 ) {
     fun record(field: String, type: VaultHistory.HistoryType) {
@@ -35,7 +35,7 @@ internal inline fun copySensitiveField(
         return
     }
 
-    handler.onAuthenticate(handler.activity, authTitle, authSubtitle) {
+    handler.onAuthenticate(handler.launcher, authTitle, authSubtitle) {
         onReveal(source)
         ClipboardUtils.copy(context, source)
         afterCopy(source)
@@ -58,7 +58,7 @@ internal inline fun toggleRevealSensitiveField(
         return
     }
 
-    handler.onAuthenticate(handler.activity, authTitle, authSubtitle) {
+    handler.onAuthenticate(handler.launcher, authTitle, authSubtitle) {
         onReveal(source)
         handler.record(fieldName, VaultHistory.HistoryType.ACCESS)
     }

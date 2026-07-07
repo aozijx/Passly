@@ -18,11 +18,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.main.MainViewModel
@@ -37,7 +39,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 fun VaultContent(
     mainViewModel: MainViewModel,
-    activity: FragmentActivity,
+    launcher: BiometricPromptLauncher,
     vaultViewModel: VaultViewModel,
     backupCoordinator: BackupCoordinator,
     backupDirectoryUri: String?,
@@ -46,6 +48,7 @@ fun VaultContent(
     onShowDetail: (VaultEntry) -> Unit = {},
     isDatabaseInitializing: Boolean = false
 ) {
+    val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -58,7 +61,7 @@ fun VaultContent(
     var isFabVisible by remember { mutableStateOf(true) }
 
     val actionProvider = rememberVaultActionProvider(
-        activity = activity,
+        launcher = launcher,
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
         backupCoordinator = backupCoordinator,
@@ -94,6 +97,7 @@ fun VaultContent(
     }
 
     LaunchedEffect(scrollBehavior.state.collapsedFraction, vaultDisplayConfig.isStatusBarAutoHide) {
+        val activity = context as? FragmentActivity ?: return@LaunchedEffect
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
         if (!vaultDisplayConfig.isStatusBarAutoHide) {
@@ -161,7 +165,7 @@ fun VaultContent(
 
     VaultDialogs(
         mainViewModel = mainViewModel,
-        activity = activity,
+        launcher = launcher,
         vaultViewModel = vaultViewModel,
         backupCoordinator = backupCoordinator,
         onUpdateInteraction = actionProvider.onUpdateInteraction

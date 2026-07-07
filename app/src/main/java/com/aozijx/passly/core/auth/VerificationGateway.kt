@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.auth
 
-import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import kotlinx.coroutines.flow.StateFlow
 
@@ -9,7 +9,7 @@ interface VerificationGateway {
     val isAppPasswordEnabled: StateFlow<Boolean>
 
     fun verifyWithBiometric(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String,
         forceReauth: Boolean = false,

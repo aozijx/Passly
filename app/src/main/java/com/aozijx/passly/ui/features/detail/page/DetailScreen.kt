@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.R
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.TotpState
@@ -45,8 +45,8 @@ fun DetailScreen(
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onShowIconPicker: () -> Unit,
     onAutoUnlockTotp: (VaultEntry) -> Unit,
-    onAuthenticate: (activity: FragmentActivity, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    activity: FragmentActivity
+    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    biometricLauncher: BiometricPromptLauncher
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -126,7 +126,7 @@ fun DetailScreen(
             editState = editState,
             onShowQrDialog = {
                 onAuthenticate(
-                    activity,
+                    biometricLauncher,
                     authQrTitle,
                     authQrSubtitle
                 ) {
@@ -139,7 +139,7 @@ fun DetailScreen(
             onUpdateVaultEntry = onUpdateVaultEntry,
             onShowIconPicker = onShowIconPicker,
             onAuthenticate = onAuthenticate,
-            activity = activity
+            biometricLauncher = biometricLauncher
         )
     }
 }

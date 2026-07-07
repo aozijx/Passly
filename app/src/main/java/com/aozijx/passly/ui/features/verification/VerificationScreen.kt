@@ -30,12 +30,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.features.settings.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.ui.features.verification.components.BiometricUnlockButton
 import com.aozijx.passly.ui.features.verification.components.PasswordUnlockSection
@@ -48,8 +50,13 @@ fun VerificationScreen(
     viewModel: VerificationViewModel,
     activity: FragmentActivity
 ) {
+    val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
+
+    val biometricLauncher = remember(activity) {
+        FragmentActivityBiometricLauncher(activity)
+    }
 
     val biometricAvailable = remember {
         BiometricManager.from(activity)
@@ -67,7 +74,7 @@ fun VerificationScreen(
 
     LaunchedEffect(Unit) {
         viewModel.errorEvent.collect { message ->
-            Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -122,7 +129,7 @@ fun VerificationScreen(
                         exit = shrinkVertically() + fadeOut()
                     ) {
                         BiometricUnlockButton(state.authInProgress) {
-                            viewModel.verifyWithBiometric(activity, title, subtitle)
+                            viewModel.verifyWithBiometric(biometricLauncher, title, subtitle)
                         }
                     }
                     if (appPasswordEnabled) {
@@ -178,16 +185,16 @@ fun VerificationScreen(
                 val pwd = state.appPassword.toPlainString()
                 val confirm = state.appPasswordConfirm.toPlainString()
                 if (pwd != confirm) {
-                    Toast.makeText(activity, mismatchMsg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, mismatchMsg, Toast.LENGTH_SHORT).show()
                     return@AppPasswordSetDialog
                 }
                 if (pwd.isEmpty()) {
-                    Toast.makeText(activity, emptyMsg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, emptyMsg, Toast.LENGTH_SHORT).show()
                     return@AppPasswordSetDialog
                 }
                 viewModel.bootstrapAppPassword { success ->
                     Toast.makeText(
-                        activity,
+                        context,
                         if (success) successMsg else failedMsg,
                         Toast.LENGTH_SHORT
                     ).show()

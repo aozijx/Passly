@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.usecase.vault
 
-import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.FaviconOutcome
 import com.aozijx.passly.domain.model.FaviconResult
@@ -62,18 +62,18 @@ class VaultUseCases @Inject constructor(
     }
 
     fun decryptSingleWithAuth(
-        activity: FragmentActivity,
+        launcher: BiometricPromptLauncher,
         encryptedData: String,
         promptTitle: String,
         promptSubtitle: String,
-        authenticate: (FragmentActivity, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
+        authenticate: (BiometricPromptLauncher, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
         onResult: (String?) -> Unit
     ) {
         if (encryptedData.isEmpty()) {
             onResult("")
             return
         }
-        authenticate(activity, promptTitle, promptSubtitle, null) {
+        authenticate(launcher, promptTitle, promptSubtitle, null) {
             onResult(encryptedData)
         }
     }

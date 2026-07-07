@@ -25,9 +25,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
@@ -52,7 +52,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun DetailCardDialog(
     initialEntry: VaultEntry,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
-    activity: FragmentActivity,
+    biometricLauncher: BiometricPromptLauncher,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
     onDismiss: () -> Unit
@@ -190,7 +190,7 @@ fun DetailCardDialog(
                             totpEditState.isEditing = false
                             showQrDialog = true
                         },
-                        activity = activity,
+                        biometricLauncher = biometricLauncher,
                         mainViewModel = mainViewModel,
                         vaultViewModel = vaultViewModel,
                         onEvent = detailViewModel::onEvent
@@ -222,7 +222,7 @@ private fun LazyListScope.typeSpecificCardContent(
     onUsernameRevealed: (String?) -> Unit,
     onPasswordRevealed: (String?) -> Unit,
     onShowQrDialog: () -> Unit,
-    activity: FragmentActivity,
+    biometricLauncher: BiometricPromptLauncher,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
     onEvent: (DetailEvent) -> Unit
@@ -244,10 +244,10 @@ private fun LazyListScope.typeSpecificCardContent(
 
             else -> {
                 CredentialSection(
-                    activity = activity,
+                    biometricLauncher = biometricLauncher,
                     item = entry,
-                    onAuthenticate = { act, title, subtitle, onSuccess ->
-                        mainViewModel.requestAuth(act, title, subtitle, onSuccess = onSuccess)
+                    onAuthenticate = { launcher, title, subtitle, onSuccess ->
+                        mainViewModel.requestAuth(launcher, title, subtitle, onSuccess = onSuccess)
                     },
                     editState = editState,
                     revealedUsername = revealedUsername,

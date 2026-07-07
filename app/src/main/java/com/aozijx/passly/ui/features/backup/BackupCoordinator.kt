@@ -154,9 +154,17 @@ class BackupCoordinator @Inject constructor(
                         } else targetUri
 
                     val outcome = if (currentState.isExporting) {
-                        backupUseCases.exportBackup(finalUri, password, currentState.includeImages)
+                        backupUseCases.exportBackup(
+                            finalUri.toString(),
+                            password,
+                            currentState.includeImages
+                        )
                     } else {
-                        backupUseCases.importBackup(finalUri, password, currentState.importMode)
+                        backupUseCases.importBackup(
+                            finalUri.toString(),
+                            password,
+                            currentState.importMode
+                        )
                     }
 
                     when (outcome) {
@@ -215,7 +223,7 @@ class BackupCoordinator @Inject constructor(
         }
 
         scope.launch {
-            backupMessage = when (val result = backupUseCases.exportPlainBackup(uri)) {
+            backupMessage = when (val result = backupUseCases.exportPlainBackup(uri.toString())) {
                 is AppResult.Success -> "明文备份已导出"
                 is AppResult.Failure -> result.error.toUiMessage("导出失败")
             }

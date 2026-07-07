@@ -3,7 +3,6 @@ package com.aozijx.passly.core.auth.session
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,7 +23,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AppIdleMonitor @Inject constructor(
-    securitySettingsUseCases: SecuritySettingsUseCases
+    idleTimeoutSettings: IdleTimeoutSettings
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var idleJob: Job? = null
@@ -34,7 +33,7 @@ class AppIdleMonitor @Inject constructor(
 
     init {
         scope.launch {
-            securitySettingsUseCases.isLockOnBackground.collect {
+            idleTimeoutSettings.lockOnBackground.collect {
                 lockOnBackground = it
             }
         }

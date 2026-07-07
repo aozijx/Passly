@@ -11,6 +11,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.R
+import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.features.backup.BackupCoordinator
 import com.aozijx.passly.ui.features.backup.components.PlainExportDialog
 import com.aozijx.passly.ui.features.backup.components.PlainExportDialogType
@@ -34,6 +35,10 @@ internal fun AppMainContent(
     var showPlainExportRiskDialog by remember { mutableStateOf(false) }
     val navController = rememberNavController()
 
+    val biometricLauncher = remember(activity) {
+        FragmentActivityBiometricLauncher(activity)
+    }
+
     PasslyNavHost(
         navController = navController,
         activity = activity,
@@ -50,7 +55,7 @@ internal fun AppMainContent(
             onExportBackup = {
                 showPlainExportRiskDialog = false
                 mainViewModel.requestAuth(
-                    activity = activity,
+                    launcher = biometricLauncher,
                     title = activity.getString(R.string.vault_backup_auth_title),
                     subtitle = activity.getString(R.string.vault_backup_auth_subtitle_plain_export),
                     onSuccess = {
