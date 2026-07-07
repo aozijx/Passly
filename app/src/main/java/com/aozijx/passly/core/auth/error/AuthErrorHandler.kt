@@ -3,7 +3,6 @@ package com.aozijx.passly.core.auth.error
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.SessionManager
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,7 +47,7 @@ class AuthErrorHandler @Inject constructor(
     /**
      * 处理认证失败，清理敏感状态并记录日志。
      */
-    fun handleAuthFailure(error: AuthError, operation: String) {
+    suspend fun handleAuthFailure(error: AuthError, operation: String) {
         Logcat.e(TAG, "Auth failure in $operation: ${error.toUserMessage()}")
 
         // 清理敏感状态
@@ -78,9 +77,9 @@ class AuthErrorHandler @Inject constructor(
     /**
      * 集中清理敏感状态。
      */
-    fun cleanupSensitiveState() {
+    suspend fun cleanupSensitiveState() {
         try {
-            runBlocking { dekManager.lock() }
+            dekManager.lock()
             SessionManager.clearSessionKey()
             Logcat.i(TAG, "Sensitive state cleared")
         } catch (e: Exception) {

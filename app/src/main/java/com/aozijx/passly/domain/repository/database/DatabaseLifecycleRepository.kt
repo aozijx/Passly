@@ -25,7 +25,7 @@ interface DatabaseLifecycleRepository {
     fun consumeAutoRecoveryNotice(): String?
 
     /**
-     * 关闭底层数据库连接，释放资源。
+     * 关闭底层数据库连接，确保资源释放完毕后返回。
      */
-    fun close()
+    suspend fun close()
 }

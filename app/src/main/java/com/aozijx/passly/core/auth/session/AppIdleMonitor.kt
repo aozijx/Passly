@@ -29,7 +29,7 @@ class AppIdleMonitor @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var idleJob: Job? = null
     private var timeoutMs: Long = 30_000L
-    private var onLockRequested: (() -> Unit)? = null
+    private var onLockRequested: (suspend () -> Unit)? = null
     private var lockOnBackground: Boolean = true
 
     init {
@@ -42,7 +42,7 @@ class AppIdleMonitor @Inject constructor(
             override fun onStop(owner: LifecycleOwner) {
                 idleJob?.cancel()
                 if (lockOnBackground) {
-                    onLockRequested?.invoke()
+                    scope.launch { onLockRequested?.invoke() }
                 } else {
                     idleJob = scope.launch {
                         delay(timeoutMs)
@@ -59,7 +59,7 @@ class AppIdleMonitor @Inject constructor(
     }
 
     /** 配置超时时间和锁定回调，由 AuthRepositoryImpl 在认证成功时调用 */
-    fun configure(timeoutMs: Long, onLock: () -> Unit) {
+    fun configure(timeoutMs: Long, onLock: suspend () -> Unit) {
         this.timeoutMs = timeoutMs
         this.onLockRequested = onLock
     }

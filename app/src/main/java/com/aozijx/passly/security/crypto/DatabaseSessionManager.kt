@@ -9,8 +9,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -35,28 +33,13 @@ class DatabaseSessionManager @Inject constructor(
     private var database: AppDatabase? = null
 
     override fun onStart(owner: LifecycleOwner) {
-        observeLockState()
+        dekManager.setLockCallback { closeAndAwait() }
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        close()
-    }
-
-    private fun observeLockState() {
-        dekManager.lockState
-            .onEach { state ->
-                when (state) {
-                    LockState.LOCKED -> {
-                        Logcat.i(TAG, "Lock state changed to LOCKED, closing database")
-                        close()
-                    }
-
-                    LockState.UNLOCKED -> {
-                        Logcat.i(TAG, "Lock state changed to UNLOCKED, database ready")
-                    }
-                }
-            }
-            .launchIn(scope)
+        scope.launch {
+            closeAndAwait()
+        }
     }
 
     suspend fun <T> withDatabase(block: suspend AppDatabase.() -> T): T =
@@ -97,19 +80,10 @@ class DatabaseSessionManager @Inject constructor(
         return db
     }
 
-    fun close() {
-        scope.launch {
-            mutex.withLock {
-                database?.let {
-                    it.close()
-                    Logcat.i(TAG, "Database session closed")
-                }
-                database = null
-            }
-        }
-    }
-
     suspend fun closeAndAwait() {
+        // 快速路径：如果已经为空，直接返回，避免获取锁的开销
+        if (database == null) return
+
         mutex.withLock {
             database?.let {
                 it.close()

@@ -48,8 +48,8 @@ class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
     ): AppResult<Unit> =
         repository.rekeyWithInvalidationPolicy(activity, invalidateOnBiometricChange)
 
-    fun lock() = repository.lock()
+    suspend fun lock() = repository.lock()
     fun onUserInteraction() = repository.onUserInteraction()
-    fun checkAndLock() = repository.checkAndLock()
-    fun updateLockTimeout(timeoutMs: Long) = repository.updateLockTimeout(timeoutMs)
+    suspend fun checkAndLock() = repository.checkAndLock()
+    suspend fun updateLockTimeout(timeoutMs: Long) = repository.updateLockTimeout(timeoutMs)
 }

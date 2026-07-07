@@ -20,8 +20,7 @@ class DatabaseLifecycleUseCases @Inject constructor(
     private val repository: DatabaseLifecycleRepository
 ) {
     /**
-     * 在 IO 调度器上预热数据库，封装错误处理与日志，避免调用方关心线程切换。
-     * 返回的 [DatabaseInitOutcome] 同时承载初始化结果与一次性自动恢复提示。
+     * 在 IO 调度器上预热数据库，封装错误处理与日志。
      */
     suspend fun preWarmAndReport(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
         val error = repository.preWarm()
@@ -43,7 +42,7 @@ class DatabaseLifecycleUseCases @Inject constructor(
     }
 
     /**
-     * 重置数据库后再次预热，复用与 [preWarmAndReport] 相同的封装。
+     * 重置数据库后再次预热。
      */
     suspend fun retryAndReport(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
         val error = repository.retry()
@@ -64,16 +63,16 @@ class DatabaseLifecycleUseCases @Inject constructor(
         DatabaseInitOutcome(error = error, recoveryNotice = notice)
     }
 
-    /**
-     * 保留原有的细粒度 API，便于其他用例（不关心完整初始化报告的场景）继续使用。
-     */
     suspend fun preWarm(): Throwable? = repository.preWarm()
 
     suspend fun retry(): Throwable? = repository.retry()
 
     fun consumeAutoRecoveryNotice(): String? = repository.consumeAutoRecoveryNotice()
 
-    fun close() = repository.close()
+    /**
+     * 关闭底层数据库连接。现在是挂起函数，确保关闭完成后才返回。
+     */
+    suspend fun close() = repository.close()
 
     private companion object {
         private const val TAG = "DatabaseLifecycle"

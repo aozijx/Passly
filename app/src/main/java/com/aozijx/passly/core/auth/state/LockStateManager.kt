@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -40,9 +39,9 @@ class LockStateManager @Inject constructor(
     /**
      * 标记认证成功，配置自动锁定定时器。
      */
-    fun markAuthorizedSync() = runBlocking {
+    suspend fun markAuthorized() {
         stateMutex.withLock {
-            if (_isAuthorized.value) return@withLock
+            if (_isAuthorized.value) return
 
             Logcat.i(TAG, "Marking authorized, configuring idle monitor")
             _isAuthorized.update { true }
@@ -54,7 +53,7 @@ class LockStateManager @Inject constructor(
     /**
      * 锁定应用，清理敏感状态。
      */
-    fun lock() = runBlocking {
+    suspend fun lock() {
         stateMutex.withLock {
             Logcat.i(TAG, "Locking application")
             dekManager.lock()
@@ -66,7 +65,7 @@ class LockStateManager @Inject constructor(
     /**
      * 更新锁定超时时间。
      */
-    fun updateTimeout(timeoutMs: Long) = runBlocking {
+    suspend fun updateTimeout(timeoutMs: Long) {
         stateMutex.withLock {
             currentTimeoutMs = timeoutMs
             idleMonitor.updateTimeout(timeoutMs)
@@ -79,19 +78,17 @@ class LockStateManager @Inject constructor(
     /**
      * 用户交互时重置空闲定时器。
      */
-    fun onUserInteraction() = runBlocking {
-        stateMutex.withLock {
-            if (!_isAuthorized.value) return@withLock
-            idleMonitor.resetIdleTimer()
-        }
+    fun onUserInteraction() {
+        if (!_isAuthorized.value) return
+        idleMonitor.resetIdleTimer()
     }
 
     /**
      * 检查并确保锁定状态一致。
      */
-    fun ensureLockedState() = runBlocking {
+    suspend fun ensureLockedState() {
         stateMutex.withLock {
-            if (_isAuthorized.value) return@withLock
+            if (_isAuthorized.value) return
             Logcat.i(TAG, "Ensuring locked state")
             dekManager.lock()
         }

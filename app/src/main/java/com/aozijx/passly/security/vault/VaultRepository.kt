@@ -30,7 +30,7 @@ class VaultRepository(
     /**
      * 删除 Vault（不可逆）。
      */
-    fun deleteVault() {
+    suspend fun deleteVault() {
         dekManager.deleteVault()
     }
 }

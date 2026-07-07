@@ -51,12 +51,14 @@ class MainViewModel @Inject constructor(
     fun handleIntent(intent: MainIntent) {
         when (intent) {
             MainIntent.Lock -> {
-                authGateway.lock()
-                databaseLifecycleUseCases.close()
+                viewModelScope.launch {
+                    authGateway.lock()
+                    databaseLifecycleUseCases.close()
+                }
             }
 
             MainIntent.UpdateInteraction -> authGateway.onUserInteraction()
-            MainIntent.CheckAndLock -> authGateway.checkAndLock()
+            MainIntent.CheckAndLock -> viewModelScope.launch { authGateway.checkAndLock() }
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             else -> Unit
         }

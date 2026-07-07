@@ -12,7 +12,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.security.SecureRandom
@@ -85,6 +84,13 @@ class DekManager @Inject constructor(
     private var _state: DekState = DekState.Locked
 
     private val _lockState = MutableStateFlow(LockState.LOCKED)
+
+    /** 锁定回调，由 DatabaseSessionManager 注册，用于在锁定前关闭数据库 */
+    private var lockCallback: (suspend () -> Unit)? = null
+
+    fun setLockCallback(callback: suspend () -> Unit) {
+        lockCallback = callback
+    }
 
     /** 公开的锁状态流，供 [VaultLockManager] 观察 */
     val lockState: StateFlow<LockState> = _lockState.asStateFlow()
@@ -449,7 +455,7 @@ class DekManager @Inject constructor(
     //  生命周期
     // ─────────────────────────────────────────────────────────
 
-    fun lock() = runBlocking {
+    suspend fun lock() {
         mutex.withLock {
             wipeCurrentDek()
             _state = DekState.Locked
@@ -457,9 +463,10 @@ class DekManager @Inject constructor(
             SessionManager.clearSessionKey()
             Logcat.i(TAG, "Locked, DEK cleared from memory")
         }
+        lockCallback?.invoke()
     }
 
-    fun deleteVault() = runBlocking {
+    suspend fun deleteVault() {
         mutex.withLock {
             _state = DekState.Deleting
             wipeCurrentDek()
@@ -470,6 +477,7 @@ class DekManager @Inject constructor(
             onLocked()
             Logcat.i(TAG, "Vault deleted")
         }
+        lockCallback?.invoke()
     }
 
     // ─────────────────────────────────────────────────────────

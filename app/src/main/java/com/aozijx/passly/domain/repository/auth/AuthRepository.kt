@@ -33,13 +33,13 @@ interface AuthRepository {
 
     fun onExternalAuthorized()
 
-    fun lock()
+    suspend fun lock()
 
     fun onUserInteraction()
 
-    fun checkAndLock()
+    suspend fun checkAndLock()
 
-    fun updateLockTimeout(timeoutMs: Long)
+    suspend fun updateLockTimeout(timeoutMs: Long)
 
     suspend fun rekeyWithInvalidationPolicy(
         activity: FragmentActivity,

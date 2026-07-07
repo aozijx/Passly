@@ -19,11 +19,17 @@ import com.aozijx.passly.security.crypto.VaultLockManager
 import com.aozijx.passly.security.keystore.BiometricKeyProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -39,6 +45,7 @@ internal class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     private val requestValidator = AuthRequestValidator()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val _isAppPasswordEnabled =
         MutableStateFlow(AppPasswordPassphraseStore.isEnabled(application))
@@ -51,7 +58,7 @@ internal class AuthRepositoryImpl @Inject constructor(
         lockManager = lockManager,
         dekManager = dekManager,
         isAuthorized = { lockStateManager.isAuthorized.value },
-        onAuthorized = { lockStateManager.markAuthorizedSync() },
+        onAuthorized = { lockStateManager.markAuthorized() },
         refreshAppPasswordState = {
             _isAppPasswordEnabled.update { AppPasswordPassphraseStore.isEnabled(application) }
         }
@@ -77,6 +84,7 @@ internal class AuthRepositoryImpl @Inject constructor(
             ?: return AppResult.failure(AppError.AuthFailed("无法准备认证环境，请重试"))
 
         return suspendCancellableCoroutine { continuation ->
+
             BiometricAuthenticator.authenticate(
                 activity = activity,
                 title = title,
@@ -84,7 +92,9 @@ internal class AuthRepositoryImpl @Inject constructor(
                 cryptoObject = BiometricPrompt.CryptoObject(cipher),
                 onError = { errorCode, error ->
                     if (continuation.isActive) {
-                        errorHandler.cleanupSensitiveState()
+                        scope.launch {
+                            errorHandler.cleanupSensitiveState()
+                        }
                         val authError = errorHandler.classifyBiometricError(errorCode, error)
                         if (authError.canFallback() && isAppPasswordEnabled.value) {
                             Logcat.w("AuthRepo", "Biometric error [$errorCode], fallback available")
@@ -95,32 +105,37 @@ internal class AuthRepositoryImpl @Inject constructor(
                 onSuccess = { result ->
                     if (!continuation.isActive) return@authenticate
 
-                    try {
-                        val unlockResult =
-                            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                    scope.launch {
+                        try {
+                            val unlockResult = withContext(Dispatchers.IO) {
                                 passphraseManager.processResult(result)
                             }
-                        if (unlockResult is UnlockResult.Failed) {
-                            continuation.resume(
-                                AppResult.failure(AppError.AuthFailed(unlockResult.reason.name))
+                            if (unlockResult is UnlockResult.Failed) {
+                                continuation.resume(
+                                    AppResult.failure(AppError.AuthFailed(unlockResult.reason.name))
+                                )
+                                return@launch
+                            }
+                            lockStateManager.markAuthorized()
+                            continuation.resume(AppResult.success(Unit))
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            errorHandler.handleAuthFailure(
+                                errorHandler.classifyError(e, "authenticate"),
+                                "authenticate"
                             )
-                            return@authenticate
+                            continuation.resume(
+                                AppResult.failure(AppError.AuthFailed(e.message ?: "认证失败"))
+                            )
                         }
-                        lockStateManager.markAuthorizedSync()
-                        continuation.resume(AppResult.success(Unit))
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        errorHandler.handleAuthFailure(
-                            errorHandler.classifyError(e, "authenticate"),
-                            "authenticate"
-                        )
-                        continuation.resume(
-                            AppResult.failure(AppError.AuthFailed(e.message ?: "认证失败"))
-                        )
                     }
                 }
             )
+
+            continuation.invokeOnCancellation {
+                scope.cancel("Authentication cancelled")
+            }
         }
     }
 
@@ -209,17 +224,17 @@ internal class AuthRepositoryImpl @Inject constructor(
     override fun onExternalAuthorized() {
         if (!lockStateManager.isAuthorized.value) {
             Logcat.i("AuthRepo", "External auth: setting authorized")
-            lockStateManager.markAuthorizedSync()
+            scope.launch { lockStateManager.markAuthorized() }
         }
     }
 
-    override fun lock() = lockStateManager.lock()
+    override suspend fun lock() = lockStateManager.lock()
 
     override fun onUserInteraction() = lockStateManager.onUserInteraction()
 
-    override fun checkAndLock() = lockStateManager.ensureLockedState()
+    override suspend fun checkAndLock() = lockStateManager.ensureLockedState()
 
-    override fun updateLockTimeout(timeoutMs: Long) {
+    override suspend fun updateLockTimeout(timeoutMs: Long) {
         val normalized = requestValidator.normalizeLockTimeout(timeoutMs)
         lockStateManager.updateTimeout(normalized)
     }
@@ -250,21 +265,28 @@ internal class AuthRepositoryImpl @Inject constructor(
                     },
                     onSuccess = { result ->
                         if (!continuation.isActive) return@authenticate
-                        AppResult.runCatching("auth.rekey.complete") {
-                            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
-                                passphraseManager.completeRekey(result)
+                        scope.launch {
+                            val outcome = AppResult.runCatching("auth.rekey.complete") {
+                                withContext(Dispatchers.IO) {
+                                    passphraseManager.completeRekey(result)
+                                }
                             }
-                        }.fold(
-                            onSuccess = { continuation.resume(AppResult.success(Unit)) },
-                            onFailure = { error ->
-                                val msg = requestValidator.sanitizeMessage(error.message)
-                                Logcat.e("AuthRepo", "Rekey completion error: $msg", error)
-                                recoverFromFailedRekey(false)
-                                continuation.resume(AppResult.failure(AppError.AuthFailed(msg)))
-                            }
-                        )
+                            outcome.fold(
+                                onSuccess = { continuation.resume(AppResult.success(Unit)) },
+                                onFailure = { error ->
+                                    val msg = requestValidator.sanitizeMessage(error.message)
+                                    Logcat.e("AuthRepo", "Rekey completion error: $msg", error)
+                                    recoverFromFailedRekey(false)
+                                    continuation.resume(AppResult.failure(AppError.AuthFailed(msg)))
+                                }
+                            )
+                        }
                     }
                 )
+
+                continuation.invokeOnCancellation {
+                    scope.cancel("Rekey cancelled")
+                }
             }
         } catch (e: IllegalStateException) {
             return AppResult.failure(AppError.AuthFailed(requestValidator.sanitizeMessage(e.message)))

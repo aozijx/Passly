@@ -53,12 +53,12 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
     }
 
     override suspend fun retry(): Throwable? = withContext(Dispatchers.IO) {
-        sessionManager.close()
+        sessionManager.closeAndAwait()
         preWarm()
     }
 
-    override fun close() {
-        sessionManager.close()
+    override suspend fun close() {
+        sessionManager.closeAndAwait()
     }
 
     override fun consumeAutoRecoveryNotice(): String? {
@@ -68,7 +68,7 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
     }
 
     private suspend fun warmUpOnce(): Throwable? {
-        return AppResult.runCatching("db.warmUp") {
+        return AppResult.runSuspendCatching("db.warmUp") {
             sessionManager.withDatabase { }
         }.fold(
             onSuccess = { null },
@@ -76,12 +76,12 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun attemptAutoRecovery(): Boolean {
-        return AppResult.runCatching("db.autoRecovery") {
-            sessionManager.close()
+    private suspend fun attemptAutoRecovery(): Boolean {
+        return AppResult.runSuspendCatching("db.autoRecovery") {
+            sessionManager.closeAndAwait()
 
             if (!snapshotDatabaseFiles()) {
-                return@runCatching false
+                return@runSuspendCatching false
             }
 
             deleteDatabaseFiles()

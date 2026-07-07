@@ -84,10 +84,10 @@ class VerificationGatewayImpl(
         }
     }
 
-    fun lock() = authUseCases.lock()
+    suspend fun lock() = authUseCases.lock()
     fun onUserInteraction() = authUseCases.onUserInteraction()
-    fun checkAndLock() = authUseCases.checkAndLock()
-    fun updateLockTimeout(timeoutMs: Long) = authUseCases.updateLockTimeout(timeoutMs)
+    suspend fun checkAndLock() = authUseCases.checkAndLock()
+    suspend fun updateLockTimeout(timeoutMs: Long) = authUseCases.updateLockTimeout(timeoutMs)
 
     suspend fun verifyWithBiometricSuspended(
         activity: FragmentActivity,

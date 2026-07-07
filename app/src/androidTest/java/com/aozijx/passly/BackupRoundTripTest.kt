@@ -68,7 +68,7 @@ class BackupRoundTripTest {
 
     @After
     fun tearDown() {
-        runCatching { databaseSessionManager.close() }
+        runCatching { runBlocking { databaseSessionManager.closeAndAwait() } }
         context.deleteDatabase(testDbName)
         tempFiles.forEach { it.delete() }
         SessionManager.clearSessionKey()
