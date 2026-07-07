@@ -10,10 +10,12 @@ import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.security.crypto.LockState
 import com.aozijx.passly.security.crypto.VaultLockManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,7 +31,9 @@ class HistoryRepositoryImpl @Inject constructor(
         .flatMapLatest { state ->
             if (state == LockState.LOCKED) emptyFlow()
             else sessionManager.withDatabase {
-                vaultHistoryDao().getHistoryByEntryId(entryId).map { it.toDomainHistoryList() }
+                vaultHistoryDao().getHistoryByEntryId(entryId)
+                    .map { it.toDomainHistoryList() }
+                    .flowOn(Dispatchers.IO)
             }
         }
 
