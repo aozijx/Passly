@@ -1,9 +1,6 @@
 package com.aozijx.passly.core.auth
 
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.core.auth.validation.AuthRequestValidator
-import com.aozijx.passly.core.auth.validation.AuthRequestValidator.AuthRequestValidationResult
-import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.ui.components.toUiMessage
@@ -16,8 +13,7 @@ import kotlinx.coroutines.launch
 
 class VerificationGatewayImpl(
     private val scope: CoroutineScope,
-    private val authUseCases: AuthUseCases,
-    private val requestValidator: AuthRequestValidator
+    private val authUseCases: AuthUseCases
 ) : VerificationGateway {
     override val isAuthorized: StateFlow<Boolean> = authUseCases.isAuthorized
     override val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
@@ -32,12 +28,6 @@ class VerificationGatewayImpl(
         forceReauth: Boolean,
         onResult: (AppResult<Unit>) -> Unit
     ) {
-        val validation = validateRequest(activity, title)
-        if (validation != null) {
-            onResult(AppResult.failure(validation))
-            return
-        }
-
         scope.launch {
             val result = if (forceReauth) {
                 authUseCases.verifyIdentity(activity, title, subtitle)
@@ -45,7 +35,7 @@ class VerificationGatewayImpl(
                 authUseCases.authenticate(activity, title, subtitle)
             }
             result.onFailure {
-                _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage()))
+                _authMessage.tryEmit(it.toUiMessage())
             }
             onResult(result)
         }
@@ -58,7 +48,7 @@ class VerificationGatewayImpl(
         scope.launch {
             val result = authUseCases.authenticateWithAppPassword(password)
             result.onFailure {
-                _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage()))
+                _authMessage.tryEmit(it.toUiMessage())
             }
             onResult(result)
         }
@@ -104,29 +94,11 @@ class VerificationGatewayImpl(
         title: String,
         subtitle: String
     ): AppResult<Unit> {
-        val validation = validateRequest(activity, title)
-        if (validation != null) return AppResult.failure(validation)
-
         val result = authUseCases.authenticate(activity, title, subtitle)
         result.onFailure {
-            _authMessage.tryEmit(requestValidator.sanitizeMessage(it.toUiMessage()))
+            _authMessage.tryEmit(it.toUiMessage())
         }
         return result
-    }
-
-    private fun validateRequest(
-        activity: FragmentActivity,
-        title: String
-    ): AppError.AuthFailed? {
-        return when (val validation = requestValidator.validateRequest(activity, title)) {
-            is AuthRequestValidationResult.Invalid -> {
-                val msg = requestValidator.sanitizeMessage(validation.message)
-                _authMessage.tryEmit(msg)
-                AppError.AuthFailed(validation.message)
-            }
-
-            AuthRequestValidationResult.Valid -> null
-        }
     }
 
     private fun launchResult(

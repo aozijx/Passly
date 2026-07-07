@@ -15,7 +15,6 @@ import com.aozijx.passly.data.repository.backup.internal.VaultPayload
 import com.aozijx.passly.data.local.AppDatabase
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
-import com.aozijx.passly.data.repository.backup.internal.BackupVInternalImageStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
@@ -42,7 +41,6 @@ class BackupRoundTripTest {
     private lateinit var repository: BackupRepositoryImpl
     private lateinit var dekManager: DekManager
     private lateinit var databaseSessionManager: DatabaseSessionManager
-    private lateinit var imageStore: BackupVInternalImageStore
     private val testDbName = "backup_test_${System.currentTimeMillis()}"
     private val tempFiles = mutableListOf<File>()
 
@@ -60,12 +58,10 @@ class BackupRoundTripTest {
         runBlocking { databaseSessionManager.withDatabase { } }
 
         val cryptoEngine = CryptoEngine(dekManager)
-        imageStore = BackupVInternalImageStore(context)
         repository = BackupRepositoryImpl(
             context,
             cryptoEngine,
             databaseSessionManager,
-            imageStore,
             ioDispatcher = Dispatchers.IO
         )
     }

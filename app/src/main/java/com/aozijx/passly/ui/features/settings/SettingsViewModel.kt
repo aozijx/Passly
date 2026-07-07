@@ -3,7 +3,6 @@ package com.aozijx.passly.ui.features.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.VerificationGatewayImpl
-import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
@@ -25,11 +24,10 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     authUseCases: AuthUseCases,
-    authRequestValidator: AuthRequestValidator,
     private val systemSettingsUseCases: SystemSettingsUseCases
 ) : ViewModel() {
 
-    val authGateway = VerificationGatewayImpl(viewModelScope, authUseCases, authRequestValidator)
+    val authGateway = VerificationGatewayImpl(viewModelScope, authUseCases)
     val isAppPasswordEnabled: StateFlow<Boolean> = authGateway.isAppPasswordEnabled
 
     private val _uiState = MutableStateFlow(SettingsUiState())

@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -28,6 +27,9 @@ interface VaultEntryDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE entryType = :entryType")
     fun observeByType(entryType: Int): Flow<List<VaultEntryEntity>>
 
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE entryType IN (:entryTypes)")
+    fun observeByEntryTypes(entryTypes: List<Int>): Flow<List<VaultEntryEntity>>
+
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE entryType = :entryType")
     suspend fun getByType(entryType: Int): List<VaultEntryEntity>
 
@@ -40,14 +42,8 @@ interface VaultEntryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: VaultEntryEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(entries: List<VaultEntryEntity>)
-
     @Update
     suspend fun update(entry: VaultEntryEntity)
-
-    @Delete
-    suspend fun delete(entry: VaultEntryEntity)
 
     @Query("DELETE FROM ${DatabaseConfig.TABLE_ENTRIES} WHERE id = :entryId")
     suspend fun deleteById(entryId: Int)

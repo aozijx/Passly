@@ -37,8 +37,8 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         private const val SLOW_SAVE_FLOW_MS = 200L
     }
 
-    override suspend fun updateUsageStats(entry: VaultEntry) = withContext(Dispatchers.IO) {
-        if (lockManager.isLocked()) return@withContext Unit
+    override suspend fun updateUsageStats(entry: VaultEntry) {
+        if (lockManager.isLocked()) return
         AppResult.runCatching("autofill.updateUsage") {
             val updatedEntry = entry.copy(
                 lastUsedAt = System.currentTimeMillis(),
@@ -50,12 +50,12 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         }.onFailure {
             Logcat.e(TAG, "Failed to update usage count for ${entry.id}", it)
         }
-        Unit
+        return
     }
 
-    override suspend fun getEntryById(entryId: Int): VaultEntry? = withContext(Dispatchers.IO) {
-        if (lockManager.isLocked()) return@withContext null
-        AppResult.runCatching("autofill.getEntry") {
+    override suspend fun getEntryById(entryId: Int): VaultEntry? {
+        if (lockManager.isLocked()) return null
+        return AppResult.runCatching("autofill.getEntry") {
             sessionManager.withDatabase {
                 vaultEntryDao().getEntryById(entryId)?.toDomain()
             }
@@ -68,25 +68,24 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntry> =
-        withContext(Dispatchers.IO) {
-            if (lockManager.isLocked()) return@withContext emptyList()
-            if (entryIds.isEmpty()) return@withContext emptyList()
-            AppResult.runCatching("autofill.getEntries") {
-                val order = entryIds.withIndex().associate { it.value to it.index }
-                sessionManager.withDatabase {
-                    vaultEntryDao().getEntriesByIds(entryIds)
-                        .toDomainList()
-                        .sortedBy { order[it.id] ?: Int.MAX_VALUE }
-                }
-            }.fold(
-                onSuccess = { it },
-                onFailure = {
-                    Logcat.e(TAG, "Failed to load entries by ids", it)
-                    emptyList()
-                }
-            )
-        }
+    override suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntry> {
+        if (lockManager.isLocked()) return emptyList()
+        if (entryIds.isEmpty()) return emptyList()
+        return AppResult.runCatching("autofill.getEntries") {
+            val order = entryIds.withIndex().associate { it.value to it.index }
+            sessionManager.withDatabase {
+                vaultEntryDao().getEntriesByIds(entryIds)
+                    .toDomainList()
+                    .sortedBy { order[it.id] ?: Int.MAX_VALUE }
+            }
+        }.fold(
+            onSuccess = { it },
+            onFailure = {
+                Logcat.e(TAG, "Failed to load entries by ids", it)
+                emptyList()
+            }
+        )
+    }
 
     override suspend fun findMatchingCandidates(
         packageName: String?,

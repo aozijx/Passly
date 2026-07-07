@@ -4,7 +4,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.VerificationGatewayImpl
-import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.crypto.memory.SecureString
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
@@ -23,11 +22,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class VerificationViewModel @Inject constructor(
-    authUseCases: AuthUseCases,
-    requestValidator: AuthRequestValidator
+    authUseCases: AuthUseCases
 ) : ViewModel() {
 
-    private val gateway = VerificationGatewayImpl(viewModelScope, authUseCases, requestValidator)
+    private val gateway = VerificationGatewayImpl(viewModelScope, authUseCases)
 
     val isAppPasswordEnabled: StateFlow<Boolean> = gateway.isAppPasswordEnabled
 

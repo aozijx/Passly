@@ -4,7 +4,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.VerificationGatewayImpl
-import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
@@ -30,14 +29,12 @@ class MainViewModel @Inject constructor(
     private val systemSettingsUseCases: SystemSettingsUseCases,
     private val securitySettingsUseCases: SecuritySettingsUseCases,
     private val authUseCases: AuthUseCases,
-    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
-    private val authRequestValidator: AuthRequestValidator
+    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases
 ) : ViewModel() {
 
     private val authGateway = VerificationGatewayImpl(
         scope = viewModelScope,
-        authUseCases = authUseCases,
-        requestValidator = authRequestValidator
+        authUseCases = authUseCases
     )
 
     private val _uiState = MutableStateFlow(MainUiState())

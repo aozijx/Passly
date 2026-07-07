@@ -9,19 +9,11 @@ import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.data.repository.vault.internal.diffFields
 import com.aozijx.passly.data.repository.vault.internal.failIfLocked
 import com.aozijx.passly.data.repository.vault.internal.ifLockedReturn
-import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.security.crypto.DatabaseSessionManager
-import com.aozijx.passly.security.crypto.LockState
 import com.aozijx.passly.security.crypto.VaultLockManager
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,43 +23,10 @@ class VaultRepositoryImpl @Inject constructor(
     private val sessionManager: DatabaseSessionManager
 ) : VaultRepository {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override val allEntries: Flow<List<VaultEntry>> = lockManager.lockState
-        .flatMapLatest { state ->
-            if (state == LockState.LOCKED) flowOf(emptyList())
-            else channelFlow {
-                sessionManager.withDatabase {
-                    vaultEntryDao().observeAll()
-                        .map { it.toDomainList() }
-                        .collect { send(it) }
-                }
-            }
-        }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeByType(type: EntryType): Flow<List<VaultEntry>> = lockManager.lockState
-        .flatMapLatest { state ->
-            if (state == LockState.LOCKED) flowOf(emptyList())
-            else channelFlow {
-                sessionManager.withDatabase {
-                    vaultEntryDao().observeByType(type.value)
-                        .map { it.toDomainList() }
-                        .collect { send(it) }
-                }
-            }
-        }
-
     override suspend fun getEntryById(entryId: Int): VaultEntry? {
         lockManager.ifLockedReturn { return null }
         return sessionManager.withDatabase {
             vaultEntryDao().getEntryById(entryId)?.toDomain()
-        }
-    }
-
-    override suspend fun getByType(type: EntryType): List<VaultEntry> {
-        lockManager.ifLockedReturn { return emptyList() }
-        return sessionManager.withDatabase {
-            vaultEntryDao().getByType(type.value).toDomainList()
         }
     }
 
@@ -77,16 +36,6 @@ class VaultRepositoryImpl @Inject constructor(
             vaultEntryDao().getAll().toDomainList()
                 .filter { !it.associatedDomain.isNullOrEmpty() }
         }
-    }
-
-    override suspend fun count(): Int {
-        lockManager.ifLockedReturn { return 0 }
-        return sessionManager.withDatabase { vaultEntryDao().count() }
-    }
-
-    override suspend fun countByType(type: EntryType): Int {
-        lockManager.ifLockedReturn { return 0 }
-        return sessionManager.withDatabase { vaultEntryDao().countByType(type.value) }
     }
 
     override suspend fun insert(entry: VaultEntry): AppResult<Long> {
@@ -174,15 +123,6 @@ class VaultRepositoryImpl @Inject constructor(
         return AppResult.runSuspendCatching("vault.delete") {
             sessionManager.withDatabase {
                 vaultEntryDao().deleteById(entry.id)
-            }
-        }
-    }
-
-    override suspend fun deleteAll(): AppResult<Unit> {
-        lockManager.failIfLocked<Unit>("数据库未解锁，无法删除所有条目")?.let { return it }
-        return AppResult.runSuspendCatching("vault.deleteAll") {
-            sessionManager.withDatabase {
-                vaultEntryDao().deleteAll()
             }
         }
     }

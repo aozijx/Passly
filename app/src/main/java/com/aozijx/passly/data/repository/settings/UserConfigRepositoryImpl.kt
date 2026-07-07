@@ -1,5 +1,6 @@
 package com.aozijx.passly.data.repository.settings
 
+import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.datastore.UserConfigFileStore
 import com.aozijx.passly.domain.model.UserConfig
 import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,7 +26,11 @@ class UserConfigRepositoryImpl @Inject constructor(
 
     init {
         scope.launch {
-            _config.value = store.read()
+            try {
+                _config.value = store.read()
+            } catch (e: Exception) {
+                Logcat.e("UserConfigRepo", "Failed to load user config", e)
+            }
         }
     }
 

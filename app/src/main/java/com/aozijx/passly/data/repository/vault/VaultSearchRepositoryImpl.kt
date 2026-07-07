@@ -23,6 +23,11 @@ class VaultSearchRepositoryImpl @Inject constructor(
     private val lockManager: VaultLockManager
 ) : VaultSearchRepository {
 
+    private companion object {
+        private val TOTP_ENTRY_TYPES = listOf(1, 2, 4)
+        private val PASSWORD_ENTRY_TYPES = listOf(0, 3, 5, 6, 7, 8)
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override val allCategories: Flow<List<String>> = lockManager.lockState
         .flatMapLatest { state ->
@@ -48,7 +53,17 @@ class VaultSearchRepositoryImpl @Inject constructor(
             if (state == LockState.LOCKED) flowOf(emptyList())
             else channelFlow {
                 sessionManager.withDatabase {
-                    vaultEntryDao().observeAll()
+                    val entryFlow = when (filter) {
+                        EntryFilter.ALL -> vaultEntryDao().observeAll()
+                        EntryFilter.TOTP_ONLY -> vaultEntryDao().observeByEntryTypes(
+                            TOTP_ENTRY_TYPES
+                        )
+
+                        EntryFilter.PASSWORD_ONLY -> vaultEntryDao().observeByEntryTypes(
+                            PASSWORD_ENTRY_TYPES
+                        )
+                    }
+                    entryFlow
                         .map { entities ->
                             entities.map { it.toDomain() }
                                 .filter { entry ->
@@ -98,7 +113,17 @@ class VaultSearchRepositoryImpl @Inject constructor(
                 if (state == LockState.LOCKED) flowOf(emptyList())
                 else channelFlow {
                     sessionManager.withDatabase {
-                        vaultEntryDao().observeAll()
+                        val entryFlow = when (filter) {
+                            EntryFilter.ALL -> vaultEntryDao().observeAll()
+                            EntryFilter.TOTP_ONLY -> vaultEntryDao().observeByEntryTypes(
+                                TOTP_ENTRY_TYPES
+                            )
+
+                            EntryFilter.PASSWORD_ONLY -> vaultEntryDao().observeByEntryTypes(
+                                PASSWORD_ENTRY_TYPES
+                            )
+                        }
+                        entryFlow
                             .map { entities ->
                                 entities.map { it.toDomain() }
                                     .filter { entry ->

@@ -13,7 +13,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.auth.VerificationGatewayImpl
-import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.otp.TwoFAUtils
@@ -43,14 +42,10 @@ class AutofillAuthActivity : FragmentActivity() {
     @Inject
     lateinit var authUseCases: AuthUseCases
 
-    @Inject
-    lateinit var requestValidator: AuthRequestValidator
-
     private val verificationGateway by lazy {
         VerificationGatewayImpl(
             scope = lifecycleScope,
-            authUseCases = authUseCases,
-            requestValidator = requestValidator
+            authUseCases = authUseCases
         )
     }
 

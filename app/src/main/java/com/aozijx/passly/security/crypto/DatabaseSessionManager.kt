@@ -108,4 +108,14 @@ class DatabaseSessionManager @Inject constructor(
             }
         }
     }
+
+    suspend fun closeAndAwait() {
+        mutex.withLock {
+            database?.let {
+                it.close()
+                Logcat.i(TAG, "Database session closed")
+            }
+            database = null
+        }
+    }
 }
