@@ -12,6 +12,7 @@ import javax.inject.Singleton
 @Singleton
 class SecuritySettingsUseCases @Inject constructor(private val repository: SecuritySettingsRepository) {
     val lockTimeout: Flow<Long> = repository.lockTimeout
+    val isBiometricEnabled: Flow<Boolean> = repository.isBiometricEnabled
     val isInvalidateKeyOnBioChange: Flow<Boolean> = repository.isInvalidateKeyOnBioChange
     val isSecureContentEnabled: Flow<Boolean> = repository.isSecureContentEnabled
     val isFlipToLockEnabled: Flow<Boolean> = repository.isFlipToLockEnabled
@@ -19,6 +20,7 @@ class SecuritySettingsUseCases @Inject constructor(private val repository: Secur
     val isLockOnBackground: Flow<Boolean> = repository.isLockOnBackground
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
+    suspend fun setBiometricEnabled(enabled: Boolean) = repository.setBiometricEnabled(enabled)
     suspend fun setSecureContentEnabled(enabled: Boolean) =
         repository.setSecureContentEnabled(enabled)
     suspend fun setFlipToLockEnabled(enabled: Boolean) = repository.setFlipToLockEnabled(enabled)

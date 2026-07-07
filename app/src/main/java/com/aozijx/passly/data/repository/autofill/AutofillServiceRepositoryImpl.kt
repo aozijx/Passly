@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.autofill
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.aozijx.passly.R
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
@@ -159,103 +160,105 @@ class AutofillServiceRepositoryImpl @Inject constructor(
         AppResult.runCatching("autofill.saveOrUpdate") {
             val saveStart = System.currentTimeMillis()
 
-            val queryStart = System.currentTimeMillis()
-            val allEntries = sessionManager.withDatabase {
-                vaultEntryDao().getAll().toDomainList()
-            }
-            val queryCost = System.currentTimeMillis() - queryStart
-            if (queryCost >= SLOW_DB_QUERY_MS) {
-                Logcat.w(
-                    TAG,
-                    "saveOrUpdateEntry query slow: ${queryCost}ms, total=${allEntries.size}"
-                )
-            }
-
-            val matchStart = System.currentTimeMillis()
             val normalizedPackage = normalizePackageName(packageName)
             val normalizedDomain = DomainNormalizer.normalize(webDomain)
-            val existing = allEntries.find { entry ->
-                if (!supportsAutofill(entry)) return@find false
 
-                val scopeMatch = isPackageMatch(entry.associatedAppPackage, normalizedPackage) ||
-                        isDomainMatch(entry.associatedDomain, normalizedDomain)
-                if (!scopeMatch) return@find false
+            sessionManager.withDatabase {
+                withTransaction {
+                    val queryStart = System.currentTimeMillis()
+                    val allEntries = vaultEntryDao().getAll().toDomainList()
+                    val queryCost = System.currentTimeMillis() - queryStart
+                    if (queryCost >= SLOW_DB_QUERY_MS) {
+                        Logcat.w(
+                            TAG,
+                            "saveOrUpdateEntry query slow: ${queryCost}ms, total=${allEntries.size}"
+                        )
+                    }
 
-                entry.username == usernameValue
-            }
-            val matchCost = System.currentTimeMillis() - matchStart
-            if (matchCost >= SLOW_ENTRY_MATCH_MS) {
-                Logcat.w(TAG, "saveOrUpdateEntry username match slow: ${matchCost}ms")
-            }
+                    val matchStart = System.currentTimeMillis()
+                    val existing = allEntries.find { entry ->
+                        if (!supportsAutofill(entry)) return@find false
 
-            if (existing != null) {
-                val updatedEntry = existing.copy(
-                    password = passwordValue,
-                    updatedAt = System.currentTimeMillis()
-                )
-                sessionManager.withDatabase {
-                    vaultEntryDao().update(updatedEntry.toEntity())
-                }
-                Logcat.i(TAG, "Updated existing account: id=${existing.id}")
-            } else {
-                val appLabel = packageName?.let { pkg ->
-                    try {
-                        val info = appContext.packageManager.getApplicationInfo(pkg, 0)
-                        appContext.packageManager.getApplicationLabel(info).toString()
-                    } catch (_: Exception) {
-                        null
+                        val scopeMatch =
+                            isPackageMatch(entry.associatedAppPackage, normalizedPackage) ||
+                                    isDomainMatch(entry.associatedDomain, normalizedDomain)
+                        if (!scopeMatch) return@find false
+
+                        entry.username == usernameValue
+                    }
+                    val matchCost = System.currentTimeMillis() - matchStart
+                    if (matchCost >= SLOW_ENTRY_MATCH_MS) {
+                        Logcat.w(TAG, "saveOrUpdateEntry username match slow: ${matchCost}ms")
+                    }
+
+                    if (existing != null) {
+                        val updatedEntry = existing.copy(
+                            password = passwordValue,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                        vaultEntryDao().update(updatedEntry.toEntity())
+                        Logcat.i(TAG, "Updated existing account: id=${existing.id}")
+                    } else {
+                        val appLabel = packageName?.let { pkg ->
+                            try {
+                                val info = appContext.packageManager.getApplicationInfo(pkg, 0)
+                                appContext.packageManager.getApplicationLabel(info).toString()
+                            } catch (_: Exception) {
+                                null
+                            }
+                        }
+
+                        val title = AutofillTitlePolicy.getSmartTitle(
+                            pageTitle = pageTitle,
+                            domain = webDomain,
+                            appLabel = appLabel,
+                            packageName = packageName,
+                            strings = AutofillTitlePolicy.AutofillTitleStrings(
+                                appFallback = appContext.getString(R.string.autofill_title_app_fallback),
+                                lateNight = appContext.getString(R.string.autofill_title_late_night),
+                                morning = appContext.getString(R.string.autofill_title_morning),
+                                noon = appContext.getString(R.string.autofill_title_noon),
+                                afternoon = appContext.getString(R.string.autofill_title_afternoon),
+                                evening = appContext.getString(R.string.autofill_title_evening),
+                                newEntry = appContext.getString(R.string.autofill_title_new_entry)
+                            )
+                        )
+
+                        val passwordStrategy = resolveStrategy(EntryType.PASSWORD.value)
+                        val fallbackCategory =
+                            appContext.getString(R.string.category_autofill).ifBlank { "自动填充" }
+
+                        val newEntry = VaultEntry(
+                            title = title,
+                            username = usernameValue,
+                            password = passwordValue,
+                            category = passwordStrategy?.suggestedCategory().orEmpty()
+                                .ifBlank { fallbackCategory },
+                            associatedAppPackage = packageName,
+                            associatedDomain = webDomain,
+                            entryType = EntryType.PASSWORD.value,
+                            createdAt = System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis()
+                        )
+
+                        val initializedEntry =
+                            passwordStrategy?.initializeDefaults(newEntry) ?: newEntry
+                        val finalizedEntry = initializedEntry.copy(
+                            category = initializedEntry.category.ifBlank { fallbackCategory },
+                            entryType = EntryType.PASSWORD.value
+                        )
+
+                        val validationError =
+                            passwordStrategy?.validateRequiredFields(finalizedEntry)
+                                ?: passwordStrategy?.validateFieldContent(finalizedEntry)
+                        if (validationError != null) {
+                            Logcat.w(TAG, "Autofill entry validation warning: $validationError")
+                        }
+
+                        vaultEntryDao().insert(finalizedEntry.toEntity())
+                        Logcat.i(TAG, "Successfully saved new entry to DB: $title")
                     }
                 }
-
-                val title = AutofillTitlePolicy.getSmartTitle(
-                    pageTitle = pageTitle,
-                    domain = webDomain,
-                    appLabel = appLabel,
-                    packageName = packageName,
-                    strings = AutofillTitlePolicy.AutofillTitleStrings(
-                        appFallback = appContext.getString(R.string.autofill_title_app_fallback),
-                        lateNight = appContext.getString(R.string.autofill_title_late_night),
-                        morning = appContext.getString(R.string.autofill_title_morning),
-                        noon = appContext.getString(R.string.autofill_title_noon),
-                        afternoon = appContext.getString(R.string.autofill_title_afternoon),
-                        evening = appContext.getString(R.string.autofill_title_evening),
-                        newEntry = appContext.getString(R.string.autofill_title_new_entry)
-                    )
-                )
-
-                val passwordStrategy = resolveStrategy(EntryType.PASSWORD.value)
-                val fallbackCategory =
-                    appContext.getString(R.string.category_autofill).ifBlank { "自动填充" }
-
-                val newEntry = VaultEntry(
-                    title = title,
-                    username = usernameValue,
-                    password = passwordValue,
-                    category = passwordStrategy?.suggestedCategory().orEmpty()
-                        .ifBlank { fallbackCategory },
-                    associatedAppPackage = packageName,
-                    associatedDomain = webDomain,
-                    entryType = EntryType.PASSWORD.value,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
-                )
-
-                val initializedEntry = passwordStrategy?.initializeDefaults(newEntry) ?: newEntry
-                val finalizedEntry = initializedEntry.copy(
-                    category = initializedEntry.category.ifBlank { fallbackCategory },
-                    entryType = EntryType.PASSWORD.value
-                )
-
-                val validationError = passwordStrategy?.validateRequiredFields(finalizedEntry)
-                    ?: passwordStrategy?.validateFieldContent(finalizedEntry)
-                if (validationError != null) {
-                    Logcat.w(TAG, "Autofill entry validation warning: $validationError")
-                }
-
-                sessionManager.withDatabase {
-                    vaultEntryDao().insert(finalizedEntry.toEntity())
-                }
-                Logcat.i(TAG, "Successfully saved new entry to DB: $title")
             }
 
             val saveCost = System.currentTimeMillis() - saveStart

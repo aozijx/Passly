@@ -151,14 +151,18 @@ class DekManager @Inject constructor(
      */
     suspend fun bootstrapDek(dek: ByteArray) {
         mutex.withLock {
-            check(_state is DekState.Locked) { "DEK already loaded" }
-            check(envelopeManager.hasAny().not()) { "Vault already initialized" }
+            try {
+                check(_state is DekState.Locked) { "DEK already loaded" }
+                check(envelopeManager.hasAny().not()) { "Vault already initialized" }
 
-            verificationTag.save(dek)
-            SessionManager.deriveAndSet(dek)
-            _state = DekState.Unlocked(dek.clone())
-            onUnlocked()
-            Logcat.i(TAG, "DEK bootstrapped with verification tag")
+                verificationTag.save(dek)
+                SessionManager.deriveAndSet(dek)
+                _state = DekState.Unlocked(dek.clone())
+                onUnlocked()
+                Logcat.i(TAG, "DEK bootstrapped with verification tag")
+            } finally {
+                MemoryCleaner.wipeByteArray(dek)
+            }
         }
     }
 
@@ -184,6 +188,8 @@ class DekManager @Inject constructor(
             } catch (e: Exception) {
                 Logcat.cryptoError(TAG, "Unlock via verified DEK", e)
                 UnlockResult.Failed(UnlockError.UNKNOWN)
+            } finally {
+                MemoryCleaner.wipeByteArray(dek)
             }
         }
     }

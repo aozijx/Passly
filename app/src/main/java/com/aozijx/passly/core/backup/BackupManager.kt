@@ -5,6 +5,7 @@ import com.lambdapioneer.argon2kt.Argon2Mode
 import com.lambdapioneer.argon2kt.Argon2Version
 import java.io.EOFException
 import java.io.InputStream
+import java.nio.CharBuffer
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
@@ -38,7 +39,7 @@ object BackupManager {
      * 根据密码和盐，使用 Argon2id 派生 256 位密钥。
      */
     fun deriveKeyArgon2id(password: CharArray, salt: ByteArray): SecretKeySpec {
-        val passBytes = String(password).toByteArray(StandardCharsets.UTF_8)
+        val passBytes = StandardCharsets.UTF_8.encode(CharBuffer.wrap(password)).array()
         try {
             val rawHash = argon2Kt.hash(
                 mode = Argon2Mode.ARGON2_ID,

@@ -1,5 +1,6 @@
 package com.aozijx.passly.data.repository.vault
 
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomainHistoryList
@@ -34,7 +35,7 @@ class HistoryRepositoryImpl @Inject constructor(
 
     override suspend fun insertHistory(history: VaultHistory) {
         lockManager.ifLockedReturn { return }
-        runCatching {
+        AppResult.runSuspendCatching("history.insert") {
             sessionManager.withDatabase {
                 vaultHistoryDao().insertHistory(history.toEntity())
             }

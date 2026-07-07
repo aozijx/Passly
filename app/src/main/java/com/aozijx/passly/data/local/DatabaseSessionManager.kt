@@ -36,6 +36,9 @@ class DatabaseSessionManager @Inject constructor(
     @Volatile
     private var database: AppDatabase? = null
 
+    @Volatile
+    private var sqlCipherFactory: SupportOpenHelperFactory? = null
+
     override fun onStart(owner: LifecycleOwner) {
         dekManager.setLockCallback { closeAndAwait() }
     }
@@ -63,6 +66,7 @@ class DatabaseSessionManager @Inject constructor(
     private suspend fun createDatabase(): AppDatabase {
         val db = dekManager.withDek { dek ->
             val factory = SupportOpenHelperFactory(dek.clone())
+            sqlCipherFactory = factory
             Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
@@ -76,6 +80,7 @@ class DatabaseSessionManager @Inject constructor(
             .onFailure { error ->
                 Logcat.e(TAG, "Database probe failed", error)
                 db.close()
+                clearSqlCipherFactoryKey()
                 throw error
             }
 
@@ -91,7 +96,6 @@ class DatabaseSessionManager @Inject constructor(
      * 超时后强制将 database 置为 null，可能存在资源泄漏但总比永久阻塞好。
      */
     suspend fun closeAndAwait() {
-        // 快速路径：如果已经为空，直接返回
         if (database == null) return
 
         val closed = withTimeoutOrNull(CLOSE_TIMEOUT_MS) {
@@ -101,14 +105,31 @@ class DatabaseSessionManager @Inject constructor(
                         .onFailure { e -> Logcat.e(TAG, "Database close error", e) }
                     Logcat.i(TAG, "Database session closed")
                 }
+                clearSqlCipherFactoryKey()
                 database = null
             }
         }
 
         if (closed == null) {
             Logcat.e(TAG, "Database close timed out after $CLOSE_TIMEOUT_MS ms, forcing null")
-            // 超时后强制置空，可能存在资源泄漏，但总比永久阻塞好
+            clearSqlCipherFactoryKey()
             database = null
+        }
+    }
+
+    private fun clearSqlCipherFactoryKey() {
+        sqlCipherFactory?.let { factory ->
+            runCatching {
+                val field = factory.javaClass.getDeclaredField("passphrase")
+                field.isAccessible = true
+                val passphrase = field.get(factory) as? ByteArray
+                passphrase?.fill(0)
+                field.set(factory, null)
+                sqlCipherFactory = null
+                Logcat.i(TAG, "SQLCipher factory key cleared")
+            }.onFailure { e ->
+                Logcat.e(TAG, "Failed to clear SQLCipher factory key", e)
+            }
         }
     }
 }

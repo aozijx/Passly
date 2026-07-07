@@ -25,12 +25,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 备份/恢复流程协调器。
  */
-@Singleton
 class BackupCoordinator @Inject constructor(
     private val backupSettingsUseCases: BackupSettingsUseCases,
     private val backupUseCases: BackupUseCases,
