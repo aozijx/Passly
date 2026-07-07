@@ -1,12 +1,9 @@
 package com.aozijx.passly.ui.features.settings.security
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
@@ -24,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.model.AppDefaults
+import com.aozijx.passly.ui.features.settings.components.GroupCard
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.ui.features.settings.components.switchSettingsItem
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
@@ -58,12 +56,8 @@ fun LockAuthSettingsSection(
             value = formatLockTimeoutText(lockTimeout),
             onClick = { expanded = !expanded }
         )
-        item(visible = expanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-            ) {
+        item(visible = expanded) { position ->
+            GroupCard(position = position, contentPadding = PaddingValues(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -107,7 +101,6 @@ fun LockAuthSettingsSection(
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
             }
         }
         navigationSettingsItem(

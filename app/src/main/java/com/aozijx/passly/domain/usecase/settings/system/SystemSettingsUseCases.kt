@@ -36,6 +36,7 @@ class SystemSettingsUseCases @Inject constructor(private val repository: SystemS
 
     // 数据与下载
     val isAutoDownloadIcons: Flow<Boolean> = repository.isAutoDownloadIcons
+    val faviconDownloadWhitelist: Flow<Set<String>> = repository.faviconDownloadWhitelist
 
     // 排序
     val vaultSortOption: Flow<SortOption> = repository.vaultSortOption
@@ -62,6 +63,8 @@ class SystemSettingsUseCases @Inject constructor(private val repository: SystemS
     suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int) =
         repository.setTabBarMaxTabsWithoutScroll(maxTabs)
     suspend fun setAutoDownloadIcons(enabled: Boolean) = repository.setAutoDownloadIcons(enabled)
+    suspend fun setFaviconDownloadWhitelist(whitelist: Set<String>) =
+        repository.setFaviconDownloadWhitelist(whitelist)
     suspend fun setVaultSortOption(sort: SortOption) = repository.setVaultSortOption(sort)
     suspend fun setLanguageCode(code: String) = repository.setLanguageCode(code)
     suspend fun setThemeColor(color: String) = repository.setThemeColor(color)

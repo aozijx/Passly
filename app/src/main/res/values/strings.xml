@@ -485,6 +485,15 @@
         <item>权限</item>
     </string-array>
 
+    <!-- 设置: 数据管理 -->
+    <string name="settings_download_icons">下载图标</string>
+    <string name="settings_download_icons_subtitle">自动获取网站图标</string>
+    <string name="settings_favicon_whitelist">图标下载白名单</string>
+    <string name="settings_favicon_whitelist_hint">仅允许从以下域名下载图标</string>
+    <string name="settings_favicon_whitelist_placeholder">输入域名，回车添加</string>
+    <string name="settings_favicon_whitelist_expand_hint">点击展开添加</string>
+    <string name="settings_favicon_whitelist_item_count">%1$d 个域名</string>
+
     <!-- 日志管理 -->
     <string name="log_management_title">日志管理</string>
     <string name="log_management_description">导出错误和崩溃日志以便排查问题</string>

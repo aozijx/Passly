@@ -38,6 +38,8 @@ internal val VISIBLE_VAULT_TABS_KEY = stringPreferencesKey("vault_visible_tabs")
 internal val TAB_BAR_MAX_TABS_WITHOUT_SCROLL_KEY =
     intPreferencesKey("vault_tab_bar_max_tabs_without_scroll")
 internal val AUTO_DOWNLOAD_ICONS_KEY = booleanPreferencesKey("data_auto_download_icons")
+internal val FAVICON_DOWNLOAD_WHITELIST_KEY =
+    stringPreferencesKey("data_favicon_download_whitelist")
 internal val VAULT_SORT_OPTION_KEY = stringPreferencesKey("vault_sort_option")
 internal val LANGUAGE_CODE_KEY = stringPreferencesKey("app_language_code")
 internal val THEME_COLOR_KEY = stringPreferencesKey("app_theme_color")

@@ -39,7 +39,10 @@ object FaviconUtils {
     /**
      * 从 HTML 中解析 link 标签获取图标 URL
      */
-    suspend fun fetchFaviconUrlFromHtml(domain: String): String? = withContext(Dispatchers.IO) {
+    suspend fun fetchFaviconUrlFromHtml(
+        domain: String,
+        whitelist: Set<String> = emptySet()
+    ): String? = withContext(Dispatchers.IO) {
         if (!BuildConfig.DEBUG) {
             Logcat.w(
                 TAG,
@@ -98,7 +101,12 @@ object FaviconUtils {
                 val match = regex.find(html)
                 if (match != null) {
                     val href = match.groupValues[1]
-                    return@withContext resolveUrl(url, href)?.takeIf(::isAllowedRemoteUrl)
+                    return@withContext resolveUrl(url, href)?.takeIf {
+                        isAllowedRemoteUrl(
+                            it,
+                            whitelist
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -128,14 +136,23 @@ object FaviconUtils {
         return base + href
     }
 
-    private fun isAllowedRemoteUrl(url: String): Boolean {
+    private fun isAllowedRemoteUrl(url: String, whitelist: Set<String> = emptySet()): Boolean {
         return try {
             val parsed = java.net.URI(url)
             val scheme = parsed.scheme?.lowercase()
             val host = parsed.host?.lowercase()
             if (scheme != "http" && scheme != "https") return false
             if (host.isNullOrBlank() || isRestrictedHost(host)) return false
-            BuildConfig.DEBUG || host in PINNED_FAVICON_HOSTS
+            if (whitelist.isNotEmpty()) {
+                whitelist.any {
+                    host.equals(it, ignoreCase = true) || host.endsWith(
+                        ".$it",
+                        ignoreCase = true
+                    )
+                }
+            } else {
+                BuildConfig.DEBUG || host in PINNED_FAVICON_HOSTS
+            }
         } catch (_: Exception) {
             false
         }
@@ -172,16 +189,19 @@ object FaviconUtils {
         return false
     }
 
-    suspend fun downloadAndSaveFavicon(input: String, context: Context): DownloadOutcome = withContext(Dispatchers.IO) {
+    suspend fun downloadAndSaveFavicon(
+        input: String,
+        context: Context,
+        whitelist: Set<String> = emptySet()
+    ): DownloadOutcome = withContext(Dispatchers.IO) {
         if (input.isBlank()) return@withContext DownloadOutcome(DownloadResult.EMPTY_INPUT)
 
         Logcat.d(TAG, "Trying to download favicon from: $input")
 
         val isDirectUrl = input.startsWith("http://") || input.startsWith("https://")
 
-        // 如果是直接 URL，直接下载
         if (isDirectUrl) {
-            if (!isAllowedRemoteUrl(input)) {
+            if (!isAllowedRemoteUrl(input, whitelist)) {
                 Logcat.w(TAG, "Reject favicon download for restricted url")
                 return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
             }
@@ -224,8 +244,7 @@ object FaviconUtils {
             return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
         }
 
-        // 1. 尝试从 HTML 解析
-        val htmlIconUrl = fetchFaviconUrlFromHtml(clean)
+        val htmlIconUrl = fetchFaviconUrlFromHtml(clean, whitelist)
         if (htmlIconUrl != null) {
             val bitmap = downloadFaviconWithCoil(htmlIconUrl, context)
             if (bitmap != null) {
@@ -234,7 +253,6 @@ object FaviconUtils {
             }
         }
 
-        // 2. 尝试默认路径
         val faviconUrls = listOf(
             "https://$clean/favicon.ico",
             "https://$clean/favicon.png",
@@ -243,6 +261,10 @@ object FaviconUtils {
 
         for (url in faviconUrls) {
             try {
+                if (!isAllowedRemoteUrl(url, whitelist)) {
+                    Logcat.w(TAG, "Reject favicon download for restricted url: $url")
+                    continue
+                }
                 Logcat.d(TAG, "Trying: $url")
                 val bitmap = downloadFaviconWithCoil(url, context)
                 if (bitmap != null) {

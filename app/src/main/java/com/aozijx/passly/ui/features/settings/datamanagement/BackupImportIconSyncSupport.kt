@@ -6,8 +6,10 @@ import android.net.NetworkCapabilities
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
+import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -20,7 +22,8 @@ internal data class BackupImportIconSyncResult(
 )
 
 internal class BackupImportIconSyncSupport(
-    private val iconResyncUseCases: IconResyncUseCases
+    private val iconResyncUseCases: IconResyncUseCases,
+    private val systemSettingsRepository: SystemSettingsRepository
 ) {
 
     private companion object {
@@ -31,6 +34,7 @@ internal class BackupImportIconSyncSupport(
         context: Context,
         onProgress: ((processed: Int, total: Int, success: Int, failed: Int) -> Unit)?
     ): BackupImportIconSyncResult = withContext(Dispatchers.IO) {
+        val whitelist = systemSettingsRepository.faviconDownloadWhitelist.first()
         val appContext = context.applicationContext
         if (!hasActiveNetwork(appContext)) {
             Logcat.w(TAG, "Skip icon sync: no active network")
@@ -66,7 +70,7 @@ internal class BackupImportIconSyncSupport(
                 return@forEach
             }
 
-            val outcome = FaviconUtils.downloadAndSaveFavicon(source, appContext)
+            val outcome = FaviconUtils.downloadAndSaveFavicon(source, appContext, whitelist)
             if (outcome.result == FaviconUtils.DownloadResult.SUCCESS && !outcome.filePath.isNullOrBlank()) {
                 val updateResult = iconResyncUseCases.update(
                     entry.copy(

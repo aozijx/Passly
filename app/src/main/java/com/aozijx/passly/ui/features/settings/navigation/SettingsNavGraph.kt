@@ -361,6 +361,9 @@ fun SettingsNavGraph(
                         onAutoDownloadIconsChange = {
                             dataViewModel.onAction(DataUiAction.SetAutoDownloadIcons(it))
                         },
+                        onFaviconWhitelistChange = {
+                            dataViewModel.onAction(DataUiAction.SetFaviconDownloadWhitelist(it))
+                        },
                         onPickBackupPath = {
                             backupPathPicker.launch(BackupExportStorageSupport.defaultDocumentsTreeUri())
                         },

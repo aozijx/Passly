@@ -21,6 +21,7 @@ interface SystemSettingsRepository {
     val visibleVaultTabs: Flow<Set<String>?>
     val tabBarMaxTabsWithoutScroll: Flow<Int>
     val isAutoDownloadIcons: Flow<Boolean>
+    val faviconDownloadWhitelist: Flow<Set<String>>
     val vaultSortOption: Flow<SortOption>
     val languageCode: Flow<String>
     val themeColor: Flow<String>
@@ -39,6 +40,7 @@ interface SystemSettingsRepository {
     suspend fun setVisibleVaultTabs(keys: Set<String>)
     suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int)
     suspend fun setAutoDownloadIcons(enabled: Boolean)
+    suspend fun setFaviconDownloadWhitelist(whitelist: Set<String>)
     suspend fun setVaultSortOption(sort: SortOption)
     suspend fun setLanguageCode(code: String)
     suspend fun setThemeColor(color: String)

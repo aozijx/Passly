@@ -16,6 +16,7 @@ import javax.inject.Inject
 
 data class DataUiState(
     val isAutoDownloadIcons: Boolean = true,
+    val faviconDownloadWhitelist: String = "",
     val directoryUri: String? = null,
     val lastExportFileName: String? = null,
     val backupMessage: String? = null,
@@ -23,6 +24,7 @@ data class DataUiState(
 
 sealed interface DataUiAction {
     data class SetAutoDownloadIcons(val enabled: Boolean) : DataUiAction
+    data class SetFaviconDownloadWhitelist(val whitelist: String) : DataUiAction
     data class SetBackupDirectoryUri(val uri: String) : DataUiAction
     data object ClearBackupDirectory : DataUiAction
     data object ClearBackupMessage : DataUiAction
@@ -42,12 +44,14 @@ class DataViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 systemSettingsUseCases.isAutoDownloadIcons,
+                systemSettingsUseCases.faviconDownloadWhitelist,
                 backupSettingsUseCases.backupDirectoryUri,
                 backupSettingsUseCases.lastBackupExportFileName,
                 snapshotFlow { backupCoordinator.backupMessage }
-            ) { adi, bdu, lef, bm ->
+            ) { adi, fdl, bdu, lef, bm ->
                 DataUiState(
                     isAutoDownloadIcons = adi,
+                    faviconDownloadWhitelist = fdl.joinToString("\n"),
                     directoryUri = bdu,
                     lastExportFileName = lef,
                     backupMessage = bm,
@@ -60,6 +64,14 @@ class DataViewModel @Inject constructor(
         when (action) {
             is DataUiAction.SetAutoDownloadIcons -> viewModelScope.launch {
                 systemSettingsUseCases.setAutoDownloadIcons(action.enabled)
+            }
+
+            is DataUiAction.SetFaviconDownloadWhitelist -> viewModelScope.launch {
+                val whitelistSet = action.whitelist.split(Regex("[\n,]"))
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .toSet()
+                systemSettingsUseCases.setFaviconDownloadWhitelist(whitelistSet)
             }
 
             is DataUiAction.SetBackupDirectoryUri -> viewModelScope.launch {

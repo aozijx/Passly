@@ -4,18 +4,21 @@ import android.content.Context
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.domain.model.FaviconOutcome
 import com.aozijx.passly.domain.model.FaviconResult
+import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
-
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class FaviconRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val appContext: Context
+    @param:ApplicationContext private val appContext: Context,
+    private val systemSettingsRepository: SystemSettingsRepository
 ) : FaviconRepository {
     override suspend fun downloadFavicon(input: String): FaviconOutcome {
-        val outcome = FaviconUtils.downloadAndSaveFavicon(input, appContext)
+        val whitelist = systemSettingsRepository.faviconDownloadWhitelist.first()
+        val outcome = FaviconUtils.downloadAndSaveFavicon(input, appContext, whitelist)
 
         val mappedResult = when (outcome.result) {
             FaviconUtils.DownloadResult.SUCCESS -> FaviconResult.SUCCESS

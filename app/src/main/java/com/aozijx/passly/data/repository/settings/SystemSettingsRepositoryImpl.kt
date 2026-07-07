@@ -13,6 +13,7 @@ import com.aozijx.passly.data.repository.settings.internal.COLLAPSE_TOP_BAR_KEY
 import com.aozijx.passly.data.repository.settings.internal.DARK_MODE_KEY
 import com.aozijx.passly.data.repository.settings.internal.DEFAULT_STYLE_KEY
 import com.aozijx.passly.data.repository.settings.internal.DYNAMIC_COLOR_KEY
+import com.aozijx.passly.data.repository.settings.internal.FAVICON_DOWNLOAD_WHITELIST_KEY
 import com.aozijx.passly.data.repository.settings.internal.LANGUAGE_CODE_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_ENABLED_KEY
 import com.aozijx.passly.data.repository.settings.internal.SWIPE_LEFT_ACTION_KEY
@@ -106,6 +107,11 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
         appContext.settingsDataStore.data.map {
             it[AUTO_DOWNLOAD_ICONS_KEY] ?: AppDefaults.Display.AUTO_DOWNLOAD_ICONS
         }
+    override val faviconDownloadWhitelist: Flow<Set<String>> =
+        appContext.settingsDataStore.data.map { prefs ->
+            prefs[FAVICON_DOWNLOAD_WHITELIST_KEY]?.split(Regex("[\n,]"))?.filter { it.isNotBlank() }
+                ?.toSet() ?: emptySet()
+        }
     override val vaultSortOption: Flow<SortOption> =
         appContext.settingsDataStore.data.map { prefs ->
             prefs[VAULT_SORT_OPTION_KEY]?.let { SortOption.entries.find { s -> s.name == it } }
@@ -194,6 +200,12 @@ class SystemSettingsRepositoryImpl @Inject constructor(@ApplicationContext conte
 
     override suspend fun setAutoDownloadIcons(enabled: Boolean) {
         appContext.settingsDataStore.edit { it[AUTO_DOWNLOAD_ICONS_KEY] = enabled }
+    }
+
+    override suspend fun setFaviconDownloadWhitelist(whitelist: Set<String>) {
+        appContext.settingsDataStore.edit {
+            it[FAVICON_DOWNLOAD_WHITELIST_KEY] = whitelist.joinToString("\n")
+        }
     }
 
     override suspend fun setVaultSortOption(sort: SortOption) {
