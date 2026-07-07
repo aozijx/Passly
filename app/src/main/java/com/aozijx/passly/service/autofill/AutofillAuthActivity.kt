@@ -12,7 +12,6 @@ import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
-import com.aozijx.passly.core.auth.VerificationGatewayImpl
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.otp.TwoFAUtils
@@ -23,6 +22,7 @@ import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.service.autofill.builder.AutofillResponseBuilder
 import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
 import com.aozijx.passly.service.autofill.presenter.AutofillCandidateBottomSheet
+import com.aozijx.passly.ui.features.verification.VerificationGatewayImpl
 import com.aozijx.passly.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch

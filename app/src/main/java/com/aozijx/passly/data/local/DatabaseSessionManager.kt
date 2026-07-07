@@ -1,10 +1,11 @@
-package com.aozijx.passly.security.crypto
+package com.aozijx.passly.data.local
 
 import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.room.Room
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.data.local.AppDatabase
+import com.aozijx.passly.security.crypto.DekManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +15,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -60,11 +62,11 @@ class DatabaseSessionManager @Inject constructor(
 
     private suspend fun createDatabase(): AppDatabase {
         val db = dekManager.withDek { dek ->
-            val factory = net.zetetic.database.sqlcipher.SupportOpenHelperFactory(dek.clone())
-            androidx.room.Room.databaseBuilder(
+            val factory = SupportOpenHelperFactory(dek.clone())
+            Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
-                com.aozijx.passly.data.local.DatabaseConfig.DATABASE_NAME
+                DatabaseConfig.DATABASE_NAME
             )
                 .openHelperFactory(factory)
                 .build()

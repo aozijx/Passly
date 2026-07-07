@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.vault
 import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.data.entity.VaultHistoryEntity
+import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
@@ -12,7 +13,6 @@ import com.aozijx.passly.data.repository.vault.internal.ifLockedReturn
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.repository.vault.VaultRepository
-import com.aozijx.passly.security.crypto.DatabaseSessionManager
 import com.aozijx.passly.security.crypto.VaultLockManager
 import javax.inject.Inject
 import javax.inject.Singleton

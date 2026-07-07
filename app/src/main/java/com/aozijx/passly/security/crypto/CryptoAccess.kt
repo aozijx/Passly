@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.crypto.encryption
+package com.aozijx.passly.security.crypto
 
 /**
  * Centralized decrypt facade to avoid scattered direct decrypt calls.

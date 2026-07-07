@@ -11,15 +11,14 @@ import com.aozijx.passly.core.backup.BackupManager.SALT_LENGTH
 import com.aozijx.passly.core.backup.BackupManager.deriveKeyArgon2id
 import com.aozijx.passly.core.backup.BackupManager.generateSalt
 import com.aozijx.passly.core.backup.BackupManager.getCipher
-import com.aozijx.passly.core.backup.EmergencyBackupExporter
 import com.aozijx.passly.core.di.IoDispatcher
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
 import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
 import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.security.crypto.CryptoEngine
-import com.aozijx.passly.security.crypto.DatabaseSessionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext

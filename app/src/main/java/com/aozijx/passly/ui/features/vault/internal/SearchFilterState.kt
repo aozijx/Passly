@@ -1,6 +1,6 @@
 package com.aozijx.passly.ui.features.vault.internal
 
-import com.aozijx.passly.ui.features.vault.model.SortOption
+import com.aozijx.passly.domain.model.SortOption
 import com.aozijx.passly.ui.features.vault.model.VaultTab
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview

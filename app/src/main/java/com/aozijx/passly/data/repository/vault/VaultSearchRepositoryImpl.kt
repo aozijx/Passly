@@ -1,11 +1,11 @@
 package com.aozijx.passly.data.repository.vault
 
+import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository.EntryFilter
-import com.aozijx.passly.security.crypto.DatabaseSessionManager
 import com.aozijx.passly.security.crypto.LockState
 import com.aozijx.passly.security.crypto.VaultLockManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi

@@ -19,7 +19,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
-import com.aozijx.passly.core.backup.BackupExportStorageSupport
+import com.aozijx.passly.data.repository.backup.BackupExportStorageSupport
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.ui.features.settings.SettingsViewModel

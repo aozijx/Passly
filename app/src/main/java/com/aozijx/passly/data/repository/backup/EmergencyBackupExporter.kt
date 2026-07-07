@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.backup
+package com.aozijx.passly.data.repository.backup
 
 import android.content.Context
 import android.database.Cursor
@@ -140,6 +140,7 @@ object EmergencyBackupExporter {
                             val blob = cursor.getBlob(blobIndex)
                             writer.value(Base64.encodeToString(blob, Base64.NO_WRAP))
                         }
+
                         else -> writer.value(cursor.getString(blobIndex))
                     }
                 }

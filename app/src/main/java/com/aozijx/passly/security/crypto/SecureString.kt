@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.crypto.memory
+package com.aozijx.passly.security.crypto
 
 @JvmInline
 value class SecureString(private val value: CharArray) {

@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.model.SortOption
 import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
@@ -23,7 +24,6 @@ import com.aozijx.passly.ui.features.vault.internal.TotpCoordinator
 import com.aozijx.passly.ui.features.vault.internal.VaultListCoordinator
 import com.aozijx.passly.ui.features.vault.internal.VaultQueryCoordinator
 import com.aozijx.passly.ui.features.vault.model.AddType
-import com.aozijx.passly.ui.features.vault.model.SortOption
 import com.aozijx.passly.ui.features.vault.model.VaultTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow

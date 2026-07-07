@@ -1,12 +1,12 @@
 package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomainHistoryList
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.data.repository.vault.internal.ifLockedReturn
 import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
-import com.aozijx.passly.security.crypto.DatabaseSessionManager
 import com.aozijx.passly.security.crypto.LockState
 import com.aozijx.passly.security.crypto.VaultLockManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi

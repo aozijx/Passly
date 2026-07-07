@@ -24,10 +24,10 @@ import com.aozijx.passly.data.repository.settings.internal.VISIBLE_VAULT_TABS_KE
 import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.domain.model.AutofillUiMode
+import com.aozijx.passly.domain.model.SortOption
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
-import com.aozijx.passly.ui.features.vault.model.SortOption
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

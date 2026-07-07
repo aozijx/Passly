@@ -10,7 +10,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.core.auth.session.AppIdleMonitor
 import com.aozijx.passly.core.logging.CrashHandler
 import com.aozijx.passly.core.logging.Logcat
-import com.aozijx.passly.security.crypto.DatabaseSessionManager
+import com.aozijx.passly.data.local.DatabaseSessionManager
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 

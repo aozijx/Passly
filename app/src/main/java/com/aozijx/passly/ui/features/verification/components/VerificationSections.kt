@@ -33,7 +33,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.crypto.memory.SecureString
+import com.aozijx.passly.security.crypto.SecureString
 
 @Composable
 internal fun PasswordUnlockSection(

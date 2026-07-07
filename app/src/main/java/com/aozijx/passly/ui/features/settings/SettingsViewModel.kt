@@ -2,13 +2,13 @@ package com.aozijx.passly.ui.features.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.auth.VerificationGatewayImpl
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.ui.features.settings.contract.SettingsEffect
 import com.aozijx.passly.ui.features.settings.contract.SettingsIntent
 import com.aozijx.passly.ui.features.settings.contract.SettingsUiState
+import com.aozijx.passly.ui.features.verification.VerificationGatewayImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

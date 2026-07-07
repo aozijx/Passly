@@ -1,9 +1,9 @@
 package com.aozijx.passly.ui.features.vault.contract
 
+import com.aozijx.passly.domain.model.SortOption
 import com.aozijx.passly.domain.model.TotpState
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.ui.features.detail.internal.VaultDetailCoordinatorState
-import com.aozijx.passly.ui.features.vault.model.SortOption
 import com.aozijx.passly.ui.features.vault.model.VaultTab
 
 data class VaultUiState(

@@ -5,6 +5,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.logging.Logcat
 import com.aozijx.passly.core.util.DomainNormalizer
+import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toDomainList
 import com.aozijx.passly.data.mapper.toEntity
@@ -15,7 +16,6 @@ import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.repository.vault.VaultAutofillRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
-import com.aozijx.passly.security.crypto.DatabaseSessionManager
 import com.aozijx.passly.security.crypto.VaultLockManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers

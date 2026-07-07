@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.usecase.settings.system
 
 import com.aozijx.passly.domain.model.AutofillUiMode
+import com.aozijx.passly.domain.model.SortOption
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.SystemSettingsRepository
-import com.aozijx.passly.ui.features.vault.model.SortOption
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton

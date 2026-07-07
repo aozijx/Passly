@@ -1,6 +1,7 @@
-package com.aozijx.passly.core.auth
+package com.aozijx.passly.ui.features.verification
 
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.core.auth.VerificationGateway
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.ui.components.toUiMessage

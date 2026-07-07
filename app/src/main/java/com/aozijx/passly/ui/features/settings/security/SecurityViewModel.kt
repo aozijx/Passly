@@ -3,12 +3,11 @@ package com.aozijx.passly.ui.features.settings.security
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.auth.VerificationGatewayImpl
-
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
+import com.aozijx.passly.ui.features.verification.VerificationGatewayImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

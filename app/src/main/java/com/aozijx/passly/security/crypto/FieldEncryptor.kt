@@ -1,9 +1,7 @@
-package com.aozijx.passly.core.crypto.encryption
+package com.aozijx.passly.security.crypto
 
 import android.util.Base64
 import com.aozijx.passly.domain.model.AppDefaults
-import com.aozijx.passly.security.crypto.MemoryCleaner
-import com.aozijx.passly.security.crypto.SessionManager
 import java.nio.ByteBuffer
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec

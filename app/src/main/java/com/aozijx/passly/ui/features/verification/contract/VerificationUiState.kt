@@ -1,6 +1,6 @@
 package com.aozijx.passly.ui.features.verification.contract
 
-import com.aozijx.passly.core.crypto.memory.SecureString
+import com.aozijx.passly.security.crypto.SecureString
 
 data class VerificationUiState(
     val authInProgress: Boolean = false,

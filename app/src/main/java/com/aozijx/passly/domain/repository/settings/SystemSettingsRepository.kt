@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.repository.settings
 
 import com.aozijx.passly.domain.model.AutofillUiMode
+import com.aozijx.passly.domain.model.SortOption
 import com.aozijx.passly.domain.model.SwipeActionType
 import com.aozijx.passly.domain.model.VaultCardStyle
-import com.aozijx.passly.ui.features.vault.model.SortOption
 import kotlinx.coroutines.flow.Flow
 
 interface SystemSettingsRepository {
