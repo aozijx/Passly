@@ -32,7 +32,8 @@ import javax.inject.Inject
 class BackupCoordinator @Inject constructor(
     private val backupSettingsUseCases: BackupSettingsUseCases,
     private val backupUseCases: BackupUseCases,
-    private val application: Application
+    private val application: Application,
+    private val storageSupport: BackupExportStorageSupport
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var plainExportTokenIssuedAt: Long = 0L
@@ -117,7 +118,7 @@ class BackupCoordinator @Inject constructor(
         backupMessage = null
     }
 
-    fun nextBackupFileName(): String = BackupExportStorageSupport.buildBackupFileName()
+    fun nextBackupFileName(): String = storageSupport.buildBackupFileName()
 
     fun tryStartExportInConfiguredDirectory(directoryUri: String?): Boolean {
         if (directoryUri.isNullOrBlank()) return false
@@ -142,8 +143,7 @@ class BackupCoordinator @Inject constructor(
                 try {
                     val finalUri =
                         if (currentState.isExporting && currentState.pendingExportAllowFallback) {
-                            val createResult = BackupExportStorageSupport.createNamedExportTarget(
-                                context,
+                            val createResult = storageSupport.createNamedExportTarget(
                                 targetUri.toString(),
                                 currentState.pendingExportFileName ?: nextBackupFileName()
                             )
@@ -204,7 +204,7 @@ class BackupCoordinator @Inject constructor(
         if (!dirUri.isNullOrBlank()) {
             scope.launch {
                 val targetResult = withContext(Dispatchers.IO) {
-                    BackupExportStorageSupport.createNamedExportTarget(context, dirUri, fileName)
+                    storageSupport.createNamedExportTarget(dirUri, fileName)
                 }
                 targetResult.fold(
                     onSuccess = { exportPlainBackupToUri(it.fileUri) },
@@ -268,7 +268,7 @@ class BackupCoordinator @Inject constructor(
         oldState: BackupUiState
     ) {
         if (oldState.isExporting && oldState.pendingExportAllowFallback)
-            BackupExportStorageSupport.deleteDocument(context, finalUri)
+            storageSupport.deleteDocument(finalUri)
         backupMessage = error.toUiMessage(text(R.string.backup_error_unknown))
     }
 }
