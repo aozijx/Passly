@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.data.local.datastore.UserConfigFileStore
 import com.aozijx.passly.domain.model.UserConfig
 import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository

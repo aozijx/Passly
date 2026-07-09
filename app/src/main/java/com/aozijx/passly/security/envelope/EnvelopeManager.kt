@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.envelope
 
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec

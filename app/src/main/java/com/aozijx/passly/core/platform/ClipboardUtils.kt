@@ -7,7 +7,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 
 /**
  * 剪贴板工具类，提供安全复制、自动清除以及内容获取功能

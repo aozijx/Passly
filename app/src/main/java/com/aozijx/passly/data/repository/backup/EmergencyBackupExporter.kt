@@ -8,7 +8,7 @@ import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.ErrorLayer
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.security.crypto.CryptoEngine
 import net.zetetic.database.sqlcipher.SQLiteDatabase

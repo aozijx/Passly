@@ -6,7 +6,7 @@ import android.graphics.Color
 import android.net.Uri
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.google.zxing.BarcodeFormat
@@ -72,6 +72,3 @@ object QrCodeUtils {
         }
     }
 }
-
-
-

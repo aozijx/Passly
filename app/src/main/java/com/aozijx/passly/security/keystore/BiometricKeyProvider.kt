@@ -2,7 +2,7 @@ package com.aozijx.passly.security.keystore
 
 import android.content.Context
 import androidx.biometric.BiometricPrompt
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.UnlockResult
 import com.aozijx.passly.security.envelope.EnvelopeType

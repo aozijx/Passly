@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.usecase.database
 
 import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

@@ -32,8 +32,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.logging.LogExporter
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.LogExporter
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.ui.features.settings.components.navigationSettingsItem
 import com.aozijx.passly.ui.features.settings.shell.SettingsGroupTitle
 import com.aozijx.passly.ui.features.settings.shell.SettingsRoundedGroup
@@ -55,11 +55,15 @@ fun LogSettingsSection() {
     fun refreshLogInfo() {
         scope.launch {
             withContext(Dispatchers.IO) {
-                val content = Logcat.readAllLogs()
-                val size = if (content.isEmpty()) "0 B"
-                else "%d KB".format(content.length / 1024)
-                logContent = content
-                logSize = size
+                Logcat.readAllLogs().onSuccess { content ->
+                    val size = if (content.isEmpty()) "0 B"
+                    else "%d KB".format(content.length / 1024)
+                    logContent = content
+                    logSize = size
+                }.onFailure {
+                    logContent = ""
+                    logSize = "0 B"
+                }
             }
         }
     }
@@ -80,10 +84,9 @@ fun LogSettingsSection() {
             subtitle = "导出所有日志文件为 ZIP",
             onClick = {
                 scope.launch {
-                    val file = withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.IO) {
                         LogExporter.exportAllLogsAsZip(context)
-                    }
-                    if (file != null) {
+                    }.onSuccess { file ->
                         LogExporter.shareLogsZip(context, file)
                     }
                 }
@@ -95,11 +98,10 @@ fun LogSettingsSection() {
             subtitle = "导出错误日志为文本文件",
             onClick = {
                 scope.launch {
-                    val file = withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.IO) {
                         LogExporter.exportErrorLogsAsTxt(context)
-                    }
-                    if (file != null) {
-                        LogExporter.shareLogsFile(context, file)
+                    }.onSuccess { file ->
+                        LogExporter.shareLogsTxt(context, file)
                     }
                 }
             }

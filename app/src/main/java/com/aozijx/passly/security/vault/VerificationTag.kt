@@ -3,7 +3,7 @@ package com.aozijx.passly.security.vault
 import android.content.Context
 import android.util.Base64
 import androidx.core.content.edit
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import java.nio.ByteBuffer
 import java.security.SecureRandom
 import javax.crypto.Cipher

@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository

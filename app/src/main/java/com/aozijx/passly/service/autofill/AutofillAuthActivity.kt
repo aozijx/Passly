@@ -13,7 +13,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.AutofillUiMode
 import com.aozijx.passly.domain.model.VaultEntry

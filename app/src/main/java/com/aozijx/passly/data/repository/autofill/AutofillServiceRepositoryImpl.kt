@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.aozijx.passly.R
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.core.util.DomainNormalizer
 import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomain

@@ -1,7 +1,7 @@
 package com.aozijx.passly.security.crypto
 
 import android.content.Context
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.security.envelope.Envelope
 import com.aozijx.passly.security.envelope.EnvelopeManager
@@ -183,10 +183,10 @@ class DekManager @Inject constructor(
                 Logcat.i(TAG, "Unlocked with verified DEK via: $envelopeId")
                 UnlockResult.Success
             } catch (e: IllegalArgumentException) {
-                Logcat.cryptoError(TAG, "DEK verification", e)
+                Logcat.logCryptoException(TAG, "DEK verification", e)
                 UnlockResult.Failed(UnlockError.DEK_VERIFY_FAILED)
             } catch (e: Exception) {
-                Logcat.cryptoError(TAG, "Unlock via verified DEK", e)
+                Logcat.logCryptoException(TAG, "Unlock via verified DEK", e)
                 UnlockResult.Failed(UnlockError.UNKNOWN)
             } finally {
                 MemoryCleaner.wipeByteArray(dek)
@@ -246,13 +246,13 @@ class DekManager @Inject constructor(
                     MemoryCleaner.wipeByteArray(dek)
                 }
             } catch (e: javax.crypto.AEADBadTagException) {
-                Logcat.cryptoError(TAG, "Biometric unlock", e)
+                Logcat.logCryptoException(TAG, "Biometric unlock", e)
                 UnlockResult.Failed(UnlockError.AUTH_FAILED)
             } catch (e: IllegalArgumentException) {
-                Logcat.cryptoError(TAG, "Biometric DEK verification", e)
+                Logcat.logCryptoException(TAG, "Biometric DEK verification", e)
                 UnlockResult.Failed(UnlockError.DEK_VERIFY_FAILED)
             } catch (e: Exception) {
-                Logcat.cryptoError(TAG, "Biometric unlock", e)
+                Logcat.logCryptoException(TAG, "Biometric unlock", e)
                 UnlockResult.Failed(UnlockError.UNKNOWN)
             }
         }
@@ -287,7 +287,7 @@ class DekManager @Inject constructor(
                     MemoryCleaner.wipeByteArray(dek)
                 }
             } catch (e: Exception) {
-                Logcat.cryptoError(TAG, "Biometric bootstrap", e)
+                Logcat.logCryptoException(TAG, "Biometric bootstrap", e)
                 UnlockResult.Failed(UnlockError.UNKNOWN)
             }
         }

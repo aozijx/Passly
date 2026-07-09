@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.local.datastore
 
 import android.content.Context
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.model.UserConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers

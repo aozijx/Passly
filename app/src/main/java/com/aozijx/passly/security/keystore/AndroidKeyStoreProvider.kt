@@ -4,7 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.model.AppDefaults
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -30,7 +30,7 @@ internal object AndroidKeyStoreProvider {
             Logcat.i(TAG, "Cipher initialized in ENCRYPT mode")
             cipher
         } catch (e: Exception) {
-            Logcat.cryptoError(TAG, "Get encrypt cipher", e)
+            Logcat.logCryptoException(TAG, "Get encrypt cipher", e)
             null
         }
     }
@@ -48,14 +48,14 @@ internal object AndroidKeyStoreProvider {
             Logcat.i(TAG, "Cipher initialized in DECRYPT mode")
             cipher
         } catch (e: KeyPermanentlyInvalidatedException) {
-            Logcat.cryptoError(TAG, "Key invalidated", e)
+            Logcat.logCryptoException(TAG, "Key invalidated", e)
             synchronized(keyGenLock) {
                 val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
                 ks.deleteEntry(alias)
             }
             null
         } catch (e: Exception) {
-            Logcat.cryptoError(TAG, "Get decrypt cipher", e)
+            Logcat.logCryptoException(TAG, "Get decrypt cipher", e)
             null
         }
     }

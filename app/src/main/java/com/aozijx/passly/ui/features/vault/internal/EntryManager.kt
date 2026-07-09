@@ -3,7 +3,7 @@ package com.aozijx.passly.ui.features.vault.internal
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases

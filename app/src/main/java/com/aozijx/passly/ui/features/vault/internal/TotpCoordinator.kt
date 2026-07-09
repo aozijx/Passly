@@ -1,6 +1,6 @@
 package com.aozijx.passly.ui.features.vault.internal
 
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.TotpConfig
 import com.aozijx.passly.domain.model.TotpState

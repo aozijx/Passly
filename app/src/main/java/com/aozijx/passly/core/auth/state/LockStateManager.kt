@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.auth.state
 
 import com.aozijx.passly.core.auth.session.AppIdleMonitor
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.security.crypto.DekManager
 import kotlinx.coroutines.flow.MutableStateFlow

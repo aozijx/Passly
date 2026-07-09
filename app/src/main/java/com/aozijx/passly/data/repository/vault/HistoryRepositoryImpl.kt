@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomainHistoryList
 import com.aozijx.passly.data.mapper.toEntity

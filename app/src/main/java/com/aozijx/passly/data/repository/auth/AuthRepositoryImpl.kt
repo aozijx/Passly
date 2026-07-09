@@ -9,7 +9,7 @@ import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator.AuthRequestValidationResult
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.data.repository.auth.internal.AppPasswordHandler
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import com.aozijx.passly.security.crypto.DekManager
