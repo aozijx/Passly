@@ -33,6 +33,8 @@ materialIcons = "1.7.8"
 # ❗ Room 使用 KSP 时，对 Kotlin 版本非常敏感
 room = "2.8.4"
 datastorePreferences = "1.2.1"
+# ❗ 序列化库版本建议与 Kotlin 版本保持兼容性检查
+kotlinxSerializationJson = "1.11.0"
 # ❗ SQLCipher 是 SQLite 的加密层，升级其中之一需确保 native 库不冲突
 sqlite = "2.7.0"
 sqlcipher = "4.17.0"
@@ -88,12 +90,13 @@ androidx-material-icons-extended = { group = "androidx.compose.material", name =
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 
-# 数据持久化 (Room & DataStore)
+# 数据持久化 (Room & DataStore & Serialization)
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 
@@ -129,3 +132,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
