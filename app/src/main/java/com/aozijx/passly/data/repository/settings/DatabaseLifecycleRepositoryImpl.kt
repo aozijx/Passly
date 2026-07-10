@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.onFailureLog
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.data.local.DatabaseSessionManager
@@ -86,9 +87,8 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
 
             deleteDatabaseFiles()
             true
-        }.onFailure {
-            Logcat.e(TAG, "Auto recovery cleanup failed", it)
-        }.getOrDefault(false)
+        }.onFailureLog(TAG)
+            .getOrDefault(false)
     }
 
     private fun snapshotDatabaseFiles(): Boolean {
@@ -116,10 +116,8 @@ internal class DatabaseLifecycleRepositoryImpl @Inject constructor(
                 val target = File(recoveryDir, "${source.name}.$timestamp.bak")
                 source.copyTo(target, overwrite = true)
                 copiedTargets += target
-            }.onFailure {
-                Logcat.w(TAG, "Failed to snapshot DB file: ${source.name}", it)
-                snapshotFailed = true
-            }
+            }.onFailureLog(TAG)
+                .onFailure { snapshotFailed = true }
         }
 
         if (snapshotFailed) return false

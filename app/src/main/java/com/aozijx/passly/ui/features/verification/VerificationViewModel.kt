@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.security.crypto.MemoryCleaner
 import com.aozijx.passly.security.crypto.SecureString
-import com.aozijx.passly.ui.components.toUiMessage
 import com.aozijx.passly.ui.features.verification.contract.VerificationUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.aozijx.passly.R
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.onFailureLog
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.core.util.DomainNormalizer
 import com.aozijx.passly.data.local.DatabaseSessionManager
@@ -48,9 +49,7 @@ class AutofillServiceRepositoryImpl @Inject constructor(
             sessionManager.withDatabase {
                 vaultEntryDao().update(updatedEntry.toEntity())
             }
-        }.onFailure {
-            Logcat.e(TAG, "Failed to update usage count for ${entry.id}", it)
-        }
+        }.onFailureLog(TAG)
         return
     }
 

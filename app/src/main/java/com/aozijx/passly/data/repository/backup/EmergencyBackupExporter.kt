@@ -8,6 +8,8 @@ import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.ErrorLayer
+import com.aozijx.passly.core.error.fromThrowable
+import com.aozijx.passly.core.error.logFailureWithContext
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.security.crypto.CryptoEngine
@@ -88,14 +90,13 @@ object EmergencyBackupExporter {
                     Logcat.i(TAG, "紧急救灾备份已生成(密文): ${backupFile.absolutePath}")
                     AppResult.success(backupFile)
                 } catch (e: Exception) {
-                    Logcat.e(TAG, "紧急救灾备份失败", e)
                     AppResult.failure(
                         AppError.fromThrowable(
                             e,
                             layer = ErrorLayer.DATA,
                             operation = "emergencyBackup.export"
                         )
-                    )
+                    ).logFailureWithContext(TAG, "emergencyBackup.export")
                 } finally {
                     plainJson?.fill(0)
                     encryptedPayload?.fill(0)
@@ -103,14 +104,13 @@ object EmergencyBackupExporter {
                 }
             }
         } catch (e: Exception) {
-            Logcat.e(TAG, "紧急救灾备份失败: DEK 不可用", e)
             AppResult.failure(
                 AppError.fromThrowable(
                     e,
                     layer = ErrorLayer.DATA,
                     operation = "emergencyBackup.export"
                 )
-            )
+            ).logFailureWithContext(TAG, "emergencyBackup.export")
         }
     }
 

@@ -5,7 +5,7 @@ import android.widget.Toast
 import com.aozijx.passly.R
 import com.aozijx.passly.core.auth.VerificationGateway
 import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
-import com.aozijx.passly.ui.components.toUiMessage
+import com.aozijx.passly.core.error.ui.toUiMessage
 
 enum class AppPasswordAction {
     SET,

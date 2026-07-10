@@ -3,8 +3,8 @@ package com.aozijx.passly.ui.features.verification
 import com.aozijx.passly.core.auth.VerificationGateway
 import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.domain.usecase.auth.AuthUseCases
-import com.aozijx.passly.ui.components.toUiMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

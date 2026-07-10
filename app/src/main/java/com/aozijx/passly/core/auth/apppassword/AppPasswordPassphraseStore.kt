@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import com.aozijx.passly.core.backup.BackupManager
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.AuthFailed
 import com.aozijx.passly.domain.model.AppDefaults
 import com.aozijx.passly.security.crypto.MemoryCleaner
 import java.security.MessageDigest
@@ -99,7 +100,7 @@ object AppPasswordPassphraseStore {
         val lockedUntil = prefs.getLong(AppDefaults.Auth.KEY_APP_PASSWORD_LOCKED_UNTIL, 0L)
         val now = System.currentTimeMillis()
         if (lockedUntil > now) {
-            return AppResult.failure(AppError.AuthFailed("尝试过于频繁，请 ${lockedUntil - now} 秒后重试"))
+            return AppResult.failure(AuthFailed("尝试过于频繁，请 ${lockedUntil - now} 秒后重试"))
         }
 
         return AppResult.runCatching("appPasswordStore.unlock") {
@@ -128,9 +129,9 @@ object AppPasswordPassphraseStore {
                 }
             }
             if (shouldLock) {
-                AppError.AuthFailed("密码错误次数过多，请 ${AppDefaults.Lock.MIN_APP_PASSWORD_LOCKOUT_MS / 1000} 秒后重试")
+                AuthFailed("密码错误次数过多，请 ${AppDefaults.Lock.MIN_APP_PASSWORD_LOCKOUT_MS / 1000} 秒后重试")
             } else {
-                AppError.AuthFailed(AppDefaults.Auth.ERROR_APP_PASSWORD_MISMATCH)
+                AuthFailed(AppDefaults.Auth.ERROR_APP_PASSWORD_MISMATCH)
             }
         }
     }

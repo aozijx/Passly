@@ -3,12 +3,14 @@ package com.aozijx.passly.data.repository.auth
 import androidx.biometric.BiometricPrompt
 import com.aozijx.passly.core.auth.apppassword.AppPasswordPassphraseStore
 import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
-import com.aozijx.passly.core.auth.error.AuthErrorHandler
 import com.aozijx.passly.core.auth.state.LockStateManager
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator
 import com.aozijx.passly.core.auth.validation.AuthRequestValidator.AuthRequestValidationResult
-import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.AuthFailed
+import com.aozijx.passly.core.error.auth.AuthErrorHandler
+import com.aozijx.passly.core.error.auth.canFallbackForAuth
+import com.aozijx.passly.core.error.logFailureWithContext
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.data.repository.auth.internal.AppPasswordHandler
 import com.aozijx.passly.domain.repository.auth.AuthRepository
@@ -71,7 +73,7 @@ internal class AuthRepositoryImpl @Inject constructor(
         when (val validation = requestValidator.validateRequest(title)) {
             is AuthRequestValidationResult.Invalid -> {
                 return AppResult.failure(
-                    AppError.AuthFailed(requestValidator.sanitizeMessage(validation.message))
+                    AuthFailed(requestValidator.sanitizeMessage(validation.message))
                 )
             }
             AuthRequestValidationResult.Valid -> Unit
@@ -80,7 +82,7 @@ internal class AuthRepositoryImpl @Inject constructor(
         if (lockStateManager.isAuthorized.value) return AppResult.success(Unit)
 
         val cipher = passphraseManager.getInitializedCipher()
-            ?: return AppResult.failure(AppError.AuthFailed("无法准备认证环境，请重试"))
+            ?: return AppResult.failure(AuthFailed("无法准备认证环境，请重试"))
 
         return suspendCancellableCoroutine { continuation ->
 
@@ -93,11 +95,11 @@ internal class AuthRepositoryImpl @Inject constructor(
                         scope.launch {
                             errorHandler.cleanupSensitiveState()
                         }
-                        val authError = errorHandler.classifyBiometricError(errorCode, error)
-                        if (authError.canFallback() && isAppPasswordEnabled.value) {
+                        val appError = errorHandler.classifyBiometricError(errorCode, error)
+                        if (appError.canFallbackForAuth() && isAppPasswordEnabled.value) {
                             Logcat.w("AuthRepo", "Biometric error [$errorCode], fallback available")
                         }
-                        continuation.resume(AppResult.failure(AppError.AuthFailed(authError.toUserMessage())))
+                        continuation.resume(AppResult.failure(appError))
                     }
                 },
                 onSuccess = { result ->
@@ -110,7 +112,7 @@ internal class AuthRepositoryImpl @Inject constructor(
                             }
                             if (unlockResult is UnlockResult.Failed) {
                                 continuation.resume(
-                                    AppResult.failure(AppError.AuthFailed(unlockResult.reason.name))
+                                    AppResult.failure(AuthFailed(unlockResult.reason.name))
                                 )
                                 return@launch
                             }
@@ -119,13 +121,9 @@ internal class AuthRepositoryImpl @Inject constructor(
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
-                            errorHandler.handleAuthFailure(
-                                errorHandler.classifyError(e, "authenticate"),
-                                "authenticate"
-                            )
-                            continuation.resume(
-                                AppResult.failure(AppError.AuthFailed(e.message ?: "认证失败"))
-                            )
+                            val appError = errorHandler.classifyError(e, "authenticate")
+                            errorHandler.handleAuthFailure(appError, "authenticate")
+                            continuation.resume(AppResult.failure(appError))
                         }
                     }
                 }
@@ -145,14 +143,14 @@ internal class AuthRepositoryImpl @Inject constructor(
         when (val validation = requestValidator.validateRequest(title)) {
             is AuthRequestValidationResult.Invalid -> {
                 return AppResult.failure(
-                    AppError.AuthFailed(requestValidator.sanitizeMessage(validation.message))
+                    AuthFailed(requestValidator.sanitizeMessage(validation.message))
                 )
             }
             AuthRequestValidationResult.Valid -> Unit
         }
 
         if (lockManager.isLocked()) {
-            return AppResult.failure(AppError.AuthFailed("请先解锁应用"))
+            return AppResult.failure(AuthFailed("请先解锁应用"))
         }
 
         return suspendCancellableCoroutine { continuation ->
@@ -161,8 +159,8 @@ internal class AuthRepositoryImpl @Inject constructor(
                 subtitle = subtitle,
                 onError = { errorCode, error ->
                     if (continuation.isActive) {
-                        val authError = errorHandler.classifyBiometricError(errorCode, error)
-                        continuation.resume(AppResult.failure(AppError.AuthFailed(authError.toUserMessage())))
+                        val appError = errorHandler.classifyBiometricError(errorCode, error)
+                        continuation.resume(AppResult.failure(appError))
                     }
                 },
                 onSuccess = {
@@ -244,7 +242,7 @@ internal class AuthRepositoryImpl @Inject constructor(
             passphraseManager.prepareForRekey(invalidateOnBiometricChange)
 
             val cipher = passphraseManager.getInitializedCipher()
-                ?: return AppResult.failure(AppError.AuthFailed("无法准备重加密环境"))
+                ?: return AppResult.failure(AuthFailed("无法准备重加密环境"))
 
             return suspendCancellableCoroutine { continuation ->
                 launcher.launchPrompt(
@@ -254,9 +252,15 @@ internal class AuthRepositoryImpl @Inject constructor(
                     onError = { errorCode, error ->
                         if (continuation.isActive) {
                             val msg = requestValidator.sanitizeMessage(error)
-                            Logcat.e("AuthRepo", "Rekey auth error [$errorCode]: $msg")
                             recoverFromFailedRekey(invalidateOnBiometricChange)
-                            continuation.resume(AppResult.failure(AppError.AuthFailed(msg)))
+                            continuation.resume(
+                                AppResult.failure(AuthFailed(msg))
+                                    .logFailureWithContext(
+                                        "AuthRepo",
+                                        "rekey.auth",
+                                        mapOf("errorCode" to errorCode.toString())
+                                    )
+                            )
                         }
                     },
                     onSuccess = { result ->
@@ -271,9 +275,11 @@ internal class AuthRepositoryImpl @Inject constructor(
                                 onSuccess = { continuation.resume(AppResult.success(Unit)) },
                                 onFailure = { error ->
                                     val msg = requestValidator.sanitizeMessage(error.message)
-                                    Logcat.e("AuthRepo", "Rekey completion error: $msg", error)
                                     recoverFromFailedRekey(false)
-                                    continuation.resume(AppResult.failure(AppError.AuthFailed(msg)))
+                                    continuation.resume(
+                                        AppResult.failure(AuthFailed(msg))
+                                            .logFailureWithContext("AuthRepo", "rekey.complete")
+                                    )
                                 }
                             )
                         }
@@ -285,13 +291,13 @@ internal class AuthRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: IllegalStateException) {
-            return AppResult.failure(AppError.AuthFailed(requestValidator.sanitizeMessage(e.message)))
+            return AppResult.failure(AuthFailed(requestValidator.sanitizeMessage(e.message)))
         } catch (e: java.security.InvalidKeyException) {
-            Logcat.e("AuthRepo", "Invalid key during rekey", e)
-            return AppResult.failure(AppError.AuthFailed("加密密钥无效"))
+            return AppResult.failure(AuthFailed("加密密钥无效"))
+                .logFailureWithContext("AuthRepo", "rekey")
         } catch (e: java.security.KeyStoreException) {
-            Logcat.e("AuthRepo", "KeyStore error during rekey", e)
-            return AppResult.failure(AppError.AuthFailed("密钥存储异常"))
+            return AppResult.failure(AuthFailed("密钥存储异常"))
+                .logFailureWithContext("AuthRepo", "rekey")
         }
     }
 

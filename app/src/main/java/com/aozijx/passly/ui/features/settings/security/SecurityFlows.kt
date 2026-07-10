@@ -4,7 +4,7 @@ import android.content.Context
 import android.widget.Toast
 import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.ui.components.toUiMessage
+import com.aozijx.passly.core.error.ui.toUiMessage
 
 internal fun handleInvalidateKeyToggle(
     context: Context,

@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.error.onFailureLog
 import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomainHistoryList
 import com.aozijx.passly.data.mapper.toEntity
@@ -43,8 +43,6 @@ class HistoryRepositoryImpl @Inject constructor(
             sessionManager.withDatabase {
                 vaultHistoryDao().insertHistory(history.toEntity())
             }
-        }.onFailure {
-            Logcat.e("HistoryRepo", "Failed to insert history for entry ${history.entryId}", it)
-        }
+        }.onFailureLog("HistoryRepo")
     }
 }

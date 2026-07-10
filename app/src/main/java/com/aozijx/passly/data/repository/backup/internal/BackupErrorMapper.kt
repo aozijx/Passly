@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.backup.internal
 
 import com.aozijx.passly.core.backup.BackupManager
 import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.BackupFailed
 import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.ErrorTrace
 import com.aozijx.passly.domain.model.BackupException
@@ -19,9 +20,9 @@ internal fun mapBackupException(e: Throwable): BackupException {
 internal fun mapToAppError(operation: String, e: Throwable): AppError {
     if (e is AppError) return e
     val backupException = mapBackupException(e)
-    return AppError.BackupFailed(
+    return BackupFailed(
         message = backupException.message ?: "备份操作失败",
-        errorTrace = ErrorTrace(originLayer = ErrorLayer.DATA, operation = operation),
+        trace = ErrorTrace(originLayer = ErrorLayer.DATA, operation = operation),
         cause = backupException
     )
 }
