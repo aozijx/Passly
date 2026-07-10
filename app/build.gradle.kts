@@ -122,7 +122,6 @@ dependencies {
     // Android Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.exifinterface)
 
     // Lifecycle & Navigation
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -154,6 +153,14 @@ dependencies {
     // Security & Biometric
     implementation(libs.androidx.biometric)
 
+    // Security KDF
+    implementation(libs.argon2kt)
+
+    // Credentials & Autofill
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.androidx.autofill)
+
     // SQLCipher & SQLite
     implementation(libs.sqlcipher)
     implementation(libs.androidx.sqlite)
@@ -178,9 +185,6 @@ dependencies {
 
     // Markdown
     implementation(libs.markdown.renderer)
-
-    // Security KDF
-    implementation(libs.argon2kt)
 
     // Hilt
     implementation(libs.hilt.android)
