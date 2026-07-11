@@ -10,8 +10,8 @@ import androidx.activity.viewModels
 import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.model.AutofillUiMode
-import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.features.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.ui.theme.AppTheme
@@ -41,7 +41,7 @@ class AutofillFillActivity : FragmentActivity() {
                     }
 
                     is AutofillFillViewModel.UiState.ShowCandidates -> {
-                        showBottomSheet(state.entries)
+                        showBottomSheet(state.candidates)
                     }
 
                     is AutofillFillViewModel.UiState.Result -> {
@@ -103,13 +103,13 @@ class AutofillFillActivity : FragmentActivity() {
         )
     }
 
-    private fun showBottomSheet(entries: List<VaultEntry>) {
+    private fun showBottomSheet(candidates: List<ResolvedCandidate>) {
         setContent {
             AppTheme {
                 AutofillCandidateBottomSheet(
-                    entries = entries,
-                    onCandidateSelected = { entry ->
-                        viewModel.selectCandidate(entry, biometricLauncher)
+                    candidates = candidates,
+                    onCandidateSelected = { candidate ->
+                        viewModel.selectCandidate(candidate, biometricLauncher)
                     },
                     onCancel = { finishWithResult(null) }
                 )

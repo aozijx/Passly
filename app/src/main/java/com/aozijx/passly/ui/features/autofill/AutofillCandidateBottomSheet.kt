@@ -23,7 +23,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -31,14 +30,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
+import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutofillCandidateBottomSheet(
-    entries: List<VaultEntry>, onCandidateSelected: (VaultEntry) -> Unit, onCancel: () -> Unit
+    candidates: List<ResolvedCandidate>,
+    onCandidateSelected: (ResolvedCandidate) -> Unit,
+    onCancel: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
@@ -78,9 +78,11 @@ fun AutofillCandidateBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(entries, key = { it.id }) { entry ->
+                    items(candidates, key = { it.candidateId }) { candidate ->
                         CandidateItem(
-                            entry = entry, onClick = { onCandidateSelected(entry) })
+                            candidate = candidate,
+                            onClick = { onCandidateSelected(candidate) }
+                        )
                     }
                 }
             }
@@ -90,12 +92,9 @@ fun AutofillCandidateBottomSheet(
 
 @Composable
 private fun CandidateItem(
-    entry: VaultEntry, onClick: () -> Unit
+    candidate: ResolvedCandidate,
+    onClick: () -> Unit
 ) {
-    val decryptedUsername = remember(entry) {
-        LegacyResponseFactory.getBasicCredentials(entry)?.username ?: entry.username
-    }
-
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -110,21 +109,22 @@ private fun CandidateItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             VaultItemIcon(
-                modifier = Modifier.size(32.dp), entry
+                modifier = Modifier.size(32.dp),
+                candidate
             )
 
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = entry.title,
+                    text = candidate.displayName,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = decryptedUsername,
+                    text = candidate.username,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -132,9 +132,9 @@ private fun CandidateItem(
                 )
                 Text(
                     text = when {
-                        !entry.associatedDomain.isNullOrBlank() -> entry.associatedDomain
-                        !entry.associatedAppPackage.isNullOrBlank() -> entry.associatedAppPackage
-                        else -> entry.category
+                        !candidate.associatedDomain.isNullOrBlank() -> candidate.associatedDomain
+                        !candidate.associatedAppPackage.isNullOrBlank() -> candidate.associatedAppPackage
+                        else -> ""
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),

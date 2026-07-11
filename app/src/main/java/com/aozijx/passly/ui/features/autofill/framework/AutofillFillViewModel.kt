@@ -7,11 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.auth.VerificationGateway
 import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.core.autofill.model.ResolvedCandidate
+import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.AutofillUiMode
-import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.service.autofill.framework.builder.LegacyDatasetFactory
 import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
@@ -29,6 +29,7 @@ import kotlin.coroutines.resume
 @HiltViewModel
 class AutofillFillViewModel @Inject constructor(
     private val autofillUseCases: AutofillUseCases,
+    private val candidateResolver: CandidateResolver,
     private val verificationGateway: VerificationGateway,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
@@ -36,7 +37,7 @@ class AutofillFillViewModel @Inject constructor(
     sealed class UiState {
         object Initial : UiState()
         object Loading : UiState()
-        data class ShowCandidates(val entries: List<VaultEntry>) : UiState()
+        data class ShowCandidates(val candidates: List<ResolvedCandidate>) : UiState()
         data class Result(val response: FillResponse?) : UiState()
         data class Error(val message: String) : UiState()
     }
@@ -66,18 +67,19 @@ class AutofillFillViewModel @Inject constructor(
                 if (request.isUnlockOnly) {
                     handleUnlockOnly(request, biometricLauncher)
                 } else if (request.uiMode == AutofillUiMode.BOTTOM_SHEET && request.candidateEntryIds.isNotEmpty() && request.directEntryId == null) {
-                    val entries = autofillUseCases.getByIds(request.candidateEntryIds)
-                    if (entries.isEmpty()) {
+                    val candidates = candidateResolver.resolveByIds(request.candidateEntryIds)
+                    if (candidates.isEmpty()) {
                         _uiState.update { UiState.Error("No matching entries") }
                     } else {
-                        _uiState.update { UiState.ShowCandidates(entries) }
+                        _uiState.update { UiState.ShowCandidates(candidates) }
                     }
                 } else {
-                    val entry = request.directEntryId?.let { autofillUseCases.getById(it) }
-                    if (entry == null) {
+                    val candidate = request.directEntryId
+                        ?.let { candidateResolver.resolveByIds(listOf(it)).firstOrNull() }
+                    if (candidate == null) {
                         _uiState.update { UiState.Error("Entry not found") }
                     } else {
-                        handleSingleEntry(entry, request, biometricLauncher)
+                        handleSingleEntry(candidate, request, biometricLauncher)
                     }
                 }
             } catch (e: Exception) {
@@ -97,9 +99,9 @@ class AutofillFillViewModel @Inject constructor(
             _uiState.update { UiState.Result(null) }
             return
         }
-        val candidates = autofillUseCases.search(request.packageName, request.webDomain)
+        val candidates = candidateResolver.resolveByPackage(request.packageName, request.webDomain)
         if (candidates.isEmpty()) {
-            _uiState.update { UiState.Result(null) } // 无候选，直接返回成功（无填充）
+            _uiState.update { UiState.Result(null) }
             return
         }
         val response = LegacyResponseFactory.buildPostUnlockFillResponse(
@@ -113,7 +115,7 @@ class AutofillFillViewModel @Inject constructor(
     }
 
     private suspend fun handleSingleEntry(
-        entry: VaultEntry,
+        candidate: ResolvedCandidate,
         request: FillRequest,
         launcher: BiometricPromptLauncher
     ) {
@@ -127,15 +129,13 @@ class AutofillFillViewModel @Inject constructor(
             return
         }
 
-        val basicCred = LegacyResponseFactory.getBasicCredentials(entry)
+        val basicCred = LegacyResponseFactory.getBasicCredentials(candidate)
         if (basicCred == null) {
             _uiState.update { UiState.Error("Failed to decrypt credentials") }
             return
         }
 
-        val totpCode = if (request.otpId != null && entry.totpSecret?.isNotBlank() == true) {
-            TwoFAUtils.generateCurrentTotpFromEntry(entry)
-        } else null
+        val totpCode = if (request.otpId != null) candidate.totpCode else null
 
         val dataset = LegacyDatasetFactory.createFillDataset(
             request.usernameId, request.passwordId, request.otpId,
@@ -143,7 +143,7 @@ class AutofillFillViewModel @Inject constructor(
         )
 
         if (dataset != null) {
-            autofillUseCases.updateLastUsed(entry)
+            autofillUseCases.updateLastUsed(candidate.candidateId)
             val response = FillResponse.Builder().addDataset(dataset).build()
             _uiState.update { UiState.Result(response) }
         } else {
@@ -151,11 +151,11 @@ class AutofillFillViewModel @Inject constructor(
         }
     }
 
-    fun selectCandidate(entry: VaultEntry, biometricLauncher: BiometricPromptLauncher) {
+    fun selectCandidate(candidate: ResolvedCandidate, biometricLauncher: BiometricPromptLauncher) {
         val request = currentRequest ?: return
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
-            handleSingleEntry(entry, request, biometricLauncher)
+            handleSingleEntry(candidate, request, biometricLauncher)
         }
     }
 

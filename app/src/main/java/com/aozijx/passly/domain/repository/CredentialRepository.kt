@@ -23,11 +23,8 @@ interface CredentialRepository {
     /** 按 ID 列表批量获取凭据条目 */
     fun getByIds(entryIds: List<Int>): List<VaultEntry>
 
-    /** 解密凭据的敏感字段（password / totpSecret 等） */
-    fun decrypt(entry: VaultEntry): VaultEntry?
-
     /** 更新凭据的最后使用时间 */
-    fun updateLastUsed(entry: VaultEntry)
+    fun updateLastUsed(entryId: Int)
 
     /** 保存或更新凭据条目 */
     fun save(

@@ -17,9 +17,7 @@ class AutofillUseCases @Inject constructor(private val repository: CredentialRep
 
     fun getByIds(entryIds: List<Int>): List<VaultEntry> = repository.getByIds(entryIds)
 
-    fun decrypt(entry: VaultEntry): VaultEntry? = repository.decrypt(entry)
-
-    fun updateLastUsed(entry: VaultEntry) = repository.updateLastUsed(entry)
+    fun updateLastUsed(entryId: Int) = repository.updateLastUsed(entryId)
 
     fun save(
         packageName: String?,

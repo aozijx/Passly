@@ -55,6 +55,8 @@
     <string name="autofill_match_app">应用匹配</string>
     <string name="autofill_match_domain">域名匹配</string>
     <string name="autofill_match_unknown">候选</string>
+    <string name="autofill_prompt_title">使用 Passly 自动填充</string>
+    <string name="select">选择</string>
     <string name="autofill_chevron_right" translatable="false">›</string>
     <plurals name="autofill_trigger_count">
         <item quantity="other">找到 %d 个匹配账号 · 点击选择</item>

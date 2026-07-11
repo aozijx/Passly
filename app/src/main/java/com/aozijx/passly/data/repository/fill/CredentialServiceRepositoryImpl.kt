@@ -64,20 +64,15 @@ class CredentialServiceRepositoryImpl @Inject constructor(
             }
         }
 
-    override fun decrypt(entry: VaultEntry): VaultEntry? {
-        // BLOB 已在 toDomain() 中解密，所有字段均为明文
-        if (entry.password.isEmpty() && entry.username.isEmpty()) return null
-        return entry
-    }
-
-    override fun updateLastUsed(entry: VaultEntry) {
+    override fun updateLastUsed(entryId: Int) {
         runBlocking(Dispatchers.IO) {
             lockManager.ifLockedReturn { return@runBlocking }
             sessionManager.withDatabase {
                 val dao = vaultEntryDao()
-                val entity = dao.getEntryById(entry.id) ?: return@withDatabase
-                val updated = entity.toDomain(fieldEncryptor).copy(
-                    usageCount = entry.usageCount + 1,
+                val entity = dao.getEntryById(entryId) ?: return@withDatabase
+                val domain = entity.toDomain(fieldEncryptor)
+                val updated = domain.copy(
+                    usageCount = domain.usageCount + 1,
                     lastUsedAt = System.currentTimeMillis()
                 )
                 dao.update(updated.toEntity(fieldEncryptor))

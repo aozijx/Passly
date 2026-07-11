@@ -49,6 +49,12 @@
     <string name="autofill_match_app">App match</string>
     <string name="autofill_match_domain">Domain match</string>
     <string name="autofill_match_unknown">Candidate</string>
+    <string name="autofill_prompt_title">Use Passly to Autofill</string>
+    <string name="select">Select</string>
+    <plurals name="autofill_trigger_count">
+        <item quantity="one">%d matching account · Tap to select</item>
+        <item quantity="other">%d matching accounts · Tap to select</item>
+    </plurals>
 
     <!-- Autofill title generation -->
     <string name="autofill_title_app_fallback">App</string>

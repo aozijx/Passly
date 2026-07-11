@@ -7,14 +7,9 @@ import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.core.autofill.model.toVaultEntry
-import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.AutofillUiMode
-import com.aozijx.passly.domain.model.CredentialCandidate
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.MatchType
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.service.autofill.framework.parser.ParsedStructure
 import com.aozijx.passly.ui.features.autofill.framework.AutofillFillActivity
 import com.aozijx.passly.ui.features.autofill.framework.AutofillRemoteViewFactory
@@ -58,16 +53,16 @@ internal object LegacyResponseFactory {
                 presentation
             )
         } else {
-            response.candidates.forEach { entry ->
+            response.candidates.forEach { candidate ->
                 val presentation = AutofillRemoteViewFactory.createDatasetItem(
                     context = context,
-                    entry = entry.toVaultEntry(),
-                    subtitle = entry.subtitle,
-                    badge = "",
+                    candidate = candidate,
+                    subtitle = candidate.subtitle,
+                    badge = buildBadge(candidate),
                 )
-                val intent = createFillIntent(context, entry, parsed, uiMode)
+                val intent = createFillIntent(context, candidate, parsed, uiMode)
                 val pi = PendingIntent.getActivity(
-                    context, entry.candidateId.hashCode(), intent,
+                    context, candidate.candidateId.hashCode(), intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 val dsBuilder = Dataset.Builder().setAuthentication(pi.intentSender)
@@ -86,7 +81,7 @@ internal object LegacyResponseFactory {
 
     fun buildPostUnlockFillResponse(
         context: Context,
-        candidates: List<CredentialCandidate>,
+        candidates: List<ResolvedCandidate>,
         usernameId: android.view.autofill.AutofillId?,
         passwordId: android.view.autofill.AutofillId?,
         otpId: android.view.autofill.AutofillId?,
@@ -95,26 +90,21 @@ internal object LegacyResponseFactory {
         var datasetCount = 0
 
         candidates.forEach { candidate ->
-            val entry = candidate.entry
-            val subtitle = buildSubtitle(entry)
+            val subtitle = buildSubtitle(candidate)
             val badge = buildBadge(candidate)
             val presentation = AutofillRemoteViewFactory.createDatasetItem(
-                context = context, entry = entry, subtitle = subtitle, badge = badge
+                context = context, candidate = candidate, subtitle = subtitle, badge = badge
             )
 
-            val basicCred = getBasicCredentials(entry)
+            val basicCred = getBasicCredentials(candidate)
             if (basicCred != null) {
-                val totpCode = if (otpId != null && entry.totpSecret?.isNotBlank() == true) {
-                    TwoFAUtils.generateCurrentTotpFromEntry(entry)
-                } else null
-
                 val dataset = LegacyDatasetFactory.createFillDataset(
                     usernameId = usernameId,
                     passwordId = passwordId,
                     otpId = otpId,
                     username = basicCred.username,
                     password = basicCred.password,
-                    totpCode = totpCode,
+                    totpCode = candidate.totpCode,
                     presentation = presentation
                 )
                 if (dataset != null) {
@@ -127,33 +117,21 @@ internal object LegacyResponseFactory {
         return if (datasetCount > 0) builder.build() else null
     }
 
-    // ── 辅助方法 ──
-
-    fun getBasicCredentials(entry: VaultEntry): BasicCredentials? {
-        val username = entry.username
-        val password = entry.password
-        if (username.isBlank() && password.isBlank()) return null
-        return BasicCredentials(username, password)
+    fun getBasicCredentials(candidate: ResolvedCandidate): BasicCredentials? {
+        if (candidate.username.isBlank() && candidate.password.isBlank()) return null
+        return BasicCredentials(candidate.username, candidate.password)
     }
 
-    private fun buildSubtitle(entry: VaultEntry): String {
-        val strategy = runCatching {
-            EntryTypeStrategyFactory.getStrategy(EntryType.fromValue(entry.entryType))
-        }.getOrNull()
-
-        val strategySummary = strategy
-            ?.let { runCatching { it.extractSummary(entry) }.getOrDefault("") }
-            .orEmpty()
-
+    private fun buildSubtitle(candidate: ResolvedCandidate): String {
         val infoParts = mutableListOf<String>()
-        if (entry.username.isNotBlank()) infoParts += entry.username
-        if (strategySummary.isNotBlank()) infoParts += strategySummary
-        if (infoParts.isEmpty()) infoParts += EntryType.fromValue(entry.entryType).displayName
+        if (candidate.username.isNotBlank()) infoParts += candidate.username
+        val displayType = EntryType.fromValue(candidate.entryType).displayName
+        if (infoParts.isEmpty()) infoParts += displayType
         val joined = infoParts.joinToString(" · ")
-        return if (!entry.totpSecret.isNullOrBlank()) "OTP · $joined" else joined
+        return if (candidate.totpCode != null) "OTP · $joined" else joined
     }
 
-    private fun buildBadge(candidate: CredentialCandidate): String {
+    private fun buildBadge(candidate: ResolvedCandidate): String {
         return when (candidate.matchedBy) {
             MatchType.PACKAGE_NAME -> candidate.matchedPackage ?: ""
             MatchType.WEB_DOMAIN -> candidate.matchedDomain ?: ""
@@ -177,11 +155,11 @@ internal object LegacyResponseFactory {
 
     private fun createFillIntent(
         context: Context,
-        entry: ResolvedCandidate,
+        candidate: ResolvedCandidate,
         parsed: ParsedStructure,
         uiMode: AutofillUiMode
     ): Intent = Intent(context, AutofillFillActivity::class.java).apply {
-        putExtra("vault_item_id", entry.candidateId)
+        putExtra("vault_item_id", candidate.candidateId)
         putExtra("username_id", parsed.usernameId)
         putExtra("password_id", parsed.passwordId)
         putExtra("otp_id", parsed.otpId)

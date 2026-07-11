@@ -49,6 +49,11 @@
     <string name="autofill_match_app">アプリ一致</string>
     <string name="autofill_match_domain">ドメイン一致</string>
     <string name="autofill_match_unknown">候補</string>
+    <string name="autofill_prompt_title">Passly で自動入力</string>
+    <string name="select">選択</string>
+    <plurals name="autofill_trigger_count">
+        <item quantity="other">%d 件のアカウント · タップして選択</item>
+    </plurals>
 
     <!-- 自動入力タイトル生成 -->
     <string name="autofill_title_app_fallback">アプリ</string>
