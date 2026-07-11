@@ -1,5 +1,6 @@
 package com.aozijx.passly.data.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -13,6 +14,7 @@ import java.io.Serializable
 data class VaultEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val entryType: Int = 0,
-    val encryptedBlob: String,
+    @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
+    val encryptedBlob: ByteArray,
     val updatedAt: Long = System.currentTimeMillis()
 ) : Serializable

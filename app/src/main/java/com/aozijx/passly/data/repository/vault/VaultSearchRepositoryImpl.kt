@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.mapper.toSummary
 import com.aozijx.passly.domain.model.VaultSummary
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository.EntryFilter
+import com.aozijx.passly.security.crypto.FieldEncryptor
 import com.aozijx.passly.security.crypto.LockState
 import com.aozijx.passly.security.crypto.VaultLockManager
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +22,8 @@ import javax.inject.Singleton
 @Singleton
 class VaultSearchRepositoryImpl @Inject constructor(
     private val sessionManager: DatabaseSessionManager,
-    private val lockManager: VaultLockManager
+    private val lockManager: VaultLockManager,
+    private val fieldEncryptor: FieldEncryptor
 ) : VaultSearchRepository {
 
     private companion object {
@@ -36,7 +38,7 @@ class VaultSearchRepositoryImpl @Inject constructor(
             else sessionManager.withDatabase {
                 vaultEntryDao().observeAll()
                     .map { entities ->
-                        entities.map { it.toDomain() }
+                        entities.map { it.toDomain(fieldEncryptor) }
                             .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }
                             .distinct()
                     }
@@ -63,7 +65,7 @@ class VaultSearchRepositoryImpl @Inject constructor(
                 }
                 entryFlow
                     .map { entities ->
-                        entities.map { it.toDomain() }
+                        entities.map { it.toDomain(fieldEncryptor) }
                             .filter { entry ->
                                 (query.isEmpty() || entry.title.contains(
                                     query,
@@ -121,7 +123,7 @@ class VaultSearchRepositoryImpl @Inject constructor(
                     }
                     entryFlow
                         .map { entities ->
-                            entities.map { it.toDomain() }
+                            entities.map { it.toDomain(fieldEncryptor) }
                                 .filter { entry ->
                                     when (filter) {
                                         EntryFilter.ALL -> true

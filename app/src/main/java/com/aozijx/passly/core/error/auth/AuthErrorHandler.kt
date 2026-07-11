@@ -20,7 +20,8 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthErrorHandler @Inject constructor(
-    private val dekManager: DekManager
+    private val dekManager: DekManager,
+    private val sessionManager: SessionManager
 ) {
     private companion object {
         private const val TAG = "AuthErrorHandler"
@@ -159,7 +160,7 @@ class AuthErrorHandler @Inject constructor(
     suspend fun cleanupSensitiveState() {
         try {
             dekManager.lock()
-            SessionManager.clearSessionKey()
+            sessionManager.clearSessionKey()
             Logcat.i(TAG, "Sensitive state cleared")
         } catch (e: Exception) {
             Logcat.e(TAG, "Failed to clear sensitive state", e)

@@ -5,17 +5,23 @@ import com.aozijx.passly.security.crypto.FieldEncryptor
 
 internal object BackupFieldEncryptor {
 
-    fun toExportPayload(entity: VaultEntryEntity, iconPathForBackup: String?): VaultPayload {
-        val json = FieldEncryptor.decrypt(entity.encryptedBlob)
+    fun toExportPayload(
+        entity: VaultEntryEntity,
+        iconPathForBackup: String?,
+        fieldEncryptor: FieldEncryptor
+    ): VaultPayload {
+        val json = fieldEncryptor.decrypt(entity.encryptedBlob)
         val payload = VaultPayload.fromJson(json)
         return if (iconPathForBackup != null) payload.copy(iconCustomPath = iconPathForBackup) else payload
     }
 
-    fun toImportEntity(payload: VaultPayload): VaultEntryEntity {
-        val encryptedBlob = FieldEncryptor.encrypt(payload.toJson())
+    fun toImportEntity(
+        payload: VaultPayload,
+        fieldEncryptor: FieldEncryptor
+    ): VaultEntryEntity {
         return VaultEntryEntity(
             entryType = payload.entryType,
-            encryptedBlob = encryptedBlob,
+            encryptedBlob = fieldEncryptor.encrypt(payload.toJson()),
             updatedAt = System.currentTimeMillis()
         )
     }

@@ -3,7 +3,6 @@ package com.aozijx.passly.core.otp
 import android.util.Base64
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.security.crypto.CryptoAccess
 import java.nio.ByteBuffer
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -19,12 +18,10 @@ object TwoFAUtils {
      * 从 VaultEntry 生成当前的 TOTP 验证码
      */
     fun generateCurrentTotpFromEntry(entry: VaultEntry): String? {
-        val secretCiphertext = entry.totpSecret ?: return null
-        if (secretCiphertext.isBlank()) return null
-        
+        val secret = entry.totpSecret ?: return null
+        if (secret.isBlank()) return null
+
         return try {
-            val secret = CryptoAccess.decryptOrNull(secretCiphertext) ?: return null
-            
             generateTotp(
                 secret = secret,
                 digits = entry.totpDigits,

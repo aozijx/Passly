@@ -7,8 +7,8 @@ import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.security.crypto.FieldEncryptor
 
-fun VaultEntryEntity.toDomain(): VaultEntry {
-    val json = FieldEncryptor.decrypt(encryptedBlob)
+fun VaultEntryEntity.toDomain(fieldEncryptor: FieldEncryptor): VaultEntry {
+    val json = fieldEncryptor.decrypt(encryptedBlob)
     val p = VaultPayload.fromJson(json)
     return VaultEntry(
         id = id,
@@ -57,7 +57,7 @@ fun VaultEntryEntity.toDomain(): VaultEntry {
     )
 }
 
-fun VaultEntry.toEntity(): VaultEntryEntity {
+fun VaultEntry.toEntity(fieldEncryptor: FieldEncryptor): VaultEntryEntity {
     val payload = VaultPayload(
         title = title,
         username = username,
@@ -104,7 +104,7 @@ fun VaultEntry.toEntity(): VaultEntryEntity {
     return VaultEntryEntity(
         id = id,
         entryType = entryType,
-        encryptedBlob = FieldEncryptor.encrypt(payload.toJson()),
+        encryptedBlob = fieldEncryptor.encrypt(payload.toJson()),
         updatedAt = updatedAt ?: System.currentTimeMillis()
     )
 }
@@ -132,5 +132,8 @@ fun VaultHistory.toEntity(): VaultHistoryEntity = VaultHistoryEntity(
     changedAt = changedAt
 )
 
-fun List<VaultEntryEntity>.toDomainList(): List<VaultEntry> = map { it.toDomain() }
-fun List<VaultHistoryEntity>.toDomainHistoryList(): List<VaultHistory> = map { it.toDomain() }
+fun List<VaultEntryEntity>.toDomainList(fieldEncryptor: FieldEncryptor): List<VaultEntry> =
+    map { it.toDomain(fieldEncryptor) }
+
+fun List<VaultHistoryEntity>.toDomainHistoryList(): List<VaultHistory> =
+    map { it.toDomain() }

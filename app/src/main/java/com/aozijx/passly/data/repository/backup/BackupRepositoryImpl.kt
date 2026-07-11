@@ -19,6 +19,7 @@ import com.aozijx.passly.data.repository.vault.internal.failIfLocked
 import com.aozijx.passly.domain.model.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.security.crypto.CryptoEngine
+import com.aozijx.passly.security.crypto.FieldEncryptor
 import com.aozijx.passly.security.crypto.VaultLockManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -43,6 +44,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     private val cryptoEngine: CryptoEngine,
     private val sessionManager: DatabaseSessionManager,
     private val lockManager: VaultLockManager,
+    private val fieldEncryptor: FieldEncryptor,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
 
@@ -57,7 +59,9 @@ internal class BackupRepositoryImpl @Inject constructor(
                 val entities = sessionManager.withDatabase {
                     vaultEntryDao().getAll()
                 }
-                val exportPayloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
+                val exportPayloads = entities.map {
+                    BackupFieldEncryptor.toExportPayload(it, null, fieldEncryptor)
+                }
 
                 val salt = generateSalt()
                 val key = deriveKeyArgon2id(password, salt)
@@ -93,7 +97,9 @@ internal class BackupRepositoryImpl @Inject constructor(
                 val entities = sessionManager.withDatabase {
                     vaultEntryDao().getAll()
                 }
-                val payloads = entities.map { BackupFieldEncryptor.toExportPayload(it, null) }
+                val payloads = entities.map {
+                    BackupFieldEncryptor.toExportPayload(it, null, fieldEncryptor)
+                }
 
                 context.contentResolver.openOutputStream(uri.toUri())?.use {
                     BackupVSerializer.writeEntries(it, payloads)
@@ -204,7 +210,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                         vaultEntryDao().deleteAll()
                     }
                     payloads.forEach { payload ->
-                        val entity = BackupFieldEncryptor.toImportEntity(payload)
+                        val entity = BackupFieldEncryptor.toImportEntity(payload, fieldEncryptor)
                         vaultEntryDao().insert(entity)
                     }
                 }
@@ -231,7 +237,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                     vaultEntryDao().deleteAll()
                 }
                 payloads.forEach { payload ->
-                    val entity = BackupFieldEncryptor.toImportEntity(payload)
+                    val entity = BackupFieldEncryptor.toImportEntity(payload, fieldEncryptor)
                     vaultEntryDao().insert(entity)
                 }
             }
@@ -254,7 +260,8 @@ internal class BackupRepositoryImpl @Inject constructor(
                                 vaultEntryDao().deleteAll()
                             }
                             payloads.forEach { payload ->
-                                val entity = BackupFieldEncryptor.toImportEntity(payload)
+                                val entity =
+                                    BackupFieldEncryptor.toImportEntity(payload, fieldEncryptor)
                                 vaultEntryDao().insert(entity)
                             }
                         }

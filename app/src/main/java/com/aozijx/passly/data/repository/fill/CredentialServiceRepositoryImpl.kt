@@ -3,12 +3,13 @@ package com.aozijx.passly.data.repository.fill
 import com.aozijx.passly.data.local.DatabaseSessionManager
 import com.aozijx.passly.data.mapper.toDomain
 import com.aozijx.passly.data.mapper.toEntity
-import com.aozijx.passly.domain.autofill.AutofillConfiguration
+import com.aozijx.passly.data.repository.vault.internal.ifLockedReturn
 import com.aozijx.passly.domain.model.CredentialCandidate
 import com.aozijx.passly.domain.model.EntryType
 import com.aozijx.passly.domain.model.MatchType
 import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.repository.CredentialRepository
+import com.aozijx.passly.security.crypto.FieldEncryptor
 import com.aozijx.passly.security.crypto.VaultLockManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -25,7 +26,64 @@ import javax.inject.Singleton
 class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: DatabaseSessionManager,
     private val lockManager: VaultLockManager,
+    private val fieldEncryptor: FieldEncryptor
 ) : CredentialRepository {
+
+    override fun search(
+        packageName: String?,
+        webDomain: String?
+    ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
+        lockManager.ifLockedReturn { return@runBlocking emptyList() }
+        sessionManager.withDatabase {
+            vaultEntryDao().getAll().map { it.toDomain(fieldEncryptor) }
+                .filter { it.entryType == EntryType.PASSWORD.value }
+                .map { entry ->
+                    CredentialCandidate(
+                        entry = entry,
+                        score = MatchType.UNKNOWN.score,
+                        matchedBy = MatchType.UNKNOWN,
+                        matchedDomain = entry.associatedDomain,
+                        matchedPackage = entry.associatedAppPackage
+                    )
+                }
+        }
+    }
+
+    override fun getById(entryId: Int): VaultEntry? = runBlocking(Dispatchers.IO) {
+        lockManager.ifLockedReturn { return@runBlocking null }
+        sessionManager.withDatabase {
+            vaultEntryDao().getEntryById(entryId)?.toDomain(fieldEncryptor)
+        }
+    }
+
+    override fun getByIds(entryIds: List<Int>): List<VaultEntry> =
+        runBlocking(Dispatchers.IO) {
+            lockManager.ifLockedReturn { return@runBlocking emptyList() }
+            sessionManager.withDatabase {
+                vaultEntryDao().getEntriesByIds(entryIds).map { it.toDomain(fieldEncryptor) }
+            }
+        }
+
+    override fun decrypt(entry: VaultEntry): VaultEntry? {
+        // BLOB 已在 toDomain() 中解密，所有字段均为明文
+        if (entry.password.isEmpty() && entry.username.isEmpty()) return null
+        return entry
+    }
+
+    override fun updateLastUsed(entry: VaultEntry) {
+        runBlocking(Dispatchers.IO) {
+            lockManager.ifLockedReturn { return@runBlocking }
+            sessionManager.withDatabase {
+                val dao = vaultEntryDao()
+                val entity = dao.getEntryById(entry.id) ?: return@withDatabase
+                val updated = entity.toDomain(fieldEncryptor).copy(
+                    usageCount = entry.usageCount + 1,
+                    lastUsedAt = System.currentTimeMillis()
+                )
+                dao.update(updated.toEntity(fieldEncryptor))
+            }
+        }
+    }
 
     override fun save(
         packageName: String?,
@@ -34,137 +92,36 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         usernameValue: String,
         passwordValue: String
     ): Boolean = runBlocking(Dispatchers.IO) {
-        if (lockManager.isLocked()) return@runBlocking false
-        try {
-            sessionManager.withDatabase<Unit> {
-                val dao = vaultEntryDao()
-                val existing = if (usernameValue.isNotBlank()) {
-                    dao.getAll().firstOrNull { it.toDomain().username == usernameValue }
-                } else null
-
-                if (existing != null) {
-                    val domain = existing.toDomain()
-                    val updated = domain.copy(
-                        password = passwordValue,
-                        updatedAt = System.currentTimeMillis(),
-                    ).toEntity()
-                    dao.update(updated)
-                } else {
-                    val entry = VaultEntry(
-                        title = pageTitle ?: webDomain ?: packageName ?: "Unknown",
-                        username = usernameValue,
+        lockManager.ifLockedReturn { return@runBlocking false }
+        sessionManager.withDatabase {
+            val dao = vaultEntryDao()
+            val existing = dao.getAll().firstOrNull {
+                it.toDomain(fieldEncryptor).username == usernameValue
+            }
+            if (existing != null) {
+                val domain = existing.toDomain(fieldEncryptor)
+                dao.update(
+                    domain.copy(
                         password = passwordValue,
                         associatedAppPackage = packageName,
                         associatedDomain = webDomain,
-                        entryType = EntryType.PASSWORD.value,
-                        category = "",
-                        createdAt = System.currentTimeMillis(),
-                        updatedAt = System.currentTimeMillis(),
-                    ).toEntity()
-                    dao.insert(entry)
-                }
-            }
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    override fun decrypt(entry: VaultEntry): VaultEntry? {
-        if (lockManager.isLocked()) return null
-        return entry
-    }
-
-    override fun search(
-        packageName: String?,
-        webDomain: String?
-    ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
-        if (lockManager.isLocked()) return@runBlocking emptyList()
-
-        val allEntries = sessionManager.withDatabase {
-            vaultEntryDao().getAll().map { it.toDomain() }
-                .filter {
-                    it.entryType == EntryType.PASSWORD.value &&
-                            AutofillConfiguration.isAutofillSupported(EntryType.fromValue(it.entryType))
-                }
-        }
-
-        if (allEntries.isEmpty()) return@runBlocking emptyList()
-
-        val normalizedDomain = webDomain?.lowercase()?.trim('/')
-
-        val candidates = allEntries.mapNotNull { entry ->
-            val entryDomain = entry.associatedDomain?.lowercase()?.trim('/')
-
-            val matchInfo = when {
-                packageName != null && entry.associatedAppPackage == packageName -> {
-                    val domain =
-                        if (!normalizedDomain.isNullOrBlank() && entryDomain == normalizedDomain) {
-                            normalizedDomain
-                        } else null
-                    Triple(MatchType.PACKAGE_NAME, domain, packageName)
-                }
-
-                !normalizedDomain.isNullOrBlank() && entryDomain == normalizedDomain -> {
-                    Triple(MatchType.WEB_DOMAIN, normalizedDomain, null)
-                }
-
-                else -> null
-            }
-
-            if (matchInfo != null) {
-                val (matchedBy, matchedDomain, matchedPackage) = matchInfo
-                CredentialCandidate(
-                    entry = entry,
-                    score = matchedBy.score,
-                    matchedBy = matchedBy,
-                    matchedDomain = matchedDomain,
-                    matchedPackage = matchedPackage,
+                        title = pageTitle ?: usernameValue
+                    ).toEntity(fieldEncryptor)
                 )
             } else {
-                null
+                dao.insert(
+                    VaultEntry(
+                        title = pageTitle ?: usernameValue,
+                        username = usernameValue,
+                        password = passwordValue,
+                        category = "",
+                        entryType = EntryType.PASSWORD.value,
+                        associatedAppPackage = packageName,
+                        associatedDomain = webDomain
+                    ).toEntity(fieldEncryptor)
+                )
             }
         }
-            .filter { it.matchedBy != MatchType.UNKNOWN }
-            .sortedWith(AutofillConfiguration::compareCandidates)
-            .take(AutofillConfiguration.MAX_CANDIDATES)
-
-        candidates
-    }
-
-    override fun getById(entryId: Int): VaultEntry? {
-        if (lockManager.isLocked()) return null
-        val entity = runBlocking(Dispatchers.IO) {
-            sessionManager.withDatabase {
-                vaultEntryDao().getEntryById(entryId)
-            }
-        } ?: return null
-        return entity.toDomain()
-    }
-
-    override fun getByIds(entryIds: List<Int>): List<VaultEntry> {
-        if (lockManager.isLocked()) return emptyList()
-        return runBlocking(Dispatchers.IO) {
-            sessionManager.withDatabase {
-                vaultEntryDao().getEntriesByIds(entryIds).map { it.toDomain() }
-            }
-        }
-    }
-
-    override fun updateLastUsed(entry: VaultEntry) {
-        if (lockManager.isLocked()) return
-        runBlocking(Dispatchers.IO) {
-            sessionManager.withDatabase {
-                val dao = vaultEntryDao()
-                val entity = dao.getEntryById(entry.id)
-                if (entity != null) {
-                    val updated = entry.copy(
-                        usageCount = (entity.toDomain().usageCount) + 1,
-                        lastUsedAt = System.currentTimeMillis(),
-                    )
-                    dao.update(updated.toEntity())
-                }
-            }
-        }
+        true
     }
 }

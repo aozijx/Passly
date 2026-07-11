@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "65b89fe27020380b24e4e2243d90c5aa",
+    "identityHash": "22c603b3c525facef826b40a9179e5dd",
     "entities": [
       {
         "tableName": "vault_entries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `entryType` INTEGER NOT NULL, `encryptedBlob` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `entryType` INTEGER NOT NULL, `encryptedBlob` BLOB NOT NULL, `updatedAt` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -23,7 +23,7 @@
           {
             "fieldPath": "encryptedBlob",
             "columnName": "encryptedBlob",
-            "affinity": "TEXT",
+            "affinity": "BLOB",
             "notNull": true
           },
           {
@@ -144,7 +144,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '65b89fe27020380b24e4e2243d90c5aa')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '22c603b3c525facef826b40a9179e5dd')"
     ]
   }
 }

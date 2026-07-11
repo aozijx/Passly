@@ -1,9 +1,10 @@
 package com.aozijx.passly.security.crypto
 
 import com.aozijx.passly.domain.model.AppDefaults
-import com.aozijx.passly.security.crypto.SessionManager.sessionAgeMs
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * 字段级加密会话密钥管理器。
@@ -27,9 +28,12 @@ import javax.crypto.spec.SecretKeySpec
  * - 锁定后内存清零，不可恢复
  * - 最大会话时长由 AppIdleMonitor 管理，本类提供 [sessionAgeMs] 用于审计
  */
-object SessionManager {
+@Singleton
+class SessionManager @Inject constructor() {
     /** 默认最大会话时长（5 分钟），由 AppIdleMonitor 实际管控 */
-    const val DEFAULT_MAX_SESSION_MS: Long = 5 * 60 * 1000L
+    companion object {
+        const val DEFAULT_MAX_SESSION_MS: Long = 5 * 60 * 1000L
+    }
 
     private val lock = Any()
 

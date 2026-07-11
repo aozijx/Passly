@@ -64,7 +64,8 @@ sealed interface DekState {
 @Singleton
 class DekManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val envelopeManager: EnvelopeManager
+    private val envelopeManager: EnvelopeManager,
+    private val sessionManager: SessionManager
 ) {
     companion object {
         private const val TAG = "DekManager"
@@ -130,7 +131,7 @@ class DekManager @Inject constructor(
                 wipeCurrentDek()
                 _state = DekState.Unlocked(clonedDek)
                 onUnlocked()
-                SessionManager.deriveAndSet(dek)
+                sessionManager.deriveAndSet(dek)
 
                 Logcat.i(TAG, "Vault initialization complete (${dek.size * 8} bits)")
             } finally {
@@ -156,7 +157,7 @@ class DekManager @Inject constructor(
                 check(envelopeManager.hasAny().not()) { "Vault already initialized" }
 
                 verificationTag.save(dek)
-                SessionManager.deriveAndSet(dek)
+                sessionManager.deriveAndSet(dek)
                 _state = DekState.Unlocked(dek.clone())
                 onUnlocked()
                 Logcat.i(TAG, "DEK bootstrapped with verification tag")
@@ -176,7 +177,7 @@ class DekManager @Inject constructor(
             try {
                 check(_state is DekState.Locked) { "Already unlocked" }
                 verificationTag.verify(dek, envelopeId)
-                SessionManager.deriveAndSet(dek)
+                sessionManager.deriveAndSet(dek)
                 wipeCurrentDek()
                 _state = DekState.Unlocked(dek.clone())
                 onUnlocked()
@@ -235,7 +236,7 @@ class DekManager @Inject constructor(
                 val dek = cipher.doFinal(envelope.dekCiphertext)
                 try {
                     verificationTag.verify(dek, envelope.id)
-                    SessionManager.deriveAndSet(dek)
+                    sessionManager.deriveAndSet(dek)
                     val clonedDek = dek.clone()
                     wipeCurrentDek()
                     _state = DekState.Unlocked(clonedDek)
@@ -280,7 +281,7 @@ class DekManager @Inject constructor(
                     wipeCurrentDek()
                     _state = DekState.Unlocked(clonedDek)
                     onUnlocked()
-                    SessionManager.deriveAndSet(dek)
+                    sessionManager.deriveAndSet(dek)
                     Logcat.i(TAG, "Vault bootstrapped with biometric envelope")
                     UnlockResult.Success
                 } finally {
@@ -340,7 +341,7 @@ class DekManager @Inject constructor(
         // Step 3: 在 mutex 内完成密钥擦除（无论回调成功与否）
         mutex.withLock {
             wipeCurrentDek()
-            SessionManager.clearSessionKey()
+            sessionManager.clearSessionKey()
             _state = DekState.Locked
             Logcat.i(TAG, "Lock completed, DEK cleared from memory")
         }
@@ -368,7 +369,7 @@ class DekManager @Inject constructor(
         // Step 3: 在 mutex 内完成清理
         mutex.withLock {
             wipeCurrentDek()
-            SessionManager.clearSessionKey()
+            sessionManager.clearSessionKey()
             envelopeManager.removeAll()
             verificationTag.delete()
             _state = DekState.Locked
