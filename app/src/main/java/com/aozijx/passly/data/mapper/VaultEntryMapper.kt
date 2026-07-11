@@ -2,6 +2,7 @@ package com.aozijx.passly.data.mapper
 
 import com.aozijx.passly.data.entity.VaultEntryEntity
 import com.aozijx.passly.data.entity.VaultHistoryEntity
+import com.aozijx.passly.data.local.DatabaseConfig
 import com.aozijx.passly.data.repository.backup.internal.VaultPayload
 import com.aozijx.passly.data.repository.backup.internal.toVaultEntry
 import com.aozijx.passly.data.repository.backup.internal.toVaultPayload
@@ -9,8 +10,18 @@ import com.aozijx.passly.domain.model.VaultEntry
 import com.aozijx.passly.domain.model.VaultHistory
 import com.aozijx.passly.security.crypto.FieldEncryptor
 
+/** AAD 绑定格式: table:uuid:column，确保密文黏性绑定到特定数据库单元格 */
+private fun aad(table: String, uuid: String, column: String): ByteArray =
+    "${table}:${uuid}:${column}".toByteArray(Charsets.UTF_8)
+
+private fun aadOrNull(table: String, uuid: String, column: String): ByteArray? =
+    if (uuid.isNotEmpty()) aad(table, uuid, column) else null
+
 fun VaultEntryEntity.toDomain(fieldEncryptor: FieldEncryptor): VaultEntry {
-    val json = fieldEncryptor.decrypt(encryptedBlob)
+    val json = fieldEncryptor.decrypt(
+        encryptedBlob,
+        aadOrNull(DatabaseConfig.TABLE_ENTRIES, uuid, "encryptedBlob")
+    )
     val p = VaultPayload.fromJson(json)
     return p.toVaultEntry(id = id, updatedAt = updatedAt)
 }
@@ -20,7 +31,11 @@ fun VaultEntry.toEntity(fieldEncryptor: FieldEncryptor): VaultEntryEntity {
     return VaultEntryEntity(
         id = id,
         entryType = entryType,
-        encryptedBlob = fieldEncryptor.encrypt(payload.toJson()),
+        uuid = payload.uuid,
+        encryptedBlob = fieldEncryptor.encrypt(
+            payload.toJson(),
+            aad(DatabaseConfig.TABLE_ENTRIES, payload.uuid, "encryptedBlob")
+        ),
         updatedAt = updatedAt ?: System.currentTimeMillis()
     )
 }

@@ -53,6 +53,7 @@ data class VaultEntry(
 
     val favorite: Boolean = false,
     val tags: List<String>? = null,
+    val uuid: String? = null,
     val createdAt: Long? = System.currentTimeMillis(),
     val updatedAt: Long? = null,
     val expiresAt: Long? = null

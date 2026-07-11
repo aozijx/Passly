@@ -14,6 +14,8 @@ import java.io.Serializable
 data class VaultEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val entryType: Int = 0,
+    /** 记录级唯一标识，用于 AES-GCM AAD 绑定，防止密文跨记录替换 */
+    val uuid: String = "",
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val encryptedBlob: ByteArray,
     val updatedAt: Long = System.currentTimeMillis()

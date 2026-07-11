@@ -17,6 +17,11 @@ import javax.inject.Singleton
  * - [encrypt]: String → ByteArray（IV + ciphertext，无 Base64，直接存 BLOB）
  * - [decrypt]: ByteArray → String（从 BLOB 读取后解密为明文）
  *
+ * ## AAD（Additional Authenticated Data）
+ * - [aad] 参数绑定 Entry UUID，防止密文跨记录替换攻击
+ * - 加密/解密时 AAD 必须一致，否则 GCM Tag 验证失败
+ * - 调用方（如 CryptoAccess）可传 null 表示无 AAD
+ *
  * ## 安全注意事项
  * - String 不可变，明文在 GC 前无法彻底擦除；尽量缩短 String 生命周期
  * - SecretKeySpec 内部会复制 key，wipe 原始 key 不影响 SecretKeySpec 内部的副本（JVM 限制）
@@ -26,12 +31,14 @@ import javax.inject.Singleton
 class FieldEncryptor @Inject constructor(
     private val sessionManager: SessionManager
 ) {
-    fun encrypt(data: String): ByteArray {
+    fun encrypt(data: String, aad: ByteArray? = null): ByteArray {
         val key = sessionManager.getSessionKey()
         return try {
             val secretKey = SecretKeySpec(key, AppDefaults.Crypto.AES_KEY_ALGORITHM)
             val cipher = Cipher.getInstance(AppDefaults.Crypto.ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+
+            aad?.let { cipher.updateAAD(it) }
 
             val plaintext = data.toByteArray(Charsets.UTF_8)
             val encrypted = cipher.doFinal(plaintext)
@@ -53,7 +60,7 @@ class FieldEncryptor @Inject constructor(
         }
     }
 
-    fun decrypt(encryptedData: ByteArray): String {
+    fun decrypt(encryptedData: ByteArray, aad: ByteArray? = null): String {
         val key = sessionManager.getSessionKey()
         return try {
             val secretKey = SecretKeySpec(key, AppDefaults.Crypto.AES_KEY_ALGORITHM)
@@ -71,6 +78,8 @@ class FieldEncryptor @Inject constructor(
                 GCMParameterSpec(AppDefaults.Crypto.GCM_TAG_BITS, iv)
             )
 
+            aad?.let { cipher.updateAAD(it) }
+
             try {
                 val decrypted = cipher.doFinal(encrypted)
                 val result = String(decrypted, Charsets.UTF_8)
@@ -81,7 +90,7 @@ class FieldEncryptor @Inject constructor(
                 // Tag 验证失败：数据库可能损坏，或密钥不匹配
                 MemoryCleaner.wipeByteArray(iv)
                 throw CryptoException.TagVerificationFailed(
-                    "GCM 认证标签验证失败：数据可能已损坏或密钥不匹配", e
+                    "GCM 认证标签验证失败：数据可能已损坏或密钥不匹配（AAD 不一致也会触发）", e
                 )
             }
         } finally {
