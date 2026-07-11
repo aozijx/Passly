@@ -2,16 +2,15 @@ package com.aozijx.passly.ui.features.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.VerificationGateway
 import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.ui.toUiMessage
-import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.security.SecuritySettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.system.SystemSettingsUseCases
 import com.aozijx.passly.ui.features.main.contract.MainEffect
 import com.aozijx.passly.ui.features.main.contract.MainIntent
 import com.aozijx.passly.ui.features.main.contract.MainUiState
-import com.aozijx.passly.ui.features.verification.VerificationGatewayImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,14 +27,9 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val systemSettingsUseCases: SystemSettingsUseCases,
     private val securitySettingsUseCases: SecuritySettingsUseCases,
-    private val authUseCases: AuthUseCases,
+    private val authGateway: VerificationGateway,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases
 ) : ViewModel() {
-
-    private val authGateway = VerificationGatewayImpl(
-        scope = viewModelScope,
-        authUseCases = authUseCases
-    )
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()

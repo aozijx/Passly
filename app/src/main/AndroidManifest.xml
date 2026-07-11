@@ -46,15 +46,35 @@
         </activity>
 
         <activity
-            android:name=".service.autofill.AutofillAuthActivity"
+            android:name=".ui.features.autofill.framework.AutofillFillActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="standard"
             android:noHistory="true"
             android:theme="@style/Theme.Passly.TransparentAuth" />
 
+        <!-- Phase 2: Credential Provider 凭据选择响应 Activity -->
+        <activity
+            android:name=".ui.features.autofill.credential.CredentialResponseActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="standard"
+            android:noHistory="true"
+            android:theme="@style/Theme.Passly.TransparentAuth"
+            tools:targetApi="34">
+            <intent-filter>
+                <action android:name="com.aozijx.passly.ACTION_GET_PASSWORD" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.aozijx.passly.ACTION_GET_PASSKEY" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.aozijx.passly.ACTION_CREDENTIAL_UNLOCK" />
+            </intent-filter>
+        </activity>
+
         <service
-            android:name=".service.autofill.AutofillService"
+            android:name=".service.autofill.framework.LegacyAutofillService"
             android:exported="true"
             android:label="@string/autofill_service_name"
             android:permission="android.permission.BIND_AUTOFILL_SERVICE">
@@ -66,12 +86,28 @@
                 android:resource="@xml/autofill_service_config" />
         </service>
 
-        <!-- 修复：声明前台服务类型为 dataSync -->
+        <!-- API 34+ CredentialProviderService，默认关闭，由 Application 动态启用 -->
+        <service
+            android:name=".service.autofill.credential.ModernCredentialService"
+            android:enabled="false"
+            android:exported="true"
+            android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
+            tools:targetApi="34">
+            <intent-filter>
+                <action android:name="android.service.credentials.CredentialProviderService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.credentials.provider"
+                android:resource="@xml/credential_service_config" />
+        </service>
+
+        <!-- 声明前台服务类型为 dataSync -->
         <service
             android:name=".service.backup.BackupImportIconSyncForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- 支持 Android 13（API 33）及以上系统的“按应用语言偏好”（Per-App Language）功能。-->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"

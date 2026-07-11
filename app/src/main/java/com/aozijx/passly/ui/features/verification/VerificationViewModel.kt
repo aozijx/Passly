@@ -1,11 +1,10 @@
 package com.aozijx.passly.ui.features.verification
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.auth.VerificationGateway
 import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.ui.toUiMessage
-import com.aozijx.passly.domain.usecase.auth.AuthUseCases
 import com.aozijx.passly.security.crypto.MemoryCleaner
 import com.aozijx.passly.security.crypto.SecureString
 import com.aozijx.passly.ui.features.verification.contract.VerificationUiState
@@ -21,10 +20,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class VerificationViewModel @Inject constructor(
-    authUseCases: AuthUseCases
+    private val gateway: VerificationGateway
 ) : ViewModel() {
-
-    private val gateway = VerificationGatewayImpl(viewModelScope, authUseCases)
 
     val isAppPasswordEnabled: StateFlow<Boolean> = gateway.isAppPasswordEnabled
 

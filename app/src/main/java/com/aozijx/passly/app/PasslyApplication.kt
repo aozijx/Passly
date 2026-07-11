@@ -3,7 +3,10 @@ package com.aozijx.passly.app
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
+import android.content.ComponentName
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.view.MotionEvent
@@ -92,6 +95,55 @@ class PasslyApplication : Application() {
 
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
         registerGlobalTouchListener()
+        configureAutofillServices()
+    }
+
+    /**
+     * 双轨切换：根据 API 级别动态启用/禁用填充服务。
+     *
+     * - API >= 34：禁用 LegacyAutofillService，启用 ModernCredentialService
+     * - API <  34：启用 LegacyAutofillService（ModernCredentialService 默认 disabled，无需处理）
+     *
+     * 使用 PackageManager.setComponentEnabledSetting 而非硬编码 enabled="true"，
+     * 避免在低版本设备上触发 NoClassDefFoundError。
+     */
+    private fun configureAutofillServices() {
+        val pm = packageManager
+        val legacyComponent = ComponentName(
+            this,
+            "${BuildConfig.APPLICATION_ID}.service.autofill.LegacyAutofillService"
+        )
+        val modernComponent = ComponentName(
+            this,
+            "${BuildConfig.APPLICATION_ID}.service.credential.ModernCredentialService"
+        )
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // API 34+：启用 Modern，禁用 Legacy
+                pm.setComponentEnabledSetting(
+                    modernComponent,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+                pm.setComponentEnabledSetting(
+                    legacyComponent,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+                Logcat.i("PasslyApplication", "Autofill: ModernCredentialService enabled (API 34+)")
+            } else {
+                // API 31-33：启用 Legacy
+                pm.setComponentEnabledSetting(
+                    legacyComponent,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+                Logcat.i("PasslyApplication", "Autofill: LegacyAutofillService enabled (API < 34)")
+            }
+        } catch (e: Exception) {
+            Logcat.e("PasslyApplication", "Failed to configure autofill services", e)
+        }
     }
 
     /** 监听所有 Activity 创建，注入全局触摸监听，确保所有页面的交互都能重置空闲计时器 */

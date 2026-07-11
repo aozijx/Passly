@@ -1,6 +1,7 @@
-package com.aozijx.passly.service.autofill.presenter
+package com.aozijx.passly.ui.features.autofill.framework
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.widget.RemoteViews
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.VaultEntry
@@ -45,7 +46,7 @@ object AutofillRemoteViewFactory {
     fun createSaveDescription(
         context: Context,
         appLabel: String,
-        iconBitmap: android.graphics.Bitmap
+        iconBitmap: Bitmap
     ): RemoteViews {
         val saveTitle = context.getString(R.string.autofill_save_prompt_title, appLabel)
         val saveDescription = context.getString(R.string.autofill_save_prompt_description, appLabel)

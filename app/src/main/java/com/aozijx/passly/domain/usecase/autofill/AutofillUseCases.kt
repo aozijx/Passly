@@ -1,32 +1,33 @@
 package com.aozijx.passly.domain.usecase.autofill
 
-import com.aozijx.passly.domain.model.AutofillCandidate
+import com.aozijx.passly.domain.model.CredentialCandidate
 import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.repository.vault.VaultAutofillRepository
+import com.aozijx.passly.domain.repository.CredentialRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AutofillUseCases @Inject constructor(private val repository: VaultAutofillRepository) {
+class AutofillUseCases @Inject constructor(private val repository: CredentialRepository) {
 
-    suspend fun updateUsageStats(entry: VaultEntry) = repository.updateUsageStats(entry)
-
-    suspend fun getEntryById(entryId: Int): VaultEntry? = repository.getEntryById(entryId)
-
-    suspend fun getEntriesByIds(entryIds: List<Int>): List<VaultEntry> =
-        repository.getEntriesByIds(entryIds)
-
-    suspend fun findMatchingCandidates(
+    fun search(
         packageName: String?, webDomain: String?
-    ): List<AutofillCandidate> = repository.findMatchingCandidates(packageName, webDomain)
+    ): List<CredentialCandidate> = repository.search(packageName, webDomain)
 
-    suspend fun saveOrUpdateEntry(
+    fun getById(entryId: Int): VaultEntry? = repository.getById(entryId)
+
+    fun getByIds(entryIds: List<Int>): List<VaultEntry> = repository.getByIds(entryIds)
+
+    fun decrypt(entry: VaultEntry): VaultEntry? = repository.decrypt(entry)
+
+    fun updateLastUsed(entry: VaultEntry) = repository.updateLastUsed(entry)
+
+    fun save(
         packageName: String?,
         webDomain: String?,
         pageTitle: String?,
         usernameValue: String,
         passwordValue: String
-    ): Boolean = repository.saveOrUpdateEntry(
+    ): Boolean = repository.save(
         packageName,
         webDomain,
         pageTitle,

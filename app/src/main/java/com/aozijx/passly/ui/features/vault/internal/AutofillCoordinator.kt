@@ -17,7 +17,8 @@ internal class AutofillCoordinator {
         private set
 
     private companion object {
-        const val AUTOFILL_SERVICE_CLASS = "com.aozijx.passly.service.autofill.AutofillService"
+        const val AUTOFILL_SERVICE_CLASS =
+            "com.aozijx.passly.service.autofill.LegacyAutofillService"
     }
 
     fun refreshStatus(context: Context) {

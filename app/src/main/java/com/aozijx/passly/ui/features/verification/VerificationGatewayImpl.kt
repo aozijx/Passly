@@ -11,8 +11,19 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class VerificationGatewayImpl(
+/**
+ * 认证网关单例实现。
+ *
+ * 使用 Application 级别的 CoroutineScope（由 DI 提供），
+ * 确保 isAuthorized 等核心状态在整个应用中同步。
+ * 调用方（ViewModel）通过协程回调或直接调用与网关交互，
+ * 不直接将 ViewModel 生命周期绑定到网关。
+ */
+@Singleton
+class VerificationGatewayImpl @Inject constructor(
     private val scope: CoroutineScope,
     private val authUseCases: AuthUseCases
 ) : VerificationGateway {
@@ -20,7 +31,7 @@ class VerificationGatewayImpl(
     override val isAppPasswordEnabled: StateFlow<Boolean> = authUseCases.isAppPasswordEnabled
 
     private val _authMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val authMessage: SharedFlow<String> = _authMessage.asSharedFlow()
+    override val authMessage: SharedFlow<String> = _authMessage.asSharedFlow()
 
     override fun verifyWithBiometric(
         launcher: BiometricPromptLauncher,
@@ -75,7 +86,7 @@ class VerificationGatewayImpl(
         launchResult(onResult) { authUseCases.disableAppPassword(password) }
     }
 
-    fun rekeyWithInvalidationPolicy(
+    override fun rekeyWithInvalidationPolicy(
         launcher: BiometricPromptLauncher,
         invalidateOnBiometricChange: Boolean,
         onResult: (AppResult<Unit>) -> Unit
@@ -85,12 +96,13 @@ class VerificationGatewayImpl(
         }
     }
 
-    suspend fun lock() = authUseCases.lock()
-    fun onUserInteraction() = authUseCases.onUserInteraction()
-    suspend fun checkAndLock() = authUseCases.checkAndLock()
-    suspend fun updateLockTimeout(timeoutMs: Long) = authUseCases.updateLockTimeout(timeoutMs)
+    override suspend fun lock() = authUseCases.lock()
+    override fun onUserInteraction() = authUseCases.onUserInteraction()
+    override suspend fun checkAndLock() = authUseCases.checkAndLock()
+    override suspend fun updateLockTimeout(timeoutMs: Long) =
+        authUseCases.updateLockTimeout(timeoutMs)
 
-    suspend fun verifyWithBiometricSuspended(
+    override suspend fun verifyWithBiometricSuspended(
         launcher: BiometricPromptLauncher,
         title: String,
         subtitle: String

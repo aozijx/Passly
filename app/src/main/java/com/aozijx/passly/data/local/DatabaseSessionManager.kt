@@ -80,7 +80,6 @@ class DatabaseSessionManager @Inject constructor(
             .onFailure { error ->
                 Logcat.e(TAG, "Database probe failed", error)
                 db.close()
-                clearSqlCipherFactoryKey()
                 throw error
             }
 
@@ -105,31 +104,13 @@ class DatabaseSessionManager @Inject constructor(
                         .onFailure { e -> Logcat.e(TAG, "Database close error", e) }
                     Logcat.i(TAG, "Database session closed")
                 }
-                clearSqlCipherFactoryKey()
                 database = null
             }
         }
 
         if (closed == null) {
             Logcat.e(TAG, "Database close timed out after $CLOSE_TIMEOUT_MS ms, forcing null")
-            clearSqlCipherFactoryKey()
             database = null
-        }
-    }
-
-    private fun clearSqlCipherFactoryKey() {
-        sqlCipherFactory?.let { factory ->
-            runCatching {
-                val field = factory.javaClass.getDeclaredField("passphrase")
-                field.isAccessible = true
-                val passphrase = field.get(factory) as? ByteArray
-                passphrase?.fill(0)
-                field.set(factory, null)
-                sqlCipherFactory = null
-                Logcat.i(TAG, "SQLCipher factory key cleared")
-            }.onFailure { e ->
-                Logcat.e(TAG, "Failed to clear SQLCipher factory key", e)
-            }
         }
     }
 }

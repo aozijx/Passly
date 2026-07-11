@@ -1,4 +1,4 @@
-package com.aozijx.passly.service.autofill.presenter
+package com.aozijx.passly.ui.features.autofill
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -32,7 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.service.autofill.credential.AutofillCredentialProvider
+import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,7 +93,7 @@ private fun CandidateItem(
     entry: VaultEntry, onClick: () -> Unit
 ) {
     val decryptedUsername = remember(entry) {
-        AutofillCredentialProvider.getBasicCredentials(entry)?.username ?: entry.username
+        LegacyResponseFactory.getBasicCredentials(entry)?.username ?: entry.username
     }
 
     Surface(

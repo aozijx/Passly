@@ -2,8 +2,8 @@ package com.aozijx.passly.core.di
 
 import com.aozijx.passly.core.auth.session.IdleTimeoutSettings
 import com.aozijx.passly.data.repository.auth.AuthRepositoryImpl
-import com.aozijx.passly.data.repository.autofill.AutofillServiceRepositoryImpl
 import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
+import com.aozijx.passly.data.repository.fill.CredentialServiceRepositoryImpl
 import com.aozijx.passly.data.repository.settings.BackupSettingsRepositoryImpl
 import com.aozijx.passly.data.repository.settings.DatabaseLifecycleRepositoryImpl
 import com.aozijx.passly.data.repository.settings.IdleTimeoutSettingsImpl
@@ -15,6 +15,7 @@ import com.aozijx.passly.data.repository.vault.HistoryRepositoryImpl
 import com.aozijx.passly.data.repository.vault.OtpRepositoryImpl
 import com.aozijx.passly.data.repository.vault.VaultRepositoryImpl
 import com.aozijx.passly.data.repository.vault.VaultSearchRepositoryImpl
+import com.aozijx.passly.domain.repository.CredentialRepository
 import com.aozijx.passly.domain.repository.auth.AuthRepository
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
@@ -25,7 +26,6 @@ import com.aozijx.passly.domain.repository.userconfig.UserConfigRepository
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.HistoryRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
-import com.aozijx.passly.domain.repository.vault.VaultAutofillRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.repository.vault.VaultSearchRepository
 import com.aozijx.passly.security.crypto.VaultLockManager
@@ -90,7 +90,7 @@ abstract class DataModuleBinds {
 
     @Binds
     @Singleton
-    abstract fun bindVaultAutofillRepository(impl: AutofillServiceRepositoryImpl): VaultAutofillRepository
+    abstract fun bindAutofillRepository(impl: CredentialServiceRepositoryImpl): CredentialRepository
 
     @Binds
     @Singleton
