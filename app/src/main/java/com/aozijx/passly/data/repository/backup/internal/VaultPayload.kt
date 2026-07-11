@@ -3,7 +3,6 @@ package com.aozijx.passly.data.repository.backup.internal
 import com.aozijx.passly.domain.model.VaultEntry
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.util.UUID
 
 val VaultJson = Json {
     ignoreUnknownKeys = true
@@ -13,7 +12,6 @@ val VaultJson = Json {
 
 @Serializable
 data class VaultPayload(
-    val uuid: String = UUID.randomUUID().toString(),
     val title: String,
     val username: String,
     val password: String,
@@ -76,7 +74,7 @@ data class VaultPayload(
     }
 }
 
-fun VaultPayload.toVaultEntry(id: Int, updatedAt: Long): VaultEntry = VaultEntry(
+fun VaultPayload.toVaultEntry(id: Int, uuid: String, updatedAt: Long): VaultEntry = VaultEntry(
     id = id,
     title = title,
     username = username,
@@ -124,7 +122,6 @@ fun VaultPayload.toVaultEntry(id: Int, updatedAt: Long): VaultEntry = VaultEntry
 )
 
 fun VaultEntry.toVaultPayload(): VaultPayload = VaultPayload(
-    uuid = uuid ?: UUID.randomUUID().toString(),
     title = title,
     username = username,
     password = password,

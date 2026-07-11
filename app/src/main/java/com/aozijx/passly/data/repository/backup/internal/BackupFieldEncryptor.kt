@@ -27,12 +27,13 @@ internal object BackupFieldEncryptor {
         payload: VaultPayload,
         fieldEncryptor: FieldEncryptor
     ): VaultEntryEntity {
+        val entryUuid = java.util.UUID.randomUUID().toString()
         return VaultEntryEntity(
             entryType = payload.entryType,
-            uuid = payload.uuid,
+            uuid = entryUuid,
             encryptedBlob = fieldEncryptor.encrypt(
                 payload.toJson(),
-                aad(payload.uuid, "encryptedBlob")
+                aad(entryUuid, "encryptedBlob")
             ),
             updatedAt = System.currentTimeMillis()
         )

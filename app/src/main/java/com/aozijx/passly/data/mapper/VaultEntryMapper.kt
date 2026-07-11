@@ -23,18 +23,19 @@ fun VaultEntryEntity.toDomain(fieldEncryptor: FieldEncryptor): VaultEntry {
         aadOrNull(DatabaseConfig.TABLE_ENTRIES, uuid, "encryptedBlob")
     )
     val p = VaultPayload.fromJson(json)
-    return p.toVaultEntry(id = id, updatedAt = updatedAt)
+    return p.toVaultEntry(id = id, uuid = uuid, updatedAt = updatedAt)
 }
 
 fun VaultEntry.toEntity(fieldEncryptor: FieldEncryptor): VaultEntryEntity {
     val payload = toVaultPayload()
+    val entryUuid = uuid ?: java.util.UUID.randomUUID().toString()
     return VaultEntryEntity(
         id = id,
         entryType = entryType,
-        uuid = payload.uuid,
+        uuid = entryUuid,
         encryptedBlob = fieldEncryptor.encrypt(
             payload.toJson(),
-            aad(DatabaseConfig.TABLE_ENTRIES, payload.uuid, "encryptedBlob")
+            aad(DatabaseConfig.TABLE_ENTRIES, entryUuid, "encryptedBlob")
         ),
         updatedAt = updatedAt ?: System.currentTimeMillis()
     )
