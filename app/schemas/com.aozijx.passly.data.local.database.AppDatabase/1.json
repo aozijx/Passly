@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "bd05b98f7648ff4bda0b457ea351089a",
+    "identityHash": "aeab2d17fea0cef48623de1cf74cbd0c",
     "entities": [
       {
         "tableName": "vault_metadata",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `vaultId` TEXT NOT NULL, `entryType` INTEGER NOT NULL, `entryVersion` INTEGER NOT NULL, `metadataBlob` BLOB NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `vaultId` TEXT NOT NULL, `entryVersion` INTEGER NOT NULL, `entryType` TEXT NOT NULL, `metadataBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`))",
         "fields": [
           {
             "fieldPath": "entryId",
@@ -21,21 +21,27 @@
             "notNull": true
           },
           {
-            "fieldPath": "entryType",
-            "columnName": "entryType",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
             "fieldPath": "entryVersion",
             "columnName": "entryVersion",
             "affinity": "INTEGER",
             "notNull": true
           },
           {
+            "fieldPath": "entryType",
+            "columnName": "entryType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
             "fieldPath": "metadataBlob",
             "columnName": "metadataBlob",
             "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
             "notNull": true
           },
           {
@@ -58,15 +64,6 @@
         },
         "indices": [
           {
-            "name": "index_vault_metadata_vaultId",
-            "unique": false,
-            "columnNames": [
-              "vaultId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_metadata_vaultId` ON `${TABLE_NAME}` (`vaultId`)"
-          },
-          {
             "name": "index_vault_metadata_entryType",
             "unique": false,
             "columnNames": [
@@ -74,6 +71,24 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_metadata_entryType` ON `${TABLE_NAME}` (`entryType`)"
+          },
+          {
+            "name": "index_vault_metadata_deletedAt",
+            "unique": false,
+            "columnNames": [
+              "deletedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_metadata_deletedAt` ON `${TABLE_NAME}` (`deletedAt`)"
+          },
+          {
+            "name": "index_vault_metadata_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_metadata_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
           }
         ]
       },
@@ -116,7 +131,7 @@
       },
       {
         "tableName": "vault_history",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`historyId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `snapshotBlob` BLOB NOT NULL, `version` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`historyId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`historyId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `version` INTEGER NOT NULL, `snapshotBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`historyId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "historyId",
@@ -131,15 +146,15 @@
             "notNull": true
           },
           {
-            "fieldPath": "snapshotBlob",
-            "columnName": "snapshotBlob",
-            "affinity": "BLOB",
-            "notNull": true
-          },
-          {
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "snapshotBlob",
+            "columnName": "snapshotBlob",
+            "affinity": "BLOB",
             "notNull": true
           },
           {
@@ -157,13 +172,14 @@
         },
         "indices": [
           {
-            "name": "index_vault_history_entryId",
+            "name": "index_vault_history_entryId_version",
             "unique": false,
             "columnNames": [
-              "entryId"
+              "entryId",
+              "version"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_history_entryId` ON `${TABLE_NAME}` (`entryId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_history_entryId_version` ON `${TABLE_NAME}` (`entryId`, `version`)"
           },
           {
             "name": "index_vault_history_createdAt",
@@ -231,13 +247,14 @@
         },
         "indices": [
           {
-            "name": "index_vault_activity_entryId",
+            "name": "index_vault_activity_entryId_createdAt",
             "unique": false,
             "columnNames": [
-              "entryId"
+              "entryId",
+              "createdAt"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_activity_entryId` ON `${TABLE_NAME}` (`entryId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_activity_entryId_createdAt` ON `${TABLE_NAME}` (`entryId`, `createdAt`)"
           },
           {
             "name": "index_vault_activity_createdAt",
@@ -265,7 +282,7 @@
       },
       {
         "tableName": "vault_attachments",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `encryptedBlob` BLOB NOT NULL, `cipherHash` BLOB, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `encryptedBlob` BLOB NOT NULL, `cipherHash` BLOB, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "attachmentId",
@@ -289,6 +306,12 @@
             "fieldPath": "cipherHash",
             "columnName": "cipherHash",
             "affinity": "BLOB"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -361,6 +384,16 @@
         },
         "indices": [
           {
+            "name": "index_lookup_index_entryId_field",
+            "unique": false,
+            "columnNames": [
+              "entryId",
+              "field"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lookup_index_entryId_field` ON `${TABLE_NAME}` (`entryId`, `field`)"
+          },
+          {
             "name": "index_lookup_index_keywordHash",
             "unique": false,
             "columnNames": [
@@ -383,11 +416,75 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "key_envelopes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`envelopeId` TEXT NOT NULL, `type` INTEGER NOT NULL, `algorithm` INTEGER NOT NULL, `ciphertext` BLOB NOT NULL, `kdfSalt` BLOB, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`envelopeId`))",
+        "fields": [
+          {
+            "fieldPath": "envelopeId",
+            "columnName": "envelopeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "algorithm",
+            "columnName": "algorithm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ciphertext",
+            "columnName": "ciphertext",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kdfSalt",
+            "columnName": "kdfSalt",
+            "affinity": "BLOB"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "envelopeId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_key_envelopes_type",
+            "unique": false,
+            "columnNames": [
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_key_envelopes_type` ON `${TABLE_NAME}` (`type`)"
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bd05b98f7648ff4bda0b457ea351089a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aeab2d17fea0cef48623de1cf74cbd0c')"
     ]
   }
 }

@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.model.entity.EntryType
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -19,10 +20,10 @@ interface VaultMetadataDao {
     fun observeActive(): Flow<List<VaultMetadataEntity>>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun observeByType(entryType: Int): Flow<List<VaultMetadataEntity>>
+    fun observeByType(entryType: EntryType): Flow<List<VaultMetadataEntity>>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType IN (:entryTypes) AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun observeByEntryTypes(entryTypes: List<Int>): Flow<List<VaultMetadataEntity>>
+    fun observeByEntryTypes(entryTypes: List<EntryType>): Flow<List<VaultMetadataEntity>>
 
     // ---- get (suspend) ----
 
@@ -42,7 +43,7 @@ interface VaultMetadataDao {
     suspend fun getByIds(entryIds: List<String>): List<VaultMetadataEntity>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    suspend fun getByType(entryType: Int): List<VaultMetadataEntity>
+    suspend fun getByType(entryType: EntryType): List<VaultMetadataEntity>
 
     // ---- pagination (offset-based) ----
 
@@ -55,7 +56,7 @@ interface VaultMetadataDao {
     fun pagingActive(): PagingSource<Int, VaultMetadataEntity>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun pagingByType(entryType: Int): PagingSource<Int, VaultMetadataEntity>
+    fun pagingByType(entryType: EntryType): PagingSource<Int, VaultMetadataEntity>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun pagingDeleted(): PagingSource<Int, VaultMetadataEntity>
@@ -91,7 +92,7 @@ interface VaultMetadataDao {
     suspend fun countActive(): Int
 
     @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL AND entryType = :entryType")
-    suspend fun countByType(entryType: Int): Int
+    suspend fun countByType(entryType: EntryType): Int
 
     @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NOT NULL")
     suspend fun countDeleted(): Int

@@ -6,6 +6,21 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.data.local.database.DatabaseConfig
 
+enum class EntryType {
+    LOGIN,
+    NOTE,
+    CARD,
+    IDENTITY,
+    SSH_KEY,
+    WIFI,
+    PASSPORT,
+    LICENSE,
+    DATABASE,
+    SERVER,
+    API_KEY,
+    CRYPTO_WALLET
+}
+
 /**
  * 非敏感元数据存储 —— 列表/搜索/自动填充只需解密此 Blob。
  */
@@ -34,9 +49,11 @@ data class VaultMetadataEntity(
     val entryVersion: Int = 1,
 
     /**
-     * 条目类型（Login、Card、Identity、SSH...）
+     * 条目类型，数据层内部分类，用于 DAO 过滤/索引。
+     * Room TypeConverter 自动序列化为 String（枚举名）。
+     * 不暴露给 domain/UI —— UI 通过 Payload 字段推导类型。
      */
-    val entryType: Int = 0,
+    val entryType: EntryType = EntryType.LOGIN,
 
     /**
      * MetadataPayload（AES-256-GCM 加密）
