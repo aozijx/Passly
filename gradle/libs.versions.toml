@@ -38,6 +38,7 @@ kotlinxSerializationJson = "1.11.0"
 # ❗ SQLCipher 是 SQLite 的加密层，升级其中之一需确保 native 库不冲突
 sqlite = "2.7.0"
 sqlcipher = "4.17.0"
+uuidCreator = "6.1.1"
 
 # 凭据管理器 / 自动填充 (Credentials & Autofill)
 credentials = "1.6.0"
@@ -102,6 +103,7 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
+uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuidCreator" }
 
 # 凭据管理器 / 自动填充 (Credentials & Autofill)
 # Android 14+ 系统凭据框架，支持 Passkey 和统一账号选择器

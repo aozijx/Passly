@@ -169,6 +169,7 @@ dependencies {
     // Data Persistence
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.uuid.creator)
 
     // CameraX
     implementation(libs.androidx.camera.core)
