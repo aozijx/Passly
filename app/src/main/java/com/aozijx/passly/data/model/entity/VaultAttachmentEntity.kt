@@ -5,8 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.DatabaseConfig
-import java.io.Serializable
+import com.aozijx.passly.data.local.database.DatabaseConfig
 
 /**
  * 极简附件表：仅存储加密后的 Metadata Blob。
@@ -33,5 +32,7 @@ data class VaultAttachmentEntity(
     val encryptedBlob: ByteArray,
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val cipherHash: ByteArray? = null
-) : Serializable
+    val cipherHash: ByteArray? = null,
+
+    val createdAt: Long = System.currentTimeMillis()
+)

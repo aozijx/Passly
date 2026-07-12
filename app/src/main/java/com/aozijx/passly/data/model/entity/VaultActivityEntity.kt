@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseConfig
 
 enum class ActivityType {
     VIEW,
@@ -31,7 +31,7 @@ enum class ActivityType {
         )
     ],
     indices = [
-        Index(value = ["entryId"]),
+        Index(value = ["entryId", "createdAt"]),
         Index(value = ["createdAt"])
     ]
 )

@@ -32,6 +32,7 @@ materialIcons = "1.7.8"
 # 数据持久化 (Data Storage)
 # ❗ Room 使用 KSP 时，对 Kotlin 版本非常敏感
 room = "2.8.4"
+paging = "3.3.6"
 datastorePreferences = "1.2.1"
 # ❗ 序列化库版本建议与 Kotlin 版本保持兼容性检查
 kotlinxSerializationJson = "1.11.0"
@@ -99,6 +100,8 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
+androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
+androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }

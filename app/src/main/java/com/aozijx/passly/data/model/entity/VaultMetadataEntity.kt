@@ -4,15 +4,18 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseConfig
 
 /**
  * 非敏感元数据存储 —— 列表/搜索/自动填充只需解密此 Blob。
  */
 @Entity(
     tableName = DatabaseConfig.TABLE_METADATA,
-    indices = [Index(value = ["vaultId"]),
-        Index(value = ["entryType"])]
+    indices = [
+        Index(value = ["entryType"]),
+        Index(value = ["deletedAt"]),
+        Index(value = ["updatedAt"])
+    ]
 )
 data class VaultMetadataEntity(
 
@@ -26,19 +29,24 @@ data class VaultMetadataEntity(
     val vaultId: String = "default",
 
     /**
-     * 条目类型（Login、Card、Identity、SSH...）
-     */
-    val entryType: Int = 0,
-
-    /**
      * 条目版本，用于 History / Sync / Conflict。
      */
     val entryVersion: Int = 1,
 
     /**
+     * 条目类型（Login、Card、Identity、SSH...）
+     */
+    val entryType: Int = 0,
+
+    /**
      * MetadataPayload（AES-256-GCM 加密）
      */
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB) val metadataBlob: ByteArray,
+
+    /**
+     * 创建时间（UTC Epoch Millis）
+     */
+    val createdAt: Long = System.currentTimeMillis(),
 
     /**
      * 最后更新时间（UTC Epoch Millis）

@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseConfig
 
 enum class LookupField {
     TITLE,
@@ -26,7 +26,8 @@ enum class LookupField {
         )
     ],
     indices = [
-        Index(value = ["keywordHash"])
+        Index(value = ["entryId", "field"]),
+        Index(value = ["keywordHash"]),
     ]
 )
 data class LookupIndexEntity(

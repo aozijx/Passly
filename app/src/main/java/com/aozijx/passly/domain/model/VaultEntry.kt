@@ -1,7 +1,10 @@
 package com.aozijx.passly.domain.model
 
 data class VaultEntry(
-    val id: Int = 0,
+    val id: String = "",
+    val vaultId: String = "default",
+    val entryVersion: Int = 1,
+    val deletedAt: Long? = null,
     val title: String,
     val username: String,
     val password: String,
@@ -53,7 +56,6 @@ data class VaultEntry(
 
     val favorite: Boolean = false,
     val tags: List<String>? = null,
-    val uuid: String? = null,
     val createdAt: Long? = System.currentTimeMillis(),
     val updatedAt: Long? = null,
     val expiresAt: Long? = null
