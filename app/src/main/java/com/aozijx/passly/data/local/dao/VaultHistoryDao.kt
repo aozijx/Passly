@@ -30,8 +30,8 @@ interface VaultHistoryDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId AND version = :version LIMIT 1")
     suspend fun getByVersion(entryId: String, version: Int): VaultHistoryEntity?
 
-    @Query("SELECT version FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId ORDER BY version DESC LIMIT 1")
-    suspend fun getLatestVersion(entryId: String): Int?
+    @Query("SELECT COALESCE(MAX(version), 0) + 1 FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId")
+    suspend fun getNextVersion(entryId: String): Int
 
     @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId")
     suspend fun countByEntryId(entryId: String): Int
