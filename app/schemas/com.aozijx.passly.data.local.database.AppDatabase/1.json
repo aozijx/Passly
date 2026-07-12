@@ -1,0 +1,393 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "bd05b98f7648ff4bda0b457ea351089a",
+    "entities": [
+      {
+        "tableName": "vault_metadata",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `vaultId` TEXT NOT NULL, `entryType` INTEGER NOT NULL, `entryVersion` INTEGER NOT NULL, `metadataBlob` BLOB NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`))",
+        "fields": [
+          {
+            "fieldPath": "entryId",
+            "columnName": "entryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vaultId",
+            "columnName": "vaultId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryType",
+            "columnName": "entryType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryVersion",
+            "columnName": "entryVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metadataBlob",
+            "columnName": "metadataBlob",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "entryId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vault_metadata_vaultId",
+            "unique": false,
+            "columnNames": [
+              "vaultId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_metadata_vaultId` ON `${TABLE_NAME}` (`vaultId`)"
+          },
+          {
+            "name": "index_vault_metadata_entryType",
+            "unique": false,
+            "columnNames": [
+              "entryType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_metadata_entryType` ON `${TABLE_NAME}` (`entryType`)"
+          }
+        ]
+      },
+      {
+        "tableName": "vault_credentials",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `credentialBlob` BLOB NOT NULL, PRIMARY KEY(`entryId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "entryId",
+            "columnName": "entryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "credentialBlob",
+            "columnName": "credentialBlob",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "entryId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "vault_metadata",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "entryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "vault_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`historyId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `snapshotBlob` BLOB NOT NULL, `version` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`historyId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "historyId",
+            "columnName": "historyId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryId",
+            "columnName": "entryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "snapshotBlob",
+            "columnName": "snapshotBlob",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "historyId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vault_history_entryId",
+            "unique": false,
+            "columnNames": [
+              "entryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_history_entryId` ON `${TABLE_NAME}` (`entryId`)"
+          },
+          {
+            "name": "index_vault_history_createdAt",
+            "unique": false,
+            "columnNames": [
+              "createdAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_history_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "vault_metadata",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "entryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "vault_activity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`activityId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `activityType` TEXT NOT NULL, `source` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`activityId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "activityId",
+            "columnName": "activityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryId",
+            "columnName": "entryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activityType",
+            "columnName": "activityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "activityId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vault_activity_entryId",
+            "unique": false,
+            "columnNames": [
+              "entryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_activity_entryId` ON `${TABLE_NAME}` (`entryId`)"
+          },
+          {
+            "name": "index_vault_activity_createdAt",
+            "unique": false,
+            "columnNames": [
+              "createdAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_activity_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "vault_metadata",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "entryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "vault_attachments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `encryptedBlob` BLOB NOT NULL, `cipherHash` BLOB, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "attachmentId",
+            "columnName": "attachmentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryId",
+            "columnName": "entryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "encryptedBlob",
+            "columnName": "encryptedBlob",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cipherHash",
+            "columnName": "cipherHash",
+            "affinity": "BLOB"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "attachmentId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vault_attachments_entryId",
+            "unique": false,
+            "columnNames": [
+              "entryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_attachments_entryId` ON `${TABLE_NAME}` (`entryId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "vault_metadata",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "entryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "lookup_index",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `field` TEXT NOT NULL, `keywordHash` BLOB NOT NULL, `weight` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `field`, `keywordHash`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "entryId",
+            "columnName": "entryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "field",
+            "columnName": "field",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keywordHash",
+            "columnName": "keywordHash",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weight",
+            "columnName": "weight",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "entryId",
+            "field",
+            "keywordHash"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_lookup_index_keywordHash",
+            "unique": false,
+            "columnNames": [
+              "keywordHash"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lookup_index_keywordHash` ON `${TABLE_NAME}` (`keywordHash`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "vault_metadata",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "entryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bd05b98f7648ff4bda0b457ea351089a')"
+    ]
+  }
+}
