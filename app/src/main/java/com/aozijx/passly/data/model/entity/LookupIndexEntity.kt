@@ -10,13 +10,14 @@ enum class LookupField {
     TITLE,
     USERNAME,
     EMAIL,
-    URL,
-    NOTES
+    DOMAIN,
+    PACKAGE,
+    SEARCH_TEXT
 }
 
 @Entity(
     tableName = DatabaseConfig.TABLE_LOOKUP_INDEX,
-    primaryKeys = ["entryId", "field", "keywordHash"],
+    primaryKeys = ["entryId", "field", "keywordHash", "gramLength"],
     foreignKeys = [
         ForeignKey(
             entity = VaultMetadataEntity::class,
@@ -38,6 +39,8 @@ data class LookupIndexEntity(
 
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val keywordHash: ByteArray,
+
+    val gramLength: Int = 2,
 
     val weight: Int = 1
 )

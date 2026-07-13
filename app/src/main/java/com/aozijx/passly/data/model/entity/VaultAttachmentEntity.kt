@@ -30,9 +30,5 @@ data class VaultAttachmentEntity(
     val entryId: String,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val encryptedBlob: ByteArray,
-
-    @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val cipherHash: ByteArray? = null,
-
     val createdAt: Long = System.currentTimeMillis()
 )

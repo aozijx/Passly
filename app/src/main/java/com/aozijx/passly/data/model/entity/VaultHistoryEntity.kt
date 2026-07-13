@@ -29,8 +29,6 @@ import com.github.f4b6a3.uuid.UuidCreator
 data class VaultHistoryEntity(
 
     /**
-     * Snapshot 唯一标识。
-     * 使用 UUIDv7，保证时间有序。
      * version 由 DAO 自动维护，不参与主键。
      */
     @PrimaryKey
