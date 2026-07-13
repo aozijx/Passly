@@ -33,6 +33,13 @@ interface VaultHistoryDao {
     @Query("SELECT COALESCE(MAX(version), 0) + 1 FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId")
     suspend fun getNextVersion(entryId: String): Int
 
+    // ---- exists ----
+
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_HISTORY} WHERE historyId = :historyId)")
+    suspend fun exists(historyId: String): Boolean
+
+    // ---- count ----
+
     @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId")
     suspend fun countByEntryId(entryId: String): Int
 
@@ -46,13 +53,22 @@ interface VaultHistoryDao {
 
     // ---- delete ----
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_HISTORY} WHERE historyId = :historyId")
-    suspend fun deleteById(historyId: String)
-
     @Query("DELETE FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId")
     suspend fun deleteByEntryId(entryId: String)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId AND historyId NOT IN (SELECT historyId FROM ${DatabaseConfig.TABLE_HISTORY} WHERE entryId = :entryId ORDER BY version DESC LIMIT :keepCount)")
+    @Query(
+        """
+        DELETE FROM ${DatabaseConfig.TABLE_HISTORY}
+        WHERE entryId = :entryId
+        AND version <= (
+            SELECT version
+            FROM ${DatabaseConfig.TABLE_HISTORY}
+            WHERE entryId = :entryId
+            ORDER BY version DESC
+            LIMIT 1 OFFSET :keepCount
+        )
+    """
+    )
     suspend fun deleteOldVersions(entryId: String, keepCount: Int)
 
     @Query("DELETE FROM ${DatabaseConfig.TABLE_HISTORY}")

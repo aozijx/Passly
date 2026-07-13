@@ -25,6 +25,23 @@ interface VaultMetadataDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType IN (:entryTypes) AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeByEntryTypes(entryTypes: List<EntryType>): Flow<List<VaultMetadataEntity>>
 
+    // ---- paging (Paging 3) ----
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    fun pagingActive(): PagingSource<Int, VaultMetadataEntity>
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    fun pagingByType(entryType: EntryType): PagingSource<Int, VaultMetadataEntity>
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
+    fun pagingDeleted(): PagingSource<Int, VaultMetadataEntity>
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    fun pagingRecentlyUpdated(): PagingSource<Int, VaultMetadataEntity>
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY createdAt DESC")
+    fun pagingRecentlyCreated(): PagingSource<Int, VaultMetadataEntity>
+
     // ---- get (suspend) ----
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
@@ -45,41 +62,14 @@ interface VaultMetadataDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getByType(entryType: EntryType): List<VaultMetadataEntity>
 
-    // ---- pagination (offset-based) ----
-
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit OFFSET :offset")
     suspend fun getPage(limit: Int, offset: Int): List<VaultMetadataEntity>
-
-    // ---- paging (Paging 3) ----
-
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun pagingActive(): PagingSource<Int, VaultMetadataEntity>
-
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun pagingByType(entryType: EntryType): PagingSource<Int, VaultMetadataEntity>
-
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
-    fun pagingDeleted(): PagingSource<Int, VaultMetadataEntity>
-
-    // 收藏分页预留 — favorite 字段在 Payload 中，后续若提升到 Entity 层再启用
-    // @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL AND favorite = 1 ORDER BY updatedAt DESC")
-    // fun pagingFavorite(): PagingSource<Int, VaultMetadataEntity>
-
-    // ---- recent ----
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit")
     suspend fun getRecentlyUpdated(limit: Int): List<VaultMetadataEntity>
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY createdAt DESC LIMIT :limit")
     suspend fun getRecentlyCreated(limit: Int): List<VaultMetadataEntity>
-
-    // ---- paging recent ----
-
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun pagingRecentlyUpdated(): PagingSource<Int, VaultMetadataEntity>
-
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY createdAt DESC")
-    fun pagingRecentlyCreated(): PagingSource<Int, VaultMetadataEntity>
 
     // ---- exists ----
 
@@ -101,6 +91,9 @@ interface VaultMetadataDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: VaultMetadataEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(entries: List<VaultMetadataEntity>)
 
     @Update
     suspend fun update(entry: VaultMetadataEntity)

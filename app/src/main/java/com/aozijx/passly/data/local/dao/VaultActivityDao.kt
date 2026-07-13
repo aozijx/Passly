@@ -24,11 +24,6 @@ interface VaultActivityDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE activityType = :activityType ORDER BY createdAt DESC")
     fun observeByType(activityType: ActivityType): Flow<List<VaultActivityEntity>>
 
-    // ---- get (suspend) ----
-
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE activityId = :activityId LIMIT 1")
-    suspend fun getById(activityId: String): VaultActivityEntity?
-
     // ---- paging (Paging 3) ----
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE entryId = :entryId ORDER BY createdAt DESC")
@@ -36,6 +31,24 @@ interface VaultActivityDao {
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} ORDER BY createdAt DESC")
     fun pagingAll(): PagingSource<Int, VaultActivityEntity>
+
+    // ---- get (suspend) ----
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE activityId = :activityId LIMIT 1")
+    suspend fun getById(activityId: String): VaultActivityEntity?
+
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE entryId = :entryId ORDER BY createdAt DESC")
+    suspend fun getByEntryId(entryId: String): List<VaultActivityEntity>
+
+    // ---- exists ----
+
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE activityId = :activityId)")
+    suspend fun exists(activityId: String): Boolean
+
+    // ---- count ----
+
+    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_ACTIVITY}")
+    suspend fun count(): Int
 
     // ---- insert ----
 
@@ -47,9 +60,6 @@ interface VaultActivityDao {
 
     // ---- delete ----
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE activityId = :activityId")
-    suspend fun deleteById(activityId: String)
-
     @Query("DELETE FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE entryId = :entryId")
     suspend fun deleteByEntryId(entryId: String)
 
@@ -58,9 +68,4 @@ interface VaultActivityDao {
 
     @Query("DELETE FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE createdAt < :timestamp")
     suspend fun deleteBefore(timestamp: Long)
-
-    // ---- maintenance ----
-
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_ACTIVITY}")
-    suspend fun count(): Int
 }

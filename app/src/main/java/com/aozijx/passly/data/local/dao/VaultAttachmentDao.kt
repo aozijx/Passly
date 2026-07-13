@@ -27,10 +27,26 @@ interface VaultAttachmentDao {
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_ATTACHMENTS} WHERE attachmentId = :attachmentId")
     suspend fun getById(attachmentId: String): VaultAttachmentEntity?
 
+    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ATTACHMENTS} WHERE entryId = :entryId ORDER BY createdAt DESC")
+    suspend fun getByEntryId(entryId: String): List<VaultAttachmentEntity>
+
+    // ---- exists ----
+
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_ATTACHMENTS} WHERE attachmentId = :attachmentId)")
+    suspend fun exists(attachmentId: String): Boolean
+
+    // ---- count ----
+
+    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_ATTACHMENTS} WHERE entryId = :entryId")
+    suspend fun countByEntryId(entryId: String): Int
+
     // ---- insert ----
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(attachment: VaultAttachmentEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(attachments: List<VaultAttachmentEntity>)
 
     // ---- delete ----
 
@@ -40,13 +56,6 @@ interface VaultAttachmentDao {
     @Query("DELETE FROM ${DatabaseConfig.TABLE_ATTACHMENTS} WHERE entryId = :entryId")
     suspend fun deleteByEntryId(entryId: String)
 
-    // ---- count ----
-
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_ATTACHMENTS} WHERE entryId = :entryId")
-    suspend fun countByEntryId(entryId: String): Int
-
-    // ---- exists ----
-
-    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_ATTACHMENTS} WHERE attachmentId = :attachmentId)")
-    suspend fun exists(attachmentId: String): Boolean
+    @Query("DELETE FROM ${DatabaseConfig.TABLE_ATTACHMENTS}")
+    suspend fun clear()
 }

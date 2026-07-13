@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.model.entity.LookupField
 import com.aozijx.passly.data.model.entity.LookupIndexEntity
 
 @Dao
@@ -12,16 +13,23 @@ interface LookupIndexDao {
 
     // ---- search ----
 
-    @Query("SELECT DISTINCT entryId FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE keywordHash = :keywordHash ORDER BY weight DESC")
-    suspend fun searchByHash(keywordHash: ByteArray): List<String>
-
-    @Query("SELECT DISTINCT entryId FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE keywordHash IN (:keywordHashes) ORDER BY weight DESC")
-    suspend fun searchByHashes(keywordHashes: List<ByteArray>): List<String>
+    @Query("SELECT entryId FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE keywordHash = :hash AND gramLength = :length AND field IN (:fields) ORDER BY weight DESC")
+    suspend fun searchByHash(hash: ByteArray, length: Int, fields: List<LookupField>): List<String>
 
     // ---- get (suspend) ----
 
     @Query("SELECT * FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId")
     suspend fun getByEntryId(entryId: String): List<LookupIndexEntity>
+
+    // ---- exists ----
+
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId)")
+    suspend fun exists(entryId: String): Boolean
+
+    // ---- count ----
+
+    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX}")
+    suspend fun count(): Int
 
     // ---- insert ----
 
@@ -40,13 +48,8 @@ interface LookupIndexDao {
     suspend fun deleteByEntryIds(entryIds: List<String>)
 
     @Query("DELETE FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId AND field = :field")
-    suspend fun deleteByEntryAndField(entryId: String, field: String)
+    suspend fun deleteByEntryAndField(entryId: String, field: LookupField)
 
     @Query("DELETE FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX}")
     suspend fun clear()
-
-    // ---- maintenance ----
-
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX}")
-    suspend fun count(): Int
 }

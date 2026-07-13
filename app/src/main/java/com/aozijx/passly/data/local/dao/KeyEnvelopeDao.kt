@@ -34,7 +34,7 @@ interface KeyEnvelopeDao {
     @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES}")
     suspend fun count(): Int
 
-    // ---- insert / update ----
+    // ---- insert ----
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(envelope: KeyEnvelopeEntity)
