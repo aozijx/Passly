@@ -5,8 +5,8 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.aozijx.passly.data.local.database.DatabaseConfig
-import com.aozijx.passly.data.model.entity.LookupField
 import com.aozijx.passly.data.model.entity.LookupIndexEntity
+import com.aozijx.passly.domain.model.lookup.LookupField
 
 @Dao
 interface LookupIndexDao {

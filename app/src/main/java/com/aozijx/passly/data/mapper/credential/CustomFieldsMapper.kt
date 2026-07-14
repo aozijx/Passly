@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.mapper.credential
 
 import com.aozijx.passly.data.model.payload.credential.CustomFieldPayload
+import com.aozijx.passly.domain.model.CustomField
 import com.aozijx.passly.domain.model.VaultEntry
 
 fun VaultEntry.toCustomFieldsPayload(): List<CustomFieldPayload> =

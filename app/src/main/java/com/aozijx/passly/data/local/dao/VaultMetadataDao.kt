@@ -7,8 +7,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.aozijx.passly.data.local.database.DatabaseConfig
-import com.aozijx.passly.data.model.entity.EntryType
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
+import com.aozijx.passly.domain.model.EntryType
 import kotlinx.coroutines.flow.Flow
 
 @Dao

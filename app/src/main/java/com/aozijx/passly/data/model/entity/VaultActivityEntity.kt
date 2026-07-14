@@ -6,19 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.data.local.database.DatabaseConfig
-
-enum class ActivityType {
-    VIEW,
-    COPY_USERNAME,
-    COPY_PASSWORD,
-    AUTOFILL,
-    EXPORT,
-    IMPORT,
-    CREATE,
-    UPDATE,
-    DELETE,
-    RESTORE
-}
+import com.aozijx.passly.domain.model.activity.ActivityType
 
 @Entity(
     tableName = DatabaseConfig.TABLE_ACTIVITY,

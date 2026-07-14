@@ -5,15 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import com.aozijx.passly.data.local.database.DatabaseConfig
-
-enum class LookupField {
-    TITLE,
-    USERNAME,
-    EMAIL,
-    DOMAIN,
-    PACKAGE,
-    SEARCH_TEXT
-}
+import com.aozijx.passly.domain.model.lookup.LookupField
 
 @Entity(
     tableName = DatabaseConfig.TABLE_LOOKUP_INDEX,

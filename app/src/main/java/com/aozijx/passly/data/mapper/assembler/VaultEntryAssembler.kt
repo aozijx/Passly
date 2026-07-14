@@ -19,10 +19,13 @@ object VaultEntryAssembler {
             id = entity.entryId,
             vaultId = entity.vaultId,
             entryVersion = entity.entryVersion,
-            revision = entity.revision,
             deletedAt = entity.deletedAt,
             createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt
+            updatedAt = entity.updatedAt,
+            title = "",
+            username = "",
+            password = "",
+            category = ""
         )
         entry = entry.mergeMetadata(metaPayload)
         return credPayload?.let { entry.mergeCredential(it) } ?: entry
@@ -33,9 +36,12 @@ object VaultEntryAssembler {
             id = snapshot.id,
             vaultId = snapshot.vaultId,
             entryVersion = snapshot.revision,
-            revision = snapshot.revision,
             createdAt = snapshot.createdAt,
-            updatedAt = snapshot.updatedAt
+            updatedAt = snapshot.updatedAt,
+            title = "",
+            username = "",
+            password = "",
+            category = ""
         )
         entry = entry.mergeMetadata(snapshot.metadata)
         return entry.mergeCredential(snapshot.credential)
@@ -49,10 +55,13 @@ object VaultEntryAssembler {
             id = entity.entryId,
             vaultId = entity.vaultId,
             entryVersion = entity.entryVersion,
-            revision = entity.revision,
             deletedAt = entity.deletedAt,
             createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt
+            updatedAt = entity.updatedAt,
+            title = "",
+            username = "",
+            password = "",
+            category = ""
         ).mergeMetadata(metaPayload)
     }
 }

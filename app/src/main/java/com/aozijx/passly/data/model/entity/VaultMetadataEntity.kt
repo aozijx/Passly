@@ -5,25 +5,8 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.domain.model.EntryType
 
-enum class EntryType {
-    LOGIN,
-    NOTE,
-    CARD,
-    IDENTITY,
-    SSH_KEY,
-    WIFI,
-    PASSPORT,
-    LICENSE,
-    DATABASE,
-    SERVER,
-    API_KEY,
-    CRYPTO_WALLET
-}
-
-/**
- * 非敏感元数据存储 —— 列表/搜索/自动填充只需解密此 Blob。
- */
 @Entity(
     tableName = DatabaseConfig.TABLE_METADATA,
     indices = [
