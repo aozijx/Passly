@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.model.entity.KeyEnvelopeEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -13,25 +13,25 @@ interface KeyEnvelopeDao {
 
     // ---- observe (Flow) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES} ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE} ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<KeyEnvelopeEntity>>
 
     // ---- get (suspend) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES} WHERE envelopeId = :envelopeId LIMIT 1")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE} WHERE envelopeId = :envelopeId LIMIT 1")
     suspend fun getById(envelopeId: String): KeyEnvelopeEntity?
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES} WHERE type = :type")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE} WHERE type = :type")
     suspend fun getByType(type: Int): List<KeyEnvelopeEntity>
 
     // ---- exists ----
 
-    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES} WHERE envelopeId = :envelopeId)")
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE} WHERE envelopeId = :envelopeId)")
     suspend fun exists(envelopeId: String): Boolean
 
     // ---- count ----
 
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES}")
+    @Query("SELECT COUNT(*) FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE}")
     suspend fun count(): Int
 
     // ---- insert ----
@@ -44,12 +44,12 @@ interface KeyEnvelopeDao {
 
     // ---- delete ----
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES} WHERE envelopeId = :envelopeId")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE} WHERE envelopeId = :envelopeId")
     suspend fun deleteById(envelopeId: String)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES} WHERE type = :type")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE} WHERE type = :type")
     suspend fun deleteByType(type: Int)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_KEY_ENVELOPES}")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE}")
     suspend fun clear()
 }

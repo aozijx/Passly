@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.model.entity.LookupIndexEntity
 import com.aozijx.passly.domain.model.lookup.LookupField
 
@@ -13,22 +13,22 @@ interface LookupIndexDao {
 
     // ---- search ----
 
-    @Query("SELECT entryId FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE keywordHash = :hash AND gramLength = :length AND field IN (:fields) ORDER BY weight DESC")
+    @Query("SELECT entryId FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX} WHERE keywordHash = :hash AND gramLength = :length AND field IN (:fields) ORDER BY weight DESC")
     suspend fun searchByHash(hash: ByteArray, length: Int, fields: List<LookupField>): List<String>
 
     // ---- get (suspend) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId")
     suspend fun getByEntryId(entryId: String): List<LookupIndexEntity>
 
     // ---- exists ----
 
-    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId)")
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId)")
     suspend fun exists(entryId: String): Boolean
 
     // ---- count ----
 
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX}")
+    @Query("SELECT COUNT(*) FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX}")
     suspend fun count(): Int
 
     // ---- insert ----
@@ -41,15 +41,15 @@ interface LookupIndexDao {
 
     // ---- delete ----
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId")
     suspend fun deleteByEntryId(entryId: String)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE entryId IN (:entryIds)")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX} WHERE entryId IN (:entryIds)")
     suspend fun deleteByEntryIds(entryIds: List<String>)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId AND field = :field")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX} WHERE entryId = :entryId AND field = :field")
     suspend fun deleteByEntryAndField(entryId: String, field: LookupField)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_LOOKUP_INDEX}")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX}")
     suspend fun clear()
 }

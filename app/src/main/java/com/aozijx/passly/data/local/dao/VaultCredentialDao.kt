@@ -5,7 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 
 @Dao
@@ -13,20 +13,20 @@ interface VaultCredentialDao {
 
     // ---- get (suspend) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_CREDENTIALS} WHERE entryId = :entryId LIMIT 1")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_CREDENTIALS} WHERE entryId = :entryId LIMIT 1")
     suspend fun getByEntryId(entryId: String): VaultCredentialEntity?
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_CREDENTIALS} WHERE entryId IN (:entryIds)")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_CREDENTIALS} WHERE entryId IN (:entryIds)")
     suspend fun getByEntryIds(entryIds: List<String>): List<VaultCredentialEntity>
 
     // ---- exists ----
 
-    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_CREDENTIALS} WHERE entryId = :entryId)")
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseSchema.TABLE_CREDENTIALS} WHERE entryId = :entryId)")
     suspend fun exists(entryId: String): Boolean
 
     // ---- count ----
 
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_CREDENTIALS}")
+    @Query("SELECT COUNT(*) FROM ${DatabaseSchema.TABLE_CREDENTIALS}")
     suspend fun count(): Int
 
     // ---- insert / update ----
@@ -42,9 +42,9 @@ interface VaultCredentialDao {
 
     // ---- delete ----
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_CREDENTIALS} WHERE entryId = :entryId")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_CREDENTIALS} WHERE entryId = :entryId")
     suspend fun delete(entryId: String)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_CREDENTIALS}")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_CREDENTIALS}")
     suspend fun clear()
 }

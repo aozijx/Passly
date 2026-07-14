@@ -5,7 +5,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.model.entity.VaultActivityEntity
 import com.aozijx.passly.domain.model.activity.ActivityType
 import kotlinx.coroutines.flow.Flow
@@ -15,39 +15,39 @@ interface VaultActivityDao {
 
     // ---- observe (Flow) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE entryId = :entryId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE entryId = :entryId ORDER BY createdAt DESC")
     fun observeByEntryId(entryId: String): Flow<List<VaultActivityEntity>>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_ACTIVITY} ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<VaultActivityEntity>>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE activityType = :activityType ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE activityType = :activityType ORDER BY createdAt DESC")
     fun observeByType(activityType: ActivityType): Flow<List<VaultActivityEntity>>
 
     // ---- paging (Paging 3) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE entryId = :entryId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE entryId = :entryId ORDER BY createdAt DESC")
     fun pagingByEntryId(entryId: String): PagingSource<Int, VaultActivityEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_ACTIVITY} ORDER BY createdAt DESC")
     fun pagingAll(): PagingSource<Int, VaultActivityEntity>
 
     // ---- get (suspend) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE activityId = :activityId LIMIT 1")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE activityId = :activityId LIMIT 1")
     suspend fun getById(activityId: String): VaultActivityEntity?
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE entryId = :entryId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE entryId = :entryId ORDER BY createdAt DESC")
     suspend fun getByEntryId(entryId: String): List<VaultActivityEntity>
 
     // ---- exists ----
 
-    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE activityId = :activityId)")
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE activityId = :activityId)")
     suspend fun exists(activityId: String): Boolean
 
     // ---- count ----
 
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_ACTIVITY}")
+    @Query("SELECT COUNT(*) FROM ${DatabaseSchema.TABLE_ACTIVITY}")
     suspend fun count(): Int
 
     // ---- insert ----
@@ -60,12 +60,12 @@ interface VaultActivityDao {
 
     // ---- delete ----
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE entryId = :entryId")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE entryId = :entryId")
     suspend fun deleteByEntryId(entryId: String)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_ACTIVITY}")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_ACTIVITY}")
     suspend fun clear()
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_ACTIVITY} WHERE createdAt < :timestamp")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE createdAt < :timestamp")
     suspend fun deleteBefore(timestamp: Long)
 }

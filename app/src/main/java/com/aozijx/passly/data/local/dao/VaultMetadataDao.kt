@@ -6,9 +6,9 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
-import com.aozijx.passly.domain.model.EntryType
+import com.aozijx.passly.domain.model.type.EntryType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -16,75 +16,75 @@ interface VaultMetadataDao {
 
     // ---- observe (Flow) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeActive(): Flow<List<VaultMetadataEntity>>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeByType(entryType: EntryType): Flow<List<VaultMetadataEntity>>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType IN (:entryTypes) AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE entryType IN (:entryTypes) AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeByEntryTypes(entryTypes: List<EntryType>): Flow<List<VaultMetadataEntity>>
 
     // ---- paging (Paging 3) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun pagingActive(): PagingSource<Int, VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun pagingByType(entryType: EntryType): PagingSource<Int, VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun pagingDeleted(): PagingSource<Int, VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun pagingRecentlyUpdated(): PagingSource<Int, VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY createdAt DESC")
     fun pagingRecentlyCreated(): PagingSource<Int, VaultMetadataEntity>
 
     // ---- get (suspend) ----
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getActive(): List<VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     suspend fun getDeleted(): List<VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} ORDER BY updatedAt DESC")
     suspend fun getAll(): List<VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryId = :entryId LIMIT 1")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE entryId = :entryId LIMIT 1")
     suspend fun getById(entryId: String): VaultMetadataEntity?
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryId IN (:entryIds)")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE entryId IN (:entryIds)")
     suspend fun getByIds(entryIds: List<String>): List<VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getByType(entryType: EntryType): List<VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit OFFSET :offset")
     suspend fun getPage(limit: Int, offset: Int): List<VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit")
     suspend fun getRecentlyUpdated(limit: Int): List<VaultMetadataEntity>
 
-    @Query("SELECT * FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY createdAt DESC LIMIT :limit")
+    @Query("SELECT * FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL ORDER BY createdAt DESC LIMIT :limit")
     suspend fun getRecentlyCreated(limit: Int): List<VaultMetadataEntity>
 
     // ---- exists ----
 
-    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryId = :entryId)")
+    @Query("SELECT EXISTS(SELECT 1 FROM ${DatabaseSchema.TABLE_METADATA} WHERE entryId = :entryId)")
     suspend fun exists(entryId: String): Boolean
 
     // ---- count ----
 
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL")
+    @Query("SELECT COUNT(*) FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL")
     suspend fun countActive(): Int
 
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NULL AND entryType = :entryType")
+    @Query("SELECT COUNT(*) FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NULL AND entryType = :entryType")
     suspend fun countByType(entryType: EntryType): Int
 
-    @Query("SELECT COUNT(*) FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NOT NULL")
+    @Query("SELECT COUNT(*) FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NOT NULL")
     suspend fun countDeleted(): Int
 
     // ---- insert / update ----
@@ -100,20 +100,20 @@ interface VaultMetadataDao {
 
     // ---- soft delete / restore ----
 
-    @Query("UPDATE ${DatabaseConfig.TABLE_METADATA} SET deletedAt = :timestamp, updatedAt = :timestamp WHERE entryId = :entryId")
+    @Query("UPDATE ${DatabaseSchema.TABLE_METADATA} SET deletedAt = :timestamp, updatedAt = :timestamp WHERE entryId = :entryId")
     suspend fun softDelete(entryId: String, timestamp: Long)
 
-    @Query("UPDATE ${DatabaseConfig.TABLE_METADATA} SET deletedAt = NULL, updatedAt = :now WHERE entryId = :entryId")
+    @Query("UPDATE ${DatabaseSchema.TABLE_METADATA} SET deletedAt = NULL, updatedAt = :now WHERE entryId = :entryId")
     suspend fun restore(entryId: String, now: Long)
 
     // ---- delete ----
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_METADATA} WHERE entryId = :entryId")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_METADATA} WHERE entryId = :entryId")
     suspend fun deleteById(entryId: String)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_METADATA} WHERE deletedAt IS NOT NULL AND deletedAt < :before")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_METADATA} WHERE deletedAt IS NOT NULL AND deletedAt < :before")
     suspend fun purgeDeleted(before: Long)
 
-    @Query("DELETE FROM ${DatabaseConfig.TABLE_METADATA}")
+    @Query("DELETE FROM ${DatabaseSchema.TABLE_METADATA}")
     suspend fun clear()
 }
