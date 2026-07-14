@@ -3,8 +3,8 @@
 # Kotlin 版本决定了 KSP 和 Compose Compiler 的兼容范围
 agp = "9.0.1"
 kotlin = "2.3.20"
-# ❗ KSP 版本必须与 Kotlin 版本严格对应 (例如 2.3.20-1.0.x)
-ksp = "2.3.5"
+# ❗ KSP 版本 2.3.x 系列不再使用 xxx-1.0.x 后缀，直接写三段数字
+ksp = "2.3.9"
 # Hilt 版本建议与 hilt-navigation-compose 保持库兼容性
 hilt = "2.59.2"
 

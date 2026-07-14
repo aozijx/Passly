@@ -8,21 +8,21 @@ import com.aozijx.passly.data.local.dao.KeyEnvelopeDao
 import com.aozijx.passly.data.local.dao.LookupIndexDao
 import com.aozijx.passly.data.local.dao.VaultActivityDao
 import com.aozijx.passly.data.local.dao.VaultAttachmentDao
+import com.aozijx.passly.data.local.dao.VaultCredentialDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.local.dao.VaultMetadataDao
-import com.aozijx.passly.data.local.dao.VaultPayloadDao
 import com.aozijx.passly.data.model.entity.KeyEnvelopeEntity
 import com.aozijx.passly.data.model.entity.LookupIndexEntity
 import com.aozijx.passly.data.model.entity.VaultActivityEntity
 import com.aozijx.passly.data.model.entity.VaultAttachmentEntity
+import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultHistoryEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
-import com.aozijx.passly.data.model.entity.VaultPayloadEntity
 
 @Database(
     entities = [
         VaultMetadataEntity::class,
-        VaultPayloadEntity::class,
+        VaultCredentialEntity::class,
         VaultHistoryEntity::class,
         VaultActivityEntity::class,
         VaultAttachmentEntity::class,
@@ -35,7 +35,7 @@ import com.aozijx.passly.data.model.entity.VaultPayloadEntity
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun metadataDao(): VaultMetadataDao
-    abstract fun payloadDao(): VaultPayloadDao
+    abstract fun credentialDao(): VaultCredentialDao
     abstract fun historyDao(): VaultHistoryDao
     abstract fun activityDao(): VaultActivityDao
     abstract fun attachmentDao(): VaultAttachmentDao
