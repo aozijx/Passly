@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "aeab2d17fea0cef48623de1cf74cbd0c",
+    "identityHash": "552fca3c8e234b7b0d34ff8ab3b11f0c",
     "entities": [
       {
         "tableName": "vault_metadata",
@@ -282,7 +282,7 @@
       },
       {
         "tableName": "vault_attachments",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `encryptedBlob` BLOB NOT NULL, `cipherHash` BLOB, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `encryptedBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "attachmentId",
@@ -301,11 +301,6 @@
             "columnName": "encryptedBlob",
             "affinity": "BLOB",
             "notNull": true
-          },
-          {
-            "fieldPath": "cipherHash",
-            "columnName": "cipherHash",
-            "affinity": "BLOB"
           },
           {
             "fieldPath": "createdAt",
@@ -347,7 +342,7 @@
       },
       {
         "tableName": "lookup_index",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `field` TEXT NOT NULL, `keywordHash` BLOB NOT NULL, `weight` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `field`, `keywordHash`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `field` TEXT NOT NULL, `keywordHash` BLOB NOT NULL, `gramLength` INTEGER NOT NULL, `weight` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `field`, `keywordHash`, `gramLength`), FOREIGN KEY(`entryId`) REFERENCES `vault_metadata`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "entryId",
@@ -368,6 +363,12 @@
             "notNull": true
           },
           {
+            "fieldPath": "gramLength",
+            "columnName": "gramLength",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
             "fieldPath": "weight",
             "columnName": "weight",
             "affinity": "INTEGER",
@@ -379,7 +380,8 @@
           "columnNames": [
             "entryId",
             "field",
-            "keywordHash"
+            "keywordHash",
+            "gramLength"
           ]
         },
         "indices": [
@@ -484,7 +486,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aeab2d17fea0cef48623de1cf74cbd0c')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '552fca3c8e234b7b0d34ff8ab3b11f0c')"
     ]
   }
 }

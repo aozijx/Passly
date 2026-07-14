@@ -20,7 +20,7 @@ import com.aozijx.passly.data.local.database.DatabaseConfig
         )
     ]
 )
-data class VaultPayloadEntity(
+data class VaultCredentialEntity(
 
     @PrimaryKey
     val entryId: String = "",
