@@ -5,16 +5,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseSchema
 
-/**
- * 极简附件表：仅存储加密后的 Metadata Blob。
- *
- * 所有业务字段（filename, mimeType, encryptedPath, thumbnail, dimensions...）
- * 均以 JSON 序列化后 AES-GCM 加密存入 [encryptedBlob]。
- */
 @Entity(
-    tableName = DatabaseConfig.TABLE_ATTACHMENTS,
+    tableName = DatabaseSchema.TABLE_ATTACHMENT,
     foreignKeys = [
         ForeignKey(
             entity = VaultMetadataEntity::class,
@@ -26,9 +20,17 @@ import com.aozijx.passly.data.local.database.DatabaseConfig
     indices = [Index(value = ["entryId"])]
 )
 data class VaultAttachmentEntity(
-    @PrimaryKey val attachmentId: String,
+    // 附件唯一标识
+    @PrimaryKey
+    val attachmentId: String,
+
+    // 关联条目 ID
     val entryId: String,
+
+    // 加密后的附件元数据（文件名、MIME、加密路径等）
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val encryptedBlob: ByteArray,
+
+    // 创建时间
     val createdAt: Long = System.currentTimeMillis()
 )

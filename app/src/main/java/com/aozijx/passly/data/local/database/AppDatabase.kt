@@ -2,8 +2,9 @@ package com.aozijx.passly.data.local.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.data.local.DatabaseException
+import com.aozijx.passly.core.error.database.DatabaseException
 import com.aozijx.passly.data.local.dao.KeyEnvelopeDao
 import com.aozijx.passly.data.local.dao.LookupIndexDao
 import com.aozijx.passly.data.local.dao.VaultActivityDao
@@ -11,26 +12,34 @@ import com.aozijx.passly.data.local.dao.VaultAttachmentDao
 import com.aozijx.passly.data.local.dao.VaultCredentialDao
 import com.aozijx.passly.data.local.dao.VaultHistoryDao
 import com.aozijx.passly.data.local.dao.VaultMetadataDao
+import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
+import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
+import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
 import com.aozijx.passly.data.model.entity.KeyEnvelopeEntity
 import com.aozijx.passly.data.model.entity.LookupIndexEntity
 import com.aozijx.passly.data.model.entity.VaultActivityEntity
 import com.aozijx.passly.data.model.entity.VaultAttachmentEntity
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
-import com.aozijx.passly.data.model.entity.VaultHistoryEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
+import com.aozijx.passly.data.model.entity.VaultSnapshotEntity
 
 @Database(
     entities = [
         VaultMetadataEntity::class,
         VaultCredentialEntity::class,
-        VaultHistoryEntity::class,
+        VaultSnapshotEntity::class,
         VaultActivityEntity::class,
         VaultAttachmentEntity::class,
         LookupIndexEntity::class,
         KeyEnvelopeEntity::class
     ],
-    version = DatabaseConfig.VERSION,
+    version = DatabaseSchema.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
+)
+@TypeConverters(
+    EntryTypeConverter::class,
+    ActivityTypeConverter::class,
+    LookupFieldConverter::class
 )
 abstract class AppDatabase : RoomDatabase() {
 

@@ -5,11 +5,11 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.database.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.github.f4b6a3.uuid.UuidCreator
 
 @Entity(
-    tableName = DatabaseConfig.TABLE_HISTORY,
+    tableName = DatabaseSchema.TABLE_HISTORY,
     foreignKeys = [
         ForeignKey(
             entity = VaultMetadataEntity::class,
@@ -19,29 +19,28 @@ import com.github.f4b6a3.uuid.UuidCreator
         )
     ],
     indices = [
-        // 查询某个条目的版本历史（ORDER BY version DESC）
-        Index(value = ["entryId", "version"]),
-
-        // 清理旧历史
+        Index(value = ["entryId", "version"], unique = true),
         Index(value = ["createdAt"])
     ]
 )
-data class VaultHistoryEntity(
-
-    /**
-     * version 由 DAO 自动维护，不参与主键。
-     */
+data class VaultSnapshotEntity(
+    // 历史记录唯一标识
     @PrimaryKey
     val historyId: String = UuidCreator.getTimeOrderedEpoch().toString(),
 
-    val entryId: String,
-
-    // 从 1 开始递增，由 DAO.getNextVersion() 统一管理
+    // 变更版本号，从 1 开始递增
     val version: Int,
+
+    // 关联条目 ID
+    val entryId: String,
 
     // 加密后的完整快照（Metadata + Credential）
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val snapshotBlob: ByteArray,
 
+    // 变更类型：value_changed, version_restored
+    val changeType: String,
+
+    // 创建时间
     val createdAt: Long = System.currentTimeMillis()
 )
