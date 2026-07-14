@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.crypto
 
-import com.aozijx.passly.data.model.payload.backup.VaultSnapshot
 import com.aozijx.passly.data.model.payload.credential.CredentialPayload
 import com.aozijx.passly.data.model.payload.metadata.MetadataPayload
+import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
 import com.aozijx.passly.data.model.serializer.toCredentialPayload
 import com.aozijx.passly.data.model.serializer.toJsonString
 import com.aozijx.passly.data.model.serializer.toMetadataPayload

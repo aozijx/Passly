@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.model.serializer
 
-import com.aozijx.passly.data.model.payload.backup.VaultSnapshot
+import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
 import kotlinx.serialization.builtins.ListSerializer
 
 fun VaultSnapshot.toJsonString(): String =
