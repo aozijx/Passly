@@ -1,67 +1,54 @@
 package com.aozijx.passly.data.mapper.assembler
 
-import com.aozijx.passly.data.mapper.credential.mergeCredential
-import com.aozijx.passly.data.mapper.metadata.mergeMetadata
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
-import com.aozijx.passly.data.model.payload.credential.CredentialPayload
-import com.aozijx.passly.data.model.payload.metadata.MetadataPayload
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.VaultCredential
+import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.entry.VaultMetadata
 
 object VaultEntryAssembler {
 
     fun assembleFromDatabase(
         entity: VaultMetadataEntity,
-        metaPayload: MetadataPayload,
-        credPayload: CredentialPayload?
+        meta: VaultMetadata,
+        cred: VaultCredential?
     ): VaultEntry {
-        var entry = VaultEntry(
-            id = entity.entryId,
-            vaultId = entity.vaultId,
-            entryVersion = entity.entryVersion,
-            deletedAt = entity.deletedAt,
-            createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt,
-            title = "",
-            username = "",
-            password = "",
-            category = ""
+        return VaultEntry(
+            metadata = meta.copy(
+                entryId = entity.entryId,
+                createdAt = entity.createdAt,
+                updatedAt = entity.updatedAt,
+                deletedAt = entity.deletedAt
+            ),
+            credential = cred?.copy(entryId = entity.entryId)
+                ?: VaultCredential(entryId = entity.entryId)
         )
-        entry = entry.mergeMetadata(metaPayload)
-        return credPayload?.let { entry.mergeCredential(it) } ?: entry
     }
 
     fun assembleFromSnapshot(snapshot: VaultSnapshot): VaultEntry {
-        var entry = VaultEntry(
-            id = snapshot.id,
-            vaultId = snapshot.vaultId,
-            entryVersion = snapshot.revision,
-            createdAt = snapshot.createdAt,
-            updatedAt = snapshot.updatedAt,
-            title = "",
-            username = "",
-            password = "",
-            category = ""
+        return VaultEntry(
+            metadata = snapshot.metadata.copy(
+                entryId = snapshot.id,
+                createdAt = snapshot.createdAt,
+                updatedAt = snapshot.updatedAt,
+                deletedAt = snapshot.deletedAt
+            ),
+            credential = snapshot.credential.copy(entryId = snapshot.id)
         )
-        entry = entry.mergeMetadata(snapshot.metadata)
-        return entry.mergeCredential(snapshot.credential)
     }
 
     fun assembleFromMetadataOnly(
         entity: VaultMetadataEntity,
-        metaPayload: MetadataPayload
+        meta: VaultMetadata
     ): VaultEntry {
         return VaultEntry(
-            id = entity.entryId,
-            vaultId = entity.vaultId,
-            entryVersion = entity.entryVersion,
-            deletedAt = entity.deletedAt,
-            createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt,
-            title = "",
-            username = "",
-            password = "",
-            category = ""
-        ).mergeMetadata(metaPayload)
+            metadata = meta.copy(
+                entryId = entity.entryId,
+                createdAt = entity.createdAt,
+                updatedAt = entity.updatedAt,
+                deletedAt = entity.deletedAt
+            ),
+            credential = VaultCredential(entryId = entity.entryId)
+        )
     }
 }
