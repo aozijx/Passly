@@ -3,20 +3,20 @@ package com.aozijx.passly.data.crypto
 import com.aozijx.passly.data.model.payload.backup.VaultSnapshot
 import com.aozijx.passly.data.model.payload.credential.CredentialPayload
 import com.aozijx.passly.data.model.payload.metadata.MetadataPayload
-import com.aozijx.passly.data.model.serializer.toByteArray
 import com.aozijx.passly.data.model.serializer.toCredentialPayload
+import com.aozijx.passly.data.model.serializer.toJsonString
 import com.aozijx.passly.data.model.serializer.toMetadataPayload
 import com.aozijx.passly.data.model.serializer.toVaultSnapshot
 import com.aozijx.passly.security.crypto.FieldEncryptor
 
-object VaultPayloadCipher {
+object EntryCipher {
 
     fun encryptMetadata(
         payload: MetadataPayload,
         entryId: String,
         fieldEncryptor: FieldEncryptor
     ): ByteArray = fieldEncryptor.encrypt(
-        payload.toByteArray(),
+        payload.toJsonString(),
         AadProvider.metadata(entryId)
     )
 
@@ -34,7 +34,7 @@ object VaultPayloadCipher {
         entryId: String,
         fieldEncryptor: FieldEncryptor
     ): ByteArray = fieldEncryptor.encrypt(
-        payload.toByteArray(),
+        payload.toJsonString(),
         AadProvider.credential(entryId)
     )
 
@@ -52,7 +52,7 @@ object VaultPayloadCipher {
         entryId: String,
         fieldEncryptor: FieldEncryptor
     ): ByteArray = fieldEncryptor.encrypt(
-        payload.toByteArray(),
+        payload.toJsonString(),
         AadProvider.history(entryId)
     )
 
