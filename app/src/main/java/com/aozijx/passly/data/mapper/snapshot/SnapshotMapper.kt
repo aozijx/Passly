@@ -1,22 +1,18 @@
 package com.aozijx.passly.data.mapper.snapshot
 
 import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
-import com.aozijx.passly.data.mapper.credential.toCredentialPayload
-import com.aozijx.passly.data.mapper.metadata.toMetadataPayload
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.VaultEntry
 
 fun VaultEntry.toSnapshot(): VaultSnapshot = VaultSnapshot(
     id = id,
-    vaultId = vaultId,
     entryType = entryType,
     deletedAt = deletedAt,
-    createdAt = createdAt ?: 0L,
-    updatedAt = updatedAt ?: 0L,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
     lastUsedAt = lastUsedAt,
-    revision = entryVersion,
-    metadata = toMetadataPayload(),
-    credential = toCredentialPayload()
+    metadata = metadata,
+    credential = credential
 )
 
 fun VaultSnapshot.toDomain(): VaultEntry = VaultEntryAssembler.assembleFromSnapshot(this)
