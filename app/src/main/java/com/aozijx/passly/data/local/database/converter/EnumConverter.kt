@@ -2,8 +2,8 @@ package com.aozijx.passly.data.local.database.converter
 
 import androidx.room.TypeConverter
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.lookup.LookupField
-import com.aozijx.passly.domain.model.type.EntryType
 
 object EntryTypeConverter {
     @TypeConverter

@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.strategy
 
-import com.aozijx.passly.domain.model.EntryType
-import com.aozijx.passly.domain.model.FieldGroup
-import com.aozijx.passly.domain.model.FieldKey
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.FieldGroup
+import com.aozijx.passly.domain.model.entry.FieldKey
+import com.aozijx.passly.domain.model.entry.VaultEntry
 
 /**
  * 条目类型策略基类
@@ -50,49 +50,49 @@ interface EntryTypeStrategy {
     private fun getCommonFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
         FieldKey.TITLE -> entry.title
         FieldKey.USERNAME -> entry.username
-        FieldKey.PASSWORD -> entry.password
-        FieldKey.EMAIL -> entry.email
-        FieldKey.NOTES -> entry.notes
-        FieldKey.URIS -> entry.uriList?.joinToString(", ")
+        FieldKey.PASSWORD -> entry.credential.password
+        FieldKey.EMAIL -> entry.credential.email
+        FieldKey.NOTES -> entry.credential.notes
+        FieldKey.URIS -> entry.website?.matchDomains?.joinToString(", ")
         else -> null
     }
 
     private fun getTotpFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.TOTP_SECRET -> entry.totpSecret
-        FieldKey.TOTP_ISSUER -> entry.totpIssuer
-        FieldKey.TOTP_PERIOD -> entry.totpPeriod.toString()
-        FieldKey.TOTP_DIGITS -> entry.totpDigits.toString()
-        FieldKey.TOTP_ALGORITHM -> entry.totpAlgorithm
+        FieldKey.TOTP_SECRET -> entry.credential.twoFactor?.otp?.secret
+        FieldKey.TOTP_ISSUER -> entry.credential.twoFactor?.otp?.issuer
+        FieldKey.TOTP_PERIOD -> (entry.credential.twoFactor?.otp?.period ?: 30).toString()
+        FieldKey.TOTP_DIGITS -> (entry.credential.twoFactor?.otp?.digits ?: 6).toString()
+        FieldKey.TOTP_ALGORITHM -> entry.credential.twoFactor?.otp?.algorithm ?: "SHA1"
         else -> null
     }
 
     private fun getCryptoFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.PASSKEY_DATA -> entry.passkeyDataJson
-        FieldKey.RECOVERY_CODES -> entry.recoveryCodes
-        FieldKey.HARDWARE_INFO -> entry.hardwareKeyInfo
-        FieldKey.SSH_KEY -> entry.sshPrivateKey
-        FieldKey.SEED_PHRASE -> entry.cryptoSeedPhrase
+        FieldKey.PASSKEY_DATA -> entry.credential.passkeyPrivateKeyReference
+        FieldKey.RECOVERY_CODES -> entry.credential.recoveryCodes.joinToString("\n")
+        FieldKey.HARDWARE_INFO -> entry.credential.hardwareKeyInfo
+        FieldKey.SSH_KEY -> entry.credential.sshPrivateKey
+        FieldKey.SEED_PHRASE -> entry.credential.seedPhrase
         else -> null
     }
 
     private fun getFinanceFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.CARD_EXPIRATION -> entry.cardExpiration
-        FieldKey.CARD_CVV -> entry.cardCvv
-        FieldKey.PAYMENT_PIN -> entry.paymentPin
-        FieldKey.PAYMENT_PLATFORM -> entry.paymentPlatform
-        FieldKey.SECURITY_QUESTION -> entry.securityQuestion
-        FieldKey.SECURITY_ANSWER -> entry.securityAnswer
+        FieldKey.CARD_EXPIRATION -> entry.credential.cardExpiry
+        FieldKey.CARD_CVV -> entry.credential.cardCvv
+        FieldKey.PAYMENT_PIN -> entry.credential.paymentPin
+        FieldKey.PAYMENT_PLATFORM -> entry.credential.paymentPlatform
+        FieldKey.SECURITY_QUESTION -> entry.credential.securityQuestion
+        FieldKey.SECURITY_ANSWER -> entry.credential.securityAnswer
         else -> null
     }
 
     private fun getIdentityFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.ID_NUMBER -> entry.idNumber
+        FieldKey.ID_NUMBER -> entry.credential.idNumber
         else -> null
     }
 
     private fun getConnectivityFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.WIFI_SECURITY -> entry.wifiSecurityType
-        FieldKey.WIFI_HIDDEN -> if (entry.wifiIsHidden) "是" else "否"
+        FieldKey.WIFI_SECURITY -> entry.credential.wifiSecurityType
+        FieldKey.WIFI_HIDDEN -> if (entry.credential.wifiIsHidden) "是" else "否"
         else -> null
     }
 
@@ -147,8 +147,8 @@ object EntryTypeStrategyFactory {
             ?: throw IllegalArgumentException("没有找到类型 $entryType 对应的策略")
     }
 
-    fun getStrategy(typeValue: Int): EntryTypeStrategy {
-        val entryType = EntryType.fromValue(typeValue)
+    fun getStrategy(typeName: String): EntryTypeStrategy {
+        val entryType = EntryType.fromName(typeName)
         return getStrategy(entryType)
     }
 
