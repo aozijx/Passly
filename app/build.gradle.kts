@@ -104,6 +104,15 @@ android {
     sourceSets.getByName("androidTest") {
         assets.directories.add("$projectDir/schemas")
     }
+
+    lint {
+        disable += setOf(
+            "AndroidGradlePluginVersion",
+//            "GradleDependency",
+//            "NewerVersionAvailable",
+            "OldTargetApi"
+        )
+    }
 }
 
 // Kotlin 配置
