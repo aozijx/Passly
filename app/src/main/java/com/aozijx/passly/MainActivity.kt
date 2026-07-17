@@ -1,26 +1,22 @@
 package com.aozijx.passly
 
-import android.content.Context
 import android.os.Bundle
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.core.platform.LocaleHelper
-import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
-import com.aozijx.passly.ui.features.backup.BackupCoordinator
-import com.aozijx.passly.ui.features.main.MainNotificationPermissionController
-import com.aozijx.passly.ui.features.main.MainSensorController
-import com.aozijx.passly.ui.features.main.MainViewModel
-import com.aozijx.passly.ui.features.main.contract.MainIntent
-import com.aozijx.passly.ui.features.main.ui.MainScreen
+import com.aozijx.passly.feature.backup.BackupCoordinator
+import com.aozijx.passly.feature.main.MainNotificationPermissionController
+import com.aozijx.passly.core.message.AppMessageCategory
+import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.feature.main.MainSensorController
+import com.aozijx.passly.feature.main.MainViewModel
+import com.aozijx.passly.feature.main.contract.MainIntent
+import com.aozijx.passly.feature.main.ui.MainScreen
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import kotlin.system.exitProcess
 
@@ -36,8 +32,14 @@ class MainActivity : FragmentActivity() {
             if (viewModel.isAuthorizedNow()) {
                 viewModel.handleIntent(MainIntent.Lock)
                 if (sensorController.isFlipExitAndClearStackEnabled) {
-                    finishAndRemoveTask()
-                    exitProcess(0)
+                    AppMessageCenter.publish(
+                        text = "应用即将关闭",
+                        category = AppMessageCategory.APP_CLOSE
+                    )
+                    window.decorView.postDelayed({
+                        finishAndRemoveTask()
+                        exitProcess(0)
+                    }, APP_CLOSE_MESSAGE_DELAY_MS)
                 }
             }
         }
@@ -45,28 +47,8 @@ class MainActivity : FragmentActivity() {
 
     private val notificationPermissionController: MainNotificationPermissionController by lazy {
         MainNotificationPermissionController(this) {
-            Toast.makeText(
-                this,
-                getString(R.string.main_notification_permission_denied),
-                Toast.LENGTH_SHORT
-            ).show()
+            AppMessageCenter.publish(getString(R.string.main_notification_permission_denied))
         }
-    }
-
-    override fun attachBaseContext(newBase: Context) {
-        val code = runCatching {
-            kotlinx.coroutines.runBlocking {
-                newBase.settingsDataStore.data.first()[
-                    stringPreferencesKey("app_language_code")
-                ] ?: ""
-            }
-        }.getOrDefault("")
-        val ctx = if (code.isNotEmpty()) {
-            LocaleHelper.applyLanguage(newBase, code)
-        } else {
-            newBase
-        }
-        super.attachBaseContext(ctx)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -99,12 +81,15 @@ class MainActivity : FragmentActivity() {
 
     override fun onResume() {
         super.onResume()
-        viewModel.handleIntent(MainIntent.CheckAndLock)
         if (sensorController.isFlipLockEnabled) sensorController.register()
     }
 
     override fun onPause() {
         super.onPause()
         if (sensorController.isFlipLockEnabled) sensorController.unregister()
+    }
+
+    private companion object {
+        const val APP_CLOSE_MESSAGE_DELAY_MS = 300L
     }
 }

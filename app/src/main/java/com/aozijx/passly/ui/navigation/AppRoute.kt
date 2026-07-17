@@ -16,6 +16,6 @@ sealed class AppRoute(val route: String) {
 
     data object Detail : AppRoute("detail/{entryId}") {
         const val ARG_ENTRY_ID = "entryId"
-        fun createRoute(entryId: Int) = "detail/$entryId"
+        fun createRoute(entryId: String) = "detail/$entryId"
     }
 }

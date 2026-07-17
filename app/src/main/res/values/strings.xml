@@ -158,6 +158,8 @@
     <string name="backup_import_mode_overwrite_desc">删除现有数据，导入备份</string>
     <string name="backup_import_mode_append_title">追加新数据</string>
     <string name="backup_import_mode_append_desc">保留现有数据，追加备份内容</string>
+    <string name="backup_use_recovery_code">使用恢复码加密</string>
+    <string name="backup_recovery_code_label">恢复码</string>
     <string name="backup_include_media_title">包含媒体文件</string>
     <string name="backup_include_media_desc">备份图标和附件</string>
 
@@ -229,6 +231,19 @@
     <string name="vault_detail_history_updates">变更</string>
     <string name="vault_detail_history_actions">使用</string>
     <string name="vault_detail_history_empty_filtered">暂无记录</string>
+    <string name="vault_detail_history_tab_version">版本</string>
+    <string name="vault_detail_history_tab_activity">活动</string>
+    <string name="vault_detail_history_restore">恢复</string>
+    <string name="vault_detail_activity_create">创建</string>
+    <string name="vault_detail_activity_update">更新</string>
+    <string name="vault_detail_activity_delete">删除</string>
+    <string name="vault_detail_activity_restore">恢复</string>
+    <string name="vault_detail_activity_autofill">自动填充</string>
+    <string name="vault_detail_activity_copy_password">复制密码</string>
+    <string name="vault_detail_activity_copy_username">复制用户名</string>
+    <string name="vault_detail_activity_view">查看</string>
+    <string name="vault_detail_activity_export">导出</string>
+    <string name="vault_detail_activity_import">导入</string>
 
     <!-- 验证页面字符串 -->
     <string name="auth_biometric_unlock">生物识别解锁</string>
@@ -278,18 +293,30 @@
     <string name="settings_theme_color_teal">青色</string>
     <string name="settings_theme_color_pink">粉色</string>
     <string name="settings_theme_color_select_title">选择主题色</string>
-    <string name="settings_group_language">语言</string>
-    <string name="settings_app_language">应用语言</string>
-    <string name="language_select_title">选择语言</string>
-    <string name="language_follow_system">跟随系统</string>
-    <string name="language_zh">简体中文</string>
-    <string name="language_en">English</string>
-    <string name="language_ja">日本語</string>
-    <string name="language_restart_hint">切换语言后建议重启应用以完全生效</string>
-    <string name="language_restart_title">重启应用</string>
-    <string name="language_restart_message">语言已更改，是否立即重启应用以使更改生效？</string>
-    <string name="language_restart_now">立即重启</string>
-    <string name="language_restart_later">稍后</string>
+
+    <!-- 恢复码 -->
+    <string name="settings_recovery_code_title">恢复码</string>
+    <string name="settings_recovery_code_warning">恢复码仅生成一次，请立即复制并妥善保存，丢失后将无法恢复账户。</string>
+    <string name="settings_recovery_code_save_hint">App 不会保存恢复码，请自行记录到安全的地方。</string>
+    <string name="settings_recovery_code_copy">复制恢复码</string>
+    <string name="settings_recovery_code_auth_title">身份验证</string>
+    <string name="settings_recovery_code_auth_subtitle">需要验证身份</string>
+    <string name="settings_recovery_code_verify_title">验证恢复码</string>
+    <string name="settings_recovery_code_verify_hint">粘贴恢复码进行验证</string>
+    <string name="settings_recovery_code_verify_btn">验证</string>
+    <string name="settings_recovery_code_verify_valid">恢复码有效</string>
+    <string name="settings_recovery_code_verify_invalid">恢复码无效</string>
+    <string name="settings_recovery_code_dismiss">我已记下</string>
+    <string name="settings_recovery_code_copied">恢复码已复制到剪贴板</string>
+    <string name="settings_recovery_code_create">创建恢复码</string>
+    <string name="settings_recovery_code_saved">已保存到设备</string>
+    <string name="settings_recovery_code_regenerate">重新生成恢复码</string>
+    <string name="settings_recovery_code_regenerate_confirm_message">旧的恢复码将立即失效，确定要重新生成吗？</string>
+    <string name="settings_recovery_code_regenerate_confirm">确定</string>
+    <string name="settings_recovery_code_cancel">取消</string>
+    <string name="auth_use_recovery_code">使用恢复码</string>
+    <string name="auth_recovery_code_label">恢复码</string>
+    <string name="auth_recovery_code_unlock">解锁保险库</string>
 
     <!-- 设置: 列表卡片样式 -->
     <string name="settings_card_style_section_title">列表卡片样式</string>

@@ -18,19 +18,19 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.feature.backup.BackupCoordinator
+import com.aozijx.passly.feature.detail.DetailViewModel
+import com.aozijx.passly.feature.detail.contract.DetailEffect
+import com.aozijx.passly.feature.detail.page.DetailScreen
+import com.aozijx.passly.feature.main.MainViewModel
+import com.aozijx.passly.feature.main.contract.MainIntent
+import com.aozijx.passly.feature.settings.SettingsScreen
+import com.aozijx.passly.feature.settings.SettingsViewModel
+import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
+import com.aozijx.passly.feature.vault.VaultContent
+import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
-import com.aozijx.passly.ui.features.backup.BackupCoordinator
-import com.aozijx.passly.ui.features.detail.DetailViewModel
-import com.aozijx.passly.ui.features.detail.contract.DetailEffect
-import com.aozijx.passly.ui.features.detail.page.DetailScreen
-import com.aozijx.passly.ui.features.main.MainViewModel
-import com.aozijx.passly.ui.features.main.contract.MainIntent
-import com.aozijx.passly.ui.features.settings.SettingsScreen
-import com.aozijx.passly.ui.features.settings.SettingsViewModel
-import com.aozijx.passly.ui.features.settings.datamanagement.DataViewModel
-import com.aozijx.passly.ui.features.vault.VaultContent
-import com.aozijx.passly.ui.features.vault.VaultViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 /**
@@ -86,11 +86,11 @@ fun PasslyNavHost(
         composable(
             route = AppRoute.Detail.route,
             arguments = listOf(
-                navArgument(AppRoute.Detail.ARG_ENTRY_ID) { type = NavType.IntType }
+                navArgument(AppRoute.Detail.ARG_ENTRY_ID) { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val entryId = backStackEntry.arguments
-                ?.getInt(AppRoute.Detail.ARG_ENTRY_ID)
+                ?.getString(AppRoute.Detail.ARG_ENTRY_ID)
                 ?: return@composable
 
             val detailViewModel: DetailViewModel = hiltViewModel()
@@ -137,7 +137,15 @@ fun PasslyNavHost(
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 settingsViewModel = settingsViewModel,
-                onUpdateInteraction = onUpdateInteraction
+                onUpdateInteraction = onUpdateInteraction,
+                onAuthRequired = { title, subtitle, onSuccess ->
+                    mainViewModel.requestReauth(
+                        launcher = biometricLauncher,
+                        title = title,
+                        subtitle = subtitle,
+                        onSuccess = onSuccess
+                    )
+                }
             )
         }
         }

@@ -3,8 +3,8 @@ package com.aozijx.passly.ui.common
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
-import com.aozijx.passly.core.auth.biometric.BiometricAuthenticator
-import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.feature.auth.biometric.BiometricAuthenticator
+import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 
 /**
  * FragmentActivity 的 BiometricPromptLauncher 实现
