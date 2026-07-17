@@ -45,8 +45,6 @@ jobs:
         include:
         - language: actions
           build-mode: none
-        # NOTE: Using 'manual' build mode with a version patch because Kotlin 2.3.20 
-        # is too recent for the extractor.
         - language: java-kotlin
           build-mode: manual
 
@@ -61,19 +59,6 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: gradle
-
-    # 核心修复步骤 1：降级 Kotlin 以适配 CodeQL
-    # 核心修复步骤 2：注入 android.disallowKotlinSourceSets=false 以适配 Gradle 9.1/AGP 9.0
-    - name: Patch Project for CodeQL Compatibility
-      if: matrix.build-mode == 'manual'
-      shell: bash
-      run: |
-        echo "Patching Kotlin version from 2.3.20 to 2.1.0..."
-        sed -i 's/kotlin = "2.3.20"/kotlin = "2.1.0"/' gradle/libs.versions.toml
-        sed -i 's/ksp = "2.3.5"/ksp = "2.1.0-1.0.29"/' gradle/libs.versions.toml
-        
-        echo "Suppressing Kotlin SourceSet DSL error for AGP 9.0..."
-        echo "android.disallowKotlinSourceSets=false" >> gradle.properties
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
@@ -93,8 +78,7 @@ jobs:
       shell: bash
       run: |
         chmod +x gradlew
-        # Build a single variant with memory constraints
-        ./gradlew :app:assembleFullDebug --no-daemon \
+        ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --no-daemon \
           -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
           -Dorg.gradle.parallel=false \
           --stacktrace
