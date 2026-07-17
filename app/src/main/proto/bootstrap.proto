@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option java_package = "com.aozijx.passly.data.crypto.proto";
+option java_multiple_files = true;
+
+message BootstrapData {
+  int32 version = 1;
+  repeated EnvelopeEntry envelopes = 2;
+  bytes verification_tag = 3;
+}
+
+message EnvelopeEntry {
+  string type = 1;
+  bytes ciphertext = 2;
+  bytes iv = 3;
+  bytes salt = 4;
+  string algorithm = 5;
+  int32 version = 6;
+}

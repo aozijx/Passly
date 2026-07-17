@@ -3,29 +3,27 @@ package com.aozijx.passly.domain.usecase.database
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.domain.repository.database.DatabaseLifecycleRepository
+import com.aozijx.passly.domain.repository.database.DatabaseController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 data class DatabaseInitOutcome(
-    val error: Throwable? = null,
-    val recoveryNotice: String? = null
+    val error: Throwable? = null
 ) {
     val success: Boolean get() = error == null
 }
 
 @Singleton
 class DatabaseLifecycleUseCases @Inject constructor(
-    private val repository: DatabaseLifecycleRepository
+    private val repository: DatabaseController
 ) {
     /**
      * 在 IO 调度器上预热数据库，封装错误处理与日志。
      */
     suspend fun preWarmAndReport(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
         val error = repository.preWarm()
-        val notice = if (error == null) repository.consumeAutoRecoveryNotice() else null
         if (error == null) {
             Logcat.i(TAG, "Database preWarm completed")
         } else {
@@ -39,7 +37,7 @@ class DatabaseLifecycleUseCases @Inject constructor(
                 )
             )
         }
-        DatabaseInitOutcome(error = error, recoveryNotice = notice)
+        DatabaseInitOutcome(error = error)
     }
 
     /**
@@ -47,7 +45,6 @@ class DatabaseLifecycleUseCases @Inject constructor(
      */
     suspend fun retryAndReport(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
         val error = repository.retry()
-        val notice = if (error == null) repository.consumeAutoRecoveryNotice() else null
         if (error == null) {
             Logcat.i(TAG, "Database retry completed")
         } else {
@@ -61,14 +58,12 @@ class DatabaseLifecycleUseCases @Inject constructor(
                 )
             )
         }
-        DatabaseInitOutcome(error = error, recoveryNotice = notice)
+        DatabaseInitOutcome(error = error)
     }
 
     suspend fun preWarm(): Throwable? = repository.preWarm()
 
     suspend fun retry(): Throwable? = repository.retry()
-
-    fun consumeAutoRecoveryNotice(): String? = repository.consumeAutoRecoveryNotice()
 
     /**
      * 关闭底层数据库连接。现在是挂起函数，确保关闭完成后才返回。

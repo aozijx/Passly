@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.usecase.backup
 
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.model.BackupImportMode
+import com.aozijx.passly.domain.model.backup.BackupImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import java.io.File
 import javax.inject.Inject

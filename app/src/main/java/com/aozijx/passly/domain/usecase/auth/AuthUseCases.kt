@@ -1,8 +1,7 @@
 package com.aozijx.passly.domain.usecase.auth
 
-import com.aozijx.passly.core.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.repository.auth.AuthRepository
+import com.aozijx.passly.domain.repository.security.AuthRepository
 import kotlinx.coroutines.flow.StateFlow
 
 import javax.inject.Inject
@@ -12,12 +11,6 @@ import javax.inject.Singleton
 class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
     val isAuthorized: StateFlow<Boolean> = repository.isAuthorized
     val isAppPasswordEnabled: StateFlow<Boolean> = repository.isAppPasswordEnabled
-
-    suspend fun authenticate(
-        launcher: BiometricPromptLauncher,
-        title: String,
-        subtitle: String
-    ): AppResult<Unit> = repository.authenticate(launcher, title, subtitle)
 
     suspend fun authenticateWithAppPassword(password: CharArray): AppResult<Unit> =
         repository.authenticateWithAppPassword(password)
@@ -36,20 +29,4 @@ class AuthUseCases @Inject constructor(private val repository: AuthRepository) {
     suspend fun disableAppPassword(password: CharArray): AppResult<Unit> =
         repository.disableAppPassword(password)
 
-    suspend fun verifyIdentity(
-        launcher: BiometricPromptLauncher,
-        title: String,
-        subtitle: String
-    ): AppResult<Unit> = repository.verifyIdentity(launcher, title, subtitle)
-
-    suspend fun rekeyWithInvalidationPolicy(
-        launcher: BiometricPromptLauncher,
-        invalidateOnBiometricChange: Boolean
-    ): AppResult<Unit> =
-        repository.rekeyWithInvalidationPolicy(launcher, invalidateOnBiometricChange)
-
-    suspend fun lock() = repository.lock()
-    fun onUserInteraction() = repository.onUserInteraction()
-    suspend fun checkAndLock() = repository.checkAndLock()
-    suspend fun updateLockTimeout(timeoutMs: Long) = repository.updateLockTimeout(timeoutMs)
 }

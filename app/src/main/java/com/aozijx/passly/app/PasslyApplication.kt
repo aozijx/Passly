@@ -13,17 +13,11 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.auth.session.AppIdleMonitor
+import com.aozijx.passly.security.session.AppIdleMonitor
 import com.aozijx.passly.core.log.CrashHandler
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.core.log.SensitiveDataFilter
-import com.aozijx.passly.data.repository.settings.internal.LANGUAGE_CODE_KEY
-import com.aozijx.passly.data.repository.settings.internal.settingsDataStore
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -39,10 +33,6 @@ class PasslyApplication : Application() {
         val context: Context
             get() = instance.applicationContext
 
-        /** 全局缓存的语言设置，避免在 Activity 的 attachBaseContext 中阻塞读取 DataStore */
-        @Volatile
-        var appLanguageCode: String = ""
-            private set
     }
 
     @Inject
@@ -53,19 +43,6 @@ class PasslyApplication : Application() {
 
     lateinit var logcatInstance: Logcat
         private set
-
-    override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(base)
-        // 预加载语言设置，避免后续 Activity 启动时重复阻塞主线程
-        // 设置较短的超时时间（200ms），防止 DataStore 初始化异常导致启动长时间黑屏
-        appLanguageCode = runCatching {
-            runBlocking(Dispatchers.IO) {
-                withTimeout(200) {
-                    base.settingsDataStore.data.first()[LANGUAGE_CODE_KEY] ?: ""
-                }
-            }
-        }.getOrDefault("")
-    }
 
     override fun onCreate() {
         if (BuildConfig.DEBUG) {
@@ -111,11 +88,11 @@ class PasslyApplication : Application() {
         val pm = packageManager
         val legacyComponent = ComponentName(
             this,
-            "${BuildConfig.APPLICATION_ID}.service.autofill.LegacyAutofillService"
+            "${packageName}.service.autofill.framework.LegacyAutofillService"
         )
         val modernComponent = ComponentName(
             this,
-            "${BuildConfig.APPLICATION_ID}.service.credential.ModernCredentialService"
+            "${packageName}.service.autofill.credential.ModernCredentialService"
         )
 
         try {

@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.domain.model.EntryType
-import com.aozijx.passly.domain.model.FieldDefinition
-import com.aozijx.passly.domain.model.FieldGroup
-import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.FieldDefinition
+import com.aozijx.passly.domain.model.entry.FieldGroup
+import com.aozijx.passly.domain.model.entry.FieldType
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
@@ -19,12 +19,12 @@ class SshKeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "标识名不能为空"
-        if (entry.sshPrivateKey.isNullOrBlank()) return "SSH 私钥不能为空"
+        if (entry.credential.sshPrivateKey.isNullOrBlank()) return "SSH 私钥不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        entry.sshPrivateKey?.let {
+        entry.credential.sshPrivateKey?.let {
             if (!it.contains("BEGIN")) return "无效的 SSH 私钥格式"
         }
         return null
@@ -35,7 +35,7 @@ class SshKeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
     }
 
     override fun extractSummary(entry: VaultEntry): String {
-        return entry.uriList?.firstOrNull() ?: "无主机"
+        return entry.website?.matchDomains?.firstOrNull() ?: "无主机"
     }
 
     override fun suggestedCategory(): String = "技术"
@@ -43,9 +43,11 @@ class SshKeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun supportsAutofill(): Boolean = false
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
-        return entry.copy(
-            category = suggestedCategory(), notes = entry.notes ?: "SSH 连接凭据"
-        )
+        return if (entry.credential.notes == null) {
+            entry.copy(credential = entry.credential.copy(notes = "SSH 连接凭据"))
+        } else {
+            entry
+        }
     }
 
     override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {

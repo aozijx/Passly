@@ -1,7 +1,7 @@
 package com.aozijx.passly.di.security
 
 import com.aozijx.passly.feature.auth.VerificationGateway
-import com.aozijx.passly.feature.verification.VerificationGatewayImpl
+import com.aozijx.passly.feature.auth.DefaultVerificationGateway
 import com.aozijx.passly.security.session.SessionStateProvider
 import com.aozijx.passly.security.session.UserSessionManager
 import com.aozijx.passly.security.session.UserSessionManagerImpl
@@ -33,5 +33,5 @@ abstract class SecurityModule {
 
     @Binds
     @Singleton
-    internal abstract fun bindVerificationGateway(impl: VerificationGatewayImpl): VerificationGateway
+    internal abstract fun bindVerificationGateway(impl: DefaultVerificationGateway): VerificationGateway
 }

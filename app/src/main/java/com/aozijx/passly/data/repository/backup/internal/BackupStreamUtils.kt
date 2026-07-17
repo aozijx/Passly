@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.backup.internal
 
 import android.content.Context
 import android.net.Uri
-import com.aozijx.passly.domain.model.BackupException
+import com.aozijx.passly.core.error.backup.BackupException
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.OutputStream

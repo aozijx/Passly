@@ -1,22 +1,19 @@
 package com.aozijx.passly.data.crypto
 
-import com.aozijx.passly.data.model.payload.credential.CredentialPayload
-import com.aozijx.passly.data.model.payload.metadata.MetadataPayload
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
-import com.aozijx.passly.data.model.serializer.toCredentialPayload
-import com.aozijx.passly.data.model.serializer.toJsonString
-import com.aozijx.passly.data.model.serializer.toMetadataPayload
-import com.aozijx.passly.data.model.serializer.toVaultSnapshot
+import com.aozijx.passly.data.model.serializer.AppJson
+import com.aozijx.passly.domain.model.credential.VaultCredential
+import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.security.crypto.FieldEncryptor
 
 object EntryCipher {
 
     fun encryptMetadata(
-        payload: MetadataPayload,
+        meta: VaultMetadata,
         entryId: String,
         fieldEncryptor: FieldEncryptor
     ): ByteArray = fieldEncryptor.encrypt(
-        payload.toJsonString(),
+        AppJson.encodeToString(VaultMetadata.serializer(), meta),
         AadProvider.metadata(entryId)
     )
 
@@ -24,17 +21,17 @@ object EntryCipher {
         blob: ByteArray,
         entryId: String,
         fieldEncryptor: FieldEncryptor
-    ): MetadataPayload = fieldEncryptor.decrypt(
-        blob,
-        AadProvider.metadata(entryId)
-    ).toMetadataPayload()
+    ): VaultMetadata = AppJson.decodeFromString(
+        VaultMetadata.serializer(),
+        fieldEncryptor.decrypt(blob, AadProvider.metadata(entryId))
+    )
 
     fun encryptCredential(
-        payload: CredentialPayload,
+        cred: VaultCredential,
         entryId: String,
         fieldEncryptor: FieldEncryptor
     ): ByteArray = fieldEncryptor.encrypt(
-        payload.toJsonString(),
+        AppJson.encodeToString(VaultCredential.serializer(), cred),
         AadProvider.credential(entryId)
     )
 
@@ -42,17 +39,17 @@ object EntryCipher {
         blob: ByteArray,
         entryId: String,
         fieldEncryptor: FieldEncryptor
-    ): CredentialPayload = fieldEncryptor.decrypt(
-        blob,
-        AadProvider.credential(entryId)
-    ).toCredentialPayload()
+    ): VaultCredential = AppJson.decodeFromString(
+        VaultCredential.serializer(),
+        fieldEncryptor.decrypt(blob, AadProvider.credential(entryId))
+    )
 
     fun encryptSnapshot(
-        payload: VaultSnapshot,
+        snapshot: VaultSnapshot,
         entryId: String,
         fieldEncryptor: FieldEncryptor
     ): ByteArray = fieldEncryptor.encrypt(
-        payload.toJsonString(),
+        AppJson.encodeToString(VaultSnapshot.serializer(), snapshot),
         AadProvider.history(entryId)
     )
 
@@ -60,8 +57,8 @@ object EntryCipher {
         blob: ByteArray,
         entryId: String,
         fieldEncryptor: FieldEncryptor
-    ): VaultSnapshot = fieldEncryptor.decrypt(
-        blob,
-        AadProvider.history(entryId)
-    ).toVaultSnapshot()
+    ): VaultSnapshot = AppJson.decodeFromString(
+        VaultSnapshot.serializer(),
+        fieldEncryptor.decrypt(blob, AadProvider.history(entryId))
+    )
 }

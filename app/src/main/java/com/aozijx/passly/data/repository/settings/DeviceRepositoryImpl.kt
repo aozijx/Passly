@@ -2,7 +2,6 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import com.aozijx.passly.data.local.datastore.appSettingsDataStore
-import com.aozijx.passly.domain.model.settings.AppDefaults
 import com.aozijx.passly.domain.repository.settings.DeviceRepository
 import com.aozijx.passly.domain.repository.settings.DeviceSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,39 +21,19 @@ class DeviceRepositoryImpl @Inject constructor(
     // ── 安全 ──
 
     override val lockTimeout: Flow<Long> =
-        dataStore.data.map { s ->
-            if (s.hasLockTimeoutMs()) s.lockTimeoutMs else AppDefaults.Lock.DEFAULT_TIMEOUT_MS
-        }
+        dataStore.data.map { it.lockTimeoutMs }
     override val isBiometricEnabled: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasBiometricEnabled()) s.biometricEnabled
-            else AppDefaults.Security.BIOMETRIC_ENABLED
-        }
+        dataStore.data.map { it.biometricEnabled }
     override val isInvalidateKeyOnBioChange: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasInvalidateKeyOnBioChange()) s.invalidateKeyOnBioChange
-            else AppDefaults.Security.INVALIDATE_KEY_ON_BIO_CHANGE
-        }
+        dataStore.data.map { it.invalidateKeyOnBioChange }
     override val isSecureContentEnabled: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasSecureContent()) s.secureContent
-            else AppDefaults.Security.SECURE_CONTENT_ENABLED
-        }
+        dataStore.data.map { it.secureContent }
     override val isFlipToLockEnabled: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasFlipToLock()) s.flipToLock
-            else AppDefaults.Security.FLIP_TO_LOCK_ENABLED
-        }
+        dataStore.data.map { it.flipToLock }
     override val isFlipExitAndClearStackEnabled: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasFlipExitAndClearStack()) s.flipExitAndClearStack
-            else AppDefaults.Security.FLIP_EXIT_AND_CLEAR_STACK
-        }
+        dataStore.data.map { it.flipExitAndClearStack }
     override val isLockOnBackground: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasLockOnBackground()) s.lockOnBackground
-            else AppDefaults.Security.LOCK_ON_BACKGROUND
-        }
+        dataStore.data.map { it.lockOnBackground }
 
     // ── 备份 ──
 

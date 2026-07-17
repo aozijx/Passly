@@ -2,10 +2,10 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import com.aozijx.passly.data.local.datastore.appSettingsDataStore
-import com.aozijx.passly.domain.model.settings.AppDefaults
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.model.settings.SwipeActionType
+import com.aozijx.passly.domain.model.settings.TabLayoutConstraints
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
 import com.aozijx.passly.domain.repository.settings.PortableRepository
 import com.aozijx.passly.domain.repository.settings.PortableSettings
@@ -34,10 +34,7 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
     override val isDarkMode: Flow<Boolean?> =
         dataStore.data.map { s -> if (s.hasDarkMode()) s.darkMode else null }
     override val isDynamicColor: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasDynamicColor()) s.dynamicColor
-            else AppDefaults.Display.DYNAMIC_COLOR
-        }
+        dataStore.data.map { it.dynamicColor }
     override val cardStyle: Flow<VaultCardStyle> = dataStore.data.map { s ->
         decodeCardStyles(s.cardStyleByEntryTypeMap)[DEFAULT_STYLE_KEY]
             ?: VaultCardStyle.fromKey(s.cardStyle)
@@ -51,32 +48,20 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
             parsed.toMap()
         }
     override val isStatusBarAutoHide: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasAutoHideStatusBar()) s.autoHideStatusBar
-            else AppDefaults.Display.STATUS_BAR_AUTO_HIDE
-        }
+        dataStore.data.map { it.autoHideStatusBar }
     override val isTopBarCollapsible: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasCollapseTopBar()) s.collapseTopBar
-            else AppDefaults.Display.TOP_BAR_COLLAPSIBLE
-        }
+        dataStore.data.map { it.collapseTopBar }
     override val isTabBarCollapsible: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasCollapseTabBar()) s.collapseTabBar
-            else AppDefaults.Display.TAB_BAR_COLLAPSIBLE
-        }
+        dataStore.data.map { it.collapseTabBar }
     override val isSwipeEnabled: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasSwipeEnabled()) s.swipeEnabled
-            else AppDefaults.Vault.SWIPE_ENABLED
-        }
+        dataStore.data.map { it.swipeEnabled }
     override val swipeLeftAction: Flow<SwipeActionType> = dataStore.data.map { s ->
         SwipeActionType.entries.find { e -> e.name == s.swipeLeftAction }
-            ?: AppDefaults.Vault.SWIPE_LEFT_ACTION
+            ?: SwipeActionType.COPY_PASSWORD
     }
     override val swipeRightAction: Flow<SwipeActionType> = dataStore.data.map { s ->
         SwipeActionType.entries.find { e -> e.name == s.swipeRightAction }
-            ?: AppDefaults.Vault.SWIPE_RIGHT_ACTION
+            ?: SwipeActionType.DETAIL
     }
     override val visibleVaultTabs: Flow<Set<String>?> = dataStore.data.map { s ->
         if (s.visibleVaultTabsConfigured) s.visibleVaultTabList.toSet() else null
@@ -85,25 +70,18 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
         when (s.autofillUiMode) {
             "inline", "SYSTEM_INLINE" -> AutofillUiMode.SYSTEM_INLINE
             "bottom_sheet", "BOTTOM_SHEET" -> AutofillUiMode.BOTTOM_SHEET
-            else -> AppDefaults.Vault.AUTOFILL_UI_MODE
+            else -> AutofillUiMode.SYSTEM_INLINE
         }
     }
     override val tabBarMaxTabsWithoutScroll: Flow<Int> = dataStore.data.map { s ->
-        val value = if (s.hasTabBarMaxTabsWithoutScroll()) {
-            s.tabBarMaxTabsWithoutScroll
-        } else {
-            AppDefaults.Vault.TAB_BAR_MAX_TABS_WITHOUT_SCROLL
-        }
+        val value = s.tabBarMaxTabsWithoutScroll
         value.coerceIn(
-            AppDefaults.Display.TAB_THRESHOLD_MIN,
-            AppDefaults.Display.TAB_THRESHOLD_MAX
+            TabLayoutConstraints.MIN_TABS_WITHOUT_SCROLL,
+            TabLayoutConstraints.MAX_TABS_WITHOUT_SCROLL
         )
     }
     override val isAutoDownloadIcons: Flow<Boolean> =
-        dataStore.data.map { s ->
-            if (s.hasAutoDownloadIcons()) s.autoDownloadIcons
-            else AppDefaults.Display.AUTO_DOWNLOAD_ICONS
-        }
+        dataStore.data.map { it.autoDownloadIcons }
     override val faviconDownloadWhitelist: Flow<Set<String>> =
         dataStore.data.map { s -> s.faviconDownloadDomainList.toSet() }
     override val vaultSortOption: Flow<SortOption> =
@@ -112,6 +90,14 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
         }
     override val themeColor: Flow<String> =
         dataStore.data.map { s -> s.themeColor }
+    override val showGeneralMessages: Flow<Boolean> =
+        dataStore.data.map { it.showGeneralMessages }
+    override val showIconDownloadMessages: Flow<Boolean> =
+        dataStore.data.map { it.showIconDownloadMessages }
+    override val showClipboardClearMessages: Flow<Boolean> =
+        dataStore.data.map { it.showClipboardClearMessages }
+    override val showAppCloseMessages: Flow<Boolean> =
+        dataStore.data.map { it.showAppCloseMessages }
 
     override fun getSettingsFlow(): Flow<PortableSettings> = combine(
         combine(
@@ -247,8 +233,8 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
         dataStore.updateData {
             it.toBuilder().setTabBarMaxTabsWithoutScroll(
                 maxTabs.coerceIn(
-                    AppDefaults.Display.TAB_THRESHOLD_MIN,
-                    AppDefaults.Display.TAB_THRESHOLD_MAX
+                    TabLayoutConstraints.MIN_TABS_WITHOUT_SCROLL,
+                    TabLayoutConstraints.MAX_TABS_WITHOUT_SCROLL
                 )
             ).build()
         }
@@ -273,5 +259,21 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
 
     override suspend fun setThemeColor(color: String) {
         dataStore.updateData { it.toBuilder().setThemeColor(color).build() }
+    }
+
+    override suspend fun setShowGeneralMessages(enabled: Boolean) {
+        dataStore.updateData { it.toBuilder().setShowGeneralMessages(enabled).build() }
+    }
+
+    override suspend fun setShowIconDownloadMessages(enabled: Boolean) {
+        dataStore.updateData { it.toBuilder().setShowIconDownloadMessages(enabled).build() }
+    }
+
+    override suspend fun setShowClipboardClearMessages(enabled: Boolean) {
+        dataStore.updateData { it.toBuilder().setShowClipboardClearMessages(enabled).build() }
+    }
+
+    override suspend fun setShowAppCloseMessages(enabled: Boolean) {
+        dataStore.updateData { it.toBuilder().setShowAppCloseMessages(enabled).build() }
     }
 }

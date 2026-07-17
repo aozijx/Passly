@@ -2,9 +2,9 @@ package com.aozijx.passly.data.model.payload.snapshot
 
 import com.aozijx.passly.data.model.payload.backup.AttachmentPayload
 import com.aozijx.passly.data.model.payload.backup.BackupSchema
-import com.aozijx.passly.domain.model.entry.VaultCredential
+import com.aozijx.passly.domain.model.credential.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultMetadata
-import com.aozijx.passly.domain.model.type.EntryType
+import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.type.Platform
 import kotlinx.serialization.Serializable
 

@@ -1,5 +1,27 @@
 package com.aozijx.passly.domain.model.envelope
 
+@JvmInline
+value class EnvelopeType(val value: String) {
+    companion object {
+        val BIOMETRIC = EnvelopeType("biometric")
+        val DEVICE_CREDENTIAL = EnvelopeType("device_credential")
+        val APP_PASSWORD = EnvelopeType("app_password")
+        val RECOVERY = EnvelopeType("recovery")
+        val PASSKEY = EnvelopeType("passkey")
+        val YUBIKEY = EnvelopeType("yubikey")
+        val ENTERPRISE = EnvelopeType("enterprise")
+    }
+}
+
+@JvmInline
+value class KdfAlgorithm(val value: String) {
+    companion object {
+        val NONE = KdfAlgorithm("none")
+        val ARGON2ID = KdfAlgorithm("argon2id")
+        val PBKDF2 = KdfAlgorithm("pbkdf2")
+    }
+}
+
 data class KeyEnvelope(
     val type: EnvelopeType,
     val ciphertext: ByteArray,

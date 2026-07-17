@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.autofill.model
 
-import com.aozijx.passly.domain.model.MatchType
-import com.aozijx.passly.domain.model.VaultIconable
+import com.aozijx.passly.domain.model.entry.VaultIconable
+import com.aozijx.passly.domain.model.lookup.MatchType
 
 /**
  * 已解析的候选凭据：裁剪后的 UI 安全子集 + Fill 所需的全部字段。
@@ -35,7 +35,7 @@ data class ResolvedCandidate(
     val fields: Map<FieldRole, String> = emptyMap(),
     override val iconName: String? = null,
     override val iconCustomPath: String? = null,
-    val entryType: Int = 0,
+    val entryType: String = "",
     /** 匹配类型（仅 Pipeline 路径有值，BottomSheet 直接查阅路径为 null） */
     val matchedBy: MatchType? = null,
     val matchedPackage: String? = null,

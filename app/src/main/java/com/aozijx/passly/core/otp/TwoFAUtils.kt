@@ -2,7 +2,7 @@ package com.aozijx.passly.core.otp
 
 import android.util.Base64
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import java.nio.ByteBuffer
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -18,15 +18,15 @@ object TwoFAUtils {
      * 从 VaultEntry 生成当前的 TOTP 验证码
      */
     fun generateCurrentTotpFromEntry(entry: VaultEntry): String? {
-        val secret = entry.totpSecret ?: return null
+        val secret = entry.credential.twoFactor?.otp?.secret ?: return null
         if (secret.isBlank()) return null
 
         return try {
             generateTotp(
                 secret = secret,
-                digits = entry.totpDigits,
-                period = entry.totpPeriod,
-                algorithm = entry.totpAlgorithm
+                digits = entry.credential.twoFactor.otp.digits,
+                period = entry.credential.twoFactor.otp.period,
+                algorithm = entry.credential.twoFactor.otp.algorithm
             )
         } catch (e: Exception) {
             Logcat.e("TwoFAUtils", "Failed to generate TOTP from entry", e)

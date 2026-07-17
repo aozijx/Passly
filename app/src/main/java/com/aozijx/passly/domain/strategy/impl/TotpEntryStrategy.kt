@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.domain.model.EntryType
-import com.aozijx.passly.domain.model.FieldDefinition
-import com.aozijx.passly.domain.model.FieldGroup
-import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.FieldDefinition
+import com.aozijx.passly.domain.model.entry.FieldGroup
+import com.aozijx.passly.domain.model.entry.FieldType
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
@@ -15,17 +15,17 @@ import javax.inject.Singleton
 
 @Singleton
 class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
-    override val entryType = EntryType.TOTP
+    override val entryType = EntryType.LOGIN
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "TOTP 标题不能为空"
-        if (entry.totpSecret.isNullOrBlank()) return "TOTP 密钥不能为空"
+        if (entry.credential.twoFactor?.otp?.secret.isNullOrBlank()) return "TOTP 密钥不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        if (entry.totpPeriod <= 0) return "TOTP 周期必须大于 0"
-        if (entry.totpDigits !in 5..8) return "TOTP 位数应在 5-8 位"
+        if ((entry.credential.twoFactor?.otp?.period ?: 30) <= 0) return "TOTP 周期必须大于 0"
+        if ((entry.credential.twoFactor?.otp?.digits ?: 6) !in 5..8) return "TOTP 位数应在 5-8 位"
         return null
     }
 
@@ -34,7 +34,7 @@ class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
     }
 
     override fun extractSummary(entry: VaultEntry): String {
-        return "${entry.totpDigits} 位 / ${entry.totpPeriod}s"
+        return "${entry.credential.twoFactor?.otp?.digits ?: 6} 位 / ${entry.credential.twoFactor?.otp?.period ?: 30}s"
     }
 
     override fun suggestedCategory(): String = "认证"
@@ -42,7 +42,7 @@ class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun supportsAutofill(): Boolean = false
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
-        return entry.copy(category = suggestedCategory())
+        return entry
     }
 
     override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {

@@ -1,13 +1,13 @@
 package com.aozijx.passly.domain.usecase.autofill
 
-import com.aozijx.passly.domain.model.CredentialCandidate
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.repository.CredentialRepository
+import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.CredentialCandidate
+import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AutofillUseCases @Inject constructor(private val repository: CredentialRepository) {
+class AutofillUseCases @Inject constructor(private val repository: CredentialServiceRepository) {
 
     fun search(
         packageName: String?, webDomain: String?

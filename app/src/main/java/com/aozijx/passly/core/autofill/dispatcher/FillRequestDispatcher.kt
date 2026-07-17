@@ -7,7 +7,7 @@ import com.aozijx.passly.core.autofill.model.ResponseContext
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.security.crypto.VaultLockManager
+import com.aozijx.passly.security.session.SessionStateProvider
 
 /**
  * 统一填充 Pipeline：纯编排调度，不负责查询、匹配、组装的实现细节。
@@ -24,7 +24,7 @@ import com.aozijx.passly.security.crypto.VaultLockManager
  * 严禁引用 AutofillService、CredentialProviderService 或任何 android.service 包。
  */
 class FillRequestDispatcher(
-    private val vaultLockManager: VaultLockManager,
+    private val sessionState: SessionStateProvider,
     private val candidateResolver: CandidateResolver,
     private val fieldMatchStrategy: FieldMatchStrategy,
     private val responseFactory: ResponseFactory,
@@ -41,7 +41,7 @@ class FillRequestDispatcher(
      * @return InternalFillResponse。若 vault 锁定或管道任一阶段无结果，返回空 entries。
      */
     fun dispatch(request: InternalFillRequest): InternalFillResponse {
-        if (vaultLockManager.isLocked()) {
+        if (sessionState.isLocked()) {
             Logcat.i(TAG, "Vault locked, skip fill for ${request.parentPackage}")
             return InternalFillResponse()
         }

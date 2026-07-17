@@ -197,7 +197,7 @@ internal class AuthRepositoryImpl @Inject constructor(
 
     override fun onExternalAuthorized() {
         if (!sessionManager.isAuthorized.value) {
-            Logcat.Companion.i("AuthRepo", "External auth: setting authorized")
+            Logcat.i("AuthRepo", "External auth: setting authorized")
             scope.launch { sessionManager.onAuthSuccess() }
         }
     }

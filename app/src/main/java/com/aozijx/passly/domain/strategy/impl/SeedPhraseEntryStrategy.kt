@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.domain.model.EntryType
-import com.aozijx.passly.domain.model.FieldDefinition
-import com.aozijx.passly.domain.model.FieldGroup
-import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.FieldDefinition
+import com.aozijx.passly.domain.model.entry.FieldGroup
+import com.aozijx.passly.domain.model.entry.FieldType
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
@@ -15,16 +15,16 @@ import javax.inject.Singleton
 
 @Singleton
 class SeedPhraseEntryStrategy @Inject constructor() : EntryTypeStrategy {
-    override val entryType = EntryType.SEED_PHRASE
+    override val entryType = EntryType.LOGIN
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "钱包名称不能为空"
-        if (entry.cryptoSeedPhrase.isNullOrBlank()) return "助记词不能为空"
+        if (entry.credential.seedPhrase.isNullOrBlank()) return "助记词不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        entry.cryptoSeedPhrase?.let { phrase ->
+        entry.credential.seedPhrase?.let { phrase ->
             val wordCount = phrase.split(Regex("\\s+")).size
             if (wordCount !in setOf(12, 24)) {
                 return "助记词应包含 12 或 24 个单词，实际 $wordCount 个"
@@ -34,7 +34,7 @@ class SeedPhraseEntryStrategy @Inject constructor() : EntryTypeStrategy {
     }
 
     override fun getSensitiveFields(): Set<String> {
-        return setOf("cryptoSeedPhrase", "password")
+        return setOf("seedPhrase", "password")
     }
 
     override fun extractSummary(entry: VaultEntry): String {
@@ -46,10 +46,11 @@ class SeedPhraseEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun supportsAutofill(): Boolean = false
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
-        return entry.copy(
-            category = suggestedCategory(),
-            notes = entry.notes ?: "备份好这个助记词，永远不要分享给任何人"
-        )
+        return if (entry.credential.notes == null) {
+            entry.copy(credential = entry.credential.copy(notes = "备份好这个助记词，永远不要分享给任何人"))
+        } else {
+            entry
+        }
     }
 
     override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
@@ -57,7 +58,7 @@ class SeedPhraseEntryStrategy @Inject constructor() : EntryTypeStrategy {
             FieldGroup(
                 title = "钱包信息", fields = listOf(
                     FieldDefinition("title", "名称", isRequired = true), FieldDefinition(
-                        "cryptoSeedPhrase",
+                        "seedPhrase",
                         "助记词",
                         isSensitive = true,
                         isRequired = true,

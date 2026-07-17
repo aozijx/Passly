@@ -5,7 +5,7 @@ import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.BackupFailed
 import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.ErrorTrace
-import com.aozijx.passly.domain.model.backup.BackupException
+import com.aozijx.passly.core.error.backup.BackupException
 
 internal fun mapBackupException(e: Throwable): BackupException {
     if (e is BackupException) return e

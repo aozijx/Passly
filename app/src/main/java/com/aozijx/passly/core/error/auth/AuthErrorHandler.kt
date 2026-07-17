@@ -10,8 +10,7 @@ import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.ErrorTrace
 import com.aozijx.passly.core.error.KeyStateError
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.security.crypto.DekManager
-import com.aozijx.passly.security.crypto.SessionManager
+import com.aozijx.passly.security.session.UserSessionManager
 import java.security.InvalidKeyException
 import java.security.KeyStoreException
 import javax.crypto.BadPaddingException
@@ -20,8 +19,7 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthErrorHandler @Inject constructor(
-    private val dekManager: DekManager,
-    private val sessionManager: SessionManager
+    private val userSessionManager: UserSessionManager
 ) {
     private companion object {
         private const val TAG = "AuthErrorHandler"
@@ -159,8 +157,7 @@ class AuthErrorHandler @Inject constructor(
 
     suspend fun cleanupSensitiveState() {
         try {
-            dekManager.lock()
-            sessionManager.clearSessionKey()
+            userSessionManager.lock()
             Logcat.i(TAG, "Sensitive state cleared")
         } catch (e: Exception) {
             Logcat.e(TAG, "Failed to clear sensitive state", e)

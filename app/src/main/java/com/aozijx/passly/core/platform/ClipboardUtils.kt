@@ -8,6 +8,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.message.AppMessageCategory
+import com.aozijx.passly.core.message.AppMessageCenter
 
 /**
  * 剪贴板工具类，提供安全复制、自动清除以及内容获取功能
@@ -65,7 +67,13 @@ object ClipboardUtils {
         try {
             val clipboard = context.applicationContext
                 .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.clearPrimaryClip()
+            if (clipboard.hasPrimaryClip()) {
+                clipboard.clearPrimaryClip()
+                AppMessageCenter.publish(
+                    text = "剪贴板中的敏感内容已清除",
+                    category = AppMessageCategory.CLIPBOARD_CLEAR
+                )
+            }
         } catch (e: Exception) {
             Logcat.e("ClipboardUtils", "Clear clipboard failed", e)
         }

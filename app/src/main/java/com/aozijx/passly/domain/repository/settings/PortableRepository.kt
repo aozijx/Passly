@@ -52,6 +52,10 @@ interface PortableRepository {
     val isAutoDownloadIcons: Flow<Boolean>
     val faviconDownloadWhitelist: Flow<Set<String>>
     val vaultSortOption: Flow<SortOption>
+    val showGeneralMessages: Flow<Boolean>
+    val showIconDownloadMessages: Flow<Boolean>
+    val showClipboardClearMessages: Flow<Boolean>
+    val showAppCloseMessages: Flow<Boolean>
 
     suspend fun setDarkMode(enabled: Boolean?)
     suspend fun setDynamicColor(enabled: Boolean)
@@ -70,4 +74,8 @@ interface PortableRepository {
     suspend fun setFaviconDownloadWhitelist(whitelist: Set<String>)
     suspend fun setVaultSortOption(sort: SortOption)
     suspend fun setThemeColor(color: String)
+    suspend fun setShowGeneralMessages(enabled: Boolean)
+    suspend fun setShowIconDownloadMessages(enabled: Boolean)
+    suspend fun setShowClipboardClearMessages(enabled: Boolean)
+    suspend fun setShowAppCloseMessages(enabled: Boolean)
 }

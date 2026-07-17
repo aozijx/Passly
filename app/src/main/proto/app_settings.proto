@@ -1,0 +1,57 @@
+syntax = "proto2";
+
+option java_package = "com.aozijx.passly.data.local.datastore.settings";
+option java_multiple_files = true;
+
+message AppSettings {
+  optional int32 version = 1 [default = 1];
+
+  // Security
+  optional int64 lock_timeout_ms = 2 [default = 60000];
+  optional bool biometric_enabled = 3 [default = true];
+  optional bool invalidate_key_on_bio_change = 4 [default = true];
+  optional bool secure_content = 5 [default = true];
+  optional bool flip_to_lock = 6 [default = false];
+  optional bool flip_exit_and_clear_stack = 7 [default = false];
+  optional bool lock_on_background = 8 [default = false];
+
+  // Display
+  optional bool dark_mode = 9;
+  optional bool dynamic_color = 10 [default = true];
+  optional string card_style = 11 [default = "default"];
+  reserved 12;
+  optional bool auto_hide_status_bar = 13 [default = true];
+  optional bool collapse_top_bar = 14 [default = true];
+  optional bool collapse_tab_bar = 15 [default = true];
+
+  // Vault Interaction
+  optional bool swipe_enabled = 16 [default = true];
+  optional string swipe_left_action = 17 [default = "COPY_PASSWORD"];
+  optional string swipe_right_action = 18 [default = "DETAIL"];
+  reserved 19;
+  optional string autofill_ui_mode = 20 [default = "SYSTEM_INLINE"];
+  optional int32 tab_bar_max_tabs_without_scroll = 21 [default = 4];
+  optional bool auto_download_icons = 22 [default = true];
+  reserved 23;
+  optional string vault_sort_option = 24 [default = "DEFAULT"];
+  reserved 25;
+  optional string theme_color = 26 [default = ""];
+
+  // Backup
+  optional string backup_directory_uri = 27 [default = ""];
+  optional string last_backup_export_file_name = 28 [default = ""];
+
+  reserved 29 to 35;
+
+  map<int32, string> card_style_by_entry_type = 36;
+  repeated string visible_vault_tab = 37;
+  repeated string favicon_download_domain = 38;
+  map<string, string> runtime_extra = 39;
+  optional bool visible_vault_tabs_configured = 40 [default = false];
+
+  // In-app message categories
+  optional bool show_general_messages = 41 [default = true];
+  optional bool show_icon_download_messages = 42 [default = true];
+  optional bool show_clipboard_clear_messages = 43 [default = true];
+  optional bool show_app_close_messages = 44 [default = true];
+}

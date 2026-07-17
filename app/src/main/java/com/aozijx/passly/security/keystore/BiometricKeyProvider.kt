@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.biometric.BiometricPrompt
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.security.crypto.DekManager
+import com.aozijx.passly.security.crypto.UnlockError
 import com.aozijx.passly.security.crypto.UnlockResult
-import com.aozijx.passly.security.envelope.EnvelopeType
+import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,7 +47,7 @@ class BiometricKeyProvider @Inject constructor(
      * - 已有信封 → 解密模式（用于解锁）
      * - 无信封   → 加密模式（用于首次引导）
      */
-    fun getInitializedCipher(): Cipher? {
+    suspend fun getInitializedCipher(): Cipher? {
         val envelope = dekManager.getEnvelope(EnvelopeType.BIOMETRIC)
         return if (envelope != null) {
             AndroidKeyStoreProvider.getCipherForDecrypt(context, envelope.iv)
@@ -64,17 +65,24 @@ class BiometricKeyProvider @Inject constructor(
     suspend fun processResult(result: BiometricPrompt.AuthenticationResult): UnlockResult {
         val cipher = result.cryptoObject?.cipher
             ?: return UnlockResult.Failed(
-                com.aozijx.passly.security.crypto.UnlockError.AUTH_FAILED
+                UnlockError.AUTH_FAILED
             )
 
         val hasEnvelope = dekManager.getEnvelope(EnvelopeType.BIOMETRIC) != null
 
         return if (hasEnvelope) {
             Logcat.i(TAG, "Delegating biometric unlock to DekManager")
-            withContext(Dispatchers.IO) { dekManager.unlockBiometric(cipher) }
+            withContext(Dispatchers.IO) { dekManager.unlock(EnvelopeType.BIOMETRIC, cipher) }
         } else {
             Logcat.i(TAG, "No biometric envelope, delegating bootstrap to DekManager")
-            withContext(Dispatchers.IO) { dekManager.bootstrapBiometric(cipher) }
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    dekManager.initializeWithCipher(EnvelopeType.BIOMETRIC, cipher)
+                    UnlockResult.Success
+                }.getOrElse { e ->
+                    UnlockResult.Failed(UnlockError.UNKNOWN)
+                }
+            }
         }
     }
 
@@ -85,7 +93,7 @@ class BiometricKeyProvider @Inject constructor(
     /**
      * 准备 Rekey：删除旧 AndroidKeyStore 密钥和 Biometric 信封。
      */
-    fun prepareForRekey(invalidateOnBiometricChange: Boolean) {
+    suspend fun prepareForRekey(invalidateOnBiometricChange: Boolean) {
         val alias = AndroidKeyStoreProvider.getAlias(context)
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         if (ks.containsAlias(alias)) {
@@ -108,7 +116,7 @@ class BiometricKeyProvider @Inject constructor(
             ?: throw IllegalStateException("CryptoObject is null")
 
         withContext(Dispatchers.IO) {
-            dekManager.rekeyBiometric(cipher)
+            dekManager.rekey(EnvelopeType.BIOMETRIC, cipher)
         }
     }
 }

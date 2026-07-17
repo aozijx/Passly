@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.domain.model.EntryType
-import com.aozijx.passly.domain.model.FieldDefinition
-import com.aozijx.passly.domain.model.FieldGroup
-import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.FieldDefinition
+import com.aozijx.passly.domain.model.entry.FieldGroup
+import com.aozijx.passly.domain.model.entry.FieldType
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
@@ -15,27 +15,27 @@ import javax.inject.Singleton
 
 @Singleton
 class PasskeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
-    override val entryType = EntryType.PASSKEY
+    override val entryType = EntryType.LOGIN
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "Passkey 标题不能为空"
-        if (entry.passkeyDataJson.isNullOrBlank()) return "Passkey 数据不能为空"
+        if (entry.credential.passkeyPrivateKeyReference.isNullOrBlank()) return "Passkey 数据不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        if (!entry.recoveryCodes.isNullOrBlank() && entry.recoveryCodes.length < 6) {
+        if (entry.credential.recoveryCodes.isNotEmpty() && entry.credential.recoveryCodes.any { it.length < 6 }) {
             return "恢复码内容异常"
         }
         return null
     }
 
     override fun getSensitiveFields(): Set<String> {
-        return setOf("passkeyDataJson", "recoveryCodes")
+        return setOf("passkeyPrivateKeyReference", "recoveryCodes")
     }
 
     override fun extractSummary(entry: VaultEntry): String {
-        return if (entry.recoveryCodes.isNullOrBlank()) "Passkey" else "Passkey + 恢复码"
+        return if (entry.credential.recoveryCodes.isEmpty()) "Passkey" else "Passkey + 恢复码"
     }
 
     override fun suggestedCategory(): String = "认证"
@@ -43,7 +43,7 @@ class PasskeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun supportsAutofill(): Boolean = false
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
-        return entry.copy(category = suggestedCategory())
+        return entry
     }
 
     override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
@@ -53,8 +53,8 @@ class PasskeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
                     FieldDefinition("title", "名称", isRequired = true),
                     FieldDefinition("username", "账户名"),
                     FieldDefinition(
-                        "passkeyDataJson",
-                        "Passkey 凭据 (JSON)",
+                        "passkeyPrivateKeyReference",
+                        "Passkey 凭据",
                         isSensitive = true,
                         isRequired = true,
                         fieldType = FieldType.TEXTAREA

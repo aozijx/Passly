@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.otp
 
 import androidx.core.net.toUri
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -34,10 +34,10 @@ object TotpUtils {
     }
 
     fun constructOtpAuthUri(entry: VaultEntry, secret: String): String {
-        val issuer = URLEncoder.encode(entry.totpIssuer ?: entry.category, "UTF-8")
+        val issuer = URLEncoder.encode(entry.credential.twoFactor?.otp?.issuer ?: entry.category, "UTF-8")
         val label = URLEncoder.encode(entry.title, "UTF-8")
         val secretEncoded = secret.replace(" ", "").uppercase()
 
-        return "otpauth://totp/$label?secret=$secretEncoded&issuer=$issuer&period=${entry.totpPeriod}&digits=${entry.totpDigits}&algorithm=${entry.totpAlgorithm}"
+        return "otpauth://totp/$label?secret=$secretEncoded&issuer=$issuer&period=${entry.credential.twoFactor?.otp?.period ?: 30}&digits=${entry.credential.twoFactor?.otp?.digits ?: 6}&algorithm=${entry.credential.twoFactor?.otp?.algorithm ?: "SHA1"}"
     }
 }

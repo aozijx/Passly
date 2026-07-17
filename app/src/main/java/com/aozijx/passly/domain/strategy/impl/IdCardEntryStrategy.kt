@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.domain.model.EntryType
-import com.aozijx.passly.domain.model.FieldDefinition
-import com.aozijx.passly.domain.model.FieldGroup
-import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.FieldDefinition
+import com.aozijx.passly.domain.model.entry.FieldGroup
+import com.aozijx.passly.domain.model.entry.FieldType
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
@@ -19,12 +19,12 @@ class IdCardEntryStrategy @Inject constructor() : EntryTypeStrategy {
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "证件标题不能为空"
-        if (entry.idNumber.isNullOrBlank()) return "证件号码不能为空"
+        if (entry.credential.idNumber.isNullOrBlank()) return "证件号码不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        if (entry.idNumber != null && entry.idNumber.length < 6) {
+        if (entry.credential.idNumber != null && entry.credential.idNumber.length < 6) {
             return "证件号码长度异常"
         }
         return null
@@ -35,7 +35,7 @@ class IdCardEntryStrategy @Inject constructor() : EntryTypeStrategy {
     }
 
     override fun extractSummary(entry: VaultEntry): String {
-        return if (entry.cardExpiration.isNullOrBlank()) "证件信息" else "有效期 ${entry.cardExpiration}"
+        return if (entry.credential.cardExpiry.isNullOrBlank()) "证件信息" else "有效期 ${entry.credential.cardExpiry}"
     }
 
     override fun suggestedCategory(): String = "身份"
@@ -43,7 +43,7 @@ class IdCardEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun supportsAutofill(): Boolean = false
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
-        return entry.copy(category = suggestedCategory())
+        return entry
     }
 
     override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {

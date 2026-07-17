@@ -1,12 +1,13 @@
 package com.aozijx.passly.domain.usecase.detail
 
-import com.aozijx.passly.domain.model.FaviconOutcome
-import com.aozijx.passly.domain.model.FaviconResult
-import com.aozijx.passly.domain.model.VaultEntry
-import com.aozijx.passly.domain.model.VaultHistory
+import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
-import com.aozijx.passly.domain.repository.vault.HistoryRepository
+import com.aozijx.passly.domain.model.favicon.FaviconResult
+import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.activity.VaultActivity
 import com.aozijx.passly.domain.repository.vault.VaultRepository
+import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
+import com.aozijx.passly.domain.usecase.vault.SnapshotUseCases
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,10 +16,11 @@ import javax.inject.Singleton
 class DetailUseCases @Inject constructor(
     private val vaultRepository: VaultRepository,
     private val faviconRepository: FaviconRepository,
-    private val historyRepository: HistoryRepository
+    private val activityUseCases: ActivityUseCases,
+    private val snapshotUseCases: SnapshotUseCases
 ) {
 
-    suspend fun getEntryById(entryId: Int): VaultEntry? = vaultRepository.getEntryById(entryId)
+    suspend fun getEntryById(entryId: String): VaultEntry? = vaultRepository.getEntryById(entryId)
 
     suspend fun updateEntry(entry: VaultEntry) = vaultRepository.update(entry)
 
@@ -27,17 +29,17 @@ class DetailUseCases @Inject constructor(
         if (domain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return null
         val outcome = downloadFavicon(domain)
         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-            val updated = entry.copy(iconCustomPath = outcome.filePath)
+            val updated = entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath))
             vaultRepository.update(updated)
             return updated
         }
         return null
     }
 
-    fun getHistoryByEntryId(entryId: Int): Flow<List<VaultHistory>> =
-        historyRepository.getHistoryByEntryId(entryId)
+    fun getActivityByEntryId(entryId: String): Flow<List<VaultActivity>> =
+        activityUseCases.observeByEntryId(entryId)
 
-    suspend fun insertHistory(history: VaultHistory) = historyRepository.insertHistory(history)
+    suspend fun insertActivity(activity: VaultActivity) = activityUseCases.insert(activity)
 
     private suspend fun downloadFavicon(input: String): FaviconOutcome {
         if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)

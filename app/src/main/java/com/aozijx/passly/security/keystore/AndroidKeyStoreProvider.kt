@@ -5,7 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.domain.model.AppDefaults
+import com.aozijx.passly.security.crypto.CryptoConfig
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -16,7 +16,7 @@ internal object AndroidKeyStoreProvider {
     private val keyGenLock = Any()
 
     fun getAlias(context: Context) =
-        "${context.packageName}.${AppDefaults.Crypto.KEYSTORE_ALIAS_SUFFIX}"
+        "${context.packageName}.${CryptoConfig.KEYSTORE_ALIAS_SUFFIX}"
 
     /** 获取 ENCRYPT_MODE Cipher（用于新建信封） */
     fun getCipherForEncrypt(context: Context): Cipher? {
@@ -25,7 +25,7 @@ internal object AndroidKeyStoreProvider {
         return try {
             val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
             val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
-            val cipher = Cipher.getInstance(AppDefaults.Crypto.ALGORITHM)
+            val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
             Logcat.i(TAG, "Cipher initialized in ENCRYPT mode")
             cipher
@@ -42,8 +42,8 @@ internal object AndroidKeyStoreProvider {
         return try {
             val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
             val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
-            val cipher = Cipher.getInstance(AppDefaults.Crypto.ALGORITHM)
-            val spec = GCMParameterSpec(AppDefaults.Crypto.GCM_TAG_BITS, iv)
+            val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
+            val spec = GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, iv)
             cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
             Logcat.i(TAG, "Cipher initialized in DECRYPT mode")
             cipher
@@ -80,7 +80,7 @@ internal object AndroidKeyStoreProvider {
         )
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setKeySize(AppDefaults.Crypto.KEY_SIZE_BITS)
+            .setKeySize(CryptoConfig.KEY_SIZE_BITS)
             .setUserAuthenticationRequired(true)
             .setUserAuthenticationParameters(
                 0,

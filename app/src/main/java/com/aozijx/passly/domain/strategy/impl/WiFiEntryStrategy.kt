@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.strategy.impl
 
-import com.aozijx.passly.domain.model.EntryType
-import com.aozijx.passly.domain.model.FieldDefinition
-import com.aozijx.passly.domain.model.FieldGroup
-import com.aozijx.passly.domain.model.FieldType
-import com.aozijx.passly.domain.model.VaultEntry
+import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.FieldDefinition
+import com.aozijx.passly.domain.model.entry.FieldGroup
+import com.aozijx.passly.domain.model.entry.FieldType
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
 /**
@@ -20,12 +20,12 @@ class WiFiEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "WiFi 标题不能为空"
         if (entry.username.isBlank()) return "SSID 不能为空"
-        if (entry.password.isBlank()) return "WiFi 密码不能为空"
+        if (entry.credential.password.isNullOrBlank()) return "WiFi 密码不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        if (entry.password.length < 8) return "WiFi 密码长度应在 8 位及以上"
+        if ((entry.credential.password?.length ?: 0) < 8) return "WiFi 密码长度应在 8 位及以上"
         return null
     }
 
@@ -34,7 +34,7 @@ class WiFiEntryStrategy @Inject constructor() : EntryTypeStrategy {
     }
 
     override fun extractSummary(entry: VaultEntry): String {
-        return "加密类型 ${entry.wifiSecurityType ?: "WPA/WPA2"}"
+        return "加密类型 ${entry.credential.wifiSecurityType ?: "WPA/WPA2"}"
     }
 
     override fun suggestedCategory(): String = "网络"
@@ -42,7 +42,7 @@ class WiFiEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun supportsAutofill(): Boolean = true
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
-        return entry.copy(category = suggestedCategory())
+        return entry
     }
 
     override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {

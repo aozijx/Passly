@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.crypto
 
-import com.aozijx.passly.domain.model.AppDefaults
+import com.aozijx.passly.core.error.crypto.CryptoException
+import com.aozijx.passly.security.MemoryCleaner
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -11,7 +12,7 @@ import javax.inject.Singleton
 /**
  * 字段级加密：AES-256-GCM。
  *
- * 密钥来自 [SessionManager]，仅在用户已认证解锁时可用；锁定状态下调用会抛出。
+ * 密钥来自 [SessionKeyManager]，仅在用户已认证解锁时可用；锁定状态下调用会抛出。
  *
  * ## 输入/输出
  * - [encrypt]: String → ByteArray（IV + ciphertext，无 Base64，直接存 BLOB）
@@ -29,13 +30,13 @@ import javax.inject.Singleton
  */
 @Singleton
 class FieldEncryptor @Inject constructor(
-    private val sessionManager: SessionManager
+    private val sessionKeyManager: SessionKeyManager
 ) {
     fun encrypt(data: String, aad: ByteArray? = null): ByteArray {
-        val key = sessionManager.getSessionKey()
+        val key = sessionKeyManager.getSessionKey()
         return try {
-            val secretKey = SecretKeySpec(key, AppDefaults.Crypto.AES_KEY_ALGORITHM)
-            val cipher = Cipher.getInstance(AppDefaults.Crypto.ALGORITHM)
+            val secretKey = SecretKeySpec(key, CryptoConfig.AES_KEY_ALGORITHM)
+            val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
 
             aad?.let { cipher.updateAAD(it) }
@@ -61,21 +62,21 @@ class FieldEncryptor @Inject constructor(
     }
 
     fun decrypt(encryptedData: ByteArray, aad: ByteArray? = null): String {
-        val key = sessionManager.getSessionKey()
+        val key = sessionKeyManager.getSessionKey()
         return try {
-            val secretKey = SecretKeySpec(key, AppDefaults.Crypto.AES_KEY_ALGORITHM)
+            val secretKey = SecretKeySpec(key, CryptoConfig.AES_KEY_ALGORITHM)
 
-            val iv = encryptedData.copyOfRange(0, AppDefaults.Crypto.IV_LENGTH)
+            val iv = encryptedData.copyOfRange(0, CryptoConfig.IV_LENGTH)
             val encrypted = encryptedData.copyOfRange(
-                AppDefaults.Crypto.IV_LENGTH,
+                CryptoConfig.IV_LENGTH,
                 encryptedData.size
             )
 
-            val cipher = Cipher.getInstance(AppDefaults.Crypto.ALGORITHM)
+            val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             cipher.init(
                 Cipher.DECRYPT_MODE,
                 secretKey,
-                GCMParameterSpec(AppDefaults.Crypto.GCM_TAG_BITS, iv)
+                GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, iv)
             )
 
             aad?.let { cipher.updateAAD(it) }

@@ -11,7 +11,7 @@ import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.error.logFailureWithContext
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.data.local.DatabaseConfig
+import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.security.crypto.CryptoEngine
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.ByteArrayOutputStream
@@ -57,7 +57,7 @@ object EmergencyBackupExporter {
         return try {
             deleteExpiredBackups(context.cacheDir)
 
-            val dbFile = context.getDatabasePath(DatabaseConfig.DATABASE_NAME)
+            val dbFile = context.getDatabasePath(DatabaseSchema.DATABASE_NAME)
             if (!dbFile.exists()) return AppResult.failure(
                 AppError.fromThrowable(
                     Exception("数据库文件不存在"),
@@ -119,7 +119,7 @@ object EmergencyBackupExporter {
         val writer = JsonWriter(OutputStreamWriter(output, StandardCharsets.UTF_8))
         writer.setIndent("  ")
 
-        val cursor = db.rawQuery("SELECT * FROM ${DatabaseConfig.TABLE_ENTRIES}", null)
+        val cursor = db.rawQuery("SELECT * FROM ${DatabaseSchema.TABLE_METADATA}", null)
         writer.beginArray()
         cursor.use {
             while (cursor.moveToNext()) {

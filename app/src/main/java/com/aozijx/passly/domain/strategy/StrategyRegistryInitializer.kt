@@ -1,15 +1,16 @@
 package com.aozijx.passly.domain.strategy
 
+import com.aozijx.passly.domain.model.entry.EntryType
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 internal class StrategyRegistryInitializer @Inject constructor(
-    strategies: Map<Int, @JvmSuppressWildcards EntryTypeStrategy>
+    strategies: Map<String, @JvmSuppressWildcards EntryTypeStrategy>
 ) {
     init {
         val mapped = strategies.mapKeys { (key, _) ->
-            com.aozijx.passly.domain.model.EntryType.fromValue(key)
+            EntryType.fromName(key)
         }
         EntryTypeStrategyFactory.registerAll(mapped)
     }
