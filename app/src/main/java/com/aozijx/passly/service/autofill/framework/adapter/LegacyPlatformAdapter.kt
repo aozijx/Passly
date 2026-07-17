@@ -5,7 +5,7 @@ import android.service.autofill.FillResponse
 import com.aozijx.passly.core.autofill.model.FieldDescriptor
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
-import com.aozijx.passly.domain.model.AutofillUiMode
+import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
 import com.aozijx.passly.service.autofill.framework.parser.ParsedStructure
 import javax.inject.Inject

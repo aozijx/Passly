@@ -19,9 +19,9 @@ import androidx.credentials.provider.CredentialEntry
 import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
-import com.aozijx.passly.core.di.Strict
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.security.crypto.VaultLockManager
+import com.aozijx.passly.di.Strict
+import com.aozijx.passly.security.session.SessionStateProvider
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,7 +45,7 @@ class ModernCredentialService : CredentialProviderService() {
     @Strict
     lateinit var dispatcher: FillRequestDispatcher
     @Inject
-    lateinit var vaultLockManager: VaultLockManager
+    lateinit var sessionState: SessionStateProvider
     @Inject
     lateinit var adapter: CredentialPlatformAdapter
 
@@ -73,7 +73,7 @@ class ModernCredentialService : CredentialProviderService() {
         callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>
     ) {
         try {
-            if (vaultLockManager.isLocked()) {
+            if (sessionState.isLocked()) {
                 callback.onResult(
                     BeginGetCredentialResponse(
                         authenticationActions = listOf(

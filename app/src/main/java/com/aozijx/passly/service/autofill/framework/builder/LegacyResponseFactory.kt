@@ -7,12 +7,12 @@ import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.domain.model.AutofillUiMode
-import com.aozijx.passly.domain.model.EntryType
-import com.aozijx.passly.domain.model.MatchType
+import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.lookup.MatchType
+import com.aozijx.passly.domain.model.settings.AutofillUiMode
+import com.aozijx.passly.feature.autofill.framework.AutofillFillActivity
+import com.aozijx.passly.feature.autofill.framework.AutofillRemoteViewFactory
 import com.aozijx.passly.service.autofill.framework.parser.ParsedStructure
-import com.aozijx.passly.ui.features.autofill.framework.AutofillFillActivity
-import com.aozijx.passly.ui.features.autofill.framework.AutofillRemoteViewFactory
 
 /**
  * Legacy 自动填充响应工厂：负责将 InternalFillResponse 转换为 Android FillResponse。
@@ -40,18 +40,7 @@ internal object LegacyResponseFactory {
         val builder = FillResponse.Builder()
 
         if (response.candidates.isEmpty()) {
-            val presentation = AutofillRemoteViewFactory.createUnlockTrigger(context)
-            val intent = createUnlockIntent(context, parsed, uiMode)
-            val pi = PendingIntent.getActivity(
-                context, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            LegacyDatasetFactory.setAuthenticationCompat(
-                builder,
-                parsed.allIds.toTypedArray(),
-                pi.intentSender,
-                presentation
-            )
+            return builder.build()
         } else {
             response.candidates.forEach { candidate ->
                 val presentation = AutofillRemoteViewFactory.createDatasetItem(
@@ -125,7 +114,7 @@ internal object LegacyResponseFactory {
     private fun buildSubtitle(candidate: ResolvedCandidate): String {
         val infoParts = mutableListOf<String>()
         if (candidate.username.isNotBlank()) infoParts += candidate.username
-        val displayType = EntryType.fromValue(candidate.entryType).displayName
+        val displayType = EntryType.fromName(candidate.entryType).displayName
         if (infoParts.isEmpty()) infoParts += displayType
         val joined = infoParts.joinToString(" · ")
         return if (candidate.totpCode != null) "OTP · $joined" else joined
@@ -137,20 +126,6 @@ internal object LegacyResponseFactory {
             MatchType.WEB_DOMAIN -> candidate.matchedDomain ?: ""
             else -> ""
         }
-    }
-
-    private fun createUnlockIntent(
-        context: Context,
-        parsed: ParsedStructure,
-        uiMode: AutofillUiMode
-    ): Intent = Intent(context, AutofillFillActivity::class.java).apply {
-        putExtra("unlock_only", true)
-        putExtra("username_id", parsed.usernameId)
-        putExtra("password_id", parsed.passwordId)
-        putExtra("otp_id", parsed.otpId)
-        putExtra("package_name", parsed.packageName)
-        putExtra("web_domain", parsed.webDomain)
-        putExtra("autofill_ui_mode", uiMode.name)
     }
 
     private fun createFillIntent(

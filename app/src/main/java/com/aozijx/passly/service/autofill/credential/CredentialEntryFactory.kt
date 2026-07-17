@@ -14,7 +14,7 @@ import com.aozijx.passly.core.autofill.model.ResolvedCandidate
  * Credential 条目工厂：负责构建 Credential Manager 所需的条目对象。
  *
  * 输入为 Core 层的 [ResolvedCandidate]，由 [CredentialPlatformAdapter] 传入。
- * 不直接依赖 domain 层的 [com.aozijx.passly.domain.model.CredentialCandidate]。
+ * 不直接依赖 domain 层的 [com.aozijx.passly.domain.model.credential.CredentialCandidate]。
  */
 internal object CredentialEntryFactory {
 
