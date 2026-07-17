@@ -1,14 +1,12 @@
-package com.aozijx.passly.core.di
+package com.aozijx.passly.di
 
-import com.aozijx.passly.core.auth.VerificationGateway
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.autofill.matcher.FieldMatchStrategy
 import com.aozijx.passly.core.autofill.matcher.HeuristicMatchStrategy
 import com.aozijx.passly.core.autofill.matcher.StrictMatchStrategy
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
-import com.aozijx.passly.security.crypto.VaultLockManager
-import com.aozijx.passly.ui.features.verification.VerificationGatewayImpl
+import com.aozijx.passly.security.session.SessionStateProvider
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -42,10 +40,6 @@ abstract class ServiceModule {
     @Heuristic
     abstract fun bindHeuristicStrategy(impl: HeuristicMatchStrategy): FieldMatchStrategy
 
-    @Binds
-    @Singleton
-    abstract fun bindVerificationGateway(impl: VerificationGatewayImpl): VerificationGateway
-
     companion object {
         @Provides
         @Singleton
@@ -56,12 +50,12 @@ abstract class ServiceModule {
         @Singleton
         @Heuristic
         fun provideHeuristicDispatcher(
-            vaultLockManager: VaultLockManager,
+            sessionState: SessionStateProvider,
             candidateResolver: CandidateResolver,
             @Heuristic fieldMatchStrategy: FieldMatchStrategy,
             responseFactory: ResponseFactory,
         ): FillRequestDispatcher = FillRequestDispatcher(
-            vaultLockManager,
+            sessionState,
             candidateResolver,
             fieldMatchStrategy,
             responseFactory,
@@ -71,12 +65,12 @@ abstract class ServiceModule {
         @Singleton
         @Strict
         fun provideStrictDispatcher(
-            vaultLockManager: VaultLockManager,
+            sessionState: SessionStateProvider,
             candidateResolver: CandidateResolver,
             @Strict fieldMatchStrategy: FieldMatchStrategy,
             responseFactory: ResponseFactory,
         ): FillRequestDispatcher = FillRequestDispatcher(
-            vaultLockManager,
+            sessionState,
             candidateResolver,
             fieldMatchStrategy,
             responseFactory,
