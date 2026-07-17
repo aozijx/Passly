@@ -1,12 +1,9 @@
-package com.aozijx.passly.data.local
+package com.aozijx.passly.data.local.database
 
-import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.room.Room
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.security.crypto.DekManager
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,18 +12,23 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * 负责数据库会话管理。
+ *
+ * 只负责：App Start → DatabaseProvider.open() → 保存 Database → withDatabase() → Vault Lock → close()
+ * 不知道：DEK、SupportOpenHelperFactory、Room.databaseBuilder
+ */
 @Singleton
-class DatabaseSessionManager @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+class DatabaseSession @Inject constructor(
+    private val provider: DatabaseProvider,
     private val dekManager: DekManager
 ) : DefaultLifecycleObserver {
 
     companion object {
-        private const val TAG = "DbSessionMgr"
+        private const val TAG = "DatabaseSession"
         private const val CLOSE_TIMEOUT_MS = 5000L
     }
 
@@ -35,9 +37,6 @@ class DatabaseSessionManager @Inject constructor(
 
     @Volatile
     private var database: AppDatabase? = null
-
-    @Volatile
-    private var sqlCipherFactory: SupportOpenHelperFactory? = null
 
     override fun onStart(owner: LifecycleOwner) {
         dekManager.setLockCallback { closeAndAwait() }
@@ -56,37 +55,13 @@ class DatabaseSessionManager @Inject constructor(
                 mutex.withLock {
                     db = database
                     if (db == null) {
-                        db = createDatabase()
+                        db = provider.open()
+                        database = db
                     }
                 }
             }
             block(checkNotNull(db))
         }
-
-    private suspend fun createDatabase(): AppDatabase {
-        val db = dekManager.withDek { dek ->
-            val factory = SupportOpenHelperFactory(dek.clone())
-            sqlCipherFactory = factory
-            Room.databaseBuilder(
-                context.applicationContext,
-                AppDatabase::class.java,
-                DatabaseConfig.DATABASE_NAME
-            )
-                .openHelperFactory(factory)
-                .build()
-        }
-
-        runCatching { db.openHelper.writableDatabase }
-            .onFailure { error ->
-                Logcat.e(TAG, "Database probe failed", error)
-                db.close()
-                throw error
-            }
-
-        database = db
-        Logcat.i(TAG, "Database session created")
-        return db
-    }
 
     /**
      * 关闭数据库会话并等待完成。
