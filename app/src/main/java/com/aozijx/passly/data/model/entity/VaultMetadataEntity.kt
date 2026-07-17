@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.data.local.database.DatabaseSchema
-import com.aozijx.passly.domain.model.type.EntryType
+import com.aozijx.passly.domain.model.entry.EntryType
 
 @Entity(
     tableName = DatabaseSchema.TABLE_METADATA,
