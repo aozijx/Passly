@@ -3,38 +3,29 @@ package com.aozijx.passly.data.repository.backup
 import android.content.Context
 import androidx.core.net.toUri
 import androidx.room.withTransaction
-import com.aozijx.passly.core.backup.BackupManager.DATA_ENTRY_NAME
-import com.aozijx.passly.core.backup.BackupManager.IV_LENGTH
-import com.aozijx.passly.core.backup.BackupManager.MAGIC_NUMBER
-import com.aozijx.passly.core.backup.BackupManager.SALT_LENGTH
-import com.aozijx.passly.core.backup.BackupManager.deriveKeyArgon2id
-import com.aozijx.passly.core.backup.BackupManager.generateSalt
-import com.aozijx.passly.core.backup.BackupManager.getCipher
-import com.aozijx.passly.core.di.IoDispatcher
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.data.local.DatabaseSessionManager
-import com.aozijx.passly.data.repository.backup.internal.BackupFieldEncryptor
-import com.aozijx.passly.data.repository.backup.internal.BackupVSerializer
-import com.aozijx.passly.data.repository.vault.internal.failIfLocked
-import com.aozijx.passly.domain.model.BackupImportMode
+import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
+import com.aozijx.passly.data.mapper.snapshot.toSnapshot
+import com.aozijx.passly.data.model.entity.VaultCredentialEntity
+import com.aozijx.passly.data.model.entity.VaultMetadataEntity
+import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
+import com.aozijx.passly.data.model.serializer.AppJson
+import com.aozijx.passly.data.repository.backup.internal.BackupArchiveCodec
+import com.aozijx.passly.data.repository.backup.internal.BackupArchiveContent
+import com.aozijx.passly.di.IoDispatcher
+import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.credential.VaultCredential
+import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.security.crypto.CryptoEngine
 import com.aozijx.passly.security.crypto.FieldEncryptor
-import com.aozijx.passly.security.crypto.VaultLockManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.InputStream
-import java.io.SequenceInputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
-import javax.crypto.Cipher
-import javax.crypto.CipherInputStream
-import javax.crypto.CipherOutputStream
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,48 +33,104 @@ import javax.inject.Singleton
 internal class BackupRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val cryptoEngine: CryptoEngine,
-    private val sessionManager: DatabaseSessionManager,
-    private val lockManager: VaultLockManager,
+    private val sessionManager: DatabaseSession,
     private val fieldEncryptor: FieldEncryptor,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
+
+    private fun aad(uuid: String, column: String): ByteArray =
+        "vault:$uuid:$column".toByteArray(Charsets.UTF_8)
+
+    private fun aadOrNull(uuid: String, column: String): ByteArray? =
+        if (uuid.isNotEmpty()) aad(uuid, column) else null
+
+    private suspend fun decryptMetadata(entity: VaultMetadataEntity): VaultMetadata {
+        val json =
+            fieldEncryptor.decrypt(entity.metadataBlob, aadOrNull(entity.entryId, "metadata"))
+        return AppJson.decodeFromString(VaultMetadata.serializer(), json)
+    }
+
+    private suspend fun decryptCredential(entity: VaultCredentialEntity): VaultCredential {
+        val json =
+            fieldEncryptor.decrypt(entity.credentialBlob, aadOrNull(entity.entryId, "credential"))
+        return AppJson.decodeFromString(VaultCredential.serializer(), json)
+    }
+
+    private suspend fun encryptMetadata(meta: VaultMetadata, uuid: String): ByteArray {
+        val json = AppJson.encodeToString(VaultMetadata.serializer(), meta)
+        return fieldEncryptor.encrypt(json, aad(uuid, "metadata"))
+    }
+
+    private suspend fun encryptCredential(cred: VaultCredential, uuid: String): ByteArray {
+        val json = AppJson.encodeToString(VaultCredential.serializer(), cred)
+        return fieldEncryptor.encrypt(json, aad(uuid, "credential"))
+    }
+
+    private suspend fun getVaultEntries(): List<VaultEntry> {
+        return sessionManager.withDatabase {
+            val metadataEntities = metadataDao().getActive()
+            val credentialEntities =
+                credentialDao().getByEntryIds(metadataEntities.map { it.entryId })
+            val credentialMap = credentialEntities.associateBy { it.entryId }
+
+            metadataEntities.map { metaEntity ->
+                val meta = decryptMetadata(metaEntity)
+                val cred = credentialMap[metaEntity.entryId]?.let { decryptCredential(it) }
+                assembleEntry(metaEntity, meta, cred)
+            }
+        }
+    }
+
+    private fun assembleEntry(
+        metaEntity: VaultMetadataEntity,
+        meta: VaultMetadata,
+        cred: VaultCredential?
+    ): VaultEntry {
+        return VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
+    }
+
+    private fun imageEntryName(entryId: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(entryId.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+        return "images/${digest.take(32)}.bin"
+    }
 
     override suspend fun exportEncryptedBackup(
         uri: String,
         password: CharArray,
         includeImages: Boolean
     ): AppResult<Unit> {
-        lockManager.failIfLocked<Unit>()?.let { return it }
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.export.encrypted") {
-                val entities = sessionManager.withDatabase {
-                    vaultEntryDao().getAll()
-                }
-                val exportPayloads = entities.map {
-                    BackupFieldEncryptor.toExportPayload(it, null, fieldEncryptor)
-                }
-
-                val salt = generateSalt()
-                val key = deriveKeyArgon2id(password, salt)
-                val cipher = getCipher(Cipher.ENCRYPT_MODE, key)
-
-                val byteArrayOutputStream = ByteArrayOutputStream()
-                BackupVSerializer.writeEntries(byteArrayOutputStream, exportPayloads)
-                val backupData = byteArrayOutputStream.toByteArray()
-
-                context.contentResolver.openOutputStream(uri.toUri())?.use { outputStream ->
-                    ZipOutputStream(outputStream).use { zipOut ->
-                        zipOut.putNextEntry(ZipEntry(DATA_ENTRY_NAME))
-                        // 明文写入 salt 和 iv（解密必需）
-                        zipOut.write(salt)
-                        zipOut.write(cipher.iv)
-                        // 加密写入 magic number 和数据
-                        CipherOutputStream(zipOut, cipher).use { cipherOut ->
-                            cipherOut.write(MAGIC_NUMBER)
-                            cipherOut.write(backupData)
-                        }
-                        zipOut.closeEntry()
+                val entries = getVaultEntries()
+                val images = linkedMapOf<String, ByteArray>()
+                val snapshots = entries.map { entry ->
+                    val snapshot = entry.toSnapshot()
+                    val source = entry.iconCustomPath?.let(::File)
+                    if (includeImages && source?.isFile == true) {
+                        val archivePath = imageEntryName(entry.id)
+                        images[archivePath] = source.readBytes()
+                        snapshot.copy(
+                            metadata = snapshot.metadata.copy(iconCustomPath = archivePath)
+                        )
+                    } else {
+                        snapshot.copy(metadata = snapshot.metadata.copy(iconCustomPath = null))
                     }
+                }
+                val snapshotJson = AppJson.encodeToString(
+                    kotlinx.serialization.builtins.ListSerializer(VaultSnapshot.serializer()),
+                    snapshots
+                ).toByteArray(Charsets.UTF_8)
+                val encoded = BackupArchiveCodec.encode(
+                    BackupArchiveContent(snapshotJson, images),
+                    password
+                )
+                val output = context.contentResolver.openOutputStream(uri.toUri())
+                    ?: error("无法打开备份输出文件")
+                output.use {
+                    it.write(encoded)
+                    it.flush()
                 }
                 Unit
             }
@@ -91,26 +138,28 @@ internal class BackupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun exportPlainBackup(uri: String): AppResult<Unit> {
-        lockManager.failIfLocked<Unit>()?.let { return it }
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.export.plain") {
-                val entities = sessionManager.withDatabase {
-                    vaultEntryDao().getAll()
-                }
-                val payloads = entities.map {
-                    BackupFieldEncryptor.toExportPayload(it, null, fieldEncryptor)
-                }
+                val entries = getVaultEntries()
+                val snapshots = entries.map { it.toSnapshot() }
 
-                context.contentResolver.openOutputStream(uri.toUri())?.use {
-                    BackupVSerializer.writeEntries(it, payloads)
+                val backupData = AppJson.encodeToString(
+                    kotlinx.serialization.builtins.ListSerializer(VaultSnapshot.serializer()),
+                    snapshots
+                )
+
+                val output = context.contentResolver.openOutputStream(uri.toUri())
+                    ?: error("无法打开明文备份输出文件")
+                output.use {
+                    it.write(backupData.toByteArray(Charsets.UTF_8))
+                    it.flush()
                 }
                 Unit
             }
         }
     }
 
-    override suspend fun exportEmergencyBackup(): AppResult<File> {
-        lockManager.failIfLocked<File>()?.let { return it }
+    override suspend fun exportEmergencyBackup(): AppResult<java.io.File> {
         return withContext(ioDispatcher) {
             EmergencyBackupExporter.exportOnFailure(context, cryptoEngine)
         }
@@ -121,124 +170,86 @@ internal class BackupRepositoryImpl @Inject constructor(
         password: CharArray,
         mode: BackupImportMode
     ): AppResult<Unit> {
-        lockManager.failIfLocked<Unit>()?.let { return it }
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.import") {
-                context.contentResolver.openInputStream(uri.toUri())?.use { inputStream ->
-                    // 检测文件类型：ZIP（加密） vs JSON（明文）
-                    val header = ByteArray(4)
-                    val headerRead = inputStream.read(header)
-                    if (headerRead < 4) {
-                        throw IllegalArgumentException("备份文件无效：文件过小")
-                    }
-
-                    // ZIP 文件头：PK\x03\x04 (0x50 0x4B 0x03 0x04)
-                    val isZipFile = header[0] == 0x50.toByte() && header[1] == 0x4B.toByte() &&
-                            header[2] == 0x03.toByte() && header[3] == 0x04.toByte()
-
-                    if (isZipFile) {
-                        // 加密备份导入
-                        importEncryptedBackup(inputStream, header, password, mode)
-                    } else {
-                        // 明文 JSON 导入
-                        importPlainTextBackup(inputStream, header, mode)
-                    }
-                }
+                val input = context.contentResolver.openInputStream(uri.toUri())
+                    ?: error("无法打开备份文件")
+                val encoded = input.use { it.readBytes() }
+                val archive = BackupArchiveCodec.decode(encoded, password)
+                val snapshots = decodeSnapshots(archive.snapshotJson)
+                importWithImages(snapshots, archive.images, mode)
                 Unit
             }
         }
     }
 
-    private suspend fun importEncryptedBackup(
-        inputStream: InputStream,
-        header: ByteArray,
-        password: CharArray,
-        mode: BackupImportMode
-    ) {
-        // 将 header 前缀回流中
-        val fullStream = SequenceInputStream(
-            ByteArrayInputStream(header),
-            inputStream
+    private fun decodeSnapshots(bytes: ByteArray): List<VaultSnapshot> =
+        AppJson.decodeFromString(
+            kotlinx.serialization.builtins.ListSerializer(VaultSnapshot.serializer()),
+            String(bytes, Charsets.UTF_8)
         )
 
-        ZipInputStream(fullStream).use { zipIn ->
-            var entry = zipIn.nextEntry
-            while (entry != null && entry.name != DATA_ENTRY_NAME) {
-                entry = zipIn.nextEntry
+    private suspend fun importWithImages(
+        snapshots: List<VaultSnapshot>,
+        images: Map<String, ByteArray>,
+        mode: BackupImportMode
+    ) {
+        val createdFiles = mutableListOf<File>()
+        val restored = snapshots.map { snapshot ->
+            val archivePath = snapshot.metadata.iconCustomPath
+            val imageBytes = archivePath?.let(images::get)
+            if (archivePath == null) {
+                snapshot.copy(metadata = snapshot.metadata.copy(iconCustomPath = null))
+            } else {
+                requireNotNull(imageBytes) { "备份缺少附件: $archivePath" }
+                val directory = File(context.filesDir, "vault_images").apply { mkdirs() }
+                val target = File(directory, "restored_${archivePath.substringAfterLast('/')}")
+                target.outputStream().use { it.write(imageBytes) }
+                createdFiles += target
+                snapshot.copy(
+                    metadata = snapshot.metadata.copy(iconCustomPath = target.absolutePath)
+                )
             }
-
-            if (entry == null) {
-                throw IllegalArgumentException("备份文件无效：未找到数据条目")
-            }
-
-            // 明文读取 salt 和 iv
-            val salt = ByteArray(SALT_LENGTH)
-            val saltRead = zipIn.read(salt)
-            if (saltRead != SALT_LENGTH) {
-                throw IllegalArgumentException("备份文件无效：盐读取失败")
-            }
-
-            val iv = ByteArray(IV_LENGTH)
-            val ivRead = zipIn.read(iv)
-            if (ivRead != IV_LENGTH) {
-                throw IllegalArgumentException("备份文件无效：IV读取失败")
-            }
-
-            // 派生密钥并初始化解密器
-            val key = deriveKeyArgon2id(password, salt)
-            val cipher = getCipher(Cipher.DECRYPT_MODE, key, iv)
-
-            // 解密剩余数据
-            val decryptedBytes = CipherInputStream(zipIn, cipher).readBytes()
-
-            // 验证 magic number
-            if (decryptedBytes.size < MAGIC_NUMBER.size) {
-                throw IllegalArgumentException("备份文件无效：数据过小")
-            }
-            val magic = decryptedBytes.sliceArray(0 until MAGIC_NUMBER.size)
-            if (!magic.contentEquals(MAGIC_NUMBER)) {
-                throw IllegalArgumentException("备份文件无效：魔术字节不匹配")
-            }
-
-            // 解析备份数据
-            val backupData = decryptedBytes.sliceArray(MAGIC_NUMBER.size until decryptedBytes.size)
-            val payloads = BackupVSerializer.readEntries(ByteArrayInputStream(backupData))
-
-            sessionManager.withDatabase {
-                withTransaction {
-                    if (mode == BackupImportMode.OVERWRITE) {
-                        vaultEntryDao().deleteAll()
-                    }
-                    payloads.forEach { payload ->
-                        val entity = BackupFieldEncryptor.toImportEntity(payload, fieldEncryptor)
-                        vaultEntryDao().insert(entity)
-                    }
-                }
-            }
+        }
+        try {
+            importSnapshots(restored, mode)
+        } catch (error: Throwable) {
+            createdFiles.forEach(File::delete)
+            throw error
         }
     }
 
-    private suspend fun importPlainTextBackup(
-        inputStream: InputStream,
-        header: ByteArray,
-        mode: BackupImportMode
-    ) {
-        // 将 header 前缀回流中
-        val fullStream = SequenceInputStream(
-            ByteArrayInputStream(header),
-            inputStream
-        )
-
-        val payloads = BackupVSerializer.readEntries(fullStream)
-
+    private suspend fun importSnapshots(snapshots: List<VaultSnapshot>, mode: BackupImportMode) {
         sessionManager.withDatabase {
             withTransaction {
                 if (mode == BackupImportMode.OVERWRITE) {
-                    vaultEntryDao().deleteAll()
+                    metadataDao().clear()
+                    credentialDao().clear()
                 }
-                payloads.forEach { payload ->
-                    val entity = BackupFieldEncryptor.toImportEntity(payload, fieldEncryptor)
-                    vaultEntryDao().insert(entity)
+
+                snapshots.forEach { snapshot ->
+                    val entryId = snapshot.id
+                    val metaBlob = encryptMetadata(snapshot.metadata, entryId)
+                    val credBlob = encryptCredential(snapshot.credential, entryId)
+
+                    val metaEntity = VaultMetadataEntity(
+                        entryId = entryId,
+                        vaultId = snapshot.vaultId,
+                        entryVersion = snapshot.revision,
+                        entryType = snapshot.entryType,
+                        metadataBlob = metaBlob,
+                        createdAt = snapshot.createdAt,
+                        updatedAt = snapshot.updatedAt,
+                        deletedAt = snapshot.deletedAt
+                    )
+
+                    val credEntity = VaultCredentialEntity(
+                        entryId = entryId,
+                        credentialBlob = credBlob
+                    )
+
+                    metadataDao().insert(metaEntity)
+                    credentialDao().insert(credEntity)
                 }
             }
         }
@@ -248,24 +259,20 @@ internal class BackupRepositoryImpl @Inject constructor(
         uri: String,
         mode: BackupImportMode
     ): AppResult<Unit> {
-        lockManager.failIfLocked<Unit>()?.let { return it }
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.import.plain") {
-                context.contentResolver.openInputStream(uri.toUri())?.use { inputStream ->
-                    val payloads = BackupVSerializer.readEntries(inputStream)
-
-                    sessionManager.withDatabase {
-                        withTransaction {
-                            if (mode == BackupImportMode.OVERWRITE) {
-                                vaultEntryDao().deleteAll()
-                            }
-                            payloads.forEach { payload ->
-                                val entity =
-                                    BackupFieldEncryptor.toImportEntity(payload, fieldEncryptor)
-                                vaultEntryDao().insert(entity)
-                            }
-                        }
+                val input = context.contentResolver.openInputStream(uri.toUri())
+                    ?: error("无法打开明文备份文件")
+                input.use { inputStream ->
+                    val backupData = inputStream.readBytes()
+                    val snapshots = AppJson.decodeFromString(
+                        kotlinx.serialization.builtins.ListSerializer(VaultSnapshot.serializer()),
+                        String(backupData, Charsets.UTF_8)
+                    ).map {
+                        it.copy(metadata = it.metadata.copy(iconCustomPath = null))
                     }
+
+                    importSnapshots(snapshots, mode)
                 }
                 Unit
             }
@@ -276,8 +283,11 @@ internal class BackupRepositoryImpl @Inject constructor(
         withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.testPermission") {
                 val uri = directoryUri.toUri()
-                context.contentResolver.openOutputStream(uri)?.use {
+                val output = context.contentResolver.openOutputStream(uri)
+                    ?: error("无法打开备份测试文件")
+                output.use {
                     it.write(ByteArray(0))
+                    it.flush()
                 }
                 Unit
             }
