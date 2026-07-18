@@ -3,7 +3,9 @@ package com.aozijx.passly.core.diagnostics
 import android.content.Context
 import com.aozijx.passly.BuildConfig
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -18,29 +20,39 @@ object DiagnosticsRuntime {
     @Volatile
     private var fileSink: EncryptedFileLogSink? = null
 
-    fun start(context: Context, scope: CoroutineScope) {
+    fun start(
+        context: Context,
+        scope: CoroutineScope,
+        policies: Flow<DiagnosticsPolicy>
+    ) {
         val appContext = context.applicationContext
-        val policyStore = DiagnosticsPolicyStore(appContext)
-        val encryptedSink = EncryptedFileLogSink(appContext) { fileEnabled.get() }
-        val structured = StructuredLogger(
-            CompositeLogSink(
-                listOf(
-                    AndroidLogSink { androidEnabled.get() },
-                    encryptedSink
-                )
-            )
-        )
-        fileSink = encryptedSink
-        logger = structured
-        AppLog.install(structured)
         DiagnosticsCrashHandler.install()
 
         scope.launch {
-            policyStore.settings.collectLatest { settings ->
+            val initial = policies.first()
+            androidEnabled.set(initial.androidSinkEnabled)
+            fileEnabled.set(
+                BuildConfig.DEBUG ||
+                    initial.isFileLoggingEnabled()
+            )
+            val encryptedSink = EncryptedFileLogSink(appContext) { fileEnabled.get() }
+            val structured = StructuredLogger(
+                CompositeLogSink(
+                    listOf(
+                        AndroidLogSink { androidEnabled.get() },
+                        encryptedSink
+                    )
+                )
+            )
+            fileSink = encryptedSink
+            logger = structured
+            AppLog.install(structured)
+
+            policies.collectLatest { settings ->
                 androidEnabled.set(settings.androidSinkEnabled)
                 fileEnabled.set(
                     BuildConfig.DEBUG ||
-                        settings.fileLoggingEnabledUntilMs > System.currentTimeMillis()
+                        settings.isFileLoggingEnabled()
                 )
             }
         }

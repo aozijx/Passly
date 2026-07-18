@@ -1,23 +1,19 @@
 package com.aozijx.passly.di
 
-import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.diagnostics.AppLogger
-import com.aozijx.passly.core.message.AppMessagePublisher
-import com.aozijx.passly.core.message.DefaultAppMessagePublisher
+import com.aozijx.passly.core.diagnostics.DiagnosticsPolicyController
+import com.aozijx.passly.data.local.datastore.diagnostics.ProtoDiagnosticsPolicyController
+import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DiagnosticsModule {
-    @Provides
+abstract class DiagnosticsModule {
+    @Binds
     @Singleton
-    fun provideAppLogger(): AppLogger = AppLog
-
-    @Provides
-    @Singleton
-    fun provideAppMessagePublisher(): AppMessagePublisher = DefaultAppMessagePublisher
+    internal abstract fun bindDiagnosticsPolicyController(
+        impl: ProtoDiagnosticsPolicyController
+    ): DiagnosticsPolicyController
 }

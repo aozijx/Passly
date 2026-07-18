@@ -17,8 +17,9 @@ import java.security.SecureRandom
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -33,9 +34,15 @@ class EncryptedFileLogSink(
     private val directory = File(context.noBackupFilesDir, DIRECTORY_NAME)
     private val wrappedKeyFile = File(directory, WRAPPED_KEY_FILE)
     private val random = SecureRandom()
-    private val writer: ExecutorService = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "passly-log-writer").apply { isDaemon = true }
-    }
+    private val writer = ThreadPoolExecutor(
+        1,
+        1,
+        0L,
+        TimeUnit.MILLISECONDS,
+        ArrayBlockingQueue(MAX_QUEUED_RECORDS),
+        { runnable -> Thread(runnable, "passly-log-writer").apply { isDaemon = true } },
+        ThreadPoolExecutor.AbortPolicy()
+    )
     private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val writeLock = Any()
 
@@ -50,9 +57,15 @@ class EncryptedFileLogSink(
 
     override fun write(event: SanitizedLogEvent) {
         if (!enabled()) return
-        val line = event.encodeLine().toByteArray(StandardCharsets.UTF_8)
-        writer.execute {
-            runCatching { appendEncrypted(currentLogFile(), line) }
+        try {
+            writer.execute {
+                val line = event.encodeLine().toByteArray(StandardCharsets.UTF_8)
+                runCatching { appendEncrypted(currentLogFile(), line, lockWrites = true) }
+            }
+        } catch (_: RejectedExecutionException) {
+            if (event.level >= LogLevel.ERROR) {
+                emergencyWrite(event, EMERGENCY_QUEUE_FALLBACK_MS)
+            }
         }
     }
 
@@ -75,7 +88,11 @@ class EncryptedFileLogSink(
         val thread = Thread({
             runCatching {
                 val file = File(directory, "crash_${System.currentTimeMillis()}.elog")
-                appendEncrypted(file, event.encodeLine().toByteArray(StandardCharsets.UTF_8))
+                appendEncrypted(
+                    file,
+                    event.encodeLine().toByteArray(StandardCharsets.UTF_8),
+                    lockWrites = false
+                )
                 completed.set(true)
             }
         }, "passly-emergency-log").apply { isDaemon = true }
@@ -108,7 +125,7 @@ class EncryptedFileLogSink(
         return File(directory, "log_${dateFormatter.format(Date())}_${System.currentTimeMillis()}.$LOG_EXTENSION")
     }
 
-    private fun appendEncrypted(file: File, plain: ByteArray) {
+    private fun appendEncrypted(file: File, plain: ByteArray, lockWrites: Boolean) {
         val keyBytes = dataKey?.clone() ?: return
         try {
             val nonce = ByteArray(NONCE_BYTES).also(random::nextBytes)
@@ -119,7 +136,7 @@ class EncryptedFileLogSink(
                 GCMParameterSpec(TAG_BITS, nonce)
             )
             val encrypted = cipher.doFinal(plain)
-            synchronized(writeLock) {
+            val append = {
                 DataOutputStream(FileOutputStream(file, true).buffered()).use { output ->
                     output.writeInt(nonce.size)
                     output.write(nonce)
@@ -127,6 +144,7 @@ class EncryptedFileLogSink(
                     output.write(encrypted)
                 }
             }
+            if (lockWrites) synchronized(writeLock) { append() } else append()
             encrypted.fill(0)
         } finally {
             keyBytes.fill(0)
@@ -237,6 +255,8 @@ class EncryptedFileLogSink(
         private const val TAG_BITS = 128
         private const val DATA_KEY_BYTES = 32
         private const val MAX_RECORD_BYTES = 64 * 1024
+        private const val MAX_QUEUED_RECORDS = 256
+        private const val EMERGENCY_QUEUE_FALLBACK_MS = 50L
         private const val MAX_FILE_BYTES = 1024 * 1024L
         private const val MAX_TOTAL_BYTES = 3 * 1024 * 1024L
         private const val MAX_FILES = 3

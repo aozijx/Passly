@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
+import com.aozijx.passly.core.diagnostics.DiagnosticsPolicyController
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import dagger.hilt.android.HiltAndroidApp
@@ -42,6 +43,9 @@ class PasslyApplication : Application() {
     lateinit var authenticationManager: AuthenticationManager
 
     @Inject
+    lateinit var diagnosticsPolicyController: DiagnosticsPolicyController
+
+    @Inject
     lateinit var biometricRotationReconciler: BiometricRotationReconciler
 
     private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -60,7 +64,11 @@ class PasslyApplication : Application() {
         super.onCreate()
         instance = this
 
-        DiagnosticsRuntime.start(applicationContext, diagnosticsScope)
+        DiagnosticsRuntime.start(
+            applicationContext,
+            diagnosticsScope,
+            diagnosticsPolicyController.policies
+        )
         diagnosticsScope.launch { biometricRotationReconciler.reconcile() }
 
         try {
