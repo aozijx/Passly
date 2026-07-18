@@ -1,6 +1,8 @@
 package com.aozijx.passly.di.database
 
 import com.aozijx.passly.data.repository.settings.DatabaseControllerImpl
+import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.domain.authentication.VaultResourceController
 import com.aozijx.passly.domain.repository.database.DatabaseController
 import dagger.Binds
 import dagger.Module
@@ -23,4 +25,10 @@ abstract class DatabaseModule {
     internal abstract fun bindDatabaseController(
         impl: DatabaseControllerImpl
     ): DatabaseController
+
+    @Binds
+    @Singleton
+    internal abstract fun bindVaultResourceController(
+        impl: DatabaseSession
+    ): VaultResourceController
 }
