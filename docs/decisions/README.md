@@ -1,39 +1,32 @@
-# Passly 架构决策记录 (Architecture Decision Records)
+# 架构决策记录
 
-## 1. 什么是 ADR？
+ADR 记录“为什么选择”，主题文档记录“当前如何实现”。已发布 ADR 不删除、不复用编号；决策变化时新增
+ADR，并在双方状态中建立替代关系。
 
-架构决策记录 (ADR) 是一个简短的文本文件，用于记录项目在特定时间点所做的重要架构决策。它捕捉了决策背后的背景、可选方案以及最终选择的理由，为项目的长期演进提供了可追溯的依据。
+## 统一格式
 
----
+每份 ADR 包含状态、日期、背景、决策、后果、备选方案和关联资料。旧记录没有可靠日期时写“未记录”，不猜测。
 
-## 2. 文档规范
+## 索引
 
-- **状态管理**：每个 ADR 应包含明确的状态（如 Accepted, Superseded, Deprecated）。
-- **不可变性**：编号一经发布不再修改。若后续决策发生重大变化，应新增 ADR 并标注对旧决策的替代关系。
-- **职责边界**：ADR 聚焦于“为什么”而非“如何实现”，避免包含过细的代码实现细节。
-
----
-
-## 3. 核心决策索引
-
-| 编号           | 核心标题                           | 关联文件                                                                                             |
-|:-------------|:-------------------------------|:-------------------------------------------------------------------------------------------------|
-| **ADR 0001** | 项目核心原则与设计哲学                    | [ADR-0001-project-principles.md](./ADR-0001-project-principles.md)                               |
-| **ADR 0002** | 采用信封加密机制 (Envelope Encryption) | [ADR-0002-envelope-encryption.md](./ADR-0002-envelope-encryption.md)                             |
-| **ADR 0003** | 采用双 DEK (双重数据加密密钥) 架构          | [ADR-0003-dual-dek.md](./ADR-0003-dual-dek.md)                                                   |
-| **ADR 0004** | Repository 作为唯一解密边界            | [ADR-0004-repository-is-decryption-boundary.md](./ADR-0004-repository-is-decryption-boundary.md) |
-| **ADR 0005** | Autofill Pipeline 分层边界定义       | [ADR-0005-autofill-layer-boundaries.md](./ADR-0005-autofill-layer-boundaries.md)                 |
-| **ADR 0006** | 使用 ResolvedCandidate 隔离领域模型    | [ADR-0006-resolvedcandidate-dto.md](./ADR-0006-resolvedcandidate-dto.md)                         |
-| **ADR 0007** | 将 UseCase 定义为可选架构层             | [ADR-0007-usecase-is-optional.md](./ADR-0007-usecase-is-optional.md)                             |
-| **ADR 0008** | 运行时威胁边界定义 (Runtime Dump)       | [ADR-0008-runtime-threat-boundary.md](./ADR-0008-runtime-threat-boundary.md)                     |
-| **ADR 0009** | 暂不引入 Google Tink 加密库           | [ADR-0009-no-google-tink.md](./ADR-0009-no-google-tink.md)                                       |
-| **ADR 0010** | Repository 返回明文领域模型契约          | [ADR-0010-repository-returns-plaintext.md](./ADR-0010-repository-returns-plaintext.md)           |
-| **ADR 0011** | 威胁模型驱动架构设计原则                   | [ADR-0011-threat-model-drives-design.md](./ADR-0011-threat-model-drives-design.md)               |
-| **ADR 0012** | 坚持使用符合 NIST 规范的随机 Nonce        | [ADR-0012-random-nonce.md](./ADR-0012-random-nonce.md)                                           |
-
----
-
-## 4. 总结
-
-Passly 的架构设计始终以 **安全 (Security)** 与 **健壮 (Robustness)**
-为最高优先级。通过这些架构决策记录，我们确保了每一项底层技术的引入都有明确的风险场景支撑，为用户构建了一个透明且可靠的安全底座。
+| 编号                                                    | 状态         | 决策                            |
+|-------------------------------------------------------|------------|-------------------------------|
+| [0001](ADR-0001-project-principles.md)                | Accepted   | 项目原则                          |
+| [0002](ADR-0002-envelope-encryption.md)               | Accepted   | 信封加密                          |
+| [0003](ADR-0003-dual-dek.md)                          | Superseded | 双 DEK（由 0019 替代）              |
+| [0004](ADR-0004-repository-is-decryption-boundary.md) | Accepted   | Repository 是解密边界              |
+| [0005](ADR-0005-autofill-layer-boundaries.md)         | Accepted   | Autofill 分层边界                 |
+| [0006](ADR-0006-resolvedcandidate-dto.md)             | Accepted   | ResolvedCandidate 隔离          |
+| [0007](ADR-0007-usecase-is-optional.md)               | Accepted   | UseCase 可选                    |
+| [0008](ADR-0008-runtime-threat-boundary.md)           | Accepted   | 运行时威胁边界                       |
+| [0009](ADR-0009-no-google-tink.md)                    | Accepted   | 暂不引入 Google Tink              |
+| [0010](ADR-0010-repository-returns-plaintext.md)      | Accepted   | Repository 返回明文领域模型           |
+| [0011](ADR-0011-threat-model-drives-design.md)        | Accepted   | 威胁模型驱动设计                      |
+| [0012](ADR-0012-random-nonce.md)                      | Accepted   | 随机 Nonce                      |
+| [0013](ADR-0013-vault-snapshot-model.md)              | Accepted   | Vault Snapshot 聚合模型           |
+| [0014](ADR-0014-blind-index-search.md)                | Accepted   | Blind Index 检索                |
+| [0015](ADR-0015-history-snapshot-strategy.md)         | Accepted   | 历史快照策略                        |
+| [0016](ADR-0016-backup-format.md)                     | Accepted   | 版本化加密备份                       |
+| [0017](ADR-0017-recovery-code-envelope.md)            | Accepted   | 恢复码独立 Envelope                |
+| [0018](ADR-0018-lookup-metadata-strategy.md)          | Accepted   | Metadata/Lookup/Credential 分离 |
+| [0019](ADR-0019-single-dek-derived-session-key.md)    | Accepted   | 单 DEK 与派生会话密钥                 |
