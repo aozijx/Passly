@@ -37,5 +37,5 @@ flowchart TB
 - 数据损坏、错误凭据和版本不兼容必须区分，禁止用删除数据隐藏错误。
 - 密码学原语或格式变更必须新增 ADR 和测试向量。
 
-参见[威胁模型](threat-model.md)、[密钥管理](key-management.md)和[认证](authentication.md)。
-
+参见[威胁模型](threat-model.md)、[密钥管理](key-management.md)、[认证](authentication.md)和
+[安全诊断](diagnostics.md)。

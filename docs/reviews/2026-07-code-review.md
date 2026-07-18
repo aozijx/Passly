@@ -1,6 +1,19 @@
 # 2026-07 代码审查
 
-范围：文档重构期间核对数据库、信封、备份、设置、权限、消息与认证实现。此报告记录尚未收口的问题，不表示已经修复。
+范围：文档重构期间核对数据库、信封、备份、设置、权限、消息与认证实现。原始发现保留作为历史证据；修复状态以
+2026-07-18 复核表为准。
+
+## 2026-07-18 复核
+
+| 原问题 | 状态 | 当前实现 |
+|---|---|---|
+| 认证失败双消息 | 已解决 | `AuthFeedbackPresenter` 按 correlation ID 发布一次；用户取消静默 |
+| 底层直接 Toast | 已解决 | 旧 Gateway、Authenticator、Launcher 与 ViewModel error event 已删除 |
+| 旧日志旁路与脆弱过滤 | 已解决 | 所有调用点进入 `AppLog`，Sanitizer 在 Sink 前执行 |
+| Crash 路径锁与 Keystore 风险 | 已解决 | 有界 writer；预加载 emergency key；崩溃写入不取普通锁、不访问 Keystore |
+| 恢复码重新生成提前失效 | 已解决 | 候选草稿确认后才提交 Envelope；进程恢复显示 DraftExpired |
+| DatabaseSession 并发关闭 | 待设备复核 | 会话控制已接入 lease gate，事务故障注入仍需设备测试 |
+| 备份 v1 KDF 自描述 | 待后续 | 不属于本轮认证/诊断范围 |
 
 ## 高优先级
 

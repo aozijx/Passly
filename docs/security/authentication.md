@@ -1,39 +1,63 @@
-# 认证与恢复码
+# 统一认证与恢复码
 
-## 认证方式
+状态：当前实现。
 
-| 方式   | 包装密钥来源                                    | 作用              |
-|------|-------------------------------------------|-----------------|
-| 生物识别 | Android Keystore + BiometricPrompt Cipher | 日常解锁            |
-| 应用密码 | Argon2id(password, salt)                  | 独立于系统锁屏的解锁方式    |
-| 恢复码  | Argon2id(recovery code, salt)             | 失去常规凭据时恢复 Vault |
+## 契约与状态机
 
-认证 UI 负责 Android 生物识别编排；Domain `AuthRepository` 不接收 `BiometricPromptLauncher` 等
-Android 类型。
-
-## 恢复码生命周期
+`AuthenticationManager` 是唯一认证编排入口。请求只包含目的、允许方式、新鲜认证要求和 correlation ID；不得携带
+Activity、文案、资源 ID、Launcher、Cipher 或 PendingIntent。
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Absent
-    Absent --> ShownOnce: 身份认证后创建并原子写入 Envelope
-    ShownOnce --> StoredEnvelope: 页面关闭 / 用户确认
-    StoredEnvelope --> ShownOnce: 身份认证后重新生成
-    StoredEnvelope --> Unlocked: 输入恢复码并验证
+    [*] --> Locked
+    Locked --> AwaitingHost: authenticate
+    AwaitingHost --> Authenticating: Host 可用
+    Authenticating --> Unlocking: 凭据成功且需解封
+    Unlocking --> Authenticated: DEK 与数据库会话就绪
+    Authenticated --> Authenticating: 新鲜复验
+    Authenticated --> Locking: 手动 / 超时 / 后台 / 完整性错误
+    Locking --> Locked: 拒绝 lease、关库、擦除密钥
 ```
 
-- 创建或重新生成前必须完成当前身份认证。
-- 明文只展示一次；不存在“查看已有恢复码”。
-- 重新生成会替换 Recovery Envelope，使旧码立即失效。
-- 恢复码输入仅用于 Vault 解锁，不参与备份加密。
-- ViewModel 页面关闭后清除明文状态；输入优先使用 `CharArray`。
+同一时间只允许一个活跃请求。普通解锁可以复用有效会话；复验、安全设置、备份和诊断导出必须重新认证。用户主动取消
+返回 `Cancelled(byUser = true)` 且不显示 Toast；Host 丢失、系统取消和真实失败由 `AuthFeedbackPresenter` 按
+correlation ID 最多发布一次。
 
-认证页底部可以提供低强调度的“使用恢复码”入口，但入口只是导航，不应预先读取或缓存恢复码状态。
+## Host 与生物识别
 
-## 会话
+Main、Autofill 和 Credential Response Activity 都在根 Compose 安装 `AuthenticationHost`。Registry 只保存 Host
+弱引用、owner ID 和注册 token；取得 lease 与实际展示前都会检查 resumed、finishing、destroyed 和 token。无 Host
+时最多等待 500 ms，Activity 销毁会取消所属请求，Autofill 请求不会转交 MainActivity。
 
-认证成功后 `DekManager` 缓存 DEK 并派生会话密钥，同时启动空闲计时。认证取消只产生一个 UI
-消息事件，不得关闭应用级单例 CoroutineScope，也不得由 Verification 与 Main 两条通道重复显示。
+PromptInfo 与 CryptoObject 分离。Enroll/Rotate 使用新的 ENCRYPT Cipher，Unlock 使用最新 alias 和 Envelope nonce
+创建新的 DECRYPT Cipher，VerifyIdentity 不携带 CryptoObject。Cipher 不缓存，也不进入 Bundle、Intent、
+SavedStateHandle 或 PendingIntent。`KeyMissing`、`KeyInvalidated`、`CryptoObjectInvalid` 和 `HostUnavailable` 分别映射。
 
-锁定由手动操作、超时、后台策略或安全事件触发。完整状态收口为：停止新敏感操作、关闭数据库、清除会话密钥、清除
-DEK、发布 Locked 状态。
+## KDF 与敏感内存
+
+应用密码和恢复码的 Argon2id 只在专用单线程 `KdfRunner` 上执行。取消会立即结束调用方等待，但 Native worker
+可能继续；worker 返回后检查 request token，已取消的结果只擦除、不提交。密码副本、派生 key 和未交接 DEK 由拥有者
+在同步 `finally` 中尽力覆盖，正常状态与 callback 在 Main.immediate 串行提交。
+
+## 恢复码草稿
+
+```mermaid
+stateDiagram-v2
+    Stored --> Authenticating: 生成 / 重新生成
+    Authenticating --> DraftReady: 创建候选 Envelope
+    DraftReady --> Stored: 关闭页面，丢弃候选
+    DraftReady --> Committed: 我已安全保存并启用
+    DraftReady --> DraftExpired: 进程死亡后恢复页面
+```
+
+- 旧 Recovery Envelope 在用户确认前保持有效；确认提交后旧码才失效。
+- 明文由 Activity-retained `RecoveryCodeDraft` 持有，不进入 StateFlow、SavedStateHandle、Bundle 或磁盘。
+- SavedStateHandle 只保存 disclosure 标记和 generation ID。进程恢复但草稿不存在时显示
+  “恢复码草稿已过期，请重新认证后生成”。
+- 恢复码只允许 `UnlockVault`，不参与备份加密；不存在“查看已有恢复码”。
+
+## 生物识别策略轮换
+
+Bootstrap 先写 PREPARED journal，再创建 candidate key/Envelope；单次更新切换 active binding 并登记旧 alias
+待清理。提交后删除旧 alias 失败只记录并留待 Reconciler 重试，不回滚新 binding。启动和认证成功后都会清理 orphan
+candidate 与 obsolete alias。

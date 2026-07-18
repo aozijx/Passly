@@ -6,7 +6,7 @@
 sequenceDiagram
     actor User as 用户
     participant UI as Verification UI
-    participant Auth as Auth/Recovery Repository
+    participant Auth as AuthenticationManager
     participant DEK as DekManager
     participant Boot as BootstrapStore
     participant DB as DatabaseSession
@@ -14,13 +14,16 @@ sequenceDiagram
     UI->>Auth: 验证凭据
     Auth->>Boot: 读取对应 Envelope 与 Verification Tag
     Auth->>DEK: 解封并验证 DEK
-    DEK-->>UI: Unlocked
-    UI->>DB: 首次仓库访问时打开数据库
+    Auth->>DB: 允许新的数据库 lease
+    DEK-->>UI: Authenticated
     Note over DEK,DB: 锁定时先关闭数据库，再擦除 DEK 与派生会话密钥
 ```
 
 `BootstrapStore` 位于数据库之外，使应用在 SQLCipher 尚未打开时也能取得信封。当前实现由 Proto DataStore
 提供，DEK 解锁后 `DatabaseProvider` 才能创建 Room 实例。
+
+Activity 只通过 `AuthenticationHost` 提供 UI 能力；认证请求本身不携带 Activity、Launcher、Cipher 或
+PendingIntent。锁定由 `VaultSessionController` 拒绝新 lease、等待活跃操作、关闭 Room，再擦除会话密钥与 DEK。
 
 ## 一次性消息
 

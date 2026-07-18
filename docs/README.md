@@ -24,6 +24,7 @@
 
 - [安全总览](security/overview.md)
 - [认证与恢复码](security/authentication.md)
+- [安全诊断](security/diagnostics.md)
 - [密钥管理](security/key-management.md)
 - [存储加密](security/storage-encryption.md)
 - [自动填充安全](security/autofill.md)
@@ -45,4 +46,3 @@
 | 当前实现 | 已从仓库代码核对，可作为开发依据    |
 | 决策   | 说明长期约束，具体状态以 ADR 为准 |
 | 待办   | 已发现但尚未实现，不应写成现有能力   |
-
