@@ -143,7 +143,7 @@ fun SeedPhraseSection(
 
         if (entry.credential.notes != null) {
             DetailItem(
-                label = stringResource(R.string.vault_detail_notes),
+                label = stringResource(R.string.remark),
                 value = entry.credential.notes,
                 isRevealed = true,
                 onCopy = {

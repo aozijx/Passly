@@ -14,7 +14,6 @@ internal fun DataManagementDetail(
     backupPathLabel: String,
     lastExportFileLabel: String,
     onAutoDownloadIconsChange: (Boolean) -> Unit,
-    onFaviconWhitelistChange: (String) -> Unit,
     onPickBackupPath: () -> Unit,
     onTestBackupWrite: () -> Unit,
     onClearBackupPath: (() -> Unit)?
@@ -24,9 +23,7 @@ internal fun DataManagementDetail(
 
         DataSettingsSection(
             isAutoDownloadIcons = state.isAutoDownloadIcons,
-            faviconDownloadWhitelist = state.faviconDownloadWhitelist,
-            onAutoDownloadIconsChange = onAutoDownloadIconsChange,
-            onFaviconWhitelistChange = onFaviconWhitelistChange
+            onAutoDownloadIconsChange = onAutoDownloadIconsChange
         )
 
         Spacer(modifier = Modifier.height(24.dp))

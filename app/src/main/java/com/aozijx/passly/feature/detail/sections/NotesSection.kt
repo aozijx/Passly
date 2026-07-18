@@ -34,7 +34,7 @@ fun NotesSection(
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    val notesLabel = stringResource(R.string.vault_detail_notes)
+    val notesLabel = stringResource(R.string.remark)
     val addNotesPlaceholder = stringResource(R.string.vault_detail_add_notes)
     val noNotesLabel = stringResource(R.string.vault_detail_no_notes)
 

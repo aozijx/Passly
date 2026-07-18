@@ -20,6 +20,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.feature.settings.components.navigationSettingsItem
@@ -44,7 +45,7 @@ internal fun SettingsMainPage(
             TopAppBar(
                 title = {
                     Text(
-                        "设置",
+                        stringResource(com.aozijx.passly.R.string.settings),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.headlineSmall
                     )
@@ -54,7 +55,10 @@ internal fun SettingsMainPage(
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(com.aozijx.passly.R.string.back)
+                        )
                     }
                 }
             )
@@ -68,19 +72,19 @@ internal fun SettingsMainPage(
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            val sections = SettingsGroup.entries.groupBy { it.sectionTitle }
+            val sections = SettingsGroup.entries.groupBy { it.sectionTitleRes }
 
-            sections.forEach { (sectionTitle, groups) ->
+            sections.forEach { (sectionTitleRes, groups) ->
                 item {
-                    SettingsGroupTitle(text = sectionTitle)
+                    SettingsGroupTitle(text = stringResource(sectionTitleRes))
                 }
                 item {
                     SettingsRoundedGroup {
                         groups.forEach { group ->
                             navigationSettingsItem(
                                 icon = group.icon,
-                                title = group.title,
-                                subtitle = group.subtitle,
+                                title = stringResource(group.titleRes),
+                                subtitle = stringResource(group.subtitleRes),
                                 onClick = { onGroupClick(group.route) }
                             )
                         }

@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -132,7 +132,7 @@ fun RecoveryCodeDetail(
                 shape = RoundedCornerShape(12.dp),
                 enabled = verifyInput.isNotBlank()
             ) {
-                Text(stringResource(R.string.settings_recovery_code_verify_btn))
+                Text(stringResource(R.string.verify))
             }
 
             // 验证结果
@@ -190,14 +190,14 @@ fun RecoveryCodeDetail(
                     onAuthRequired(viewAuthTitle, viewAuthSubtitle, onRegenerate)
                 }) {
                     Text(
-                        stringResource(R.string.settings_recovery_code_regenerate_confirm),
+                        stringResource(R.string.confirm),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRegenerateConfirm = false }) {
-                    Text(stringResource(R.string.settings_recovery_code_cancel))
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
