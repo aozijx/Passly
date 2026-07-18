@@ -32,7 +32,7 @@ data class ThemePreset(
 )
 
 val themePresets = listOf(
-    ThemePreset(0, R.string.settings_theme_color_default),
+    ThemePreset(0, R.string.default_label),
     ThemePreset(0xFF4285F4, R.string.settings_theme_color_blue),
     ThemePreset(0xFF34A853, R.string.settings_theme_color_green),
     ThemePreset(0xFFEA4335, R.string.settings_theme_color_red),

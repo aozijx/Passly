@@ -16,19 +16,19 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.core.message.AppMessageCategory
+import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.feature.backup.BackupCoordinator
 import com.aozijx.passly.feature.backup.components.PlainExportDialog
 import com.aozijx.passly.feature.backup.components.PlainExportDialogType
-import com.aozijx.passly.core.message.AppMessageCenter
-import com.aozijx.passly.core.message.AppMessageCategory
-import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainConfigViewModel
+import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.message.AppMessageHostViewModel
-import com.aozijx.passly.feature.verification.ui.VerificationScreen
 import com.aozijx.passly.feature.verification.VerificationViewModel
+import com.aozijx.passly.feature.verification.ui.VerificationScreen
 import com.aozijx.passly.ui.theme.AppTheme
 
 @Composable
@@ -90,7 +90,7 @@ internal fun MainScreen(
     }
 
     AppTheme(
-        darkTheme = if (mainUiState.isDarkMode == true) true else null,
+        darkTheme = mainUiState.isDarkMode,
         dynamicColor = mainUiState.isDynamicColor,
         themeColor = mainUiState.themeColor
     ) {

@@ -235,7 +235,6 @@
     <string name="settings_theme_mode">Appearance</string>
     <string name="settings_theme_mode_light">Light</string>
     <string name="settings_theme_mode_dark">Dark</string>
-    <string name="settings_theme_mode_choose">Choose appearance</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_choose">Choose language</string>
     <string name="settings_language_chinese">简体中文</string>
