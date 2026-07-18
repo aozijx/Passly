@@ -1,11 +1,8 @@
 package com.aozijx.passly.feature.scanner.components
 
-import android.Manifest
 import android.content.ClipData
 import android.content.Intent
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
@@ -48,6 +45,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.permission.AppPermission
+import com.aozijx.passly.core.permission.rememberAppPermissionRequester
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.launch
@@ -77,15 +76,20 @@ fun ScannerView(
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     val hasPermission = remember { mutableStateOf(false) }
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        hasPermission.value = granted
-        if (!granted) onPermissionDenied()
+    val permissionRequester = rememberAppPermissionRequester { result ->
+        val isGranted = result[AppPermission.Camera]?.isSatisfied == true
+        hasPermission.value = isGranted
+        if (!isGranted) onPermissionDenied()
     }
 
-    LaunchedEffect(Unit) {
-        launcher.launch(Manifest.permission.CAMERA)
+    LaunchedEffect(permissionRequester) {
+        val cameraPermission = permissionRequester.snapshot(AppPermission.Camera)
+        hasPermission.value = cameraPermission.isSatisfied
+        when {
+            cameraPermission.isSatisfied -> Unit
+            cameraPermission.canRequest -> permissionRequester.request(AppPermission.Camera)
+            else -> onPermissionDenied()
+        }
     }
 
     DisposableEffect(lifecycleOwner) {

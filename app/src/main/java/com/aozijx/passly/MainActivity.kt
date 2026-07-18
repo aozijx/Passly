@@ -10,8 +10,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.core.permission.ActivityPermissionRequester
+import com.aozijx.passly.core.permission.AppPermission
+import com.aozijx.passly.core.permission.AppPermissionManager
 import com.aozijx.passly.feature.backup.BackupCoordinator
-import com.aozijx.passly.feature.main.MainNotificationPermissionController
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
@@ -26,6 +28,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var backupCoordinator: BackupCoordinator
+
+    @Inject
+    lateinit var permissionManager: AppPermissionManager
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
@@ -45,9 +50,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val notificationPermissionController: MainNotificationPermissionController by lazy {
-        MainNotificationPermissionController(this) {
-            AppMessageCenter.publish(getString(R.string.main_notification_permission_denied))
+    private val permissionRequester: ActivityPermissionRequester by lazy {
+        ActivityPermissionRequester(this, permissionManager) { result ->
+            if (result[AppPermission.Notifications]?.isSatisfied == false) {
+                AppMessageCenter.publish(getString(R.string.main_notification_permission_denied))
+            }
         }
     }
 
@@ -62,7 +69,7 @@ class MainActivity : AppCompatActivity() {
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        notificationPermissionController.requestIfNeeded()
+        permissionRequester.request(AppPermission.Notifications)
 
         setContent {
             MainScreen(

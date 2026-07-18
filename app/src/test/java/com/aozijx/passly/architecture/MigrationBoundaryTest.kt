@@ -162,4 +162,23 @@ class MigrationBoundaryTest {
             "content: @Composable ColumnScope.() -> Unit" in sectionSource
         )
     }
+
+    @Test
+    fun featuresUseCentralPermissionRequesters() {
+        val offenders = productionKotlinFiles
+            .filter { "/feature/" in it.invariantSeparatorsPath }
+            .filter { source ->
+                val text = source.readText()
+                "Manifest.permission." in text ||
+                        "ActivityResultContracts.RequestPermission" in text ||
+                        "ActivityResultContracts.RequestMultiplePermissions" in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue(
+            "Feature permission requests bypass the central module: $offenders",
+            offenders.isEmpty()
+        )
+    }
 }
