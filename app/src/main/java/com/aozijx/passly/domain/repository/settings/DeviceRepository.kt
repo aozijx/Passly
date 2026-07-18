@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
  */
 data class DeviceSettings(
     val lockTimeout: Long,
-    val isBiometricEnabled: Boolean,
     val isInvalidateKeyOnBioChange: Boolean,
     val isSecureContentEnabled: Boolean,
     val isFlipToLockEnabled: Boolean,
@@ -22,7 +21,6 @@ interface DeviceRepository : IdleTimeoutSettings {
 
     // 安全
     override val lockTimeout: Flow<Long>
-    val isBiometricEnabled: Flow<Boolean>
     val isInvalidateKeyOnBioChange: Flow<Boolean>
     val isSecureContentEnabled: Flow<Boolean>
     val isFlipToLockEnabled: Flow<Boolean>
@@ -30,7 +28,6 @@ interface DeviceRepository : IdleTimeoutSettings {
     override val isLockOnBackground: Flow<Boolean>
 
     suspend fun setLockTimeout(timeoutMs: Long)
-    suspend fun setBiometricEnabled(enabled: Boolean)
     suspend fun setInvalidateKeyOnBioChange(enabled: Boolean)
     suspend fun setSecureContentEnabled(enabled: Boolean)
     suspend fun setFlipToLockEnabled(enabled: Boolean)

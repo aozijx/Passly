@@ -38,10 +38,12 @@ private const val SLIDER_STEP_SECONDS = (LockTimeoutConstraints.SLIDER_STEP_MS /
 fun LockAuthSettingsSection(
     lockTimeout: Long,
     isAppPasswordEnabled: Boolean,
+    isBiometricEnabled: Boolean,
     isInvalidateKeyOnBioChange: Boolean,
     isLockOnBackground: Boolean,
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
+    onBiometricEnabledChange: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
     onLockOnBackgroundChange: (Boolean) -> Unit
 ) {
@@ -119,15 +121,24 @@ fun LockAuthSettingsSection(
             onClick = onAppPasswordClick
             ),
             switchSettingsGroupItem(
+                key = "security.biometric_enabled",
+                icon = Icons.Default.Fingerprint,
+                title = "生物识别解锁",
+                subtitle = if (isBiometricEnabled) "使用强生物识别解锁保险库" else "需要先验证现有凭据",
+                checked = isBiometricEnabled,
+                onCheckedChange = onBiometricEnabledChange
+            ),
+            switchSettingsGroupItem(
                 key = "security.invalidate_biometric",
-            icon = Icons.Default.Fingerprint,
-            title = "生物识别变更时销毁密钥",
-            subtitle = if (isInvalidateKeyOnBioChange)
-                "新增或移除指纹/面部时，保险箱密钥将被销毁"
-            else
-                "新增或移除指纹/面部时，保险箱密钥保持有效",
-            checked = isInvalidateKeyOnBioChange,
-            onCheckedChange = onInvalidateKeyOnBioChangeToggle
+                visible = isBiometricEnabled,
+                icon = Icons.Default.Fingerprint,
+                title = "生物识别变更时销毁密钥",
+                subtitle = if (isInvalidateKeyOnBioChange)
+                    "新增或移除生物识别后，需要重新启用"
+                else
+                    "系统录入变化后仍保留当前密钥",
+                checked = isInvalidateKeyOnBioChange,
+                onCheckedChange = onInvalidateKeyOnBioChangeToggle
             ),
             switchSettingsGroupItem(
                 key = "security.lock_on_background",

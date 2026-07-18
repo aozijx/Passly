@@ -1,7 +1,5 @@
 package com.aozijx.passly.feature.verification.ui
 
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -25,13 +23,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.message.AppMessageCenter
@@ -45,21 +41,16 @@ private enum class AuthChannel { Biometric, Password, SetPassword }
 
 @Composable
 fun VerificationScreen(
-    viewModel: VerificationViewModel,
-    activity: FragmentActivity
+    viewModel: VerificationViewModel
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
-
-    val biometricAvailable = remember {
-        BiometricManager.from(activity)
-            .canAuthenticate(BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
-    }
+    val methods by viewModel.methodAvailability.collectAsStateWithLifecycle()
 
     val subtitle = stringResource(R.string.vault_auth_subtitle)
 
     val mainChannel = when {
-        biometricAvailable -> AuthChannel.Biometric
+        methods.biometric -> AuthChannel.Biometric
         appPasswordEnabled -> AuthChannel.Password
         else -> AuthChannel.SetPassword
     }

@@ -6,8 +6,6 @@ import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.usecase.settings.DeviceSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,6 +67,10 @@ class SecurityViewModel @Inject constructor(
         .map { it.appPassword }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val isBiometricEnabled: StateFlow<Boolean> = authenticationManager.methods
+        .map { it.biometric }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private val _hasRecoveryEnvelope = MutableStateFlow(false)
     val hasRecoveryEnvelope: StateFlow<Boolean> = _hasRecoveryEnvelope.asStateFlow()
 
@@ -116,14 +118,24 @@ class SecurityViewModel @Inject constructor(
         onResult: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
-            val authentication = authenticationManager.authenticate(
-                AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
-            )
-            if (authentication !is AuthenticationResult.Success) {
-                onResult(false)
-                return@launch
-            }
             val result = methodProvisioner.rotateBiometricPolicy(enabled)
+            if (result is AuthenticationResult.Success) {
+                deviceSettingsUseCases.setInvalidateKeyOnBioChange(enabled)
+            }
+            onResult(result is AuthenticationResult.Success)
+        }
+    }
+
+    fun setBiometricEnabled(
+        enabled: Boolean,
+        onResult: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = if (enabled) {
+                methodProvisioner.rotateBiometricPolicy(config.value.isInvalidateKeyOnBioChange)
+            } else {
+                methodProvisioner.disableBiometric()
+            }
             onResult(result is AuthenticationResult.Success)
         }
     }

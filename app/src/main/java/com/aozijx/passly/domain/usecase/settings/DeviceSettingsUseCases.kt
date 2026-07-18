@@ -12,7 +12,6 @@ import javax.inject.Singleton
 class DeviceSettingsUseCases @Inject constructor(private val repository: DeviceRepository) {
     // ── 安全 ──
     val lockTimeout: Flow<Long> = repository.lockTimeout
-    val isBiometricEnabled: Flow<Boolean> = repository.isBiometricEnabled
     val isInvalidateKeyOnBioChange: Flow<Boolean> = repository.isInvalidateKeyOnBioChange
     val isSecureContentEnabled: Flow<Boolean> = repository.isSecureContentEnabled
     val isFlipToLockEnabled: Flow<Boolean> = repository.isFlipToLockEnabled
@@ -20,7 +19,6 @@ class DeviceSettingsUseCases @Inject constructor(private val repository: DeviceR
     val isLockOnBackground: Flow<Boolean> = repository.isLockOnBackground
 
     suspend fun setLockTimeout(timeoutMs: Long) = repository.setLockTimeout(timeoutMs)
-    suspend fun setBiometricEnabled(enabled: Boolean) = repository.setBiometricEnabled(enabled)
     suspend fun setInvalidateKeyOnBioChange(enabled: Boolean) =
         repository.setInvalidateKeyOnBioChange(enabled)
     suspend fun setSecureContentEnabled(enabled: Boolean) =

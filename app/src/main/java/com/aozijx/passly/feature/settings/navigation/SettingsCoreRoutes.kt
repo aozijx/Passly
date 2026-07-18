@@ -23,6 +23,7 @@ import com.aozijx.passly.feature.settings.security.PrivacyViewModel
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
 import com.aozijx.passly.feature.settings.security.SecurityViewModel
 import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
+import com.aozijx.passly.feature.settings.security.handleBiometricToggle
 import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
 import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
 import com.aozijx.passly.feature.settings.shell.SettingsMainPage
@@ -57,6 +58,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
         val viewModel: SecurityViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
         val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
+        val biometricEnabled by viewModel.isBiometricEnabled.collectAsStateWithLifecycle()
 
         SettingsSecondaryPage(
             title = "安全设置",
@@ -66,6 +68,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                 SecurityDetail(
                     state = state,
                     isAppPasswordEnabled = appPasswordEnabled,
+                    isBiometricEnabled = biometricEnabled,
                     onLockTimeoutChange = {
                         viewModel.onAction(SecurityUiAction.SetLockTimeout(it))
                     },
@@ -80,9 +83,11 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                             onVerified = localState::openSetAppPasswordDialog
                         )
                     },
+                    onBiometricEnabledChange = { enabled ->
+                        handleBiometricToggle(enabled, viewModel::setBiometricEnabled)
+                    },
                     onInvalidateKeyOnBioChangeToggle = { enabled ->
                         handleInvalidateKeyToggle(
-                            context = context,
                             enabled = enabled,
                             switchPolicy = viewModel::switchKeyInvalidationPolicy
                         )

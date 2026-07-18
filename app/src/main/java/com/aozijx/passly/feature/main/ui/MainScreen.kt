@@ -133,10 +133,7 @@ internal fun MainScreen(
                 }
 
                 else -> {
-                    VerificationScreen(
-                        viewModel = verificationViewModel,
-                        activity = activity
-                    )
+                    VerificationScreen(viewModel = verificationViewModel)
                 }
             }
         }

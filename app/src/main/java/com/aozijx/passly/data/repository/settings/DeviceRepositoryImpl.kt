@@ -22,8 +22,6 @@ class DeviceRepositoryImpl @Inject constructor(
 
     override val lockTimeout: Flow<Long> =
         dataStore.data.map { it.lockTimeoutMs }
-    override val isBiometricEnabled: Flow<Boolean> =
-        dataStore.data.map { it.biometricEnabled }
     override val isInvalidateKeyOnBioChange: Flow<Boolean> =
         dataStore.data.map { it.invalidateKeyOnBioChange }
     override val isSecureContentEnabled: Flow<Boolean> =
@@ -52,17 +50,16 @@ class DeviceRepositoryImpl @Inject constructor(
 
     override fun getSettingsFlow(): Flow<DeviceSettings> = combine(
         combine(
-            lockTimeout, isBiometricEnabled, isInvalidateKeyOnBioChange,
-            isSecureContentEnabled, isFlipToLockEnabled
-        ) { timeout, bio, invalidate, secure, flip ->
-            Group1(timeout, bio, invalidate, secure, flip)
+            lockTimeout, isInvalidateKeyOnBioChange, isSecureContentEnabled,
+            isFlipToLockEnabled
+        ) { timeout, invalidate, secure, flip ->
+            Group1(timeout, invalidate, secure, flip)
         },
         isFlipExitAndClearStackEnabled, isLockOnBackground,
         backupDirectoryUri, lastBackupExportFileName
     ) { g1, flipExit, lockBg, backupUri, lastExport ->
         DeviceSettings(
             lockTimeout = g1.timeout,
-            isBiometricEnabled = g1.bio,
             isInvalidateKeyOnBioChange = g1.invalidate,
             isSecureContentEnabled = g1.secure,
             isFlipToLockEnabled = g1.flip,
@@ -75,7 +72,6 @@ class DeviceRepositoryImpl @Inject constructor(
 
     private data class Group1(
         val timeout: Long,
-        val bio: Boolean,
         val invalidate: Boolean,
         val secure: Boolean,
         val flip: Boolean
@@ -85,10 +81,6 @@ class DeviceRepositoryImpl @Inject constructor(
 
     override suspend fun setLockTimeout(timeoutMs: Long) {
         dataStore.updateData { it.toBuilder().setLockTimeoutMs(timeoutMs).build() }
-    }
-
-    override suspend fun setBiometricEnabled(enabled: Boolean) {
-        dataStore.updateData { it.toBuilder().setBiometricEnabled(enabled).build() }
     }
 
     override suspend fun setInvalidateKeyOnBioChange(enabled: Boolean) {

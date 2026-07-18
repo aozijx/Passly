@@ -8,7 +8,7 @@ message AppSettings {
 
   // Security
   optional int64 lock_timeout_ms = 2 [default = 60000];
-  optional bool biometric_enabled = 3 [default = true];
+  reserved 3; // Biometric availability is derived from BootstrapStore + platform capability.
   optional bool invalidate_key_on_bio_change = 4 [default = true];
   optional bool secure_content = 5 [default = true];
   optional bool flip_to_lock = 6 [default = false];

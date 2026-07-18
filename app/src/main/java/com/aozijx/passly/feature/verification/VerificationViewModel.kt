@@ -28,6 +28,8 @@ class VerificationViewModel @Inject constructor(
     private val methodProvisioner: AuthenticationMethodProvisioner
 ) : ViewModel() {
 
+    val methodAvailability = authenticationManager.methods
+
     val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
         .map { it.appPassword }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)

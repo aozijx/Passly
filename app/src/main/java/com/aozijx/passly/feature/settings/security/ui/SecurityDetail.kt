@@ -12,8 +12,10 @@ import com.aozijx.passly.ui.components.settings.SettingsSection
 internal fun SecurityDetail(
     state: SecurityUiState,
     isAppPasswordEnabled: Boolean,
+    isBiometricEnabled: Boolean,
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
+    onBiometricEnabledChange: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
     onLockOnBackgroundChange: (Boolean) -> Unit,
     onClipboardClearToastsChange: (Boolean) -> Unit,
@@ -24,10 +26,12 @@ internal fun SecurityDetail(
         LockAuthSettingsSection(
             lockTimeout = state.lockTimeout,
             isAppPasswordEnabled = isAppPasswordEnabled,
+            isBiometricEnabled = isBiometricEnabled,
             isInvalidateKeyOnBioChange = state.isInvalidateKeyOnBioChange,
             isLockOnBackground = state.isLockOnBackground,
             onLockTimeoutChange = onLockTimeoutChange,
             onAppPasswordClick = onAppPasswordClick,
+            onBiometricEnabledChange = onBiometricEnabledChange,
             onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
             onLockOnBackgroundChange = onLockOnBackgroundChange
         )
