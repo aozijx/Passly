@@ -23,6 +23,15 @@ object KeyDerivation {
     }
 
     fun deriveKeyArgon2id(password: CharArray, salt: ByteArray): SecretKeySpec {
+        val rawKey = deriveKeyBytesArgon2id(password, salt)
+        return try {
+            SecretKeySpec(rawKey, "AES")
+        } finally {
+            rawKey.fill(0)
+        }
+    }
+
+    fun deriveKeyBytesArgon2id(password: CharArray, salt: ByteArray): ByteArray {
         val passBytes = StandardCharsets.UTF_8.encode(CharBuffer.wrap(password)).array()
         try {
             val rawHash = argon2Kt.hash(
@@ -35,12 +44,7 @@ object KeyDerivation {
                 hashLengthInBytes = KEY_LENGTH_BYTES,
                 version = Argon2Version.V13
             )
-            val rawKey = rawHash.rawHashAsByteArray()
-            return try {
-                SecretKeySpec(rawKey, "AES")
-            } finally {
-                rawKey.fill(0)
-            }
+            return rawHash.rawHashAsByteArray()
         } finally {
             passBytes.fill(0)
         }

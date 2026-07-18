@@ -5,6 +5,10 @@ import com.aozijx.passly.feature.auth.DefaultVerificationGateway
 import com.aozijx.passly.security.session.SessionStateProvider
 import com.aozijx.passly.security.session.UserSessionManager
 import com.aozijx.passly.security.session.UserSessionManagerImpl
+import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
+import com.aozijx.passly.security.authentication.VaultSessionController
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -34,4 +38,16 @@ abstract class SecurityModule {
     @Binds
     @Singleton
     internal abstract fun bindVerificationGateway(impl: DefaultVerificationGateway): VerificationGateway
+
+    @Binds
+    @Singleton
+    internal abstract fun bindAuthenticationManager(
+        impl: DefaultAuthenticationManager
+    ): AuthenticationManager
+
+    @Binds
+    @Singleton
+    internal abstract fun bindVaultAccessState(
+        impl: VaultSessionController
+    ): VaultAccessState
 }

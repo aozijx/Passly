@@ -44,7 +44,7 @@ abstract class ServiceModule {
         @Provides
         @Singleton
         fun provideApplicationScope(): CoroutineScope =
-            CoroutineScope(SupervisorJob() + Dispatchers.Main)
+            CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
         @Provides
         @Singleton
