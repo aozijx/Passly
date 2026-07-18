@@ -48,9 +48,9 @@ fun AuthenticationHost(
                 Lifecycle.Event.ON_PAUSE -> registration?.let(registry::unregister)
                 Lifecycle.Event.ON_DESTROY -> {
                     registration?.let(registry::unregister)
+                    host.cancelOwnedRequests()
                     if (!activity.isChangingConfigurations) {
                         registry.invalidateOwner(host.ownerId)
-                        host.cancelOwnedRequests()
                     }
                 }
                 else -> Unit

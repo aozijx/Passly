@@ -14,8 +14,8 @@ import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
+import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
-import com.aozijx.passly.security.session.AppIdleMonitor
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,10 +36,10 @@ class PasslyApplication : Application() {
     }
 
     @Inject
-    lateinit var idleMonitor: AppIdleMonitor
+    lateinit var appLifecycleObserver: AppLifecycleObserver
 
     @Inject
-    lateinit var appLifecycleObserver: AppLifecycleObserver
+    lateinit var authenticationManager: AuthenticationManager
 
     @Inject
     lateinit var biometricRotationReconciler: BiometricRotationReconciler
@@ -159,7 +159,7 @@ class PasslyApplication : Application() {
             ?.setOnTouchListener { v, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) {
                     v.performClick()
-                    idleMonitor.resetIdleTimer()
+                    authenticationManager.onUserInteraction()
                 }
                 false
             }

@@ -27,7 +27,9 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val dekManager: DekManager,
     private val session: VaultSessionController,
     private val authenticationManager: AuthenticationManager,
-    private val bootstrapStore: BootstrapStore
+    private val bootstrapStore: BootstrapStore,
+    private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
+    private val biometricRotationCoordinator: BiometricRotationCoordinator
 ) : AuthenticationMethodProvisioner {
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UUID.randomUUID().toString()
@@ -62,6 +64,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                     )
                 }
                 session.markAuthenticated()
+                authenticationManager.refreshAvailability()
                 AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
             } finally {
                 rawKey.fill(0)
@@ -110,7 +113,23 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
             )
         }
         bootstrapStore.delete(EnvelopeType.APP_PASSWORD)
+        authenticationManager.refreshAvailability()
         return AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
+    }
+
+    override suspend fun rotateBiometricPolicy(
+        invalidateOnEnrollment: Boolean
+    ): AuthenticationResult {
+        val correlationId = UUID.randomUUID().toString()
+        val host = hostRegistry.awaitLease()?.hostOrNull()
+            ?: return AuthenticationResult.Failure(
+                AuthenticationFailure(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
+            )
+        return biometricRotationCoordinator.rotate(
+            host = host,
+            invalidateOnEnrollment = invalidateOnEnrollment,
+            correlationId = correlationId
+        )
     }
 
     override suspend fun hasRecoveryCode(): Boolean =

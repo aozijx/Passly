@@ -17,7 +17,7 @@ import javax.inject.Singleton
  *     --> [deriveAndSet]  派生会话密钥并记录时间戳
  *       --> [isActive] == true，FieldEncryptor 可正常加解密
  *         ... 用户操作中 ...
- *       --> 空闲超时（AppIdleMonitor）触发 DekManager.lock()
+ *       --> 空闲超时（VaultSessionController）触发 DekManager.lock()
  *         --> [clearSessionKey] 清零并置 [isActive] == false
  *       --> 或：手动锁定 / 退后台锁定 / 强力终止
  *         --> 下次解密必须重新认证
@@ -26,11 +26,11 @@ import javax.inject.Singleton
  * ## 约束
  * - 密钥不在磁盘上明文存在
  * - 锁定后内存清零，不可恢复
- * - 最大会话时长由 AppIdleMonitor 管理，本类提供 [sessionAgeMs] 用于审计
+ * - 最大会话时长由 VaultSessionController 管理，本类提供 [sessionAgeMs] 用于审计
  */
 @Singleton
 class SessionKeyManager @Inject constructor() {
-    /** 默认最大会话时长（5 分钟），由 AppIdleMonitor 实际管控 */
+    /** 默认最大会话时长（5 分钟），由 VaultSessionController 实际管控 */
     companion object {
         const val DEFAULT_MAX_SESSION_MS: Long = 5 * 60 * 1000L
     }

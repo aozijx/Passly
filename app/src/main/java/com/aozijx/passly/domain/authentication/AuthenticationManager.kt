@@ -16,6 +16,7 @@ interface AuthenticationManager {
     ): AuthenticationRequestHandle
 
     suspend fun lock(reason: LockReason)
+    suspend fun refreshAvailability()
     fun snapshot(): AuthenticationSnapshot
     fun onUserInteraction()
 }

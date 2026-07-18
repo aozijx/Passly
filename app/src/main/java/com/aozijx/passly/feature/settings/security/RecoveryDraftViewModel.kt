@@ -82,14 +82,26 @@ class RecoveryDraftViewModel @Inject constructor(
     fun confirmAndEnable() {
         viewModelScope.launch {
             val envelope = draft.copyEnvelope() ?: return@launch
-            runCatching { bootstrapStore.save(envelope) }
-                .onSuccess {
-                    draft.clear()
-                    savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-                    savedStateHandle[DRAFT_GENERATION_ID] = null as String?
-                    _state.value = RecoveryDraftState.Committed
+            try {
+                bootstrapStore.save(envelope)
+                draft.clear()
+                savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+                savedStateHandle[DRAFT_GENERATION_ID] = null as String?
+                _state.value = RecoveryDraftState.Committed
+                try {
+                    authenticationManager.refreshAvailability()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Throwable) {
+                    // Envelope 已提交；可用方式会在下次认证前重新刷新。
                 }
-                .onFailure { KeyEnvelope.destroy(envelope) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                _state.value = RecoveryDraftState.Failed
+            } finally {
+                KeyEnvelope.destroy(envelope)
+            }
         }
     }
 

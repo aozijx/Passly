@@ -51,6 +51,10 @@ class DefaultAuthenticationManager @Inject constructor(
     override val state: StateFlow<AuthenticationState> = session.authenticationState
     override val methods: StateFlow<AuthMethodAvailability> = _methods
 
+    init {
+        scope.launch { refreshAvailability() }
+    }
+
     override suspend fun authenticate(request: AuthenticationRequest): AuthenticationResult {
         if (!requestMutex.tryLock()) {
             return finish(
@@ -70,7 +74,7 @@ class DefaultAuthenticationManager @Inject constructor(
                     reusedSession = true
                 )
             }
-            refreshMethods()
+            refreshAvailability()
             session.transition(AuthenticationState.AwaitingHost(request.correlationId))
             val lease = hostRegistry.awaitLease() ?: return finish(
                 request,
@@ -149,18 +153,7 @@ class DefaultAuthenticationManager @Inject constructor(
 
     override suspend fun lock(reason: LockReason) = session.lock(reason)
 
-    override fun snapshot(): AuthenticationSnapshot {
-        val current = state.value
-        return AuthenticationSnapshot(
-            state = current,
-            activeCorrelationId = activeCorrelationId.get(),
-            authenticatedAtMs = (current as? AuthenticationState.Authenticated)?.authenticatedAtMs
-        )
-    }
-
-    override fun onUserInteraction() = session.onUserInteraction()
-
-    private suspend fun refreshMethods() {
+    override suspend fun refreshAvailability() {
         _methods.value = withContext(Dispatchers.Default) {
             AuthMethodAvailability(
                 biometric = biometricManager.canAuthenticate(
@@ -172,6 +165,17 @@ class DefaultAuthenticationManager @Inject constructor(
             )
         }
     }
+
+    override fun snapshot(): AuthenticationSnapshot {
+        val current = state.value
+        return AuthenticationSnapshot(
+            state = current,
+            activeCorrelationId = activeCorrelationId.get(),
+            authenticatedAtMs = (current as? AuthenticationState.Authenticated)?.authenticatedAtMs
+        )
+    }
+
+    override fun onUserInteraction() = session.onUserInteraction()
 
     private suspend fun restoreState(wasUnlocked: Boolean) {
         if (wasUnlocked) session.markAuthenticated()

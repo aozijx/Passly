@@ -9,8 +9,6 @@ import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.security.authentication.BiometricRotationCoordinator
-import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -42,8 +40,6 @@ sealed interface SecurityUiAction {
 @HiltViewModel
 class SecurityViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
-    private val hostRegistry: AuthenticationHostRegistry,
-    private val biometricRotationCoordinator: BiometricRotationCoordinator,
     private val methodProvisioner: AuthenticationMethodProvisioner,
     private val deviceSettingsUseCases: DeviceSettingsUseCases,
     private val portableSettingsUseCases: PortableSettingsUseCases
@@ -127,16 +123,7 @@ class SecurityViewModel @Inject constructor(
                 onResult(false)
                 return@launch
             }
-            val host = hostRegistry.awaitLease()?.hostOrNull()
-            if (host == null) {
-                onResult(false)
-                return@launch
-            }
-            val result = biometricRotationCoordinator.rotate(
-                host = host,
-                invalidateOnEnrollment = enabled,
-                correlationId = java.util.UUID.randomUUID().toString()
-            )
+            val result = methodProvisioner.rotateBiometricPolicy(enabled)
             onResult(result is AuthenticationResult.Success)
         }
     }

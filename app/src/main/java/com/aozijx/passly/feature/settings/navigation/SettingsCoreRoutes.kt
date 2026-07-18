@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.settings.navigation
 import android.content.Context
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
@@ -11,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
+import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.AppearanceDetail
 import com.aozijx.passly.feature.settings.appearance.AppearanceUiAction
 import com.aozijx.passly.feature.settings.appearance.AppearanceViewModel
@@ -18,7 +18,6 @@ import com.aozijx.passly.feature.settings.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.appearance.InterfaceUiAction
 import com.aozijx.passly.feature.settings.appearance.InterfaceViewModel
 import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordEntryClick
-import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.security.PrivacyUiAction
 import com.aozijx.passly.feature.settings.security.PrivacyViewModel
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
@@ -29,7 +28,6 @@ import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
 import com.aozijx.passly.feature.settings.shell.SettingsMainPage
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
-import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 
 internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     navController: NavHostController,
