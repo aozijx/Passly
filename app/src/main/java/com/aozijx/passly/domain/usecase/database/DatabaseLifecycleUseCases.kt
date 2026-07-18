@@ -2,7 +2,7 @@ package com.aozijx.passly.domain.usecase.database
 
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.fromThrowable
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.domain.repository.database.DatabaseController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,9 +25,9 @@ class DatabaseLifecycleUseCases @Inject constructor(
     suspend fun preWarmAndReport(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
         val error = repository.preWarm()
         if (error == null) {
-            Logcat.i(TAG, "Database preWarm completed")
+            AppLog.i(TAG, "Database preWarm completed")
         } else {
-            Logcat.e(
+            AppLog.e(
                 TAG,
                 "Database preWarm failed",
                 AppError.fromThrowable(
@@ -46,9 +46,9 @@ class DatabaseLifecycleUseCases @Inject constructor(
     suspend fun retryAndReport(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
         val error = repository.retry()
         if (error == null) {
-            Logcat.i(TAG, "Database retry completed")
+            AppLog.i(TAG, "Database retry completed")
         } else {
-            Logcat.e(
+            AppLog.e(
                 TAG,
                 "Database retry failed",
                 AppError.fromThrowable(

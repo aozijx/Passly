@@ -7,7 +7,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
 
@@ -50,7 +50,7 @@ object ClipboardUtils {
                     clear(appContext)
                 }
             } catch (e: Exception) {
-                Logcat.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
+                AppLog.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
             }
         }
 
@@ -75,7 +75,7 @@ object ClipboardUtils {
                 )
             }
         } catch (e: Exception) {
-            Logcat.e("ClipboardUtils", "Clear clipboard failed", e)
+            AppLog.e("ClipboardUtils", "Clear clipboard failed", e)
         }
     }
 

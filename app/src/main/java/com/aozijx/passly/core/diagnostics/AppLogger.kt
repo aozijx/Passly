@@ -1,6 +1,7 @@
 package com.aozijx.passly.core.diagnostics
 
 import android.util.Log
+import android.security.keystore.UserNotAuthenticatedException
 import com.aozijx.passly.BuildConfig
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -79,4 +80,43 @@ object AppLog : AppLogger {
         fields: Map<String, String> = emptyMap(),
         throwable: Throwable? = null
     ) = log(LogEvent(LogLevel.ERROR, category, name, fields, throwable))
+
+    // 迁移期兼容入口只保留调用点标签；自由文本不进入 Sink，避免把 URL、用户名或路径带入日志。
+    fun v(tag: String, @Suppress("UNUSED_PARAMETER") message: String) =
+        d(LogCategory.APPLICATION, "legacy.${tag.take(48)}")
+
+    fun d(tag: String, @Suppress("UNUSED_PARAMETER") message: String) =
+        d(LogCategory.APPLICATION, "legacy.${tag.take(48)}")
+
+    fun i(tag: String, @Suppress("UNUSED_PARAMETER") message: String) =
+        i(LogCategory.APPLICATION, "legacy.${tag.take(48)}")
+
+    fun w(
+        tag: String,
+        @Suppress("UNUSED_PARAMETER") message: String,
+        throwable: Throwable? = null
+    ) = w(LogCategory.APPLICATION, "legacy.${tag.take(48)}", throwable = throwable)
+
+    fun e(
+        tag: String,
+        @Suppress("UNUSED_PARAMETER") message: String,
+        throwable: Throwable? = null
+    ) = e(LogCategory.APPLICATION, "legacy.${tag.take(48)}", throwable = throwable)
+
+    fun logCryptoException(tag: String, action: String, error: Exception) {
+        if (error is UserNotAuthenticatedException) {
+            w(
+                LogCategory.SECURITY,
+                "crypto.not_authenticated",
+                fields = mapOf("component" to tag.take(48), "operation" to action.take(48))
+            )
+        } else {
+            e(
+                LogCategory.SECURITY,
+                "crypto.operation_failed",
+                fields = mapOf("component" to tag.take(48), "operation" to action.take(48)),
+                throwable = error
+            )
+        }
+    }
 }

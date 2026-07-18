@@ -11,7 +11,7 @@ import androidx.credentials.provider.PasswordCredentialEntry
 import androidx.credentials.provider.PublicKeyCredentialEntry
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,7 +48,7 @@ class CredentialPlatformAdapter @Inject constructor() {
     ): List<PasswordCredentialEntry> {
         val candidates = response.candidates
         if (candidates.isEmpty()) {
-            Logcat.d(TAG, "No candidates for password entries")
+            AppLog.d(TAG, "No candidates for password entries")
             return emptyList()
         }
 
@@ -70,7 +70,7 @@ class CredentialPlatformAdapter @Inject constructor() {
     ): List<PublicKeyCredentialEntry> {
         val candidates = response.candidates
         if (candidates.isEmpty()) {
-            Logcat.d(TAG, "No candidates for passkey entries")
+            AppLog.d(TAG, "No candidates for passkey entries")
             return emptyList()
         }
 

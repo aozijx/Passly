@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.mapper
 
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
@@ -52,7 +52,7 @@ class VaultEntryCryptoMapper @Inject constructor(
             val cred = credEntity?.let { decryptCredential(it) }
             VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
         } catch (e: Exception) {
-            Logcat.w("VaultRepo", "Skipping corrupt entry ${metaEntity.entryId}: ${e.message}")
+            AppLog.w("VaultRepo", "Skipping corrupt entry ${metaEntity.entryId}: ${e.message}")
             null
         }
     }

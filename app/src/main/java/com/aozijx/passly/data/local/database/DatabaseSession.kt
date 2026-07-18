@@ -2,7 +2,7 @@ package com.aozijx.passly.data.local.database
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.domain.authentication.VaultResourceController
 import com.aozijx.passly.security.crypto.DekManager
 import kotlinx.coroutines.CompletableDeferred
@@ -99,15 +99,15 @@ class DatabaseSession @Inject constructor(
             mutex.withLock {
                 database?.let {
                     runCatching { it.close() }
-                        .onFailure { e -> Logcat.e(TAG, "Database close error", e) }
-                    Logcat.i(TAG, "Database session closed")
+                        .onFailure { e -> AppLog.e(TAG, "Database close error", e) }
+                    AppLog.i(TAG, "Database session closed")
                 }
                 database = null
             }
         }
 
         if (closed == null) {
-            Logcat.e(TAG, "Database close timed out after $CLOSE_TIMEOUT_MS ms, forcing null")
+            AppLog.e(TAG, "Database close timed out after $CLOSE_TIMEOUT_MS ms, forcing null")
             database = null
         }
     }

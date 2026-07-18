@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.vault.internal
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -22,7 +22,7 @@ internal class EntryManager(
     private val onError: (String) -> Unit = {}
 ) {
     private val handler = CoroutineExceptionHandler { _, throwable ->
-        Logcat.e("EntryManager", "Operation failed", throwable)
+        AppLog.e("EntryManager", "Operation failed", throwable)
         onError("操作失败: ${throwable.message ?: "未知错误"}")
     }
     private val deletingIds = mutableSetOf<String>()

@@ -10,7 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import com.aozijx.passly.R
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 
 internal class AutofillCoordinator {
     var isEnabled by mutableStateOf(false)
@@ -47,7 +47,7 @@ internal class AutofillCoordinator {
             context.startActivity(intent)
             true
         } catch (e: Exception) {
-            Logcat.e("AutofillCoordinator", "Failed to start activity: ${intent.action}", e)
+            AppLog.e("AutofillCoordinator", "Failed to start activity: ${intent.action}", e)
             false
         }
     }

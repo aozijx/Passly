@@ -19,7 +19,7 @@ private val Context.diagnosticsDataStore: DataStore<DiagnosticsSettings> by data
 
 @Singleton
 class ProtoDiagnosticsPolicyController @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : DiagnosticsPolicyController {
     override val policies: Flow<DiagnosticsPolicy> = context.diagnosticsDataStore.data.map {
         DiagnosticsPolicy(

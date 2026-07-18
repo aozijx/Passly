@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.crypto
 
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.model.envelope.KdfAlgorithm
 import com.aozijx.passly.domain.model.envelope.KeyEnvelope
@@ -57,7 +57,7 @@ class DekManager @Inject constructor(
                 bootstrapStore.save(
                     EnvelopeCrypto.wrapWithKey(type, dek, wrappingKey, salt, algorithm)
                 )
-                Logcat.i(TAG, "Vault initialized with envelope: ${type.value}")
+                AppLog.i(TAG, "Vault initialized with envelope: ${type.value}")
                 cacheAndUnlock(dek)
             } finally {
                 MemoryCleaner.wipeByteArray(dek)
@@ -76,7 +76,7 @@ class DekManager @Inject constructor(
             try {
                 bootstrapStore.saveVerificationTag(VerificationTag.create(dek))
                 bootstrapStore.save(EnvelopeCrypto.wrapWithCipher(type, dek, cipher))
-                Logcat.i(TAG, "Vault initialized with cipher envelope: ${type.value}")
+                AppLog.i(TAG, "Vault initialized with cipher envelope: ${type.value}")
                 cacheAndUnlock(dek)
             } finally {
                 MemoryCleaner.wipeByteArray(dek)
@@ -100,16 +100,16 @@ class DekManager @Inject constructor(
                 } finally {
                     MemoryCleaner.wipeByteArray(dek)
                 }
-                Logcat.i(TAG, "Unlocked via ${type.value}")
+                AppLog.i(TAG, "Unlocked via ${type.value}")
                 UnlockResult.Success
             } catch (e: javax.crypto.AEADBadTagException) {
-                Logcat.logCryptoException(TAG, "Cipher unlock", e)
+                AppLog.logCryptoException(TAG, "Cipher unlock", e)
                 UnlockResult.Failed(UnlockError.AUTH_FAILED)
             } catch (e: IllegalArgumentException) {
-                Logcat.logCryptoException(TAG, "DEK verification", e)
+                AppLog.logCryptoException(TAG, "DEK verification", e)
                 UnlockResult.Failed(UnlockError.DEK_VERIFY_FAILED)
             } catch (e: Exception) {
-                Logcat.logCryptoException(TAG, "Unlock", e)
+                AppLog.logCryptoException(TAG, "Unlock", e)
                 UnlockResult.Failed(UnlockError.UNKNOWN)
             }
         }
@@ -125,17 +125,17 @@ class DekManager @Inject constructor(
                     VerificationTag.verify(dek, tag, type.value)
                 } else {
                     bootstrapStore.saveVerificationTag(VerificationTag.create(dek))
-                    Logcat.i(TAG, "VerificationTag created (bootstrap: ${type.value})")
+                    AppLog.i(TAG, "VerificationTag created (bootstrap: ${type.value})")
                 }
 
                 cacheAndUnlock(dek)
-                Logcat.i(TAG, "Unlocked with DEK via ${type.value}")
+                AppLog.i(TAG, "Unlocked with DEK via ${type.value}")
                 UnlockResult.Success
             } catch (e: IllegalArgumentException) {
-                Logcat.logCryptoException(TAG, "DEK verification", e)
+                AppLog.logCryptoException(TAG, "DEK verification", e)
                 UnlockResult.Failed(UnlockError.DEK_VERIFY_FAILED)
             } catch (e: Exception) {
-                Logcat.logCryptoException(TAG, "setDek", e)
+                AppLog.logCryptoException(TAG, "setDek", e)
                 UnlockResult.Failed(UnlockError.UNKNOWN)
             }
         }
@@ -148,7 +148,7 @@ class DekManager @Inject constructor(
                 "DEK not loaded, current: ${current::class.simpleName}"
             }
             bootstrapStore.save(EnvelopeCrypto.wrapWithCipher(type, current.dek, cipher))
-            Logcat.i(TAG, "Envelope re-keyed: ${type.value}")
+            AppLog.i(TAG, "Envelope re-keyed: ${type.value}")
         }
     }
 
@@ -166,7 +166,7 @@ class DekManager @Inject constructor(
             bootstrapStore.save(
                 EnvelopeCrypto.wrapWithKey(type, current.dek, wrappingKey, salt, algorithm)
             )
-            Logcat.i(TAG, "Envelope re-keyed with key: ${type.value}")
+            AppLog.i(TAG, "Envelope re-keyed with key: ${type.value}")
         }
     }
 
@@ -197,18 +197,18 @@ class DekManager @Inject constructor(
         mutex.withLock {
             _state = DekState.Locking
             _isUnlocked.value = false
-            Logcat.i(TAG, "Lock initiated")
+            AppLog.i(TAG, "Lock initiated")
         }
         try {
             lockCallback?.invoke()
         } catch (e: Exception) {
-            Logcat.e(TAG, "Database close failed during lock, continuing", e)
+            AppLog.e(TAG, "Database close failed during lock, continuing", e)
         }
         mutex.withLock {
             wipeCurrentDek()
             sessionKeyManager.clearSessionKey()
             _state = DekState.Locked
-            Logcat.i(TAG, "Lock completed")
+            AppLog.i(TAG, "Lock completed")
         }
     }
 
@@ -216,19 +216,19 @@ class DekManager @Inject constructor(
         mutex.withLock {
             _state = DekState.Deleting
             _isUnlocked.value = false
-            Logcat.i(TAG, "Vault deletion initiated")
+            AppLog.i(TAG, "Vault deletion initiated")
         }
         try {
             lockCallback?.invoke()
         } catch (e: Exception) {
-            Logcat.e(TAG, "Database close failed during deletion, continuing", e)
+            AppLog.e(TAG, "Database close failed during deletion, continuing", e)
         }
         mutex.withLock {
             wipeCurrentDek()
             sessionKeyManager.clearSessionKey()
             bootstrapStore.clear()
             _state = DekState.Locked
-            Logcat.i(TAG, "Vault deleted")
+            AppLog.i(TAG, "Vault deleted")
         }
     }
 

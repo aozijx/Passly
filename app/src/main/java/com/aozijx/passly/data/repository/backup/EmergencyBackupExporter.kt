@@ -10,7 +10,7 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.error.logFailureWithContext
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.security.crypto.CryptoEngine
 import net.zetetic.database.sqlcipher.SQLiteDatabase
@@ -87,7 +87,7 @@ object EmergencyBackupExporter {
                         output.write(encryptedPayload)
                     }
 
-                    Logcat.i(TAG, "紧急救灾备份已生成(密文): ${backupFile.absolutePath}")
+                    AppLog.i(TAG, "紧急救灾备份已生成(密文): ${backupFile.absolutePath}")
                     AppResult.success(backupFile)
                 } catch (e: Exception) {
                     AppResult.failure(

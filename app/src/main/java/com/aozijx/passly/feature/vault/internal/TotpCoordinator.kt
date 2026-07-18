@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import kotlinx.coroutines.CoroutineScope
@@ -81,7 +81,7 @@ internal class TotpCoordinator(
         if (_states.value.containsKey(entry.id)) return
         val decrypted = decryptSecret(entry.credential.twoFactor?.otp?.secret)
         if (decrypted == null) {
-            Logcat.w("TotpCoordinator", "Auto unlock failed: secret decrypt returned null")
+            AppLog.w("TotpCoordinator", "Auto unlock failed: secret decrypt returned null")
             return
         }
         unlock(entry.id, decrypted)

@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.settings.datamanagement
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
 import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
@@ -37,7 +37,7 @@ internal class BackupImportIconSyncSupport(
         val whitelist = portableSettingsUseCases.faviconDownloadWhitelist.first()
         val appContext = context.applicationContext
         if (!hasActiveNetwork(appContext)) {
-            Logcat.w(TAG, "Skip icon sync: no active network")
+            AppLog.w(TAG, "Skip icon sync: no active network")
             return@withContext BackupImportIconSyncResult(
                 total = 0,
                 success = 0,
@@ -82,12 +82,12 @@ internal class BackupImportIconSyncSupport(
                 } else {
                     failedCount++
                     failedIds += entry.id
-                    Logcat.w(TAG, "Icon sync update failed: entryId=${entry.id}")
+                    AppLog.w(TAG, "Icon sync update failed: entryId=${entry.id}")
                 }
             } else {
                 failedCount++
                 failedIds += entry.id
-                Logcat.w(
+                AppLog.w(
                     TAG,
                     "Icon sync failed: entryId=${entry.id}, source=$source, result=${outcome.result}"
                 )
@@ -103,7 +103,7 @@ internal class BackupImportIconSyncSupport(
             failedEntryIds = failedIds
         )
 
-        Logcat.i(
+        AppLog.i(
             TAG,
             "Icon sync done: total=${result.total}, success=${result.success}, failed=${result.failed}"
         )

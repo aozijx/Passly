@@ -261,4 +261,22 @@ class MigrationBoundaryTest {
         )
         assertTrue("Recovery draft must use its domain factory", "RecoveryCodeDraftFactory" in source)
     }
+
+    @Test
+    fun legacyLoggingStackCannotReturn() {
+        val legacyRoot = File("src/main/java/com/aozijx/passly/core/log")
+        val legacyReferences = productionKotlinFiles
+            .filter { source ->
+                val text = source.readText()
+                "core.log.Logcat" in text || "core.log.LogExporter" in text || "LogFilter" in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Legacy logging references: $legacyReferences", legacyReferences.isEmpty())
+        assertTrue(
+            "Legacy logging source directory must be removed",
+            !legacyRoot.exists() || legacyRoot.walkTopDown().none { it.extension == "kt" }
+        )
+    }
 }

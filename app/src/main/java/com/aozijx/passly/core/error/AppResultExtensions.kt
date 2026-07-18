@@ -1,17 +1,17 @@
 package com.aozijx.passly.core.error
 
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 
 // 自动根据错误严重级别记录日志
 /**
- * 自动日志记录：如果失败，根据错误级别记录 Logcat
+ * 自动日志记录：如果失败，根据错误级别写入结构化诊断系统。
  */
 fun <T> AppResult<T>.onFailureLog(tag: String = "DataLayer"): AppResult<T> {
     return this.onFailure { error ->
         val logMsg = "[${error.code}] ${error.trace.operation ?: "UnknownOp"}: ${error.message}"
         when (error.severity) {
-            ErrorSeverity.ERROR -> Logcat.e(tag, logMsg, error)
-            ErrorSeverity.WARNING -> Logcat.w(tag, logMsg, error)
+            ErrorSeverity.ERROR -> AppLog.e(tag, logMsg, error)
+            ErrorSeverity.WARNING -> AppLog.w(tag, logMsg, error)
         }
     }
 }
@@ -28,8 +28,8 @@ fun <T> AppResult<T>.logFailureWithContext(
         val msg =
             "[$operation] ${error.code} - ${error.message} | traceId=${trace.traceId}$contextStr"
         when (error.severity) {
-            ErrorSeverity.WARNING -> Logcat.w(tag, msg, error)
-            ErrorSeverity.ERROR -> Logcat.e(tag, msg, error)
+            ErrorSeverity.WARNING -> AppLog.w(tag, msg, error)
+            ErrorSeverity.ERROR -> AppLog.e(tag, msg, error)
         }
     }
     return this

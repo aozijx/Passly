@@ -19,7 +19,7 @@ import androidx.credentials.provider.CredentialEntry
 import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.di.Strict
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import dagger.hilt.android.AndroidEntryPoint
@@ -92,7 +92,7 @@ class ModernCredentialService : CredentialProviderService() {
                 callback.onResult(response)
             }
         } catch (e: Exception) {
-            Logcat.e(TAG, "onBeginGetCredentialRequest failed", e)
+            AppLog.e(TAG, "onBeginGetCredentialRequest failed", e)
             callback.onError(GetCredentialUnknownException(e.message ?: "Unknown error"))
         }
     }
@@ -132,7 +132,7 @@ class ModernCredentialService : CredentialProviderService() {
             }
         }
 
-        Logcat.i(TAG, "Phase 1: ${entries.size} entries for $packageName")
+        AppLog.i(TAG, "Phase 1: ${entries.size} entries for $packageName")
         return BeginGetCredentialResponse(entries)
     }
 }

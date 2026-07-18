@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.service.autofill.framework.builder.LegacyDatasetFactory
@@ -82,7 +82,7 @@ class AutofillFillViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Logcat.Companion.e("AutofillVM", "Error", e)
+                AppLog.e("AutofillVM", "Error", e)
                 _uiState.update { UiState.Error(e.message ?: "Unknown error") }
             }
         }

@@ -2,7 +2,7 @@ package com.aozijx.passly.data.local.database
 
 import android.content.Context
 import androidx.room.Room
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.security.crypto.DekManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
@@ -42,12 +42,12 @@ class DatabaseProvider @Inject constructor(
 
         runCatching { db.openHelper.writableDatabase }
             .onFailure { error ->
-                Logcat.e(TAG, "Database probe failed", error)
+                AppLog.e(TAG, "Database probe failed", error)
                 db.close()
                 throw error
             }
 
-        Logcat.i(TAG, "Database created")
+        AppLog.i(TAG, "Database created")
         return db
     }
 }

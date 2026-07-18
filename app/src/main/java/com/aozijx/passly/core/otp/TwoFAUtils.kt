@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.otp
 
 import android.util.Base64
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import java.nio.ByteBuffer
 import javax.crypto.Mac
@@ -29,7 +29,7 @@ object TwoFAUtils {
                 algorithm = entry.credential.twoFactor.otp.algorithm
             )
         } catch (e: Exception) {
-            Logcat.e("TwoFAUtils", "Failed to generate TOTP from entry", e)
+            AppLog.e("TwoFAUtils", "Failed to generate TOTP from entry", e)
             null
         }
     }
@@ -95,7 +95,7 @@ object TwoFAUtils {
                 otp.toString().padStart(digits, '0')
             }
         } catch (e: Exception) {
-            Logcat.e("TwoFAUtils", "Generate 2FA failed (Algo: $algorithm)", e)
+            AppLog.e("TwoFAUtils", "Generate 2FA failed (Algo: $algorithm)", e)
             return "------"
         }
     }

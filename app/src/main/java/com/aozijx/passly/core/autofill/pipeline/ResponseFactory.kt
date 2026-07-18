@@ -4,7 +4,7 @@ import com.aozijx.passly.core.autofill.model.FieldRole
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.autofill.model.ResponseContext
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,10 +28,10 @@ class ResponseFactory @Inject constructor() {
             candidate.copy(fields = buildFieldValueMap(candidate, context.roleMap))
         }
         if (resolved.isEmpty()) {
-            Logcat.w(TAG, "No candidates could be resolved for ${context.parentPackage}")
+            AppLog.w(TAG, "No candidates could be resolved for ${context.parentPackage}")
             return InternalFillResponse()
         }
-        Logcat.i(TAG, "Built ${resolved.size} candidates for ${context.parentPackage}")
+        AppLog.i(TAG, "Built ${resolved.size} candidates for ${context.parentPackage}")
         return InternalFillResponse(candidates = resolved, origin = context.parentPackage)
     }
 

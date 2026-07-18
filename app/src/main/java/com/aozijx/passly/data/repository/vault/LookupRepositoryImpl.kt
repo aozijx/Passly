@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.vault
 
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.data.local.database.DatabaseSession
 import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
@@ -70,7 +70,7 @@ class LookupRepositoryImpl @Inject constructor(
             val cred = credEntity?.let { decryptCredential(it) }
             VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
         } catch (e: Exception) {
-            Logcat.w("LookupRepo", "Skipping corrupt entry ${metaEntity.entryId}: ${e.message}")
+            AppLog.w("LookupRepo", "Skipping corrupt entry ${metaEntity.entryId}: ${e.message}")
             null
         }
     }

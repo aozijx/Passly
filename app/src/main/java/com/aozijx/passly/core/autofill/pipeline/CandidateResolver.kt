@@ -2,7 +2,7 @@ package com.aozijx.passly.core.autofill.pipeline
 
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.model.lookup.MatchType
@@ -30,7 +30,7 @@ class CandidateResolver @Inject constructor(
         return try {
             repository.search(packageName, webDomain).map { it.toResolved() }
         } catch (e: Exception) {
-            Logcat.e(TAG, "Candidate lookup failed for $packageName", e)
+            AppLog.e(TAG, "Candidate lookup failed for $packageName", e)
             emptyList()
         }
     }
@@ -41,7 +41,7 @@ class CandidateResolver @Inject constructor(
                 entry.toResolvedCandidate()
             }
         } catch (e: Exception) {
-            Logcat.e(TAG, "resolveByIds failed", e)
+            AppLog.e(TAG, "resolveByIds failed", e)
             emptyList()
         }
     }

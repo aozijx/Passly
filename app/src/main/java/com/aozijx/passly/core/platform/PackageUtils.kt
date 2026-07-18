@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.scale
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.AppLog
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -51,7 +51,7 @@ class PackageUtils @Inject constructor(
             metadataCache.put(packageName, metadata)
             metadata
         } catch (e: PackageManager.NameNotFoundException) {
-            Logcat.w(TAG, "App not found for package: $packageName", e)
+            AppLog.w(TAG, "App not found for package: $packageName", e)
             null
         }
     }
@@ -72,7 +72,7 @@ class PackageUtils @Inject constructor(
                 null
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            Logcat.w(TAG, "Icon not found for package: $packageName", e)
+            AppLog.w(TAG, "Icon not found for package: $packageName", e)
             null
         }
     }
@@ -96,7 +96,7 @@ class PackageUtils @Inject constructor(
                 try {
                     drawable.toBitmap(targetSize, targetSize)
                 } catch (e: Exception) {
-                    Logcat.e(TAG, "Failed to convert drawable to bitmap", e)
+                    AppLog.e(TAG, "Failed to convert drawable to bitmap", e)
                     null
                 }
             }
