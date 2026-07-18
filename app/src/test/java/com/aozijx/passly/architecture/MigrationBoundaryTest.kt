@@ -221,4 +221,44 @@ class MigrationBoundaryTest {
             "toasts." !in generalNotifications
         )
     }
+
+    @Test
+    fun legacyAuthenticationStackCannotReturn() {
+        val forbiddenSymbols = listOf(
+            "VerificationGateway",
+            "BiometricPromptLauncher",
+            "BiometricAuthCoordinator",
+            "UserSessionManager",
+            "SessionStateProvider",
+            "AppIdleMonitor"
+        )
+        val offenders = productionKotlinFiles
+            .filter { source -> forbiddenSymbols.any { it in source.readText() } }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Legacy authentication references: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun authenticationActivitiesStayInTheApplicationProcess() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        assertTrue(
+            "Authentication hosts must not be moved to another process",
+            "android:process" !in manifest
+        )
+    }
+
+    @Test
+    fun recoveryDraftViewModelDependsOnlyOnAuthenticationContracts() {
+        val source = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/RecoveryDraftViewModel.kt"
+        ).readText()
+
+        assertTrue(
+            "Recovery draft UI must not access cryptographic implementations",
+            "import com.aozijx.passly.security." !in source
+        )
+        assertTrue("Recovery draft must use its domain factory", "RecoveryCodeDraftFactory" in source)
+    }
 }
