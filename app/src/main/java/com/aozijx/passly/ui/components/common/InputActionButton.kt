@@ -25,25 +25,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.security.crypto.SecureString
-
-@Preview
-@Composable
-private fun InputActionButtonPreview() {
-    InputActionButton(
-        value = SecureString.EMPTY,
-        expanded = false,
-        progress = false,
-        collapsedText = "应用密码解锁",
-        expandedText = "验证应用密码",
-        inputLabel = "应用密码",
-        onValueChange = {},
-        onExpandedChange = {},
-        onAction = {}
-    )
-}
 
 @Composable
 fun InputActionButton(

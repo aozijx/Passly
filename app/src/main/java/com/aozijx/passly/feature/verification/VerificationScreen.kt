@@ -38,7 +38,6 @@ fun VerificationScreen(
 ) {
     val methods by viewModel.methodAvailability.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     val subtitle = stringResource(R.string.vault_auth_subtitle)
     val activeMethod = uiState.activeMethod
 
