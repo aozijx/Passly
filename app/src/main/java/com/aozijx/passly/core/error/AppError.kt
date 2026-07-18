@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.error
 
-import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 // ─── 基础定义 ──────────────────────────────
 enum class ErrorLayer { DATA, DOMAIN, UI }
@@ -10,7 +10,7 @@ enum class ErrorSeverity { WARNING, ERROR }
 data class ErrorTrace(
     val originLayer: ErrorLayer,
     val operation: String? = null,
-    val traceId: String = UUID.randomUUID().toString(),
+    val traceId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     val timestampMs: Long = System.currentTimeMillis(),
     val extras: Map<String, String> = emptyMap()
 ) {

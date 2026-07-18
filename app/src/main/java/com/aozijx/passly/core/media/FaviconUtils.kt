@@ -8,11 +8,11 @@ import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.diagnostics.AppLog
+import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.util.UUID
 
 object FaviconUtils {
 
@@ -321,7 +321,7 @@ object FaviconUtils {
                 if (!exists()) mkdirs()
             }
 
-            val fileName = "favicon_${UUID.randomUUID()}.png"
+            val fileName = "favicon_${UuidCreator.getTimeOrderedEpoch()}.png"
             val destFile = File(directory, fileName)
 
             FileOutputStream(destFile).use { outputStream ->

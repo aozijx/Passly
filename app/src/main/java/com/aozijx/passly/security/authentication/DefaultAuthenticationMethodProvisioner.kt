@@ -3,21 +3,21 @@ package com.aozijx.passly.security.authentication
 import com.aozijx.passly.core.security.KeyDerivation
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
+import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.model.envelope.KdfAlgorithm
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.envelope.BootstrapStore
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.CancellationException
-import javax.crypto.spec.SecretKeySpec
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,7 +34,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val feedback: AuthFeedbackPresenter
 ) : AuthenticationMethodProvisioner {
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
-        val correlationId = UUID.randomUUID().toString()
+        val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
         if (password.isEmpty()) {
             password.fill('\u0000')
             return AuthenticationResult.Failure(
@@ -98,7 +98,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     }
 
     override suspend fun disableAppPassword(): AuthenticationResult {
-        val correlationId = UUID.randomUUID().toString()
+        val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
         val authentication = authenticationManager.authenticate(
             AuthenticationRequest(
                 purpose = AuthenticationPurpose.MANAGE_APP_PASSWORD,
@@ -120,7 +120,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     }
 
     override suspend fun disableBiometric(): AuthenticationResult {
-        val correlationId = UUID.randomUUID().toString()
+        val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
         val authentication = authenticationManager.authenticate(
             AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
         )
@@ -148,7 +148,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     override suspend fun rotateBiometricPolicy(
         invalidateOnEnrollment: Boolean
     ): AuthenticationResult {
-        val correlationId = UUID.randomUUID().toString()
+        val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
         val authentication = authenticationManager.authenticate(
             AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
         )

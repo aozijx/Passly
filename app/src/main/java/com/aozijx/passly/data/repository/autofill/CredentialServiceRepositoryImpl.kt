@@ -6,6 +6,7 @@ import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.data.util.Clock
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.credential.VaultCredential
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
@@ -15,10 +16,9 @@ import com.aozijx.passly.domain.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.model.lookup.MatchType
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.security.crypto.FieldEncryptor
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -118,7 +118,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     ): Boolean = runBlocking(Dispatchers.IO) {
         if (sessionState.isLocked()) return@runBlocking false
         sessionManager.withDatabase {
-            val entryId = UUID.randomUUID().toString()
+            val entryId = UuidCreator.getTimeOrderedEpoch().toString()
             val meta = VaultMetadata(
                 entryId = entryId,
                 entryType = EntryType.LOGIN,

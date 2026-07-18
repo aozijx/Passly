@@ -15,14 +15,14 @@ import com.aozijx.passly.domain.model.envelope.KeyEnvelope
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.EnvelopeCrypto
 import com.aozijx.passly.security.envelope.BootstrapStore
-import java.security.SecureRandom
-import java.util.UUID
-import javax.crypto.spec.SecretKeySpec
-import javax.inject.Inject
-import javax.inject.Singleton
+import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.security.SecureRandom
+import javax.crypto.spec.SecretKeySpec
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class DefaultRecoveryCodeDraftFactory @Inject constructor(
@@ -34,7 +34,7 @@ class DefaultRecoveryCodeDraftFactory @Inject constructor(
     private val random = SecureRandom()
 
     override suspend fun create(): RecoveryCodeDraftCreation {
-        val correlationId = UUID.randomUUID().toString()
+        val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
         val code = CharArray(CODE_LENGTH) { CODE_ALPHABET[random.nextInt(CODE_ALPHABET.length)] }
         val salt = KeyDerivation.generateSalt()
         val secret = SecretChars.copyOf(code)

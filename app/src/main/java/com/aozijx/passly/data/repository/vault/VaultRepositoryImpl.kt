@@ -8,13 +8,14 @@ import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.util.Clock
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -51,7 +52,7 @@ class VaultRepositoryImpl @Inject constructor(
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
         return sessionManager.withDatabase {
             AppResult.runSuspendCatching("vault.insert") {
-                val entryId = entry.id.ifEmpty { java.util.UUID.randomUUID().toString() }
+                val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
                 val now = clock.now()
                 val metaBlob = cryptoMapper.encryptMetadata(entry.metadata, entryId)
                 val credBlob = cryptoMapper.encryptCredential(entry.credential, entryId)

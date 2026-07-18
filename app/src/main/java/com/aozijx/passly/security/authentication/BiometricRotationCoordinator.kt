@@ -6,8 +6,8 @@ import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.security.authentication.host.AuthUiHost
-import com.aozijx.passly.security.authentication.host.BiometricHostResult
 import com.aozijx.passly.security.authentication.host.BiometricHostFailure
+import com.aozijx.passly.security.authentication.host.BiometricHostResult
 import com.aozijx.passly.security.authentication.host.BiometricPromptSpec
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.EnvelopeCrypto
@@ -15,7 +15,7 @@ import com.aozijx.passly.security.envelope.BiometricBinding
 import com.aozijx.passly.security.envelope.BiometricRotationJournal
 import com.aozijx.passly.security.envelope.BiometricRotationPhase
 import com.aozijx.passly.security.envelope.BootstrapStore
-import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,7 +34,8 @@ class BiometricRotationCoordinator @Inject constructor(
             return fail(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
         }
         val oldAlias = bootstrapStore.loadBiometricState().binding?.activeAlias
-        val candidateAlias = "${cryptoFactory.baseAlias()}.candidate.${UUID.randomUUID()}"
+        val candidateAlias =
+            "${cryptoFactory.baseAlias()}.candidate.${UuidCreator.getTimeOrderedEpoch()}"
         bootstrapStore.prepareBiometricRotation(
             BiometricRotationJournal(
                 phase = BiometricRotationPhase.PREPARED,

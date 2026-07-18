@@ -4,7 +4,7 @@ import com.aozijx.passly.core.diagnostics.AppFailure
 import com.aozijx.passly.core.diagnostics.FailureOrigin
 import com.aozijx.passly.core.diagnostics.FailureSeverity
 import com.aozijx.passly.core.diagnostics.RecoveryAction
-import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 enum class AuthenticationMethod { BIOMETRIC, APP_PASSWORD, RECOVERY_CODE }
 
@@ -32,7 +32,7 @@ data class AuthenticationRequest(
         setOf(AuthenticationMethod.BIOMETRIC, AuthenticationMethod.APP_PASSWORD)
     },
     val requireFreshAuthentication: Boolean = purpose != AuthenticationPurpose.UNLOCK_VAULT,
-    val correlationId: String = UUID.randomUUID().toString()
+    val correlationId: String = UuidCreator.getTimeOrderedEpoch().toString()
 ) {
     init {
         require(allowedMethods.isNotEmpty()) { "At least one authentication method is required" }

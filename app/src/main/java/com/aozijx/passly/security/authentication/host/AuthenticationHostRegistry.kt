@@ -1,11 +1,11 @@
 package com.aozijx.passly.security.authentication.host
 
+import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import java.lang.ref.WeakReference
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,7 +38,8 @@ class AuthenticationHostRegistry @Inject constructor() {
     private val registration = MutableStateFlow<Registration?>(null)
 
     fun register(host: AuthUiHost): HostRegistrationToken {
-        val token = HostRegistrationToken(host.ownerId, UUID.randomUUID().toString())
+        val token =
+            HostRegistrationToken(host.ownerId, UuidCreator.getTimeOrderedEpoch().toString())
         registration.value = Registration(
             ownerId = host.ownerId,
             token = token,

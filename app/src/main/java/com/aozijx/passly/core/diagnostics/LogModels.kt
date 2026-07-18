@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.diagnostics
 
-import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 enum class LogLevel { VERBOSE, DEBUG, INFO, WARN, ERROR, FATAL }
 
@@ -22,7 +22,7 @@ data class LogEvent(
     val name: String,
     val fields: Map<String, String> = emptyMap(),
     val throwable: Throwable? = null,
-    val correlationId: String = UUID.randomUUID().toString(),
+    val correlationId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     val timestampMs: Long = System.currentTimeMillis()
 )
 

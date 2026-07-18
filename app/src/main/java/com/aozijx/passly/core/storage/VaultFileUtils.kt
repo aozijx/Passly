@@ -2,12 +2,12 @@ package com.aozijx.passly.core.storage
 
 import android.content.Context
 import android.net.Uri
+import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.util.UUID
 
 object VaultFileUtils {
 
@@ -18,7 +18,7 @@ object VaultFileUtils {
                     if (!exists()) mkdirs()
                 }
 
-                val fileName = "img_${UUID.randomUUID()}.jpg"
+                val fileName = "img_${UuidCreator.getTimeOrderedEpoch()}.jpg"
                 val destFile = File(directory, fileName)
 
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->

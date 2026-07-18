@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.diagnostics
 
-import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 enum class FailureOrigin { PLATFORM, SECURITY, DATA, DOMAIN, PRESENTATION }
 enum class FailureSeverity { INFO, WARNING, ERROR, FATAL }
@@ -20,6 +20,6 @@ data class StandardFailure(
     override val origin: FailureOrigin,
     override val severity: FailureSeverity,
     override val recoveryAction: RecoveryAction = RecoveryAction.NONE,
-    override val correlationId: String = UUID.randomUUID().toString(),
+    override val correlationId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     override val safeFields: Map<String, String> = emptyMap()
 ) : AppFailure

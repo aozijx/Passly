@@ -1,8 +1,8 @@
 package com.aozijx.passly.ui.authentication
 
 import androidx.lifecycle.ViewModel
-import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 class AuthenticationHostOwnerViewModel : ViewModel() {
-    val ownerId: String = UUID.randomUUID().toString()
+    val ownerId: String = UuidCreator.getTimeOrderedEpoch().toString()
 }
