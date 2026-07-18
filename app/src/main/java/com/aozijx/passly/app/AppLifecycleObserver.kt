@@ -2,7 +2,7 @@ package com.aozijx.passly.app
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.aozijx.passly.core.log.Logcat
+import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
 import com.aozijx.passly.data.local.database.DatabaseSession
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,10 +22,10 @@ class AppLifecycleObserver @Inject constructor(
     override fun onStop(owner: LifecycleOwner) {
         databaseSession.onStop(owner)
         // 确保应用进入后台时，所有待写入的日志落盘，但不关闭线程池
-        Logcat.flushLogs()
+        DiagnosticsRuntime.flush()
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
-        Logcat.shutdown()
+        DiagnosticsRuntime.shutdown()
     }
 }

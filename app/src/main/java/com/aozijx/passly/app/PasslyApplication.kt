@@ -13,11 +13,12 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
+import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
 import com.aozijx.passly.security.session.AppIdleMonitor
-import com.aozijx.passly.core.log.CrashHandler
-import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.core.log.SensitiveDataFilter
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -26,9 +27,6 @@ class PasslyApplication : Application() {
     companion object {
         @SuppressLint("StaticFieldLeak")
         private lateinit var instance: PasslyApplication
-
-        val logcat: Logcat
-            get() = instance.logcatInstance
 
         val context: Context
             get() = instance.applicationContext
@@ -41,8 +39,7 @@ class PasslyApplication : Application() {
     @Inject
     lateinit var appLifecycleObserver: AppLifecycleObserver
 
-    lateinit var logcatInstance: Logcat
-        private set
+    private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         if (BuildConfig.DEBUG) {
@@ -58,15 +55,16 @@ class PasslyApplication : Application() {
         super.onCreate()
         instance = this
 
-        logcatInstance = Logcat(context = applicationContext, filter = SensitiveDataFilter())
-        Logcat.init(logcatInstance)
-        CrashHandler.init(logcatInstance)
-        Logcat.clearOldLogs()
+        DiagnosticsRuntime.start(applicationContext, diagnosticsScope)
 
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            Logcat.e("PasslyApplication", "Failed to load SQLCipher native library.", e)
+            com.aozijx.passly.core.diagnostics.AppLog.e(
+                com.aozijx.passly.core.diagnostics.LogCategory.DATABASE,
+                "sqlcipher.load_failed",
+                throwable = e
+            )
             throw e
         }
 
@@ -108,7 +106,10 @@ class PasslyApplication : Application() {
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                     PackageManager.DONT_KILL_APP
                 )
-                Logcat.i("PasslyApplication", "Autofill: ModernCredentialService enabled (API 34+)")
+                com.aozijx.passly.core.diagnostics.AppLog.i(
+                    com.aozijx.passly.core.diagnostics.LogCategory.AUTOFILL,
+                    "autofill.modern_enabled"
+                )
             } else {
                 // API 31-33：启用 Legacy
                 pm.setComponentEnabledSetting(
@@ -116,10 +117,17 @@ class PasslyApplication : Application() {
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                     PackageManager.DONT_KILL_APP
                 )
-                Logcat.i("PasslyApplication", "Autofill: LegacyAutofillService enabled (API < 34)")
+                com.aozijx.passly.core.diagnostics.AppLog.i(
+                    com.aozijx.passly.core.diagnostics.LogCategory.AUTOFILL,
+                    "autofill.legacy_enabled"
+                )
             }
         } catch (e: Exception) {
-            Logcat.e("PasslyApplication", "Failed to configure autofill services", e)
+            com.aozijx.passly.core.diagnostics.AppLog.e(
+                com.aozijx.passly.core.diagnostics.LogCategory.AUTOFILL,
+                "autofill.configure_failed",
+                throwable = e
+            )
         }
     }
 
