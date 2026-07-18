@@ -155,11 +155,13 @@ class DefaultAuthenticationManager @Inject constructor(
 
     override suspend fun refreshAvailability() {
         _methods.value = withContext(Dispatchers.Default) {
+            val biometricState = bootstrapStore.loadBiometricState()
             AuthMethodAvailability(
                 biometric = biometricManager.canAuthenticate(
                     BiometricManager.Authenticators.BIOMETRIC_STRONG
                 ) == BiometricManager.BIOMETRIC_SUCCESS &&
-                    bootstrapStore.load(EnvelopeType.BIOMETRIC) != null,
+                    bootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
+                    biometricState.binding != null,
                 appPassword = bootstrapStore.load(EnvelopeType.APP_PASSWORD) != null,
                 recoveryCode = bootstrapStore.load(EnvelopeType.RECOVERY) != null
             )
@@ -183,7 +185,15 @@ class DefaultAuthenticationManager @Inject constructor(
     }
 
     private fun failure(request: AuthenticationRequest, code: AuthenticationFailureCode) =
-        AuthenticationResult.Failure(AuthenticationFailure(code, request.correlationId))
+        AuthenticationResult.Failure(
+            AuthenticationFailure(
+                code,
+                request.correlationId,
+                safeFields = request.allowedMethods.singleOrNull()?.let { method ->
+                    mapOf("method" to method.name)
+                }.orEmpty()
+            )
+        )
 
     private fun finish(
         request: AuthenticationRequest,

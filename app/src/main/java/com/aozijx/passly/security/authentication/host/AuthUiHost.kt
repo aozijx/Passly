@@ -21,8 +21,18 @@ data class BiometricPromptSpec(
 sealed interface BiometricHostResult {
     data class Success(val result: BiometricPrompt.AuthenticationResult) : BiometricHostResult
     data class Cancelled(val byUser: Boolean) : BiometricHostResult
-    data class Error(val code: Int) : BiometricHostResult
+    data class Failure(
+        val reason: BiometricHostFailure,
+        val platformCode: Int? = null
+    ) : BiometricHostResult
     data object HostUnavailable : BiometricHostResult
+}
+
+enum class BiometricHostFailure {
+    METHOD_UNAVAILABLE,
+    RATE_LIMITED,
+    CRYPTO_OBJECT_INVALID,
+    AUTHENTICATION_FAILED
 }
 
 sealed interface SecretHostResult {

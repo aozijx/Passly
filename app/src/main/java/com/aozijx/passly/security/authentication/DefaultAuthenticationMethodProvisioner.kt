@@ -29,7 +29,9 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val bootstrapStore: BootstrapStore,
     private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
-    private val biometricRotationCoordinator: BiometricRotationCoordinator
+    private val biometricRotationCoordinator: BiometricRotationCoordinator,
+    private val cryptoFactory: BiometricCryptoFactory,
+    private val feedback: AuthFeedbackPresenter
 ) : AuthenticationMethodProvisioner {
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UUID.randomUUID().toString()
@@ -110,26 +112,59 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         if (!alternatives) {
             return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
-            )
+            ).also { feedback.present(it, correlationId) }
         }
         bootstrapStore.delete(EnvelopeType.APP_PASSWORD)
         authenticationManager.refreshAvailability()
         return AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
     }
 
+    override suspend fun disableBiometric(): AuthenticationResult {
+        val correlationId = UUID.randomUUID().toString()
+        val authentication = authenticationManager.authenticate(
+            AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
+        )
+        if (authentication !is AuthenticationResult.Success) return authentication
+        val alternatives = bootstrapStore.loadAll().any {
+            it.type == EnvelopeType.APP_PASSWORD || it.type == EnvelopeType.RECOVERY
+        }
+        if (!alternatives) {
+            return AuthenticationResult.Failure(
+                AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
+            )
+        }
+        val activeAlias = bootstrapStore.loadBiometricState().binding?.activeAlias
+            ?: return AuthenticationResult.Failure(
+                AuthenticationFailure(AuthenticationFailureCode.KEY_MISSING, correlationId)
+            ).also { feedback.present(it, correlationId) }
+        bootstrapStore.disableBiometric(activeAlias)
+        if (cryptoFactory.deleteAlias(activeAlias)) {
+            bootstrapStore.clearBiometricCleanupAlias(activeAlias)
+        }
+        authenticationManager.refreshAvailability()
+        return AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC)
+    }
+
     override suspend fun rotateBiometricPolicy(
         invalidateOnEnrollment: Boolean
     ): AuthenticationResult {
         val correlationId = UUID.randomUUID().toString()
+        val authentication = authenticationManager.authenticate(
+            AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
+        )
+        if (authentication !is AuthenticationResult.Success) return authentication
         val host = hostRegistry.awaitLease()?.hostOrNull()
             ?: return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
-            )
-        return biometricRotationCoordinator.rotate(
+            ).also { feedback.present(it, correlationId) }
+        val result = biometricRotationCoordinator.rotate(
             host = host,
             invalidateOnEnrollment = invalidateOnEnrollment,
             correlationId = correlationId
         )
+        if (result is AuthenticationResult.Success) authenticationManager.refreshAvailability()
+        feedback.present(result, correlationId)
+        return result
     }
 
     override suspend fun hasRecoveryCode(): Boolean =

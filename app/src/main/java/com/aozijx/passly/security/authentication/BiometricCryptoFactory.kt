@@ -24,7 +24,7 @@ internal sealed interface BiometricCryptoPreparation {
 class BiometricCryptoFactory @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
-    internal fun legacyAlias(): String = "${context.packageName}.${CryptoConfig.KEYSTORE_ALIAS_SUFFIX}"
+    internal fun baseAlias(): String = "${context.packageName}.${CryptoConfig.KEYSTORE_ALIAS_SUFFIX}"
 
     internal fun createDecrypt(
         alias: String,

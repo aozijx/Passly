@@ -4,12 +4,15 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
+import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.core.diagnostics.LogCategory
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.security.authentication.SecretChars
 import com.aozijx.passly.security.authentication.host.AuthHostSnapshot
 import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.BiometricHostResult
+import com.aozijx.passly.security.authentication.host.BiometricHostFailure
 import com.aozijx.passly.security.authentication.host.BiometricPromptSpec
 import com.aozijx.passly.security.authentication.host.SecretHostResult
 import kotlinx.coroutines.CancellableContinuation
@@ -81,11 +84,18 @@ class ActivityAuthUiHost(
         cryptoObject: BiometricPrompt.CryptoObject?
     ): BiometricHostResult {
         if (!snapshot().usable) return BiometricHostResult.HostUnavailable
+        val promptInfo = try {
+            BiometricPromptSpecFactory.create(spec, cryptoBound = cryptoObject != null)
+        } catch (failure: IllegalArgumentException) {
+            AppLog.e(
+                LogCategory.AUTHENTICATION,
+                "biometric.prompt_configuration_invalid",
+                throwable = failure
+            )
+            return BiometricHostResult.Failure(BiometricHostFailure.CRYPTO_OBJECT_INVALID)
+        }
         return suspendCancellableCoroutine { continuation ->
-            val prompt = BiometricPrompt(
-                activity,
-                activity.mainExecutor,
-                object : BiometricPrompt.AuthenticationCallback() {
+            val callback = object : BiometricPrompt.AuthenticationCallback() {
                     override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                         activePrompt.set(null)
                         if (continuation.isActive) continuation.resume(BiometricHostResult.Success(result))
@@ -97,13 +107,27 @@ class ActivityAuthUiHost(
                         val result = when (errorCode) {
                             BiometricPrompt.ERROR_NEGATIVE_BUTTON,
                             BiometricPrompt.ERROR_USER_CANCELED -> BiometricHostResult.Cancelled(true)
-                            BiometricPrompt.ERROR_CANCELED -> BiometricHostResult.Cancelled(false)
-                            else -> BiometricHostResult.Error(errorCode)
+                            BiometricPrompt.ERROR_CANCELED,
+                            BiometricPrompt.ERROR_TIMEOUT -> BiometricHostResult.Cancelled(false)
+                            else -> BiometricHostResult.Failure(
+                                BiometricPromptErrorClassifier.classify(errorCode),
+                                errorCode
+                            )
                         }
                         continuation.resume(result)
                     }
                 }
-            )
+            val prompt = try {
+                BiometricPrompt(activity, activity.mainExecutor, callback)
+            } catch (failure: IllegalStateException) {
+                AppLog.w(
+                    LogCategory.AUTHENTICATION,
+                    "biometric.prompt_host_invalid",
+                    throwable = failure
+                )
+                if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
+                return@suspendCancellableCoroutine
+            }
             activePrompt.set(prompt)
             continuation.invokeOnCancellation {
                 activePrompt.getAndSet(null)?.cancelAuthentication()
@@ -113,12 +137,48 @@ class ActivityAuthUiHost(
                 continuation.resume(BiometricHostResult.HostUnavailable)
                 return@suspendCancellableCoroutine
             }
-            runCatching {
-                val promptInfo = BiometricPromptSpecFactory.create(spec)
+            try {
                 if (cryptoObject == null) prompt.authenticate(promptInfo)
                 else prompt.authenticate(promptInfo, cryptoObject)
-            }.onFailure {
+            } catch (failure: IllegalArgumentException) {
                 activePrompt.set(null)
+                AppLog.e(
+                    LogCategory.AUTHENTICATION,
+                    "biometric.crypto_or_prompt_invalid",
+                    throwable = failure
+                )
+                if (continuation.isActive) {
+                    continuation.resume(
+                        BiometricHostResult.Failure(BiometricHostFailure.CRYPTO_OBJECT_INVALID)
+                    )
+                }
+            } catch (failure: IllegalStateException) {
+                activePrompt.set(null)
+                AppLog.w(
+                    LogCategory.AUTHENTICATION,
+                    "biometric.prompt_show_host_invalid",
+                    throwable = failure
+                )
+                if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
+            } catch (failure: SecurityException) {
+                activePrompt.set(null)
+                AppLog.e(
+                    LogCategory.AUTHENTICATION,
+                    "biometric.prompt_permission_denied",
+                    throwable = failure
+                )
+                if (continuation.isActive) {
+                    continuation.resume(
+                        BiometricHostResult.Failure(BiometricHostFailure.METHOD_UNAVAILABLE)
+                    )
+                }
+            } catch (failure: Exception) {
+                activePrompt.set(null)
+                AppLog.e(
+                    LogCategory.AUTHENTICATION,
+                    "biometric.prompt_unexpected_failure",
+                    throwable = failure
+                )
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
             }
         }
@@ -155,7 +215,13 @@ class ActivityAuthUiHost(
 }
 
 internal object BiometricPromptSpecFactory {
-    fun create(spec: BiometricPromptSpec): BiometricPrompt.PromptInfo {
+    fun create(
+        spec: BiometricPromptSpec,
+        cryptoBound: Boolean
+    ): BiometricPrompt.PromptInfo {
+        require(!cryptoBound || !spec.allowDeviceCredential) {
+            "A biometric-only keystore operation cannot allow device credentials"
+        }
         val authenticators = if (spec.allowDeviceCredential) {
             BiometricManager.Authenticators.BIOMETRIC_STRONG or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
@@ -179,5 +245,24 @@ internal object BiometricPromptSpecFactory {
         AuthenticationPurpose.BACKUP_IMPORT -> "验证后导入备份"
         AuthenticationPurpose.EXPORT_DIAGNOSTICS -> "验证后导出诊断"
         else -> "验证身份"
+    }
+}
+
+internal object BiometricPromptErrorClassifier {
+    fun classify(errorCode: Int): BiometricHostFailure = when (errorCode) {
+        BiometricPrompt.ERROR_LOCKOUT,
+        BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> BiometricHostFailure.RATE_LIMITED
+
+        BiometricPrompt.ERROR_HW_NOT_PRESENT,
+        BiometricPrompt.ERROR_HW_UNAVAILABLE,
+        BiometricPrompt.ERROR_NO_BIOMETRICS,
+        BiometricPrompt.ERROR_NO_DEVICE_CREDENTIAL,
+        BiometricPrompt.ERROR_SECURITY_UPDATE_REQUIRED -> BiometricHostFailure.METHOD_UNAVAILABLE
+
+        BiometricPrompt.ERROR_UNABLE_TO_PROCESS,
+        BiometricPrompt.ERROR_NO_SPACE,
+        BiometricPrompt.ERROR_VENDOR -> BiometricHostFailure.CRYPTO_OBJECT_INVALID
+
+        else -> BiometricHostFailure.AUTHENTICATION_FAILED
     }
 }

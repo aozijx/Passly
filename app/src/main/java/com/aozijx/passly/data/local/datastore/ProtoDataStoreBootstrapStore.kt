@@ -149,6 +149,22 @@ class ProtoDataStoreBootstrapStore @Inject constructor(
         }
     }
 
+    override suspend fun disableBiometric(activeAlias: String) {
+        dataStore.updateData { current ->
+            val builder = current.toBuilder()
+            val envelopeIndex = current.envelopesList.indexOfFirst {
+                it.type == EnvelopeType.BIOMETRIC.value
+            }
+            if (envelopeIndex >= 0) builder.removeEnvelopes(envelopeIndex)
+            builder.clearBiometricBinding()
+            builder.clearBiometricRotation()
+            if (activeAlias.isNotBlank() && activeAlias !in current.biometricCleanupAliasesList) {
+                builder.addBiometricCleanupAliases(activeAlias)
+            }
+            builder.build()
+        }
+    }
+
     override suspend fun clearBiometricRotationJournal() {
         dataStore.updateData { it.toBuilder().clearBiometricRotation().build() }
     }

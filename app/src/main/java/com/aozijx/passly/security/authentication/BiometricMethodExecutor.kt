@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.BiometricHostResult
+import com.aozijx.passly.security.authentication.host.BiometricHostFailure
 import com.aozijx.passly.security.authentication.host.BiometricPromptSpec
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.UnlockError
@@ -33,7 +34,7 @@ class BiometricMethodExecutor @Inject constructor(
         val envelope = bootstrapStore.load(EnvelopeType.BIOMETRIC)
             ?: return failure(AuthenticationFailureCode.METHOD_UNAVAILABLE, request)
         val alias = bootstrapStore.loadBiometricState().binding?.activeAlias
-            ?: cryptoFactory.legacyAlias()
+            ?: return failure(AuthenticationFailureCode.KEY_MISSING, request)
         val preparation = cryptoFactory.createDecrypt(alias, envelope.iv)
         val cipher = when (preparation) {
             is BiometricCryptoPreparation.Ready -> preparation.cipher
@@ -54,7 +55,7 @@ class BiometricMethodExecutor @Inject constructor(
                 is UnlockResult.Failed -> failure(unlock.reason.failureCode(), request)
             }
             is BiometricHostResult.Cancelled -> MethodExecutionResult.Cancelled(hostResult.byUser)
-            is BiometricHostResult.Error -> failure(AuthenticationFailureCode.CREDENTIAL_INCORRECT, request)
+            is BiometricHostResult.Failure -> failure(hostResult.reason.failureCode(), request)
             BiometricHostResult.HostUnavailable -> failure(AuthenticationFailureCode.HOST_UNAVAILABLE, request)
         }
     }
@@ -67,8 +68,15 @@ class BiometricMethodExecutor @Inject constructor(
     ) {
         is BiometricHostResult.Success -> MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
         is BiometricHostResult.Cancelled -> MethodExecutionResult.Cancelled(result.byUser)
-        is BiometricHostResult.Error -> failure(AuthenticationFailureCode.CREDENTIAL_INCORRECT, request)
+        is BiometricHostResult.Failure -> failure(result.reason.failureCode(), request)
         BiometricHostResult.HostUnavailable -> failure(AuthenticationFailureCode.HOST_UNAVAILABLE, request)
+    }
+
+    private fun BiometricHostFailure.failureCode(): AuthenticationFailureCode = when (this) {
+        BiometricHostFailure.METHOD_UNAVAILABLE -> AuthenticationFailureCode.METHOD_UNAVAILABLE
+        BiometricHostFailure.RATE_LIMITED -> AuthenticationFailureCode.RATE_LIMITED
+        BiometricHostFailure.CRYPTO_OBJECT_INVALID -> AuthenticationFailureCode.CRYPTO_OBJECT_INVALID
+        BiometricHostFailure.AUTHENTICATION_FAILED -> AuthenticationFailureCode.CREDENTIAL_INCORRECT
     }
 
     private fun UnlockError.failureCode(): AuthenticationFailureCode = when (this) {
@@ -78,5 +86,11 @@ class BiometricMethodExecutor @Inject constructor(
     }
 
     private fun failure(code: AuthenticationFailureCode, request: AuthenticationRequest) =
-        MethodExecutionResult.Failure(AuthenticationFailure(code, request.correlationId))
+        MethodExecutionResult.Failure(
+            AuthenticationFailure(
+                code,
+                request.correlationId,
+                safeFields = mapOf("method" to AuthenticationMethod.BIOMETRIC.name)
+            )
+        )
 }

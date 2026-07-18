@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.BiometricHostResult
+import com.aozijx.passly.security.authentication.host.BiometricHostFailure
 import com.aozijx.passly.security.authentication.host.BiometricPromptSpec
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.EnvelopeCrypto
@@ -29,10 +30,11 @@ class BiometricRotationCoordinator @Inject constructor(
         invalidateOnEnrollment: Boolean,
         correlationId: String
     ): AuthenticationResult {
-        check(dekManager.isUnlocked.value) { "Vault must be unlocked before biometric rotation" }
+        if (!dekManager.isUnlocked.value) {
+            return fail(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
+        }
         val oldAlias = bootstrapStore.loadBiometricState().binding?.activeAlias
-            ?: cryptoFactory.legacyAlias()
-        val candidateAlias = "${cryptoFactory.legacyAlias()}.candidate.${UUID.randomUUID()}"
+        val candidateAlias = "${cryptoFactory.baseAlias()}.candidate.${UUID.randomUUID()}"
         bootstrapStore.prepareBiometricRotation(
             BiometricRotationJournal(
                 phase = BiometricRotationPhase.PREPARED,
@@ -42,7 +44,9 @@ class BiometricRotationCoordinator @Inject constructor(
         )
         val preparation = cryptoFactory.createEncrypt(candidateAlias, invalidateOnEnrollment)
         val cipher = (preparation as? BiometricCryptoPreparation.Ready)?.cipher
-            ?: return fail(preparation.failureCode(), correlationId)
+            ?: return fail(preparation.failureCode(), correlationId).also {
+                rollbackCandidate(candidateAlias)
+            }
         return when (
             val prompt = host.authenticateBiometric(
                 BiometricPromptSpec(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY),
@@ -56,21 +60,34 @@ class BiometricRotationCoordinator @Inject constructor(
                 bootstrapStore.commitBiometricRotation(
                     envelope = envelope,
                     binding = BiometricBinding(candidateAlias, invalidateOnEnrollment),
-                    obsoleteAlias = oldAlias.takeIf { it != candidateAlias }
+                    obsoleteAlias = oldAlias?.takeIf { it != candidateAlias }
                 )
-                if (oldAlias != candidateAlias && cryptoFactory.deleteAlias(oldAlias)) {
+                if (oldAlias != null &&
+                    oldAlias != candidateAlias &&
+                    cryptoFactory.deleteAlias(oldAlias)
+                ) {
                     bootstrapStore.clearBiometricCleanupAlias(oldAlias)
                 }
                 bootstrapStore.clearBiometricRotationJournal()
                 AuthenticationResult.Success(com.aozijx.passly.domain.authentication.AuthenticationMethod.BIOMETRIC)
             }
             is BiometricHostResult.Cancelled -> {
-                cryptoFactory.deleteAlias(candidateAlias)
-                bootstrapStore.clearBiometricRotationJournal()
+                rollbackCandidate(candidateAlias)
                 AuthenticationResult.Cancelled(prompt.byUser)
             }
-            is BiometricHostResult.Error -> fail(AuthenticationFailureCode.CRYPTO_OBJECT_INVALID, correlationId)
-            BiometricHostResult.HostUnavailable -> fail(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
+            is BiometricHostResult.Failure -> fail(prompt.reason.failureCode(), correlationId).also {
+                rollbackCandidate(candidateAlias)
+            }
+            BiometricHostResult.HostUnavailable -> {
+                rollbackCandidate(candidateAlias)
+                fail(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
+            }
+        }
+    }
+
+    private suspend fun rollbackCandidate(candidateAlias: String) {
+        if (cryptoFactory.deleteAlias(candidateAlias)) {
+            bootstrapStore.clearBiometricRotationJournal()
         }
     }
 
@@ -80,6 +97,21 @@ class BiometricRotationCoordinator @Inject constructor(
         else -> AuthenticationFailureCode.CRYPTO_OBJECT_INVALID
     }
 
+    private fun BiometricHostFailure.failureCode(): AuthenticationFailureCode = when (this) {
+        BiometricHostFailure.METHOD_UNAVAILABLE -> AuthenticationFailureCode.METHOD_UNAVAILABLE
+        BiometricHostFailure.RATE_LIMITED -> AuthenticationFailureCode.RATE_LIMITED
+        BiometricHostFailure.CRYPTO_OBJECT_INVALID,
+        BiometricHostFailure.AUTHENTICATION_FAILED -> AuthenticationFailureCode.CRYPTO_OBJECT_INVALID
+    }
+
     private fun fail(code: AuthenticationFailureCode, correlationId: String) =
-        AuthenticationResult.Failure(AuthenticationFailure(code, correlationId))
+        AuthenticationResult.Failure(
+            AuthenticationFailure(
+                code,
+                correlationId,
+                safeFields = mapOf(
+                    "method" to com.aozijx.passly.domain.authentication.AuthenticationMethod.BIOMETRIC.name
+                )
+            )
+        )
 }
