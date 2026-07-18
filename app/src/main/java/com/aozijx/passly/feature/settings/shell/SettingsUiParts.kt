@@ -24,7 +24,7 @@ fun SettingsGroupTitle(text: String) {
 @Composable
 fun SettingsRoundedGroup(
     modifier: Modifier = Modifier,
-    content: RoundedGroupScope.() -> Unit
+    content: @Composable RoundedGroupScope.() -> Unit
 ) {
     RoundedGroup(modifier = modifier, content = content)
 }

@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.internal
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
@@ -10,69 +11,70 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.aozijx.passly.R
 import com.aozijx.passly.feature.settings.navigation.SettingsRoute
 
 internal enum class SettingsGroup(
-    val sectionTitle: String,
-    val title: String,
-    val subtitle: String,
+    @param:StringRes val sectionTitleRes: Int,
+    @param:StringRes val titleRes: Int,
+    @param:StringRes val subtitleRes: Int,
     val icon: ImageVector,
     val route: SettingsRoute
 ) {
     APPEARANCE(
-        sectionTitle = "显示与外观",
+        sectionTitleRes = R.string.settings_section_appearance,
         icon = Icons.Default.Palette,
-        title = "外观设置",
-        subtitle = "主题配色、字体语言与动态取色",
+        titleRes = R.string.settings_page_appearance,
+        subtitleRes = R.string.settings_page_appearance_summary,
         route = SettingsRoute.Appearance
     ),
     INTERFACE(
-        sectionTitle = "显示与外观",
+        sectionTitleRes = R.string.settings_section_appearance,
         icon = Icons.Default.SpaceDashboard,
-        title = "界面设置",
-        subtitle = "沉浸式体验、状态栏与标签栏",
+        titleRes = R.string.settings_page_interface,
+        subtitleRes = R.string.settings_page_interface_summary,
         route = SettingsRoute.Interface
     ),
     SECURITY(
-        sectionTitle = "安全与隐私",
+        sectionTitleRes = R.string.settings_section_security,
         icon = Icons.Default.Lock,
-        title = "安全设置",
-        subtitle = "自动锁定、密码与生物识别",
+        titleRes = R.string.settings_page_security,
+        subtitleRes = R.string.settings_page_security_summary,
         route = SettingsRoute.Security
     ),
     PRIVACY(
-        sectionTitle = "安全与隐私",
+        sectionTitleRes = R.string.settings_section_security,
         icon = Icons.Default.Visibility,
-        title = "隐私设置",
-        subtitle = "防窥保护、翻转锁定与内容隐藏",
+        titleRes = R.string.settings_page_privacy,
+        subtitleRes = R.string.settings_page_privacy_summary,
         route = SettingsRoute.Privacy
     ),
     INTERACTION(
-        sectionTitle = "交互与操作",
+        sectionTitleRes = R.string.settings_section_features,
         icon = Icons.Default.TouchApp,
-        title = "交互与操作",
-        subtitle = "手势控制与自动填充",
+        titleRes = R.string.settings_page_interaction,
+        subtitleRes = R.string.settings_page_interaction_summary,
         route = SettingsRoute.Interaction
     ),
     DATA_MANAGEMENT(
-        sectionTitle = "备份与恢复",
+        sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Storage,
-        title = "备份与恢复",
-        subtitle = "备份与恢复",
+        titleRes = R.string.settings_page_data,
+        subtitleRes = R.string.settings_page_data_summary,
         route = SettingsRoute.DataManagement
     ),
     RECOVERY_CODE(
-        sectionTitle = "备份与恢复",
+        sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Key,
-        title = "恢复码",
-        subtitle = "用于账户恢复，仅生成一次",
+        titleRes = R.string.settings_page_recovery_code,
+        subtitleRes = R.string.settings_page_recovery_code_summary,
         route = SettingsRoute.RecoveryCode
     ),
     GENERAL(
-        sectionTitle = "通用",
+        sectionTitleRes = R.string.settings_section_other,
         icon = Icons.Default.Info,
-        title = "通用",
-        subtitle = "关于、缓存与应用信息",
+        titleRes = R.string.settings_page_general,
+        subtitleRes = R.string.settings_page_general_summary,
         route = SettingsRoute.General
     )
 }
