@@ -62,7 +62,7 @@ fun CategoryItem(
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        stringResource(R.string.category_label),
+                        stringResource(R.string.category),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -127,7 +127,7 @@ fun CategoryItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                stringResource(R.string.category_label),
+                stringResource(R.string.category),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.outline
             )

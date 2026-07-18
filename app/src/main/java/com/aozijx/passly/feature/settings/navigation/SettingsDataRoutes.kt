@@ -3,10 +3,10 @@ package com.aozijx.passly.feature.settings.navigation
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
@@ -21,10 +21,10 @@ import com.aozijx.passly.feature.settings.general.GeneralDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionUiAction
 import com.aozijx.passly.feature.settings.interaction.InteractionViewModel
-import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeDetail
-import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeSheet
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
 import com.aozijx.passly.feature.settings.security.SecurityViewModel
+import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeDetail
+import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeSheet
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
 
@@ -79,9 +79,6 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                     lastExportFileLabel = lastExportFileLabel,
                     onAutoDownloadIconsChange = {
                         dataViewModel.onAction(DataUiAction.SetAutoDownloadIcons(it))
-                    },
-                    onFaviconWhitelistChange = {
-                        dataViewModel.onAction(DataUiAction.SetFaviconDownloadWhitelist(it))
                     },
                     onPickBackupPath = {
                         backupPathPicker.launch(
