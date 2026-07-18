@@ -18,13 +18,13 @@ import com.aozijx.passly.feature.settings.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.appearance.InterfaceUiAction
 import com.aozijx.passly.feature.settings.appearance.InterfaceViewModel
 import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordEntryClick
-import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
 import com.aozijx.passly.feature.settings.security.PrivacyUiAction
 import com.aozijx.passly.feature.settings.security.PrivacyViewModel
-import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
 import com.aozijx.passly.feature.settings.security.SecurityViewModel
 import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
+import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
+import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
 import com.aozijx.passly.feature.settings.shell.SettingsMainPage
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
@@ -95,6 +95,12 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     },
                     onLockOnBackgroundChange = {
                         viewModel.onAction(SecurityUiAction.ToggleLockOnBackground(it))
+                    },
+                    onClipboardClearToastsChange = {
+                        viewModel.onAction(SecurityUiAction.ToggleClipboardClearToasts(it))
+                    },
+                    onAppCloseToastsChange = {
+                        viewModel.onAction(SecurityUiAction.ToggleAppCloseToasts(it))
                     }
                 )
             }

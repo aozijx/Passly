@@ -42,6 +42,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.core.message.AppMessagePresentation
 import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
 import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorType
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
@@ -220,6 +221,8 @@ private suspend fun downloadFavicon(
     }
     AppMessageCenter.publish(
         text = context.getString(message),
-        category = AppMessageCategory.ICON_DOWNLOAD
+        category = AppMessageCategory.ICON_DOWNLOAD,
+        presentation = AppMessagePresentation.STATUS_BAR,
+        title = context.getString(R.string.settings_icon_download_notifications)
     )
 }

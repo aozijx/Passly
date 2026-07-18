@@ -318,15 +318,17 @@
     <string name="settings_page_recovery_code_summary">紧急解锁保险库</string>
     <string name="settings_page_general">通用</string>
     <string name="settings_page_general_summary">消息、缓存、关于</string>
-    <string name="settings_messages">消息</string>
-    <string name="settings_messages_general">应用消息</string>
-    <string name="settings_messages_general_summary">操作结果与错误</string>
-    <string name="settings_messages_icon_download">图标下载</string>
-    <string name="settings_messages_icon_download_summary">下载结果</string>
-    <string name="settings_messages_clipboard">剪贴板清除</string>
-    <string name="settings_messages_clipboard_summary">清除敏感内容后提醒</string>
-    <string name="settings_messages_app_close">应用关闭</string>
-    <string name="settings_messages_app_close_summary">翻转关闭前提醒</string>
+    <string name="settings_status_bar_notifications">状态栏通知</string>
+    <string name="settings_status_bar_notifications_summary">在系统状态栏显示应用信息</string>
+    <string name="settings_icon_download_notifications">图标下载通知</string>
+    <string name="settings_icon_download_notifications_summary">显示下载结果；前台同步进度始终可见</string>
+    <string name="settings_security_toast_messages">Toast 提醒</string>
+    <string name="settings_clipboard_clear_toast">剪贴板清除</string>
+    <string name="settings_clipboard_clear_toast_summary">清除敏感内容后简短提醒</string>
+    <string name="settings_app_close_toast">应用关闭</string>
+    <string name="settings_app_close_toast_summary">关闭应用前简短提醒</string>
+    <string name="notification_channel_app_messages">应用信息</string>
+    <string name="notification_channel_app_messages_summary">下载结果等状态栏信息</string>
 
     <!-- 恢复码 -->
     <string name="settings_recovery_code_title">恢复码</string>

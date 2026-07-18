@@ -6,10 +6,14 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 enum class AppMessageCategory { GENERAL, ICON_DOWNLOAD, CLIPBOARD_CLEAR, APP_CLOSE }
 
+enum class AppMessagePresentation { TOAST, STATUS_BAR }
+
 data class AppMessage(
     val text: String,
     val category: AppMessageCategory = AppMessageCategory.GENERAL,
-    val longDuration: Boolean = false
+    val longDuration: Boolean = false,
+    val presentation: AppMessagePresentation = AppMessagePresentation.TOAST,
+    val title: String? = null
 )
 
 object AppMessageCenter {
@@ -23,7 +27,7 @@ object AppMessageCenter {
 
     fun publish(message: AppMessage) {
         val now = System.nanoTime() / 1_000_000L
-        val key = "${message.category}:${message.text}"
+        val key = "${message.presentation}:${message.category}:${message.text}"
         synchronized(lock) {
             if (key == lastKey && now - lastPublishedAt < DEDUPLICATION_WINDOW_MS) return
             lastKey = key
@@ -35,6 +39,8 @@ object AppMessageCenter {
     fun publish(
         text: String,
         category: AppMessageCategory = AppMessageCategory.GENERAL,
-        longDuration: Boolean = false
-    ) = publish(AppMessage(text, category, longDuration))
+        longDuration: Boolean = false,
+        presentation: AppMessagePresentation = AppMessagePresentation.TOAST,
+        title: String? = null
+    ) = publish(AppMessage(text, category, longDuration, presentation, title))
 }

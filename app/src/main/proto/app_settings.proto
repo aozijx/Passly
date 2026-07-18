@@ -49,9 +49,9 @@ message AppSettings {
   map<string, string> runtime_extra = 39;
   optional bool visible_vault_tabs_configured = 40 [default = false];
 
-  // In-app message categories
-  optional bool show_general_messages = 41 [default = true];
-  optional bool show_icon_download_messages = 42 [default = true];
-  optional bool show_clipboard_clear_messages = 43 [default = true];
-  optional bool show_app_close_messages = 44 [default = true];
+  // Message presentation preferences
+  optional bool status_bar_notifications_enabled = 41 [default = true];
+  optional bool icon_download_notifications_enabled = 42 [default = true];
+  optional bool clipboard_clear_toasts_enabled = 43 [default = true];
+  optional bool app_close_toasts_enabled = 44 [default = true];
 }

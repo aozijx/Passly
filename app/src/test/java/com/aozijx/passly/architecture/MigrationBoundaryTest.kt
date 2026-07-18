@@ -181,4 +181,44 @@ class MigrationBoundaryTest {
             offenders.isEmpty()
         )
     }
+
+    @Test
+    fun notificationPermissionIsRequestedOnlyFromItsSetting() {
+        val mainActivity = File("src/main/java/com/aozijx/passly/MainActivity.kt").readText()
+        val generalSettings = File(
+            "src/main/java/com/aozijx/passly/feature/settings/general/GeneralDetail.kt"
+        ).readText()
+
+        assertTrue(
+            "Startup must not request notification permission",
+            "AppPermission.Notifications" !in mainActivity
+        )
+        assertTrue(
+            "Status-bar setting must own notification permission requests",
+            "permissionRequester.request(AppPermission.Notifications)" in generalSettings
+        )
+    }
+
+    @Test
+    fun securitySettingsOwnToastPreferences() {
+        val securityToasts = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/ui/SecurityToastSettingsSection.kt"
+        ).readText()
+        val generalNotifications = File(
+            "src/main/java/com/aozijx/passly/feature/settings/general/NotificationSettingsSection.kt"
+        ).readText()
+
+        assertTrue(
+            "Clipboard Toast setting must live under security",
+            "clipboard_clear" in securityToasts
+        )
+        assertTrue(
+            "App-close Toast setting must live under security",
+            "app_close" in securityToasts
+        )
+        assertTrue(
+            "General notification settings must not contain Toast controls",
+            "toasts." !in generalNotifications
+        )
+    }
 }

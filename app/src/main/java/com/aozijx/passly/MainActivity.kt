@@ -10,9 +10,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
-import com.aozijx.passly.core.permission.ActivityPermissionRequester
-import com.aozijx.passly.core.permission.AppPermission
-import com.aozijx.passly.core.permission.AppPermissionManager
 import com.aozijx.passly.feature.backup.BackupCoordinator
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
@@ -28,9 +25,6 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var backupCoordinator: BackupCoordinator
-
-    @Inject
-    lateinit var permissionManager: AppPermissionManager
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
@@ -50,14 +44,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val permissionRequester: ActivityPermissionRequester by lazy {
-        ActivityPermissionRequester(this, permissionManager) { result ->
-            if (result[AppPermission.Notifications]?.isSatisfied == false) {
-                AppMessageCenter.publish(getString(R.string.main_notification_permission_denied))
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppContentTheme)
         super.onCreate(savedInstanceState)
@@ -68,8 +54,6 @@ class MainActivity : AppCompatActivity() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-
-        permissionRequester.request(AppPermission.Notifications)
 
         setContent {
             MainScreen(
@@ -97,6 +81,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private companion object {
-        const val APP_CLOSE_MESSAGE_DELAY_MS = 300L
+        const val APP_CLOSE_MESSAGE_DELAY_MS = 1_000L
     }
 }

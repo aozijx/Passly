@@ -23,8 +23,8 @@ class ProtoSerializerTest {
         assertEquals("COPY_PASSWORD", defaults.swipeLeftAction)
         assertEquals("DETAIL", defaults.swipeRightAction)
         assertEquals(4, defaults.tabBarMaxTabsWithoutScroll)
-        assertEquals(true, defaults.showGeneralMessages)
-        assertFalse(defaults.hasShowGeneralMessages())
+        assertEquals(true, defaults.statusBarNotificationsEnabled)
+        assertFalse(defaults.hasStatusBarNotificationsEnabled())
     }
 
     @Test
@@ -36,10 +36,10 @@ class ProtoSerializerTest {
             .addVisibleVaultTab("login")
             .setVisibleVaultTabsConfigured(true)
             .putRuntimeExtra("show_access_history", "false")
-            .setShowGeneralMessages(false)
-            .setShowIconDownloadMessages(false)
-            .setShowClipboardClearMessages(false)
-            .setShowAppCloseMessages(false)
+            .setStatusBarNotificationsEnabled(false)
+            .setIconDownloadNotificationsEnabled(false)
+            .setClipboardClearToastsEnabled(false)
+            .setAppCloseToastsEnabled(false)
             .build()
         val output = ByteArrayOutputStream()
 
@@ -49,11 +49,11 @@ class ProtoSerializerTest {
         assertEquals(settings, decoded)
         assertEquals(false, decoded.dynamicColor)
         assertEquals(true, decoded.hasDynamicColor())
-        assertFalse(decoded.showGeneralMessages)
-        assertEquals(true, decoded.hasShowGeneralMessages())
-        assertEquals(true, decoded.hasShowIconDownloadMessages())
-        assertEquals(true, decoded.hasShowClipboardClearMessages())
-        assertEquals(true, decoded.hasShowAppCloseMessages())
+        assertFalse(decoded.statusBarNotificationsEnabled)
+        assertEquals(true, decoded.hasStatusBarNotificationsEnabled())
+        assertEquals(true, decoded.hasIconDownloadNotificationsEnabled())
+        assertEquals(true, decoded.hasClipboardClearToastsEnabled())
+        assertEquals(true, decoded.hasAppCloseToastsEnabled())
     }
 
     @Test

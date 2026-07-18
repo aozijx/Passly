@@ -2,11 +2,12 @@ package com.aozijx.passly.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.feature.auth.VerificationGateway
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.usecase.auth.RecoveryCodeUseCases
 import com.aozijx.passly.domain.usecase.settings.DeviceSettingsUseCases
+import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.feature.auth.VerificationGateway
+import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,11 +22,15 @@ data class SecurityUiState(
     val lockTimeout: Long = 60_000L,
     val isInvalidateKeyOnBioChange: Boolean = true,
     val isLockOnBackground: Boolean = false,
+    val clipboardClearToastsEnabled: Boolean = true,
+    val appCloseToastsEnabled: Boolean = true
 )
 
 sealed interface SecurityUiAction {
     data class SetLockTimeout(val timeoutMs: Long) : SecurityUiAction
     data class ToggleLockOnBackground(val enabled: Boolean) : SecurityUiAction
+    data class ToggleClipboardClearToasts(val enabled: Boolean) : SecurityUiAction
+    data class ToggleAppCloseToasts(val enabled: Boolean) : SecurityUiAction
     data object CreateRecoveryCode : SecurityUiAction
     data object RegenerateRecoveryCode : SecurityUiAction
     data class VerifyRecoveryCode(val code: String) : SecurityUiAction
@@ -37,18 +42,23 @@ sealed interface SecurityUiAction {
 class SecurityViewModel @Inject constructor(
     val authGateway: VerificationGateway,
     private val deviceSettingsUseCases: DeviceSettingsUseCases,
+    private val portableSettingsUseCases: PortableSettingsUseCases,
     private val recoveryCodeUseCases: RecoveryCodeUseCases
 ) : ViewModel() {
 
     val config: StateFlow<SecurityUiState> = combine(
         deviceSettingsUseCases.lockTimeout,
         deviceSettingsUseCases.isInvalidateKeyOnBioChange,
-        deviceSettingsUseCases.isLockOnBackground
-    ) { lt, ibc, lob ->
+        deviceSettingsUseCases.isLockOnBackground,
+        portableSettingsUseCases.clipboardClearToastsEnabled,
+        portableSettingsUseCases.appCloseToastsEnabled
+    ) { lt, ibc, lob, clipboardToasts, closeToasts ->
         SecurityUiState(
             lockTimeout = lt,
             isInvalidateKeyOnBioChange = ibc,
             isLockOnBackground = lob,
+            clipboardClearToastsEnabled = clipboardToasts,
+            appCloseToastsEnabled = closeToasts
         )
     }.stateIn(
         viewModelScope,
@@ -75,6 +85,14 @@ class SecurityViewModel @Inject constructor(
 
             is SecurityUiAction.ToggleLockOnBackground -> viewModelScope.launch {
                 deviceSettingsUseCases.setLockOnBackground(action.enabled)
+            }
+
+            is SecurityUiAction.ToggleClipboardClearToasts -> viewModelScope.launch {
+                portableSettingsUseCases.setClipboardClearToastsEnabled(action.enabled)
+            }
+
+            is SecurityUiAction.ToggleAppCloseToasts -> viewModelScope.launch {
+                portableSettingsUseCases.setAppCloseToastsEnabled(action.enabled)
             }
 
             SecurityUiAction.CreateRecoveryCode -> viewModelScope.launch {

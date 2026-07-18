@@ -48,7 +48,7 @@ internal fun MainScreen(
     val messageHostViewModel: AppMessageHostViewModel = hiltViewModel()
 
     LaunchedEffect(messageHostViewModel) {
-        messageHostViewModel.messages.collect { message ->
+        messageHostViewModel.toastMessages.collect { message ->
             Toast.makeText(
                 context,
                 message.text,
@@ -117,7 +117,7 @@ internal fun MainScreen(
                             )
                             activity.window.decorView.postDelayed(
                                 { activity.finishAffinity() },
-                                300L
+                                1_000L
                             )
                         }
                     )

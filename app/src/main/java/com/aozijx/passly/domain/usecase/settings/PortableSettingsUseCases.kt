@@ -34,10 +34,11 @@ class PortableSettingsUseCases @Inject constructor(private val repository: Porta
     val isAutoDownloadIcons: Flow<Boolean> = repository.isAutoDownloadIcons
     val faviconDownloadWhitelist: Flow<Set<String>> = repository.faviconDownloadWhitelist
     val vaultSortOption: Flow<SortOption> = repository.vaultSortOption
-    val showGeneralMessages: Flow<Boolean> = repository.showGeneralMessages
-    val showIconDownloadMessages: Flow<Boolean> = repository.showIconDownloadMessages
-    val showClipboardClearMessages: Flow<Boolean> = repository.showClipboardClearMessages
-    val showAppCloseMessages: Flow<Boolean> = repository.showAppCloseMessages
+    val statusBarNotificationsEnabled: Flow<Boolean> = repository.statusBarNotificationsEnabled
+    val iconDownloadNotificationsEnabled: Flow<Boolean> =
+        repository.iconDownloadNotificationsEnabled
+    val clipboardClearToastsEnabled: Flow<Boolean> = repository.clipboardClearToastsEnabled
+    val appCloseToastsEnabled: Flow<Boolean> = repository.appCloseToastsEnabled
 
     suspend fun setDarkMode(enabled: Boolean?) = repository.setDarkMode(enabled)
     suspend fun setDynamicColor(enabled: Boolean) = repository.setDynamicColor(enabled)
@@ -61,12 +62,15 @@ class PortableSettingsUseCases @Inject constructor(private val repository: Porta
         repository.setFaviconDownloadWhitelist(whitelist)
     suspend fun setVaultSortOption(sort: SortOption) = repository.setVaultSortOption(sort)
     suspend fun setThemeColor(color: String) = repository.setThemeColor(color)
-    suspend fun setShowGeneralMessages(enabled: Boolean) =
-        repository.setShowGeneralMessages(enabled)
-    suspend fun setShowIconDownloadMessages(enabled: Boolean) =
-        repository.setShowIconDownloadMessages(enabled)
-    suspend fun setShowClipboardClearMessages(enabled: Boolean) =
-        repository.setShowClipboardClearMessages(enabled)
-    suspend fun setShowAppCloseMessages(enabled: Boolean) =
-        repository.setShowAppCloseMessages(enabled)
+    suspend fun setStatusBarNotificationsEnabled(enabled: Boolean) =
+        repository.setStatusBarNotificationsEnabled(enabled)
+
+    suspend fun setIconDownloadNotificationsEnabled(enabled: Boolean) =
+        repository.setIconDownloadNotificationsEnabled(enabled)
+
+    suspend fun setClipboardClearToastsEnabled(enabled: Boolean) =
+        repository.setClipboardClearToastsEnabled(enabled)
+
+    suspend fun setAppCloseToastsEnabled(enabled: Boolean) =
+        repository.setAppCloseToastsEnabled(enabled)
 }

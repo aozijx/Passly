@@ -15,7 +15,9 @@ internal fun SecurityDetail(
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
-    onLockOnBackgroundChange: (Boolean) -> Unit
+    onLockOnBackgroundChange: (Boolean) -> Unit,
+    onClipboardClearToastsChange: (Boolean) -> Unit,
+    onAppCloseToastsChange: (Boolean) -> Unit
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -28,6 +30,15 @@ internal fun SecurityDetail(
             onAppPasswordClick = onAppPasswordClick,
             onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
             onLockOnBackgroundChange = onLockOnBackgroundChange
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        SecurityToastSettingsSection(
+            clipboardClearEnabled = state.clipboardClearToastsEnabled,
+            appCloseEnabled = state.appCloseToastsEnabled,
+            onClipboardClearEnabledChange = onClipboardClearToastsChange,
+            onAppCloseEnabledChange = onAppCloseToastsChange
         )
     }
 }

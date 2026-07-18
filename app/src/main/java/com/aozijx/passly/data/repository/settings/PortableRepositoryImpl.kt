@@ -90,14 +90,14 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
         }
     override val themeColor: Flow<String> =
         dataStore.data.map { s -> s.themeColor }
-    override val showGeneralMessages: Flow<Boolean> =
-        dataStore.data.map { it.showGeneralMessages }
-    override val showIconDownloadMessages: Flow<Boolean> =
-        dataStore.data.map { it.showIconDownloadMessages }
-    override val showClipboardClearMessages: Flow<Boolean> =
-        dataStore.data.map { it.showClipboardClearMessages }
-    override val showAppCloseMessages: Flow<Boolean> =
-        dataStore.data.map { it.showAppCloseMessages }
+    override val statusBarNotificationsEnabled: Flow<Boolean> =
+        dataStore.data.map { it.statusBarNotificationsEnabled }
+    override val iconDownloadNotificationsEnabled: Flow<Boolean> =
+        dataStore.data.map { it.iconDownloadNotificationsEnabled }
+    override val clipboardClearToastsEnabled: Flow<Boolean> =
+        dataStore.data.map { it.clipboardClearToastsEnabled }
+    override val appCloseToastsEnabled: Flow<Boolean> =
+        dataStore.data.map { it.appCloseToastsEnabled }
 
     override fun getSettingsFlow(): Flow<PortableSettings> = combine(
         combine(
@@ -261,19 +261,21 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
         dataStore.updateData { it.toBuilder().setThemeColor(color).build() }
     }
 
-    override suspend fun setShowGeneralMessages(enabled: Boolean) {
-        dataStore.updateData { it.toBuilder().setShowGeneralMessages(enabled).build() }
+    override suspend fun setStatusBarNotificationsEnabled(enabled: Boolean) {
+        dataStore.updateData { it.toBuilder().setStatusBarNotificationsEnabled(enabled).build() }
     }
 
-    override suspend fun setShowIconDownloadMessages(enabled: Boolean) {
-        dataStore.updateData { it.toBuilder().setShowIconDownloadMessages(enabled).build() }
+    override suspend fun setIconDownloadNotificationsEnabled(enabled: Boolean) {
+        dataStore.updateData {
+            it.toBuilder().setIconDownloadNotificationsEnabled(enabled).build()
+        }
     }
 
-    override suspend fun setShowClipboardClearMessages(enabled: Boolean) {
-        dataStore.updateData { it.toBuilder().setShowClipboardClearMessages(enabled).build() }
+    override suspend fun setClipboardClearToastsEnabled(enabled: Boolean) {
+        dataStore.updateData { it.toBuilder().setClipboardClearToastsEnabled(enabled).build() }
     }
 
-    override suspend fun setShowAppCloseMessages(enabled: Boolean) {
-        dataStore.updateData { it.toBuilder().setShowAppCloseMessages(enabled).build() }
+    override suspend fun setAppCloseToastsEnabled(enabled: Boolean) {
+        dataStore.updateData { it.toBuilder().setAppCloseToastsEnabled(enabled).build() }
     }
 }
