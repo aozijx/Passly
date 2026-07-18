@@ -8,17 +8,17 @@ import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.feature.verification.model.VerificationUiState
 import com.aozijx.passly.security.MemoryCleaner
 import com.aozijx.passly.security.crypto.SecureString
-import com.aozijx.passly.feature.verification.model.VerificationUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -63,7 +63,8 @@ class VerificationViewModel @Inject constructor(
     }
 
     fun unlockWithRecoveryCode() {
-        authenticate(AuthenticationMethod.RECOVERY_CODE)
+        val recoveryCode = _uiState.value.recoveryCode.toCharArray()
+        authenticate(AuthenticationMethod.RECOVERY_CODE, recoveryCode)
     }
 
     fun onShowSetPasswordDialog() = _uiState.update { it.copy(showSetPasswordDialog = true) }
@@ -84,7 +85,8 @@ class VerificationViewModel @Inject constructor(
     fun verifyWithBiometric() = authenticate(AuthenticationMethod.BIOMETRIC)
 
     fun verifyWithAppPassword() {
-        authenticate(AuthenticationMethod.APP_PASSWORD)
+        val password = _uiState.value.appPassword.toCharArray()
+        authenticate(AuthenticationMethod.APP_PASSWORD, password)
     }
 
     fun bootstrapAppPassword(onComplete: (Boolean) -> Unit) {
@@ -118,17 +120,26 @@ class VerificationViewModel @Inject constructor(
         }
     }
 
-    private fun authenticate(method: AuthenticationMethod) {
+    private fun authenticate(method: AuthenticationMethod, credential: CharArray? = null) {
         if (_uiState.value.authInProgress) return
         _uiState.update { it.copy(authInProgress = true) }
         viewModelScope.launch {
-            val result = authenticationManager.authenticate(
-                AuthenticationRequest(
-                    purpose = AuthenticationPurpose.UNLOCK_VAULT,
-                    allowedMethods = setOf(method)
+            val result = try {
+                authenticationManager.authenticate(
+                    AuthenticationRequest(
+                        purpose = AuthenticationPurpose.UNLOCK_VAULT,
+                        allowedMethods = setOf(method)
+                    ),
+                    credential
                 )
-            )
+            } finally {
+                credential?.let(MemoryCleaner::wipeCharArray)
+            }
             _uiState.update { it.copy(authInProgress = false) }
+            if (method == AuthenticationMethod.APP_PASSWORD) {
+                _uiState.value.appPassword.wipe()
+                _uiState.update { it.copy(appPassword = SecureString.EMPTY) }
+            }
             if (result is AuthenticationResult.Success && method == AuthenticationMethod.RECOVERY_CODE) {
                 clearRecoveryCodeState()
             }

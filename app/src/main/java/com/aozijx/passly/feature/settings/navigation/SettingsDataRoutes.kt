@@ -23,10 +23,10 @@ import com.aozijx.passly.feature.settings.general.GeneralDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionUiAction
 import com.aozijx.passly.feature.settings.interaction.InteractionViewModel
-import com.aozijx.passly.feature.settings.security.SecurityUiAction
-import com.aozijx.passly.feature.settings.security.SecurityViewModel
 import com.aozijx.passly.feature.settings.security.RecoveryDraftState
 import com.aozijx.passly.feature.settings.security.RecoveryDraftViewModel
+import com.aozijx.passly.feature.settings.security.SecurityUiAction
+import com.aozijx.passly.feature.settings.security.SecurityViewModel
 import com.aozijx.passly.feature.settings.security.messageOrNull
 import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeDetail
 import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeSheet
@@ -39,8 +39,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     context: Context,
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionViewModel,
-    dataViewModel: DataViewModel,
-    onAuthRequired: (title: String, subtitle: String, onSuccess: () -> Unit) -> Unit
+    dataViewModel: DataViewModel
 ) {
     composable(SettingsRoute.Interaction.route) {
         val state by interactionViewModel.config.collectAsStateWithLifecycle()
@@ -159,8 +158,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                     },
                     onClearVerifyResult = {
                         viewModel.onAction(SecurityUiAction.ClearVerifyResult)
-                    },
-                    onAuthRequired = onAuthRequired
+                    }
                 )
             }
         }

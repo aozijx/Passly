@@ -102,12 +102,15 @@ class MigrationBoundaryTest {
 
     @Test
     fun recoveryCodeCreationUsesFreshIdentityVerification() {
-        val navHost = File(
-            "src/main/java/com/aozijx/passly/ui/navigation/PasslyNavHost.kt"
+        val recoveryDraftViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/RecoveryDraftViewModel.kt"
         ).readText()
-        val settingsBlock = navHost.substringAfter("composable(AppRoute.Settings.route)")
 
-        assertTrue("Recovery-code settings must force reauthentication", "requestReauth(" in settingsBlock)
+        assertTrue(
+            "Recovery-code module must request its own fresh authentication",
+            "AuthenticationPurpose.MANAGE_RECOVERY_CODE" in recoveryDraftViewModel &&
+                    "authenticationManager.authenticate(" in recoveryDraftViewModel
+        )
     }
 
     @Test

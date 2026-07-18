@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationRequestHandle
 import com.aozijx.passly.domain.authentication.AuthenticationResult
@@ -55,7 +56,10 @@ class DefaultAuthenticationManager @Inject constructor(
         scope.launch { refreshAvailability() }
     }
 
-    override suspend fun authenticate(request: AuthenticationRequest): AuthenticationResult {
+    override suspend fun authenticate(
+        request: AuthenticationRequest,
+        credential: CharArray?
+    ): AuthenticationResult {
         if (!requestMutex.tryLock()) {
             return finish(
                 request,
@@ -66,6 +70,7 @@ class DefaultAuthenticationManager @Inject constructor(
         }
         activeCorrelationId.set(request.correlationId)
         val wasUnlocked = session.isUnlocked()
+        val isFullUnlock = request.purpose == AuthenticationPurpose.UNLOCK_VAULT
         try {
             if (wasUnlocked && !request.requireFreshAuthentication) {
                 session.onUserInteraction()
@@ -75,61 +80,73 @@ class DefaultAuthenticationManager @Inject constructor(
                 )
             }
             refreshAvailability()
-            session.transition(AuthenticationState.AwaitingHost(request.correlationId))
+            if (isFullUnlock) {
+                session.transition(AuthenticationState.AwaitingHost(request.correlationId))
+            }
             val lease = hostRegistry.awaitLease() ?: return finish(
                 request,
                 failure(request, AuthenticationFailureCode.HOST_UNAVAILABLE)
-            ).also { restoreState(wasUnlocked) }
+            ).also { if (isFullUnlock) restoreState(wasUnlocked) }
             val available = request.allowedMethods.filter(_methods.value::available)
             if (available.isEmpty()) {
-                restoreState(wasUnlocked)
+                if (isFullUnlock) restoreState(wasUnlocked)
                 return finish(request, failure(request, AuthenticationFailureCode.METHOD_UNAVAILABLE))
             }
             val host = lease.hostOrNull() ?: run {
-                restoreState(wasUnlocked)
+                if (isFullUnlock) restoreState(wasUnlocked)
                 return finish(request, failure(request, AuthenticationFailureCode.HOST_UNAVAILABLE))
             }
-            val method = if (available.size == 1) {
-                available.first()
-            } else {
-                host.chooseMethod(request.purpose, available)
+            val method = when {
+                available.size == 1 -> available.first()
+                AuthenticationMethod.BIOMETRIC in available -> AuthenticationMethod.BIOMETRIC
+                else -> host.chooseMethod(request.purpose, available)
                     ?: run {
-                        restoreState(wasUnlocked)
+                        if (isFullUnlock) restoreState(wasUnlocked)
                         return finish(request, AuthenticationResult.Cancelled(byUser = true))
                     }
             }
             if (!hostRegistry.isCurrent(lease)) {
-                restoreState(wasUnlocked)
+                if (isFullUnlock) restoreState(wasUnlocked)
                 return finish(request, failure(request, AuthenticationFailureCode.HOST_UNAVAILABLE))
             }
-            session.transition(AuthenticationState.Authenticating(request.correlationId, method))
+            if (isFullUnlock) {
+                session.transition(
+                    AuthenticationState.Authenticating(
+                        request.correlationId,
+                        method
+                    )
+                )
+            }
             val execution = when (method) {
                 AuthenticationMethod.BIOMETRIC -> biometricExecutor.execute(request, host)
                 AuthenticationMethod.APP_PASSWORD,
-                AuthenticationMethod.RECOVERY_CODE -> credentialExecutor.execute(request, method, host)
+                AuthenticationMethod.RECOVERY_CODE -> credentialExecutor.execute(
+                    request,
+                    method,
+                    host,
+                    credential
+                )
             }
             val result = when (execution) {
                 is MethodExecutionResult.Success -> {
-                    if (request.purpose != com.aozijx.passly.domain.authentication.AuthenticationPurpose.UNLOCK_VAULT) {
-                        session.markAuthenticated()
-                    }
+                    if (!isFullUnlock) session.onUserInteraction()
                     AuthenticationResult.Success(execution.method)
                 }
                 is MethodExecutionResult.Cancelled -> {
-                    restoreState(wasUnlocked)
+                    if (isFullUnlock) restoreState(wasUnlocked)
                     AuthenticationResult.Cancelled(execution.byUser)
                 }
                 is MethodExecutionResult.Failure -> {
-                    restoreState(wasUnlocked)
+                    if (isFullUnlock) restoreState(wasUnlocked)
                     AuthenticationResult.Failure(execution.failure)
                 }
             }
             return finish(request, result)
         } catch (cancelled: CancellationException) {
-            restoreState(wasUnlocked)
+            if (isFullUnlock) restoreState(wasUnlocked)
             throw cancelled
         } catch (failure: Throwable) {
-            restoreState(wasUnlocked)
+            if (isFullUnlock) restoreState(wasUnlocked)
             return finish(request, failure(request, AuthenticationFailureCode.SESSION_TRANSITION_FAILED))
         } finally {
             activeCorrelationId.compareAndSet(request.correlationId, null)
@@ -142,7 +159,7 @@ class DefaultAuthenticationManager @Inject constructor(
         callback: AuthenticationCallback
     ): AuthenticationRequestHandle {
         val job = scope.launch {
-            val result = authenticate(request)
+            val result = authenticate(request, credential = null)
             withContext(Dispatchers.Main.immediate) { callback.onResult(result) }
         }
         return object : AuthenticationRequestHandle {

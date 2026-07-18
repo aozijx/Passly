@@ -34,9 +34,7 @@ fun SettingsNavGraph(
     navController: NavHostController,
     settingsViewModel: SettingsViewModel,
     onUpdateInteraction: () -> Unit,
-    onOuterBack: () -> Unit,
-    onAuthRequired: (title: String, subtitle: String, onSuccess: () -> Unit) -> Unit =
-        { _, _, callback -> callback() }
+    onOuterBack: () -> Unit
 ) {
     val localState = rememberSettingsScreenLocalState()
     val context = LocalContext.current
@@ -120,8 +118,7 @@ fun SettingsNavGraph(
             context = context,
             localState = localState,
             interactionViewModel = interactionViewModel,
-            dataViewModel = dataViewModel,
-            onAuthRequired = onAuthRequired
+            dataViewModel = dataViewModel
         )
     }
 

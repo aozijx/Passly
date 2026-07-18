@@ -27,14 +27,18 @@ class CredentialMethodExecutor @Inject constructor(
     internal suspend fun execute(
         request: AuthenticationRequest,
         method: AuthenticationMethod,
-        host: AuthUiHost
+        host: AuthUiHost,
+        credential: CharArray? = null
     ): MethodExecutionResult {
         val type = method.envelopeType()
         val envelope = bootstrapStore.load(type) ?: return failure(
             AuthenticationFailureCode.METHOD_UNAVAILABLE,
             request
         )
-        return when (val input = host.requestSecret(request.purpose, method)) {
+        val input = credential
+            ?.let { SecretHostResult.Submitted(SecretChars.copyOf(it)) }
+            ?: host.requestSecret(request.purpose, method)
+        return when (input) {
             is SecretHostResult.Cancelled -> MethodExecutionResult.Cancelled(input.byUser)
             SecretHostResult.HostUnavailable -> failure(AuthenticationFailureCode.HOST_UNAVAILABLE, request)
             is SecretHostResult.Submitted -> input.secret.use { secret ->

@@ -128,12 +128,7 @@ fun PasslyNavHost(
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 settingsViewModel = settingsViewModel,
-                onUpdateInteraction = onUpdateInteraction,
-                onAuthRequired = { title, subtitle, onSuccess ->
-                    mainViewModel.requestReauth(
-                        onSuccess = onSuccess
-                    )
-                }
+                onUpdateInteraction = onUpdateInteraction
             )
         }
         }

@@ -1,14 +1,17 @@
 package com.aozijx.passly.domain.authentication
 
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
 interface AuthenticationManager {
     val state: StateFlow<AuthenticationState>
     val methods: StateFlow<AuthMethodAvailability>
 
-    suspend fun authenticate(request: AuthenticationRequest): AuthenticationResult
+    suspend fun authenticate(
+        request: AuthenticationRequest,
+        credential: CharArray? = null
+    ): AuthenticationResult
 
     fun authenticate(
         request: AuthenticationRequest,

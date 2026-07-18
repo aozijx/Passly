@@ -40,13 +40,10 @@ fun RecoveryCodeDetail(
     onCreateRecoveryCode: () -> Unit,
     onRegenerate: () -> Unit,
     onVerifyCode: (String) -> Unit,
-    onClearVerifyResult: () -> Unit,
-    onAuthRequired: (title: String, subtitle: String, onSuccess: () -> Unit) -> Unit
+    onClearVerifyResult: () -> Unit
 ) {
     var showRegenerateConfirm by remember { mutableStateOf(false) }
     var verifyInput by remember { mutableStateOf("") }
-    val viewAuthTitle = stringResource(R.string.settings_recovery_code_auth_title)
-    val viewAuthSubtitle = stringResource(R.string.settings_recovery_code_auth_subtitle)
 
     Column(
         modifier = Modifier
@@ -82,11 +79,7 @@ fun RecoveryCodeDetail(
 
         if (!hasRecoveryEnvelope) {
             Button(
-                onClick = {
-                    onAuthRequired(viewAuthTitle, viewAuthSubtitle) {
-                        onCreateRecoveryCode()
-                    }
-                },
+                onClick = onCreateRecoveryCode,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -187,7 +180,7 @@ fun RecoveryCodeDetail(
             confirmButton = {
                 TextButton(onClick = {
                     showRegenerateConfirm = false
-                    onAuthRequired(viewAuthTitle, viewAuthSubtitle, onRegenerate)
+                    onRegenerate()
                 }) {
                     Text(
                         stringResource(R.string.confirm),

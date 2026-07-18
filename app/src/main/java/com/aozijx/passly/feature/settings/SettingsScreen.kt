@@ -10,8 +10,7 @@ import com.aozijx.passly.feature.settings.navigation.SettingsNavGraph
 fun SettingsScreen(
     onBack: () -> Unit,
     settingsViewModel: SettingsViewModel,
-    onUpdateInteraction: () -> Unit = {},
-    onAuthRequired: (title: String, subtitle: String, onSuccess: () -> Unit) -> Unit = { _, _, cb -> cb() }
+    onUpdateInteraction: () -> Unit = {}
 ) {
     val navController = rememberNavController()
 
@@ -19,7 +18,6 @@ fun SettingsScreen(
         navController = navController,
         settingsViewModel = settingsViewModel,
         onUpdateInteraction = onUpdateInteraction,
-        onOuterBack = onBack,
-        onAuthRequired = onAuthRequired
+        onOuterBack = onBack
     )
 }
