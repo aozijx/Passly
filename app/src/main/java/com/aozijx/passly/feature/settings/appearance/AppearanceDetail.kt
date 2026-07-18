@@ -32,12 +32,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.settings.components.dropdownSettingsItem
-import com.aozijx.passly.feature.settings.components.navigationSettingsItem
-import com.aozijx.passly.feature.settings.components.switchSettingsItem
-import com.aozijx.passly.feature.settings.shell.SettingsGroupTitle
-import com.aozijx.passly.feature.settings.shell.SettingsRoundedGroup
-import com.aozijx.passly.feature.settings.shell.sectionSpacing
+import com.aozijx.passly.ui.components.group.RoundedGroup
+import com.aozijx.passly.ui.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.ui.components.settings.SettingsSection
+import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.ui.theme.themePresetByColor
 import kotlinx.coroutines.launch
 
@@ -59,48 +59,54 @@ internal fun AppearanceDetail(
         .toLanguageTags()
         .substringBefore(',')
 
-    Column(modifier = Modifier.sectionSpacing()) {
+    SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
-        SettingsGroupTitle(text = stringResource(R.string.settings_group_theme))
-        SettingsRoundedGroup {
-            dropdownSettingsItem(
-                icon = when (state.isDarkMode) {
-                    true -> Icons.Default.DarkMode
-                    false -> Icons.Default.LightMode
-                    null -> Icons.Default.SettingsBrightness
-                },
-                title = stringResource(R.string.settings_theme_mode),
-                selected = state.isDarkMode,
-                selectedLabel = stringResource(state.isDarkMode.labelRes()),
-                options = listOf(
-                    null to stringResource(R.string.follow_system),
-                    false to stringResource(R.string.settings_theme_mode_light),
-                    true to stringResource(R.string.settings_theme_mode_dark)
+        SettingsSectionTitle(text = stringResource(R.string.settings_group_theme))
+        RoundedGroup(
+            items = listOf(
+                dropdownSettingsGroupItem(
+                    key = "appearance.theme_mode",
+                    icon = when (state.isDarkMode) {
+                        true -> Icons.Default.DarkMode
+                        false -> Icons.Default.LightMode
+                        null -> Icons.Default.SettingsBrightness
+                    },
+                    title = stringResource(R.string.settings_theme_mode),
+                    selected = state.isDarkMode,
+                    selectedLabel = stringResource(state.isDarkMode.labelRes()),
+                    options = listOf(
+                        null to stringResource(R.string.follow_system),
+                        false to stringResource(R.string.settings_theme_mode_light),
+                        true to stringResource(R.string.settings_theme_mode_dark)
+                    ),
+                    expanded = showThemeModeMenu,
+                    onExpandedChange = { showThemeModeMenu = it },
+                    onSelect = onDarkModeChange
                 ),
-                expanded = showThemeModeMenu,
-                onExpandedChange = { showThemeModeMenu = it },
-                onSelect = onDarkModeChange
+                navigationSettingsGroupItem(
+                    key = "appearance.language",
+                    icon = Icons.Default.Language,
+                    title = stringResource(R.string.settings_language),
+                    value = stringResource(languageTag.languageLabelRes()),
+                    onClick = { showLanguageDialog = true }
+                ),
+                switchSettingsGroupItem(
+                    key = "appearance.dynamic_color",
+                    icon = Icons.Default.Palette,
+                    title = stringResource(R.string.settings_dynamic_color),
+                    subtitle = stringResource(R.string.settings_dynamic_color_desc),
+                    checked = state.isDynamicColor,
+                    onCheckedChange = onDynamicColorChange
+                ),
+                navigationSettingsGroupItem(
+                    key = "appearance.theme_color",
+                    icon = Icons.Default.Palette,
+                    title = stringResource(R.string.settings_theme_color),
+                    value = stringResource(themePresetByColor(state.themeColor).nameKey),
+                    onClick = { showThemeColorSheet = true }
+                )
             )
-            navigationSettingsItem(
-                icon = Icons.Default.Language,
-                title = stringResource(R.string.settings_language),
-                value = stringResource(languageTag.languageLabelRes()),
-                onClick = { showLanguageDialog = true }
-            )
-            switchSettingsItem(
-                icon = Icons.Default.Palette,
-                title = stringResource(R.string.settings_dynamic_color),
-                subtitle = stringResource(R.string.settings_dynamic_color_desc),
-                checked = state.isDynamicColor,
-                onCheckedChange = onDynamicColorChange
-            )
-            navigationSettingsItem(
-                icon = Icons.Default.Palette,
-                title = stringResource(R.string.settings_theme_color),
-                value = stringResource(themePresetByColor(state.themeColor).nameKey),
-                onClick = { showThemeColorSheet = true }
-            )
-        }
+        )
     }
 
     if (showLanguageDialog) {

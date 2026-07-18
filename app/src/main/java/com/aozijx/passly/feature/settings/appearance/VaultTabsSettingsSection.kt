@@ -22,10 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.model.settings.TabLayoutConstraints
-import com.aozijx.passly.feature.settings.components.GroupCard
-import com.aozijx.passly.feature.settings.shell.SettingsGroupTitle
-import com.aozijx.passly.feature.settings.shell.SettingsRoundedGroup
 import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.ui.components.group.GroupCard
+import com.aozijx.passly.ui.components.group.RoundedGroup
+import com.aozijx.passly.ui.components.group.RoundedGroupItem
+import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 import kotlin.math.roundToInt
 
 private const val TAB_THRESHOLD_MIN = TabLayoutConstraints.MIN_TABS_WITHOUT_SCROLL
@@ -48,10 +49,11 @@ fun VaultTabsSettingsSection(
     val previewThreshold = sliderValue.roundToInt()
         .coerceIn(TAB_THRESHOLD_MIN, TAB_THRESHOLD_MAX)
 
-    SettingsGroupTitle(text = "保险箱 Tab")
-    SettingsRoundedGroup {
-        item { position ->
-            GroupCard(position = position, contentPadding = PaddingValues(0.dp)) {
+    SettingsSectionTitle(text = "保险箱 Tab")
+    RoundedGroup(
+        items = listOf(
+            RoundedGroupItem(key = "interface.vault_tabs") { itemScope ->
+                GroupCard(itemScope = itemScope, contentPadding = PaddingValues(0.dp)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -117,5 +119,6 @@ fun VaultTabsSettingsSection(
                 }
             }
         }
-    }
+        )
+    )
 }

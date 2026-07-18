@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.settings.general
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -16,7 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.platform.CacheUtils
-import com.aozijx.passly.feature.settings.shell.sectionSpacing
+import com.aozijx.passly.ui.components.settings.SettingsSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,7 +28,7 @@ internal fun GeneralDetail() {
     val messageViewModel: MessageSettingsViewModel = hiltViewModel()
     val messageState by messageViewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.sectionSpacing()) {
+    SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
 
         MessageSettingsSection(

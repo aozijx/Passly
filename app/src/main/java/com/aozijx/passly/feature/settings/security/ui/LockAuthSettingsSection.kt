@@ -22,11 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.model.settings.LockTimeoutConstraints
 import com.aozijx.passly.feature.settings.security.formatLockTimeoutText
-import com.aozijx.passly.feature.settings.components.GroupCard
-import com.aozijx.passly.feature.settings.components.navigationSettingsItem
-import com.aozijx.passly.feature.settings.components.switchSettingsItem
-import com.aozijx.passly.feature.settings.shell.SettingsGroupTitle
-import com.aozijx.passly.feature.settings.shell.SettingsRoundedGroup
+import com.aozijx.passly.ui.components.group.GroupCard
+import com.aozijx.passly.ui.components.group.RoundedGroup
+import com.aozijx.passly.ui.components.group.RoundedGroupItem
+import com.aozijx.passly.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 import kotlin.math.roundToInt
 
 private const val SLIDER_MIN_SECONDS = (LockTimeoutConstraints.SLIDER_MIN_MS / 1000L).toFloat()
@@ -49,16 +50,21 @@ fun LockAuthSettingsSection(
         .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
     var sliderValue by remember(lockTimeout) { mutableFloatStateOf(currentSeconds) }
 
-    SettingsGroupTitle(text = "认证")
-    SettingsRoundedGroup {
-        navigationSettingsItem(
+    SettingsSectionTitle(text = "认证")
+    RoundedGroup(
+        items = listOf(
+            navigationSettingsGroupItem(
+                key = "security.lock_timeout",
             icon = Icons.Default.Timer,
             title = "自动锁定",
             value = formatLockTimeoutText(lockTimeout),
             onClick = { expanded = !expanded }
-        )
-        item(visible = expanded) { position ->
-            GroupCard(position = position, contentPadding = PaddingValues(16.dp)) {
+            ),
+            RoundedGroupItem(
+                key = "security.lock_timeout_slider",
+                visible = expanded
+            ) { itemScope ->
+                GroupCard(itemScope = itemScope, contentPadding = PaddingValues(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -103,15 +109,17 @@ fun LockAuthSettingsSection(
                     )
                 }
             }
-        }
-        navigationSettingsItem(
+            },
+            navigationSettingsGroupItem(
+                key = "security.app_password",
             icon = Icons.Default.Lock,
             title = "设置密码",
             subtitle = "独立于系统锁屏，用密码直接解锁应用",
             value = if (isAppPasswordEnabled) "已设置" else "未设置",
             onClick = onAppPasswordClick
-        )
-        switchSettingsItem(
+            ),
+            switchSettingsGroupItem(
+                key = "security.invalidate_biometric",
             icon = Icons.Default.Fingerprint,
             title = "生物识别变更时销毁密钥",
             subtitle = if (isInvalidateKeyOnBioChange)
@@ -120,13 +128,15 @@ fun LockAuthSettingsSection(
                 "新增或移除指纹/面部时，保险箱密钥保持有效",
             checked = isInvalidateKeyOnBioChange,
             onCheckedChange = onInvalidateKeyOnBioChangeToggle
-        )
-        switchSettingsItem(
+            ),
+            switchSettingsGroupItem(
+                key = "security.lock_on_background",
             icon = Icons.Default.Lock,
             title = "立即锁定",
             subtitle = "退出 app 后将在设定的锁定时间后锁定",
             checked = isLockOnBackground,
             onCheckedChange = onLockOnBackgroundChange
         )
-    }
+        )
+    )
 }

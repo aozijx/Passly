@@ -23,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.feature.settings.components.navigationSettingsItem
 import com.aozijx.passly.feature.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.navigation.SettingsRoute
+import com.aozijx.passly.ui.components.group.RoundedGroup
+import com.aozijx.passly.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,19 +78,20 @@ internal fun SettingsMainPage(
 
             sections.forEach { (sectionTitleRes, groups) ->
                 item {
-                    SettingsGroupTitle(text = stringResource(sectionTitleRes))
+                    SettingsSectionTitle(text = stringResource(sectionTitleRes))
                 }
                 item {
-                    SettingsRoundedGroup {
-                        groups.forEach { group ->
-                            navigationSettingsItem(
+                    RoundedGroup(
+                        items = groups.map { group ->
+                            navigationSettingsGroupItem(
+                                key = group.route.route,
                                 icon = group.icon,
                                 title = stringResource(group.titleRes),
                                 subtitle = stringResource(group.subtitleRes),
                                 onClick = { onGroupClick(group.route) }
                             )
                         }
-                    }
+                    )
                 }
                 item { Spacer(modifier = Modifier.height(12.dp)) }
             }

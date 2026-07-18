@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.settings.appearance
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -12,11 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
-import com.aozijx.passly.feature.settings.components.GroupCard
-import com.aozijx.passly.feature.settings.components.switchSettingsItem
-import com.aozijx.passly.feature.settings.shell.SettingsGroupTitle
-import com.aozijx.passly.feature.settings.shell.SettingsRoundedGroup
-import com.aozijx.passly.feature.settings.shell.sectionSpacing
+import com.aozijx.passly.ui.components.group.GroupCard
+import com.aozijx.passly.ui.components.group.RoundedGroup
+import com.aozijx.passly.ui.components.group.RoundedGroupItem
+import com.aozijx.passly.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.ui.components.settings.SettingsSection
+import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 
 @Composable
 internal fun InterfaceDetail(
@@ -30,48 +30,55 @@ internal fun InterfaceDetail(
     onVisibleVaultTabsChange: (Set<String>) -> Unit,
     onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit
 ) {
-    Column(modifier = Modifier.sectionSpacing()) {
+    SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
 
-        SettingsGroupTitle(text = "沉浸式体验")
-        SettingsRoundedGroup {
-            switchSettingsItem(
-                icon = Icons.Default.Fullscreen,
-                title = "自动隐藏系统状态栏",
-                subtitle = "浏览列表时释放屏幕顶部空间",
-                checked = state.isStatusBarAutoHide,
-                onCheckedChange = onStatusBarAutoHideChange
+        SettingsSectionTitle(text = "沉浸式体验")
+        RoundedGroup(
+            items = listOf(
+                switchSettingsGroupItem(
+                    key = "interface.status_bar_auto_hide",
+                    icon = Icons.Default.Fullscreen,
+                    title = "自动隐藏系统状态栏",
+                    subtitle = "浏览列表时释放屏幕顶部空间",
+                    checked = state.isStatusBarAutoHide,
+                    onCheckedChange = onStatusBarAutoHideChange
+                ),
+                switchSettingsGroupItem(
+                    key = "interface.top_bar_collapsible",
+                    icon = Icons.Default.ViewDay,
+                    title = "标题栏跟随滚动",
+                    subtitle = "上滑时自动收缩标题以获得更多视野",
+                    checked = state.isTopBarCollapsible,
+                    onCheckedChange = onTopBarCollapsibleChange
+                ),
+                switchSettingsGroupItem(
+                    key = "interface.tab_bar_collapsible",
+                    icon = Icons.Default.SpaceDashboard,
+                    title = "分类标签栏跟随滚动",
+                    subtitle = "功能分类标签随列表滑动智能隐藏",
+                    checked = state.isTabBarCollapsible,
+                    onCheckedChange = onTabBarCollapsibleChange
+                )
             )
-            switchSettingsItem(
-                icon = Icons.Default.ViewDay,
-                title = "标题栏跟随滚动",
-                subtitle = "上滑时自动收缩标题以获得更多视野",
-                checked = state.isTopBarCollapsible,
-                onCheckedChange = onTopBarCollapsibleChange
-            )
-            switchSettingsItem(
-                icon = Icons.Default.SpaceDashboard,
-                title = "分类标签栏跟随滚动",
-                subtitle = "功能分类标签随列表滑动智能隐藏",
-                checked = state.isTabBarCollapsible,
-                onCheckedChange = onTabBarCollapsibleChange
-            )
-        }
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SettingsGroupTitle(text = "卡片样式")
-        SettingsRoundedGroup {
-            item { position ->
-                GroupCard(position = position, contentPadding = PaddingValues(0.dp)) {
-                    CardStyleSettingsSection(
-                        availableStyles = availableCardStyles,
-                        loginSelectedStyle = loginSelectedStyle,
-                        onLoginStyleSelected = onLoginStyleSelected
-                    )
+        SettingsSectionTitle(text = "卡片样式")
+        RoundedGroup(
+            items = listOf(
+                RoundedGroupItem(key = "interface.card_style") { itemScope ->
+                    GroupCard(itemScope = itemScope, contentPadding = PaddingValues(0.dp)) {
+                        CardStyleSettingsSection(
+                            availableStyles = availableCardStyles,
+                            loginSelectedStyle = loginSelectedStyle,
+                            onLoginStyleSelected = onLoginStyleSelected
+                        )
+                    }
                 }
-            }
-        }
+            )
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 

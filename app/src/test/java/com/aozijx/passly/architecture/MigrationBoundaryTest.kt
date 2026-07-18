@@ -109,4 +109,57 @@ class MigrationBoundaryTest {
 
         assertTrue("Recovery-code settings must force reauthentication", "requestReauth(" in settingsBlock)
     }
+
+    @Test
+    fun roundedGroupUsesCommonUiWithMandatoryStableKeys() {
+        val commonGroupRoot = File(
+            "src/main/java/com/aozijx/passly/ui/components/group"
+        )
+        val roundedGroupSource = File(commonGroupRoot, "RoundedGroup.kt").readText()
+        val legacyGroupRoot = File(
+            "src/main/java/com/aozijx/passly/feature/settings/components"
+        )
+
+        assertTrue("RoundedGroup must live in common UI", commonGroupRoot.isDirectory)
+        assertTrue(
+            "Feature-specific RoundedGroup components must be removed",
+            !legacyGroupRoot.exists() || legacyGroupRoot.walkTopDown().none { it.extension == "kt" }
+        )
+        assertTrue(
+            "RoundedGroupBuilder must not return",
+            !File(commonGroupRoot, "RoundedGroupBuilder.kt").exists()
+        )
+        assertTrue(
+            "RoundedGroup keys must be mandatory strings",
+            "val key: String" in roundedGroupSource
+        )
+        assertTrue(
+            "RoundedGroup must not fall back to list indexes",
+            "originalIndex" !in roundedGroupSource
+        )
+        assertTrue(
+            "RoundedGroup position lookup must remain linear",
+            ".indexOf(" !in roundedGroupSource
+        )
+    }
+
+    @Test
+    fun settingsSectionIsCustomizableAndLivesInCommonUi() {
+        val sectionSource = File(
+            "src/main/java/com/aozijx/passly/ui/components/settings/SettingsSection.kt"
+        ).readText()
+        val legacyParts = File(
+            "src/main/java/com/aozijx/passly/feature/settings/shell/SettingsUiParts.kt"
+        )
+
+        assertTrue("SettingsUiParts must not return", !legacyParts.exists())
+        assertTrue(
+            "Section layout fields must be externally configurable",
+            "SettingsSectionStyle" in sectionSource
+        )
+        assertTrue(
+            "SettingsSection must accept caller-owned composable content",
+            "content: @Composable ColumnScope.() -> Unit" in sectionSource
+        )
+    }
 }

@@ -34,9 +34,9 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.log.LogExporter
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.feature.settings.components.navigationSettingsItem
-import com.aozijx.passly.feature.settings.shell.SettingsGroupTitle
-import com.aozijx.passly.feature.settings.shell.SettingsRoundedGroup
+import com.aozijx.passly.ui.components.group.RoundedGroup
+import com.aozijx.passly.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -68,17 +68,20 @@ fun LogSettingsSection() {
         }
     }
 
-    SettingsGroupTitle(text = logManagementTitle)
-    SettingsRoundedGroup {
-        navigationSettingsItem(
+    SettingsSectionTitle(text = logManagementTitle)
+    RoundedGroup(
+        items = listOf(
+            navigationSettingsGroupItem(
+                key = "logs.view",
             icon = Icons.Default.BugReport,
             title = "查看日志",
             onClick = {
                 refreshLogInfo()
                 showViewerDialog = true
             }
-        )
-        navigationSettingsItem(
+            ),
+            navigationSettingsGroupItem(
+                key = "logs.export_all",
             icon = Icons.Default.Description,
             title = "导出所有日志",
             subtitle = "导出所有日志文件为 ZIP",
@@ -91,8 +94,9 @@ fun LogSettingsSection() {
                     }
                 }
             }
-        )
-        navigationSettingsItem(
+            ),
+            navigationSettingsGroupItem(
+                key = "logs.export_errors",
             icon = Icons.Default.SaveAlt,
             title = "导出错误日志",
             subtitle = "导出错误日志为文本文件",
@@ -105,14 +109,16 @@ fun LogSettingsSection() {
                     }
                 }
             }
-        )
-        navigationSettingsItem(
+            ),
+            navigationSettingsGroupItem(
+                key = "logs.clear",
             icon = Icons.Default.DeleteSweep,
             title = "清除日志",
             value = logSize,
             onClick = { showClearConfirmDialog = true }
         )
-    }
+        )
+    )
 
     if (showViewerDialog) {
         LogViewerSheet(
