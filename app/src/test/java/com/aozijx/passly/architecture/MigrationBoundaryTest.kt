@@ -279,4 +279,23 @@ class MigrationBoundaryTest {
             !legacyRoot.exists() || legacyRoot.walkTopDown().none { it.extension == "kt" }
         )
     }
+
+    @Test
+    fun encryptedDiagnosticsUseBoundedQueueAndPreparedCrashKey() {
+        val source = File(
+            "src/main/java/com/aozijx/passly/core/diagnostics/PerFileEncryptedLogSink.kt"
+        ).readText()
+        val emergencyBlock = source.substringAfter("fun emergencyWrite").substringBefore("fun readAll")
+
+        assertTrue("Log writer queue must remain bounded", "ArrayBlockingQueue" in source)
+        assertTrue("Every diagnostics file needs an encrypted header", "writeHeader(file" in source)
+        assertTrue(
+            "Crash writer must use the preloaded key instead of Keystore",
+            "getOrCreateWrappingKey" !in emergencyBlock
+        )
+        assertTrue(
+            "Crash writer must not wait for the normal writer lock",
+            "lockWrites = false" in emergencyBlock
+        )
+    }
 }
