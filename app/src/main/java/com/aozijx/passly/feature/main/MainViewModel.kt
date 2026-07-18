@@ -2,12 +2,15 @@ package com.aozijx.passly.feature.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.feature.auth.VerificationGateway
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.security.session.UserSessionManager
+import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.AuthenticationState
+import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.main.contract.MainUiState
@@ -26,9 +29,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val portableSettingsUseCases: PortableSettingsUseCases,
-    private val authGateway: VerificationGateway,
+    private val authenticationManager: AuthenticationManager,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
-    private val sessionManager: UserSessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -46,50 +48,48 @@ class MainViewModel @Inject constructor(
         when (intent) {
             MainIntent.Lock -> {
                 viewModelScope.launch {
-                    sessionManager.lock()
+                    authenticationManager.lock(LockReason.USER)
                     databaseLifecycleUseCases.close()
                 }
             }
 
-            MainIntent.UpdateInteraction -> sessionManager.onUserInteraction()
+            MainIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             else -> Unit
         }
     }
 
-    fun isAuthorizedNow(): Boolean = authGateway.isAuthorized.value
+    fun isAuthorizedNow(): Boolean =
+        authenticationManager.state.value is AuthenticationState.Authenticated
 
     fun requestAuth(
-        launcher: BiometricPromptLauncher,
-        title: String,
-        subtitle: String,
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        authGateway.verifyWithBiometric(launcher, title, subtitle) { result ->
-            result.onSuccess { onSuccess() }
-                .onFailure { error -> onError?.invoke(error.toUiMessage()) }
+        authenticationManager.authenticate(
+            AuthenticationRequest(AuthenticationPurpose.UNLOCK_VAULT)
+        ) { result ->
+            if (result is AuthenticationResult.Success) onSuccess()
+            else if (result is AuthenticationResult.Failure) onError?.invoke("认证失败")
         }
     }
 
     fun requestReauth(
-        launcher: BiometricPromptLauncher,
-        title: String,
-        subtitle: String,
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        authGateway.verifyWithBiometric(
-            launcher, title, subtitle, forceReauth = true
+        authenticationManager.authenticate(
+            AuthenticationRequest(AuthenticationPurpose.REAUTHENTICATE)
         ) { result ->
-            result.onSuccess { onSuccess() }
-                .onFailure { error -> onError?.invoke(error.toUiMessage()) }
+            if (result is AuthenticationResult.Success) onSuccess()
+            else if (result is AuthenticationResult.Failure) onError?.invoke("认证失败")
         }
     }
 
     private fun observeAuthStates() {
         viewModelScope.launch {
-            authGateway.isAuthorized.collect { authorized ->
+            authenticationManager.state.collect { state ->
+                val authorized = state is AuthenticationState.Authenticated
                 if (authorized) {
                     _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
                     val outcome = databaseLifecycleUseCases.preWarmAndReport()

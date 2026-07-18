@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.feature.auth.VerificationGateway
+import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.feature.settings.contract.SettingsEffect
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
@@ -17,16 +19,22 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    val authGateway: VerificationGateway,
+    val authenticationManager: AuthenticationManager,
+    private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
     private val portableSettingsUseCases: PortableSettingsUseCases
 ) : ViewModel() {
 
-    val isAppPasswordEnabled: StateFlow<Boolean> = authGateway.isAppPasswordEnabled
+    val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
+        .map { it.appPassword }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -87,6 +95,24 @@ class SettingsViewModel @Inject constructor(
             }.onFailure { error ->
                 _effects.tryEmit(SettingsEffect.ShowError(error.message ?: "保存失败"))
             }
+        }
+    }
+
+    fun setAppPassword(password: CharArray, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            onResult(authenticationMethodProvisioner.setAppPassword(password) is AuthenticationResult.Success)
+        }
+    }
+
+    fun changeAppPassword(password: CharArray, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            onResult(authenticationMethodProvisioner.changeAppPassword(password) is AuthenticationResult.Success)
+        }
+    }
+
+    fun disableAppPassword(onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            onResult(authenticationMethodProvisioner.disableAppPassword() is AuthenticationResult.Success)
         }
     }
 }

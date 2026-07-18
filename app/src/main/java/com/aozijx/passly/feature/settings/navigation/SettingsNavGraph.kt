@@ -56,7 +56,7 @@ fun SettingsNavGraph(
             currentPassword = localState.appPasswordCurrent,
             newPassword = localState.appPasswordNew,
             confirmPassword = localState.appPasswordConfirm,
-            authGateway = settingsViewModel.authGateway,
+            settingsViewModel = settingsViewModel,
             onSuccess = localState::onAppPasswordSuccess
         )
     }
@@ -109,6 +109,7 @@ fun SettingsNavGraph(
             navController = navController,
             context = context,
             localState = localState,
+            settingsViewModel = settingsViewModel,
             onUpdateInteraction = onUpdateInteraction,
             onOuterBack = onOuterBack,
             authDecryptTitle = authDecryptTitle,

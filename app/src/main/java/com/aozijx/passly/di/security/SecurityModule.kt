@@ -9,6 +9,8 @@ import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.VaultSessionController
+import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
+import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -50,4 +52,10 @@ abstract class SecurityModule {
     internal abstract fun bindVaultAccessState(
         impl: VaultSessionController
     ): VaultAccessState
+
+    @Binds
+    @Singleton
+    internal abstract fun bindAuthenticationMethodProvisioner(
+        impl: DefaultAuthenticationMethodProvisioner
+    ): AuthenticationMethodProvisioner
 }

@@ -18,6 +18,7 @@ import com.aozijx.passly.feature.settings.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.appearance.InterfaceUiAction
 import com.aozijx.passly.feature.settings.appearance.InterfaceViewModel
 import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordEntryClick
+import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.security.PrivacyUiAction
 import com.aozijx.passly.feature.settings.security.PrivacyViewModel
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
@@ -34,6 +35,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     navController: NavHostController,
     context: Context,
     localState: SettingsScreenLocalState,
+    settingsViewModel: SettingsViewModel,
     onUpdateInteraction: () -> Unit,
     onOuterBack: () -> Unit,
     authDecryptTitle: String,
@@ -70,13 +72,10 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                         viewModel.onAction(SecurityUiAction.SetLockTimeout(it))
                     },
                     onAppPasswordClick = {
-                        val launcher = (context as? FragmentActivity)
-                            ?.let(::FragmentActivityBiometricLauncher)
                         handleAppPasswordEntryClick(
                             context = context,
-                            launcher = launcher,
                             isAppPasswordEnabled = appPasswordEnabled,
-                            authGateway = viewModel.authGateway,
+                            settingsViewModel = settingsViewModel,
                             title = authDecryptTitle,
                             subtitle = setAppPasswordSubtitle,
                             onAlreadyEnabled = localState::openAppPasswordActionDialog,
@@ -84,11 +83,8 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                         )
                     },
                     onInvalidateKeyOnBioChangeToggle = { enabled ->
-                        val launcher = (context as? FragmentActivity)
-                            ?.let(::FragmentActivityBiometricLauncher)
                         handleInvalidateKeyToggle(
                             context = context,
-                            launcher = launcher,
                             enabled = enabled,
                             switchPolicy = viewModel::switchKeyInvalidationPolicy
                         )

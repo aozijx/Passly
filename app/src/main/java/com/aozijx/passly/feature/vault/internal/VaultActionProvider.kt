@@ -81,7 +81,7 @@ fun rememberVaultActionProvider(
                         promptTitle = decryptAuthTitle,
                         promptSubtitle = decryptAuthSubtitle,
                         authenticate = { launcher, t, s, _, ok ->
-                            mainViewModel.requestAuth(launcher, t, s, onSuccess = ok)
+                            mainViewModel.requestAuth(onSuccess = ok)
                         },
                         onResult = { decrypted ->
                             decrypted?.let {
@@ -105,7 +105,7 @@ fun rememberVaultActionProvider(
                 item = item,
                 onAuthRequired = { ok ->
                     mainViewModel.requestReauth(
-                        launcher, authTitle, item.title, onSuccess = ok
+                        onSuccess = ok
                     )
                 },
                 onQuickDelete = { vaultViewModel.quickDelete(it) },

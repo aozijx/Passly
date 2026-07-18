@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.settings.security.ui
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,12 +27,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.message.AppMessageCenter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecoveryCodeSheet(
     recoveryCode: String,
     sheetState: SheetState,
+    onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -88,11 +89,7 @@ fun RecoveryCodeSheet(
             Button(
                 onClick = {
                     ClipboardUtils.copy(context, recoveryCode)
-                    Toast.makeText(
-                        context,
-                        copiedMessage,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    AppMessageCenter.publish(copiedMessage)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -102,12 +99,22 @@ fun RecoveryCodeSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("我已安全保存并启用")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    stringResource(R.string.settings_recovery_code_dismiss),
+                    "放弃本次草稿",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

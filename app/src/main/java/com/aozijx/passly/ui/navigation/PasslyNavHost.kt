@@ -123,7 +123,7 @@ fun PasslyNavHost(
                     onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it) },
                     onAuthenticate = { launcher, title, subtitle, success ->
-                        mainViewModel.requestAuth(launcher, title, subtitle, onSuccess = success)
+                        mainViewModel.requestAuth(onSuccess = success)
                     },
                     biometricLauncher = biometricLauncher
                 )
@@ -140,9 +140,6 @@ fun PasslyNavHost(
                 onUpdateInteraction = onUpdateInteraction,
                 onAuthRequired = { title, subtitle, onSuccess ->
                     mainViewModel.requestReauth(
-                        launcher = biometricLauncher,
-                        title = title,
-                        subtitle = subtitle,
                         onSuccess = onSuccess
                     )
                 }

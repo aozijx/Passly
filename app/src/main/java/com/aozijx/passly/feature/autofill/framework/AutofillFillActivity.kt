@@ -15,7 +15,6 @@ import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.feature.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.ui.authentication.AuthenticationHost
-import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -28,8 +27,6 @@ class AutofillFillActivity : FragmentActivity() {
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
     private val viewModel: AutofillFillViewModel by viewModels()
-
-    private val biometricLauncher by lazy { FragmentActivityBiometricLauncher(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,7 +66,7 @@ class AutofillFillActivity : FragmentActivity() {
         }
 
         // 启动处理
-        viewModel.initialize(request, biometricLauncher)
+        viewModel.initialize(request)
     }
 
     private fun parseIntent(intent: Intent?): AutofillFillViewModel.FillRequest {
@@ -122,7 +119,7 @@ class AutofillFillActivity : FragmentActivity() {
                     AutofillCandidateBottomSheet(
                         candidates = candidates,
                         onCandidateSelected = { candidate ->
-                            viewModel.selectCandidate(candidate, biometricLauncher)
+                            viewModel.selectCandidate(candidate)
                         },
                         onCancel = { finishWithResult(null) }
                     )

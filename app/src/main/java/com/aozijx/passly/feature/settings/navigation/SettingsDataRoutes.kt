@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -23,6 +25,9 @@ import com.aozijx.passly.feature.settings.interaction.InteractionUiAction
 import com.aozijx.passly.feature.settings.interaction.InteractionViewModel
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
 import com.aozijx.passly.feature.settings.security.SecurityViewModel
+import com.aozijx.passly.feature.settings.security.RecoveryDraftState
+import com.aozijx.passly.feature.settings.security.RecoveryDraftViewModel
+import com.aozijx.passly.feature.settings.security.messageOrNull
 import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeDetail
 import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeSheet
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
@@ -97,7 +102,15 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
 
     composable(SettingsRoute.RecoveryCode.route) {
         val viewModel: SecurityViewModel = hiltViewModel()
-        val recoveryCode by viewModel.recoveryCode.collectAsStateWithLifecycle()
+        val draftViewModel: RecoveryDraftViewModel = hiltViewModel()
+        val draftState by draftViewModel.state.collectAsStateWithLifecycle()
+        val recoveryCode = remember(draftState) {
+            if (draftState is RecoveryDraftState.Ready) {
+                draftViewModel.revealCode()?.concatToString()
+            } else {
+                null
+            }
+        }
         val hasEnvelope by viewModel.hasRecoveryEnvelope.collectAsStateWithLifecycle()
         val verifyResult by viewModel.verifyResult.collectAsStateWithLifecycle()
 
@@ -109,24 +122,37 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                 RecoveryCodeSheet(
                     recoveryCode = code,
                     sheetState = localState.recoveryCodeSheetState,
+                    onConfirm = {
+                        localState.showRecoveryCodeSheet = false
+                        draftViewModel.confirmAndEnable()
+                    },
                     onDismiss = {
                         localState.showRecoveryCodeSheet = false
-                        viewModel.onAction(SecurityUiAction.DismissRecoveryCode)
+                        draftViewModel.dismiss()
                     }
                 )
             }
         }
 
         SettingsSecondaryPage(title = "恢复码", onBack = { navController.popBackStack() }) {
+            draftState.messageOrNull()?.let { message ->
+                item {
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
             item {
                 RecoveryCodeDetail(
-                    hasRecoveryEnvelope = hasEnvelope,
+                    hasRecoveryEnvelope = hasEnvelope || draftState is RecoveryDraftState.Committed,
                     verifyResult = verifyResult,
                     onCreateRecoveryCode = {
-                        viewModel.onAction(SecurityUiAction.CreateRecoveryCode)
+                        draftViewModel.generate()
                     },
                     onRegenerate = {
-                        viewModel.onAction(SecurityUiAction.RegenerateRecoveryCode)
+                        draftViewModel.generate()
                     },
                     onVerifyCode = {
                         viewModel.onAction(SecurityUiAction.VerifyRecoveryCode(it))

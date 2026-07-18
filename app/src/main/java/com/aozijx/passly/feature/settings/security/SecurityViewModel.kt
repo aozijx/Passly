@@ -2,12 +2,15 @@ package com.aozijx.passly.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.usecase.auth.RecoveryCodeUseCases
+import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.usecase.settings.DeviceSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.feature.auth.VerificationGateway
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.security.authentication.BiometricRotationCoordinator
+import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,19 +35,18 @@ sealed interface SecurityUiAction {
     data class ToggleLockOnBackground(val enabled: Boolean) : SecurityUiAction
     data class ToggleClipboardClearToasts(val enabled: Boolean) : SecurityUiAction
     data class ToggleAppCloseToasts(val enabled: Boolean) : SecurityUiAction
-    data object CreateRecoveryCode : SecurityUiAction
-    data object RegenerateRecoveryCode : SecurityUiAction
     data class VerifyRecoveryCode(val code: String) : SecurityUiAction
     data object ClearVerifyResult : SecurityUiAction
-    data object DismissRecoveryCode : SecurityUiAction
 }
 
 @HiltViewModel
 class SecurityViewModel @Inject constructor(
-    val authGateway: VerificationGateway,
+    private val authenticationManager: AuthenticationManager,
+    private val hostRegistry: AuthenticationHostRegistry,
+    private val biometricRotationCoordinator: BiometricRotationCoordinator,
+    private val methodProvisioner: AuthenticationMethodProvisioner,
     private val deviceSettingsUseCases: DeviceSettingsUseCases,
-    private val portableSettingsUseCases: PortableSettingsUseCases,
-    private val recoveryCodeUseCases: RecoveryCodeUseCases
+    private val portableSettingsUseCases: PortableSettingsUseCases
 ) : ViewModel() {
 
     val config: StateFlow<SecurityUiState> = combine(
@@ -66,10 +69,9 @@ class SecurityViewModel @Inject constructor(
         SecurityUiState()
     )
 
-    val isAppPasswordEnabled: StateFlow<Boolean> = authGateway.isAppPasswordEnabled
-
-    private val _recoveryCode = MutableStateFlow<String?>(value = null)
-    val recoveryCode: StateFlow<String?> = _recoveryCode.asStateFlow()
+    val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
+        .map { it.appPassword }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _hasRecoveryEnvelope = MutableStateFlow(false)
     val hasRecoveryEnvelope: StateFlow<Boolean> = _hasRecoveryEnvelope.asStateFlow()
@@ -95,22 +97,8 @@ class SecurityViewModel @Inject constructor(
                 portableSettingsUseCases.setAppCloseToastsEnabled(action.enabled)
             }
 
-            SecurityUiAction.CreateRecoveryCode -> viewModelScope.launch {
-                val code = recoveryCodeUseCases.create()
-                _recoveryCode.value = String(code)
-                code.fill('\u0000')
-                _hasRecoveryEnvelope.value = true
-            }
-
-            SecurityUiAction.RegenerateRecoveryCode -> viewModelScope.launch {
-                val code = recoveryCodeUseCases.regenerate()
-                _hasRecoveryEnvelope.value = true
-                _recoveryCode.value = String(code)
-                code.fill('\u0000')
-            }
-
             is SecurityUiAction.VerifyRecoveryCode -> viewModelScope.launch {
-                val valid = recoveryCodeUseCases.verify(action.code.toCharArray())
+                val valid = methodProvisioner.verifyRecoveryCode(action.code.toCharArray())
                 _verifyResult.value = valid
             }
 
@@ -118,23 +106,38 @@ class SecurityViewModel @Inject constructor(
                 _verifyResult.value = null
             }
 
-            SecurityUiAction.DismissRecoveryCode -> {
-                _recoveryCode.value = null
-            }
         }
     }
 
     init {
         viewModelScope.launch {
-            _hasRecoveryEnvelope.value = recoveryCodeUseCases.hasRecoveryCode()
+            _hasRecoveryEnvelope.value = methodProvisioner.hasRecoveryCode()
         }
     }
 
     fun switchKeyInvalidationPolicy(
-        launcher: BiometricPromptLauncher,
         enabled: Boolean,
-        onResult: (AppResult<Unit>) -> Unit
+        onResult: (Boolean) -> Unit
     ) {
-        authGateway.rekeyWithInvalidationPolicy(launcher, enabled, onResult)
+        viewModelScope.launch {
+            val authentication = authenticationManager.authenticate(
+                AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
+            )
+            if (authentication !is AuthenticationResult.Success) {
+                onResult(false)
+                return@launch
+            }
+            val host = hostRegistry.awaitLease()?.hostOrNull()
+            if (host == null) {
+                onResult(false)
+                return@launch
+            }
+            val result = biometricRotationCoordinator.rotate(
+                host = host,
+                invalidateOnEnrollment = enabled,
+                correlationId = java.util.UUID.randomUUID().toString()
+            )
+            onResult(result is AuthenticationResult.Success)
+        }
     }
 }

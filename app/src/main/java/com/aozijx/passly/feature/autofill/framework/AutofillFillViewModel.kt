@@ -5,11 +5,8 @@ import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.feature.auth.VerificationGateway
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
-import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
@@ -22,15 +19,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
+import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import com.aozijx.passly.domain.authentication.AuthenticationResult
 import javax.inject.Inject
-import kotlin.coroutines.resume
 
 @HiltViewModel
 class AutofillFillViewModel @Inject constructor(
     private val autofillUseCases: AutofillUseCases,
     private val candidateResolver: CandidateResolver,
-    private val verificationGateway: VerificationGateway,
+    private val authenticationManager: AuthenticationManager,
     @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -59,13 +58,13 @@ class AutofillFillViewModel @Inject constructor(
         val candidateEntryIds: List<Int>,
     )
 
-    fun initialize(request: FillRequest, biometricLauncher: BiometricPromptLauncher) {
+    fun initialize(request: FillRequest) {
         currentRequest = request
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
             try {
                 if (request.isUnlockOnly) {
-                    handleUnlockOnly(request, biometricLauncher)
+                    handleUnlockOnly(request)
                 } else if (request.uiMode == AutofillUiMode.BOTTOM_SHEET && request.candidateEntryIds.isNotEmpty() && request.directEntryId == null) {
                     val candidates = candidateResolver.resolveByIds(request.candidateEntryIds)
                     if (candidates.isEmpty()) {
@@ -79,7 +78,7 @@ class AutofillFillViewModel @Inject constructor(
                     if (candidate == null) {
                         _uiState.update { UiState.Error("Entry not found") }
                     } else {
-                        handleSingleEntry(candidate, request, biometricLauncher)
+                        handleSingleEntry(candidate, request)
                     }
                 }
             } catch (e: Exception) {
@@ -89,13 +88,9 @@ class AutofillFillViewModel @Inject constructor(
         }
     }
 
-    private suspend fun handleUnlockOnly(request: FillRequest, launcher: BiometricPromptLauncher) {
-        val authResult = verifyWithBiometricSuspended(
-            launcher,
-            "解锁保险库",
-            "请验证身份以自动填充"
-        )
-        if (authResult is AppResult.Failure) {
+    private suspend fun handleUnlockOnly(request: FillRequest) {
+        val authResult = authenticateForAutofill()
+        if (authResult !is AuthenticationResult.Success) {
             _uiState.update { UiState.Result(null) }
             return
         }
@@ -116,15 +111,10 @@ class AutofillFillViewModel @Inject constructor(
 
     private suspend fun handleSingleEntry(
         candidate: ResolvedCandidate,
-        request: FillRequest,
-        launcher: BiometricPromptLauncher
+        request: FillRequest
     ) {
-        val authResult = verifyWithBiometricSuspended(
-            launcher,
-            "确认填充",
-            "请验证身份以填充此凭证"
-        )
-        if (authResult is AppResult.Failure) {
+        val authResult = authenticateForAutofill()
+        if (authResult !is AuthenticationResult.Success) {
             _uiState.update { UiState.Result(null) }
             return
         }
@@ -151,21 +141,14 @@ class AutofillFillViewModel @Inject constructor(
         }
     }
 
-    fun selectCandidate(candidate: ResolvedCandidate, biometricLauncher: BiometricPromptLauncher) {
+    fun selectCandidate(candidate: ResolvedCandidate) {
         val request = currentRequest ?: return
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
-            handleSingleEntry(candidate, request, biometricLauncher)
+            handleSingleEntry(candidate, request)
         }
     }
 
-    private suspend fun verifyWithBiometricSuspended(
-        launcher: BiometricPromptLauncher,
-        title: String,
-        subtitle: String,
-    ): AppResult<Unit> = suspendCancellableCoroutine { continuation ->
-        verificationGateway.verifyWithBiometric(launcher, title, subtitle) { result ->
-            continuation.resume(result)
-        }
-    }
+    private suspend fun authenticateForAutofill(): AuthenticationResult =
+        authenticationManager.authenticate(AuthenticationRequest(AuthenticationPurpose.AUTOFILL))
 }

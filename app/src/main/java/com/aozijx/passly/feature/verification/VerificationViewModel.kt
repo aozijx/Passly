@@ -2,12 +2,12 @@ package com.aozijx.passly.feature.verification
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.feature.auth.VerificationGateway
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.ui.toUiMessage
-import com.aozijx.passly.core.message.AppMessageCenter
-import com.aozijx.passly.domain.usecase.auth.RecoveryCodeUseCases
+import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.security.MemoryCleaner
 import com.aozijx.passly.security.crypto.SecureString
 import com.aozijx.passly.feature.verification.model.VerificationUiState
@@ -16,24 +16,30 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class VerificationViewModel @Inject constructor(
-    private val gateway: VerificationGateway,
-    private val recoveryCodeUseCases: RecoveryCodeUseCases
+    private val authenticationManager: AuthenticationManager,
+    private val methodProvisioner: AuthenticationMethodProvisioner
 ) : ViewModel() {
 
-    val isAppPasswordEnabled: StateFlow<Boolean> = gateway.isAppPasswordEnabled
+    val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
+        .map { it.appPassword }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _uiState = MutableStateFlow(VerificationUiState())
     val uiState: StateFlow<VerificationUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            val available = recoveryCodeUseCases.hasRecoveryCode()
-            _uiState.update { it.copy(recoveryCodeAvailable = available) }
+            authenticationManager.methods.collect { methods ->
+                _uiState.update { it.copy(recoveryCodeAvailable = methods.recoveryCode) }
+            }
         }
     }
 
@@ -55,21 +61,7 @@ class VerificationViewModel @Inject constructor(
     }
 
     fun unlockWithRecoveryCode() {
-        val current = _uiState.value
-        if (current.authInProgress) return
-        val code = current.recoveryCode.toCharArray()
-        if (code.isEmpty()) return
-        _uiState.update { it.copy(authInProgress = true) }
-        viewModelScope.launch {
-            val result = recoveryCodeUseCases.unlock(code)
-            when (result) {
-                is AppResult.Success -> clearRecoveryCodeState()
-                is AppResult.Failure -> {
-                    _uiState.update { it.copy(authInProgress = false) }
-                    AppMessageCenter.publish(result.error.toUiMessage())
-                }
-            }
-        }
+        authenticate(AuthenticationMethod.RECOVERY_CODE)
     }
 
     fun onShowSetPasswordDialog() = _uiState.update { it.copy(showSetPasswordDialog = true) }
@@ -87,41 +79,21 @@ class VerificationViewModel @Inject constructor(
         }
     }
 
-    fun verifyWithBiometric(launcher: BiometricPromptLauncher, title: String, subtitle: String) {
-        if (_uiState.value.authInProgress) return
-        _uiState.update { it.copy(authInProgress = true) }
-        gateway.verifyWithBiometric(launcher, title, subtitle) { result ->
-            _uiState.update { it.copy(authInProgress = false) }
-        }
-    }
+    fun verifyWithBiometric() = authenticate(AuthenticationMethod.BIOMETRIC)
 
     fun verifyWithAppPassword() {
-        val current = _uiState.value
-        if (current.authInProgress) return
-        _uiState.update { it.copy(authInProgress = true) }
-        gateway.verifyWithAppPassword(current.appPassword.toCharArray()) { result ->
-            when (result) {
-                is AppResult.Success ->
-                    _uiState.update {
-                        it.copy(
-                            authInProgress = false,
-                            appPassword = SecureString.EMPTY,
-                            showPasswordInput = false
-                        )
-                    }
-                is AppResult.Failure -> _uiState.update { it.copy(authInProgress = false) }
-            }
-        }
+        authenticate(AuthenticationMethod.APP_PASSWORD)
     }
 
     fun bootstrapAppPassword(onComplete: (Boolean) -> Unit) {
         if (_uiState.value.authInProgress) return
         _uiState.update { it.copy(authInProgress = true) }
         val password = _uiState.value.appPassword.toCharArray()
-        gateway.bootstrapAppPassword(password) { result ->
+        viewModelScope.launch {
+            val result = methodProvisioner.setAppPassword(password)
             MemoryCleaner.wipeCharArray(password)
             _uiState.update { it.copy(authInProgress = false) }
-            val success = result.isSuccess
+            val success = result is AuthenticationResult.Success
             onComplete(success)
         }
     }
@@ -141,6 +113,23 @@ class VerificationViewModel @Inject constructor(
                 recoveryCode = SecureString.EMPTY,
                 showRecoveryCodeInput = false
             )
+        }
+    }
+
+    private fun authenticate(method: AuthenticationMethod) {
+        if (_uiState.value.authInProgress) return
+        _uiState.update { it.copy(authInProgress = true) }
+        viewModelScope.launch {
+            val result = authenticationManager.authenticate(
+                AuthenticationRequest(
+                    purpose = AuthenticationPurpose.UNLOCK_VAULT,
+                    allowedMethods = setOf(method)
+                )
+            )
+            _uiState.update { it.copy(authInProgress = false) }
+            if (result is AuthenticationResult.Success && method == AuthenticationMethod.RECOVERY_CODE) {
+                clearRecoveryCodeState()
+            }
         }
     }
 }

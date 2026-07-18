@@ -1,0 +1,150 @@
+package com.aozijx.passly.security.authentication
+
+import com.aozijx.passly.core.security.KeyDerivation
+import com.aozijx.passly.domain.authentication.AuthenticationFailure
+import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
+import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.model.envelope.EnvelopeType
+import com.aozijx.passly.domain.model.envelope.KdfAlgorithm
+import com.aozijx.passly.security.crypto.DekManager
+import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import java.util.UUID
+import kotlinx.coroutines.CancellationException
+import javax.crypto.spec.SecretKeySpec
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class DefaultAuthenticationMethodProvisioner @Inject constructor(
+    private val kdfRunner: KdfRunner,
+    private val dekManager: DekManager,
+    private val session: VaultSessionController,
+    private val authenticationManager: AuthenticationManager,
+    private val bootstrapStore: BootstrapStore
+) : AuthenticationMethodProvisioner {
+    override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
+        val correlationId = UUID.randomUUID().toString()
+        if (password.isEmpty()) {
+            password.fill('\u0000')
+            return AuthenticationResult.Failure(
+                AuthenticationFailure(AuthenticationFailureCode.CREDENTIAL_INCORRECT, correlationId)
+            )
+        }
+        val secret = SecretChars.take(password)
+        val salt = KeyDerivation.generateSalt()
+        return try {
+            val ownedKey = kdfRunner.execute(secret) { chars ->
+                OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, salt))
+            }
+            val rawKey = ownedKey.consume()
+            try {
+                val key = SecretKeySpec(rawKey, "AES")
+                if (dekManager.isUnlocked.value) {
+                    dekManager.rekeyWithKey(
+                        EnvelopeType.APP_PASSWORD,
+                        key,
+                        salt,
+                        KdfAlgorithm.ARGON2ID
+                    )
+                } else {
+                    dekManager.initializeWithKey(
+                        EnvelopeType.APP_PASSWORD,
+                        key,
+                        salt,
+                        KdfAlgorithm.ARGON2ID
+                    )
+                }
+                session.markAuthenticated()
+                AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
+            } finally {
+                rawKey.fill(0)
+                ownedKey.discard()
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            AuthenticationResult.Failure(
+                AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
+            )
+        } finally {
+            secret.close()
+        }
+    }
+
+    override suspend fun changeAppPassword(newPassword: CharArray): AuthenticationResult {
+        val authentication = authenticationManager.authenticate(
+            AuthenticationRequest(
+                purpose = AuthenticationPurpose.MANAGE_APP_PASSWORD,
+                allowedMethods = setOf(AuthenticationMethod.APP_PASSWORD)
+            )
+        )
+        if (authentication !is AuthenticationResult.Success) {
+            newPassword.fill('\u0000')
+            return authentication
+        }
+        return setAppPassword(newPassword)
+    }
+
+    override suspend fun disableAppPassword(): AuthenticationResult {
+        val correlationId = UUID.randomUUID().toString()
+        val authentication = authenticationManager.authenticate(
+            AuthenticationRequest(
+                purpose = AuthenticationPurpose.MANAGE_APP_PASSWORD,
+                allowedMethods = setOf(AuthenticationMethod.APP_PASSWORD)
+            )
+        )
+        if (authentication !is AuthenticationResult.Success) return authentication
+        val alternatives = bootstrapStore.loadAll().any {
+            it.type == EnvelopeType.BIOMETRIC || it.type == EnvelopeType.RECOVERY
+        }
+        if (!alternatives) {
+            return AuthenticationResult.Failure(
+                AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
+            )
+        }
+        bootstrapStore.delete(EnvelopeType.APP_PASSWORD)
+        return AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
+    }
+
+    override suspend fun hasRecoveryCode(): Boolean =
+        bootstrapStore.load(EnvelopeType.RECOVERY) != null
+
+    override suspend fun verifyRecoveryCode(code: CharArray): Boolean {
+        val envelope = bootstrapStore.load(EnvelopeType.RECOVERY) ?: run {
+            code.fill('\u0000')
+            return false
+        }
+        val secret = SecretChars.take(code)
+        return try {
+            val ownedKey = kdfRunner.execute(secret) { chars ->
+                OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, envelope.salt))
+            }
+            val rawKey = ownedKey.consume()
+            try {
+                val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    SecretKeySpec(rawKey, "AES"),
+                    GCMParameterSpec(128, envelope.iv)
+                )
+                val dek = cipher.doFinal(envelope.ciphertext)
+                dek.fill(0)
+                true
+            } catch (_: Exception) {
+                false
+            } finally {
+                rawKey.fill(0)
+                ownedKey.discard()
+            }
+        } finally {
+            secret.close()
+        }
+    }
+}

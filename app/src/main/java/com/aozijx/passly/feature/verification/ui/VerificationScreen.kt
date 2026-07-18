@@ -40,7 +40,6 @@ import com.aozijx.passly.feature.verification.VerificationViewModel
 import com.aozijx.passly.feature.verification.ui.components.BiometricUnlockButton
 import com.aozijx.passly.feature.verification.ui.components.PasswordUnlockSection
 import com.aozijx.passly.feature.verification.ui.components.SetPasswordEntrySection
-import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 
 private enum class AuthChannel { Biometric, Password, SetPassword }
 
@@ -52,16 +51,11 @@ fun VerificationScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
 
-    val biometricLauncher = remember(activity) {
-        FragmentActivityBiometricLauncher(activity)
-    }
-
     val biometricAvailable = remember {
         BiometricManager.from(activity)
             .canAuthenticate(BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
     }
 
-    val title = stringResource(R.string.vault_auth_decrypt_title)
     val subtitle = stringResource(R.string.vault_auth_subtitle)
 
     val mainChannel = when {
@@ -121,7 +115,7 @@ fun VerificationScreen(
                         exit = shrinkVertically() + fadeOut()
                     ) {
                         BiometricUnlockButton(state.authInProgress) {
-                            viewModel.verifyWithBiometric(biometricLauncher, title, subtitle)
+                            viewModel.verifyWithBiometric()
                         }
                     }
                     if (appPasswordEnabled) {

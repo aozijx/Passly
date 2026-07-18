@@ -55,9 +55,6 @@ internal fun AppMainContent(
             onExportBackup = {
                 showPlainExportRiskDialog = false
                 mainViewModel.requestAuth(
-                    launcher = biometricLauncher,
-                    title = activity.getString(R.string.vault_backup_auth_title),
-                    subtitle = activity.getString(R.string.vault_backup_auth_subtitle_plain_export),
                     onSuccess = {
                         backupCoordinator.issuePlainExportToken()
                         backupCoordinator.exportPlainBackup(

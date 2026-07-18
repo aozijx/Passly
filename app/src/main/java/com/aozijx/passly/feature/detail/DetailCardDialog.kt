@@ -234,7 +234,7 @@ private fun LazyListScope.typeSpecificCardContent(
                     biometricLauncher = biometricLauncher,
                     item = entry,
                     onAuthenticate = { launcher, title, subtitle, onSuccess ->
-                        mainViewModel.requestAuth(launcher, title, subtitle, onSuccess = onSuccess)
+                        mainViewModel.requestAuth(onSuccess = onSuccess)
                     },
                     editState = editState,
                     revealedUsername = revealedUsername,

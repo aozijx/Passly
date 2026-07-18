@@ -29,9 +29,6 @@ fun DeleteConfirmDialog(
         confirmButton = {
             TextButton(onClick = {
                 mainViewModel.requestAuth(
-                    launcher = launcher,
-                    title = deleteTitle,
-                    subtitle = authSubtitle,
                     onSuccess = { onConfirm() })
             }) {
                 Text(

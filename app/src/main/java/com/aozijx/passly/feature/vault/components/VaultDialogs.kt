@@ -98,9 +98,6 @@ fun VaultDialogs(
             backupCoordinator = backupCoordinator,
             onAuthRequired = { title, subtitle, onSuccess ->
                 mainViewModel.requestAuth(
-                    launcher = launcher,
-                    title = title,
-                    subtitle = subtitle,
                     onSuccess = onSuccess
                 )
             }
