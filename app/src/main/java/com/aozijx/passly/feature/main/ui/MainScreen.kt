@@ -125,7 +125,6 @@ internal fun MainScreen(
 
                 "main" -> {
                     AppMainContent(
-                        activity = activity,
                         mainViewModel = viewModel,
                         backupCoordinator = backupCoordinator,
                         onPlainExportPickerRequest = { fileName ->

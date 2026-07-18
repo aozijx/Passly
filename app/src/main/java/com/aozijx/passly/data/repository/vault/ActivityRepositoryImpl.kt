@@ -6,7 +6,7 @@ import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
 import com.aozijx.passly.domain.repository.vault.ActivityRepository
-import com.aozijx.passly.security.session.SessionStateProvider
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -20,7 +20,7 @@ import javax.inject.Singleton
 @Singleton
 class ActivityRepositoryImpl @Inject constructor(
     private val sessionManager: DatabaseSession,
-    private val sessionState: SessionStateProvider
+    private val sessionState: VaultAccessState
 ) : ActivityRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)

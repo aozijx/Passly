@@ -7,7 +7,7 @@ import com.aozijx.passly.core.autofill.model.ResponseContext
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
 import com.aozijx.passly.core.log.Logcat
-import com.aozijx.passly.security.session.SessionStateProvider
+import com.aozijx.passly.domain.authentication.VaultAccessState
 
 /**
  * 统一填充 Pipeline：纯编排调度，不负责查询、匹配、组装的实现细节。
@@ -24,7 +24,7 @@ import com.aozijx.passly.security.session.SessionStateProvider
  * 严禁引用 AutofillService、CredentialProviderService 或任何 android.service 包。
  */
 class FillRequestDispatcher(
-    private val sessionState: SessionStateProvider,
+    private val sessionState: VaultAccessState,
     private val candidateResolver: CandidateResolver,
     private val fieldMatchStrategy: FieldMatchStrategy,
     private val responseFactory: ResponseFactory,

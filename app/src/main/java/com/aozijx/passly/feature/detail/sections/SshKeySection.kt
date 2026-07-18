@@ -29,7 +29,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.components.EditTextField
 import com.aozijx.passly.feature.detail.contract.DetailEvent
@@ -39,14 +39,13 @@ import com.aozijx.passly.feature.detail.internal.copySensitiveField
 
 @Composable
 fun SshKeySection(
-    launcher: BiometricPromptLauncher,
     entry: VaultEntry,
     editState: EntryEditState,
     revealedPassword: String?,
     revealedSshPrivateKey: String?,
     onPasswordRevealed: (String?) -> Unit,
     onSshPrivateKeyRevealed: (String?) -> Unit,
-    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit
 ) {
@@ -55,7 +54,6 @@ fun SshKeySection(
     val passphraseLabel = stringResource(R.string.passphrase)
     val sshKeyCopiedMsg = stringResource(R.string.ssh_key_copied)
     val actionHandler = DetailSectionActionHandler(
-        launcher = launcher,
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
@@ -182,7 +180,7 @@ fun SshKeySection(
                 onClick = {
                     val sshKey = entry.credential.sshPrivateKey
                     if (!sshKey.isNullOrBlank()) {
-                        onAuthenticate(launcher, "解密 SSH 私钥", "验证身份以查看完整条目") {
+                        onAuthenticate {
                             onSshPrivateKeyRevealed(sshKey)
                             onEvent(
                                 DetailEvent.RecordAction(

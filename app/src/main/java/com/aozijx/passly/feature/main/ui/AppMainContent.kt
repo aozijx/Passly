@@ -6,7 +6,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
@@ -17,12 +16,10 @@ import com.aozijx.passly.feature.backup.components.PlainExportDialogType
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
 import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.navigation.PasslyNavHost
 
 @Composable
 internal fun AppMainContent(
-    activity: FragmentActivity,
     mainViewModel: MainViewModel,
     backupCoordinator: BackupCoordinator,
     onPlainExportPickerRequest: (String) -> Unit
@@ -35,13 +32,8 @@ internal fun AppMainContent(
     var showPlainExportRiskDialog by remember { mutableStateOf(false) }
     val navController = rememberNavController()
 
-    val biometricLauncher = remember(activity) {
-        FragmentActivityBiometricLauncher(activity)
-    }
-
     PasslyNavHost(
         navController = navController,
-        activity = activity,
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
         backupCoordinator = backupCoordinator,

@@ -14,13 +14,13 @@ import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
-import com.aozijx.passly.security.session.SessionStateProvider
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class VaultRepositoryImpl @Inject constructor(
-    private val sessionState: SessionStateProvider,
+    private val sessionState: VaultAccessState,
     private val sessionManager: DatabaseSession,
     private val cryptoMapper: VaultEntryCryptoMapper,
     private val clock: Clock,

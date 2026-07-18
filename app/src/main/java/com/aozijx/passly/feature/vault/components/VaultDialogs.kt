@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.vault.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.feature.backup.BackupCoordinator
 import com.aozijx.passly.feature.backup.components.BackupPasswordDialog
 import com.aozijx.passly.feature.detail.DetailCardDialog
@@ -15,7 +14,6 @@ import com.aozijx.passly.feature.vault.model.AddType
 @Composable
 fun VaultDialogs(
     mainViewModel: MainViewModel,
-    launcher: BiometricPromptLauncher,
     vaultViewModel: VaultViewModel,
     backupCoordinator: BackupCoordinator,
     onUpdateInteraction: () -> Unit
@@ -46,7 +44,6 @@ fun VaultDialogs(
         DetailCardDialog(
             initialEntry = item,
             launchMode = request.launchMode,
-            biometricLauncher = launcher,
             mainViewModel = mainViewModel,
             vaultViewModel = vaultViewModel,
             onDismiss = { vaultViewModel.dismissDetail() })
@@ -85,7 +82,6 @@ fun VaultDialogs(
     // --- 全局确认/反馈对话框 ---
     vaultViewModel.itemToDelete?.let { item ->
         DeleteConfirmDialog(
-            launcher = launcher,
             item = item,
             mainViewModel = mainViewModel,
             onConfirm = { vaultViewModel.confirmDelete() },

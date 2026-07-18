@@ -21,7 +21,6 @@ import com.aozijx.passly.domain.model.entry.FieldKey
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.feature.backup.BackupCoordinator
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
@@ -38,7 +37,6 @@ class VaultActionProvider(
 
 @Composable
 fun rememberVaultActionProvider(
-    launcher: BiometricPromptLauncher,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
     backupCoordinator: BackupCoordinator,
@@ -57,7 +55,7 @@ fun rememberVaultActionProvider(
     val latestTotpStates by rememberUpdatedState(uiState.totpStates)
 
     val performCopy = remember(
-        launcher, context, vaultViewModel, mainViewModel,
+        context, vaultViewModel, mainViewModel,
         decryptAuthTitle, decryptAuthSubtitle, totpCopiedText, fieldCopiedFormat
     ) {
         { fieldKey: FieldKey, item: VaultEntry ->
@@ -76,11 +74,8 @@ fun rememberVaultActionProvider(
                     val rawValue =
                         strategy.getFieldValue(fullEntry, fieldKey) ?: return@loadEntryById
                     vaultViewModel.decryptSingle(
-                        launcher = launcher,
                         encryptedData = rawValue,
-                        promptTitle = decryptAuthTitle,
-                        promptSubtitle = decryptAuthSubtitle,
-                        authenticate = { launcher, t, s, _, ok ->
+                        authenticate = { ok ->
                             mainViewModel.requestAuth(onSuccess = ok)
                         },
                         onResult = { decrypted ->
@@ -97,7 +92,7 @@ fun rememberVaultActionProvider(
     }
 
     val onSwipeTriggered = remember(
-        launcher, mainViewModel, vaultViewModel, authTitle, onShowDetail, performCopy
+        mainViewModel, vaultViewModel, authTitle, onShowDetail, performCopy
     ) {
         { action: SwipeActionType, item: VaultEntry ->
             handleSwipeAction(

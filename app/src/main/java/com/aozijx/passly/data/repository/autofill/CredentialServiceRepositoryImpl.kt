@@ -15,7 +15,7 @@ import com.aozijx.passly.domain.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.model.lookup.MatchType
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.security.crypto.FieldEncryptor
-import com.aozijx.passly.security.session.SessionStateProvider
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.util.UUID
@@ -25,7 +25,7 @@ import javax.inject.Singleton
 @Singleton
 class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: DatabaseSession,
-    private val sessionState: SessionStateProvider,
+    private val sessionState: VaultAccessState,
     private val fieldEncryptor: FieldEncryptor,
     private val clock: Clock
 ) : CredentialServiceRepository {

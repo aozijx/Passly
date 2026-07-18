@@ -6,7 +6,7 @@ import com.aozijx.passly.core.autofill.matcher.HeuristicMatchStrategy
 import com.aozijx.passly.core.autofill.matcher.StrictMatchStrategy
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
-import com.aozijx.passly.security.session.SessionStateProvider
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -50,7 +50,7 @@ abstract class ServiceModule {
         @Singleton
         @Heuristic
         fun provideHeuristicDispatcher(
-            sessionState: SessionStateProvider,
+            sessionState: VaultAccessState,
             candidateResolver: CandidateResolver,
             @Heuristic fieldMatchStrategy: FieldMatchStrategy,
             responseFactory: ResponseFactory,
@@ -65,7 +65,7 @@ abstract class ServiceModule {
         @Singleton
         @Strict
         fun provideStrictDispatcher(
-            sessionState: SessionStateProvider,
+            sessionState: VaultAccessState,
             candidateResolver: CandidateResolver,
             @Strict fieldMatchStrategy: FieldMatchStrategy,
             responseFactory: ResponseFactory,

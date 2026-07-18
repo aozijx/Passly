@@ -25,7 +25,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.feature.backup.BackupCoordinator
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.vault.components.VaultContentTopBar
@@ -41,7 +40,6 @@ import kotlin.collections.getOrNull
 @Composable
 fun VaultContent(
     mainViewModel: MainViewModel,
-    launcher: BiometricPromptLauncher,
     vaultViewModel: VaultViewModel,
     backupCoordinator: BackupCoordinator,
     backupDirectoryUri: String?,
@@ -63,7 +61,6 @@ fun VaultContent(
     var isFabVisible by remember { mutableStateOf(true) }
 
     val actionProvider = rememberVaultActionProvider(
-        launcher = launcher,
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
         backupCoordinator = backupCoordinator,
@@ -167,7 +164,6 @@ fun VaultContent(
 
     VaultDialogs(
         mainViewModel = mainViewModel,
-        launcher = launcher,
         vaultViewModel = vaultViewModel,
         backupCoordinator = backupCoordinator,
         onUpdateInteraction = actionProvider.onUpdateInteraction

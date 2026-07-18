@@ -21,7 +21,7 @@ import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.di.Strict
-import com.aozijx.passly.security.session.SessionStateProvider
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,7 +45,7 @@ class ModernCredentialService : CredentialProviderService() {
     @Strict
     lateinit var dispatcher: FillRequestDispatcher
     @Inject
-    lateinit var sessionState: SessionStateProvider
+    lateinit var sessionState: VaultAccessState
     @Inject
     lateinit var adapter: CredentialPlatformAdapter
 

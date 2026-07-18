@@ -31,7 +31,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailEvent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
@@ -40,17 +40,15 @@ import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun SeedPhraseSection(
-    launcher: BiometricPromptLauncher,
     entry: VaultEntry,
     revealedSeedPhrase: String?,
     onSeedPhraseRevealed: (String?) -> Unit,
-    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onAuthenticate: DetailAuthenticate,
     onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val seedPhraseCopiedMsg = stringResource(R.string.seed_phrase_copied)
     val actionHandler = DetailSectionActionHandler(
-        launcher = launcher,
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )

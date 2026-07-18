@@ -34,7 +34,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailEvent
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
@@ -44,7 +44,6 @@ import com.aozijx.passly.feature.detail.internal.copySensitiveField
 
 @Composable
 fun BankCardSection(
-    launcher: BiometricPromptLauncher,
     entry: VaultEntry,
     editState: EntryEditState,
     revealedCardholder: String?,
@@ -52,14 +51,13 @@ fun BankCardSection(
     revealedCvv: String?,
     revealedPaymentPin: String?,
     onRevealField: (String, String?) -> Unit,
-    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit
 ) {
     val context = LocalContext.current
     val cardCopiedMsg = stringResource(R.string.card_copied)
     val actionHandler = DetailSectionActionHandler(
-        launcher = launcher,
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
@@ -263,7 +261,7 @@ fun BankCardSection(
         if (revealedCardNumber == null && !editState.isEditingPassword) {
             Button(
                 onClick = {
-                    onAuthenticate(launcher, "解密卡片信息", "验证身份以查看完整信息") {
+                    onAuthenticate {
                         onRevealField(RevealedFieldKey.CARD_NUMBER, entry.credential.password)
                         onEvent(
                             DetailEvent.RecordAction(

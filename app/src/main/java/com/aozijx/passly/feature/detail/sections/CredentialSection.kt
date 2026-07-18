@@ -21,7 +21,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.components.EditTextField
 import com.aozijx.passly.feature.detail.contract.DetailEvent
@@ -31,9 +31,8 @@ import com.aozijx.passly.feature.detail.internal.copySensitiveField
 
 @Composable
 fun CredentialSection(
-    biometricLauncher: BiometricPromptLauncher,
     item: VaultEntry,
-    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onAuthenticate: DetailAuthenticate,
     editState: EntryEditState,
     revealedUsername: String?,
     revealedPassword: String?,
@@ -44,7 +43,6 @@ fun CredentialSection(
 ) {
     val context = LocalContext.current
     val actionHandler = DetailSectionActionHandler(
-        launcher = biometricLauncher,
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
@@ -110,7 +108,7 @@ fun CredentialSection(
         if (revealedUsername == null || revealedPassword == null) {
             Button(
                 onClick = {
-                    onAuthenticate(biometricLauncher, "解密信息", "验证身份以查看完整条目") {
+                    onAuthenticate {
                         if (revealedUsername == null && item.username.isNotEmpty()) {
                             onUsernameRevealed(item.username)
                             onEvent(

@@ -9,7 +9,6 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.feature.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
@@ -203,18 +202,15 @@ class VaultViewModel @Inject constructor(
     }
 
     fun decryptSingle(
-        launcher: BiometricPromptLauncher,
         encryptedData: String,
-        promptTitle: String,
-        promptSubtitle: String,
-        authenticate: (BiometricPromptLauncher, String, String, ((String) -> Unit)?, () -> Unit) -> Unit,
+        authenticate: (onSuccess: () -> Unit) -> Unit,
         onResult: (String?) -> Unit
     ) {
         if (encryptedData.isEmpty()) {
             onResult("")
             return
         }
-        authenticate(launcher, promptTitle, promptSubtitle, null) {
+        authenticate {
             onResult(encryptedData)
         }
     }

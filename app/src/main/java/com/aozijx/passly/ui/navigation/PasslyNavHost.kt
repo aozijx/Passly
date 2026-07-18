@@ -10,7 +10,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -30,7 +29,6 @@ import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
 import com.aozijx.passly.feature.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import kotlinx.coroutines.flow.collectLatest
 
 /**
@@ -39,7 +37,6 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun PasslyNavHost(
     navController: NavHostController,
-    activity: FragmentActivity,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
     backupCoordinator: BackupCoordinator,
@@ -48,10 +45,6 @@ fun PasslyNavHost(
 ) {
     val dataViewModel: DataViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
-    val biometricLauncher = remember(activity) {
-        FragmentActivityBiometricLauncher(activity)
-    }
-
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -67,7 +60,6 @@ fun PasslyNavHost(
         ) {
         composable(AppRoute.Vault.route) {
             VaultContent(
-                launcher = biometricLauncher,
                 mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
                 backupCoordinator = backupCoordinator,
@@ -122,10 +114,9 @@ fun PasslyNavHost(
                     onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it) },
-                    onAuthenticate = { launcher, title, subtitle, success ->
+                    onAuthenticate = { success ->
                         mainViewModel.requestAuth(onSuccess = success)
-                    },
-                    biometricLauncher = biometricLauncher
+                    }
                 )
             }
         }

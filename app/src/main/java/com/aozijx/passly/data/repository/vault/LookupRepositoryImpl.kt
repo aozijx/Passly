@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.repository.vault.LookupRepository
 import com.aozijx.passly.security.crypto.FieldEncryptor
-import com.aozijx.passly.security.session.SessionStateProvider
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -26,7 +26,7 @@ import javax.inject.Singleton
 @Singleton
 class LookupRepositoryImpl @Inject constructor(
     private val sessionManager: DatabaseSession,
-    private val sessionState: SessionStateProvider,
+    private val sessionState: VaultAccessState,
     private val fieldEncryptor: FieldEncryptor
 ) : LookupRepository {
 

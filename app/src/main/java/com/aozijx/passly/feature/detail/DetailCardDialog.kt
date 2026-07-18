@@ -32,7 +32,6 @@ import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
 import com.aozijx.passly.feature.detail.components.DetailHeader
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailEvent
@@ -52,7 +51,6 @@ import kotlinx.coroutines.flow.collectLatest
 fun DetailCardDialog(
     initialEntry: VaultEntry,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
-    biometricLauncher: BiometricPromptLauncher,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
     onDismiss: () -> Unit
@@ -190,7 +188,6 @@ fun DetailCardDialog(
                             totpEditState.isEditing = false
                             showQrDialog = true
                         },
-                        biometricLauncher = biometricLauncher,
                         mainViewModel = mainViewModel,
                         vaultViewModel = vaultViewModel,
                         onEvent = detailViewModel::onEvent
@@ -222,7 +219,6 @@ private fun LazyListScope.typeSpecificCardContent(
     onUsernameRevealed: (String?) -> Unit,
     onPasswordRevealed: (String?) -> Unit,
     onShowQrDialog: () -> Unit,
-    biometricLauncher: BiometricPromptLauncher,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
     onEvent: (DetailEvent) -> Unit
@@ -231,9 +227,8 @@ private fun LazyListScope.typeSpecificCardContent(
         when (vaultType) {
             else -> {
                 CredentialSection(
-                    biometricLauncher = biometricLauncher,
                     item = entry,
-                    onAuthenticate = { launcher, title, subtitle, onSuccess ->
+                    onAuthenticate = { onSuccess ->
                         mainViewModel.requestAuth(onSuccess = onSuccess)
                     },
                     editState = editState,

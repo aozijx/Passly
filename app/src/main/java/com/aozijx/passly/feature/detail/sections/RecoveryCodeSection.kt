@@ -12,7 +12,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailEvent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
@@ -21,11 +21,10 @@ import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun RecoveryCodeSection(
-    launcher: BiometricPromptLauncher,
     entry: VaultEntry,
     revealedRecoveryCodes: String?,
     onRecoveryCodesRevealed: (String?) -> Unit,
-    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
+    onAuthenticate: DetailAuthenticate,
     onEvent: (DetailEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -34,7 +33,6 @@ fun RecoveryCodeSection(
     val notSet = stringResource(R.string.vault_detail_not_set)
     val hidden = stringResource(R.string.hidden_mask)
     val actionHandler = DetailSectionActionHandler(
-        launcher = launcher,
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )

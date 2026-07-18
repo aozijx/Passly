@@ -17,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailScrollableContent
 import com.aozijx.passly.feature.detail.components.DetailTopBar
 import com.aozijx.passly.feature.detail.contract.DetailEvent
@@ -44,8 +44,7 @@ fun DetailScreen(
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onShowIconPicker: () -> Unit,
     onAutoUnlockTotp: (VaultEntry) -> Unit,
-    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    biometricLauncher: BiometricPromptLauncher
+    onAuthenticate: DetailAuthenticate
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -124,11 +123,7 @@ fun DetailScreen(
             totpEditState = totpEditState,
             editState = editState,
             onShowQrDialog = {
-                onAuthenticate(
-                    biometricLauncher,
-                    authQrTitle,
-                    authQrSubtitle
-                ) {
+                onAuthenticate {
                     totpEditState.isEditing = false
                     onEvent(DetailEvent.ShowIconPicker) // 借用 Event 系统处理显示逻辑（或根据需要调整）
                 }
@@ -137,8 +132,7 @@ fun DetailScreen(
             onInteraction = onUpdateInteraction,
             onUpdateVaultEntry = onUpdateVaultEntry,
             onShowIconPicker = onShowIconPicker,
-            onAuthenticate = onAuthenticate,
-            biometricLauncher = biometricLauncher
+            onAuthenticate = onAuthenticate
         )
     }
 }

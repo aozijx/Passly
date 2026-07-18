@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.auth.biometric.BiometricPromptLauncher
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailEvent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
@@ -44,8 +44,7 @@ fun DetailScrollableContent(
     onInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onShowIconPicker: () -> Unit,
-    onAuthenticate: (launcher: BiometricPromptLauncher, title: String, subtitle: String, onSuccess: () -> Unit) -> Unit,
-    biometricLauncher: BiometricPromptLauncher
+    onAuthenticate: DetailAuthenticate
 ) {
     val entry = uiState.entry ?: return
     val vaultType = uiState.vaultType
@@ -69,7 +68,6 @@ fun DetailScrollableContent(
             EntryType.LOGIN -> {
                 item {
                     CredentialSection(
-                        biometricLauncher = biometricLauncher,
                         item = entry,
                         onAuthenticate = onAuthenticate,
                         editState = editState,
@@ -86,7 +84,6 @@ fun DetailScrollableContent(
             EntryType.WIFI -> {
                 item {
                     WifiSection(
-                        launcher = biometricLauncher,
                         entry = entry,
                         editState = editState,
                         revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
@@ -101,7 +98,6 @@ fun DetailScrollableContent(
             EntryType.BANK_CARD, EntryType.CARD -> {
                 item {
                     BankCardSection(
-                        launcher = biometricLauncher,
                         entry = entry,
                         editState = editState,
                         revealedCardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER),
@@ -119,7 +115,6 @@ fun DetailScrollableContent(
             EntryType.SSH_KEY -> {
                 item {
                     SshKeySection(
-                        launcher = biometricLauncher,
                         entry = entry,
                         editState = editState,
                         revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
@@ -141,7 +136,6 @@ fun DetailScrollableContent(
             EntryType.ID_CARD, EntryType.IDENTITY, EntryType.PASSPORT, EntryType.LICENSE -> {
                 item {
                     IdCardSection(
-                        launcher = biometricLauncher,
                         entry = entry,
                         revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER),
                         onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, it) },
@@ -154,7 +148,6 @@ fun DetailScrollableContent(
             EntryType.NOTE, EntryType.DATABASE, EntryType.SERVER, EntryType.API_KEY, EntryType.CRYPTO_WALLET -> {
                 item {
                     CredentialSection(
-                        biometricLauncher = biometricLauncher,
                         item = entry,
                         onAuthenticate = onAuthenticate,
                         editState = editState,
