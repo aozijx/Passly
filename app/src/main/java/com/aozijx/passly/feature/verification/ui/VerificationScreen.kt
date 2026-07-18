@@ -1,14 +1,14 @@
 package com.aozijx.passly.feature.verification.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,13 +16,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,30 +38,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
 import com.aozijx.passly.feature.verification.VerificationViewModel
 import com.aozijx.passly.feature.verification.ui.components.BiometricUnlockButton
-import com.aozijx.passly.feature.verification.ui.components.PasswordUnlockSection
 import com.aozijx.passly.feature.verification.ui.components.SetPasswordEntrySection
-
-private enum class AuthChannel { Biometric, Password, SetPassword }
 
 @Composable
 fun VerificationScreen(
     viewModel: VerificationViewModel
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
+    val authState by viewModel.state.collectAsStateWithLifecycle()
     val methods by viewModel.methodAvailability.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val subtitle = stringResource(R.string.vault_auth_subtitle)
-
-    val mainChannel = when {
-        methods.biometric -> AuthChannel.Biometric
-        appPasswordEnabled -> AuthChannel.Password
-        else -> AuthChannel.SetPassword
-    }
+    val isAuthInProgress = authState !is AuthenticationState.Locked
 
     Box(
         modifier = Modifier
@@ -98,92 +98,114 @@ fun VerificationScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            when (mainChannel) {
-                AuthChannel.Biometric -> {
-                    AnimatedVisibility(
-                        visible = !state.showPasswordInput,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        BiometricUnlockButton(state.authInProgress) {
-                            viewModel.verifyWithBiometric()
-                        }
-                    }
-                    if (appPasswordEnabled) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        PasswordUnlockSection(
-                            appPassword = state.appPassword,
-                            showPasswordInput = state.showPasswordInput,
-                            authInProgress = state.authInProgress,
-                            onPasswordChange = viewModel::onPasswordChange,
-                            onExpandInput = viewModel::onShowPasswordInput,
-                            onUnlockRequest = viewModel::verifyWithAppPassword
-                        )
-                    }
-                }
-
-                AuthChannel.Password -> PasswordUnlockSection(
-                    appPassword = state.appPassword,
-                    showPasswordInput = state.showPasswordInput,
-                    authInProgress = state.authInProgress,
-                    onPasswordChange = viewModel::onPasswordChange,
-                    onExpandInput = viewModel::onShowPasswordInput,
-                    onUnlockRequest = viewModel::verifyWithAppPassword
+            if (methods.biometric) {
+                BiometricUnlockButton(
+                    authInProgress = isAuthInProgress,
+                    onClick = viewModel::verifyWithBiometric
                 )
+            }
 
-                AuthChannel.SetPassword -> {
-                    SetPasswordEntrySection(state.authInProgress) {
-                        viewModel.onShowSetPasswordDialog()
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
+            if (methods.appPassword) {
+                if (methods.biometric) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                PasswordUnlockButton(
+                    authInProgress = isAuthInProgress,
+                    onClick = viewModel::verifyWithAppPassword
+                )
+            }
+
+            if (!methods.biometric && !methods.appPassword) {
+                SetPasswordEntrySection(
+                    authInProgress = isAuthInProgress,
+                    onClick = viewModel::onShowSetPasswordDialog
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.auth_biometric_unavailable_password_required),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (methods.recoveryCode) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = viewModel::unlockWithRecoveryCode,
+                    enabled = !isAuthInProgress
+                ) {
                     Text(
-                        text = stringResource(R.string.auth_biometric_unavailable_password_required),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = stringResource(R.string.auth_use_recovery_code),
+                        style = MaterialTheme.typography.labelSmall
                     )
                 }
-            }
-            if (state.recoveryCodeAvailable) {
-                Spacer(modifier = Modifier.height(8.dp))
-                RecoveryCodeUnlockSection(
-                    code = state.recoveryCode.toPlainString(),
-                    expanded = state.showRecoveryCodeInput,
-                    inProgress = state.authInProgress,
-                    onToggle = viewModel::onToggleRecoveryCodeInput,
-                    onCodeChange = viewModel::onRecoveryCodeChange,
-                    onUnlock = viewModel::unlockWithRecoveryCode
-                )
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
 
-    if (state.showSetPasswordDialog) {
-        val mismatchMsg = stringResource(R.string.auth_password_mismatch)
-        val emptyMsg = stringResource(R.string.auth_password_empty)
-        val successMsg = stringResource(R.string.auth_password_set_success)
+    if (uiState.showSetPasswordDialog) {
+        var password by remember { mutableStateOf("") }
+        var confirmPassword by remember { mutableStateOf("") }
 
         AppPasswordSetDialog(
-            newPassword = state.appPassword.toPlainString(),
-            confirmPassword = state.appPasswordConfirm.toPlainString(),
-            onNewPasswordChange = viewModel::onPasswordChange,
-            onConfirmPasswordChange = viewModel::onPasswordConfirmChange,
+            newPassword = password,
+            confirmPassword = confirmPassword,
+            onNewPasswordChange = { password = it },
+            onConfirmPasswordChange = { confirmPassword = it },
             onConfirm = {
-                val pwd = state.appPassword.toPlainString()
-                val confirm = state.appPasswordConfirm.toPlainString()
-                if (pwd != confirm) {
-                    AppMessageCenter.publish(mismatchMsg)
-                    return@AppPasswordSetDialog
-                }
-                if (pwd.isEmpty()) {
-                    AppMessageCenter.publish(emptyMsg)
-                    return@AppPasswordSetDialog
-                }
-                viewModel.bootstrapAppPassword { success ->
-                    if (success) AppMessageCenter.publish(successMsg)
-                }
+                if (password != confirmPassword || password.isEmpty()) return@AppPasswordSetDialog
+                viewModel.bootstrapAppPassword(password.toCharArray())
+                password = ""
+                confirmPassword = ""
             },
-            onDismiss = viewModel::onDismissSetPasswordDialog
+            onDismiss = {
+                password = ""
+                confirmPassword = ""
+                viewModel.onDismissSetPasswordDialog()
+            }
         )
+    }
+}
+
+@Composable
+private fun PasswordUnlockButton(
+    authInProgress: Boolean,
+    onClick: () -> Unit
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        enabled = !authInProgress,
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        AnimatedContent(
+            targetState = authInProgress,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "password_loading"
+        ) { loading ->
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Key,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(
+                        text = stringResource(R.string.auth_password_unlock),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+        }
     }
 }
