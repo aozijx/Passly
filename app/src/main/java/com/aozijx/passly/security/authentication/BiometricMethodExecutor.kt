@@ -32,7 +32,9 @@ class BiometricMethodExecutor @Inject constructor(
         }
         val envelope = bootstrapStore.load(EnvelopeType.BIOMETRIC)
             ?: return failure(AuthenticationFailureCode.METHOD_UNAVAILABLE, request)
-        val preparation = cryptoFactory.createDecrypt(envelope.iv)
+        val alias = bootstrapStore.loadBiometricState().binding?.activeAlias
+            ?: cryptoFactory.legacyAlias()
+        val preparation = cryptoFactory.createDecrypt(alias, envelope.iv)
         val cipher = when (preparation) {
             is BiometricCryptoPreparation.Ready -> preparation.cipher
             BiometricCryptoPreparation.KeyMissing -> return failure(AuthenticationFailureCode.KEY_MISSING, request)

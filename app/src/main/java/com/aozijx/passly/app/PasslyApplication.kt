@@ -14,11 +14,13 @@ import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
+import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import com.aozijx.passly.security.session.AppIdleMonitor
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -39,6 +41,9 @@ class PasslyApplication : Application() {
     @Inject
     lateinit var appLifecycleObserver: AppLifecycleObserver
 
+    @Inject
+    lateinit var biometricRotationReconciler: BiometricRotationReconciler
+
     private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -56,6 +61,7 @@ class PasslyApplication : Application() {
         instance = this
 
         DiagnosticsRuntime.start(applicationContext, diagnosticsScope)
+        diagnosticsScope.launch { biometricRotationReconciler.reconcile() }
 
         try {
             System.loadLibrary("sqlcipher")
