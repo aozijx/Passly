@@ -27,8 +27,8 @@ import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.message.AppMessageHostViewModel
+import com.aozijx.passly.feature.verification.VerificationScreen
 import com.aozijx.passly.feature.verification.VerificationViewModel
-import com.aozijx.passly.feature.verification.ui.VerificationScreen
 import com.aozijx.passly.ui.theme.AppTheme
 
 @Composable

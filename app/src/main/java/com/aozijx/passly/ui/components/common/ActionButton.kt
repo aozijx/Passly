@@ -1,0 +1,81 @@
+package com.aozijx.passly.ui.components.common
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun ActionButton(
+    modifier: Modifier = Modifier,
+    progress: Boolean = false,
+    success: Boolean = false,
+    icon: ImageVector? = null,
+    text: String = "Unknown",
+    resultText: String = "Success",
+    enabled: Boolean = true,
+    content: @Composable (() -> Unit)? = null,
+    onClick: () -> Unit = {}
+) {
+    FilledTonalButton(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(46.dp),
+        onClick = onClick,
+        enabled = enabled && !progress && !success,
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        AnimatedContent(
+            targetState = progress to success,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "ActionButtonContent"
+        ) { (loading, isSuccess) ->
+            when {
+                loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                content != null && !isSuccess -> {
+                    content()
+                }
+
+                else -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (icon != null) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                        }
+                        Text(
+                            text = if (isSuccess) resultText else text,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

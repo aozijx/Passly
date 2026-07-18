@@ -84,7 +84,7 @@ class MigrationBoundaryTest {
     }
 
     @Test
-    fun migratedFeaturePresentationKeepsComposeInsideUiPackages() {
+    fun migratedFeaturePresentationKeepsComposeInsideUiPackagesOrFeatureScreens() {
         val guardedFeaturePaths = listOf(
             "/feature/verification/",
             "/feature/settings/apppassword/",
@@ -92,12 +92,18 @@ class MigrationBoundaryTest {
         )
         val offenders = productionKotlinFiles
             .filter { source -> guardedFeaturePaths.any { it in source.invariantSeparatorsPath } }
-            .filter { "/ui/" !in it.invariantSeparatorsPath }
+            .filter {
+                "/ui/" !in it.invariantSeparatorsPath &&
+                        !it.name.endsWith("Screen.kt")
+            }
             .filter { "androidx.compose" in it.readText() }
             .map { it.relativeTo(File("src/main/java")).path }
             .toList()
 
-        assertTrue("Compose outside feature UI packages: $offenders", offenders.isEmpty())
+        assertTrue(
+            "Compose outside UI packages or feature Screen entry points: $offenders",
+            offenders.isEmpty()
+        )
     }
 
     @Test

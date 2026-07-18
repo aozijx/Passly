@@ -65,8 +65,8 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                         KdfAlgorithm.ARGON2ID
                     )
                 }
-                session.markAuthenticated()
                 authenticationManager.refreshAvailability()
+                session.markAuthenticated()
                 AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
             } finally {
                 rawKey.fill(0)
