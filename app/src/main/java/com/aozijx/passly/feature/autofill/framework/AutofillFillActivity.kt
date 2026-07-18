@@ -13,13 +13,19 @@ import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.feature.autofill.AutofillCandidateBottomSheet
+import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
+import com.aozijx.passly.ui.authentication.AuthenticationHost
 import com.aozijx.passly.ui.common.FragmentActivityBiometricLauncher
 import com.aozijx.passly.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class AutofillFillActivity : FragmentActivity() {
+
+    @Inject
+    lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
     private val viewModel: AutofillFillViewModel by viewModels()
 
@@ -28,6 +34,12 @@ class AutofillFillActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
+
+        setContent {
+            AppTheme {
+                AuthenticationHost(this, authenticationHostRegistry) {}
+            }
+        }
 
         val request = parseIntent(intent)
 
@@ -106,13 +118,15 @@ class AutofillFillActivity : FragmentActivity() {
     private fun showBottomSheet(candidates: List<ResolvedCandidate>) {
         setContent {
             AppTheme {
-                AutofillCandidateBottomSheet(
-                    candidates = candidates,
-                    onCandidateSelected = { candidate ->
-                        viewModel.selectCandidate(candidate, biometricLauncher)
-                    },
-                    onCancel = { finishWithResult(null) }
-                )
+                AuthenticationHost(this, authenticationHostRegistry) {
+                    AutofillCandidateBottomSheet(
+                        candidates = candidates,
+                        onCandidateSelected = { candidate ->
+                            viewModel.selectCandidate(candidate, biometricLauncher)
+                        },
+                        onCancel = { finishWithResult(null) }
+                    )
+                }
             }
         }
     }

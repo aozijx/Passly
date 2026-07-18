@@ -4,17 +4,25 @@ import android.os.Build
 import android.os.Bundle
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.compose.setContent
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.log.Logcat
 import com.aozijx.passly.service.autofill.credential.ModernCredentialService
+import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
+import com.aozijx.passly.ui.authentication.AuthenticationHost
+import com.aozijx.passly.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @AndroidEntryPoint
 class CredentialResponseActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
     private val viewModel: CredentialResponseViewModel by lazy {
         ViewModelProvider(this)[CredentialResponseViewModel::class.java]
@@ -26,6 +34,12 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        setContent {
+            AppTheme {
+                AuthenticationHost(this, authenticationHostRegistry) {}
+            }
+        }
 
         lifecycleScope.launch {
             viewModel.state.collectLatest { state ->

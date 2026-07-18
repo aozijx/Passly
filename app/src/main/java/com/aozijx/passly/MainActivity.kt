@@ -15,6 +15,8 @@ import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.main.ui.MainScreen
+import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
+import com.aozijx.passly.ui.authentication.AuthenticationHost
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.system.exitProcess
@@ -25,6 +27,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var backupCoordinator: BackupCoordinator
+
+    @Inject
+    lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
@@ -56,12 +61,14 @@ class MainActivity : AppCompatActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         setContent {
-            MainScreen(
-                activity = this,
-                viewModel = viewModel,
-                sensorController = sensorController,
-                backupCoordinator = backupCoordinator
-            )
+            AuthenticationHost(this, authenticationHostRegistry) {
+                MainScreen(
+                    activity = this,
+                    viewModel = viewModel,
+                    sensorController = sensorController,
+                    backupCoordinator = backupCoordinator
+                )
+            }
         }
     }
 
