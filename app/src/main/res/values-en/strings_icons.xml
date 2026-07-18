@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="icon_bank">Bank</string>
+    <string name="icon_card">Credit card</string>
+    <string name="icon_wallet">Wallet</string>
+    <string name="icon_bill">Bill</string>
+    <string name="icon_savings">Savings</string>
+    <string name="icon_trending">Investment</string>
+    <string name="icon_person">Personal</string>
+    <string name="icon_privacy">Privacy</string>
+    <string name="icon_social">Social</string>
+    <string name="icon_groups">Groups</string>
+    <string name="icon_badge">ID badge</string>
+    <string name="icon_key">Key</string>
+    <string name="icon_email">Email</string>
+    <string name="icon_game">Game</string>
+    <string name="icon_video">Video</string>
+    <string name="icon_movie">Movies</string>
+    <string name="icon_shopping">Shopping</string>
+    <string name="icon_bag">Shopping bag</string>
+    <string name="icon_live">Live stream</string>
+    <string name="icon_camera">Camera</string>
+    <string name="icon_star">Favorite</string>
+    <string name="icon_heart">Liked</string>
+    <string name="icon_medical">Medical</string>
+    <string name="icon_health">Health</string>
+    <string name="icon_cloud">Cloud</string>
+    <string name="icon_note">Note</string>
+    <string name="icon_book">Diary</string>
+    <string name="icon_train">Train</string>
+    <string name="icon_flight">Flight</string>
+    <string name="icon_school">School</string>
+    <string name="icon_work">Work</string>
+    <string name="icon_code">Code</string>
+    <string name="icon_web">Website</string>
+    <string name="icon_wifi">WiFi</string>
+    <string name="icon_lock">Lock</string>
+    <string name="icon_shield">Shield</string>
+    <string name="icon_apps">Apps</string>
+</resources>

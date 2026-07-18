@@ -23,7 +23,6 @@
     <string name="title">标题</string>
     <string name="remark">备注</string>
     <string name="default_label">默认</string>
-    <string name="category_label">分类</string>
     <string name="category_optional">分类 (可选)</string>
     <string name="edit_field">编辑%s</string>
     <string name="hidden_mask">••••••••</string>
@@ -223,7 +222,6 @@
     <string name="vault_detail_login_credentials">登录凭据</string>
     <string name="vault_detail_username">用户名</string>
     <string name="vault_detail_password">密码</string>
-    <string name="vault_detail_notes">备注</string>
     <string name="vault_detail_add_notes">添加备注…</string>
     <string name="vault_detail_no_notes">暂无备注</string>
     <string name="vault_detail_history_label">活动日志</string>
@@ -278,13 +276,18 @@
 
     <!-- 设置: 外观 -->
     <string name="settings_group_theme">主题</string>
-    <string name="settings_dark_mode">深色模式</string>
-    <string name="settings_dark_mode_on">当前为深色主题</string>
-    <string name="settings_dark_mode_off">当前为浅色主题</string>
+    <string name="settings_theme_mode">外观模式</string>
+    <string name="settings_theme_mode_light">浅色</string>
+    <string name="settings_theme_mode_dark">深色</string>
+    <string name="settings_theme_mode_choose">选择外观模式</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_choose">选择语言</string>
+    <string name="settings_language_chinese">简体中文</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_japanese">日本語</string>
     <string name="settings_dynamic_color">动态取色</string>
-    <string name="settings_dynamic_color_desc">使用系统壁纸颜色作为应用主题</string>
+    <string name="settings_dynamic_color_desc">使用壁纸配色</string>
     <string name="settings_theme_color">主题色</string>
-    <string name="settings_theme_color_default">默认</string>
     <string name="settings_theme_color_blue">蓝色</string>
     <string name="settings_theme_color_green">绿色</string>
     <string name="settings_theme_color_red">红色</string>
@@ -293,6 +296,38 @@
     <string name="settings_theme_color_teal">青色</string>
     <string name="settings_theme_color_pink">粉色</string>
     <string name="settings_theme_color_select_title">选择主题色</string>
+
+    <!-- 设置首页 -->
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_section_security">安全</string>
+    <string name="settings_section_features">功能</string>
+    <string name="settings_section_data">数据</string>
+    <string name="settings_section_other">其他</string>
+    <string name="settings_page_appearance">主题与语言</string>
+    <string name="settings_page_appearance_summary">模式、语言、配色</string>
+    <string name="settings_page_interface">界面</string>
+    <string name="settings_page_interface_summary">状态栏、滚动、卡片</string>
+    <string name="settings_page_security">解锁与锁定</string>
+    <string name="settings_page_security_summary">密码、生物识别、自动锁定</string>
+    <string name="settings_page_privacy">隐私保护</string>
+    <string name="settings_page_privacy_summary">防截屏、翻转锁定</string>
+    <string name="settings_page_interaction">操作与填充</string>
+    <string name="settings_page_interaction_summary">滑动操作、自动填充</string>
+    <string name="settings_page_data">备份与下载</string>
+    <string name="settings_page_data_summary">图标下载、备份目录</string>
+    <string name="settings_page_recovery_code">恢复码</string>
+    <string name="settings_page_recovery_code_summary">紧急解锁保险库</string>
+    <string name="settings_page_general">通用</string>
+    <string name="settings_page_general_summary">消息、缓存、关于</string>
+    <string name="settings_messages">消息</string>
+    <string name="settings_messages_general">应用消息</string>
+    <string name="settings_messages_general_summary">操作结果与错误</string>
+    <string name="settings_messages_icon_download">图标下载</string>
+    <string name="settings_messages_icon_download_summary">下载结果</string>
+    <string name="settings_messages_clipboard">剪贴板清除</string>
+    <string name="settings_messages_clipboard_summary">清除敏感内容后提醒</string>
+    <string name="settings_messages_app_close">应用关闭</string>
+    <string name="settings_messages_app_close_summary">翻转关闭前提醒</string>
 
     <!-- 恢复码 -->
     <string name="settings_recovery_code_title">恢复码</string>
@@ -303,7 +338,6 @@
     <string name="settings_recovery_code_auth_subtitle">需要验证身份</string>
     <string name="settings_recovery_code_verify_title">验证恢复码</string>
     <string name="settings_recovery_code_verify_hint">粘贴恢复码进行验证</string>
-    <string name="settings_recovery_code_verify_btn">验证</string>
     <string name="settings_recovery_code_verify_valid">恢复码有效</string>
     <string name="settings_recovery_code_verify_invalid">恢复码无效</string>
     <string name="settings_recovery_code_dismiss">我已记下</string>
@@ -312,8 +346,6 @@
     <string name="settings_recovery_code_saved">已保存到设备</string>
     <string name="settings_recovery_code_regenerate">重新生成恢复码</string>
     <string name="settings_recovery_code_regenerate_confirm_message">旧的恢复码将立即失效，确定要重新生成吗？</string>
-    <string name="settings_recovery_code_regenerate_confirm">确定</string>
-    <string name="settings_recovery_code_cancel">取消</string>
     <string name="auth_use_recovery_code">使用恢复码</string>
     <string name="auth_recovery_code_label">恢复码</string>
     <string name="auth_recovery_code_unlock">解锁保险库</string>
@@ -332,44 +364,6 @@
     <string name="settings_card_style_password_desc">强调凭据识别</string>
     <string name="settings_card_style_totp_name">TOTP卡片</string>
     <string name="settings_card_style_totp_desc">突出验证码与进度环</string>
-
-    <string name="icon_bank">银行</string>
-    <string name="icon_card">信用卡</string>
-    <string name="icon_wallet">钱包</string>
-    <string name="icon_bill">账单</string>
-    <string name="icon_savings">储蓄</string>
-    <string name="icon_trending">理财</string>
-    <string name="icon_person">个人</string>
-    <string name="icon_privacy">隐私</string>
-    <string name="icon_social">社交</string>
-    <string name="icon_groups">群组</string>
-    <string name="icon_badge">证件</string>
-    <string name="icon_key">密钥</string>
-    <string name="icon_email">邮件</string>
-    <string name="icon_game">游戏</string>
-    <string name="icon_video">视频</string>
-    <string name="icon_movie">影视</string>
-    <string name="icon_shopping">购物</string>
-    <string name="icon_bag">购物袋</string>
-    <string name="icon_live">直播</string>
-    <string name="icon_camera">摄像</string>
-    <string name="icon_star">收藏</string>
-    <string name="icon_heart">心仪</string>
-    <string name="icon_medical">医疗</string>
-    <string name="icon_health">健康</string>
-    <string name="icon_cloud">云端</string>
-    <string name="icon_note">笔记</string>
-    <string name="icon_book">日记</string>
-    <string name="icon_train">高铁</string>
-    <string name="icon_flight">飞机</string>
-    <string name="icon_school">校园</string>
-    <string name="icon_work">工作</string>
-    <string name="icon_code">代码</string>
-    <string name="icon_web">网页</string>
-    <string name="icon_wifi">WiFi</string>
-    <string name="icon_lock">锁定</string>
-    <string name="icon_shield">防护</string>
-    <string name="icon_apps">应用</string>
 
     <!-- 类别 -->
     <string name="category_autofill">自动填充</string>
@@ -515,13 +509,9 @@
     </string-array>
 
     <!-- 设置: 数据管理 -->
-    <string name="settings_download_icons">下载图标</string>
-    <string name="settings_download_icons_subtitle">自动获取网站图标</string>
-    <string name="settings_favicon_whitelist">图标下载白名单</string>
-    <string name="settings_favicon_whitelist_hint">仅允许从以下域名下载图标</string>
-    <string name="settings_favicon_whitelist_placeholder">输入域名，回车添加</string>
-    <string name="settings_favicon_whitelist_expand_hint">点击展开添加</string>
-    <string name="settings_favicon_whitelist_item_count">%1$d 个域名</string>
+    <string name="settings_data_download">下载</string>
+    <string name="settings_download_icons">自动下载图标</string>
+    <string name="settings_download_icons_subtitle">保存网站图标</string>
 
     <!-- 日志管理 -->
     <string name="log_management_title">日志管理</string>
