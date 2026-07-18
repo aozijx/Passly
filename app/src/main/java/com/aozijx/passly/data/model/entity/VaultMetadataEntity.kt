@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.domain.model.entry.EntryType
+import com.github.f4b6a3.uuid.UuidCreator
 
 @Entity(
     tableName = DatabaseSchema.TABLE_METADATA,
@@ -18,7 +19,7 @@ import com.aozijx.passly.domain.model.entry.EntryType
 data class VaultMetadataEntity(
     // 条目唯一标识
     @PrimaryKey
-    val entryId: String = "",
+    val entryId: String = UuidCreator.getTimeOrderedEpoch().toString(),
 
     // 条目版本，用于 History / Sync / Conflict
     val entryVersion: Int = 1,

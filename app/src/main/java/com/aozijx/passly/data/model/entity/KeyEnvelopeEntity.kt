@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.data.local.database.DatabaseSchema
+import com.github.f4b6a3.uuid.UuidCreator
 
 @Entity(
     tableName = DatabaseSchema.TABLE_KEY_ENVELOPE,
@@ -15,7 +16,7 @@ import com.aozijx.passly.data.local.database.DatabaseSchema
 data class KeyEnvelopeEntity(
     /* 信封唯一标识 */
     @PrimaryKey
-    val envelopeId: String = "",
+    val envelopeId: String = UuidCreator.getTimeOrderedEpoch().toString(),
 
     // 算法版本，用于未来加密算法迁移
     val algorithmVersion: Int = 1,

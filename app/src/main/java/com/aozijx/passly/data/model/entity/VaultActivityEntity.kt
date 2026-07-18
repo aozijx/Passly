@@ -7,6 +7,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.github.f4b6a3.uuid.UuidCreator
 
 @Entity(
     tableName = DatabaseSchema.TABLE_ACTIVITY,
@@ -26,7 +27,7 @@ import com.aozijx.passly.domain.model.activity.ActivityType
 data class VaultActivityEntity(
     // 活动唯一标识
     @PrimaryKey
-    val activityId: String = "",
+    val activityId: String = UuidCreator.getTimeOrderedEpoch().toString(),
 
     // 关联条目 ID
     val entryId: String,
