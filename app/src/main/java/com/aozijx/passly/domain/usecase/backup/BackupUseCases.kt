@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.usecase.backup
 
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.backup.ImportMode
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import java.io.File
 import javax.inject.Inject
@@ -15,18 +15,18 @@ class BackupUseCases @Inject constructor(private val repository: BackupRepositor
     ): AppResult<Unit> = repository.exportEncryptedBackup(uri, password, includeImages)
 
     suspend fun importBackup(
-        uri: String, password: CharArray, mode: BackupImportMode
+        uri: String, password: CharArray, mode: ImportMode
     ): AppResult<Unit> = repository.importBackup(uri, password, mode)
 
     suspend fun exportPlainBackup(uri: String): AppResult<Unit> =
         repository.exportPlainBackup(uri)
 
-    suspend fun importPlainBackup(uri: String, mode: BackupImportMode): AppResult<Unit> =
+    suspend fun importPlainBackup(uri: String, mode: ImportMode): AppResult<Unit> =
         repository.importPlainBackup(uri, mode)
 
     suspend fun exportEmergencyBackup(): AppResult<File> =
         repository.exportEmergencyBackup()
 
-    suspend fun testDirectoryWritePermission(directoryUri: String): AppResult<Unit> =
-        repository.testDirectoryWritePermission(directoryUri)
+    suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
+        repository.checkDirectoryWritable(uri)
 }

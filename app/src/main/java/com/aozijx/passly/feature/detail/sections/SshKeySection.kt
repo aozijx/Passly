@@ -61,7 +61,7 @@ fun SshKeySection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.ssh_fingerprint),
-            value = entry.username.ifEmpty { stringResource(R.string.ssh_default_fingerprint) },
+            value = entry.username.ifEmpty { stringResource(R.string.not_set) },
             isRevealed = true,
             onCopy = {
                 ClipboardUtils.copy(context, entry.username)

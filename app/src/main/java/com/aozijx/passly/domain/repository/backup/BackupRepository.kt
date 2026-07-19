@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.repository.backup
 
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.backup.ImportMode
 import java.io.File
 
 /**
@@ -34,7 +34,7 @@ interface BackupRepository {
     suspend fun importBackup(
         uri: String,
         password: CharArray,
-        mode: BackupImportMode
+        config: ImportMode
     ): AppResult<Unit>
 
     /**
@@ -42,11 +42,11 @@ interface BackupRepository {
      */
     suspend fun importPlainBackup(
         uri: String,
-        mode: BackupImportMode
+        config: ImportMode
     ): AppResult<Unit>
 
     /**
      * 测试目录写入权限。
      */
-    suspend fun testDirectoryWritePermission(directoryUri: String): AppResult<Unit>
+    suspend fun checkDirectoryWritable(uri: String): AppResult<Unit>
 }

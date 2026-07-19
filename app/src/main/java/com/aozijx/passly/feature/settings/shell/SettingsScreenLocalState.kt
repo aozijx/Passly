@@ -1,16 +1,15 @@
 package com.aozijx.passly.feature.settings.shell
 
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.feature.backup.internal.BackupPathSettingsConfig
 import com.aozijx.passly.feature.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.feature.settings.internal.AppPasswordDialogState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.rememberModalBottomSheetState
 
 @OptIn(ExperimentalMaterial3Api::class)
 internal class SettingsScreenLocalState {
@@ -100,11 +99,6 @@ internal class SettingsScreenLocalState {
         }
         clearAppPasswordInputs()
     }
-
-    fun backupPathLabel(rawUri: String?): String = BackupPathSettingsConfig.displayValue(rawUri)
-
-    fun lastExportFileLabel(fileName: String?): String =
-        BackupPathSettingsConfig.displayRecentFileName(fileName)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

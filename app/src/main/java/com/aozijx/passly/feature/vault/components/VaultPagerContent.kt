@@ -27,7 +27,6 @@ import com.aozijx.passly.feature.vault.model.VaultTab
 import com.aozijx.passly.ui.components.widgets.SwipeDirection
 import com.aozijx.passly.ui.components.widgets.SwipeToAction
 import com.aozijx.passly.ui.components.widgets.createSwipeAction
-import kotlin.collections.getOrNull
 
 @Composable
 fun VaultPagerContent(
@@ -70,7 +69,7 @@ fun VaultPagerContent(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(60.dp))
                     Spacer(modifier = Modifier.navigationBarsPadding())
                 }
             }

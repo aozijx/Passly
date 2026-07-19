@@ -67,7 +67,7 @@ internal fun LoginDomainIconCard(
     var domainInput by remember(entry.associatedDomain) {
         mutableStateOf(TextFieldValue(entry.associatedDomain.orEmpty()))
     }
-    val notSet = stringResource(R.string.vault_detail_not_set)
+    val notSet = stringResource(R.string.not_set)
 
     InfoGroupCard(title = stringResource(R.string.vault_detail_domain_and_icon)) {
         Column(

@@ -1,11 +1,9 @@
 package com.aozijx.passly.feature.settings.datamanagement
 
-import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.usecase.settings.DeviceSettingsUseCases
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.feature.backup.BackupCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,22 +15,19 @@ import javax.inject.Inject
 data class DataUiState(
     val isAutoDownloadIcons: Boolean = true,
     val directoryUri: String? = null,
-    val lastExportFileName: String? = null,
-    val backupMessage: String? = null,
+    val lastExportFileName: String? = null
 )
 
 sealed interface DataUiAction {
     data class SetAutoDownloadIcons(val enabled: Boolean) : DataUiAction
     data class SetBackupDirectoryUri(val uri: String) : DataUiAction
     data object ClearBackupDirectory : DataUiAction
-    data object ClearBackupMessage : DataUiAction
 }
 
 @HiltViewModel
 class DataViewModel @Inject constructor(
     private val portableSettingsUseCases: PortableSettingsUseCases,
-    private val deviceSettingsUseCases: DeviceSettingsUseCases,
-    private val backupCoordinator: BackupCoordinator
+    private val deviceSettingsUseCases: DeviceSettingsUseCases
 ) : ViewModel() {
 
     private val _config = MutableStateFlow(DataUiState())
@@ -43,14 +38,12 @@ class DataViewModel @Inject constructor(
             combine(
                 portableSettingsUseCases.isAutoDownloadIcons,
                 deviceSettingsUseCases.backupDirectoryUri,
-                deviceSettingsUseCases.lastBackupExportFileName,
-                snapshotFlow { backupCoordinator.backupMessage }
-            ) { adi, bdu, lef, bm ->
+                deviceSettingsUseCases.lastBackupExportFileName
+            ) { adi, bdu, lef ->
                 DataUiState(
                     isAutoDownloadIcons = adi,
                     directoryUri = bdu,
-                    lastExportFileName = lef,
-                    backupMessage = bm,
+                    lastExportFileName = lef
                 )
             }.collect { _config.value = it }
         }
@@ -69,11 +62,6 @@ class DataViewModel @Inject constructor(
             is DataUiAction.ClearBackupDirectory -> viewModelScope.launch {
                 deviceSettingsUseCases.clearBackupDirectoryUri()
             }
-
-            is DataUiAction.ClearBackupMessage -> backupCoordinator.clearBackupMessage()
         }
     }
-
-    fun testBackupDirectoryWritePermission(uri: String?) =
-        backupCoordinator.testBackupDirectoryWritePermission(uri)
 }

@@ -5,14 +5,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
-import com.aozijx.passly.R
-import com.aozijx.passly.feature.backup.BackupCoordinator
+import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.components.PlainExportDialog
 import com.aozijx.passly.feature.backup.components.PlainExportDialogType
+import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
 import com.aozijx.passly.feature.vault.VaultViewModel
@@ -21,10 +20,8 @@ import com.aozijx.passly.ui.navigation.PasslyNavHost
 @Composable
 internal fun AppMainContent(
     mainViewModel: MainViewModel,
-    backupCoordinator: BackupCoordinator,
-    onPlainExportPickerRequest: (String) -> Unit
+    backupViewModel: BackupViewModel
 ) {
-    val context = LocalContext.current
     val vaultViewModel: VaultViewModel = hiltViewModel()
     val dataViewModel: DataViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
@@ -36,7 +33,7 @@ internal fun AppMainContent(
         navController = navController,
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        backupCoordinator = backupCoordinator,
+        backupViewModel = backupViewModel,
         onPlainExportClick = { showPlainExportRiskDialog = true },
         isDatabaseInitializing = mainUiState.isDatabaseInitializing
     )
@@ -48,13 +45,11 @@ internal fun AppMainContent(
                 showPlainExportRiskDialog = false
                 mainViewModel.requestAuth(
                     onSuccess = {
-                        backupCoordinator.issuePlainExportToken()
-                        backupCoordinator.exportPlainBackup(
-                            context = context,
-                            dirUri = dataState.directoryUri,
-                            onPickerRequest = { fileName ->
-                                onPlainExportPickerRequest(fileName)
-                            }
+                        backupViewModel.onIntent(BackupIntent.IssuePlainExportToken)
+                        backupViewModel.onIntent(
+                            BackupIntent.ExportPlainBackup(
+                                dirUri = dataState.directoryUri
+                            )
                         )
                     }
                 )

@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordAction
@@ -42,6 +43,7 @@ fun SettingsNavGraph(
     val interactionState by interactionViewModel.config.collectAsStateWithLifecycle()
     val dataViewModel: DataViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
+    val backupViewModel: BackupViewModel = hiltViewModel()
 
     val authDecryptTitle = stringResource(R.string.vault_auth_decrypt_title)
     val setAppPasswordSubtitle =
@@ -59,12 +61,6 @@ fun SettingsNavGraph(
         )
     }
 
-    LaunchedEffect(dataState.backupMessage) {
-        dataState.backupMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            dataViewModel.onAction(DataUiAction.ClearBackupMessage)
-        }
-    }
     LaunchedEffect(Unit) {
         settingsViewModel.effects.collect { effect ->
             val message = when (effect) {
@@ -118,7 +114,8 @@ fun SettingsNavGraph(
             context = context,
             localState = localState,
             interactionViewModel = interactionViewModel,
-            dataViewModel = dataViewModel
+            dataViewModel = dataViewModel,
+            backupViewModel = backupViewModel
         )
     }
 

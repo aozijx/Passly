@@ -32,7 +32,7 @@ fun PasskeySection(
 ) {
     val context = LocalContext.current
     val copied = stringResource(R.string.vault_detail_copied)
-    val notSet = stringResource(R.string.vault_detail_not_set)
+    val notSet = stringResource(R.string.not_set)
     val hidden = stringResource(R.string.hidden_mask)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,

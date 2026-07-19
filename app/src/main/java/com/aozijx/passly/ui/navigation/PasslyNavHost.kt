@@ -18,7 +18,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.backup.BackupCoordinator
+import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.page.DetailScreen
@@ -39,7 +39,7 @@ fun PasslyNavHost(
     navController: NavHostController,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    backupCoordinator: BackupCoordinator,
+    backupViewModel: BackupViewModel,
     onPlainExportClick: () -> Unit,
     isDatabaseInitializing: Boolean = false
 ) {
@@ -62,7 +62,7 @@ fun PasslyNavHost(
             VaultContent(
                 mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
-                backupCoordinator = backupCoordinator,
+                backupViewModel = backupViewModel,
                 backupDirectoryUri = dataState.directoryUri,
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)

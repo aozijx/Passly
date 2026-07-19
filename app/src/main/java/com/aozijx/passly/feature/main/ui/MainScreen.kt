@@ -11,38 +11,46 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.R
+import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
-import com.aozijx.passly.feature.backup.BackupCoordinator
+import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.components.PlainExportDialog
 import com.aozijx.passly.feature.backup.components.PlainExportDialogType
+import com.aozijx.passly.feature.backup.contract.BackupEffect
+import com.aozijx.passly.feature.backup.contract.BackupIntent
+import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.main.MainConfigViewModel
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
-import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.message.AppMessageHostViewModel
 import com.aozijx.passly.feature.verification.VerificationScreen
 import com.aozijx.passly.feature.verification.VerificationViewModel
+import com.aozijx.passly.service.backup.BackupImportIconSyncForegroundService
 import com.aozijx.passly.ui.theme.AppTheme
 
 @Composable
 internal fun MainScreen(
     activity: FragmentActivity,
     viewModel: MainViewModel,
-    sensorController: MainSensorController,
-    backupCoordinator: BackupCoordinator
+    sensorController: MainSensorController
 ) {
     val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val mainConfigViewModel: MainConfigViewModel = hiltViewModel()
     val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
+
+    val backupViewModel: BackupViewModel = hiltViewModel()
+    val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
 
     val verificationViewModel: VerificationViewModel = hiltViewModel()
     val messageHostViewModel: AppMessageHostViewModel = hiltViewModel()
@@ -57,17 +65,60 @@ internal fun MainScreen(
         }
     }
 
-    LaunchedEffect(backupCoordinator.backupMessage) {
-        backupCoordinator.backupMessage?.let {
-            AppMessageCenter.publish(it, longDuration = true)
-            backupCoordinator.clearBackupMessage()
-        }
-    }
+    val exportSuccessMsg = stringResource(R.string.backup_export_success)
+    val importSuccessMsg = stringResource(R.string.backup_import_success)
+    val permOkMsg = stringResource(R.string.backup_directory_permission_ok)
+    val plainExportSuccessMsg = stringResource(R.string.backup_plain_export_success)
+    val emergencyExportSuccessMsg = stringResource(R.string.backup_emergency_export_success)
+    val unknownErrorMsg = stringResource(R.string.backup_error_unknown)
 
     val plainExportPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
-        uri?.let { backupCoordinator.exportPlainBackupToUri(it) }
+        uri?.let { backupViewModel.onIntent(BackupIntent.ExportPlainBackupToUri(it)) }
+    }
+
+    // --- 收集 BackupEffect ---
+    LaunchedEffect(backupViewModel) {
+        backupViewModel.effect.collect { effect ->
+            when (effect) {
+                is BackupEffect.ShowError -> {
+                    val msg = effect.error.toUiMessage(unknownErrorMsg)
+                    AppMessageCenter.publish(msg, longDuration = true)
+                }
+
+                is BackupEffect.ShowPlainExportPicker -> plainExportPickerLauncher.launch(effect.fileName)
+                BackupEffect.StartImportSyncService -> {
+                    BackupImportIconSyncForegroundService.start(context)
+                }
+
+                BackupEffect.RequestAuth -> Unit // 由 VaultDialogs 处理
+            }
+        }
+    }
+
+    LaunchedEffect(backupState.status) {
+        when (val status = backupState.status) {
+            is BackupOperationStatus.Success -> {
+                val msg = when (status.type) {
+                    BackupOperationStatus.OperationType.EXPORT -> exportSuccessMsg
+                    BackupOperationStatus.OperationType.IMPORT -> importSuccessMsg
+                    BackupOperationStatus.OperationType.PLAIN_EXPORT -> plainExportSuccessMsg
+                    BackupOperationStatus.OperationType.EMERGENCY_EXPORT -> emergencyExportSuccessMsg
+                    BackupOperationStatus.OperationType.PERMISSION_CHECK -> permOkMsg
+                }
+                AppMessageCenter.publish(msg, longDuration = true)
+                backupViewModel.onIntent(BackupIntent.ResetBackupStatus)
+            }
+
+            is BackupOperationStatus.Failure -> {
+                val errorMsg = backupState.error?.toUiMessage(unknownErrorMsg) ?: unknownErrorMsg
+                AppMessageCenter.publish(errorMsg, longDuration = true)
+                backupViewModel.onIntent(BackupIntent.ResetBackupStatus)
+            }
+
+            else -> Unit
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -108,7 +159,7 @@ internal fun MainScreen(
                     PlainExportDialog(
                         type = PlainExportDialogType.DatabaseError,
                         onExportBackup = {
-                            viewModel.handleIntent(MainIntent.ExportEmergencyBackup(context))
+                            backupViewModel.onIntent(BackupIntent.ExportEmergencyBackup)
                         },
                         onResetOrCancel = {
                             AppMessageCenter.publish(
@@ -126,10 +177,8 @@ internal fun MainScreen(
                 "main" -> {
                     AppMainContent(
                         mainViewModel = viewModel,
-                        backupCoordinator = backupCoordinator,
-                        onPlainExportPickerRequest = { fileName ->
-                            plainExportPickerLauncher.launch(fileName)
-                        })
+                        backupViewModel = backupViewModel
+                    )
                 }
 
                 else -> {

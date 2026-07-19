@@ -10,7 +10,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
-import com.aozijx.passly.feature.backup.BackupCoordinator
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
@@ -24,9 +23,6 @@ import kotlin.system.exitProcess
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
-
-    @Inject
-    lateinit var backupCoordinator: BackupCoordinator
 
     @Inject
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
@@ -65,8 +61,7 @@ class MainActivity : AppCompatActivity() {
                 MainScreen(
                     activity = this,
                     viewModel = viewModel,
-                    sensorController = sensorController,
-                    backupCoordinator = backupCoordinator
+                    sensorController = sensorController
                 )
             }
         }

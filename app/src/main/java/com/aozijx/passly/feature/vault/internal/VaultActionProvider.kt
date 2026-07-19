@@ -21,7 +21,8 @@ import com.aozijx.passly.domain.model.entry.FieldKey
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
-import com.aozijx.passly.feature.backup.BackupCoordinator
+import com.aozijx.passly.feature.backup.BackupViewModel
+import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.vault.VaultViewModel
@@ -39,7 +40,7 @@ class VaultActionProvider(
 fun rememberVaultActionProvider(
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    backupCoordinator: BackupCoordinator,
+    backupViewModel: BackupViewModel,
     backupDirectoryUri: String?,
     uiState: VaultUiState,
     onShowDetail: (VaultEntry) -> Unit,
@@ -114,25 +115,31 @@ fun rememberVaultActionProvider(
     val exportLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.CreateDocument("application/octet-stream")) { uri: Uri? ->
             uri?.let { selectedUri ->
-                backupCoordinator.startExport(
-                    selectedUri, fileNameHint = pendingManualExportFileName
+                backupViewModel.onIntent(
+                    BackupIntent.StartExport(
+                        uri = selectedUri,
+                        fileNameHint = pendingManualExportFileName
+                    )
                 )
             }
             pendingManualExportFileName = null
         }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { backupCoordinator.startImport(it) }
+        it?.let { backupViewModel.onIntent(BackupIntent.StartImport(it)) }
     }
 
-    val onExportClick = remember(backupCoordinator, exportLauncher) {
+    val onExportClick = remember(backupViewModel, exportLauncher, backupDirectoryUri) {
         {
-            val started = backupCoordinator.tryStartExportInConfiguredDirectory(
-                backupDirectoryUri
-            )
-            if (!started) {
-                val manualFileName = backupCoordinator.nextBackupFileName()
+            if (backupDirectoryUri.isNullOrBlank()) {
+                val manualFileName = backupViewModel.buildBackupFileName()
                 pendingManualExportFileName = manualFileName
                 exportLauncher.launch(manualFileName)
+            } else {
+                backupViewModel.onIntent(
+                    BackupIntent.TryStartExportInConfiguredDirectory(
+                        backupDirectoryUri
+                    )
+                )
             }
         }
     }

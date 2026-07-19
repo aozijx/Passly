@@ -56,7 +56,7 @@ fun AssociatedInfoSection(
     var localDomain by remember(entry.associatedDomain) {
         mutableStateOf(entry.associatedDomain.orEmpty())
     }
-    val notSet = stringResource(R.string.vault_detail_not_set)
+    val notSet = stringResource(R.string.not_set)
 
     Column(
         modifier = modifier.fillMaxWidth(),

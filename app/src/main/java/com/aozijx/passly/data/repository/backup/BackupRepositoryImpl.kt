@@ -14,7 +14,7 @@ import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.data.repository.backup.internal.BackupArchiveCodec
 import com.aozijx.passly.data.repository.backup.internal.BackupArchiveContent
 import com.aozijx.passly.di.IoDispatcher
-import com.aozijx.passly.domain.model.backup.BackupImportMode
+import com.aozijx.passly.domain.model.backup.ImportMode
 import com.aozijx.passly.domain.model.credential.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
@@ -132,7 +132,6 @@ internal class BackupRepositoryImpl @Inject constructor(
                     it.write(encoded)
                     it.flush()
                 }
-                Unit
             }
         }
     }
@@ -154,12 +153,11 @@ internal class BackupRepositoryImpl @Inject constructor(
                     it.write(backupData.toByteArray(Charsets.UTF_8))
                     it.flush()
                 }
-                Unit
             }
         }
     }
 
-    override suspend fun exportEmergencyBackup(): AppResult<java.io.File> {
+    override suspend fun exportEmergencyBackup(): AppResult<File> {
         return withContext(ioDispatcher) {
             EmergencyBackupExporter.exportOnFailure(context, cryptoEngine)
         }
@@ -168,7 +166,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     override suspend fun importBackup(
         uri: String,
         password: CharArray,
-        mode: BackupImportMode
+        config: ImportMode
     ): AppResult<Unit> {
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.import") {
@@ -177,8 +175,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                 val encoded = input.use { it.readBytes() }
                 val archive = BackupArchiveCodec.decode(encoded, password)
                 val snapshots = decodeSnapshots(archive.snapshotJson)
-                importWithImages(snapshots, archive.images, mode)
-                Unit
+                importWithImages(snapshots, archive.images, config)
             }
         }
     }
@@ -192,7 +189,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     private suspend fun importWithImages(
         snapshots: List<VaultSnapshot>,
         images: Map<String, ByteArray>,
-        mode: BackupImportMode
+        config: ImportMode
     ) {
         val createdFiles = mutableListOf<File>()
         val restored = snapshots.map { snapshot ->
@@ -212,17 +209,17 @@ internal class BackupRepositoryImpl @Inject constructor(
             }
         }
         try {
-            importSnapshots(restored, mode)
+            importSnapshots(restored, config)
         } catch (error: Throwable) {
             createdFiles.forEach(File::delete)
             throw error
         }
     }
 
-    private suspend fun importSnapshots(snapshots: List<VaultSnapshot>, mode: BackupImportMode) {
+    private suspend fun importSnapshots(snapshots: List<VaultSnapshot>, config: ImportMode) {
         sessionManager.withDatabase {
             withTransaction {
-                if (mode == BackupImportMode.OVERWRITE) {
+                if (config == ImportMode.OVERWRITE) {
                     metadataDao().clear()
                     credentialDao().clear()
                 }
@@ -257,7 +254,7 @@ internal class BackupRepositoryImpl @Inject constructor(
 
     override suspend fun importPlainBackup(
         uri: String,
-        mode: BackupImportMode
+        config: ImportMode
     ): AppResult<Unit> {
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.import.plain") {
@@ -272,24 +269,21 @@ internal class BackupRepositoryImpl @Inject constructor(
                         it.copy(metadata = it.metadata.copy(iconCustomPath = null))
                     }
 
-                    importSnapshots(snapshots, mode)
+                    importSnapshots(snapshots, config)
                 }
-                Unit
             }
         }
     }
 
-    override suspend fun testDirectoryWritePermission(directoryUri: String): AppResult<Unit> =
+    override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
         withContext(ioDispatcher) {
-            AppResult.runSuspendCatching("backup.testPermission") {
-                val uri = directoryUri.toUri()
-                val output = context.contentResolver.openOutputStream(uri)
-                    ?: error("无法打开备份测试文件")
-                output.use {
+            AppResult.runSuspendCatching("backup.checkWritable") {
+                val parsedUri = uri.toUri()
+                // 尝试创建临时文件测试写入权限
+                context.contentResolver.openOutputStream(parsedUri)?.use {
                     it.write(ByteArray(0))
                     it.flush()
-                }
-                Unit
+                } ?: error("无法打开目录，可能没有写入权限")
             }
         }
 }

@@ -25,7 +25,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.backup.BackupCoordinator
+import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.vault.components.VaultContentTopBar
 import com.aozijx.passly.feature.vault.components.VaultDialogs
@@ -33,15 +33,13 @@ import com.aozijx.passly.feature.vault.components.VaultPagerContent
 import com.aozijx.passly.feature.vault.components.fab.VaultFab
 import com.aozijx.passly.feature.vault.internal.rememberVaultActionProvider
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlin.collections.first
-import kotlin.collections.getOrNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultContent(
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    backupCoordinator: BackupCoordinator,
+    backupViewModel: BackupViewModel,
     backupDirectoryUri: String?,
     onSettingsClick: () -> Unit = {},
     onPlainExportClick: () -> Unit = {},
@@ -63,7 +61,7 @@ fun VaultContent(
     val actionProvider = rememberVaultActionProvider(
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        backupCoordinator = backupCoordinator,
+        backupViewModel = backupViewModel,
         backupDirectoryUri = backupDirectoryUri,
         uiState = uiState,
         onShowDetail = onShowDetail,
@@ -165,7 +163,7 @@ fun VaultContent(
     VaultDialogs(
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        backupCoordinator = backupCoordinator,
+        backupViewModel = backupViewModel,
         onUpdateInteraction = actionProvider.onUpdateInteraction
     )
 }

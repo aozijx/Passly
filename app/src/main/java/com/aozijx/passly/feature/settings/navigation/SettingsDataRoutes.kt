@@ -9,11 +9,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import com.aozijx.passly.R
+import com.aozijx.passly.core.util.PathUtils
+import com.aozijx.passly.feature.backup.BackupViewModel
+import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
 import com.aozijx.passly.feature.settings.datamanagement.DataUiAction
@@ -39,7 +44,8 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     context: Context,
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionViewModel,
-    dataViewModel: DataViewModel
+    dataViewModel: DataViewModel,
+    backupViewModel: BackupViewModel
 ) {
     composable(SettingsRoute.Interaction.route) {
         val state by interactionViewModel.config.collectAsStateWithLifecycle()
@@ -62,11 +68,12 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
 
     composable(SettingsRoute.DataManagement.route) {
         val state by dataViewModel.config.collectAsStateWithLifecycle()
+        val notSetText = stringResource(R.string.not_set)
         val backupPathLabel = remember(state.directoryUri) {
-            localState.backupPathLabel(state.directoryUri)
+            PathUtils.formatPath(state.directoryUri) ?: notSetText
         }
         val lastExportFileLabel = remember(state.lastExportFileName) {
-            localState.lastExportFileLabel(state.lastExportFileName)
+            PathUtils.formatPath(state.lastExportFileName) ?: notSetText
         }
         val backupPathPicker =
             rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -90,7 +97,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                         )
                     },
                     onTestBackupWrite = {
-                        dataViewModel.testBackupDirectoryWritePermission(state.directoryUri)
+                        backupViewModel.onIntent(BackupIntent.CheckDirectoryPermission(state.directoryUri))
                     },
                     onClearBackupPath = if (state.directoryUri.isNullOrBlank()) null
                     else localState::openClearBackupDirConfirmDialog

@@ -15,9 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 
+@Preview
 @Composable
 fun EmptyVaultPlaceholder() {
     Column(
@@ -29,9 +31,9 @@ fun EmptyVaultPlaceholder() {
             Icons.Default.Lock,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.outlineVariant
+            tint = MaterialTheme.colorScheme.secondaryContainer
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.vault_empty_placeholder),
             style = MaterialTheme.typography.bodyLarge,
