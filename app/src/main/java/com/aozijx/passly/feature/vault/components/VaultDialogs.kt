@@ -1,51 +1,27 @@
 package com.aozijx.passly.feature.vault.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.components.BackupPasswordDialog
-import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.detail.DetailCardDialog
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.dialogs.DeleteConfirmDialog
 import com.aozijx.passly.feature.vault.model.AddType
-import kotlinx.coroutines.flow.collectLatest
+import com.aozijx.passly.ui.components.BackupPasswordDialog
+import com.aozijx.passly.ui.components.BackupPasswordDialogState
 
+// --- 详情对话框宿主 ---
 @Composable
-fun VaultDialogs(
+fun DetailDialogHost(
+    uiState: VaultUiState,
     mainViewModel: MainViewModel,
-    vaultViewModel: VaultViewModel,
-    backupViewModel: BackupViewModel,
-    onUpdateInteraction: () -> Unit
+    vaultViewModel: VaultViewModel
 ) {
-    val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
-    val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
     val detailCoordinator = uiState.detailCoordinatorState
-
-    // --- 收集 BackupEffect ---
-    LaunchedEffect(backupViewModel) {
-        backupViewModel.effect.collectLatest { effect ->
-            when (effect) {
-                is BackupEffect.RequestAuth -> {
-                    mainViewModel.requestAuth(
-                        onSuccess = { backupViewModel.onIntent(BackupIntent.ExecuteBackup) }
-                    )
-                }
-
-                is BackupEffect.StartImportSyncService -> {
-                    // 由 MainScreen 层统一处理
-                }
-
-                else -> Unit
-            }
-        }
-    }
-
-    // --- 详情对话框 ---
     detailCoordinator.request?.let { request ->
         val item = request.entry
         if (detailCoordinator.isIconPickerVisible) {
@@ -70,12 +46,21 @@ fun VaultDialogs(
             initialEntry = item,
             launchMode = request.launchMode,
             mainViewModel = mainViewModel,
-            vaultViewModel = vaultViewModel,
-            onDismiss = { vaultViewModel.dismissDetail() }
+            totpState = uiState.totpStates[item.id],
+            onDismiss = { vaultViewModel.dismissDetail() },
+            onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
+            onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
+            onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it) }
         )
     }
+}
 
-    // --- 添加对话框 ---
+// --- 添加对话框宿主 ---
+@Composable
+fun AddDialogHost(
+    vaultViewModel: VaultViewModel,
+    onUpdateInteraction: () -> Unit
+) {
     when (vaultViewModel.addType) {
         AddType.PASSWORD -> AddPasswordDialog(
             viewModel = vaultViewModel,
@@ -93,7 +78,7 @@ fun VaultDialogs(
         AddType.SEED_PHRASE,
         AddType.PASSKEY,
         AddType.RECOVERY_CODE -> {
-            val type = vaultViewModel.addType ?: return@VaultDialogs
+            val type = vaultViewModel.addType ?: return
             AddGenericEntryDialog(
                 viewModel = vaultViewModel,
                 addType = type,
@@ -104,8 +89,14 @@ fun VaultDialogs(
         null -> Unit
         else -> {}
     }
+}
 
-    // --- 全局确认/反馈对话框 ---
+// --- 删除确认对话框宿主 ---
+@Composable
+fun DeleteDialogHost(
+    vaultViewModel: VaultViewModel,
+    mainViewModel: MainViewModel
+) {
     vaultViewModel.itemToDelete?.let { item ->
         DeleteConfirmDialog(
             item = item,
@@ -114,11 +105,59 @@ fun VaultDialogs(
             onDismiss = { vaultViewModel.setItemToDelete(null) }
         )
     }
+}
 
-    // --- 备份对话框 ---
+// --- 备份密码对话框宿主 ---
+@Composable
+fun BackupDialogHost(
+    backupViewModel: BackupViewModel
+) {
+    val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
+
     if (backupState.showPasswordDialog) {
         BackupPasswordDialog(
-            viewModel = backupViewModel
+            state = BackupPasswordDialogState(
+                isExporting = backupState.isExporting,
+                importMode = backupState.importMode,
+                includeImages = backupState.includeImages,
+                backupPassword = backupState.backupPassword
+            ),
+            onDismiss = { backupViewModel.onIntent(BackupIntent.DismissPasswordDialog) },
+            onConfirm = { backupViewModel.onIntent(BackupIntent.ProcessBackupAction) },
+            onImportModeChange = { backupViewModel.onIntent(BackupIntent.UpdateImportMode(it)) },
+            onIncludeImagesChange = { backupViewModel.onIntent(BackupIntent.UpdateIncludeImages(it)) },
+            onPasswordChange = { backupViewModel.onIntent(BackupIntent.UpdatePassword(it)) }
         )
     }
+}
+
+// --- 统一入口：保持向后兼容 ---
+@Composable
+fun VaultDialogs(
+    mainViewModel: MainViewModel,
+    vaultViewModel: VaultViewModel,
+    backupViewModel: BackupViewModel,
+    onUpdateInteraction: () -> Unit
+) {
+    val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
+
+    DetailDialogHost(
+        uiState = uiState,
+        mainViewModel = mainViewModel,
+        vaultViewModel = vaultViewModel
+    )
+
+    AddDialogHost(
+        vaultViewModel = vaultViewModel,
+        onUpdateInteraction = onUpdateInteraction
+    )
+
+    DeleteDialogHost(
+        vaultViewModel = vaultViewModel,
+        mainViewModel = mainViewModel
+    )
+
+    BackupDialogHost(
+        backupViewModel = backupViewModel
+    )
 }

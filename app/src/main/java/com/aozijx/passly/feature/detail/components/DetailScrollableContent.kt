@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -29,7 +30,6 @@ import com.aozijx.passly.feature.detail.sections.IdCardSection
 import com.aozijx.passly.feature.detail.sections.NotesSection
 import com.aozijx.passly.feature.detail.sections.SshKeySection
 import com.aozijx.passly.feature.detail.sections.WifiSection
-import com.aozijx.passly.feature.vault.internal.TotpState
 
 @Composable
 fun DetailScrollableContent(

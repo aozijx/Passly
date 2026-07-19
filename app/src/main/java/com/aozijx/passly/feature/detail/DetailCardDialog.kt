@@ -27,6 +27,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
@@ -43,8 +44,6 @@ import com.aozijx.passly.feature.detail.sections.CredentialSection
 import com.aozijx.passly.feature.detail.sections.TotpSection
 import com.aozijx.passly.feature.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.feature.main.MainViewModel
-import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.feature.vault.internal.TotpState
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -52,29 +51,29 @@ fun DetailCardDialog(
     initialEntry: VaultEntry,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     mainViewModel: MainViewModel,
-    vaultViewModel: VaultViewModel,
-    onDismiss: () -> Unit
+    totpState: TotpState? = null,
+    onDismiss: () -> Unit,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    onShowIconPicker: () -> Unit,
+    onAutoUnlockTotp: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
     val detailViewModel: DetailViewModel = hiltViewModel()
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
-    val vaultUiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
-
-    val currentEntry = vaultUiState.detailCoordinatorState.request?.entry ?: initialEntry
 
     LaunchedEffect(initialEntry.id) {
         detailViewModel.onEvent(DetailEvent.Initialize(initialEntry))
     }
 
-    LaunchedEffect(currentEntry) {
-        detailViewModel.onEvent(DetailEvent.SyncEntry(currentEntry))
+    LaunchedEffect(initialEntry) {
+        detailViewModel.onEvent(DetailEvent.SyncEntry(initialEntry))
     }
 
-    val entry = detailUiState.entry ?: currentEntry
+    val entry = detailUiState.entry ?: initialEntry
     val vaultType = entry.entryType
     val editState = remember(entry) { EntryEditState(entry) }
 
-    val currentState = vaultUiState.totpStates[entry.id]
+    val currentState = totpState
     val isSteam = remember(entry.credential.twoFactor?.otp?.algorithm ?: "SHA1") { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
     val totpEditState = remember(entry, currentState?.decryptedSecret) {
         TotpEditState(entry, currentState?.decryptedSecret ?: "")
@@ -85,15 +84,15 @@ fun DetailCardDialog(
 
     LaunchedEffect(entry.id) {
         if (hasTotp) {
-            vaultViewModel.autoUnlockTotp(entry)
+            onAutoUnlockTotp(entry)
         }
     }
 
     LaunchedEffect(detailViewModel) {
         detailViewModel.effects.collectLatest { effect ->
             when (effect) {
-                is DetailEffect.EntryUpdated -> vaultViewModel.updateVaultEntry(effect.entry)
-                DetailEffect.IconPickerRequested -> vaultViewModel.showDetailIconPicker()
+                is DetailEffect.EntryUpdated -> onUpdateVaultEntry(effect.entry)
+                DetailEffect.IconPickerRequested -> onShowIconPicker()
             }
         }
     }
@@ -189,7 +188,7 @@ fun DetailCardDialog(
                             showQrDialog = true
                         },
                         mainViewModel = mainViewModel,
-                        vaultViewModel = vaultViewModel,
+                        onUpdateVaultEntry = onUpdateVaultEntry,
                         onEvent = detailViewModel::onEvent
                     )
                 }
@@ -220,7 +219,7 @@ private fun LazyListScope.typeSpecificCardContent(
     onPasswordRevealed: (String?) -> Unit,
     onShowQrDialog: () -> Unit,
     mainViewModel: MainViewModel,
-    vaultViewModel: VaultViewModel,
+    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onEvent: (DetailEvent) -> Unit
 ) {
     item {
@@ -251,7 +250,7 @@ private fun LazyListScope.typeSpecificCardContent(
                 isSteam = isSteam,
                 totpEditState = totpEditState,
                 showQrDialog = onShowQrDialog,
-                onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
+                onUpdateVaultEntry = onUpdateVaultEntry,
                 onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
                 onEvent = onEvent
             )

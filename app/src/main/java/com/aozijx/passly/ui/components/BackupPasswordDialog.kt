@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.backup.components
+package com.aozijx.passly.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,35 +17,39 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.backup.ImportMode
-import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.contract.BackupIntent
 
-/**
- * 备份/恢复密码输入对话框
- */
+data class BackupPasswordDialogState(
+    val isExporting: Boolean = false,
+    val importMode: ImportMode = ImportMode.OVERWRITE,
+    val includeImages: Boolean = false,
+    val backupPassword: String = ""
+)
+
 @Composable
 fun BackupPasswordDialog(
-    viewModel: BackupViewModel
+    state: BackupPasswordDialogState,
+    modifier: Modifier = Modifier,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    onImportModeChange: (ImportMode) -> Unit,
+    onIncludeImagesChange: (Boolean) -> Unit,
+    onPasswordChange: (String) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-
     val confirmText = stringResource(R.string.confirm)
     val cancelText = stringResource(R.string.cancel)
     val passwordLabel = stringResource(R.string.password)
 
     AlertDialog(
-        onDismissRequest = { viewModel.onIntent(BackupIntent.DismissPasswordDialog) },
-        modifier = Modifier.padding(horizontal = 24.dp),
+        onDismissRequest = onDismiss,
+        modifier = modifier.padding(horizontal = 24.dp),
         title = {
             Text(
                 if (state.isExporting) stringResource(R.string.vault_backup_title_export)
@@ -71,9 +75,7 @@ fun BackupPasswordDialog(
                                 .fillMaxWidth()
                                 .selectable(
                                     selected = state.importMode == ImportMode.OVERWRITE,
-                                    onClick = {
-                                        viewModel.onIntent(BackupIntent.UpdateImportMode(ImportMode.OVERWRITE))
-                                    },
+                                    onClick = { onImportModeChange(ImportMode.OVERWRITE) },
                                     role = Role.RadioButton
                                 )
                                 .padding(vertical = 2.dp),
@@ -81,9 +83,7 @@ fun BackupPasswordDialog(
                         ) {
                             RadioButton(
                                 selected = state.importMode == ImportMode.OVERWRITE,
-                                onClick = {
-                                    viewModel.onIntent(BackupIntent.UpdateImportMode(ImportMode.OVERWRITE))
-                                })
+                                onClick = { onImportModeChange(ImportMode.OVERWRITE) })
                             Spacer(modifier = Modifier.width(4.dp))
                             Column {
                                 Text(
@@ -103,9 +103,7 @@ fun BackupPasswordDialog(
                                 .fillMaxWidth()
                                 .selectable(
                                     selected = state.importMode == ImportMode.APPEND,
-                                    onClick = {
-                                        viewModel.onIntent(BackupIntent.UpdateImportMode(ImportMode.APPEND))
-                                    },
+                                    onClick = { onImportModeChange(ImportMode.APPEND) },
                                     role = Role.RadioButton
                                 )
                                 .padding(vertical = 2.dp),
@@ -113,9 +111,7 @@ fun BackupPasswordDialog(
                         ) {
                             RadioButton(
                                 selected = state.importMode == ImportMode.APPEND,
-                                onClick = {
-                                    viewModel.onIntent(BackupIntent.UpdateImportMode(ImportMode.APPEND))
-                                })
+                                onClick = { onImportModeChange(ImportMode.APPEND) })
                             Spacer(modifier = Modifier.width(4.dp))
                             Column {
                                 Text(
@@ -155,13 +151,8 @@ fun BackupPasswordDialog(
                         }
                         Switch(
                             checked = state.includeImages,
-                            onCheckedChange = {
-                                viewModel.onIntent(
-                                    BackupIntent.UpdateIncludeImages(
-                                        it
-                                    )
-                                )
-                            })
+                            onCheckedChange = onIncludeImagesChange
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -178,7 +169,7 @@ fun BackupPasswordDialog(
                 // 4. 密码输入框
                 OutlinedTextField(
                     value = state.backupPassword,
-                    onValueChange = { viewModel.onIntent(BackupIntent.UpdatePassword(it)) },
+                    onValueChange = onPasswordChange,
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     label = {
@@ -187,16 +178,15 @@ fun BackupPasswordDialog(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium
                 )
-
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    val isExport = state.isExporting
-                    val canProceed = if (isExport) state.backupPassword.isNotEmpty() else true
+                    val canProceed =
+                        if (state.isExporting) state.backupPassword.isNotEmpty() else true
                     if (canProceed) {
-                        viewModel.onIntent(BackupIntent.ProcessBackupAction)
+                        onConfirm()
                     }
                 }
             ) {
@@ -204,7 +194,7 @@ fun BackupPasswordDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = { viewModel.onIntent(BackupIntent.DismissPasswordDialog) }) {
+            TextButton(onClick = onDismiss) {
                 Text(cancelText)
             }
         }

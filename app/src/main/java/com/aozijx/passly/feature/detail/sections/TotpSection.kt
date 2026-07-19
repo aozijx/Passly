@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
@@ -17,7 +18,6 @@ import com.aozijx.passly.feature.detail.components.TotpCodeCard
 import com.aozijx.passly.feature.detail.contract.DetailEvent
 import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.detail.sections.dialogs.EditTotpSection
-import com.aozijx.passly.feature.vault.internal.TotpState
 
 @Composable
 fun TotpSection(

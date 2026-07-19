@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.internal
+package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.feature.detail.page.DetailOpenRequest
 

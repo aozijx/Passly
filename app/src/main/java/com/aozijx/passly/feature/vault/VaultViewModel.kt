@@ -5,11 +5,11 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
-import com.aozijx.passly.feature.detail.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.internal.AutofillCoordinator
@@ -18,7 +18,7 @@ import com.aozijx.passly.feature.vault.internal.EntryIconHelper
 import com.aozijx.passly.feature.vault.internal.EntryManager
 import com.aozijx.passly.feature.vault.internal.SearchFilterState
 import com.aozijx.passly.feature.vault.internal.TotpCoordinator
-import com.aozijx.passly.feature.vault.internal.TotpState
+import com.aozijx.passly.feature.vault.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.feature.vault.internal.VaultListCoordinator
 import com.aozijx.passly.feature.vault.internal.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType

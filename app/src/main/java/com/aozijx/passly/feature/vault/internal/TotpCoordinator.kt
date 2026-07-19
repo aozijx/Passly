@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import kotlinx.coroutines.CoroutineScope

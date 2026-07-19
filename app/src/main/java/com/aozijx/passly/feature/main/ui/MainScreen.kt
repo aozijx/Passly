@@ -22,8 +22,6 @@ import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.components.PlainExportDialog
-import com.aozijx.passly.feature.backup.components.PlainExportDialogType
 import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
@@ -35,6 +33,8 @@ import com.aozijx.passly.feature.message.AppMessageHostViewModel
 import com.aozijx.passly.feature.verification.VerificationScreen
 import com.aozijx.passly.feature.verification.VerificationViewModel
 import com.aozijx.passly.service.backup.BackupImportIconSyncForegroundService
+import com.aozijx.passly.ui.components.PlainExportDialog
+import com.aozijx.passly.ui.components.PlainExportDialogType
 import com.aozijx.passly.ui.theme.AppTheme
 
 @Composable
@@ -92,7 +92,11 @@ internal fun MainScreen(
                     BackupImportIconSyncForegroundService.start(context)
                 }
 
-                BackupEffect.RequestAuth -> Unit // 由 VaultDialogs 处理
+                BackupEffect.RequestAuth -> {
+                    viewModel.requestAuth(
+                        onSuccess = { backupViewModel.onIntent(BackupIntent.ExecuteBackup) }
+                    )
+                }
             }
         }
     }

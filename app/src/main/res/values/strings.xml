@@ -164,6 +164,13 @@
     <string name="backup_recovery_code_label">恢复码</string>
     <string name="backup_include_media_title">包含媒体文件</string>
     <string name="backup_include_media_desc">备份图标和附件</string>
+    <string name="vault_plain_export_db_error_title">数据库无法打开</string>
+    <string name="vault_plain_export_db_error_message">数据库密钥或结构不匹配。应用不会自动删除保险库。您可以尝试导出紧急备份，开发测试期间请从系统设置中清除应用数据后重新开始。\n\n注意：紧急导出为明文 JSON，请妥善保管文件。</string>
+    <string name="vault_plain_export_emergency_confirm">紧急导出备份（明文 JSON）</string>
+    <string name="vault_plain_export_db_error_dismiss">关闭应用</string>
+    <string name="vault_plain_export_title">导出明文备份</string>
+    <string name="vault_plain_export_message">即将将所有条目以明文 JSON 格式导出。\n\n⚠️ 风险提示：\n• 文件中的所有密码均为未加密明文\n• 任何获得该文件的人都能直接读取您的全部密码\n• 导出后请立即转移至安全位置并从本机删除\n• 请勿上传至云盘或通过不安全渠道传输\n• 仅在需要数据迁移或自行加密备份时使用</string>
+    <string name="vault_plain_export_confirm">我已了解风险，继续导出</string>
 
     <!-- 详情与编辑 -->
     <string name="vault_add_password_title">添加密码项</string>
