@@ -186,7 +186,6 @@
     <string name="vault_detail_domain_label">ウェブサイトドメインまたはアイコンURL</string>
     <string name="vault_detail_domain_placeholder">例：google.com または https://example.com/icon.png</string>
     <string name="vault_detail_domain_and_icon">ドメインとアイコン</string>
-    <string name="vault_detail_not_set">未設定</string>
     <string name="vault_detail_copied">コピーしました</string>
     <string name="vault_detail_download_icon">アイコンをダウンロード</string>
     <string name="vault_detail_icon_download_success">アイコンのダウンロードに成功しました！</string>

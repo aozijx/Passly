@@ -98,7 +98,6 @@
     <string name="ssh_private_key">Private key</string>
     <string name="ssh_private_key_full">Full private key</string>
     <string name="ssh_fingerprint">Key fingerprint</string>
-    <string name="ssh_default_fingerprint">Not set</string>
     <string name="ssh_key_copied">SSH key copied</string>
     <string name="passphrase">Passphrase</string>
     <string name="ssh_key_pin">Key PIN</string>

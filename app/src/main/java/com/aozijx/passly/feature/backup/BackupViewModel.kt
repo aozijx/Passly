@@ -188,7 +188,7 @@ class BackupViewModel @Inject constructor(
                 val outcome = performBackupOperation(currentState, finalUri, password)
 
                 when (outcome) {
-                    is AppResult.Success -> handleSuccess(currentState, finalUri)
+                    is AppResult.Success -> handleSuccess(currentState)
                     is AppResult.Failure -> handleFailure(outcome.error, currentState, finalUri)
                 }
                 dismissPasswordDialog()
@@ -223,7 +223,7 @@ class BackupViewModel @Inject constructor(
         }
     }
 
-    private suspend fun handleSuccess(oldState: BackupUiState, finalUri: Uri) {
+    private suspend fun handleSuccess(oldState: BackupUiState) {
         if (oldState.isExporting) {
             oldState.pendingExportFileName?.let {
                 deviceSettingsUseCases.setLastBackupExportFileName(it)

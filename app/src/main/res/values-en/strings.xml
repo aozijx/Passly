@@ -187,7 +187,6 @@
     <string name="vault_detail_domain_label">Website Domain or Icon URL</string>
     <string name="vault_detail_domain_placeholder">e.g. google.com or https://example.com/icon.png</string>
     <string name="vault_detail_domain_and_icon">Domain &amp; Icon</string>
-    <string name="vault_detail_not_set">Not set</string>
     <string name="vault_detail_copied">Copied</string>
     <string name="vault_detail_download_icon">Download Icon</string>
     <string name="vault_detail_icon_download_success">Icon downloaded successfully!</string>

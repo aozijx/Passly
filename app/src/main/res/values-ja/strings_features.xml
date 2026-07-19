@@ -98,7 +98,6 @@
     <string name="ssh_private_key">秘密鍵</string>
     <string name="ssh_private_key_full">秘密鍵全体</string>
     <string name="ssh_fingerprint">鍵のフィンガープリント</string>
-    <string name="ssh_default_fingerprint">未設定</string>
     <string name="ssh_key_copied">SSH鍵をコピーしました</string>
     <string name="passphrase">パスフレーズ</string>
     <string name="ssh_key_pin">鍵のPIN</string>
