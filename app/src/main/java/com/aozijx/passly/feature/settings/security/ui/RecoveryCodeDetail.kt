@@ -1,24 +1,20 @@
 package com.aozijx.passly.feature.settings.security.ui
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,12 +22,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.ui.components.common.InputActionButton
 
 @Composable
 fun RecoveryCodeDetail(
@@ -43,7 +40,11 @@ fun RecoveryCodeDetail(
     onClearVerifyResult: () -> Unit
 ) {
     var showRegenerateConfirm by remember { mutableStateOf(false) }
-    var verifyInput by remember { mutableStateOf("") }
+    var verifyInput by remember { mutableStateOf(SecureString.EMPTY) }
+    var isExpanded by remember { mutableStateOf(false) }
+
+    // 当验证结果返回时，停止进度显示
+    val isVerifying = verifyResult == null && !verifyInput.isEmpty && !isExpanded
 
     Column(
         modifier = Modifier
@@ -99,61 +100,36 @@ fun RecoveryCodeDetail(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
+            InputActionButton(
                 value = verifyInput,
+                expanded = isExpanded,
+                progress = isVerifying,
+                result = verifyResult,
+                icon = Icons.Default.Restore,
+                containerColor = when (verifyResult) {
+                    true -> MaterialTheme.colorScheme.secondaryContainer
+                    false -> MaterialTheme.colorScheme.errorContainer
+                    else -> null
+                },
+                showResultFooter = true,
+                collapsedText = stringResource(R.string.auth_use_recovery_code),
+                expandedText = stringResource(R.string.auth_recovery_code_unlock),
+                inputLabel = stringResource(R.string.auth_recovery_code_label),
+                successText = stringResource(R.string.settings_recovery_code_verify_valid),
+                errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
                 onValueChange = {
-                    verifyInput = it
+                    verifyInput = SecureString.fromString(it)
                     onClearVerifyResult()
                 },
-                singleLine = true,
-                placeholder = {
-                    Text(stringResource(R.string.settings_recovery_code_verify_hint))
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                onExpandedChange = { isExpanded = it },
+                onAction = {
+                    if (!verifyInput.isEmpty) {
+                        onVerifyCode(verifyInput.toPlainString().trim())
+                    }
+                }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    if (verifyInput.isNotBlank()) {
-                        onVerifyCode(verifyInput.trim())
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                enabled = verifyInput.isNotBlank()
-            ) {
-                Text(stringResource(R.string.verify))
-            }
-
-            // 验证结果
-            verifyResult?.let { valid ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (valid) Icons.Default.CheckCircle
-                        else Icons.Default.Cancel,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = if (valid) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(
-                            if (valid) R.string.settings_recovery_code_verify_valid
-                            else R.string.settings_recovery_code_verify_invalid
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (valid) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedButton(
                 onClick = { showRegenerateConfirm = true },
@@ -163,6 +139,8 @@ fun RecoveryCodeDetail(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
+                Icon(Icons.Default.Restore, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.settings_recovery_code_regenerate))
             }
         }

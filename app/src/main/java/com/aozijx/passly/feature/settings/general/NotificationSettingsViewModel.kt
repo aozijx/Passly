@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class NotificationSettingsUiState(
-    val statusBarEnabled: Boolean = true,
+    val statusBarEnabled: Boolean = false,
     val iconDownloadsEnabled: Boolean = true
 )
 

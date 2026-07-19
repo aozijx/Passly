@@ -129,17 +129,11 @@ private fun LogViewerSheet(content: String, onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp)
         ) {
-            Text(
-                text = "日志内容",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
             Text(
                 text = content.ifBlank { "暂无日志" },
                 fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .fillMaxWidth()

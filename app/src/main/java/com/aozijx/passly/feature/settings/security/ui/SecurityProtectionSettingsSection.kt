@@ -23,7 +23,7 @@ fun SecurityProtectionSettingsSection(
             switchSettingsGroupItem(
                 key = "privacy.secure_content",
                 icon = Icons.Default.Security,
-                title = "高级安全防护",
+                title = "安全防护",
                 subtitle = "禁止截屏录屏，并隐藏多任务预览",
                 checked = isSecureContentEnabled,
                 onCheckedChange = onSecureContentEnabledChange
@@ -31,8 +31,8 @@ fun SecurityProtectionSettingsSection(
             switchSettingsGroupItem(
                 key = "privacy.flip_to_lock",
                 icon = Icons.Default.Flip,
-                title = "翻转锁定",
-                subtitle = "屏幕朝下放置时立即关闭保险箱",
+                title = "锁定应用",
+                subtitle = "屏幕朝下时立即关闭保险箱",
                 checked = isFlipToLockEnabled,
                 onCheckedChange = onFlipToLockEnabledChange
             ),
@@ -40,8 +40,8 @@ fun SecurityProtectionSettingsSection(
                 key = "privacy.flip_exit",
                 visible = isFlipToLockEnabled,
                 iconPlaceholder = true,
-                title = "退出并清空任务栈",
-                subtitle = "退出到桌面，再次进入需重新认证",
+                title = "退出应用",
+                subtitle = "退出应用并清除任务栈",
                 checked = isFlipExitAndClearStackEnabled,
                 onCheckedChange = onFlipExitAndClearStackEnabledChange
             )

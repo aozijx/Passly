@@ -55,70 +55,79 @@ fun LockAuthSettingsSection(
     SettingsSectionTitle(text = "认证")
     RoundedGroup(
         items = listOf(
+
+            switchSettingsGroupItem(
+                key = "security.lock_on_background",
+                icon = Icons.Default.Lock,
+                title = "立即锁定",
+                subtitle = "退出 app 后将在设定的锁定时间后锁定",
+                checked = isLockOnBackground,
+                onCheckedChange = onLockOnBackgroundChange
+            ),
             navigationSettingsGroupItem(
                 key = "security.lock_timeout",
-            icon = Icons.Default.Timer,
-            title = "自动锁定",
-            value = formatLockTimeoutText(lockTimeout),
-            onClick = { expanded = !expanded }
+                icon = Icons.Default.Timer,
+                title = "自动锁定",
+                value = formatLockTimeoutText(lockTimeout),
+                onClick = { expanded = !expanded }
             ),
             RoundedGroupItem(
                 key = "security.lock_timeout_slider",
                 visible = expanded
             ) { itemScope ->
                 GroupCard(itemScope = itemScope, contentPadding = PaddingValues(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "自动锁定时间",
-                        style = MaterialTheme.typography.bodyMedium
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "自动锁定时间",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = formatLockTimeoutText((sliderValue.toLong() * 1000L)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = sliderValue,
+                        onValueChange = { sliderValue = it },
+                        onValueChangeFinished = {
+                            val rounded =
+                                ((sliderValue / SLIDER_STEP_SECONDS).roundToInt() * SLIDER_STEP_SECONDS)
+                                    .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
+                            sliderValue = rounded
+                            onLockTimeoutChange(rounded.toLong() * 1000L)
+                        },
+                        valueRange = SLIDER_MIN_SECONDS..SLIDER_MAX_SECONDS,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Text(
-                        text = formatLockTimeoutText((sliderValue.toLong() * 1000L)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "${SLIDER_MIN_SECONDS.roundToInt()} 秒",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                        Text(
+                            text = "${(SLIDER_MAX_SECONDS / 60f).roundToInt()} 分钟",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
                 }
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { sliderValue = it },
-                    onValueChangeFinished = {
-                        val rounded =
-                            ((sliderValue / SLIDER_STEP_SECONDS).roundToInt() * SLIDER_STEP_SECONDS)
-                                .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
-                        sliderValue = rounded
-                        onLockTimeoutChange(rounded.toLong() * 1000L)
-                    },
-                    valueRange = SLIDER_MIN_SECONDS..SLIDER_MAX_SECONDS,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "${SLIDER_MIN_SECONDS.roundToInt()} 秒",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                    Text(
-                        text = "${(SLIDER_MAX_SECONDS / 60f).roundToInt()} 分钟",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-            }
             },
             navigationSettingsGroupItem(
                 key = "security.app_password",
-            icon = Icons.Default.Lock,
-            title = "设置密码",
-            subtitle = "独立于系统锁屏，用密码直接解锁应用",
-            value = if (isAppPasswordEnabled) "已设置" else "未设置",
-            onClick = onAppPasswordClick
+                icon = Icons.Default.Lock,
+                title = "设置密码",
+                subtitle = "独立于系统锁屏，用密码直接解锁应用",
+                value = if (isAppPasswordEnabled) "已设置" else "未设置",
+                onClick = onAppPasswordClick
             ),
             switchSettingsGroupItem(
                 key = "security.biometric_enabled",
@@ -139,15 +148,7 @@ fun LockAuthSettingsSection(
                     "系统录入变化后仍保留当前密钥",
                 checked = isInvalidateKeyOnBioChange,
                 onCheckedChange = onInvalidateKeyOnBioChangeToggle
-            ),
-            switchSettingsGroupItem(
-                key = "security.lock_on_background",
-            icon = Icons.Default.Lock,
-            title = "立即锁定",
-            subtitle = "退出 app 后将在设定的锁定时间后锁定",
-            checked = isLockOnBackground,
-            onCheckedChange = onLockOnBackgroundChange
-        )
+            )
         )
     )
 }
