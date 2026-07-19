@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.utils
+package com.aozijx.passly.core.util
 
 import android.app.Activity
 import android.content.Context

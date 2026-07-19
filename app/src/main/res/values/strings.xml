@@ -268,6 +268,7 @@
     <string name="auth_password_fields_required">请填写所有密码字段</string>
     <string name="auth_current_password_required">请输入当前密码</string>
     <string name="auth_unavailable">无法进行身份验证</string>
+    <string name="password_strength_very_weak">弱爆了</string>
     <string name="password_strength_weak">弱</string>
     <string name="password_strength_medium">一般</string>
     <string name="password_strength_good">较好</string>
