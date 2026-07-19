@@ -47,14 +47,15 @@ class VaultSessionController @Inject constructor(
         type: EnvelopeType,
         ownedDek: OwnedBytes,
         correlationId: String
-    ): Boolean {
+    ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
         return try {
             transition(AuthenticationState.Unlocking(correlationId))
             when (dekManager.setDek(type, dek)) {
                 UnlockResult.Success -> {
+                    // 开启资源访问后再标记认证，确保状态监听者能正常访问数据库
                     resources.allowAccess()
-                    markAuthenticated()
+                    markAuthenticatedInternal()
                     true
                 }
                 is UnlockResult.Failed -> {
@@ -68,7 +69,16 @@ class VaultSessionController @Inject constructor(
         }
     }
 
-    suspend fun markAuthenticated() = withContext(Dispatchers.Main.immediate) {
+    /**
+     * 标记会话为已认证。
+     * 必须在确保 DEK 已正确设置后调用。
+     */
+    suspend fun markAuthenticated() = mutex.withLock {
+        resources.allowAccess() // 关键修复：确保指纹等非 commitUnlock 路径也能开启数据库访问
+        markAuthenticatedInternal()
+    }
+
+    private suspend fun markAuthenticatedInternal() = withContext(Dispatchers.Main.immediate) {
         _state.value = AuthenticationState.Authenticated(System.currentTimeMillis())
         resetIdleTimer()
     }
@@ -82,10 +92,13 @@ class VaultSessionController @Inject constructor(
             if (_state.value == AuthenticationState.Locked) return
             transition(AuthenticationState.Locking(reason))
             idleJob?.cancel()
+
             runCatching { resources.blockNewAccess() }
                 .onFailure { AppLog.e(LogCategory.DATABASE, "vault_access_block_failed", throwable = it) }
+
             runCatching { resources.closeAndAwait() }
                 .onFailure { AppLog.e(LogCategory.DATABASE, "vault_close_failed", throwable = it) }
+
             dekManager.lock()
             transition(AuthenticationState.Locked)
         }

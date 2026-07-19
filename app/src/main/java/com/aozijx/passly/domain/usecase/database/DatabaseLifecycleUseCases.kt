@@ -1,8 +1,9 @@
 package com.aozijx.passly.domain.usecase.database
 
-import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.ErrorLayer
+import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.domain.repository.database.DatabaseController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,6 +22,7 @@ class DatabaseLifecycleUseCases @Inject constructor(
 ) {
     /**
      * 在 IO 调度器上预热数据库，封装错误处理与日志。
+     * 具体的重试逻辑已下沉至 Repository 实现层。
      */
     suspend fun preWarmAndReport(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
         val error = repository.preWarm()
@@ -32,7 +34,7 @@ class DatabaseLifecycleUseCases @Inject constructor(
                 "Database preWarm failed",
                 AppError.fromThrowable(
                     error,
-                    com.aozijx.passly.core.error.ErrorLayer.DATA,
+                    ErrorLayer.DATA,
                     "database.preWarm"
                 )
             )
@@ -53,7 +55,7 @@ class DatabaseLifecycleUseCases @Inject constructor(
                 "Database retry failed",
                 AppError.fromThrowable(
                     error,
-                    com.aozijx.passly.core.error.ErrorLayer.DATA,
+                    ErrorLayer.DATA,
                     "database.retry"
                 )
             )
@@ -66,7 +68,7 @@ class DatabaseLifecycleUseCases @Inject constructor(
     suspend fun retry(): Throwable? = repository.retry()
 
     /**
-     * 关闭底层数据库连接。现在是挂起函数，确保关闭完成后才返回。
+     * 关闭底层数据库连接。
      */
     suspend fun close() = repository.close()
 

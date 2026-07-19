@@ -3,14 +3,14 @@ package com.aozijx.passly.feature.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.ui.toUiMessage
-import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
+import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
+import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.main.contract.MainUiState
@@ -49,7 +49,6 @@ class MainViewModel @Inject constructor(
             MainIntent.Lock -> {
                 viewModelScope.launch {
                     authenticationManager.lock(LockReason.USER)
-                    databaseLifecycleUseCases.close()
                 }
             }
 
@@ -92,7 +91,10 @@ class MainViewModel @Inject constructor(
                 val authorized = state is AuthenticationState.Authenticated
                 if (authorized) {
                     _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
+
+                    // 重试逻辑已下沉至 DatabaseLifecycleUseCases
                     val outcome = databaseLifecycleUseCases.preWarmAndReport()
+
                     _uiState.update {
                         it.copy(
                             isDatabaseInitializing = false,
