@@ -202,8 +202,7 @@ fun createSwipeAction(
     onAction: () -> Unit,
     backgroundColor: Color,
     iconTint: Color
-): SwipeAction? {
-    if (actionType == SwipeActionType.DISABLED) return null
+): SwipeAction {
     val icon = when (actionType) {
         SwipeActionType.DELETE -> Icons.Default.Delete
         SwipeActionType.DETAIL -> Icons.Default.Info

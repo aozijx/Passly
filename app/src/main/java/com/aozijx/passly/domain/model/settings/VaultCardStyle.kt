@@ -2,7 +2,7 @@ package com.aozijx.passly.domain.model.settings
 
 enum class AutofillUiMode { SYSTEM_INLINE, BOTTOM_SHEET }
 
-enum class SwipeActionType { DELETE, DETAIL, COPY_PASSWORD, COPY_USERNAME, DISABLED }
+enum class SwipeActionType { DELETE, DETAIL, COPY_PASSWORD, COPY_USERNAME }
 
 enum class VaultCardStyle(val key: String) {
     DEFAULT("default"),

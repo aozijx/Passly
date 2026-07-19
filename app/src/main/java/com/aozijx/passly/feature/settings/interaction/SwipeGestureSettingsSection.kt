@@ -53,5 +53,4 @@ private val SwipeActionType.label: String
         SwipeActionType.DETAIL -> "详情"
         SwipeActionType.COPY_PASSWORD -> "复制密码"
         SwipeActionType.COPY_USERNAME -> "复制账号"
-        SwipeActionType.DISABLED -> "禁用"
     }

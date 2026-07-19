@@ -35,8 +35,7 @@ private val SWIPE_ACTIONS = listOf(
     SwipeActionType.DELETE,
     SwipeActionType.DETAIL,
     SwipeActionType.COPY_PASSWORD,
-    SwipeActionType.COPY_USERNAME,
-    SwipeActionType.DISABLED,
+    SwipeActionType.COPY_USERNAME
 )
 
 private fun SwipeActionType.displayName(): String = when (this) {
@@ -44,7 +43,6 @@ private fun SwipeActionType.displayName(): String = when (this) {
     SwipeActionType.DETAIL -> "详情"
     SwipeActionType.COPY_PASSWORD -> "复制密码"
     SwipeActionType.COPY_USERNAME -> "复制账号"
-    SwipeActionType.DISABLED -> "禁用"
 }
 
 private fun SwipeActionType.icon(): ImageVector? = when (this) {
@@ -52,7 +50,6 @@ private fun SwipeActionType.icon(): ImageVector? = when (this) {
     SwipeActionType.DETAIL -> Icons.Default.Info
     SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
     SwipeActionType.COPY_USERNAME -> Icons.Default.Person
-    SwipeActionType.DISABLED -> null
 }
 
 @Composable
@@ -74,13 +71,11 @@ fun SwipeActionSelectDialog(
                         SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer
                         SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer
                         SwipeActionType.DETAIL -> MaterialTheme.colorScheme.primaryContainer
-                        SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant
                     }
                     val selectedContentColor = when (action) {
                         SwipeActionType.DELETE -> MaterialTheme.colorScheme.onErrorContainer
                         SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.onSecondaryContainer
                         SwipeActionType.DETAIL -> MaterialTheme.colorScheme.onPrimaryContainer
-                        SwipeActionType.DISABLED -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                     Row(
                         modifier = Modifier

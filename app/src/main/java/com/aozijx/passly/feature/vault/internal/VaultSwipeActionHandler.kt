@@ -12,8 +12,6 @@ fun handleSwipeAction(
     onShowDetail: (VaultEntry) -> Unit,
     onCopy: (FieldKey) -> Unit
 ) {
-    if (actionType == SwipeActionType.DISABLED) return
-
     val copyField = when (actionType) {
         SwipeActionType.COPY_PASSWORD -> FieldKey.PASSWORD
         SwipeActionType.COPY_USERNAME -> FieldKey.USERNAME
