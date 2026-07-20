@@ -11,8 +11,7 @@
 # ============================================
 # Dagger Hilt
 # ============================================
--keep class dagger.hilt.** { *; }
--keep class javax.inject.** { *; }
+# Hilt 注解和生成代码由 consumer-rules.pro 自动处理
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
 -keep class *_HiltComponents { *; }
 -keep class *_HiltModules { *; }
@@ -20,6 +19,15 @@
 -keep class *_MembersInjector { *; }
 -keep class * implements dagger.hilt.internal.GeneratedComponent { *; }
 -keep class * implements dagger.hilt.internal.GeneratedComponentManager { *; }
+
+# ============================================
+# Hilt DI 模块 - 基于注解保留
+# ============================================
+-keep @dagger.Module class *
+-keepclassmembers @dagger.Module class * {
+    @dagger.Provides <methods>;
+    @dagger.Binds <methods>;
+}
 
 # ============================================
 # Room Database
@@ -33,7 +41,6 @@
 -keep @androidx.room.Entity class *
 -keep @androidx.room.Dao interface *
 -keep class * extends androidx.room.migration.Migration
--keep class androidx.room.** { *; }
 -dontwarn androidx.room.paging.**
 -keepclassmembers class * {
     @androidx.room.* <fields>;
@@ -46,12 +53,7 @@
 }
 
 # ============================================
-# SQLCipher / SQLite
-# ============================================
--keep class net.zetetic.database.sqlcipher.** { *; }
--keep class androidx.sqlite.db.** { *; }
--keep class net.sqlcipher.** { *; }
--keep class net.sqlcipher.database.** { *; }
+# SQLCipher — JNI 方法由 AGP 默认规则保护，类由应用代码直接引用
 
 # ============================================
 # Kotlin Serialization
@@ -73,11 +75,11 @@
 }
 
 # ============================================
-# DataStore Preferences
+# Protobuf Lite - 防止 R8 混淆 proto 字段名
+# Proto 运行时通过反射按字段名访问，混淆后会导致
+# "Field version_ for Xxx not found" 崩溃
 # ============================================
--keep class androidx.datastore.preferences.** { *; }
--keep class androidx.datastore.core.** { *; }
--keepclassmembers class * extends androidx.datastore.preferences.protobuf.GeneratedMessageLite {
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
     <fields>;
 }
 
@@ -116,41 +118,23 @@
 # ============================================
 # Navigation Compose
 # ============================================
--keep class androidx.navigation.** { *; }
-
-# ============================================
-# Hilt Navigation Compose
-# ============================================
--keep class androidx.hilt.navigation.compose.** { *; }
+# Navigation 和 Hilt Navigation 的 consumer-rules.pro 已自动包含
 
 # ============================================
 # CameraX
 # ============================================
--keep class androidx.camera.** { *; }
 -dontwarn androidx.camera.**
 
 # ============================================
 # Coil
 # ============================================
--keep class coil.** { *; }
 -dontwarn coil.**
 
 # ============================================
-# ZXing / Barcode
-# ============================================
--keep class com.google.zxing.** { *; }
--keep class com.google.mlkit.vision.barcode.** { *; }
+# ZXing（仅 BarcodeFormat + QRCodeWriter，应用代码直接引用，R8 自动保留）
 
 # ============================================
-# Argon2
-# ============================================
--keep class com.lambdapioneer.argon2kt.** { *; }
-
-# ============================================
-# Credentials / Autofill
-# ============================================
--keep class androidx.credentials.** { *; }
--keep class androidx.autofill.** { *; }
+# Argon2 — JNI 方法由 AGP 默认规则保护，Argon2Kt 等由应用代码直接引用
 
 # ============================================
 # ML Kit / Firebase 组件系统
@@ -166,13 +150,6 @@
 # ============================================
 -keep class com.aozijx.passly.app.PasslyApplication { *; }
 -keep class com.aozijx.passly.MainActivity { *; }
-
-# ============================================
-# DI 模块
-# ============================================
--keep class com.aozijx.passly.di.** { *; }
--keep class com.aozijx.passly.data.di.** { *; }
--keep class com.aozijx.passly.core.di.** { *; }
 
 # ============================================
 # Serializable / Parcelable

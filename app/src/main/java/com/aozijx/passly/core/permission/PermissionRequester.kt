@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import dagger.hilt.android.EntryPointAccessors
 
 interface PermissionRequester {
     fun snapshot(permission: AppPermission): PermissionSnapshot
@@ -61,8 +62,13 @@ class ActivityPermissionRequester(
 
 @Composable
 fun rememberAppPermissionManager(): AppPermissionManager {
-    val context = LocalContext.current.applicationContext
-    return remember(context) { AndroidAppPermissionManager(context) }
+    val context = LocalContext.current
+    return remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            PermissionManagerEntryPoint::class.java
+        ).appPermissionManager
+    }
 }
 
 @Composable

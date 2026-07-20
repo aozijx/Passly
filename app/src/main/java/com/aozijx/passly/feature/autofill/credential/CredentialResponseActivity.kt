@@ -2,14 +2,14 @@ package com.aozijx.passly.feature.autofill.credential
 
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.activity.compose.setContent
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.service.autofill.credential.ModernCredentialService
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
+import com.aozijx.passly.service.autofill.credential.ModernCredentialService
 import com.aozijx.passly.ui.authentication.AuthenticationHost
 import com.aozijx.passly.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,9 +24,7 @@ class CredentialResponseActivity : AppCompatActivity() {
     @Inject
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
-    private val viewModel: CredentialResponseViewModel by lazy {
-        ViewModelProvider(this)[CredentialResponseViewModel::class.java]
-    }
+    private val viewModel: CredentialResponseViewModel by viewModels()
 
     companion object {
         private const val TAG = "CredResponse"
