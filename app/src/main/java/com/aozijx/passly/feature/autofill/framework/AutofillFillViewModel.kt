@@ -8,6 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.authentication.AuthenticationRequest
+import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.service.autofill.framework.builder.LegacyDatasetFactory
@@ -19,10 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.authentication.AuthenticationResult
 import javax.inject.Inject
 
 @HiltViewModel
@@ -133,7 +133,7 @@ class AutofillFillViewModel @Inject constructor(
         )
 
         if (dataset != null) {
-            autofillUseCases.updateLastUsed(candidate.candidateId)
+            autofillUseCases.recordUsage(candidate.candidateId)
             val response = FillResponse.Builder().addDataset(dataset).build()
             _uiState.update { UiState.Result(response) }
         } else {

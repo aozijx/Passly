@@ -8,6 +8,7 @@ import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
@@ -37,6 +38,7 @@ import javax.inject.Inject
 class VaultViewModel @Inject constructor(
     application: Application,
     private val vaultUseCases: VaultUseCases,
+    private val activityUseCases: ActivityUseCases,
     private val portableSettingsUseCases: PortableSettingsUseCases
 ) : AndroidViewModel(application) {
 
@@ -182,7 +184,7 @@ class VaultViewModel @Inject constructor(
     fun showDetail(entry: VaultEntry) {
         detail.showDetail(entry)
         totp.autoUnlock(entry)
-        viewModelScope.launch { vaultUseCases.recordUsage(entry.id) }
+        viewModelScope.launch { activityUseCases.recordUsage(entry.id) }
     }
 
     fun dismissDetail() {

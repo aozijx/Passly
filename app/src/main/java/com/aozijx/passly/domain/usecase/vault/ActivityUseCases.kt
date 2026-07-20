@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.usecase.vault
 
+import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
 import com.aozijx.passly.domain.repository.vault.ActivityRepository
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +22,9 @@ class ActivityUseCases @Inject constructor(
 
     suspend fun insert(activity: VaultActivity) =
         activityRepository.insert(activity)
+
+    suspend fun recordUsage(entryId: String, type: ActivityType = ActivityType.VIEW) =
+        activityRepository.record(entryId, type)
 
     suspend fun deleteByEntryId(entryId: String) =
         activityRepository.deleteByEntryId(entryId)

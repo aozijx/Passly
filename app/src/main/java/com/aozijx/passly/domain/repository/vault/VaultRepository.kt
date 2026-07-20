@@ -15,6 +15,5 @@ interface VaultRepository {
     suspend fun getEntriesForIconResync(): List<VaultEntry>
     suspend fun insert(entry: VaultEntry): AppResult<Long>
     suspend fun update(entry: VaultEntry): AppResult<Unit>
-    suspend fun recordUsage(entryId: String): AppResult<Unit>
     suspend fun delete(entry: VaultEntry): AppResult<Unit>
 }

@@ -110,39 +110,6 @@ class VaultRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun recordUsage(entryId: String): AppResult<Unit> {
-        if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.withDatabase {
-            AppResult.runSuspendCatching("vault.recordUsage") {
-                val metaEntity = metadataDao().getById(entryId) ?: return@runSuspendCatching
-                val credEntity = credentialDao().getByEntryId(entryId)
-                val entry =
-                    cryptoMapper.assembleEntry(metaEntity, credEntity) ?: return@runSuspendCatching
-                val updatedMeta = entry.metadata.copy(usageCount = entry.usageCount + 1)
-
-                val metaBlob = cryptoMapper.encryptMetadata(updatedMeta, entryId)
-                val credBlob = cryptoMapper.encryptCredential(entry.credential, entryId)
-
-                val newMetaEntity = VaultMetadataEntity(
-                    entryId = entryId,
-                    entryType = entry.entryType,
-                    metadataBlob = metaBlob,
-                    vaultId = metaEntity.vaultId,
-                    entryVersion = metaEntity.entryVersion + 1,
-                    createdAt = metaEntity.createdAt,
-                    updatedAt = clock.now()
-                )
-                metadataDao().update(newMetaEntity)
-                credentialDao().update(
-                    VaultCredentialEntity(
-                        entryId = entryId,
-                        credentialBlob = credBlob
-                    )
-                )
-            }
-        }
-    }
-
     override suspend fun delete(entry: VaultEntry): AppResult<Unit> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
         return sessionManager.withDatabase {

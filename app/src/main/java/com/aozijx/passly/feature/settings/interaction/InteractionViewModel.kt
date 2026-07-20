@@ -1,10 +1,11 @@
 package com.aozijx.passly.feature.settings.interaction
 
+import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.autofill.AutofillCoordinator
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.model.settings.SwipeActionType
+import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,8 +31,9 @@ sealed interface InteractionUiAction {
 
 @HiltViewModel
 class InteractionViewModel @Inject constructor(
-    private val application: android.app.Application,
-    private val portableSettingsUseCases: PortableSettingsUseCases
+    private val application: Application,
+    private val portableSettingsUseCases: PortableSettingsUseCases,
+    private val autofillUseCases: AutofillUseCases
 ) : AndroidViewModel(application) {
 
     val config: StateFlow<InteractionUiState> = combine(
@@ -77,6 +79,6 @@ class InteractionViewModel @Inject constructor(
     }
 
     fun openAutofillSettings() {
-        AutofillCoordinator().requestEnable(getApplication())
+        autofillUseCases.openSettings()
     }
 }

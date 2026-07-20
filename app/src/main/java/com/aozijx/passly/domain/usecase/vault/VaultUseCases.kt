@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.usecase.vault
 
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.model.favicon.FaviconOutcome
-import com.aozijx.passly.domain.model.favicon.FaviconResult
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.favicon.FaviconOutcome
+import com.aozijx.passly.domain.model.favicon.FaviconResult
 import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.LookupRepository
 import com.aozijx.passly.domain.repository.vault.OtpRepository
@@ -48,9 +48,6 @@ class VaultUseCases @Inject constructor(
     suspend fun updateEntry(entry: VaultEntry): AppResult<Unit> = vaultRepository.update(entry)
 
     suspend fun deleteEntry(entry: VaultEntry): AppResult<Unit> = vaultRepository.delete(entry)
-
-    suspend fun recordUsage(entryId: String): AppResult<Unit> = vaultRepository.recordUsage(entryId)
-
     fun getTotpCode(config: OtpConfig): String = otpRepository.generateTotp(config)
 
     suspend fun downloadFavicon(input: String): FaviconOutcome {

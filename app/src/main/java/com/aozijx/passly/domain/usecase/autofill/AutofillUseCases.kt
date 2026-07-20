@@ -1,35 +1,69 @@
 package com.aozijx.passly.domain.usecase.autofill
 
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.lookup.CredentialCandidate
-import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
+import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.repository.autofill.AutofillStatusRepository
+import com.aozijx.passly.domain.repository.vault.ActivityRepository
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class AutofillUseCases @Inject constructor(
+    val checkStatus: CheckAutofillStatusUseCase,
+    val observeStatus: ObserveAutofillStatusUseCase,
+    val isSupported: IsAutofillSupportedUseCase,
+    val openSettings: OpenAutofillSettingsUseCase,
+    val recordUsage: RecordAutofillUsageUseCase,
+    val saveCredential: SaveAutofillCredentialUseCase
+)
+
 @Singleton
-class AutofillUseCases @Inject constructor(private val repository: CredentialServiceRepository) {
+class CheckAutofillStatusUseCase @Inject constructor(
+    private val repository: AutofillStatusRepository
+) {
+    operator fun invoke(): Boolean = repository.isAutofillServiceEnabled()
+}
 
-    fun search(
-        packageName: String?, webDomain: String?
-    ): List<CredentialCandidate> = repository.search(packageName, webDomain)
+@Singleton
+class ObserveAutofillStatusUseCase @Inject constructor(
+    private val repository: AutofillStatusRepository
+) {
+    operator fun invoke(): Flow<Boolean> = repository.observeAutofillStatus()
+}
 
-    fun getById(entryId: Int): VaultEntry? = repository.getById(entryId)
+@Singleton
+class IsAutofillSupportedUseCase @Inject constructor(
+    private val repository: AutofillStatusRepository
+) {
+    operator fun invoke(): Boolean = repository.isAutofillSupported()
+}
 
-    fun getByIds(entryIds: List<Int>): List<VaultEntry> = repository.getByIds(entryIds)
+@Singleton
+class OpenAutofillSettingsUseCase @Inject constructor(
+    private val repository: AutofillStatusRepository
+) {
+    operator fun invoke() = repository.openAutofillSettings()
+}
 
-    fun updateLastUsed(entryId: Int) = repository.updateLastUsed(entryId)
+@Singleton
+class RecordAutofillUsageUseCase @Inject constructor(
+    private val activityRepository: ActivityRepository
+) {
+    suspend operator fun invoke(candidateId: Int): AppResult<Unit> =
+        activityRepository.record(candidateId.toString(), ActivityType.AUTOFILL)
+}
 
-    fun save(
+@Singleton
+class SaveAutofillCredentialUseCase @Inject constructor() {
+    suspend operator fun invoke(
         packageName: String?,
         webDomain: String?,
         pageTitle: String?,
         usernameValue: String,
         passwordValue: String
-    ): Boolean = repository.save(
-        packageName,
-        webDomain,
-        pageTitle,
-        usernameValue,
-        passwordValue
-    )
+    ): AppResult<Long> {
+        return AppResult.runSuspendCatching("save_autofill_credential") {
+            TODO("Implement autofill credential saving")
+        }
+    }
 }

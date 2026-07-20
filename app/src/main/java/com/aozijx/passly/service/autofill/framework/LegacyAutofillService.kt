@@ -8,6 +8,7 @@ import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.di.Heuristic
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
@@ -72,16 +73,15 @@ class LegacyAutofillService : AutofillService() {
         val parsed = AutofillStructureParser.parse(request.fillContexts)
 
         serviceScope.launch {
-            try {
-                useCases.save(
-                    packageName = parsed.packageName,
-                    webDomain = parsed.webDomain,
-                    pageTitle = parsed.pageTitle,
-                    usernameValue = parsed.usernameValue ?: "",
-                    passwordValue = parsed.passwordValue ?: "",
-                )
-            } catch (e: Exception) {
-                AppLog.e("LegacyAutofill", "Save failed", e)
+            val result = useCases.saveCredential(
+                packageName = parsed.packageName,
+                webDomain = parsed.webDomain,
+                pageTitle = parsed.pageTitle,
+                usernameValue = parsed.usernameValue ?: "",
+                passwordValue = parsed.passwordValue ?: "",
+            )
+            if (result is AppResult.Failure) {
+                AppLog.e("LegacyAutofill", "Save failed: ${result.error.message}")
             }
         }
     }

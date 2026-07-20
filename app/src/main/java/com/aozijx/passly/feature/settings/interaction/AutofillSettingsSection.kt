@@ -18,6 +18,12 @@ internal fun AutofillSettingsSection(
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
+                key = "interaction.autofill_settings",
+                title = stringResource(R.string.vault_menu_enable_autofill),
+                subtitle = stringResource(R.string.vault_toast_enable_autofill_manual),
+                onClick = onOpenAutofillSettings
+            ),
+            navigationSettingsGroupItem(
                 key = "interaction.autofill_mode",
                 title = "填充方式",
                 value = when (autofillUiMode) {
@@ -25,12 +31,6 @@ internal fun AutofillSettingsSection(
                     AutofillUiMode.BOTTOM_SHEET -> "底部弹窗"
                 },
                 onClick = onToggleAutofillUiMode
-            ),
-            navigationSettingsGroupItem(
-                key = "interaction.autofill_settings",
-                title = stringResource(R.string.vault_menu_enable_autofill),
-                subtitle = stringResource(R.string.vault_toast_enable_autofill_manual),
-                onClick = onOpenAutofillSettings
             )
         )
     )
