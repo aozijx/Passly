@@ -8,10 +8,10 @@ import com.aozijx.passly.data.repository.vault.OtpRepositoryImpl
 import com.aozijx.passly.data.repository.vault.SnapshotRepositoryImpl
 import com.aozijx.passly.data.repository.vault.VaultRepositoryImpl
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
+import com.aozijx.passly.domain.repository.favicon.FaviconRepository
+import com.aozijx.passly.domain.repository.otp.OtpRepository
 import com.aozijx.passly.domain.repository.vault.ActivityRepository
-import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.LookupRepository
-import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.SnapshotRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import dagger.Binds

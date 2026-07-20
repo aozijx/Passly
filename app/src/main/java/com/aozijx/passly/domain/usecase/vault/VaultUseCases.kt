@@ -5,9 +5,9 @@ import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
-import com.aozijx.passly.domain.repository.vault.FaviconRepository
+import com.aozijx.passly.domain.repository.favicon.FaviconRepository
+import com.aozijx.passly.domain.repository.otp.OtpRepository
 import com.aozijx.passly.domain.repository.vault.LookupRepository
-import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -48,6 +48,7 @@ class VaultUseCases @Inject constructor(
     suspend fun updateEntry(entry: VaultEntry): AppResult<Unit> = vaultRepository.update(entry)
 
     suspend fun deleteEntry(entry: VaultEntry): AppResult<Unit> = vaultRepository.delete(entry)
+
     fun getTotpCode(config: OtpConfig): String = otpRepository.generateTotp(config)
 
     suspend fun downloadFavicon(input: String): FaviconOutcome {
@@ -63,7 +64,11 @@ class VaultUseCases @Inject constructor(
                 val outcome = downloadFavicon(domain)
                 if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                     vaultRepository.getEntryById(summary.id)?.let { entry ->
-                        vaultRepository.update(entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath)))
+                        vaultRepository.update(
+                            entry.copy(
+                                metadata = entry.metadata.copy(icon = outcome.filePath)
+                            )
+                        )
                     }
                 }
             }

@@ -9,11 +9,7 @@ import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.VaultAccessState
-import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.favicon.FaviconOutcome
-import com.aozijx.passly.domain.repository.vault.FaviconRepository
-import com.aozijx.passly.domain.repository.vault.OtpRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
@@ -24,9 +20,7 @@ class VaultRepositoryImpl @Inject constructor(
     private val sessionState: VaultAccessState,
     private val sessionManager: DatabaseSession,
     private val cryptoMapper: VaultEntryCryptoMapper,
-    private val clock: Clock,
-    private val otpRepository: OtpRepository,
-    private val faviconRepository: FaviconRepository
+    private val clock: Clock
 ) : VaultRepository {
 
     override suspend fun getEntryById(entryId: String): VaultEntry? {
@@ -119,8 +113,40 @@ class VaultRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun generateTotp(config: OtpConfig): String = otpRepository.generateTotp(config)
+    override suspend fun incrementUsage(entryId: String): AppResult<Unit> {
+        if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
+        return sessionManager.withDatabase {
+            AppResult.runSuspendCatching("vault.incrementUsage") {
+                val metaEntity = metadataDao().getById(entryId) ?: return@runSuspendCatching
+                val credEntity = credentialDao().getByEntryId(entryId)
+                val entry =
+                    cryptoMapper.assembleEntry(metaEntity, credEntity) ?: return@runSuspendCatching
 
-    override suspend fun downloadFavicon(input: String): FaviconOutcome =
-        faviconRepository.downloadFavicon(input)
+                val updatedMeta = entry.metadata.copy(
+                    usageCount = entry.usageCount + 1,
+                    lastUsedAt = clock.now()
+                )
+
+                val metaBlob = cryptoMapper.encryptMetadata(updatedMeta, entryId)
+                val credBlob = cryptoMapper.encryptCredential(entry.credential, entryId)
+
+                val newMetaEntity = VaultMetadataEntity(
+                    entryId = entryId,
+                    entryType = entry.entryType,
+                    metadataBlob = metaBlob,
+                    vaultId = metaEntity.vaultId,
+                    entryVersion = metaEntity.entryVersion + 1,
+                    createdAt = metaEntity.createdAt,
+                    updatedAt = clock.now()
+                )
+                metadataDao().update(newMetaEntity)
+                credentialDao().update(
+                    VaultCredentialEntity(
+                        entryId = entryId,
+                        credentialBlob = credBlob
+                    )
+                )
+            }
+        }
+    }
 }

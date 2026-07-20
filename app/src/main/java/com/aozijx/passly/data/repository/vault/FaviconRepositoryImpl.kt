@@ -4,8 +4,8 @@ import android.content.Context
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
+import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.repository.settings.PortableRepository
-import com.aozijx.passly.domain.repository.vault.FaviconRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject

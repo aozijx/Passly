@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.vault
 
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
-import com.aozijx.passly.domain.repository.vault.OtpRepository
+import com.aozijx.passly.domain.repository.otp.OtpRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 

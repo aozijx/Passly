@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.usecase.detail
 
-import com.aozijx.passly.domain.model.favicon.FaviconOutcome
-import com.aozijx.passly.domain.repository.vault.FaviconRepository
-import com.aozijx.passly.domain.model.favicon.FaviconResult
-import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.favicon.FaviconOutcome
+import com.aozijx.passly.domain.model.favicon.FaviconResult
+import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.repository.vault.VaultRepository
 import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
 import com.aozijx.passly.domain.usecase.vault.SnapshotUseCases

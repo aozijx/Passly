@@ -1,6 +1,5 @@
 package com.aozijx.passly.domain.repository.vault
 
-import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
 import kotlinx.coroutines.flow.Flow
@@ -18,11 +17,6 @@ interface ActivityRepository {
 
     suspend fun insert(activity: VaultActivity)
     suspend fun insertAll(activities: List<VaultActivity>)
-
-    /**
-     * Records an activity for a vault entry and updates its usage statistics.
-     */
-    suspend fun record(entryId: String, type: ActivityType): AppResult<Unit>
 
     suspend fun deleteByEntryId(entryId: String)
     suspend fun deleteBefore(timestamp: Long)

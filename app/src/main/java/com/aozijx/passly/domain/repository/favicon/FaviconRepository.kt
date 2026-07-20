@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.repository.vault
+package com.aozijx.passly.domain.repository.favicon
 
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 

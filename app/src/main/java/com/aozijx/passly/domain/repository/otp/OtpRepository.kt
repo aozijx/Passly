@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.repository.vault
+package com.aozijx.passly.domain.repository.otp
 
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
 
