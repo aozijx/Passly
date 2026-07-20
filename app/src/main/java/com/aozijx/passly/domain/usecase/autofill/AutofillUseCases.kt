@@ -3,6 +3,7 @@ package com.aozijx.passly.domain.usecase.autofill
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.repository.autofill.AutofillStatusRepository
+import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.domain.repository.entry.RecordEntryUsageFacade
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -45,16 +46,25 @@ class RecordAutofillUsageUseCase @Inject constructor(
 }
 
 @Singleton
-class SaveAutofillCredentialUseCase @Inject constructor() {
+class SaveAutofillCredentialUseCase @Inject constructor(
+    private val repository: CredentialServiceRepository
+) {
     suspend operator fun invoke(
         packageName: String?,
         webDomain: String?,
         pageTitle: String?,
         usernameValue: String,
         passwordValue: String
-    ): AppResult<Long> {
+    ): AppResult<Unit> {
         return AppResult.runSuspendCatching("save_autofill_credential") {
-            TODO("Implement autofill credential saving")
+            val success = repository.save(
+                packageName = packageName,
+                webDomain = webDomain,
+                pageTitle = pageTitle,
+                usernameValue = usernameValue,
+                passwordValue = passwordValue
+            )
+            if (!success) throw IllegalStateException("Failed to save credential")
         }
     }
 }

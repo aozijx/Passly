@@ -80,8 +80,16 @@ class LegacyAutofillService : AutofillService() {
                 usernameValue = parsed.usernameValue ?: "",
                 passwordValue = parsed.passwordValue ?: "",
             )
-            if (result is AppResult.Failure) {
-                AppLog.e("LegacyAutofill", "Save failed: ${result.error.message}")
+            when (result) {
+                is AppResult.Success -> {
+                    AppLog.i("LegacyAutofill", "Credential saved successfully")
+                    callback.onSuccess()
+                }
+
+                is AppResult.Failure -> {
+                    AppLog.e("LegacyAutofill", "Save failed: ${result.error.message}")
+                    callback.onFailure(result.error.message)
+                }
             }
         }
     }
