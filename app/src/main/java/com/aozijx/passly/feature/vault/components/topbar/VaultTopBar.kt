@@ -28,20 +28,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.feature.vault.contract.VaultUiState
+import com.aozijx.passly.feature.vault.model.VaultTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTopBar(
-    vaultViewModel: VaultViewModel,
     uiState: VaultUiState,
     scrollBehavior: TopAppBarScrollBehavior,
     onExportClick: () -> Unit,
@@ -50,14 +49,21 @@ fun VaultTopBar(
     onSettingsClick: () -> Unit = {},
     isStatusBarAutoHide: Boolean = false,
     isTopBarCollapsible: Boolean = true,
-    isTabBarCollapsible: Boolean = true
+    isTabBarCollapsible: Boolean = true,
+    onSearchQueryChange: (String) -> Unit,
+    onToggleSearch: (Boolean) -> Unit,
+    onClearCategory: () -> Unit,
+    onExpandMoreMenu: (Boolean) -> Unit,
+    onToggleTotpVisibility: () -> Unit,
+    onCategorySelected: (String?) -> Unit,
+    onSortSelected: (SortOption) -> Unit,
+    onSelectTab: (VaultTab) -> Unit
 ) {
-    val context = LocalContext.current
     val density = LocalDensity.current
 
-    LifecycleResumeEffect(vaultViewModel) {
+    LifecycleResumeEffect(Unit) {
         onPauseOrDispose {
-            vaultViewModel.expandMoreMenu(false)
+            onExpandMoreMenu(false)
         }
     }
 
@@ -83,7 +89,7 @@ fun VaultTopBar(
                 if (uiState.isSearchActive) {
                     VaultSearchBar(
                         query = uiState.searchQuery,
-                        onQueryChange = { vaultViewModel.onSearchQueryChange(it) },
+                        onQueryChange = onSearchQueryChange,
                         focusRequester = focusRequester,
                     )
                 } else {
@@ -96,7 +102,7 @@ fun VaultTopBar(
                             fontWeight = FontWeight.Bold
                         )
                         if (uiState.selectedCategory != null) {
-                            IconButton(onClick = { vaultViewModel.clearSelectedCategory() }) {
+                            IconButton(onClick = onClearCategory) {
                                 Icon(
                                     Icons.Default.Clear,
                                     stringResource(R.string.vault_clear_filter),
@@ -108,7 +114,7 @@ fun VaultTopBar(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = { vaultViewModel.toggleSearch(!uiState.isSearchActive) }) {
+                IconButton(onClick = { onToggleSearch(!uiState.isSearchActive) }) {
                     Icon(
                         if (uiState.isSearchActive) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Search,
                         contentDescription = stringResource(if (uiState.isSearchActive) R.string.back else R.string.search)
@@ -118,7 +124,7 @@ fun VaultTopBar(
             actions = {
                 if (!uiState.isSearchActive) {
                     Box {
-                        IconButton(onClick = { vaultViewModel.expandMoreMenu(true) }) {
+                        IconButton(onClick = { onExpandMoreMenu(true) }) {
                             Icon(
                                 Icons.Default.MoreVert,
                                 contentDescription = stringResource(R.string.more)
@@ -126,21 +132,19 @@ fun VaultTopBar(
                         }
                         VaultDropdownMenu(
                             expanded = uiState.isMoreMenuExpanded,
-                            onDismissRequest = { vaultViewModel.expandMoreMenu(false) },
+                            onDismissRequest = { onExpandMoreMenu(false) },
                             showTOTPCode = uiState.showTOTPCode,
-                            onToggleTotpVisibility = {
-                                vaultViewModel.toggleShowTOTPCode()
-                            },
-                            onEnableAutofillClick = { vaultViewModel.openAutofillSettings(context) },
+                            onToggleTotpVisibility = onToggleTotpVisibility,
                             onSettingsClick = onSettingsClick,
                             onExportClick = onExportClick,
                             onOpenPlainExport = onPlainJsonExportClick,
                             onImportClick = onImportClick,
                             availableCategories = uiState.availableCategories,
                             selectedCategory = uiState.selectedCategory,
-                            onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
+                            onCategorySelected = onCategorySelected,
                             selectedSort = uiState.selectedSort,
-                            onSortSelected = { vaultViewModel.selectSortOption(it) })
+                            onSortSelected = onSortSelected
+                        )
                     }
                 }
             })
@@ -155,7 +159,7 @@ fun VaultTopBar(
                 selectedTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab)
                     .coerceAtLeast(0),
                 onTabSelected = { index ->
-                    uiState.visibleTabs.getOrNull(index)?.let { vaultViewModel.selectTab(it) }
+                    uiState.visibleTabs.getOrNull(index)?.let { onSelectTab(it) }
                 }
             )
         }

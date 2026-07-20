@@ -17,10 +17,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
-import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
@@ -37,7 +37,7 @@ fun VaultPagerContent(
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
     onSwipeTriggered: (SwipeActionType, VaultEntry) -> Unit,
-    vaultViewModel: VaultViewModel,
+    onItemClick: (VaultEntry) -> Unit,
     modifier: Modifier = Modifier
 ) {
     HorizontalPager(
@@ -64,7 +64,9 @@ fun VaultPagerContent(
                         swipeRightAction = swipeRightAction,
                         isSwipeEnabled = isSwipeEnabled,
                         onSwipeTriggered = onSwipeTriggered,
-                        vaultViewModel = vaultViewModel
+                        onItemClick = { onItemClick(item) },
+                        totpStates = uiState.totpStates,
+                        showTotpCode = uiState.showTOTPCode
                     )
                 }
 
@@ -85,7 +87,9 @@ private fun VaultListItemRow(
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
     onSwipeTriggered: (SwipeActionType, VaultEntry) -> Unit,
-    vaultViewModel: VaultViewModel
+    onItemClick: () -> Unit,
+    totpStates: Map<String, TotpState>,
+    showTotpCode: Boolean
 ) {
     val cardStyle = remember(item.entryType, perTypeStyleMap) {
         perTypeStyleMap[item.entryType.ordinal]?.takeIf { it != VaultCardStyle.DEFAULT }
@@ -117,7 +121,10 @@ private fun VaultListItemRow(
         isActive = isSwipeEnabled,
     ) {
         CardStyleRegistry.RenderVaultItem(
-            style = cardStyle, entry = item, viewModel = vaultViewModel
+            style = cardStyle, entry = item,
+            totpStates = totpStates,
+            showTotpCode = showTotpCode,
+            onClick = onItemClick
         )
     }
 }

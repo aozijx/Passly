@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault
 
 import android.app.Application
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,7 +11,6 @@ import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
-import com.aozijx.passly.feature.vault.internal.AutofillCoordinator
 import com.aozijx.passly.feature.vault.internal.DetailCoordinator
 import com.aozijx.passly.feature.vault.internal.EntryIconHelper
 import com.aozijx.passly.feature.vault.internal.EntryManager
@@ -48,7 +46,6 @@ class VaultViewModel @Inject constructor(
         _effects.tryEmit(VaultEffect.ShowError(message))
     }
 
-    private val autofill = AutofillCoordinator()
     private val totp = TotpCoordinator(
         scope = viewModelScope,
         codeGenerator = { config -> vaultUseCases.getTotpCode(config) },
@@ -162,9 +159,6 @@ class VaultViewModel @Inject constructor(
         _showTOTPCode.value = !_showTOTPCode.value
     }
 
-    // --- 其他业务状态 ---
-    fun openAutofillSettings(context: Context) = autofill.requestEnable(context)
-
     val addType: AddType? get() = detail.addType
     fun setAddType(type: AddType?) = detail.setAddType(type)
     val itemToDelete: VaultEntry? get() = detail.itemToDelete
@@ -177,7 +171,6 @@ class VaultViewModel @Inject constructor(
 
     init {
         totp.start { listCoordinator.state.value.items }
-        autofill.refreshStatus(getApplication())
         viewModelScope.launch {
             portableSettingsUseCases.vaultSortOption.first().let {
                 searchFilter.updateSelectedSort(it)

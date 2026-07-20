@@ -44,7 +44,6 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 private object PasswordCardPaletteCache {
@@ -67,8 +66,7 @@ private object PasswordCardPaletteCache {
 @Composable
 fun PasswordStyleVaultItem(
     entry: VaultEntry,
-    viewModel: VaultViewModel? = null,
-    onClick: () -> Unit = { viewModel?.showDetail(entry) }
+    onClick: () -> Unit
 ) {
     val context = LocalContext.current
     val secondaryText = when {

@@ -1,7 +1,8 @@
 package com.aozijx.passly.feature.settings.interaction
 
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.autofill.AutofillCoordinator
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
@@ -29,8 +30,9 @@ sealed interface InteractionUiAction {
 
 @HiltViewModel
 class InteractionViewModel @Inject constructor(
+    private val application: android.app.Application,
     private val portableSettingsUseCases: PortableSettingsUseCases
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     val config: StateFlow<InteractionUiState> = combine(
         portableSettingsUseCases.isSwipeEnabled,
@@ -72,5 +74,9 @@ class InteractionViewModel @Inject constructor(
                 viewModelScope.launch { portableSettingsUseCases.setAutofillUiMode(next) }
             }
         }
+    }
+
+    fun openAutofillSettings() {
+        AutofillCoordinator().requestEnable(getApplication())
     }
 }

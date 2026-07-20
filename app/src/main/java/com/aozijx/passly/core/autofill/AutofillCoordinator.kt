@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.internal
+package com.aozijx.passly.core.autofill
 
 import android.content.ComponentName
 import android.content.Context
@@ -12,7 +12,7 @@ import androidx.core.net.toUri
 import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
 
-internal class AutofillCoordinator {
+class AutofillCoordinator {
     var isEnabled by mutableStateOf(false)
         private set
 
@@ -20,8 +20,8 @@ internal class AutofillCoordinator {
         val currentService = Settings.Secure.getString(context.contentResolver, "autofill_service")
         val selected = currentService?.let { ComponentName.unflattenFromString(it) }
         isEnabled = selected != null && selected.packageName == context.packageName &&
-            selected.className.startsWith(context.packageName) &&
-            selected.className.endsWith("service.autofill.framework.LegacyAutofillService")
+                selected.className.startsWith(context.packageName) &&
+                selected.className.endsWith("service.autofill.framework.LegacyAutofillService")
     }
 
     fun requestEnable(context: Context) {

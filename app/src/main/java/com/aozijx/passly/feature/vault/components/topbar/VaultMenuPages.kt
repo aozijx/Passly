@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenuItem
@@ -43,7 +42,6 @@ internal fun MainMenuContent(
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onDismissRequest: () -> Unit,
-    onEnableAutofillClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onExportClick: () -> Unit,
     onOpenPlainExport: () -> Unit,
@@ -78,14 +76,6 @@ internal fun MainMenuContent(
                 null
             )
         }
-    )
-    DropdownMenuItem(
-        text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
-        onClick = {
-            onEnableAutofillClick()
-            onDismissRequest()
-        },
-        leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
     )
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     DropdownMenuItem(

@@ -127,7 +127,6 @@ fun VaultContent(
             .nestedScroll(actionProvider.fabScrollConnection),
         topBar = {
             VaultContentTopBar(
-                vaultViewModel = vaultViewModel,
                 uiState = uiState,
                 scrollBehavior = scrollBehavior,
                 onExportClick = actionProvider.onExportClick,
@@ -137,11 +136,22 @@ fun VaultContent(
                 isStatusBarAutoHide = vaultDisplayConfig.isStatusBarAutoHide,
                 isTopBarCollapsible = vaultDisplayConfig.isTopBarCollapsible,
                 isTabBarCollapsible = vaultDisplayConfig.isTabBarCollapsible,
-                isDatabaseInitializing = isDatabaseInitializing
+                isDatabaseInitializing = isDatabaseInitializing,
+                onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
+                onToggleSearch = { vaultViewModel.toggleSearch(it) },
+                onClearCategory = { vaultViewModel.clearSelectedCategory() },
+                onExpandMoreMenu = { vaultViewModel.expandMoreMenu(it) },
+                onToggleTotpVisibility = { vaultViewModel.toggleShowTOTPCode() },
+                onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
+                onSortSelected = { vaultViewModel.selectSortOption(it) },
+                onSelectTab = { vaultViewModel.selectTab(it) }
             )
         },
         floatingActionButton = {
-            VaultFab(viewModel = vaultViewModel, isVisible = isFabVisible)
+            VaultFab(
+                onAddTypeSelected = { vaultViewModel.setAddType(it) },
+                isVisible = isFabVisible
+            )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
@@ -153,7 +163,7 @@ fun VaultContent(
             swipeRightAction = vaultDisplayConfig.swipeRightAction,
             isSwipeEnabled = vaultDisplayConfig.isSwipeEnabled,
             onSwipeTriggered = actionProvider.onSwipeTriggered,
-            vaultViewModel = vaultViewModel,
+            onItemClick = { vaultViewModel.showDetail(it) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)

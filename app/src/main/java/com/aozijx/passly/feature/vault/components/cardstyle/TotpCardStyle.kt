@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -30,9 +29,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 private object TotpBehaviorTokens {
@@ -46,14 +44,14 @@ private object TotpBehaviorTokens {
 @Composable
 fun TotpStyleVaultItem(
     entry: VaultEntry,
-    vaultViewModel: VaultViewModel? = null,
+    totpState: TotpState?,
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
-    onClick: () -> Unit = { vaultViewModel?.showDetail(entry) }
+    onClick: () -> Unit
 ) {
-    val vaultUiStateState = vaultViewModel?.uiState?.collectAsStateWithLifecycle()
-    val currentState = vaultUiStateState?.value?.totpStates?.get(entry.id)
+    val currentState =
+        previewCode?.let { TotpState(code = it, progress = previewProgress ?: 0f) } ?: totpState
     val isSteam = remember(entry.credential.twoFactor?.otp?.algorithm ?: "SHA1") { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
 
     val targetProgress = previewProgress ?: (currentState?.progress ?: 0f)
@@ -76,10 +74,6 @@ fun TotpStyleVaultItem(
         targetValue = if (progress < TotpBehaviorTokens.LOW_PROGRESS_THRESHOLD) MaterialTheme.colorScheme.error
         else MaterialTheme.colorScheme.primary, label = "ProgressColor"
     )
-
-    LaunchedEffect(entry.id, vaultViewModel) {
-        vaultViewModel?.autoUnlockTotp(entry)
-    }
 
     Card(
         onClick = onClick,

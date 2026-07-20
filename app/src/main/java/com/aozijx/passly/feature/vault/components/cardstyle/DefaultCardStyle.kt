@@ -18,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,10 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 @Composable
@@ -79,20 +77,16 @@ fun VaultItem(
 @Composable
 fun TwoFAItem(
     entry: VaultEntry,
-    vaultViewModel: VaultViewModel?,
+    totpState: TotpState?,
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
-    onClick: () -> Unit = { vaultViewModel?.showDetail(entry) }
+    onClick: () -> Unit
 ) {
     val currentState =
-        vaultViewModel?.uiState?.collectAsStateWithLifecycle()?.value?.totpStates?.get(entry.id)
+        previewCode?.let { TotpState(code = it, progress = previewProgress ?: 0f) } ?: totpState
 
     val isSteam = remember(entry.credential.twoFactor?.otp?.algorithm ?: "SHA1") { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
-
-    LaunchedEffect(entry.id, vaultViewModel) {
-        vaultViewModel?.autoUnlockTotp(entry)
-    }
 
     Card(
         onClick = onClick,
@@ -166,8 +160,7 @@ fun TwoFAItem(
 @Composable
 fun AutoFillItem(
     entry: VaultEntry,
-    viewModel: VaultViewModel,
-    onClick: () -> Unit = { viewModel.showDetail(entry) }
+    onClick: () -> Unit
 ) {
     val isAutoCaptured = entry.category == stringResource(R.string.category_autofill)
 

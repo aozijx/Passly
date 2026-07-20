@@ -13,7 +13,8 @@ internal fun InteractionDetail(
     onSwipeEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit,
-    onToggleAutofillUiMode: () -> Unit
+    onToggleAutofillUiMode: () -> Unit,
+    onOpenAutofillSettings: () -> Unit
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -31,6 +32,7 @@ internal fun InteractionDetail(
 
         AutofillSettingsSection(
             autofillUiMode = state.autofillUiMode,
+            onOpenAutofillSettings = onOpenAutofillSettings,
             onToggleAutofillUiMode = onToggleAutofillUiMode
         )
     }

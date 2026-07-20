@@ -46,13 +46,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.model.AddType
 import kotlinx.coroutines.delay
 
 @Composable
 fun VaultFab(
-    viewModel: VaultViewModel,
+    onAddTypeSelected: (AddType) -> Unit,
     isVisible: Boolean = true
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
@@ -112,7 +111,7 @@ fun VaultFab(
                         icon = type.icon,
                         onClick = {
                             showFabMenu = false
-                            viewModel.setAddType(type)
+                            onAddTypeSelected(type)
                         }
                     )
                 }
@@ -147,7 +146,7 @@ fun VaultFab(
             onDismiss = { showAddEntrySheet = false },
             onSelectType = { type ->
                 showFabMenu = false
-                viewModel.setAddType(type)
+                onAddTypeSelected(type)
             }
         )
     }

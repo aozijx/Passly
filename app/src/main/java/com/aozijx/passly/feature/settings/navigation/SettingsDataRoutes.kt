@@ -60,6 +60,9 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                     onRightSwipeActionClick = localState::openRightActionDialog,
                     onToggleAutofillUiMode = {
                         interactionViewModel.onAction(InteractionUiAction.ToggleAutofillUiMode)
+                    },
+                    onOpenAutofillSettings = {
+                        interactionViewModel.openAutofillSettings()
                     }
                 )
             }
