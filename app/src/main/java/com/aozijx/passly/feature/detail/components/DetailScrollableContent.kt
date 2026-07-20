@@ -16,7 +16,7 @@ import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.EntryEditState
@@ -40,7 +40,7 @@ fun DetailScrollableContent(
     totpEditState: TotpEditState,
     editState: EntryEditState,
     onShowQrDialog: () -> Unit,
-    onEvent: (DetailEvent) -> Unit,
+    onEvent: (DetailIntent) -> Unit,
     onInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onShowIconPicker: () -> Unit,
@@ -50,7 +50,7 @@ fun DetailScrollableContent(
     val vaultType = uiState.vaultType
 
     val revealField: (String, String?) -> Unit = { key, value ->
-        onEvent(DetailEvent.RevealField(key, value))
+        onEvent(DetailIntent.RevealField(key, value))
     }
 
     LazyColumn(
@@ -75,7 +75,7 @@ fun DetailScrollableContent(
                         revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
                         onUsernameRevealed = { revealField(RevealedFieldKey.USERNAME, it) },
                         onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
                     )
                 }
@@ -89,7 +89,7 @@ fun DetailScrollableContent(
                         revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
                         onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
                         onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
                     )
                 }
@@ -106,7 +106,7 @@ fun DetailScrollableContent(
                         revealedPaymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN),
                         onRevealField = revealField,
                         onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
                     )
                 }
@@ -127,7 +127,7 @@ fun DetailScrollableContent(
                             )
                         },
                         onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
                     )
                 }
@@ -155,7 +155,7 @@ fun DetailScrollableContent(
                         revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
                         onUsernameRevealed = { revealField(RevealedFieldKey.USERNAME, it) },
                         onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                        onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                         onEvent = onEvent
                     )
                 }
@@ -168,7 +168,7 @@ fun DetailScrollableContent(
                     entry = entry,
                     editState = editState,
                     onUpdateVaultEntry = onUpdateVaultEntry,
-                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
                 )
             }
         }
@@ -179,7 +179,7 @@ fun DetailScrollableContent(
                 editState = editState,
                 onUpdateVaultEntry = onUpdateVaultEntry,
                 onShowIconPicker = onShowIconPicker,
-                onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
             )
         }
 
@@ -188,7 +188,7 @@ fun DetailScrollableContent(
                 entry = entry,
                 editState = editState,
                 onUpdateVaultEntry = onUpdateVaultEntry,
-                onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) }
+                onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
             )
         }
 

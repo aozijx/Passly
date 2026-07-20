@@ -30,7 +30,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,7 +39,7 @@ fun DetailTopBar(
     entry: VaultEntry,
     uiState: DetailUiState,
     scrollBehavior: TopAppBarScrollBehavior,
-    onEvent: (DetailEvent) -> Unit,
+    onEvent: (DetailIntent) -> Unit,
     onBack: () -> Unit,
     onInteraction: () -> Unit = {}
 ) {
@@ -51,7 +51,7 @@ fun DetailTopBar(
                 OutlinedTextField(
                     value = uiState.editedTitle,
                     onValueChange = {
-                        onEvent(DetailEvent.UpdateEditedTitle(it))
+                        onEvent(DetailIntent.UpdateEditedTitle(it))
                     },
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -64,7 +64,7 @@ fun DetailTopBar(
                     modifier = Modifier.combinedClickable(
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onEvent(DetailEvent.StartTitleEdit)
+                            onEvent(DetailIntent.StartTitleEdit)
                         },
                         onClick = { onInteraction() }
                     )
@@ -75,7 +75,7 @@ fun DetailTopBar(
             IconButton(onClick = {
                 onInteraction()
                 if (uiState.isEditingTitle) {
-                    onEvent(DetailEvent.CancelTitleEdit)
+                    onEvent(DetailIntent.CancelTitleEdit)
                 } else {
                     onBack()
                 }
@@ -90,7 +90,7 @@ fun DetailTopBar(
             if (uiState.isEditingTitle) {
                 TextButton(onClick = {
                     onInteraction()
-                    onEvent(DetailEvent.SaveTitle)
+                    onEvent(DetailIntent.SaveTitle)
                 }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Check, "保存")
@@ -101,7 +101,7 @@ fun DetailTopBar(
             } else {
                 IconButton(onClick = {
                     onInteraction()
-                    onEvent(DetailEvent.ToggleFavorite)
+                    onEvent(DetailIntent.ToggleFavorite)
                 }) {
                     Icon(
                         imageVector = if (entry.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,

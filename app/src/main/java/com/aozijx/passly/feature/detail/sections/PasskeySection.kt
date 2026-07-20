@@ -14,7 +14,7 @@ import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
@@ -27,7 +27,7 @@ fun PasskeySection(
     revealedRecoveryCodes: String?,
     onRevealField: (String, String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEvent: (DetailEvent) -> Unit,
+    onEvent: (DetailIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current

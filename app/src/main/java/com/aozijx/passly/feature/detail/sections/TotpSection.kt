@@ -15,7 +15,7 @@ import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.components.TotpCodeCard
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.detail.sections.dialogs.EditTotpSection
 
@@ -29,7 +29,7 @@ fun TotpSection(
     showQrDialog: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit,
-    onEvent: (DetailEvent) -> Unit
+    onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
     val totpCopiedMsg = stringResource(R.string.vault_totp_copied)
@@ -45,7 +45,7 @@ fun TotpSection(
                     if (it.code.isNotEmpty() && !it.code.contains("-")) {
                         ClipboardUtils.copy(context, it.code)
                         Toast.makeText(context, totpCopiedMsg, Toast.LENGTH_SHORT).show()
-                        onEvent(DetailEvent.RecordAction("totp", ActivityType.COPY_PASSWORD))
+                        onEvent(DetailIntent.RecordAction("totp", ActivityType.COPY_PASSWORD))
                     }
                 }
             },

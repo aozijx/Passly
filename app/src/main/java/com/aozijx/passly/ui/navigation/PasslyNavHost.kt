@@ -109,7 +109,7 @@ fun PasslyNavHost(
                     uiState = detailUiState,
                     totpStates = vaultUiState.totpStates,
                     onBack = { navController.popBackStack() },
-                    onEvent = detailViewModel::onEvent,
+                    onEvent = detailViewModel::handleIntent,
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
                     onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onShowIconPicker = { vaultViewModel.showDetailIconPicker() },

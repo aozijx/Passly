@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.detail.contract
 
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.activity.VaultActivity
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.activity.VaultActivity
 
 data class DetailUiState(
     val entry: VaultEntry? = null,
@@ -34,24 +34,24 @@ object RevealedFieldKey {
     const val ID_NUMBER = "idNumber"
 }
 
-sealed interface DetailEvent {
-    data class Initialize(val initialEntry: VaultEntry) : DetailEvent
-    data class SyncEntry(val entry: VaultEntry) : DetailEvent
-    data class CommitEntryUpdate(val entry: VaultEntry) : DetailEvent
-    object ShowIconPicker : DetailEvent
+sealed interface DetailIntent {
+    data class Initialize(val initialEntry: VaultEntry) : DetailIntent
+    data class SyncEntry(val entry: VaultEntry) : DetailIntent
+    data class CommitEntryUpdate(val entry: VaultEntry) : DetailIntent
+    object ShowIconPicker : DetailIntent
 
-    object StartTitleEdit : DetailEvent
-    object CancelTitleEdit : DetailEvent
-    data class UpdateEditedTitle(val value: String) : DetailEvent
+    object StartTitleEdit : DetailIntent
+    object CancelTitleEdit : DetailIntent
+    data class UpdateEditedTitle(val value: String) : DetailIntent
 
-    object SaveTitle : DetailEvent
-    object ToggleFavorite : DetailEvent
+    object SaveTitle : DetailIntent
+    object ToggleFavorite : DetailIntent
 
-    data class RevealField(val key: String, val value: String?) : DetailEvent
+    data class RevealField(val key: String, val value: String?) : DetailIntent
 
-    data class RecordAction(val field: String, val type: ActivityType) : DetailEvent
-    data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailEvent
-    object ClearSensitiveState : DetailEvent
+    data class RecordAction(val field: String, val type: ActivityType) : DetailIntent
+    data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailIntent
+    object ClearSensitiveState : DetailIntent
 }
 
 sealed interface DetailEffect {

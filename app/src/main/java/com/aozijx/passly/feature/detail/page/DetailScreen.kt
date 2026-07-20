@@ -21,7 +21,7 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailScrollableContent
 import com.aozijx.passly.feature.detail.components.DetailTopBar
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.TotpEditState
@@ -39,7 +39,7 @@ fun DetailScreen(
     totpStates: Map<String, TotpState>,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onBack: () -> Unit,
-    onEvent: (DetailEvent) -> Unit,
+    onEvent: (DetailIntent) -> Unit,
     onUpdateInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onShowIconPicker: () -> Unit,
@@ -56,7 +56,7 @@ fun DetailScreen(
 
     // 页面数据初始化（同 key 内串联首次 TOTP 自动解锁，避免重复 effect 触发）
     LaunchedEffect(initialEntry.id) {
-        onEvent(DetailEvent.Initialize(initialEntry))
+        onEvent(DetailIntent.Initialize(initialEntry))
         if (!initialEntry.credential.twoFactor?.otp?.secret.isNullOrBlank()) {
             onAutoUnlockTotp(initialEntry)
         }
@@ -125,7 +125,7 @@ fun DetailScreen(
             onShowQrDialog = {
                 onAuthenticate {
                     totpEditState.isEditing = false
-                    onEvent(DetailEvent.ShowIconPicker) // 借用 Event 系统处理显示逻辑（或根据需要调整）
+                    onEvent(DetailIntent.ShowIconPicker) // 借用 Event 系统处理显示逻辑（或根据需要调整）
                 }
             },
             onEvent = onEvent,

@@ -33,7 +33,7 @@ import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
@@ -44,7 +44,7 @@ fun SeedPhraseSection(
     revealedSeedPhrase: String?,
     onSeedPhraseRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEvent: (DetailEvent) -> Unit
+    onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
     val seedPhraseCopiedMsg = stringResource(R.string.seed_phrase_copied)

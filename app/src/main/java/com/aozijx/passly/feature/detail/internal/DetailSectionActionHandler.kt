@@ -3,15 +3,15 @@ package com.aozijx.passly.feature.detail.internal
 import android.content.Context
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.feature.detail.contract.DetailEvent
 import com.aozijx.passly.feature.detail.DetailAuthenticate
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 
 internal data class DetailSectionActionHandler(
     val onAuthenticate: DetailAuthenticate,
-    val onEvent: (DetailEvent) -> Unit
+    val onEvent: (DetailIntent) -> Unit
 ) {
     fun record(field: String, type: ActivityType) {
-        onEvent(DetailEvent.RecordAction(field, type))
+        onEvent(DetailIntent.RecordAction(field, type))
     }
 }
 

@@ -3,13 +3,13 @@ package com.aozijx.passly.feature.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.usecase.detail.DetailUseCases
-import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
 import com.aozijx.passly.domain.usecase.settings.RuntimeSettingsUseCases
+import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
 import com.aozijx.passly.feature.detail.contract.DetailEffect
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.page.internal.DetailEntryAnalyzer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,9 +51,9 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    fun onEvent(event: DetailEvent) {
+    fun handleIntent(event: DetailIntent) {
         when (event) {
-            is DetailEvent.Initialize -> {
+            is DetailIntent.Initialize -> {
                 refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
 
                 viewModelScope.launch {
@@ -70,12 +70,12 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailEvent.SyncEntry -> {
+            is DetailIntent.SyncEntry -> {
                 val editedTitle = if (_uiState.value.isEditingTitle) _uiState.value.editedTitle else event.entry.title
                 refreshFromEntry(event.entry, _uiState.value.isEditingTitle, editedTitle)
             }
 
-            is DetailEvent.CommitEntryUpdate -> {
+            is DetailIntent.CommitEntryUpdate -> {
                 val editedTitle = if (_uiState.value.isEditingTitle) {
                     _uiState.value.editedTitle
                 } else {
@@ -85,18 +85,18 @@ class DetailViewModel @Inject constructor(
                 emitEntryUpdated(event.entry)
             }
 
-            DetailEvent.ShowIconPicker -> {
+            DetailIntent.ShowIconPicker -> {
                 _effects.tryEmit(DetailEffect.IconPickerRequested)
             }
 
-            DetailEvent.StartTitleEdit -> {
+            DetailIntent.StartTitleEdit -> {
                 _uiState.update {
                     val currentTitle = it.entry?.title.orEmpty()
                     it.copy(isEditingTitle = true, editedTitle = currentTitle)
                 }
             }
 
-            DetailEvent.CancelTitleEdit -> {
+            DetailIntent.CancelTitleEdit -> {
                 _uiState.update {
                     it.copy(
                         isEditingTitle = false,
@@ -105,11 +105,11 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailEvent.UpdateEditedTitle -> {
+            is DetailIntent.UpdateEditedTitle -> {
                 _uiState.update { it.copy(editedTitle = event.value) }
             }
 
-            DetailEvent.SaveTitle -> {
+            DetailIntent.SaveTitle -> {
                 val state = _uiState.value
                 val current = state.entry ?: return
                 val newTitle = state.editedTitle.trim()
@@ -125,12 +125,12 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            DetailEvent.ToggleFavorite -> {
+            DetailIntent.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
                 commitEntryUpdate(current.copy(metadata = current.metadata.copy(favorite = !current.favorite)))
             }
 
-            is DetailEvent.RevealField -> {
+            is DetailIntent.RevealField -> {
                 _uiState.update { state ->
                     val updated = state.revealedFields.toMutableMap()
                     if (event.value != null) updated[event.key] = event.value
@@ -139,7 +139,7 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailEvent.RecordAction -> {
+            is DetailIntent.RecordAction -> {
                 val current = _uiState.value.entry ?: return
                 if (event.type == ActivityType.VIEW && !_uiState.value.isAccessHistoryEnabled) return
                 if (event.type == ActivityType.COPY_PASSWORD || event.type == ActivityType.COPY_USERNAME) {
@@ -156,14 +156,14 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
-            is DetailEvent.ToggleAccessHistoryRecording -> {
+            is DetailIntent.ToggleAccessHistoryRecording -> {
                 _uiState.update { it.copy(isAccessHistoryEnabled = event.enabled) }
                 viewModelScope.launch {
                     runtimeSettingsUseCases.setUserConfigExtra(ACCESS_HISTORY_TOGGLE_KEY, event.enabled.toString())
                 }
             }
 
-            DetailEvent.ClearSensitiveState -> {
+            DetailIntent.ClearSensitiveState -> {
                 _uiState.update { DetailUiState() }
             }
         }

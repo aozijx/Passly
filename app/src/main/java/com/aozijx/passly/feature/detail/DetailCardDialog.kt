@@ -35,7 +35,7 @@ import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.components.DetailHeader
 import com.aozijx.passly.feature.detail.contract.DetailEffect
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.TotpEditState
@@ -62,11 +62,11 @@ fun DetailCardDialog(
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(initialEntry.id) {
-        detailViewModel.onEvent(DetailEvent.Initialize(initialEntry))
+        detailViewModel.handleIntent(DetailIntent.Initialize(initialEntry))
     }
 
     LaunchedEffect(initialEntry) {
-        detailViewModel.onEvent(DetailEvent.SyncEntry(initialEntry))
+        detailViewModel.handleIntent(DetailIntent.SyncEntry(initialEntry))
     }
 
     val entry = detailUiState.entry ?: initialEntry
@@ -119,7 +119,7 @@ fun DetailCardDialog(
 
     Dialog(
         onDismissRequest = {
-            detailViewModel.onEvent(DetailEvent.ClearSensitiveState)
+            detailViewModel.handleIntent(DetailIntent.ClearSensitiveState)
             ClipboardUtils.clear(context)
             onDismiss()
         },
@@ -141,7 +141,7 @@ fun DetailCardDialog(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     DetailHeader(
                         item = entry,
-                        onIconClick = { detailViewModel.onEvent(DetailEvent.ShowIconPicker) },
+                        onIconClick = { detailViewModel.handleIntent(DetailIntent.ShowIconPicker) },
                         trailingText = entry.category
                     )
                 }
@@ -168,16 +168,16 @@ fun DetailCardDialog(
                         revealedUsername = detailUiState.revealed(RevealedFieldKey.USERNAME),
                         revealedPassword = detailUiState.revealed(RevealedFieldKey.PASSWORD),
                         onUsernameRevealed = {
-                            detailViewModel.onEvent(
-                                DetailEvent.RevealField(
+                            detailViewModel.handleIntent(
+                                DetailIntent.RevealField(
                                     RevealedFieldKey.USERNAME,
                                     it
                                 )
                             )
                         },
                         onPasswordRevealed = {
-                            detailViewModel.onEvent(
-                                DetailEvent.RevealField(
+                            detailViewModel.handleIntent(
+                                DetailIntent.RevealField(
                                     RevealedFieldKey.PASSWORD,
                                     it
                                 )
@@ -189,7 +189,7 @@ fun DetailCardDialog(
                         },
                         mainViewModel = mainViewModel,
                         onUpdateVaultEntry = onUpdateVaultEntry,
-                        onEvent = detailViewModel::onEvent
+                        onEvent = detailViewModel::handleIntent
                     )
                 }
             }
@@ -220,7 +220,7 @@ private fun LazyListScope.typeSpecificCardContent(
     onShowQrDialog: () -> Unit,
     mainViewModel: MainViewModel,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onEvent: (DetailEvent) -> Unit
+    onEvent: (DetailIntent) -> Unit
 ) {
     item {
         when (vaultType) {
@@ -235,7 +235,7 @@ private fun LazyListScope.typeSpecificCardContent(
                     revealedPassword = revealedPassword,
                     onUsernameRevealed = onUsernameRevealed,
                     onPasswordRevealed = onPasswordRevealed,
-                    onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                     onEvent = onEvent
                 )
             }
@@ -251,7 +251,7 @@ private fun LazyListScope.typeSpecificCardContent(
                 totpEditState = totpEditState,
                 showQrDialog = onShowQrDialog,
                 onUpdateVaultEntry = onUpdateVaultEntry,
-                onEntryUpdated = { onEvent(DetailEvent.CommitEntryUpdate(it)) },
+                onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                 onEvent = onEvent
             )
         }

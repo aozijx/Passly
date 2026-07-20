@@ -32,7 +32,7 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
@@ -46,7 +46,7 @@ fun WifiSection(
     onPasswordRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (VaultEntry) -> Unit,
-    onEvent: (DetailEvent) -> Unit
+    onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
     val wifiSsidLabel = stringResource(R.string.wifi_ssid)
@@ -66,7 +66,7 @@ fun WifiSection(
             isRevealed = true,
             onCopy = {
                 ClipboardUtils.copy(context, entry.username)
-                onEvent(DetailEvent.RecordAction("SSID", ActivityType.COPY_PASSWORD))
+                onEvent(DetailIntent.RecordAction("SSID", ActivityType.COPY_PASSWORD))
             },
             onEdit = {}
         )

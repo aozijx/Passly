@@ -36,7 +36,7 @@ import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
@@ -53,7 +53,7 @@ fun BankCardSection(
     onRevealField: (String, String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (VaultEntry) -> Unit,
-    onEvent: (DetailEvent) -> Unit
+    onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
     val cardCopiedMsg = stringResource(R.string.card_copied)
@@ -228,7 +228,7 @@ fun BankCardSection(
                 onCopy = {
                     ClipboardUtils.copy(context, expiration)
                     Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
-                    onEvent(DetailEvent.RecordAction("expiration", ActivityType.COPY_PASSWORD))
+                    onEvent(DetailIntent.RecordAction("expiration", ActivityType.COPY_PASSWORD))
                 },
                 onEdit = {}
             )
@@ -264,7 +264,7 @@ fun BankCardSection(
                     onAuthenticate {
                         onRevealField(RevealedFieldKey.CARD_NUMBER, entry.credential.password)
                         onEvent(
-                            DetailEvent.RecordAction(
+                            DetailIntent.RecordAction(
                                 "card number",
                                 ActivityType.VIEW
                             )
@@ -272,7 +272,7 @@ fun BankCardSection(
                         if (revealedCvv == null && entry.credential.cardCvv != null) {
                             onRevealField(RevealedFieldKey.CVV, entry.credential.cardCvv)
                             onEvent(
-                                DetailEvent.RecordAction(
+                                DetailIntent.RecordAction(
                                     "CVV",
                                     ActivityType.VIEW
                                 )
@@ -281,7 +281,7 @@ fun BankCardSection(
                         if (revealedCardholder == null) {
                             onRevealField(RevealedFieldKey.CARDHOLDER, entry.username)
                             onEvent(
-                                DetailEvent.RecordAction(
+                                DetailIntent.RecordAction(
                                     "cardholder",
                                     ActivityType.VIEW
                                 )

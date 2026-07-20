@@ -64,14 +64,13 @@ import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.feature.scanner.components.ScannerView
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent
-import com.aozijx.passly.feature.vault.VaultViewModel
 
 /**
  * Vault 专用的扫码特化组件
  */
 @Composable
 fun VaultScanner(
-    vaultViewModel: VaultViewModel,
+    onSaveEntry: (VaultEntry) -> Unit,
     scannerViewModel: ScannerViewModel = viewModel(),
     onDismiss: () -> Unit
 ) {
@@ -105,7 +104,7 @@ fun VaultScanner(
     }
 
     val pickPhoto = rememberImagePicker { uri, _ ->
-        scannerViewModel.handleIntent(ScannerIntent.DecodeImage(uri, context))
+        scannerViewModel.handleIntent(ScannerIntent.DecodeImage(uri))
     }
 
     Box(
@@ -118,7 +117,7 @@ fun VaultScanner(
             showResultCard = scannedTotp == null,
             onBarcodeDetected = { barcode ->
                 if (scannedTotp != null) return@ScannerView
-                scannerViewModel.handleIntent(ScannerIntent.BarcodeDetected(barcode, context))
+                scannerViewModel.handleIntent(ScannerIntent.BarcodeDetected(barcode))
             },
             onPermissionDenied = { onDismiss() })
 
@@ -248,7 +247,7 @@ fun VaultScanner(
                                                 )
                                             )
                                         )
-                                        vaultViewModel.addItem(entry)
+                                        onSaveEntry(entry)
                                         Toast.makeText(context, successSaveMsg, Toast.LENGTH_SHORT)
                                             .show()
                                         onDismiss()

@@ -32,7 +32,7 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.components.EditTextField
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
@@ -47,7 +47,7 @@ fun SshKeySection(
     onSshPrivateKeyRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (VaultEntry) -> Unit,
-    onEvent: (DetailEvent) -> Unit
+    onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
     val sshPrivateKeyLabel = stringResource(R.string.ssh_private_key)
@@ -183,7 +183,7 @@ fun SshKeySection(
                         onAuthenticate {
                             onSshPrivateKeyRevealed(sshKey)
                             onEvent(
-                                DetailEvent.RecordAction(
+                                DetailIntent.RecordAction(
                                     "private key",
                                     ActivityType.VIEW
                                 )

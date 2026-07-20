@@ -24,7 +24,7 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.components.EditTextField
-import com.aozijx.passly.feature.detail.contract.DetailEvent
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
@@ -39,7 +39,7 @@ fun CredentialSection(
     onUsernameRevealed: (String?) -> Unit,
     onPasswordRevealed: (String?) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit,
-    onEvent: (DetailEvent) -> Unit
+    onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
     val actionHandler = DetailSectionActionHandler(
@@ -112,7 +112,7 @@ fun CredentialSection(
                         if (revealedUsername == null && item.username.isNotEmpty()) {
                             onUsernameRevealed(item.username)
                             onEvent(
-                                DetailEvent.RecordAction(
+                                DetailIntent.RecordAction(
                                     "username",
                                     ActivityType.VIEW
                                 )
@@ -121,7 +121,7 @@ fun CredentialSection(
                         if (revealedPassword == null && item.credential.password?.isNotEmpty() == true) {
                             onPasswordRevealed(item.credential.password)
                             onEvent(
-                                DetailEvent.RecordAction(
+                                DetailIntent.RecordAction(
                                     "password",
                                     ActivityType.VIEW
                                 )
