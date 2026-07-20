@@ -43,7 +43,6 @@ internal fun MainMenuContent(
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onDismissRequest: () -> Unit,
-    isAutofillEnabled: Boolean,
     onEnableAutofillClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onExportClick: () -> Unit,
@@ -80,16 +79,14 @@ internal fun MainMenuContent(
             )
         }
     )
-    if (!isAutofillEnabled) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
-            onClick = {
-                onEnableAutofillClick()
-                onDismissRequest()
-            },
-            leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
-        )
-    }
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.vault_menu_enable_autofill)) },
+        onClick = {
+            onEnableAutofillClick()
+            onDismissRequest()
+        },
+        leadingIcon = { Icon(Icons.Default.SettingsSuggest, null) }
+    )
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     DropdownMenuItem(
         text = { Text(stringResource(R.string.settings)) },

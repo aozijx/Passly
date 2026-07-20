@@ -131,7 +131,6 @@ fun VaultTopBar(
                             onToggleTotpVisibility = {
                                 vaultViewModel.toggleShowTOTPCode()
                             },
-                            isAutofillEnabled = vaultViewModel.isAutofillEnabled,
                             onEnableAutofillClick = { vaultViewModel.openAutofillSettings(context) },
                             onSettingsClick = onSettingsClick,
                             onExportClick = onExportClick,

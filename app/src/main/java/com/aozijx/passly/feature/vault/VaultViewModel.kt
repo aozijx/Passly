@@ -163,7 +163,6 @@ class VaultViewModel @Inject constructor(
     }
 
     // --- 其他业务状态 ---
-    val isAutofillEnabled: Boolean get() = autofill.isEnabled
     fun openAutofillSettings(context: Context) = autofill.requestEnable(context)
 
     val addType: AddType? get() = detail.addType
