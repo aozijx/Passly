@@ -7,6 +7,7 @@ import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.detail.DetailCardDialog
 import com.aozijx.passly.feature.main.MainViewModel
+import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.dialogs.DeleteConfirmDialog
@@ -71,6 +72,12 @@ fun AddDialogHost(
             viewModel = vaultViewModel,
             onUpdateInteraction = onUpdateInteraction
         )
+
+        AddType.SCAN -> VaultScanner(
+            onSaveEntry = { vaultViewModel.addItem(it) },
+            onDismiss = { vaultViewModel.setAddType(null) }
+        )
+
         AddType.BANK_CARD,
         AddType.WIFI,
         AddType.SSH_KEY,
@@ -86,7 +93,6 @@ fun AddDialogHost(
             )
         }
 
-        null -> Unit
         else -> {}
     }
 }

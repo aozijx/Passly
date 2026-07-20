@@ -47,7 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.media.ImageType
@@ -71,7 +71,7 @@ import com.aozijx.passly.feature.scanner.contract.ScannerIntent
 @Composable
 fun VaultScanner(
     onSaveEntry: (VaultEntry) -> Unit,
-    scannerViewModel: ScannerViewModel = viewModel(),
+    scannerViewModel: ScannerViewModel = hiltViewModel(),
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
