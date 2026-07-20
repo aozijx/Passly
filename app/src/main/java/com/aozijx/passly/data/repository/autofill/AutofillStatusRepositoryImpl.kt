@@ -55,8 +55,10 @@ class AutofillStatusRepositoryImpl @Inject constructor(
     }
 
     override fun openAutofillSettings() {
-        val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE)
-        intent.data = "package:${context.packageName}".toUri()
+        val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
+            data = "package:${context.packageName}".toUri()
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
         context.startActivity(intent)
     }
 }

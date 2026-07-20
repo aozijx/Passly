@@ -13,8 +13,10 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.diagnostics.DiagnosticsPolicyController
+import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
+import com.aozijx.passly.core.diagnostics.LogCategory
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import dagger.hilt.android.HiltAndroidApp
@@ -74,8 +76,8 @@ class PasslyApplication : Application() {
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            com.aozijx.passly.core.diagnostics.AppLog.e(
-                com.aozijx.passly.core.diagnostics.LogCategory.DATABASE,
+            AppLog.e(
+                LogCategory.DATABASE,
                 "sqlcipher.load_failed",
                 throwable = e
             )
@@ -120,28 +122,24 @@ class PasslyApplication : Application() {
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                     PackageManager.DONT_KILL_APP
                 )
-                com.aozijx.passly.core.diagnostics.AppLog.i(
-                    com.aozijx.passly.core.diagnostics.LogCategory.AUTOFILL,
-                    "autofill.modern_enabled"
-                )
+                AppLog.i(LogCategory.AUTOFILL, "autofill.modern_enabled")
             } else {
-                // API 31-33：启用 Legacy
+                // API < 34：启用 Legacy，同时【必须】禁用 Modern
                 pm.setComponentEnabledSetting(
                     legacyComponent,
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                     PackageManager.DONT_KILL_APP
                 )
-                com.aozijx.passly.core.diagnostics.AppLog.i(
-                    com.aozijx.passly.core.diagnostics.LogCategory.AUTOFILL,
-                    "autofill.legacy_enabled"
+                // ⚠️ 关键修复：确保低版本上 Modern 服务被彻底关闭
+                pm.setComponentEnabledSetting(
+                    modernComponent,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP
                 )
+                AppLog.i(LogCategory.AUTOFILL, "autofill.legacy_enabled")
             }
         } catch (e: Exception) {
-            com.aozijx.passly.core.diagnostics.AppLog.e(
-                com.aozijx.passly.core.diagnostics.LogCategory.AUTOFILL,
-                "autofill.configure_failed",
-                throwable = e
-            )
+            AppLog.e(LogCategory.AUTOFILL, "autofill.configure_failed", throwable = e)
         }
     }
 
