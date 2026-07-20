@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.repository.vault.LookupRepository
+import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import com.aozijx.passly.feature.vault.model.VaultTab
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,7 +23,7 @@ internal class VaultQueryCoordinator(
     ) { query, category, tab ->
         QueryParams(query = query, category = category, tab = tab)
     }.distinctUntilChanged().flatMapLatest { params ->
-        vaultUseCases.observeEntrySummaries(
+        vaultUseCases.observe(
             query = params.query,
             category = params.category,
             filter = LookupRepository.EntryFilter.ALL

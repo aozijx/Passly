@@ -57,7 +57,7 @@ class DetailViewModel @Inject constructor(
                 refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
 
                 viewModelScope.launch {
-                    val latest = detailUseCases.getEntryById(event.initialEntry.id) ?: event.initialEntry
+                    val latest = detailUseCases.getById(event.initialEntry.id) ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
                     autoDownloadFavicon(latest)
                 }
@@ -147,12 +147,7 @@ class DetailViewModel @Inject constructor(
                 }
 
                 viewModelScope.launch {
-                    activityUseCases.insert(
-                        VaultActivity(
-                            entryId = current.id,
-                            activityType = event.type
-                        )
-                    )
+                    activityUseCases.recordUsage(current.id, event.type)
                 }
             }
 

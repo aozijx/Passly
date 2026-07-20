@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.vault
+package com.aozijx.passly.data.repository.otp
 
 import com.aozijx.passly.core.otp.TwoFAUtils
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
@@ -8,7 +8,7 @@ import javax.inject.Singleton
 
 @Singleton
 class OtpRepositoryImpl @Inject constructor() : OtpRepository {
-    override fun generateTotp(config: OtpConfig): String {
+    override fun generate(config: OtpConfig): String {
         val normalizedDigits = if (config.algorithm.uppercase() == "STEAM") 5 else config.digits
         return TwoFAUtils.generateTotp(
             secret = config.secret,

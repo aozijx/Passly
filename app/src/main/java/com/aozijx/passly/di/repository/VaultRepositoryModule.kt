@@ -1,19 +1,21 @@
 package com.aozijx.passly.di.repository
 
+import com.aozijx.passly.data.repository.activity.ActivityRepositoryImpl
 import com.aozijx.passly.data.repository.autofill.CredentialServiceRepositoryImpl
-import com.aozijx.passly.data.repository.vault.ActivityRepositoryImpl
-import com.aozijx.passly.data.repository.vault.FaviconRepositoryImpl
-import com.aozijx.passly.data.repository.vault.LookupRepositoryImpl
-import com.aozijx.passly.data.repository.vault.OtpRepositoryImpl
-import com.aozijx.passly.data.repository.vault.SnapshotRepositoryImpl
-import com.aozijx.passly.data.repository.vault.VaultRepositoryImpl
+import com.aozijx.passly.data.repository.entry.RecordEntryUsageFacadeImpl
+import com.aozijx.passly.data.repository.entry.VaultEntryRepositoryImpl
+import com.aozijx.passly.data.repository.favicon.FaviconRepositoryImpl
+import com.aozijx.passly.data.repository.lookup.LookupRepositoryImpl
+import com.aozijx.passly.data.repository.otp.OtpRepositoryImpl
+import com.aozijx.passly.data.repository.snapshot.SnapshotRepositoryImpl
+import com.aozijx.passly.domain.repository.activity.ActivityRepository
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
+import com.aozijx.passly.domain.repository.entry.RecordEntryUsageFacade
+import com.aozijx.passly.domain.repository.entry.VaultEntryRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
+import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import com.aozijx.passly.domain.repository.otp.OtpRepository
-import com.aozijx.passly.domain.repository.vault.ActivityRepository
-import com.aozijx.passly.domain.repository.vault.LookupRepository
-import com.aozijx.passly.domain.repository.vault.SnapshotRepository
-import com.aozijx.passly.domain.repository.vault.VaultRepository
+import com.aozijx.passly.domain.repository.snapshot.SnapshotRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -26,7 +28,11 @@ abstract class VaultRepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindVaultRepository(impl: VaultRepositoryImpl): VaultRepository
+    abstract fun bindVaultEntryRepository(impl: VaultEntryRepositoryImpl): VaultEntryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRecordEntryUsageFacade(impl: RecordEntryUsageFacadeImpl): RecordEntryUsageFacade
 
     @Binds
     @Singleton

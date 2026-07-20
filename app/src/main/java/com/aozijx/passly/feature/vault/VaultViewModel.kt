@@ -192,7 +192,7 @@ class VaultViewModel @Inject constructor(
     }
 
     fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) {
-        viewModelScope.launch { vaultUseCases.getEntryById(entryId)?.let { onLoaded(it) } }
+        viewModelScope.launch { vaultUseCases.getById(entryId)?.let { onLoaded(it) } }
     }
 
     fun decryptSingle(

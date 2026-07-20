@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.vault
+package com.aozijx.passly.data.repository.lookup
 
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.data.local.database.DatabaseSession
@@ -6,13 +6,13 @@ import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.model.serializer.AppJson
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.credential.VaultCredential
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
-import com.aozijx.passly.domain.repository.vault.LookupRepository
+import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import com.aozijx.passly.security.crypto.FieldEncryptor
-import com.aozijx.passly.domain.authentication.VaultAccessState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -94,7 +94,7 @@ class LookupRepositoryImpl @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeEntrySummariesByDemand(
+    override fun observe(
         query: String, category: String?, filter: LookupRepository.EntryFilter
     ): Flow<List<VaultEntry>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
@@ -157,7 +157,7 @@ class LookupRepositoryImpl @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun getCategoriesByFilter(filter: LookupRepository.EntryFilter): Flow<List<String>> =
+    override fun observeCategories(filter: LookupRepository.EntryFilter): Flow<List<String>> =
         sessionState.isAuthorized
             .flatMapLatest { authorized ->
                 if (!authorized) flowOf(emptyList())

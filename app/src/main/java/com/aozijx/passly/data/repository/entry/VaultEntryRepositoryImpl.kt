@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.vault
+package com.aozijx.passly.data.repository.entry
 
 import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
@@ -10,20 +10,20 @@ import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.repository.vault.VaultRepository
+import com.aozijx.passly.domain.repository.entry.VaultEntryRepository
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class VaultRepositoryImpl @Inject constructor(
+class VaultEntryRepositoryImpl @Inject constructor(
     private val sessionState: VaultAccessState,
     private val sessionManager: DatabaseSession,
     private val cryptoMapper: VaultEntryCryptoMapper,
     private val clock: Clock
-) : VaultRepository {
+) : VaultEntryRepository {
 
-    override suspend fun getEntryById(entryId: String): VaultEntry? {
+    override suspend fun getById(entryId: String): VaultEntry? {
         if (sessionState.isLocked()) return null
         return sessionManager.withDatabase {
             val metaEntity = metadataDao().getById(entryId) ?: return@withDatabase null
@@ -113,40 +113,8 @@ class VaultRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun incrementUsage(entryId: String): AppResult<Unit> {
-        if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.withDatabase {
-            AppResult.runSuspendCatching("vault.incrementUsage") {
-                val metaEntity = metadataDao().getById(entryId) ?: return@runSuspendCatching
-                val credEntity = credentialDao().getByEntryId(entryId)
-                val entry =
-                    cryptoMapper.assembleEntry(metaEntity, credEntity) ?: return@runSuspendCatching
-
-                val updatedMeta = entry.metadata.copy(
-                    usageCount = entry.usageCount + 1,
-                    lastUsedAt = clock.now()
-                )
-
-                val metaBlob = cryptoMapper.encryptMetadata(updatedMeta, entryId)
-                val credBlob = cryptoMapper.encryptCredential(entry.credential, entryId)
-
-                val newMetaEntity = VaultMetadataEntity(
-                    entryId = entryId,
-                    entryType = entry.entryType,
-                    metadataBlob = metaBlob,
-                    vaultId = metaEntity.vaultId,
-                    entryVersion = metaEntity.entryVersion + 1,
-                    createdAt = metaEntity.createdAt,
-                    updatedAt = clock.now()
-                )
-                metadataDao().update(newMetaEntity)
-                credentialDao().update(
-                    VaultCredentialEntity(
-                        entryId = entryId,
-                        credentialBlob = credBlob
-                    )
-                )
-            }
-        }
+    override suspend fun count(): Int {
+        if (sessionState.isLocked()) return 0
+        return sessionManager.withDatabase { metadataDao().countActive() }
     }
 }

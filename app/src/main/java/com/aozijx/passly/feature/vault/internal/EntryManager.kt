@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.vault.internal
 
 import android.content.Context
 import android.net.Uri
-import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.usecase.vault.VaultUseCases
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -75,7 +75,7 @@ internal class EntryManager(
         if (!acquired) return
 
         try {
-            val entry = presetEntry ?: vaultUseCases.getEntryById(entryId)
+            val entry = presetEntry ?: vaultUseCases.getById(entryId)
             if (detail.isViewingEntry(entryId)) {
                 detail.dismissDetail()
             }

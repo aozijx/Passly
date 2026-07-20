@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.vault
+package com.aozijx.passly.data.repository.favicon
 
 import android.content.Context
 import com.aozijx.passly.core.media.FaviconUtils
@@ -16,7 +16,7 @@ class FaviconRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val portableRepository: PortableRepository
 ) : FaviconRepository {
-    override suspend fun downloadFavicon(input: String): FaviconOutcome {
+    override suspend fun download(input: String): FaviconOutcome {
         val whitelist = portableRepository.getSettingsFlow().first().faviconDownloadWhitelist
         val outcome = FaviconUtils.downloadAndSaveFavicon(input, appContext, whitelist)
 

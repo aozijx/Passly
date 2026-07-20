@@ -69,7 +69,7 @@ internal class VaultListCoordinator(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val categories: StateFlow<List<String>> =
         searchFilter.selectedTab.flatMapLatest { tab ->
-            vaultUseCases.observeCategoriesByFilter(tab.entryFilter)
+            vaultUseCases.observeCategories(tab.entryFilter)
         }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val state: StateFlow<VaultListState> = combine(

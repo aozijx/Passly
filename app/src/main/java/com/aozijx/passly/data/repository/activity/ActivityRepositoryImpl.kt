@@ -1,12 +1,11 @@
-package com.aozijx.passly.data.repository.vault
+package com.aozijx.passly.data.repository.activity
 
 import com.aozijx.passly.data.local.database.DatabaseSession
 import com.aozijx.passly.data.mapper.toDomain
-import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
-import com.aozijx.passly.domain.repository.vault.ActivityRepository
+import com.aozijx.passly.domain.repository.activity.ActivityRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -56,38 +55,6 @@ class ActivityRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun getById(activityId: String): VaultActivity? {
-        if (sessionState.isLocked()) return null
-        return sessionManager.withDatabase { activityDao().getById(activityId)?.toDomain() }
-    }
-
-    override suspend fun getByEntryId(entryId: String): List<VaultActivity> {
-        if (sessionState.isLocked()) return emptyList()
-        return sessionManager.withDatabase {
-            activityDao().getByEntryId(entryId).map { it.toDomain() }
-        }
-    }
-
-    override suspend fun exists(activityId: String): Boolean {
-        if (sessionState.isLocked()) return false
-        return sessionManager.withDatabase { activityDao().exists(activityId) }
-    }
-
-    override suspend fun count(): Int {
-        if (sessionState.isLocked()) return 0
-        return sessionManager.withDatabase { activityDao().count() }
-    }
-
-    override suspend fun insert(activity: VaultActivity) {
-        if (sessionState.isLocked()) return
-        sessionManager.withDatabase { activityDao().insert(activity.toEntity()) }
-    }
-
-    override suspend fun insertAll(activities: List<VaultActivity>) {
-        if (sessionState.isLocked()) return
-        sessionManager.withDatabase { activityDao().insertAll(activities.map { it.toEntity() }) }
-    }
-
     override suspend fun deleteByEntryId(entryId: String) {
         if (sessionState.isLocked()) return
         sessionManager.withDatabase { activityDao().deleteByEntryId(entryId) }
@@ -96,10 +63,5 @@ class ActivityRepositoryImpl @Inject constructor(
     override suspend fun deleteBefore(timestamp: Long) {
         if (sessionState.isLocked()) return
         sessionManager.withDatabase { activityDao().deleteBefore(timestamp) }
-    }
-
-    override suspend fun clear() {
-        if (sessionState.isLocked()) return
-        sessionManager.withDatabase { activityDao().clear() }
     }
 }
