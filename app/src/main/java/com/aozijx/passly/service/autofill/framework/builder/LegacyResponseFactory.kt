@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
+import android.view.autofill.AutofillId
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.domain.model.entry.EntryType
@@ -40,7 +41,8 @@ internal object LegacyResponseFactory {
         val builder = FillResponse.Builder()
 
         if (response.candidates.isEmpty()) {
-            return builder.build()
+            // 没有候选项时必须禁用该页面的自动填充
+            builder.disableAutofill(5000)
         } else {
             response.candidates.forEach { candidate ->
                 val presentation = AutofillRemoteViewFactory.createDatasetItem(
@@ -71,9 +73,9 @@ internal object LegacyResponseFactory {
     fun buildPostUnlockFillResponse(
         context: Context,
         candidates: List<ResolvedCandidate>,
-        usernameId: android.view.autofill.AutofillId?,
-        passwordId: android.view.autofill.AutofillId?,
-        otpId: android.view.autofill.AutofillId?,
+        usernameId: AutofillId?,
+        passwordId: AutofillId?,
+        otpId: AutofillId?,
     ): FillResponse? {
         val builder = FillResponse.Builder()
         var datasetCount = 0
