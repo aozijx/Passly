@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.mapper.snapshot.toSnapshot
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
@@ -16,13 +17,10 @@ import com.aozijx.passly.data.repository.backup.internal.BackupArchiveContent
 import com.aozijx.passly.di.IoDispatcher
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.model.backup.ImportMode
-import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.repository.backup.BackupRepository
 import com.aozijx.passly.domain.repository.database.TransactionOperator
 import com.aozijx.passly.security.crypto.CryptoEngine
-import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -38,37 +36,9 @@ internal class BackupRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val stateProvider: SessionStateProvider,
     private val transactionOperator: TransactionOperator,
-    private val fieldEncryptor: FieldEncryptor,
+    private val cryptoMapper: VaultEntryCryptoMapper,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
-
-    private fun aad(uuid: String, column: String): ByteArray =
-        "vault:$uuid:$column".toByteArray(Charsets.UTF_8)
-
-    private fun aadOrNull(uuid: String, column: String): ByteArray? =
-        if (uuid.isNotEmpty()) aad(uuid, column) else null
-
-    private suspend fun decryptMetadata(entity: VaultMetadataEntity): VaultMetadata {
-        val json =
-            fieldEncryptor.decrypt(entity.metadataBlob, aadOrNull(entity.entryId, "metadata"))
-        return AppJson.decodeFromString(VaultMetadata.serializer(), json)
-    }
-
-    private suspend fun decryptCredential(entity: VaultCredentialEntity): VaultCredential {
-        val json =
-            fieldEncryptor.decrypt(entity.credentialBlob, aadOrNull(entity.entryId, "credential"))
-        return AppJson.decodeFromString(VaultCredential.serializer(), json)
-    }
-
-    private suspend fun encryptMetadata(meta: VaultMetadata, uuid: String): ByteArray {
-        val json = AppJson.encodeToString(VaultMetadata.serializer(), meta)
-        return fieldEncryptor.encrypt(json, aad(uuid, "metadata"))
-    }
-
-    private suspend fun encryptCredential(cred: VaultCredential, uuid: String): ByteArray {
-        val json = AppJson.encodeToString(VaultCredential.serializer(), cred)
-        return fieldEncryptor.encrypt(json, aad(uuid, "credential"))
-    }
 
     private suspend fun getVaultEntries(): List<VaultEntry> {
         return sessionManager.query {
@@ -78,19 +48,12 @@ internal class BackupRepositoryImpl @Inject constructor(
             val credentialMap = credentialEntities.associateBy { it.entryId }
 
             metadataEntities.map { metaEntity ->
-                val meta = decryptMetadata(metaEntity)
-                val cred = credentialMap[metaEntity.entryId]?.let { decryptCredential(it) }
-                assembleEntry(metaEntity, meta, cred)
+                val meta = cryptoMapper.decryptMetadata(metaEntity)
+                val cred = credentialMap[metaEntity.entryId]
+                    ?.let { cryptoMapper.decryptCredential(it) }
+                VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
             }
         }
-    }
-
-    private fun assembleEntry(
-        metaEntity: VaultMetadataEntity,
-        meta: VaultMetadata,
-        cred: VaultCredential?
-    ): VaultEntry {
-        return VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
     }
 
     private fun imageEntryName(entryId: String): String {
@@ -230,8 +193,8 @@ internal class BackupRepositoryImpl @Inject constructor(
 
                 snapshots.forEach { snapshot ->
                     val entryId = snapshot.id
-                    val metaBlob = encryptMetadata(snapshot.metadata, entryId)
-                    val credBlob = encryptCredential(snapshot.credential, entryId)
+                    val metaBlob = cryptoMapper.encryptMetadata(snapshot.metadata, entryId)
+                    val credBlob = cryptoMapper.encryptCredential(snapshot.credential, entryId)
 
                     val metaEntity = VaultMetadataEntity(
                         entryId = entryId,

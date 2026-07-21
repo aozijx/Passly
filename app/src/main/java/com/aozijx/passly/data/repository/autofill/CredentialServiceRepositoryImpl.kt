@@ -1,10 +1,10 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
-import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
@@ -16,7 +16,6 @@ import com.aozijx.passly.domain.model.entry.WebsiteInfo
 import com.aozijx.passly.domain.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.model.lookup.MatchType
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
-import com.aozijx.passly.security.crypto.FieldEncryptor
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -28,46 +27,9 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
     private val stateProvider: SessionStateProvider,
-    private val fieldEncryptor: FieldEncryptor,
+    private val cryptoMapper: VaultEntryCryptoMapper,
     private val clock: Clock
 ) : CredentialServiceRepository {
-
-    private fun aad(uuid: String, column: String): ByteArray =
-        "vault:$uuid:$column".toByteArray(Charsets.UTF_8)
-
-    private fun aadOrNull(uuid: String, column: String): ByteArray? =
-        if (uuid.isNotEmpty()) aad(uuid, column) else null
-
-    private suspend fun decryptMetadata(entity: VaultMetadataEntity): VaultMetadata {
-        val json =
-            fieldEncryptor.decrypt(entity.metadataBlob, aadOrNull(entity.entryId, "metadata"))
-        return AppJson.decodeFromString(VaultMetadata.serializer(), json)
-    }
-
-    private suspend fun decryptCredential(entity: VaultCredentialEntity): VaultCredential {
-        val json =
-            fieldEncryptor.decrypt(entity.credentialBlob, aadOrNull(entity.entryId, "credential"))
-        return AppJson.decodeFromString(VaultCredential.serializer(), json)
-    }
-
-    private suspend fun encryptMetadata(meta: VaultMetadata, uuid: String): ByteArray {
-        val json = AppJson.encodeToString(VaultMetadata.serializer(), meta)
-        return fieldEncryptor.encrypt(json, aad(uuid, "metadata"))
-    }
-
-    private suspend fun encryptCredential(cred: VaultCredential, uuid: String): ByteArray {
-        val json = AppJson.encodeToString(VaultCredential.serializer(), cred)
-        return fieldEncryptor.encrypt(json, aad(uuid, "credential"))
-    }
-
-    private suspend fun assembleEntry(
-        metaEntity: VaultMetadataEntity,
-        credEntity: VaultCredentialEntity?
-    ): VaultEntry {
-        val meta = decryptMetadata(metaEntity)
-        val cred = credEntity?.let { decryptCredential(it) }
-        return VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
-    }
 
     override fun search(
         packageName: String?,
@@ -81,7 +43,12 @@ class CredentialServiceRepositoryImpl @Inject constructor(
             val credentialMap = credentialEntities.associateBy { it.entryId }
 
             metadataEntities.filter { it.entryType == EntryType.LOGIN }
-                .map { assembleEntry(it, credentialMap[it.entryId]) }
+                .map { metaEntity ->
+                    val meta = cryptoMapper.decryptMetadata(metaEntity)
+                    val cred = credentialMap[metaEntity.entryId]
+                        ?.let { cryptoMapper.decryptCredential(it) }
+                    VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
+                }
                 .map { entry ->
                     CredentialCandidate(
                         entry = entry,
@@ -134,8 +101,8 @@ class CredentialServiceRepositoryImpl @Inject constructor(
                 email = null,
                 password = passwordValue
             )
-            val metaBlob = encryptMetadata(meta, entryId)
-            val credBlob = encryptCredential(cred, entryId)
+            val metaBlob = cryptoMapper.encryptMetadata(meta, entryId)
+            val credBlob = cryptoMapper.encryptCredential(cred, entryId)
 
             val now = clock.now()
             val metaEntity = VaultMetadataEntity(
