@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.entry
 
-import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultEntry
@@ -15,14 +15,14 @@ import javax.inject.Singleton
 @Singleton
 class QueryRepositoryImpl @Inject constructor(
     private val sessionState: VaultAccessState,
-    private val sessionManager: DatabaseSession,
+    private val sessionManager: UnifiedSessionManager,
     private val cryptoMapper: VaultEntryCryptoMapper
 ) : QueryRepository {
 
     override suspend fun getById(entryId: String): VaultEntry? {
         if (sessionState.isLocked()) return null
-        return sessionManager.withDatabase {
-            val metaEntity = metadataDao().getById(entryId) ?: return@withDatabase null
+        return sessionManager.read {
+            val metaEntity = metadataDao().getById(entryId) ?: return@read null
             val credEntity = credentialDao().getByEntryId(entryId)
             cryptoMapper.assembleEntry(metaEntity, credEntity)
         }
@@ -30,7 +30,7 @@ class QueryRepositoryImpl @Inject constructor(
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> {
         if (sessionState.isLocked()) return emptyList()
-        return sessionManager.withDatabase {
+        return sessionManager.read {
             val metaEntities = metadataDao().getActive()
             val credEntities = credentialDao().getByEntryIds(metaEntities.map { it.entryId })
             val credMap = credEntities.associateBy { it.entryId }
@@ -40,6 +40,6 @@ class QueryRepositoryImpl @Inject constructor(
 
     override suspend fun count(): Int {
         if (sessionState.isLocked()) return 0
-        return sessionManager.withDatabase { metadataDao().countActive() }
+        return sessionManager.read { metadataDao().countActive() }
     }
 }

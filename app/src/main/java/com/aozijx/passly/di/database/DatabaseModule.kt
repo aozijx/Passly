@@ -11,7 +11,7 @@ import javax.inject.Singleton
 /**
  * 数据库相关绑定。
  *
- * AppDatabase / DatabaseSession / DatabaseProvider / UnifiedSessionManager
+ * AppDatabase / DatabaseProvider / UnifiedSessionManager
  * 通过 @Inject constructor 由 Hilt 自动提供。
  * DAO 通过 AppDatabase 获取，无需显式绑定。
  */

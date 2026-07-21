@@ -3,7 +3,6 @@ package com.aozijx.passly.data.repository.settings
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.data.local.database.DatabaseSession
 import com.aozijx.passly.domain.repository.database.DatabaseController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -17,8 +16,7 @@ import javax.inject.Singleton
  */
 @Singleton
 internal class DatabaseControllerImpl @Inject constructor(
-    private val session: DatabaseSession,
-    private val unifiedSessionManager: UnifiedSessionManager
+    private val sessionManager: UnifiedSessionManager
 ) : DatabaseController {
 
     private companion object {
@@ -49,17 +47,17 @@ internal class DatabaseControllerImpl @Inject constructor(
 
     override suspend fun retry(): Throwable? = withContext(Dispatchers.IO) {
         // 关闭旧连接后重新预热（用于初始化失败后的用户重试）
-        unifiedSessionManager.closeDatabase()
+        sessionManager.closeDatabase()
         preWarm()
     }
 
     override suspend fun close() {
-        unifiedSessionManager.closeDatabase()
+        sessionManager.closeDatabase()
     }
 
     private suspend fun probe(): Throwable? =
         AppResult.runSuspendCatching("db.warmUp") {
-            session.withDatabase { openHelper.writableDatabase }
+            sessionManager.read { openHelper.writableDatabase }
         }.fold(
             onSuccess = { null },
             onFailure = { it }

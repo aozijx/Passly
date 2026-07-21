@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.mapper.snapshot.toSnapshot
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
@@ -33,7 +33,7 @@ import javax.inject.Singleton
 internal class BackupRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val cryptoEngine: CryptoEngine,
-    private val sessionManager: DatabaseSession,
+    private val sessionManager: UnifiedSessionManager,
     private val fieldEncryptor: FieldEncryptor,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
@@ -67,7 +67,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getVaultEntries(): List<VaultEntry> {
-        return sessionManager.withDatabase {
+        return sessionManager.read {
             val metadataEntities = metadataDao().getActive()
             val credentialEntities =
                 credentialDao().getByEntryIds(metadataEntities.map { it.entryId })
@@ -217,7 +217,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     }
 
     private suspend fun importSnapshots(snapshots: List<VaultSnapshot>, config: ImportMode) {
-        sessionManager.withDatabase {
+        sessionManager.write {
             withTransaction {
                 if (config == ImportMode.OVERWRITE) {
                     metadataDao().clear()

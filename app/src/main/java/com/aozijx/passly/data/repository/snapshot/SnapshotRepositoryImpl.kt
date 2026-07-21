@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.snapshot
 
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.onFailureLog
-import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.VaultSnapshotEntity
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.history.SnapshotType
@@ -20,7 +20,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SnapshotRepositoryImpl @Inject constructor(
-    private val sessionManager: DatabaseSession,
+    private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState
 ) : SnapshotRepository {
 
@@ -29,7 +29,7 @@ class SnapshotRepositoryImpl @Inject constructor(
         sessionState.isAuthorized
             .flatMapLatest { authorized ->
                 if (!authorized) emptyFlow()
-                else sessionManager.withDatabase {
+                else sessionManager.read {
                     historyDao().observeByEntryId(entryId)
                         .map { it.toDomainList() }
                         .flowOn(Dispatchers.IO)
@@ -41,14 +41,14 @@ class SnapshotRepositoryImpl @Inject constructor(
         sessionState.isAuthorized
             .flatMapLatest { authorized ->
                 if (!authorized) emptyFlow()
-                else sessionManager.withDatabase {
+                else sessionManager.read {
                     emptyFlow()
                 }
             }
 
     override suspend fun getByEntryId(entryId: String): List<VaultSnapshot> {
         if (sessionState.isLocked()) return emptyList()
-        return sessionManager.withDatabase {
+        return sessionManager.read {
             // No direct DAO method for getByEntryId; observe then first() is preferred
             emptyList()
         }
@@ -57,13 +57,13 @@ class SnapshotRepositoryImpl @Inject constructor(
     override suspend fun insert(snapshot: VaultSnapshot) {
         if (sessionState.isLocked()) return
         AppResult.runSuspendCatching("history.insert") {
-            sessionManager.withDatabase { historyDao().insert(snapshot.toEntity()) }
+            sessionManager.read { historyDao().insert(snapshot.toEntity()) }
         }.onFailureLog("HistoryRepo")
     }
 
     override suspend fun deleteByEntryId(entryId: String) {
         if (sessionState.isLocked()) return
-        sessionManager.withDatabase { historyDao().deleteByEntryId(entryId) }
+        sessionManager.read { historyDao().deleteByEntryId(entryId) }
     }
 
     private fun List<VaultSnapshotEntity>.toDomainList(): List<VaultSnapshot> =

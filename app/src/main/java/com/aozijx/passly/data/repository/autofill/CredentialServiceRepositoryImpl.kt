@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.autofill
 
-import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
@@ -24,7 +24,7 @@ import javax.inject.Singleton
 
 @Singleton
 class CredentialServiceRepositoryImpl @Inject constructor(
-    private val sessionManager: DatabaseSession,
+    private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
     private val fieldEncryptor: FieldEncryptor,
     private val clock: Clock
@@ -72,7 +72,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         webDomain: String?
     ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
         if (sessionState.isLocked()) return@runBlocking emptyList()
-        sessionManager.withDatabase {
+        sessionManager.read {
             val metadataEntities = metadataDao().getActive()
             val credentialEntities =
                 credentialDao().getByEntryIds(metadataEntities.map { it.entryId })
@@ -117,7 +117,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         passwordValue: String
     ): Boolean = runBlocking(Dispatchers.IO) {
         if (sessionState.isLocked()) return@runBlocking false
-        sessionManager.withDatabase {
+        sessionManager.read {
             val entryId = UuidCreator.getTimeOrderedEpoch().toString()
             val meta = VaultMetadata(
                 entryId = entryId,

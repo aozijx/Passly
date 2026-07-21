@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.entry
 import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.AuthFailed
-import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
@@ -22,14 +22,14 @@ import javax.inject.Singleton
 @Singleton
 class CommandRepositoryImpl @Inject constructor(
     private val sessionState: VaultAccessState,
-    private val sessionManager: DatabaseSession,
+    private val sessionManager: UnifiedSessionManager,
     private val cryptoMapper: VaultEntryCryptoMapper,
     private val clock: Clock
 ) : CommandRepository {
 
     override suspend fun insert(entry: VaultEntry): AppResult<Long> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.withDatabase {
+        return sessionManager.write {
             AppResult.runSuspendCatching("vault.insert") {
                 withTransaction {
                     val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
@@ -59,7 +59,7 @@ class CommandRepositoryImpl @Inject constructor(
 
     override suspend fun update(entry: VaultEntry): AppResult<Unit> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.withDatabase {
+        return sessionManager.write {
             AppResult.runSuspendCatching("vault.update") {
                 withTransaction {
                     val oldMetaEntity = metadataDao().getById(entry.id) ?: return@withTransaction
@@ -93,7 +93,7 @@ class CommandRepositoryImpl @Inject constructor(
 
     override suspend fun delete(entry: VaultEntry): AppResult<Unit> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.withDatabase {
+        return sessionManager.write {
             AppResult.runSuspendCatching("vault.delete") {
                 metadataDao().softDelete(entry.id, System.currentTimeMillis())
             }

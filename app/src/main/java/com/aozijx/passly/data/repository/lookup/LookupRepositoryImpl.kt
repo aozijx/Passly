@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.lookup
 
-import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.EntryType
@@ -18,7 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class LookupRepositoryImpl @Inject constructor(
-    private val sessionManager: DatabaseSession,
+    private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
     private val cryptoMapper: VaultEntryCryptoMapper
 ) : LookupRepository {
@@ -40,7 +40,7 @@ class LookupRepositoryImpl @Inject constructor(
     override val allCategories: Flow<List<String>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.withDatabase {
+            else sessionManager.read {
                 metadataDao().observeActive()
                     .map { metaEntities ->
                         val credEntities =
@@ -65,7 +65,7 @@ class LookupRepositoryImpl @Inject constructor(
     ): Flow<List<VaultEntry>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.withDatabase {
+            else sessionManager.read {
                 val entryFlow = when (filter) {
                     LookupRepository.EntryFilter.ALL -> metadataDao().observeActive()
                     LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeByEntryTypes(
@@ -132,7 +132,7 @@ class LookupRepositoryImpl @Inject constructor(
         sessionState.isAuthorized
             .flatMapLatest { authorized ->
                 if (!authorized) flowOf(emptyList())
-                else sessionManager.withDatabase {
+                else sessionManager.read {
                     val entryFlow = when (filter) {
                         LookupRepository.EntryFilter.ALL -> metadataDao().observeActive()
                         LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeByEntryTypes(

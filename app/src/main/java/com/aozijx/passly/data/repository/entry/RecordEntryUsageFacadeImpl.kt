@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.entry
 import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.AuthFailed
-import com.aozijx.passly.data.local.database.DatabaseSession
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.mapper.toEntity
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
@@ -22,14 +22,14 @@ import javax.inject.Singleton
 @Singleton
 class RecordEntryUsageFacadeImpl @Inject constructor(
     private val sessionState: VaultAccessState,
-    private val sessionManager: DatabaseSession,
+    private val sessionManager: UnifiedSessionManager,
     private val cryptoMapper: VaultEntryCryptoMapper,
     private val clock: Clock
 ) : RecordEntryUsageFacade {
 
     override suspend fun record(entryId: String, type: ActivityType): AppResult<Unit> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.withDatabase {
+        return sessionManager.write {
             AppResult.runSuspendCatching("record_entry_usage") {
                 withTransaction {
                     // 1. 插入活动记录
