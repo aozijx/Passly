@@ -53,8 +53,8 @@ fun VaultContent(
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
 
-    val perTypeStyleMap = remember(vaultDisplayConfig.perTypeMap) {
-        vaultDisplayConfig.perTypeMap
+    val perTypeStyleMap = remember(vaultDisplayConfig.style.perTypeMap) {
+        vaultDisplayConfig.style.perTypeMap
     }
     var isFabVisible by remember { mutableStateOf(true) }
 
@@ -93,11 +93,14 @@ fun VaultContent(
         }
     }
 
-    LaunchedEffect(scrollBehavior.state.collapsedFraction, vaultDisplayConfig.isStatusBarAutoHide) {
+    LaunchedEffect(
+        scrollBehavior.state.collapsedFraction,
+        vaultDisplayConfig.layout.isStatusBarAutoHide
+    ) {
         val activity = context as? FragmentActivity ?: return@LaunchedEffect
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        if (!vaultDisplayConfig.isStatusBarAutoHide) {
+        if (!vaultDisplayConfig.layout.isStatusBarAutoHide) {
             insetsController.show(WindowInsetsCompat.Type.statusBars())
             return@LaunchedEffect
         }
@@ -117,9 +120,9 @@ fun VaultContent(
                 onClick = actionProvider.onUpdateInteraction
             )
             .then(
-                if (vaultDisplayConfig.isTopBarCollapsible
-                    || vaultDisplayConfig.isTabBarCollapsible
-                    || vaultDisplayConfig.isStatusBarAutoHide
+                if (vaultDisplayConfig.layout.isTopBarCollapsible
+                    || vaultDisplayConfig.layout.isTabBarCollapsible
+                    || vaultDisplayConfig.layout.isStatusBarAutoHide
                 ) {
                     Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
                 } else Modifier
@@ -133,9 +136,9 @@ fun VaultContent(
                 onPlainJsonExportClick = onPlainExportClick,
                 onImportClick = actionProvider.onImportClick,
                 onSettingsClick = onSettingsClick,
-                isStatusBarAutoHide = vaultDisplayConfig.isStatusBarAutoHide,
-                isTopBarCollapsible = vaultDisplayConfig.isTopBarCollapsible,
-                isTabBarCollapsible = vaultDisplayConfig.isTabBarCollapsible,
+                isStatusBarAutoHide = vaultDisplayConfig.layout.isStatusBarAutoHide,
+                isTopBarCollapsible = vaultDisplayConfig.layout.isTopBarCollapsible,
+                isTabBarCollapsible = vaultDisplayConfig.layout.isTabBarCollapsible,
                 isDatabaseInitializing = isDatabaseInitializing,
                 onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
                 onToggleSearch = { vaultViewModel.toggleSearch(it) },
@@ -159,9 +162,9 @@ fun VaultContent(
             pagerState = pagerState,
             uiState = uiState,
             perTypeStyleMap = perTypeStyleMap,
-            swipeLeftAction = vaultDisplayConfig.swipeLeftAction,
-            swipeRightAction = vaultDisplayConfig.swipeRightAction,
-            isSwipeEnabled = vaultDisplayConfig.isSwipeEnabled,
+            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
+            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
+            isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
             onSwipeTriggered = actionProvider.onSwipeTriggered,
             onItemClick = { vaultViewModel.showDetail(it) },
             modifier = Modifier
