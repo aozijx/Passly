@@ -13,8 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -66,14 +64,12 @@ fun DetailScreen(
     val editState = remember(entry) { EntryEditState(entry) }
 
     val currentState = totpStates[entry.id]
-    val isSteam = remember(entry.credential.twoFactor?.otp?.algorithm ?: "SHA1") { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
+    val isSteam = remember(
+        entry.credential.twoFactor?.otp?.algorithm ?: "SHA1"
+    ) { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
     val totpEditState = remember(entry, currentState?.decryptedSecret) {
         TotpEditState(entry, currentState?.decryptedSecret ?: "")
     }
-    
-
-    val authQrTitle = stringResource(R.string.vault_auth_qr_title)
-    val authQrSubtitle = stringResource(R.string.vault_auth_qr_subtitle)
 
     // 处理外部启动模式（如编辑 TOTP）
     LaunchedEffect(entry.id, launchMode) {
