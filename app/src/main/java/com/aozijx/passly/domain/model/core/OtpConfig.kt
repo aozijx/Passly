@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.model.credential.twofactor.otp
+package com.aozijx.passly.domain.model.core
 
 import kotlinx.serialization.Serializable
 

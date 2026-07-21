@@ -1,7 +1,5 @@
 package com.aozijx.passly.domain.model.entry
 
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.credential.VaultCredential
 import kotlinx.serialization.Serializable
 
 @Serializable

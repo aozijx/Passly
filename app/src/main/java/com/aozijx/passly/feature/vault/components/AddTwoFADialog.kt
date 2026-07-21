@@ -21,11 +21,9 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.util.TotpUtils
-import com.aozijx.passly.domain.model.credential.VaultCredential
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorType
-import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
+import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
@@ -92,15 +90,12 @@ fun AddTwoFADialog(
                     credential = VaultCredential(
                         entryId = "",
                         password = "",
-                        twoFactor = TwoFactorConfig(
-                            type = TwoFactorType.TOTP,
-                            otp = OtpConfig(
-                                secret = state.secret.trim(),
-                                digits = state.digits.toIntOrNull() ?: 6,
-                                period = state.period.toIntOrNull() ?: 30,
-                                algorithm = state.algorithm,
-                                issuer = state.issuer.ifBlank { null }
-                            )
+                        otp = OtpConfig(
+                            secret = state.secret.trim(),
+                            digits = state.digits.toIntOrNull() ?: 6,
+                            period = state.period.toIntOrNull() ?: 30,
+                            algorithm = state.algorithm,
+                            issuer = state.issuer.ifBlank { null }
                         )
                     )
                 )

@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.usecase.vault
 
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
+import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult

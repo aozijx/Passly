@@ -74,13 +74,15 @@ fun DetailCardDialog(
     val editState = remember(entry) { EntryEditState(entry) }
 
     val currentState = totpState
-    val isSteam = remember(entry.credential.twoFactor?.otp?.algorithm ?: "SHA1") { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
+    val isSteam = remember(entry.credential.otp?.algorithm ?: "SHA1") {
+        (entry.credential.otp?.algorithm ?: "SHA1").uppercase() == "STEAM"
+    }
     val totpEditState = remember(entry, currentState?.decryptedSecret) {
         TotpEditState(entry, currentState?.decryptedSecret ?: "")
     }
     var showQrDialog by remember { mutableStateOf(false) }
 
-    val hasTotp = !entry.credential.twoFactor?.otp?.secret.isNullOrBlank()
+    val hasTotp = !entry.credential.otp?.secret.isNullOrBlank()
 
     LaunchedEffect(entry.id) {
         if (hasTotp) {

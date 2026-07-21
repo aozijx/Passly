@@ -11,9 +11,9 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 class TotpEditState(entry: VaultEntry, initialSecret: String) {
     var isEditing by mutableStateOf(false)
     var secret by mutableStateOf(initialSecret)
-    var period by mutableStateOf((entry.credential.twoFactor?.otp?.period ?: 30).toString())
-    var digits by mutableStateOf((entry.credential.twoFactor?.otp?.digits ?: 6).toString())
-    var algorithm by mutableStateOf(entry.credential.twoFactor?.otp?.algorithm ?: "SHA1")
+    var period by mutableStateOf((entry.credential.otp?.period ?: 30).toString())
+    var digits by mutableStateOf((entry.credential.otp?.digits ?: 6).toString())
+    var algorithm by mutableStateOf(entry.credential.otp?.algorithm ?: "SHA1")
 
     fun applySteamPreset() {
         algorithm = "STEAM"

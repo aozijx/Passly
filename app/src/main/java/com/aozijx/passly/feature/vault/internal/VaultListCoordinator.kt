@@ -83,8 +83,8 @@ internal class VaultListCoordinator(
             items = items,
             itemsByTab = mapOf(
                 VaultTab.ALL to items,
-                VaultTab.PASSWORDS to items.filter { it.credential.twoFactor?.otp?.secret.isNullOrBlank() },
-                VaultTab.TOTP to items.filter { !it.credential.twoFactor?.otp?.secret.isNullOrBlank() }
+                VaultTab.PASSWORDS to items.filter { it.credential.otp?.secret.isNullOrBlank() },
+                VaultTab.TOTP to items.filter { !it.credential.otp?.secret.isNullOrBlank() }
             )
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())

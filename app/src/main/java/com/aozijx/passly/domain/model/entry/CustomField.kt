@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.model.credential
+package com.aozijx.passly.domain.model.entry
 
 import kotlinx.serialization.Serializable
 

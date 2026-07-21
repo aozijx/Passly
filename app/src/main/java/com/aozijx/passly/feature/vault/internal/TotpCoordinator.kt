@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
+import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.vault.model.TotpState
 import kotlinx.coroutines.CoroutineScope
@@ -58,14 +58,14 @@ internal class TotpCoordinator(
         return current.mapValues { (id, state) ->
             val entry = entries.find { it.id == id } ?: return@mapValues state
             val secret = state.decryptedSecret ?: return@mapValues state
-            val period = (entry.credential.twoFactor?.otp?.period ?: 30).coerceAtLeast(1)
+            val period = (entry.credential.otp?.period ?: 30).coerceAtLeast(1)
             val remaining = period - (nowSeconds % period)
             val code = codeGenerator(
                 OtpConfig(
                     secret = secret,
-                    digits = entry.credential.twoFactor?.otp?.digits ?: 6,
-                    period = entry.credential.twoFactor?.otp?.period ?: 30,
-                    algorithm = entry.credential.twoFactor?.otp?.algorithm ?: "SHA1",
+                    digits = entry.credential.otp?.digits ?: 6,
+                    period = entry.credential.otp?.period ?: 30,
+                    algorithm = entry.credential.otp?.algorithm ?: "SHA1",
                     issuer = entry.category,
                     label = entry.title
                 )
@@ -80,7 +80,7 @@ internal class TotpCoordinator(
 
     fun autoUnlock(entry: VaultEntry) {
         if (_states.value.containsKey(entry.id)) return
-        val decrypted = decryptSecret(entry.credential.twoFactor?.otp?.secret)
+        val decrypted = decryptSecret(entry.credential.otp?.secret)
         if (decrypted == null) {
             AppLog.w("TotpCoordinator", "Auto unlock failed: secret decrypt returned null")
             return
@@ -94,7 +94,7 @@ internal class TotpCoordinator(
 
     fun onEntryUpdated(entry: VaultEntry) {
         clearSensitiveState(entry.id)
-        if (!entry.credential.twoFactor?.otp?.secret.isNullOrBlank()) {
+        if (!entry.credential.otp?.secret.isNullOrBlank()) {
             autoUnlock(entry)
         }
     }

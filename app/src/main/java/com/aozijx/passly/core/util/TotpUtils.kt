@@ -34,7 +34,7 @@ object TotpUtils {
     }
 
     fun constructOtpAuthUri(entry: VaultEntry, secret: String): String {
-        val otp = entry.credential.twoFactor?.otp
+        val otp = entry.credential.otp
         val label = Uri.encode(entry.title, "UTF-8")
         // 密钥处理：确保无空格且大写
         val secret = secret.replace(" ", "").uppercase()

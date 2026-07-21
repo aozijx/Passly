@@ -43,9 +43,7 @@ import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.core.message.AppMessagePresentation
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorType
-import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
+import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
@@ -184,7 +182,7 @@ private suspend fun downloadFavicon(
     val outcome = FaviconUtils.downloadAndSaveFavicon(domain, context)
     val message = when (outcome.result) {
         FaviconUtils.DownloadResult.SUCCESS -> {
-            val otp = entry.credential.twoFactor?.otp
+            val otp = entry.credential.otp
             val updated = entry.copy(
                 metadata = entry.metadata.copy(
                     website = (entry.metadata.website ?: WebsiteInfo()).copy(
@@ -193,16 +191,13 @@ private suspend fun downloadFavicon(
                     icon = null
                 ),
                 credential = entry.credential.copy(
-                    twoFactor = TwoFactorConfig(
-                        type = TwoFactorType.TOTP,
-                        otp = OtpConfig(
-                            secret = otp?.secret.orEmpty(),
-                            digits = otp?.digits ?: 6,
-                            period = otp?.period ?: 30,
-                            algorithm = otp?.algorithm ?: "SHA1",
-                            issuer = otp?.issuer,
-                            label = otp?.label
-                        )
+                    otp = OtpConfig(
+                        secret = otp?.secret.orEmpty(),
+                        digits = otp?.digits ?: 6,
+                        period = otp?.period ?: 30,
+                        algorithm = otp?.algorithm ?: "SHA1",
+                        issuer = otp?.issuer,
+                        label = otp?.label
                     )
                 )
             )

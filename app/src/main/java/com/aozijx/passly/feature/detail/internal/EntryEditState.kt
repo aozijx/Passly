@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
+import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
@@ -19,8 +19,8 @@ class EntryEditState(initialEntry: VaultEntry) {
     var editedNotes by mutableStateOf(initialEntry.credential.notes ?: "")
     var editedDomain by mutableStateOf(initialEntry.associatedDomain ?: "")
     var editedPackage by mutableStateOf(initialEntry.associatedAppPackage ?: "")
-    var editedTotpSecret by mutableStateOf(initialEntry.credential.twoFactor?.otp?.secret ?: "")
-    var editedTotp by mutableStateOf(initialEntry.credential.twoFactor?.otp?.secret ?: "")
+    var editedTotpSecret by mutableStateOf(initialEntry.credential.otp?.secret ?: "")
+    var editedTotp by mutableStateOf(initialEntry.credential.otp?.secret ?: "")
 
     // --- 字段编辑标志 ---
     var isEditingTitle by mutableStateOf(false)
@@ -40,7 +40,7 @@ class EntryEditState(initialEntry: VaultEntry) {
         )
         val newCredential = entry.credential.copy(
             notes = editedNotes.ifBlank { null },
-            twoFactor = updateTwoFactorSecret(entry.credential.twoFactor, editedTotpSecret.ifBlank { null })
+            otp = updateTwoFactorSecret(entry.credential.otp, editedTotpSecret.ifBlank { null })
         )
         return entry.copy(metadata = newMetadata, credential = newCredential)
     }
@@ -72,9 +72,8 @@ class EntryEditState(initialEntry: VaultEntry) {
         )
     }
 
-    private fun updateTwoFactorSecret(existing: TwoFactorConfig?, secret: String?): TwoFactorConfig? {
+    private fun updateTwoFactorSecret(existing: OtpConfig?, secret: String?): OtpConfig? {
         if (secret == null) return null
-        val otp = existing?.otp ?: return existing
-        return existing.copy(otp = otp.copy(secret = secret))
+        return existing?.copy(secret = secret)
     }
 }

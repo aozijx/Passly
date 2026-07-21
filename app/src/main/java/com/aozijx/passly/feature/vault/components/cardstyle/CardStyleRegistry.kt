@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault.components.cardstyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.credential.VaultCredential
 import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
@@ -55,7 +55,7 @@ object CardStyleRegistry {
         showTotpCode: Boolean,
         onClick: () -> Unit
     ) {
-        val isTotp = entry.credential.twoFactor?.otp?.secret?.isNotBlank() == true
+        val isTotp = entry.credential.otp?.secret?.isNotBlank() == true
         val isAutofill = entry.category == stringResource(R.string.category_autofill)
         val totpState = totpStates[entry.id]
 

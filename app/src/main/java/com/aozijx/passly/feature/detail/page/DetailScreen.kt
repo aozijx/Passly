@@ -55,7 +55,7 @@ fun DetailScreen(
     // 页面数据初始化（同 key 内串联首次 TOTP 自动解锁，避免重复 effect 触发）
     LaunchedEffect(initialEntry.id) {
         onEvent(DetailIntent.Initialize(initialEntry))
-        if (!initialEntry.credential.twoFactor?.otp?.secret.isNullOrBlank()) {
+        if (!initialEntry.credential.otp?.secret.isNullOrBlank()) {
             onAutoUnlockTotp(initialEntry)
         }
     }
@@ -65,8 +65,8 @@ fun DetailScreen(
 
     val currentState = totpStates[entry.id]
     val isSteam = remember(
-        entry.credential.twoFactor?.otp?.algorithm ?: "SHA1"
-    ) { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
+        entry.credential.otp?.algorithm ?: "SHA1"
+    ) { (entry.credential.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
     val totpEditState = remember(entry, currentState?.decryptedSecret) {
         TotpEditState(entry, currentState?.decryptedSecret ?: "")
     }

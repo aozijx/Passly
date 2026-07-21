@@ -15,7 +15,7 @@ import com.aozijx.passly.data.repository.backup.internal.BackupArchiveCodec
 import com.aozijx.passly.data.repository.backup.internal.BackupArchiveContent
 import com.aozijx.passly.di.IoDispatcher
 import com.aozijx.passly.domain.model.backup.ImportMode
-import com.aozijx.passly.domain.model.credential.VaultCredential
+import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.repository.backup.BackupRepository

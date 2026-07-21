@@ -86,7 +86,9 @@ fun TwoFAItem(
     val currentState =
         previewCode?.let { TotpState(code = it, progress = previewProgress ?: 0f) } ?: totpState
 
-    val isSteam = remember(entry.credential.twoFactor?.otp?.algorithm ?: "SHA1") { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
+    val isSteam = remember(entry.credential.otp?.algorithm ?: "SHA1") {
+        (entry.credential.otp?.algorithm ?: "SHA1").uppercase() == "STEAM"
+    }
 
     Card(
         onClick = onClick,

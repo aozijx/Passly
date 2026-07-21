@@ -2,7 +2,7 @@ package com.aozijx.passly.data.mapper.assembler
 
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
-import com.aozijx.passly.domain.model.credential.VaultCredential
+import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 

@@ -15,9 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorType
-import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
+import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.vault.components.TotpConfigForm
@@ -56,16 +54,14 @@ fun EditTotpSection(
                         onEntryUpdated(
                             item.copy(
                                 credential = item.credential.copy(
-                                    twoFactor = TwoFactorConfig(
-                                        type = item.credential.twoFactor?.type ?: TwoFactorType.TOTP,
-                                        otp = OtpConfig(
-                                            secret = editState.secret.trim(),
-                                            digits = editState.digits.toIntOrNull() ?: 6,
-                                            period = editState.period.toIntOrNull() ?: 30,
-                                            algorithm = editState.algorithm,
-                                            issuer = item.credential.twoFactor?.otp?.issuer,
-                                            label = item.credential.twoFactor?.otp?.label
-                                        )
+                                    twoFactorType = item.credential.twoFactorType,
+                                    otp = OtpConfig(
+                                        secret = editState.secret.trim(),
+                                        digits = editState.digits.toIntOrNull() ?: 6,
+                                        period = editState.period.toIntOrNull() ?: 30,
+                                        algorithm = editState.algorithm,
+                                        issuer = item.credential.otp?.issuer,
+                                        label = item.credential.otp?.label
                                     )
                                 )
                             )

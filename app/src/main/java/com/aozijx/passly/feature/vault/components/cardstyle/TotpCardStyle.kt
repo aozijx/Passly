@@ -52,7 +52,9 @@ fun TotpStyleVaultItem(
 ) {
     val currentState =
         previewCode?.let { TotpState(code = it, progress = previewProgress ?: 0f) } ?: totpState
-    val isSteam = remember(entry.credential.twoFactor?.otp?.algorithm ?: "SHA1") { (entry.credential.twoFactor?.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
+    val isSteam = remember(entry.credential.otp?.algorithm ?: "SHA1") {
+        (entry.credential.otp?.algorithm ?: "SHA1").uppercase() == "STEAM"
+    }
 
     val targetProgress = previewProgress ?: (currentState?.progress ?: 0f)
     val progress by animateFloatAsState(targetValue = targetProgress, label = "TotpProgress")

@@ -19,13 +19,13 @@ class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "TOTP 标题不能为空"
-        if (entry.credential.twoFactor?.otp?.secret.isNullOrBlank()) return "TOTP 密钥不能为空"
+        if (entry.credential.otp?.secret.isNullOrBlank()) return "TOTP 密钥不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        if ((entry.credential.twoFactor?.otp?.period ?: 30) <= 0) return "TOTP 周期必须大于 0"
-        if ((entry.credential.twoFactor?.otp?.digits ?: 6) !in 5..8) return "TOTP 位数应在 5-8 位"
+        if ((entry.credential.otp?.period ?: 30) <= 0) return "TOTP 周期必须大于 0"
+        if ((entry.credential.otp?.digits ?: 6) !in 5..8) return "TOTP 位数应在 5-8 位"
         return null
     }
 
@@ -34,7 +34,7 @@ class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
     }
 
     override fun extractSummary(entry: VaultEntry): String {
-        return "${entry.credential.twoFactor?.otp?.digits ?: 6} 位 / ${entry.credential.twoFactor?.otp?.period ?: 30}s"
+        return "${entry.credential.otp?.digits ?: 6} 位 / ${entry.credential.otp?.period ?: 30}s"
     }
 
     override fun suggestedCategory(): String = "认证"

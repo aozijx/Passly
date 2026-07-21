@@ -113,8 +113,8 @@ class LookupRepositoryImpl @Inject constructor(
                             .filter { entry ->
                                 when (filter) {
                                     LookupRepository.EntryFilter.ALL -> true
-                                    LookupRepository.EntryFilter.PASSWORD_ONLY -> entry.credential.twoFactor?.otp?.secret.isNullOrEmpty()
-                                    LookupRepository.EntryFilter.TOTP_ONLY -> !entry.credential.twoFactor?.otp?.secret.isNullOrEmpty()
+                                    LookupRepository.EntryFilter.PASSWORD_ONLY -> entry.credential.otp?.secret.isNullOrEmpty()
+                                    LookupRepository.EntryFilter.TOTP_ONLY -> !entry.credential.otp?.secret.isNullOrEmpty()
                                 }
                             }
                             .sortedWith(
@@ -157,8 +157,8 @@ class LookupRepositoryImpl @Inject constructor(
                                 .filter { entry ->
                                     when (filter) {
                                         LookupRepository.EntryFilter.ALL -> true
-                                        LookupRepository.EntryFilter.PASSWORD_ONLY -> entry.credential.twoFactor?.otp?.secret.isNullOrEmpty()
-                                        LookupRepository.EntryFilter.TOTP_ONLY -> !entry.credential.twoFactor?.otp?.secret.isNullOrEmpty()
+                                        LookupRepository.EntryFilter.PASSWORD_ONLY -> entry.credential.otp?.secret.isNullOrEmpty()
+                                        LookupRepository.EntryFilter.TOTP_ONLY -> !entry.credential.otp?.secret.isNullOrEmpty()
                                     }
                                 }
                                 .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }

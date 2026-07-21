@@ -63,7 +63,7 @@ fun rememberVaultActionProvider(
             val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
             val label = strategy.getCopyLabel(fieldKey)
 
-            if (fieldKey == FieldKey.PASSWORD && !item.credential.twoFactor?.otp?.secret.isNullOrBlank()) {
+            if (fieldKey == FieldKey.PASSWORD && !item.credential.otp?.secret.isNullOrBlank()) {
                 latestTotpStates[item.id]?.let { state ->
                     if (state.code.isNotEmpty() && !state.code.contains("-")) {
                         ClipboardUtils.copy(context, state.code)

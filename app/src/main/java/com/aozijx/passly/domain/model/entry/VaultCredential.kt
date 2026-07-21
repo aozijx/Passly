@@ -1,6 +1,6 @@
-package com.aozijx.passly.domain.model.credential
+package com.aozijx.passly.domain.model.entry
 
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
+import com.aozijx.passly.domain.model.core.OtpConfig
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -8,7 +8,8 @@ data class VaultCredential(
     val entryId: String,
     val email: String? = null,
     val password: String? = null,
-    val twoFactor: TwoFactorConfig? = null,
+    val otp: OtpConfig? = null,
+    val twoFactorType: String = "TOTP",
     val cardNumber: String? = null,
     val cardExpiry: String? = null,
     val cardCvv: String? = null,

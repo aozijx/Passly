@@ -89,7 +89,7 @@ class CandidateResolver @Inject constructor(
             MatchType.WEB_DOMAIN -> candidate.matchedDomain?.let { parts.add(it) }
             else -> {}
         }
-        if (candidate.entry.credential.twoFactor?.otp?.secret?.isNotBlank() == true) {
+        if (candidate.entry.credential.otp?.secret?.isNotBlank() == true) {
             parts.add("2FA")
         }
         return parts.joinToString(" · ")

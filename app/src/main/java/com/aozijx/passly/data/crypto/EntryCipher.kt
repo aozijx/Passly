@@ -2,7 +2,7 @@ package com.aozijx.passly.data.crypto
 
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
 import com.aozijx.passly.data.model.serializer.AppJson
-import com.aozijx.passly.domain.model.credential.VaultCredential
+import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.security.crypto.FieldEncryptor
 

@@ -22,7 +22,7 @@ object TwoFAUtils {
      * 从 VaultEntry 生成当前的 TOTP 验证码
      */
     fun generateCurrentTotpFromEntry(entry: VaultEntry): String? {
-        val otpConfig = entry.credential.twoFactor?.otp ?: return null
+        val otpConfig = entry.credential.otp ?: return null
         val secret = otpConfig.secret
         if (secret.isBlank()) return null
 

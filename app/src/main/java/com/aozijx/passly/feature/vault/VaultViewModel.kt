@@ -179,7 +179,7 @@ class VaultViewModel @Inject constructor(
         viewModelScope.launch {
             listCoordinator.state.collectLatest { state ->
                 state.items.forEach { entry ->
-                    if (!entry.credential.twoFactor?.otp?.secret.isNullOrBlank()) {
+                    if (!entry.credential.otp?.secret.isNullOrBlank()) {
                         totp.autoUnlock(entry)
                     }
                 }

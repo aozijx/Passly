@@ -54,11 +54,9 @@ import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.util.OtpAuthData
 import com.aozijx.passly.core.util.TotpUtils
-import com.aozijx.passly.domain.model.credential.VaultCredential
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
-import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorType
-import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
+import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.feature.scanner.components.ScannerView
@@ -231,17 +229,15 @@ fun VaultScanner(
                                             credential = VaultCredential(
                                                 entryId = "",
                                                 password = "",
-                                                twoFactor = TwoFactorConfig(
-                                                    type = if (isSteam) TwoFactorType.STEAM_GUARD else TwoFactorType.TOTP,
-                                                    otp = OtpConfig(
-                                                        secret = totp.secret,
-                                                        digits = if (isSteam) 5 else (totp.digits ?: 6),
-                                                        period = totp.period ?: 30,
-                                                        algorithm = if (isSteam) "STEAM" else (totp.algorithm
-                                                            ?: "SHA1"),
-                                                        issuer = totp.issuer,
-                                                        label = totp.label
-                                                    )
+                                                twoFactorType = if (isSteam) "STEAM_GUARD" else "TOTP",
+                                                otp = OtpConfig(
+                                                    secret = totp.secret,
+                                                    digits = if (isSteam) 5 else (totp.digits ?: 6),
+                                                    period = totp.period ?: 30,
+                                                    algorithm = if (isSteam) "STEAM" else (totp.algorithm
+                                                        ?: "SHA1"),
+                                                    issuer = totp.issuer,
+                                                    label = totp.label
                                                 )
                                             )
                                         )
