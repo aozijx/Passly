@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -173,6 +174,18 @@ class VaultViewModel @Inject constructor(
 
     init {
         totp.start { listCoordinator.state.value.items }
+
+        // 观察列表变化，自动解锁所有包含 TOTP 的条目
+        viewModelScope.launch {
+            listCoordinator.state.collectLatest { state ->
+                state.items.forEach { entry ->
+                    if (!entry.credential.twoFactor?.otp?.secret.isNullOrBlank()) {
+                        totp.autoUnlock(entry)
+                    }
+                }
+            }
+        }
+
         viewModelScope.launch {
             portableSettingsUseCases.vaultSortOption.first().let {
                 searchFilter.updateSelectedSort(it)
