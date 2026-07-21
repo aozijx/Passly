@@ -2,10 +2,10 @@ package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.diagnostics.LogCategory
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.authentication.VaultAccessState
-import com.aozijx.passly.domain.authentication.VaultResourceController
 import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.repository.settings.IdleTimeoutSettings
 import com.aozijx.passly.security.crypto.DekManager
@@ -28,7 +28,7 @@ import javax.inject.Singleton
 @Singleton
 class VaultSessionController @Inject constructor(
     private val dekManager: DekManager,
-    private val resources: VaultResourceController,
+    private val sessionManager: UnifiedSessionManager,
     idleTimeoutSettings: IdleTimeoutSettings
 ) : VaultAccessState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -53,8 +53,8 @@ class VaultSessionController @Inject constructor(
             transition(AuthenticationState.Unlocking(correlationId))
             when (dekManager.setDek(type, dek)) {
                 UnlockResult.Success -> {
-                    // 开启资源访问后再标记认证，确保状态监听者能正常访问数据库
-                    resources.allowAccess()
+                    // 打开会话（解锁状态），数据库在首次 read/write 时惰性初始化
+                    sessionManager.unlock()
                     markAuthenticatedInternal()
                     true
                 }
@@ -74,7 +74,7 @@ class VaultSessionController @Inject constructor(
      * 必须在确保 DEK 已正确设置后调用。
      */
     suspend fun markAuthenticated() = mutex.withLock {
-        resources.allowAccess() // 关键修复：确保指纹等非 commitUnlock 路径也能开启数据库访问
+        sessionManager.unlock()
         markAuthenticatedInternal()
     }
 
@@ -93,12 +93,11 @@ class VaultSessionController @Inject constructor(
             transition(AuthenticationState.Locking(reason))
             idleJob?.cancel()
 
-            runCatching { resources.blockNewAccess() }
-                .onFailure { AppLog.e(LogCategory.DATABASE, "vault_access_block_failed", throwable = it) }
+            // 通知会话管理器锁定（阻塞新操作，等待活跃操作排干）
+            runCatching { sessionManager.lock() }
+                .onFailure { AppLog.e(LogCategory.DATABASE, "session_lock_failed", throwable = it) }
 
-            runCatching { resources.closeAndAwait() }
-                .onFailure { AppLog.e(LogCategory.DATABASE, "vault_close_failed", throwable = it) }
-
+            // 擦除 DEK —— 数据库连接保持打开，但无 DEK 无法写入新数据
             dekManager.lock()
             transition(AuthenticationState.Locked)
         }

@@ -31,9 +31,3 @@ interface VaultAccessState {
     fun isUnlocked(): Boolean
     fun isLocked(): Boolean = !isUnlocked()
 }
-
-interface VaultResourceController {
-    suspend fun blockNewAccess()
-    suspend fun closeAndAwait()
-    suspend fun allowAccess()
-}

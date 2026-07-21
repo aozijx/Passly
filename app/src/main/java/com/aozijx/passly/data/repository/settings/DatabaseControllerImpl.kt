@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.settings
 
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.database.DatabaseSession
 import com.aozijx.passly.domain.repository.database.DatabaseController
 import kotlinx.coroutines.Dispatchers
@@ -12,11 +13,12 @@ import javax.inject.Singleton
 
 /**
  * 负责打开、探测、重试和关闭加密数据库会话。
- * 包含内部重试机制，以处理认证/锁定状态切换时的瞬时竞争。
+ * 包含内部重试机制，以处理解锁状态的瞬时竞争。
  */
 @Singleton
 internal class DatabaseControllerImpl @Inject constructor(
-    private val session: DatabaseSession
+    private val session: DatabaseSession,
+    private val unifiedSessionManager: UnifiedSessionManager
 ) : DatabaseController {
 
     private companion object {
@@ -34,8 +36,6 @@ internal class DatabaseControllerImpl @Inject constructor(
                 return@withContext null
             }
 
-            // 如果是锁定导致的错误，由于 DatabaseSession 已经有等待机制，
-            // 这里的重试更多是为了处理 Room 内部连接池初始化等其他瞬时故障。
             if (i < MAX_RETRIES) {
                 AppLog.w(
                     TAG,
@@ -48,12 +48,13 @@ internal class DatabaseControllerImpl @Inject constructor(
     }
 
     override suspend fun retry(): Throwable? = withContext(Dispatchers.IO) {
-        session.closeAndAwait()
+        // 关闭旧连接后重新预热（用于初始化失败后的用户重试）
+        unifiedSessionManager.closeDatabase()
         preWarm()
     }
 
     override suspend fun close() {
-        session.closeAndAwait()
+        unifiedSessionManager.closeDatabase()
     }
 
     private suspend fun probe(): Throwable? =
