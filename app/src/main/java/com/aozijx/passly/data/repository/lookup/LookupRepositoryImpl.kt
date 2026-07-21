@@ -1,18 +1,11 @@
 package com.aozijx.passly.data.repository.lookup
 
-import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.data.local.database.DatabaseSession
-import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
-import com.aozijx.passly.data.model.entity.VaultCredentialEntity
-import com.aozijx.passly.data.model.entity.VaultMetadataEntity
-import com.aozijx.passly.data.model.serializer.AppJson
+import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.domain.authentication.VaultAccessState
-import com.aozijx.passly.domain.model.credential.VaultCredential
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.repository.lookup.LookupRepository
-import com.aozijx.passly.security.crypto.FieldEncryptor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +20,7 @@ import javax.inject.Singleton
 class LookupRepositoryImpl @Inject constructor(
     private val sessionManager: DatabaseSession,
     private val sessionState: VaultAccessState,
-    private val fieldEncryptor: FieldEncryptor
+    private val cryptoMapper: VaultEntryCryptoMapper
 ) : LookupRepository {
 
     private companion object {
@@ -43,38 +36,6 @@ class LookupRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun aad(uuid: String, column: String): ByteArray =
-        "vault:$uuid:$column".toByteArray(Charsets.UTF_8)
-
-    private fun aadOrNull(uuid: String, column: String): ByteArray? =
-        if (uuid.isNotEmpty()) aad(uuid, column) else null
-
-    private fun decryptMetadata(entity: VaultMetadataEntity): VaultMetadata {
-        val json =
-            fieldEncryptor.decrypt(entity.metadataBlob, aadOrNull(entity.entryId, "metadata"))
-        return AppJson.decodeFromString(VaultMetadata.serializer(), json)
-    }
-
-    private fun decryptCredential(entity: VaultCredentialEntity): VaultCredential {
-        val json =
-            fieldEncryptor.decrypt(entity.credentialBlob, aadOrNull(entity.entryId, "credential"))
-        return AppJson.decodeFromString(VaultCredential.serializer(), json)
-    }
-
-    private fun assembleEntry(
-        metaEntity: VaultMetadataEntity,
-        credEntity: VaultCredentialEntity?
-    ): VaultEntry? {
-        return try {
-            val meta = decryptMetadata(metaEntity)
-            val cred = credEntity?.let { decryptCredential(it) }
-            VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
-        } catch (e: Exception) {
-            AppLog.w("LookupRepo", "Skipping corrupt entry ${metaEntity.entryId}: ${e.message}")
-            null
-        }
-    }
-
     @OptIn(ExperimentalCoroutinesApi::class)
     override val allCategories: Flow<List<String>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
@@ -85,7 +46,12 @@ class LookupRepositoryImpl @Inject constructor(
                         val credEntities =
                             credentialDao().getByEntryIds(metaEntities.map { it.entryId })
                         val credMap = credEntities.associateBy { it.entryId }
-                        metaEntities.mapNotNull { assembleEntry(it, credMap[it.entryId]) }
+                        metaEntities.mapNotNull {
+                            cryptoMapper.assembleEntry(
+                                it,
+                                credMap[it.entryId]
+                            )
+                        }
                             .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }
                             .distinct()
                     }
@@ -115,7 +81,12 @@ class LookupRepositoryImpl @Inject constructor(
                         val credEntities =
                             credentialDao().getByEntryIds(metaEntities.map { it.entryId })
                         val credMap = credEntities.associateBy { it.entryId }
-                        metaEntities.mapNotNull { assembleEntry(it, credMap[it.entryId]) }
+                        metaEntities.mapNotNull {
+                            cryptoMapper.assembleEntry(
+                                it,
+                                credMap[it.entryId]
+                            )
+                        }
                             .filter { entry ->
                                 ((query.isEmpty() || entry.title.contains(
                                     query,
@@ -177,7 +148,12 @@ class LookupRepositoryImpl @Inject constructor(
                             val credEntities =
                                 credentialDao().getByEntryIds(metaEntities.map { it.entryId })
                             val credMap = credEntities.associateBy { it.entryId }
-                            metaEntities.mapNotNull { assembleEntry(it, credMap[it.entryId]) }
+                            metaEntities.mapNotNull {
+                                cryptoMapper.assembleEntry(
+                                    it,
+                                    credMap[it.entryId]
+                                )
+                            }
                                 .filter { entry ->
                                     when (filter) {
                                         LookupRepository.EntryFilter.ALL -> true
