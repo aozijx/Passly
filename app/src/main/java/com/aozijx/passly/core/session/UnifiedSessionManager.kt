@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.repository.database.TransactionOperator
 import com.aozijx.passly.security.crypto.DekManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
@@ -19,7 +18,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.timeout
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
@@ -97,7 +95,6 @@ class UnifiedSessionManager @Inject constructor(
      *
      * 这样 [lock] 中的排干逻辑能正确等待所有正在收集的 Flow 完成。
      */
-    @OptIn(FlowPreview::class)
     fun <T> observeFlow(block: suspend AppDatabase.() -> Flow<T>): Flow<T> = flow {
         activeOps.incrementAndGet()
         try {
@@ -108,7 +105,6 @@ class UnifiedSessionManager @Inject constructor(
             //   如果 30 秒内上游无新数据发射，抛出 TimeoutCancellationException，
             //   防止僵尸流永久占用 activeOps 计数。
             db.block()
-                .timeout(TIMEOUT_FLOW_EMISSION)
                 .collect { value ->
                     ensureNotLocked()
                     emit(value)
