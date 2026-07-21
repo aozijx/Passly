@@ -39,15 +39,21 @@ class VaultUseCases @Inject constructor(
         if (insertResult is AppResult.Success && !domain.isNullOrBlank()) {
             val outcome = downloadFavicon(domain)
             if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                commandRepository.update(
-                    entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath))
-                )
+                // 插入后重新读取以获取正确的 entryVersion，避免乐观锁冲突
+                val savedEntry = queryRepository.getById(entry.id)
+                if (savedEntry != null) {
+                    commandRepository.update(
+                        savedEntry.copy(metadata = savedEntry.metadata.copy(icon = outcome.filePath)),
+                        savedEntry.metadata.entryVersion
+                    )
+                }
             }
         }
         return insertResult
     }
 
-    suspend fun updateEntry(entry: VaultEntry): AppResult<Unit> = commandRepository.update(entry)
+    suspend fun updateEntry(entry: VaultEntry): AppResult<Unit> =
+        commandRepository.update(entry, entry.metadata.entryVersion)
 
     suspend fun deleteEntry(entry: VaultEntry): AppResult<Unit> = commandRepository.delete(entry)
 
@@ -67,7 +73,8 @@ class VaultUseCases @Inject constructor(
                 if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                     queryRepository.getById(summary.id)?.let { entry ->
                         commandRepository.update(
-                            entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath))
+                            entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath)),
+                            entry.metadata.entryVersion
                         )
                     }
                 }

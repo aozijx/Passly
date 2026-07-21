@@ -23,7 +23,8 @@ class DetailUseCases @Inject constructor(
 
     suspend fun getById(entryId: String): VaultEntry? = queryRepository.getById(entryId)
 
-    suspend fun updateEntry(entry: VaultEntry) = commandRepository.update(entry)
+    suspend fun updateEntry(entry: VaultEntry) =
+        commandRepository.update(entry, entry.metadata.entryVersion)
 
     suspend fun downloadAndApplyFavicon(entry: VaultEntry): VaultEntry? {
         val domain = entry.associatedDomain
@@ -31,7 +32,7 @@ class DetailUseCases @Inject constructor(
         val outcome = downloadFavicon(domain)
         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
             val updated = entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath))
-            commandRepository.update(updated)
+            commandRepository.update(updated, entry.metadata.entryVersion)
             return updated
         }
         return null

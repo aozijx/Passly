@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.entry
 
 import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.Conflict
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
@@ -60,12 +61,20 @@ class CommandRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun update(entry: VaultEntry): AppResult<Unit> {
+    override suspend fun update(entry: VaultEntry, expectedVersion: Int): AppResult<Unit> {
         stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.update") {
                 withTransaction {
                     val oldMetaEntity = metadataDao().getById(entry.id) ?: return@withTransaction
+
+                    // 乐观锁版本校验：检查当前版本是否与客户端读取的版本一致
+                    if (oldMetaEntity.entryVersion != expectedVersion) {
+                        throw Conflict(
+                            "entry:${entry.id} version mismatch: expected=$expectedVersion, actual=${oldMetaEntity.entryVersion}"
+                        )
+                    }
+
                     val oldCredEntity = credentialDao().getByEntryId(entry.id)
                     val old = cryptoMapper.assembleEntry(oldMetaEntity, oldCredEntity)
                         ?: return@withTransaction

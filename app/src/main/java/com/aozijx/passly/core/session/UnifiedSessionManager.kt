@@ -10,12 +10,15 @@ import com.aozijx.passly.domain.repository.database.TransactionOperator
 import com.aozijx.passly.security.crypto.DekManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.timeout
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
@@ -44,9 +47,13 @@ class UnifiedSessionManager @Inject constructor(
     private val dekManager: DekManager
 ) : SessionStateProvider, TransactionOperator {
 
-    private companion object {
+    companion object {
         private const val TAG = "UnifiedSessionManager"
-        private const val DRAIN_TIMEOUT_MS = 5000L
+
+        /**
+         * Flow 观察超时：如果上游 30 秒内无新数据，触发熔断释放计数。
+         */
+        private val TIMEOUT_FLOW_EMISSION = 30.seconds
     }
 
     /** 用于强制取消僵尸事务的协程作用域。所有 DB 操作均在此作用域内启动。 */
@@ -89,16 +96,28 @@ class UnifiedSessionManager @Inject constructor(
      *
      * 这样 [lock] 中的排干逻辑能正确等待所有正在收集的 Flow 完成。
      */
+    @OptIn(FlowPreview::class)
     fun <T> observeFlow(block: suspend AppDatabase.() -> Flow<T>): Flow<T> = flow {
         activeOps.incrementAndGet()
         try {
             ensureNotLocked()
             val db = resolveDatabase()
             // 使用 collect 替代 emitAll，以便在每次发射前检查锁状态
-            db.block().collect { value ->
-                ensureNotLocked()
-                emit(value)
-            }
+            // .timeout(30.seconds) 实现 per-emission 超时兜底：
+            //   如果 30 秒内上游无新数据发射，抛出 TimeoutCancellationException，
+            //   防止僵尸流永久占用 activeOps 计数。
+            db.block()
+                .timeout(TIMEOUT_FLOW_EMISSION)
+                .collect { value ->
+                    ensureNotLocked()
+                    emit(value)
+                }
+        } catch (e: TimeoutCancellationException) {
+            AppLog.w(TAG, "observeFlow timeout after ${TIMEOUT_FLOW_EMISSION.inWholeSeconds}s")
+            throw IllegalStateException(
+                "Flow emission timeout, no data for ${TIMEOUT_FLOW_EMISSION.inWholeSeconds}s",
+                e
+            )
         } finally {
             activeOps.decrementAndGet()
         }

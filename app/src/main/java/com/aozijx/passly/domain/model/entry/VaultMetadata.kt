@@ -1,6 +1,5 @@
 package com.aozijx.passly.domain.model.entry
 
-import com.aozijx.passly.domain.model.entry.EntryType
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,5 +19,8 @@ data class VaultMetadata(
     val deletedAt: Long? = null,
     val expiresAt: Long? = null,
     val lastUsedAt: Long? = null,
-    val usageCount: Int = 0
+    val usageCount: Int = 0,
+
+    /** 乐观锁版本号，每次更新自动递增。用于防冲突并发写。 */
+    val entryVersion: Int = 0
 )

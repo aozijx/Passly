@@ -20,5 +20,5 @@ class IconResyncUseCases @Inject constructor(
         queryRepository.getEntriesForIconResync()
 
     suspend fun update(entry: VaultEntry): AppResult<Unit> =
-        commandRepository.update(entry)
+        commandRepository.update(entry, entry.metadata.entryVersion)
 }

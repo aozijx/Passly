@@ -33,6 +33,7 @@ const val CRYPTO_DATA_CORRUPTED = "CRYPTO_DATA_CORRUPTED"
 const val VALIDATION_ERROR = "VALIDATION_ERROR"
 const val NOT_FOUND = "NOT_FOUND"
 const val RATE_LIMITED = "RATE_LIMITED"
+const val CONFLICT = "CONFLICT"
 
 // ─── 兜底/未知 ─────────────────────────────
 const val UNEXPECTED = "UNEXPECTED"

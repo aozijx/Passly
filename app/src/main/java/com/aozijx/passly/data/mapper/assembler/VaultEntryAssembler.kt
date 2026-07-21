@@ -16,6 +16,7 @@ object VaultEntryAssembler {
         return VaultEntry(
             metadata = meta.copy(
                 entryId = entity.entryId,
+                entryVersion = entity.entryVersion,
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt,
                 deletedAt = entity.deletedAt
@@ -44,6 +45,7 @@ object VaultEntryAssembler {
         return VaultEntry(
             metadata = meta.copy(
                 entryId = entity.entryId,
+                entryVersion = entity.entryVersion,
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt,
                 deletedAt = entity.deletedAt
