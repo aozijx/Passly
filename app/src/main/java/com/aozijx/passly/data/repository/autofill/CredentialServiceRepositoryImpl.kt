@@ -6,6 +6,7 @@ import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.data.util.Clock
+import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultCredential
@@ -26,6 +27,7 @@ import javax.inject.Singleton
 class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
+    private val stateProvider: SessionStateProvider,
     private val fieldEncryptor: FieldEncryptor,
     private val clock: Clock
 ) : CredentialServiceRepository {
@@ -71,7 +73,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         packageName: String?,
         webDomain: String?
     ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
-        if (sessionState.isLocked()) return@runBlocking emptyList()
+        stateProvider.assertWritable()
         sessionManager.query {
             val metadataEntities = metadataDao().getActive()
             val credentialEntities =
@@ -93,19 +95,19 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     }
 
     override fun getById(entryId: Int): VaultEntry? = runBlocking(Dispatchers.IO) {
-        if (sessionState.isLocked()) return@runBlocking null
+        stateProvider.assertWritable()
         null
     }
 
     override fun getByIds(entryIds: List<Int>): List<VaultEntry> =
         runBlocking(Dispatchers.IO) {
-            if (sessionState.isLocked()) return@runBlocking emptyList()
+            stateProvider.assertWritable()
             emptyList()
         }
 
     override fun updateLastUsed(entryId: Int) {
         runBlocking(Dispatchers.IO) {
-            if (sessionState.isLocked()) return@runBlocking
+            stateProvider.assertWritable()
         }
     }
 

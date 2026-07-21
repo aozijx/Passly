@@ -14,11 +14,13 @@ import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.data.repository.backup.internal.BackupArchiveCodec
 import com.aozijx.passly.data.repository.backup.internal.BackupArchiveContent
 import com.aozijx.passly.di.IoDispatcher
+import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.model.backup.ImportMode
 import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.repository.backup.BackupRepository
+import com.aozijx.passly.domain.repository.database.TransactionOperator
 import com.aozijx.passly.security.crypto.CryptoEngine
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,6 +36,8 @@ internal class BackupRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val cryptoEngine: CryptoEngine,
     private val sessionManager: UnifiedSessionManager,
+    private val stateProvider: SessionStateProvider,
+    private val transactionOperator: TransactionOperator,
     private val fieldEncryptor: FieldEncryptor,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {

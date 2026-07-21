@@ -2,14 +2,15 @@ package com.aozijx.passly.data.repository.entry
 
 import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.AuthFailed
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.util.Clock
+import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.repository.database.TransactionOperator
 import com.aozijx.passly.domain.repository.entry.CommandRepository
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
@@ -22,13 +23,15 @@ import javax.inject.Singleton
 @Singleton
 class CommandRepositoryImpl @Inject constructor(
     private val sessionState: VaultAccessState,
+    private val stateProvider: SessionStateProvider,
+    private val transactionOperator: TransactionOperator,
     private val sessionManager: UnifiedSessionManager,
     private val cryptoMapper: VaultEntryCryptoMapper,
     private val clock: Clock
 ) : CommandRepository {
 
     override suspend fun insert(entry: VaultEntry): AppResult<Long> {
-        if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
+        stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.insert") {
                 withTransaction {
@@ -58,7 +61,7 @@ class CommandRepositoryImpl @Inject constructor(
     }
 
     override suspend fun update(entry: VaultEntry): AppResult<Unit> {
-        if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
+        stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.update") {
                 withTransaction {
@@ -92,7 +95,7 @@ class CommandRepositoryImpl @Inject constructor(
     }
 
     override suspend fun delete(entry: VaultEntry): AppResult<Unit> {
-        if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
+        stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.delete") {
                 metadataDao().softDelete(entry.id, System.currentTimeMillis())

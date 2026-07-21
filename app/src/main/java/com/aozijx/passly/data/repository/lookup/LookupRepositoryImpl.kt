@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.lookup
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
+import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
@@ -20,6 +21,7 @@ import javax.inject.Singleton
 class LookupRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
+    private val stateProvider: SessionStateProvider,
     private val cryptoMapper: VaultEntryCryptoMapper
 ) : LookupRepository {
 

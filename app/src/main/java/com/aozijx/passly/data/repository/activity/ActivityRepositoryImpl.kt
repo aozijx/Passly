@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.activity
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.toDomain
+import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
@@ -19,7 +20,8 @@ import javax.inject.Singleton
 @Singleton
 class ActivityRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState
+    private val sessionState: VaultAccessState,
+    private val stateProvider: SessionStateProvider
 ) : ActivityRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)

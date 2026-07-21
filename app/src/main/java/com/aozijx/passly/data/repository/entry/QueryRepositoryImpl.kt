@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
+import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.repository.entry.QueryRepository
@@ -15,12 +16,13 @@ import javax.inject.Singleton
 @Singleton
 class QueryRepositoryImpl @Inject constructor(
     private val sessionState: VaultAccessState,
+    private val stateProvider: SessionStateProvider,
     private val sessionManager: UnifiedSessionManager,
     private val cryptoMapper: VaultEntryCryptoMapper
 ) : QueryRepository {
 
     override suspend fun getById(entryId: String): VaultEntry? {
-        if (sessionState.isLocked()) return null
+        stateProvider.assertWritable()
         return sessionManager.query {
             val metaEntity = metadataDao().getById(entryId) ?: return@query null
             val credEntity = credentialDao().getByEntryId(entryId)
@@ -29,7 +31,7 @@ class QueryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> {
-        if (sessionState.isLocked()) return emptyList()
+        stateProvider.assertWritable()
         return sessionManager.query {
             val metaEntities = metadataDao().getActive()
             val credEntities = credentialDao().getByEntryIds(metaEntities.map { it.entryId })
@@ -39,7 +41,7 @@ class QueryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun count(): Int {
-        if (sessionState.isLocked()) return 0
+        stateProvider.assertWritable()
         return sessionManager.query { metadataDao().countActive() }
     }
 }

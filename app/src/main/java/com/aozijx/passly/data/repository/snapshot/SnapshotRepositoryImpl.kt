@@ -4,6 +4,7 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.onFailureLog
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.VaultSnapshotEntity
+import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.history.SnapshotType
 import com.aozijx.passly.domain.model.history.VaultSnapshot
@@ -21,7 +22,8 @@ import javax.inject.Singleton
 @Singleton
 class SnapshotRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState
+    private val sessionState: VaultAccessState,
+    private val stateProvider: SessionStateProvider
 ) : SnapshotRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
