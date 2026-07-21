@@ -9,7 +9,8 @@ import com.aozijx.passly.data.repository.favicon.FaviconRepositoryImpl
 import com.aozijx.passly.data.repository.lookup.LookupRepositoryImpl
 import com.aozijx.passly.data.repository.otp.OtpRepositoryImpl
 import com.aozijx.passly.data.repository.snapshot.SnapshotRepositoryImpl
-import com.aozijx.passly.domain.repository.activity.ActivityRepository
+import com.aozijx.passly.domain.repository.activity.CommandActivityRepository
+import com.aozijx.passly.domain.repository.activity.QueryActivityRepository
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
 import com.aozijx.passly.domain.repository.entry.CommandRepository
 import com.aozijx.passly.domain.repository.entry.QueryRepository
@@ -17,7 +18,8 @@ import com.aozijx.passly.domain.repository.entry.RecordEntryUsageFacade
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import com.aozijx.passly.domain.repository.otp.OtpRepository
-import com.aozijx.passly.domain.repository.snapshot.SnapshotRepository
+import com.aozijx.passly.domain.repository.snapshot.CommandSnapshotRepository
+import com.aozijx.passly.domain.repository.snapshot.QuerySnapshotRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -50,7 +52,11 @@ abstract class VaultRepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindActivityRepository(impl: ActivityRepositoryImpl): ActivityRepository
+    abstract fun bindQueryActivityRepository(impl: ActivityRepositoryImpl): QueryActivityRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCommandActivityRepository(impl: ActivityRepositoryImpl): CommandActivityRepository
 
     @Binds
     @Singleton
@@ -62,5 +68,9 @@ abstract class VaultRepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindSnapshotRepository(impl: SnapshotRepositoryImpl): SnapshotRepository
+    abstract fun bindQuerySnapshotRepository(impl: SnapshotRepositoryImpl): QuerySnapshotRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCommandSnapshotRepository(impl: SnapshotRepositoryImpl): CommandSnapshotRepository
 }

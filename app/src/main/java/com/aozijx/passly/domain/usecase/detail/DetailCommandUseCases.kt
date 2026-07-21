@@ -1,29 +1,21 @@
 package com.aozijx.passly.domain.usecase.detail
 
+import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
 import com.aozijx.passly.domain.repository.entry.CommandRepository
-import com.aozijx.passly.domain.repository.entry.QueryRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
-import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
-import com.aozijx.passly.domain.usecase.vault.SnapshotUseCases
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DetailUseCases @Inject constructor(
-    private val queryRepository: QueryRepository,
+class DetailCommandUseCases @Inject constructor(
     private val commandRepository: CommandRepository,
-    private val faviconRepository: FaviconRepository,
-    private val activityUseCases: ActivityUseCases,
-    private val snapshotUseCases: SnapshotUseCases
+    private val faviconRepository: FaviconRepository
 ) {
 
-    suspend fun getById(entryId: String): VaultEntry? = queryRepository.getById(entryId)
-
-    suspend fun updateEntry(entry: VaultEntry) =
+    suspend fun updateEntry(entry: VaultEntry): AppResult<Unit> =
         commandRepository.update(entry, entry.metadata.entryVersion)
 
     suspend fun downloadAndApplyFavicon(entry: VaultEntry): VaultEntry? {
@@ -37,9 +29,6 @@ class DetailUseCases @Inject constructor(
         }
         return null
     }
-
-    fun getActivityByEntryId(entryId: String): Flow<List<com.aozijx.passly.domain.model.activity.VaultActivity>> =
-        activityUseCases.observeByEntryId(entryId)
 
     private suspend fun downloadFavicon(input: String): FaviconOutcome {
         if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)

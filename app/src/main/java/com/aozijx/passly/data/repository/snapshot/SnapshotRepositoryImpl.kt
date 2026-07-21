@@ -8,7 +8,8 @@ import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.history.SnapshotType
 import com.aozijx.passly.domain.model.history.VaultSnapshot
-import com.aozijx.passly.domain.repository.snapshot.SnapshotRepository
+import com.aozijx.passly.domain.repository.snapshot.CommandSnapshotRepository
+import com.aozijx.passly.domain.repository.snapshot.QuerySnapshotRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -24,7 +25,7 @@ class SnapshotRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
     private val stateProvider: SessionStateProvider
-) : SnapshotRepository {
+) : QuerySnapshotRepository, CommandSnapshotRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeByEntryId(entryId: String): Flow<List<VaultSnapshot>> =

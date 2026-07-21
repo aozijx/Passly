@@ -5,9 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.usecase.detail.DetailUseCases
+import com.aozijx.passly.domain.usecase.detail.DetailCommandUseCases
+import com.aozijx.passly.domain.usecase.detail.DetailQueryUseCases
 import com.aozijx.passly.domain.usecase.settings.RuntimeSettingsUseCases
-import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
+import com.aozijx.passly.domain.usecase.vault.ActivityCommandUseCases
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
@@ -25,9 +26,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
-    private val detailUseCases: DetailUseCases,
+    private val detailQueryUseCases: DetailQueryUseCases,
+    private val detailCommandUseCases: DetailCommandUseCases,
     private val runtimeSettingsUseCases: RuntimeSettingsUseCases,
-    private val activityUseCases: ActivityUseCases
+    private val activityCommandUseCases: ActivityCommandUseCases
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer()
 
@@ -57,13 +59,14 @@ class DetailViewModel @Inject constructor(
                 refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
 
                 viewModelScope.launch {
-                    val latest = detailUseCases.getById(event.initialEntry.id) ?: event.initialEntry
+                    val latest =
+                        detailQueryUseCases.getById(event.initialEntry.id) ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
                     autoDownloadFavicon(latest)
                 }
 
                 viewModelScope.launch {
-                    detailUseCases.getActivityByEntryId(event.initialEntry.id)
+                    detailQueryUseCases.getActivityByEntryId(event.initialEntry.id)
                         .collect { list: List<VaultActivity> ->
                             _uiState.update { it.copy(history = list) }
                         }
@@ -147,7 +150,7 @@ class DetailViewModel @Inject constructor(
                 }
 
                 viewModelScope.launch {
-                    activityUseCases.recordUsage(current.id, event.type)
+                    activityCommandUseCases.recordUsage(current.id, event.type)
                 }
             }
 
@@ -177,7 +180,7 @@ class DetailViewModel @Inject constructor(
     private fun autoDownloadFavicon(entry: VaultEntry) {
         if (entry.associatedDomain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return
         viewModelScope.launch {
-            val updated = detailUseCases.downloadAndApplyFavicon(entry)
+            val updated = detailCommandUseCases.downloadAndApplyFavicon(entry)
             if (updated != null) {
                 refreshFromEntry(updated, _uiState.value.isEditingTitle, _uiState.value.editedTitle)
             }

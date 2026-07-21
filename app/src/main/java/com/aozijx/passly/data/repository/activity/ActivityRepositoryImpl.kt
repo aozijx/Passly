@@ -6,7 +6,8 @@ import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
-import com.aozijx.passly.domain.repository.activity.ActivityRepository
+import com.aozijx.passly.domain.repository.activity.CommandActivityRepository
+import com.aozijx.passly.domain.repository.activity.QueryActivityRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +23,7 @@ class ActivityRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
     private val stateProvider: SessionStateProvider
-) : ActivityRepository {
+) : QueryActivityRepository, CommandActivityRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeByEntryId(entryId: String): Flow<List<VaultActivity>> =

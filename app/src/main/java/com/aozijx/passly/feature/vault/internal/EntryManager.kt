@@ -5,7 +5,8 @@ import android.net.Uri
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.usecase.vault.VaultUseCases
+import com.aozijx.passly.domain.usecase.vault.VaultCommandUseCases
+import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +16,8 @@ import kotlinx.coroutines.sync.withLock
 
 internal class EntryManager(
     private val scope: CoroutineScope,
-    private val vaultUseCases: VaultUseCases,
+    private val vaultCommandUseCases: VaultCommandUseCases,
+    private val vaultQueryUseCases: VaultQueryUseCases,
     private val iconHelper: EntryIconHelper,
     private val detail: DetailCoordinator,
     private val totp: TotpCoordinator,
@@ -30,7 +32,7 @@ internal class EntryManager(
 
     fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
-            vaultUseCases.addEntry(entry, domain)
+            vaultCommandUseCases.addEntry(entry, domain)
                 .onSuccess {
                     detail.setAddType(null)
                     onComplete()
@@ -45,7 +47,7 @@ internal class EntryManager(
 
     fun updateEntry(entry: VaultEntry) {
         scope.launch(Dispatchers.IO + handler) {
-            vaultUseCases.updateEntry(entry)
+            vaultCommandUseCases.updateEntry(entry)
                 .onSuccess {
                     detail.updateEntry(entry)
                     totp.onEntryUpdated(entry)
@@ -75,12 +77,12 @@ internal class EntryManager(
         if (!acquired) return
 
         try {
-            val entry = presetEntry ?: vaultUseCases.getById(entryId)
+            val entry = presetEntry ?: vaultQueryUseCases.getById(entryId)
             if (detail.isViewingEntry(entryId)) {
                 detail.dismissDetail()
             }
             iconHelper.cleanupIcon(entry?.iconCustomPath)
-            entry?.let { vaultUseCases.deleteEntry(it) }
+            entry?.let { vaultCommandUseCases.deleteEntry(it) }
             detail.setItemToDelete(null)
             totp.clearSensitiveState(entryId)
         } catch (e: AppError) {
@@ -108,7 +110,7 @@ internal class EntryManager(
 
     fun downloadMissingIcons(summaries: List<VaultEntry>) {
         scope.launch(Dispatchers.IO + handler) {
-            vaultUseCases.downloadMissingFavicons(summaries)
+            vaultCommandUseCases.downloadMissingFavicons(summaries)
         }
     }
 }

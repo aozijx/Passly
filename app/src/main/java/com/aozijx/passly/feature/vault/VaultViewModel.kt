@@ -7,8 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
-import com.aozijx.passly.domain.usecase.vault.VaultUseCases
+import com.aozijx.passly.domain.usecase.vault.ActivityCommandUseCases
+import com.aozijx.passly.domain.usecase.vault.VaultCommandUseCases
+import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.internal.DetailCoordinator
@@ -38,8 +39,9 @@ import javax.inject.Inject
 @HiltViewModel
 class VaultViewModel @Inject constructor(
     application: Application,
-    private val vaultUseCases: VaultUseCases,
-    private val activityUseCases: ActivityUseCases,
+    private val vaultQueryUseCases: VaultQueryUseCases,
+    private val vaultCommandUseCases: VaultCommandUseCases,
+    private val activityCommandUseCases: ActivityCommandUseCases,
     private val portableSettingsUseCases: PortableSettingsUseCases
 ) : AndroidViewModel(application) {
 
@@ -51,20 +53,21 @@ class VaultViewModel @Inject constructor(
 
     private val totp = TotpCoordinator(
         scope = viewModelScope,
-        codeGenerator = { config -> vaultUseCases.getTotpCode(config) },
+        codeGenerator = { config -> vaultQueryUseCases.getTotpCode(config) },
         decryptSecret = { encrypted -> encrypted }
     )
     private val detail = DetailCoordinator()
     private val entryManager = EntryManager(
         scope = viewModelScope,
-        vaultUseCases = vaultUseCases,
+        vaultCommandUseCases = vaultCommandUseCases,
+        vaultQueryUseCases = vaultQueryUseCases,
         iconHelper = EntryIconHelper(),
         detail = detail,
         totp = totp,
         onError = { emitError(it) }
     )
 
-    private val queryCoordinator = VaultQueryCoordinator(vaultUseCases)
+    private val queryCoordinator = VaultQueryCoordinator(vaultQueryUseCases)
     private val searchFilter = SearchFilterState(
         viewModelScope,
         initialSort = SortOption.DEFAULT
@@ -78,7 +81,7 @@ class VaultViewModel @Inject constructor(
         scope = viewModelScope,
         queryCoordinator = queryCoordinator,
         searchFilter = searchFilter,
-        vaultUseCases = vaultUseCases,
+        vaultQueryUseCases = vaultQueryUseCases,
         entryManager = entryManager,
         isAutoDownloadIcons = isAutoDownloadIcons
     )
@@ -197,7 +200,7 @@ class VaultViewModel @Inject constructor(
     fun showDetail(entry: VaultEntry) {
         detail.showDetail(entry)
         totp.autoUnlock(entry)
-        viewModelScope.launch { activityUseCases.recordUsage(entry.id) }
+        viewModelScope.launch { activityCommandUseCases.recordUsage(entry.id) }
     }
 
     fun dismissDetail() {
@@ -205,7 +208,7 @@ class VaultViewModel @Inject constructor(
     }
 
     fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) {
-        viewModelScope.launch { vaultUseCases.getById(entryId)?.let { onLoaded(it) } }
+        viewModelScope.launch { vaultQueryUseCases.getById(entryId)?.let { onLoaded(it) } }
     }
 
     fun decryptSingle(
