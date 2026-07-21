@@ -26,7 +26,7 @@ class ActivityRepositoryImpl @Inject constructor(
     override fun observeByEntryId(entryId: String): Flow<List<VaultActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.read {
+            else sessionManager.observeFlow {
                 activityDao().observeByEntryId(entryId)
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
@@ -37,7 +37,7 @@ class ActivityRepositoryImpl @Inject constructor(
     override fun observeAll(): Flow<List<VaultActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.read {
+            else sessionManager.observeFlow {
                 activityDao().observeAll()
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
@@ -48,7 +48,7 @@ class ActivityRepositoryImpl @Inject constructor(
     override fun observeByType(activityType: ActivityType): Flow<List<VaultActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.read {
+            else sessionManager.observeFlow {
                 activityDao().observeByType(activityType)
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
@@ -57,11 +57,11 @@ class ActivityRepositoryImpl @Inject constructor(
 
     override suspend fun deleteByEntryId(entryId: String) {
         if (sessionState.isLocked()) return
-        sessionManager.read { activityDao().deleteByEntryId(entryId) }
+        sessionManager.query { activityDao().deleteByEntryId(entryId) }
     }
 
     override suspend fun deleteBefore(timestamp: Long) {
         if (sessionState.isLocked()) return
-        sessionManager.read { activityDao().deleteBefore(timestamp) }
+        sessionManager.query { activityDao().deleteBefore(timestamp) }
     }
 }

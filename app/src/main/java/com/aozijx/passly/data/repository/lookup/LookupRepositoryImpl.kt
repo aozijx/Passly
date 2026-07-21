@@ -40,7 +40,7 @@ class LookupRepositoryImpl @Inject constructor(
     override val allCategories: Flow<List<String>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.read {
+            else sessionManager.observeFlow {
                 metadataDao().observeActive()
                     .map { metaEntities ->
                         val credEntities =
@@ -65,7 +65,7 @@ class LookupRepositoryImpl @Inject constructor(
     ): Flow<List<VaultEntry>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
-            else sessionManager.read {
+            else sessionManager.observeFlow {
                 val entryFlow = when (filter) {
                     LookupRepository.EntryFilter.ALL -> metadataDao().observeActive()
                     LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeByEntryTypes(
@@ -132,7 +132,7 @@ class LookupRepositoryImpl @Inject constructor(
         sessionState.isAuthorized
             .flatMapLatest { authorized ->
                 if (!authorized) flowOf(emptyList())
-                else sessionManager.read {
+                else sessionManager.observeFlow {
                     val entryFlow = when (filter) {
                         LookupRepository.EntryFilter.ALL -> metadataDao().observeActive()
                         LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeByEntryTypes(

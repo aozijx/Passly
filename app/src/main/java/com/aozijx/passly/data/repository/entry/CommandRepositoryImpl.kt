@@ -29,7 +29,7 @@ class CommandRepositoryImpl @Inject constructor(
 
     override suspend fun insert(entry: VaultEntry): AppResult<Long> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.write {
+        return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.insert") {
                 withTransaction {
                     val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
@@ -59,7 +59,7 @@ class CommandRepositoryImpl @Inject constructor(
 
     override suspend fun update(entry: VaultEntry): AppResult<Unit> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.write {
+        return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.update") {
                 withTransaction {
                     val oldMetaEntity = metadataDao().getById(entry.id) ?: return@withTransaction
@@ -93,7 +93,7 @@ class CommandRepositoryImpl @Inject constructor(
 
     override suspend fun delete(entry: VaultEntry): AppResult<Unit> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.write {
+        return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.delete") {
                 metadataDao().softDelete(entry.id, System.currentTimeMillis())
             }

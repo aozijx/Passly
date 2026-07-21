@@ -29,7 +29,7 @@ class SnapshotRepositoryImpl @Inject constructor(
         sessionState.isAuthorized
             .flatMapLatest { authorized ->
                 if (!authorized) emptyFlow()
-                else sessionManager.read {
+                else sessionManager.observeFlow {
                     historyDao().observeByEntryId(entryId)
                         .map { it.toDomainList() }
                         .flowOn(Dispatchers.IO)
@@ -41,14 +41,14 @@ class SnapshotRepositoryImpl @Inject constructor(
         sessionState.isAuthorized
             .flatMapLatest { authorized ->
                 if (!authorized) emptyFlow()
-                else sessionManager.read {
+                else sessionManager.observeFlow {
                     emptyFlow()
                 }
             }
 
     override suspend fun getByEntryId(entryId: String): List<VaultSnapshot> {
         if (sessionState.isLocked()) return emptyList()
-        return sessionManager.read {
+        return sessionManager.query {
             // No direct DAO method for getByEntryId; observe then first() is preferred
             emptyList()
         }
@@ -57,13 +57,13 @@ class SnapshotRepositoryImpl @Inject constructor(
     override suspend fun insert(snapshot: VaultSnapshot) {
         if (sessionState.isLocked()) return
         AppResult.runSuspendCatching("history.insert") {
-            sessionManager.read { historyDao().insert(snapshot.toEntity()) }
+            sessionManager.query { historyDao().insert(snapshot.toEntity()) }
         }.onFailureLog("HistoryRepo")
     }
 
     override suspend fun deleteByEntryId(entryId: String) {
         if (sessionState.isLocked()) return
-        sessionManager.read { historyDao().deleteByEntryId(entryId) }
+        sessionManager.query { historyDao().deleteByEntryId(entryId) }
     }
 
     private fun List<VaultSnapshotEntity>.toDomainList(): List<VaultSnapshot> =

@@ -29,7 +29,7 @@ class RecordEntryUsageFacadeImpl @Inject constructor(
 
     override suspend fun record(entryId: String, type: ActivityType): AppResult<Unit> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
-        return sessionManager.write {
+        return sessionManager.transaction {
             AppResult.runSuspendCatching("record_entry_usage") {
                 withTransaction {
                     // 1. 插入活动记录

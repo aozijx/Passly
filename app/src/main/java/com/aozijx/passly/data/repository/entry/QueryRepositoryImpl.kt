@@ -21,8 +21,8 @@ class QueryRepositoryImpl @Inject constructor(
 
     override suspend fun getById(entryId: String): VaultEntry? {
         if (sessionState.isLocked()) return null
-        return sessionManager.read {
-            val metaEntity = metadataDao().getById(entryId) ?: return@read null
+        return sessionManager.query {
+            val metaEntity = metadataDao().getById(entryId) ?: return@query null
             val credEntity = credentialDao().getByEntryId(entryId)
             cryptoMapper.assembleEntry(metaEntity, credEntity)
         }
@@ -30,7 +30,7 @@ class QueryRepositoryImpl @Inject constructor(
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> {
         if (sessionState.isLocked()) return emptyList()
-        return sessionManager.read {
+        return sessionManager.query {
             val metaEntities = metadataDao().getActive()
             val credEntities = credentialDao().getByEntryIds(metaEntities.map { it.entryId })
             val credMap = credEntities.associateBy { it.entryId }
@@ -40,6 +40,6 @@ class QueryRepositoryImpl @Inject constructor(
 
     override suspend fun count(): Int {
         if (sessionState.isLocked()) return 0
-        return sessionManager.read { metadataDao().countActive() }
+        return sessionManager.query { metadataDao().countActive() }
     }
 }

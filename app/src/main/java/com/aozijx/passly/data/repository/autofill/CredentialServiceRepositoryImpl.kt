@@ -72,7 +72,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         webDomain: String?
     ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
         if (sessionState.isLocked()) return@runBlocking emptyList()
-        sessionManager.read {
+        sessionManager.query {
             val metadataEntities = metadataDao().getActive()
             val credentialEntities =
                 credentialDao().getByEntryIds(metadataEntities.map { it.entryId })
@@ -117,7 +117,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         passwordValue: String
     ): Boolean = runBlocking(Dispatchers.IO) {
         if (sessionState.isLocked()) return@runBlocking false
-        sessionManager.read {
+        sessionManager.query {
             val entryId = UuidCreator.getTimeOrderedEpoch().toString()
             val meta = VaultMetadata(
                 entryId = entryId,

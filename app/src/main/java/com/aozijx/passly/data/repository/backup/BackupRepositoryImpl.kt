@@ -67,7 +67,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getVaultEntries(): List<VaultEntry> {
-        return sessionManager.read {
+        return sessionManager.query {
             val metadataEntities = metadataDao().getActive()
             val credentialEntities =
                 credentialDao().getByEntryIds(metadataEntities.map { it.entryId })
@@ -217,7 +217,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     }
 
     private suspend fun importSnapshots(snapshots: List<VaultSnapshot>, config: ImportMode) {
-        sessionManager.write {
+        sessionManager.transaction {
             withTransaction {
                 if (config == ImportMode.OVERWRITE) {
                     metadataDao().clear()
