@@ -3,7 +3,8 @@ package com.aozijx.passly.domain.usecase.detail
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
-import com.aozijx.passly.domain.repository.entry.VaultEntryRepository
+import com.aozijx.passly.domain.repository.entry.CommandRepository
+import com.aozijx.passly.domain.repository.entry.QueryRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.usecase.vault.ActivityUseCases
 import com.aozijx.passly.domain.usecase.vault.SnapshotUseCases
@@ -13,15 +14,16 @@ import javax.inject.Singleton
 
 @Singleton
 class DetailUseCases @Inject constructor(
-    private val vaultEntryRepository: VaultEntryRepository,
+    private val queryRepository: QueryRepository,
+    private val commandRepository: CommandRepository,
     private val faviconRepository: FaviconRepository,
     private val activityUseCases: ActivityUseCases,
     private val snapshotUseCases: SnapshotUseCases
 ) {
 
-    suspend fun getById(entryId: String): VaultEntry? = vaultEntryRepository.getById(entryId)
+    suspend fun getById(entryId: String): VaultEntry? = queryRepository.getById(entryId)
 
-    suspend fun updateEntry(entry: VaultEntry) = vaultEntryRepository.update(entry)
+    suspend fun updateEntry(entry: VaultEntry) = commandRepository.update(entry)
 
     suspend fun downloadAndApplyFavicon(entry: VaultEntry): VaultEntry? {
         val domain = entry.associatedDomain
@@ -29,7 +31,7 @@ class DetailUseCases @Inject constructor(
         val outcome = downloadFavicon(domain)
         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
             val updated = entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath))
-            vaultEntryRepository.update(updated)
+            commandRepository.update(updated)
             return updated
         }
         return null

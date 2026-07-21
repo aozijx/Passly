@@ -10,62 +10,49 @@ import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.repository.entry.VaultEntryRepository
+import com.aozijx.passly.domain.repository.entry.CommandRepository
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * 命令 Repository 实现：负责业务逻辑修改，使用 withTransaction 保证原子性。
+ * 写操作统一处理加解密和关联表的同步更新。
+ */
 @Singleton
-class VaultEntryRepositoryImpl @Inject constructor(
+class CommandRepositoryImpl @Inject constructor(
     private val sessionState: VaultAccessState,
     private val sessionManager: DatabaseSession,
     private val cryptoMapper: VaultEntryCryptoMapper,
     private val clock: Clock
-) : VaultEntryRepository {
-
-    override suspend fun getById(entryId: String): VaultEntry? {
-        if (sessionState.isLocked()) return null
-        return sessionManager.withDatabase {
-            val metaEntity = metadataDao().getById(entryId) ?: return@withDatabase null
-            val credEntity = credentialDao().getByEntryId(entryId)
-            cryptoMapper.assembleEntry(metaEntity, credEntity)
-        }
-    }
-
-    override suspend fun getEntriesForIconResync(): List<VaultEntry> {
-        if (sessionState.isLocked()) return emptyList()
-        return sessionManager.withDatabase {
-            val metaEntities = metadataDao().getActive()
-            val credEntities = credentialDao().getByEntryIds(metaEntities.map { it.entryId })
-            val credMap = credEntities.associateBy { it.entryId }
-            metaEntities.mapNotNull { cryptoMapper.assembleEntry(it, credMap[it.entryId]) }
-        }
-    }
+) : CommandRepository {
 
     override suspend fun insert(entry: VaultEntry): AppResult<Long> {
         if (sessionState.isLocked()) return AppResult.failure(AuthFailed("数据库未解锁"))
         return sessionManager.withDatabase {
             AppResult.runSuspendCatching("vault.insert") {
-                val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
-                val now = clock.now()
-                val metaBlob = cryptoMapper.encryptMetadata(entry.metadata, entryId)
-                val credBlob = cryptoMapper.encryptCredential(entry.credential, entryId)
+                withTransaction {
+                    val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
+                    val now = clock.now()
+                    val metaBlob = cryptoMapper.encryptMetadata(entry.metadata, entryId)
+                    val credBlob = cryptoMapper.encryptCredential(entry.credential, entryId)
 
-                val metaEntity = VaultMetadataEntity(
-                    entryId = entryId,
-                    entryType = entry.entryType,
-                    metadataBlob = metaBlob,
-                    createdAt = now,
-                    updatedAt = now
-                )
-                val credEntity = VaultCredentialEntity(
-                    entryId = entryId,
-                    credentialBlob = credBlob
-                )
+                    val metaEntity = VaultMetadataEntity(
+                        entryId = entryId,
+                        entryType = entry.entryType,
+                        metadataBlob = metaBlob,
+                        createdAt = now,
+                        updatedAt = now
+                    )
+                    val credEntity = VaultCredentialEntity(
+                        entryId = entryId,
+                        credentialBlob = credBlob
+                    )
 
-                metadataDao().insert(metaEntity)
-                credentialDao().insert(credEntity)
-                0L
+                    metadataDao().insert(metaEntity)
+                    credentialDao().insert(credEntity)
+                    0L
+                }
             }
         }
     }
@@ -111,10 +98,5 @@ class VaultEntryRepositoryImpl @Inject constructor(
                 metadataDao().softDelete(entry.id, System.currentTimeMillis())
             }
         }
-    }
-
-    override suspend fun count(): Int {
-        if (sessionState.isLocked()) return 0
-        return sessionManager.withDatabase { metadataDao().countActive() }
     }
 }
