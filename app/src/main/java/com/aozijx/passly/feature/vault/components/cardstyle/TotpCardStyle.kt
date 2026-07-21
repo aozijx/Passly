@@ -29,8 +29,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.feature.vault.model.TotpState
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 private object TotpBehaviorTokens {

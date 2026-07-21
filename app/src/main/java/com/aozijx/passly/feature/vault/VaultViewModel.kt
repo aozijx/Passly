@@ -4,7 +4,6 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
@@ -21,6 +20,7 @@ import com.aozijx.passly.feature.vault.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.feature.vault.internal.VaultListCoordinator
 import com.aozijx.passly.feature.vault.internal.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.model.TotpState
 import com.aozijx.passly.feature.vault.model.VaultTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow

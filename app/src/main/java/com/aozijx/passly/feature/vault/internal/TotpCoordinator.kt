@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.credential.twofactor.otp.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.feature.vault.model.TotpState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay

@@ -17,12 +17,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.otp.TotpState
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
+import com.aozijx.passly.feature.vault.model.TotpState
 import com.aozijx.passly.feature.vault.model.VaultTab
 import com.aozijx.passly.ui.components.widgets.SwipeDirection
 import com.aozijx.passly.ui.components.widgets.SwipeToAction

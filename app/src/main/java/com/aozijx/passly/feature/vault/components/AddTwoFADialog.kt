@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.util.TotpUtils
 import com.aozijx.passly.domain.model.credential.VaultCredential
 import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
 import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorType
@@ -49,8 +49,10 @@ fun AddTwoFADialog(
     LaunchedEffect(state.uriText) {
         val parsed = TotpUtils.parseOtpAuthUri(state.uriText) ?: return@LaunchedEffect
         try {
-            state.title = parsed.issuer ?: parsed.label.split(":").firstOrNull() ?: ""
-            state.username = parsed.label
+            // 优先将 Label 映射为标题，并尝试从 Label 中分离出账号部分
+            state.title = parsed.label
+            state.username = parsed.label.split(":").getOrNull(1)?.trim() ?: parsed.label
+
             state.secret = parsed.secret
             state.issuer = parsed.issuer ?: ""
             state.domain = parsed.issuer ?: ""

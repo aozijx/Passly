@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.otp
+package com.aozijx.passly.feature.vault.model
 
 data class TotpState(
     val code: String = "------",

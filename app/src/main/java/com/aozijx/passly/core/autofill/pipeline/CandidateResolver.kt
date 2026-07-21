@@ -3,10 +3,10 @@ package com.aozijx.passly.core.autofill.pipeline
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.otp.TwoFAUtils
+import com.aozijx.passly.core.util.TwoFAUtils
+import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.model.lookup.MatchType
-import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
 import javax.inject.Inject
 import javax.inject.Singleton

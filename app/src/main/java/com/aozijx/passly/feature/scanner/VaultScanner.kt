@@ -52,8 +52,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
-import com.aozijx.passly.core.otp.OtpAuthData
-import com.aozijx.passly.core.otp.TotpUtils
+import com.aozijx.passly.core.util.OtpAuthData
+import com.aozijx.passly.core.util.TotpUtils
 import com.aozijx.passly.domain.model.credential.VaultCredential
 import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorConfig
 import com.aozijx.passly.domain.model.credential.twofactor.TwoFactorType
@@ -189,10 +189,8 @@ fun VaultScanner(
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = stringResource(
-                                R.string.vault_scanner_result_account, totp.label
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
+                            text = totp.label,
+                            style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -225,9 +223,9 @@ fun VaultScanner(
                                             metadata = VaultMetadata(
                                                 entryId = "",
                                                 entryType = EntryType.LOGIN,
-                                                title = totp.issuer ?: totp.label.split(":")
-                                                    .firstOrNull() ?: "2FA",
-                                                username = totp.label,
+                                                title = totp.label,
+                                                username = totp.label.split(":").getOrNull(1)
+                                                    ?.trim() ?: totp.label,
                                                 icon = null
                                             ),
                                             credential = VaultCredential(

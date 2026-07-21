@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.otp
+package com.aozijx.passly.core.util
 
 import android.util.Base64
 import com.aozijx.passly.core.diagnostics.AppLog
@@ -40,8 +40,8 @@ object TwoFAUtils {
      * @param timestamp 可选的 Unix 时间戳（秒），如果不传则使用当前系统时间
      */
     fun generateTotp(
-        secret: String, 
-        digits: Int = 6, 
+        secret: String,
+        digits: Int = 6,
         period: Int = 30,
         algorithm: String = "SHA1",
         timestamp: Long? = null
@@ -50,7 +50,7 @@ object TwoFAUtils {
         try {
             val algoUpper = algorithm.uppercase()
             val isSteam = algoUpper == "STEAM"
-            
+
             val decodedKey = if (isSteam) {
                 try {
                     if (secret.length == 32 && !secret.contains("/") && !secret.contains("+")) {
@@ -74,7 +74,7 @@ object TwoFAUtils {
             val hmacAlgo = when (algoUpper) {
                 "SHA256" -> "HmacSHA256"
                 "SHA512" -> "HmacSHA512"
-                else -> "HmacSHA1" 
+                else -> "HmacSHA1"
             }
 
             val signKey = SecretKeySpec(decodedKey, hmacAlgo)
@@ -90,7 +90,7 @@ object TwoFAUtils {
                         ((hash[offset + 1].toInt() and 0xff) shl 16) or
                         ((hash[offset + 2].toInt() and 0xff) shl 8) or
                         (hash[offset + 3].toInt() and 0xff)
-                
+
                 val otp = truncatedHash % (10.0.pow(digits.toDouble()).toLong())
                 otp.toString().padStart(digits, '0')
             }
@@ -121,7 +121,9 @@ object TwoFAUtils {
         val clean = base32.uppercase().replace(" ", "").replace("-", "").replace("=", "")
         if (clean.isEmpty()) return byteArrayOf()
         val output = ByteArray(clean.length * 5 / 8)
-        var buffer = 0; var bitsLeft = 0; var index = 0
+        var buffer = 0;
+        var bitsLeft = 0;
+        var index = 0
         for (char in clean) {
             val value = when (char) {
                 in 'A'..'Z' -> char - 'A'

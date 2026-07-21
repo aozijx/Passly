@@ -27,10 +27,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.core.otp.TotpState
-import com.aozijx.passly.core.otp.TotpUtils
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
+import com.aozijx.passly.core.util.TotpUtils
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.components.DetailHeader
@@ -44,6 +43,7 @@ import com.aozijx.passly.feature.detail.sections.CredentialSection
 import com.aozijx.passly.feature.detail.sections.TotpSection
 import com.aozijx.passly.feature.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.feature.main.MainViewModel
+import com.aozijx.passly.feature.vault.model.TotpState
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
