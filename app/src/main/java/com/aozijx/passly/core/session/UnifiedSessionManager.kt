@@ -2,6 +2,7 @@ package com.aozijx.passly.core.session
 
 import androidx.room.withTransaction
 import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.core.error.DatabaseInitFailed
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseProvider
 import com.aozijx.passly.domain.authentication.SessionLockedException
@@ -214,7 +215,8 @@ class UnifiedSessionManager @Inject constructor(
             null
         } catch (e: Exception) {
             AppLog.e(TAG, "Failed to open database", e)
-            e
+            mutex.withLock { database = null }
+            DatabaseInitFailed("数据库初始化失败", cause = e)
         }
     }
 
@@ -263,17 +265,26 @@ class UnifiedSessionManager @Inject constructor(
     /**
      * 获取当前数据库实例。
      * 如果尚未打开，则自动打开（首次使用时惰性初始化）。
+     *
+     * 初始化失败时清理 database = null 并将底层异常包装为 [DatabaseInitFailed]，
+     * 防止"死连接"残留导致后续操作持续失败。
      */
     private suspend fun resolveDatabase(): AppDatabase {
         mutex.withLock {
             database?.let { return it }
 
-            // 惰性初始化：首次访问时打开
-            val dek = dekManager.withDek { it.clone() }
-            val db = databaseProvider.open(dek)
-            dek.fill(0)
-            database = db
-            return db
+            try {
+                // 惰性初始化：首次访问时打开
+                val dek = dekManager.withDek { it.clone() }
+                val db = databaseProvider.open(dek)
+                dek.fill(0)
+                database = db
+                return db
+            } catch (e: Exception) {
+                // 清理现场，防止"死连接"残留
+                database = null
+                throw DatabaseInitFailed("数据库初始化失败", cause = e)
+            }
         }
     }
 }
