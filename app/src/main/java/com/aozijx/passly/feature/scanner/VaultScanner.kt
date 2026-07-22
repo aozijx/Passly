@@ -52,7 +52,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
-import com.aozijx.passly.core.util.OtpAuthData
 import com.aozijx.passly.core.util.TotpUtils
 import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.EntryType
@@ -81,7 +80,7 @@ fun VaultScanner(
 
     // 使用 Effect 接收一次性扫描结果
     var scanResult by remember { mutableStateOf("") }
-    var scannedTotp by remember { mutableStateOf<OtpAuthData?>(null) }
+    var scannedTotp by remember { mutableStateOf<OtpConfig?>(null) }
 
     LaunchedEffect(Unit) {
         scannerViewModel.effects.collect { effect ->
@@ -187,7 +186,14 @@ fun VaultScanner(
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = totp.label,
+                            text = buildString {
+                                if (!totp.issuer.isNullOrBlank()) append(totp.issuer)
+                                if (!totp.accountName.isNullOrBlank()) {
+                                    if (isNotEmpty()) append(": ")
+                                    append(totp.accountName)
+                                }
+                                if (isEmpty()) append("TOTP")
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -212,33 +218,31 @@ fun VaultScanner(
 
                             Button(
                                 onClick = {
-                                    val isSteam = (totp.issuer?.contains(
-                                        "Steam", ignoreCase = true
-                                    ) == true) || (totp.label.contains("Steam", ignoreCase = true))
+                                    val parsedConfig = scannedTotp ?: return@Button
+                                    val title = buildString {
+                                        if (!parsedConfig.issuer.isNullOrBlank()) append(
+                                            parsedConfig.issuer
+                                        )
+                                        if (!parsedConfig.accountName.isNullOrBlank()) {
+                                            if (isNotEmpty()) append(": ")
+                                            append(parsedConfig.accountName)
+                                        }
+                                        if (isEmpty()) append("TOTP")
+                                    }
 
                                     try {
                                         val entry = VaultEntry(
                                             metadata = VaultMetadata(
                                                 entryId = "",
                                                 entryType = EntryType.LOGIN,
-                                                title = totp.label,
-                                                username = totp.label.split(":").getOrNull(1)
-                                                    ?.trim() ?: totp.label,
+                                                title = title,
+                                                username = parsedConfig.accountName ?: title,
                                                 icon = null
                                             ),
                                             credential = VaultCredential(
                                                 entryId = "",
                                                 password = "",
-                                                twoFactorType = if (isSteam) "STEAM_GUARD" else "TOTP",
-                                                otp = OtpConfig(
-                                                    secret = totp.secret,
-                                                    digits = if (isSteam) 5 else (totp.digits ?: 6),
-                                                    period = totp.period ?: 30,
-                                                    algorithm = if (isSteam) "STEAM" else (totp.algorithm
-                                                        ?: "SHA1"),
-                                                    issuer = totp.issuer,
-                                                    label = totp.label
-                                                )
+                                                otp = parsedConfig
                                             )
                                         )
                                         onSaveEntry(entry)

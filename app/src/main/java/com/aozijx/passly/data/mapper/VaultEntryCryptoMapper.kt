@@ -6,6 +6,8 @@ import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.data.model.serializer.SnapshotPayload
+import com.aozijx.passly.domain.model.core.OtpHashAlgorithm
+import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
@@ -95,29 +97,33 @@ class VaultEntryCryptoMapper @Inject constructor(
             val hasTotp: Boolean
             val totpPeriod: Int
             val totpDigits: Int
-            val totpAlgorithm: String
+            val otpType: OtpType
+            val totpAlgorithm: OtpHashAlgorithm
             if (credEntity != null) {
                 val cred = decryptCredential(credEntity)
                 val otp = cred.otp
                 if (otp != null && otp.secret.isNotBlank()) {
                     hasTotp = true
-                    totpPeriod = otp.period
+                    totpPeriod = otp.periodSeconds ?: 30
                     totpDigits = otp.digits
+                    otpType = otp.type
                     totpAlgorithm = otp.algorithm
                 } else {
                     hasTotp = false
                     totpPeriod = 30
                     totpDigits = 6
-                    totpAlgorithm = "SHA1"
+                    otpType = OtpType.TOTP
+                    totpAlgorithm = OtpHashAlgorithm.SHA1
                 }
             } else {
                 hasTotp = false
                 totpPeriod = 30
                 totpDigits = 6
-                totpAlgorithm = "SHA1"
+                otpType = OtpType.TOTP
+                totpAlgorithm = OtpHashAlgorithm.SHA1
             }
             VaultEntryAssembler.assembleListItem(
-                metaEntity, meta, hasTotp, totpPeriod, totpDigits, totpAlgorithm
+                metaEntity, meta, hasTotp, totpPeriod, totpDigits, otpType, totpAlgorithm
             )
         } catch (e: Exception) {
             AppLog.w("VaultRepo", "Skipping corrupt list item ${metaEntity.entryId}: ${e.message}")

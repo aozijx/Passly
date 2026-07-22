@@ -210,7 +210,10 @@
     <string name="icon_picker_action_add_photo">添加自定义图片</string>
 
     <!-- TOTP 配置 -->
-    <string name="totp_secret">密钥 (Base32)</string>
+    <string name="totp_secret">密钥</string>
+    <string name="otp_type">OTP 类型</string>
+    <string name="otp_secret_encoding">密钥编码</string>
+    <string name="otp_counter">计数器</string>
     <string name="totp_period">更新周期 (秒)</string>
     <string name="totp_digits">验证码位数</string>
     <string name="totp_algorithm">加密算法</string>

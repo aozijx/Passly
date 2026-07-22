@@ -51,7 +51,8 @@ fun DetailDialogHost(
             onDismiss = { vaultViewModel.dismissDetail() },
             onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
             onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
-            onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) }
+            onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
+            onGenerateHotpCode = { vaultViewModel.generateHotpCode(it) }
         )
     }
 }

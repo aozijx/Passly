@@ -22,7 +22,7 @@ import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
 import com.aozijx.passly.ui.components.widgets.SwipeDirection
 import com.aozijx.passly.ui.components.widgets.SwipeToAction
@@ -88,7 +88,7 @@ private fun VaultListItemRow(
     isSwipeEnabled: Boolean,
     onSwipeTriggered: (SwipeActionType, VaultListItem) -> Unit,
     onItemClick: () -> Unit,
-    totpStates: Map<String, TotpState>,
+    totpStates: Map<String, OtpUiState>,
     showTotpCode: Boolean
 ) {
     val cardStyle = remember(item.entryType, perTypeStyleMap) {

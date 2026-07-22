@@ -28,8 +28,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.lookup.VaultListItem
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 @Composable
@@ -77,17 +78,17 @@ fun VaultItem(
 @Composable
 fun TwoFAItem(
     entry: VaultListItem,
-    totpState: TotpState?,
+    totpState: OtpUiState?,
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
     onClick: () -> Unit
 ) {
     val currentState =
-        previewCode?.let { TotpState(code = it, progress = previewProgress ?: 0f) } ?: totpState
+        previewCode?.let { OtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
 
-    val isSteam = remember(entry.totpAlgorithm) {
-        entry.totpAlgorithm.uppercase() == "STEAM"
+    val isSteam = remember(entry.otpType) {
+        entry.otpType == OtpType.STEAM
     }
 
     Card(

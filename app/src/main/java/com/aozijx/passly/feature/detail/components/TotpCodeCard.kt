@@ -28,12 +28,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
 fun TotpCodeCard(
-    currentState: TotpState?,
+    currentState: OtpUiState?,
     isSteam: Boolean,
+    showProgress: Boolean = true,
     onQrClick: (() -> Unit)? = null,
     onCodeClick: (() -> Unit)? = null,
     title: String = "两步验证码"
@@ -91,16 +92,18 @@ fun TotpCodeCard(
                         fontFamily = FontFamily.Monospace
                     ), color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.width(24.dp))
-                CircularProgressIndicator(
-                    progress = { currentState?.progress ?: 0f },
-                    modifier = Modifier.size(28.dp),
-                    strokeWidth = 4.dp,
-                    color = if ((currentState?.progress
-                            ?: 1f) < 0.2f
-                    ) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                )
+                if (showProgress) {
+                    Spacer(modifier = Modifier.width(24.dp))
+                    CircularProgressIndicator(
+                        progress = { currentState?.progress ?: 0f },
+                        modifier = Modifier.size(28.dp),
+                        strokeWidth = 4.dp,
+                        color = if ((currentState?.progress
+                                ?: 1f) < 0.2f
+                        ) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
+                }
             }
         }
     }

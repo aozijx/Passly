@@ -2,6 +2,8 @@ package com.aozijx.passly.data.mapper.assembler
 
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
+import com.aozijx.passly.domain.model.core.OtpHashAlgorithm
+import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
@@ -46,7 +48,8 @@ object VaultEntryAssembler {
         hasTotp: Boolean,
         totpPeriod: Int,
         totpDigits: Int,
-        totpAlgorithm: String
+        otpType: OtpType,
+        totpAlgorithm: OtpHashAlgorithm
     ): VaultListItem {
         return VaultListItem(
             id = entity.entryId,
@@ -69,6 +72,7 @@ object VaultEntryAssembler {
             hasTotp = hasTotp,
             totpPeriod = totpPeriod,
             totpDigits = totpDigits,
+            otpType = otpType,
             totpAlgorithm = totpAlgorithm
         )
     }

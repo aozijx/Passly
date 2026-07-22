@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.usecase.vault
 
+import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.VaultListItem
@@ -28,8 +29,14 @@ class VaultQueryUseCases @Inject constructor(
 
     suspend fun getById(entryId: String): VaultEntry? = queryRepository.getById(entryId)
 
+    suspend fun getOtpConfig(entryId: String): OtpConfig? = otpRepository.getConfig(entryId)
+
     suspend fun getEntriesForIconResync(): List<VaultEntry> =
         queryRepository.getEntriesForIconResync()
 
-    fun getTotpCode(config: OtpConfig): String = otpRepository.generate(config)
+    fun getTotpCode(
+        config: OtpConfig,
+        overrideCounter: Long? = null,
+        timestamp: Long = System.currentTimeMillis() / 1000
+    ): OtpResult = otpRepository.generate(config, overrideCounter, timestamp)
 }

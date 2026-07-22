@@ -17,19 +17,20 @@ import com.aozijx.passly.feature.detail.components.TotpCodeCard
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.detail.sections.dialogs.EditTotpSection
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
 fun TotpSection(
     modifier: Modifier = Modifier,
     entry: VaultEntry,
-    currentState: TotpState?,
+    currentState: OtpUiState?,
     isSteam: Boolean,
+    isHotp: Boolean = false,
     totpEditState: TotpEditState,
     showQrDialog: () -> Unit,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit,
-    onEvent: (DetailIntent) -> Unit
+    onEvent: (DetailIntent) -> Unit,
+    onGenerateHotpCode: ((entryId: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val totpCopiedMsg = stringResource(R.string.vault_totp_copied)
@@ -39,11 +40,17 @@ fun TotpSection(
         TotpCodeCard(
             currentState = currentState,
             isSteam = isSteam,
+            showProgress = !isHotp,
             onQrClick = showQrDialog,
             onCodeClick = {
-                currentState?.let {
-                    if (it.code.isNotEmpty() && !it.code.contains("-")) {
-                        ClipboardUtils.copy(context, it.code)
+                if (isHotp) {
+                    // HOTP：先生成再复制
+                    onGenerateHotpCode?.invoke(entry.id)
+                }
+                currentState?.let { state ->
+                    val code = state.code
+                    if (!code.isNullOrEmpty() && !code.contains("-")) {
+                        ClipboardUtils.copy(context, code)
                         Toast.makeText(context, totpCopiedMsg, Toast.LENGTH_SHORT).show()
                         onEvent(DetailIntent.RecordAction("totp", ActivityType.COPY_PASSWORD))
                     }
@@ -52,7 +59,7 @@ fun TotpSection(
             title = totpLabel
         )
 
-        if (totpEditState.isEditing && currentState?.decryptedSecret != null) {
+        if (totpEditState.isEditing && entry.credential.otp?.secret != null) {
             InfoGroupCard(title = stringResource(R.string.vault_edit_totp_title)) {
                 EditTotpSection(
                     item = entry,

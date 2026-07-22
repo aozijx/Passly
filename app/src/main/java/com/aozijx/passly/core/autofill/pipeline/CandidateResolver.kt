@@ -3,7 +3,8 @@ package com.aozijx.passly.core.autofill.pipeline
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.util.TwoFAUtils
+import com.aozijx.passly.core.otp.OtpGenerator
+import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.model.lookup.MatchType
@@ -53,7 +54,7 @@ class CandidateResolver @Inject constructor(
             displayName = entry.title,
             username = entry.username,
             password = entry.credential.password ?: "",
-            totpCode = TwoFAUtils.generateCurrentTotpFromEntry(entry),
+            totpCode = generateTotpFromEntry(entry),
             associatedDomain = entry.associatedDomain,
             associatedAppPackage = entry.associatedAppPackage,
             subtitle = buildSubtitle(this),
@@ -72,7 +73,7 @@ class CandidateResolver @Inject constructor(
             displayName = title,
             username = username,
             password = credential.password ?: "",
-            totpCode = TwoFAUtils.generateCurrentTotpFromEntry(this),
+            totpCode = generateTotpFromEntry(this),
             associatedDomain = associatedDomain,
             associatedAppPackage = associatedAppPackage,
             subtitle = username,
@@ -80,6 +81,15 @@ class CandidateResolver @Inject constructor(
             iconCustomPath = iconCustomPath,
             entryType = entryType.name,
         )
+    }
+
+    private fun generateTotpFromEntry(entry: VaultEntry): String? {
+        val config = entry.credential.otp ?: return null
+        if (config.secret.isBlank()) return null
+        return when (val result = OtpGenerator.generate(config)) {
+            is OtpResult.Success -> result.code
+            is OtpResult.Failure -> null
+        }
     }
 
     private fun buildSubtitle(candidate: CredentialCandidate): String {

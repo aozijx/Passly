@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
 import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 object CardStyleRegistry {
     private val previewBaseEntry = VaultListItem(
@@ -77,7 +77,7 @@ object CardStyleRegistry {
     fun RenderVaultItem(
         style: VaultCardStyle,
         entry: VaultListItem,
-        totpStates: Map<String, TotpState>,
+        totpStates: Map<String, OtpUiState>,
         showTotpCode: Boolean,
         onClick: () -> Unit
     ) {

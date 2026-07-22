@@ -60,9 +60,9 @@ interface EntryTypeStrategy {
     private fun getTotpFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
         FieldKey.TOTP_SECRET -> entry.credential.otp?.secret
         FieldKey.TOTP_ISSUER -> entry.credential.otp?.issuer
-        FieldKey.TOTP_PERIOD -> (entry.credential.otp?.period ?: 30).toString()
+        FieldKey.TOTP_PERIOD -> (entry.credential.otp?.periodSeconds ?: 30).toString()
         FieldKey.TOTP_DIGITS -> (entry.credential.otp?.digits ?: 6).toString()
-        FieldKey.TOTP_ALGORITHM -> entry.credential.otp?.algorithm ?: "SHA1"
+        FieldKey.TOTP_ALGORITHM -> entry.credential.otp?.algorithm?.name ?: "SHA1"
         else -> null
     }
 

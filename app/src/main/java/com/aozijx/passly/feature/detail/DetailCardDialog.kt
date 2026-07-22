@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.util.TotpUtils
+import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.components.DetailHeader
@@ -43,7 +44,7 @@ import com.aozijx.passly.feature.detail.sections.CredentialSection
 import com.aozijx.passly.feature.detail.sections.TotpSection
 import com.aozijx.passly.feature.detail.sections.dialogs.QrExportDialog
 import com.aozijx.passly.feature.main.MainViewModel
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -51,11 +52,12 @@ fun DetailCardDialog(
     initialEntry: VaultEntry,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     mainViewModel: MainViewModel,
-    totpState: TotpState? = null,
+    totpState: OtpUiState? = null,
     onDismiss: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onShowIconPicker: () -> Unit,
-    onAutoUnlockTotp: (VaultEntry) -> Unit
+    onAutoUnlockTotp: (VaultEntry) -> Unit,
+    onGenerateHotpCode: ((entryId: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val detailViewModel: DetailViewModel = hiltViewModel()
@@ -74,15 +76,16 @@ fun DetailCardDialog(
     val editState = remember(entry) { EntryEditState(entry) }
 
     val currentState = totpState
-    val isSteam = remember(entry.credential.otp?.algorithm ?: "SHA1") {
-        (entry.credential.otp?.algorithm ?: "SHA1").uppercase() == "STEAM"
+    val isSteam = remember(entry.credential.otp?.type) {
+        entry.credential.otp?.type == OtpType.STEAM
     }
-    val totpEditState = remember(entry, currentState?.decryptedSecret) {
-        TotpEditState(entry, currentState?.decryptedSecret ?: "")
+    val totpEditState = remember(entry, entry.credential.otp?.secret) {
+        TotpEditState(entry, entry.credential.otp?.secret ?: "")
     }
     var showQrDialog by remember { mutableStateOf(false) }
 
     val hasTotp = !entry.credential.otp?.secret.isNullOrBlank()
+    val isHotp = entry.credential.otp?.type == OtpType.HOTP
 
     LaunchedEffect(entry.id) {
         if (hasTotp) {
@@ -163,6 +166,7 @@ fun DetailCardDialog(
                         entry = entry,
                         vaultType = vaultType,
                         hasTotp = hasTotp,
+                        isHotp = isHotp,
                         currentState = currentState,
                         isSteam = isSteam,
                         totpEditState = totpEditState,
@@ -191,7 +195,8 @@ fun DetailCardDialog(
                         },
                         mainViewModel = mainViewModel,
                         onUpdateVaultEntry = onUpdateVaultEntry,
-                        onEvent = detailViewModel::handleIntent
+                        onEvent = detailViewModel::handleIntent,
+                        onGenerateHotpCode = onGenerateHotpCode
                     )
                 }
             }
@@ -199,11 +204,10 @@ fun DetailCardDialog(
     }
 
     if (showQrDialog && hasTotp) {
-        if (currentState?.decryptedSecret != null) {
-            val qrContent = TotpUtils.constructOtpAuthUri(entry, currentState.decryptedSecret)
-            val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
-            QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })
-        }
+        val otpConfig = entry.credential.otp
+        val qrContent = TotpUtils.constructOtpAuthUri(otpConfig, entry.title)
+        val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
+        QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })
     }
 }
 
@@ -211,7 +215,8 @@ private fun LazyListScope.typeSpecificCardContent(
     entry: VaultEntry,
     vaultType: EntryType,
     hasTotp: Boolean,
-    currentState: TotpState?,
+    isHotp: Boolean,
+    currentState: OtpUiState?,
     isSteam: Boolean,
     totpEditState: TotpEditState,
     editState: EntryEditState,
@@ -222,7 +227,8 @@ private fun LazyListScope.typeSpecificCardContent(
     onShowQrDialog: () -> Unit,
     mainViewModel: MainViewModel,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onEvent: (DetailIntent) -> Unit
+    onEvent: (DetailIntent) -> Unit,
+    onGenerateHotpCode: ((entryId: String) -> Unit)? = null
 ) {
     item {
         when (vaultType) {
@@ -250,11 +256,12 @@ private fun LazyListScope.typeSpecificCardContent(
                 entry = entry,
                 currentState = currentState,
                 isSteam = isSteam,
+                isHotp = isHotp,
                 totpEditState = totpEditState,
                 showQrDialog = onShowQrDialog,
-                onUpdateVaultEntry = onUpdateVaultEntry,
                 onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                onEvent = onEvent
+                onEvent = onEvent,
+                onGenerateHotpCode = onGenerateHotpCode
             )
         }
     }

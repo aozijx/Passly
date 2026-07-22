@@ -1,5 +1,7 @@
 package com.aozijx.passly.domain.model.lookup
 
+import com.aozijx.passly.domain.model.core.OtpHashAlgorithm
+import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultIconable
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
@@ -35,8 +37,10 @@ data class VaultListItem(
     val totpPeriod: Int = 30,
     /** TOTP 位数，仅在有 TOTP 时有效。 */
     val totpDigits: Int = 6,
-    /** TOTP 算法，仅在有 TOTP 时有效。 */
-    val totpAlgorithm: String = "SHA1"
+    /** OTP 类型（TOTP/HOTP/STEAM），仅在有 OTP 时有效。 */
+    val otpType: OtpType = OtpType.TOTP,
+    /** TOTP 哈希算法，仅在有 TOTP 时有效。 */
+    val totpAlgorithm: OtpHashAlgorithm = OtpHashAlgorithm.SHA1
 ) : VaultIconable {
     override val category: String get() = entryType.name
     override val iconName: String? get() = icon

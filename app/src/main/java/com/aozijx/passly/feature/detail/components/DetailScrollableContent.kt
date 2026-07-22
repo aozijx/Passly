@@ -29,13 +29,13 @@ import com.aozijx.passly.feature.detail.sections.IdCardSection
 import com.aozijx.passly.feature.detail.sections.NotesSection
 import com.aozijx.passly.feature.detail.sections.SshKeySection
 import com.aozijx.passly.feature.detail.sections.WifiSection
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
 fun DetailScrollableContent(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
-    currentState: TotpState?,
+    currentState: OtpUiState?,
     isSteam: Boolean,
     totpEditState: TotpEditState,
     editState: EntryEditState,

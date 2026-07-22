@@ -8,8 +8,8 @@ data class VaultCredential(
     val entryId: String,
     val email: String? = null,
     val password: String? = null,
+    /** OTP 配置。type/HOTP_counter 等信息已包含在 [OtpConfig] 中。 */
     val otp: OtpConfig? = null,
-    val twoFactorType: String = "TOTP",
     val cardNumber: String? = null,
     val cardExpiry: String? = null,
     val cardCvv: String? = null,

@@ -29,8 +29,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.lookup.VaultListItem
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 private object TotpBehaviorTokens {
@@ -44,16 +45,16 @@ private object TotpBehaviorTokens {
 @Composable
 fun TotpStyleVaultItem(
     entry: VaultListItem,
-    totpState: TotpState?,
+    totpState: OtpUiState?,
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
     onClick: () -> Unit
 ) {
     val currentState =
-        previewCode?.let { TotpState(code = it, progress = previewProgress ?: 0f) } ?: totpState
-    val isSteam = remember(entry.totpAlgorithm) {
-        entry.totpAlgorithm.uppercase() == "STEAM"
+        previewCode?.let { OtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
+    val isSteam = remember(entry.otpType) {
+        entry.otpType == OtpType.STEAM
     }
 
     val targetProgress = previewProgress ?: (currentState?.progress ?: 0f)

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailScrollableContent
@@ -22,7 +23,7 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.TotpEditState
-import com.aozijx.passly.feature.vault.model.TotpState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 /**
  * 详情页 UI 组件 (Stateless)
@@ -34,7 +35,7 @@ import com.aozijx.passly.feature.vault.model.TotpState
 fun DetailScreen(
     initialEntry: VaultEntry,
     uiState: DetailUiState,
-    totpStates: Map<String, TotpState>,
+    totpStates: Map<String, OtpUiState>,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onBack: () -> Unit,
     onEvent: (DetailIntent) -> Unit,
@@ -65,10 +66,10 @@ fun DetailScreen(
 
     val currentState = totpStates[entry.id]
     val isSteam = remember(
-        entry.credential.otp?.algorithm ?: "SHA1"
-    ) { (entry.credential.otp?.algorithm ?: "SHA1").uppercase() == "STEAM" }
-    val totpEditState = remember(entry, currentState?.decryptedSecret) {
-        TotpEditState(entry, currentState?.decryptedSecret ?: "")
+        entry.credential.otp?.type
+    ) { entry.credential.otp?.type == OtpType.STEAM }
+    val totpEditState = remember(entry, entry.credential.otp?.secret) {
+        TotpEditState(entry, entry.credential.otp?.secret ?: "")
     }
 
     // 处理外部启动模式（如编辑 TOTP）

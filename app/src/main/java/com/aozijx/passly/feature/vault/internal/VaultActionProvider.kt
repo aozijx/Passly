@@ -65,8 +65,9 @@ fun rememberVaultActionProvider(
 
             if (fieldKey == FieldKey.PASSWORD && item.hasTotp) {
                 latestTotpStates[item.id]?.let { state ->
-                    if (state.code.isNotEmpty() && !state.code.contains("-")) {
-                        ClipboardUtils.copy(context, state.code)
+                    val code = state.code
+                    if (!code.isNullOrEmpty() && !code.contains("-")) {
+                        ClipboardUtils.copy(context, code)
                         Toast.makeText(context, totpCopiedText, Toast.LENGTH_SHORT).show()
                     }
                 } ?: Unit
