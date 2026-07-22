@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.command
 
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.NotFound
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.mapper.lookup.toLookupFields
@@ -107,7 +108,8 @@ class EntryCommandHandler @Inject constructor(
     suspend fun updateEntry(
         id: String, expectedVersion: Int, changes: EntryChanges
     ): AppResult<Unit> = unitOfWork.write("entry.update") {
-        val metaEntity = metadataDao().getById(id) ?: return@write
+        val metaEntity = metadataDao().getById(id)
+            ?: throw NotFound("entry:$id not found")
         val oldMeta = cryptoMapper.decryptMetadata(metaEntity)
         val credEntity = credentialDao().getByEntryId(id)
         val oldCred = credEntity?.let { cryptoMapper.decryptCredential(it) }
@@ -175,7 +177,8 @@ class EntryCommandHandler @Inject constructor(
         metadataDao().restore(id, now)
 
         // 重建盲索引
-        val metaEntity = metadataDao().getById(id) ?: return@write
+        val metaEntity = metadataDao().getById(id)
+            ?: throw NotFound("entry:$id not found")
         val meta = cryptoMapper.decryptMetadata(metaEntity)
         rebuildBlindIndex(id, metaEntity, meta)
     }
@@ -228,7 +231,7 @@ class EntryCommandHandler @Inject constructor(
 
         // 2. 更新元数据中的使用统计
         val metaEntity = metadataDao().getById(entryId)
-            ?: return@write
+            ?: throw NotFound("entry:$entryId not found")
         val meta = cryptoMapper.decryptMetadata(metaEntity)
         val updatedMeta = meta.copy(
             usageCount = meta.usageCount + 1,
