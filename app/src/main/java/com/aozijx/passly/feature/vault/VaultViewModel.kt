@@ -4,10 +4,10 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.data.repository.command.EntryCommandHandler
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.SortOption
+import com.aozijx.passly.domain.repository.entry.EntryCommands
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
@@ -40,7 +40,7 @@ import javax.inject.Inject
 class VaultViewModel @Inject constructor(
     application: Application,
     private val vaultQueryUseCases: VaultQueryUseCases,
-    private val entryCommandHandler: EntryCommandHandler,
+    private val entryCommandHandler: EntryCommands,
     private val portableSettingsUseCases: PortableSettingsUseCases,
     private val faviconRepository: FaviconRepository
 ) : AndroidViewModel(application) {

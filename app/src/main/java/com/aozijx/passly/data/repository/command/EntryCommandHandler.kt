@@ -18,6 +18,7 @@ import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.model.history.SnapshotType
+import com.aozijx.passly.domain.repository.entry.EntryCommands
 import com.aozijx.passly.security.search.BlindIndexer
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
@@ -40,7 +41,7 @@ class EntryCommandHandler @Inject constructor(
     private val cryptoMapper: VaultEntryCryptoMapper,
     private val blindIndexer: BlindIndexer,
     private val clock: Clock
-) {
+) : EntryCommands {
 
     // =========================== 创建 ===========================
 
@@ -48,7 +49,8 @@ class EntryCommandHandler @Inject constructor(
      * 创建新条目。
      * 原子写入：Metadata + Credential + 盲索引 + 历史快照 + 活动记录。
      */
-    suspend fun createEntry(entry: VaultEntry): AppResult<Long> = unitOfWork.write("entry.create") {
+    override suspend fun createEntry(entry: VaultEntry): AppResult<Long> =
+        unitOfWork.write("entry.create") {
         val now = clock.now()
         val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
 
@@ -105,7 +107,7 @@ class EntryCommandHandler @Inject constructor(
      * 覆盖所有字段（title, username, password, email, notes, otp, card,
      * ssh, seedPhrase, customFields 等），替代原有的多个单字段命令。
      */
-    suspend fun updateEntry(
+    override suspend fun updateEntry(
         id: String, expectedVersion: Int, changes: EntryChanges
     ): AppResult<Unit> = unitOfWork.write("entry.update") {
         val metaEntity = metadataDao().getById(id)
@@ -152,7 +154,7 @@ class EntryCommandHandler @Inject constructor(
      * 移入回收站（软删除）。
      * 原子写入：Metadata 软删除 + 盲索引清理 + 历史快照 + 活动记录。
      */
-    suspend fun moveToTrash(
+    override suspend fun moveToTrash(
         id: String, expectedVersion: Int
     ): AppResult<Unit> = unitOfWork.write("entry.moveToTrash") {
         val now = clock.now()
@@ -170,7 +172,7 @@ class EntryCommandHandler @Inject constructor(
     /**
      * 恢复回收站中的条目。
      */
-    suspend fun restoreEntry(
+    override suspend fun restoreEntry(
         id: String
     ): AppResult<Unit> = unitOfWork.write("entry.restore") {
         val now = clock.now()
@@ -189,7 +191,7 @@ class EntryCommandHandler @Inject constructor(
      * 重建所有条目的盲索引。
      * 用于首次解锁后的存量数据迁移。
      */
-    suspend fun rebuildIndex(): AppResult<Int> = unitOfWork.write("entry.rebuildIndex") {
+    override suspend fun rebuildIndex(): AppResult<Int> = unitOfWork.write("entry.rebuildIndex") {
         val metaEntities = metadataDao().getActive()
         if (metaEntities.isEmpty()) return@write 0
 
@@ -219,8 +221,8 @@ class EntryCommandHandler @Inject constructor(
      * 记录条目使用事件。
      * 原子写入：活动记录 + 更新 usageCount / lastUsedAt。
      */
-    suspend fun recordUsage(
-        entryId: String, type: ActivityType = ActivityType.VIEW
+    override suspend fun recordUsage(
+        entryId: String, type: ActivityType
     ): AppResult<Unit> = unitOfWork.write("entry.recordUsage") {
         val now = clock.now()
 

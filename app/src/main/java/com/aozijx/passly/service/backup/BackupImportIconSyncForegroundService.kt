@@ -10,7 +10,7 @@ import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.aozijx.passly.R
-import com.aozijx.passly.data.repository.command.EntryCommandHandler
+import com.aozijx.passly.domain.repository.entry.EntryCommands
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import com.aozijx.passly.feature.settings.datamanagement.BackupImportIconSyncSupport
@@ -28,7 +28,7 @@ class BackupImportIconSyncForegroundService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Inject
-    lateinit var entryCommandHandler: EntryCommandHandler
+    lateinit var entryCommandHandler: EntryCommands
 
     @Inject
     lateinit var vaultQueryUseCases: VaultQueryUseCases

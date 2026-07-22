@@ -5,10 +5,10 @@ import android.net.Uri
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.data.repository.command.EntryCommandHandler
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconResult
+import com.aozijx.passly.domain.repository.entry.EntryCommands
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -20,7 +20,7 @@ import kotlinx.coroutines.sync.withLock
 
 internal class EntryManager(
     private val scope: CoroutineScope,
-    private val entryCommandHandler: EntryCommandHandler,
+    private val entryCommandHandler: EntryCommands,
     private val vaultQueryUseCases: VaultQueryUseCases,
     private val faviconRepository: FaviconRepository,
     private val iconHelper: EntryIconHelper,

@@ -2,13 +2,13 @@ package com.aozijx.passly.feature.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.data.repository.command.EntryCommandHandler
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
+import com.aozijx.passly.domain.repository.entry.EntryCommands
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.usecase.detail.DetailQueryUseCases
 import com.aozijx.passly.domain.usecase.settings.RuntimeSettingsUseCases
@@ -30,7 +30,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val detailQueryUseCases: DetailQueryUseCases,
-    private val entryCommandHandler: EntryCommandHandler,
+    private val entryCommandHandler: EntryCommands,
     private val runtimeSettingsUseCases: RuntimeSettingsUseCases,
     private val faviconRepository: FaviconRepository
 ) : ViewModel() {

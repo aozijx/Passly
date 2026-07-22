@@ -29,8 +29,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.settings.apppassword.rememberPasswordStrength
 import com.aozijx.passly.ui.components.PasswordStrengthIndicator
+import com.aozijx.passly.ui.components.settings.rememberPasswordStrength
 
 @Composable
 fun AppPasswordSetDialog(
