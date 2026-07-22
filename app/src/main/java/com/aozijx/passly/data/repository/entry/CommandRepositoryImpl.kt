@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.entry
 
 import androidx.room.withTransaction
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.Conflict
 import com.aozijx.passly.core.session.UnifiedSessionManager
@@ -131,10 +132,49 @@ class CommandRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun rebuildIndex(): AppResult<Int> {
+        stateProvider.assertWritable()
+        return sessionManager.transaction {
+            AppResult.runSuspendCatching("vault.rebuildIndex") {
+                withTransaction {
+                    val metaEntities = metadataDao().getActive()
+                    if (metaEntities.isEmpty()) return@withTransaction 0
+
+                    val entryIds = metaEntities.map { it.entryId }
+                    val credEntities = credentialDao().getByEntryIds(entryIds)
+                    val credMap = credEntities.associateBy { it.entryId }
+
+                    lookupIndexDao().clear()
+
+                    var indexedCount = 0
+                    for (metaEntity in metaEntities) {
+                        val credEntity = credMap[metaEntity.entryId]
+                        val entry = cryptoMapper.assembleEntry(metaEntity, credEntity) ?: continue
+                        val indexRecords = blindIndexer.index(entry.id, entry.toLookupFields())
+                        if (indexRecords.isNotEmpty()) {
+                            lookupIndexDao().insertAll(indexRecords.toEntityList())
+                            indexedCount++
+                        }
+                    }
+
+                    AppLog.i(
+                        TAG, "Rebuilt blind index for $indexedCount/${
+                            metaEntities.size
+                        } entries"
+                    )
+
+                    indexedCount
+                }
+            }
+        }
+    }
+
     /**
      * 将 [com.aozijx.passly.security.search.BlindIndexRecord] 转换为 [LookupIndexEntity]。
      */
     private companion object {
+        private const val TAG = "CommandRepositoryImpl"
+
         private fun List<com.aozijx.passly.security.search.BlindIndexRecord>.toEntityList(): List<LookupIndexEntity> =
             map { record ->
                 LookupIndexEntity(

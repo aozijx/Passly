@@ -21,4 +21,12 @@ interface CommandRepository {
     suspend fun update(entry: VaultEntry, expectedVersion: Int): AppResult<Unit>
 
     suspend fun delete(entry: VaultEntry): AppResult<Unit>
+
+    /**
+     * 重建所有搜索盲索引（用于存量数据迁移）。
+     * 遍历所有活跃条目，重新生成盲索引记录并替换旧数据。
+     *
+     * @return 已重建索引的条目数量
+     */
+    suspend fun rebuildIndex(): AppResult<Int>
 }
