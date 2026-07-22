@@ -2,8 +2,11 @@ package com.aozijx.passly.security.search
 
 import com.aozijx.passly.domain.model.lookup.LookupField
 import java.text.Normalizer
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class DefaultTokenizer : Tokenizer {
+@Singleton
+class DefaultTokenizer @Inject constructor() : Tokenizer {
 
     private companion object {
         const val QUERY_MIN_LENGTH = 2

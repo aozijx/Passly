@@ -4,8 +4,11 @@ import com.aozijx.passly.domain.model.lookup.LookupField
 import com.aozijx.passly.domain.model.lookup.LookupFieldValue
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class BlindIndexer(
+@Singleton
+class BlindIndexer @Inject constructor(
     private val tokenizer: Tokenizer,
     private val searchKeyProvider: SearchKeyProvider
 ) {
@@ -43,6 +46,23 @@ class BlindIndexer(
         }
     }
 
+    /**
+     * 搜索令牌列表（含哈希值和分词长度）。
+     * 用于 [LookupIndexDao.searchByHash] 的批量查询。
+     */
+    suspend fun searchTokens(query: String): List<SearchToken> {
+        val key = searchKeyProvider.get()
+        val mac = Mac.getInstance(HMAC_ALGORITHM)
+        mac.init(SecretKeySpec(key, HMAC_ALGORITHM))
+
+        return tokenizer.tokenizeQuery(query).map { tokenGram ->
+            SearchToken(
+                hash = mac.doFinal(tokenGram.gram.toByteArray(Charsets.UTF_8)),
+                length = tokenGram.length
+            )
+        }
+    }
+
     companion object {
         private const val HMAC_ALGORITHM = "HmacSHA256"
 
@@ -63,4 +83,12 @@ data class BlindIndexRecord(
     val keywordHash: ByteArray,
     val gramLength: Int,
     val weight: Int
+)
+
+/**
+ * 搜索令牌：包含哈希值和对应的分词长度。
+ */
+data class SearchToken(
+    val hash: ByteArray,
+    val length: Int
 )

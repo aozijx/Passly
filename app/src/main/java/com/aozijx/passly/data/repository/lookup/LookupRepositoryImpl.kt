@@ -1,12 +1,15 @@
 package com.aozijx.passly.data.repository.lookup
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
-import com.aozijx.passly.domain.authentication.SessionStateProvider
+import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.lookup.LookupField
 import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.repository.lookup.LookupRepository
+import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -21,15 +24,11 @@ import javax.inject.Singleton
 class LookupRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
-    private val stateProvider: SessionStateProvider,
-    private val cryptoMapper: VaultEntryCryptoMapper
+    private val cryptoMapper: VaultEntryCryptoMapper,
+    private val blindIndexer: BlindIndexer
 ) : LookupRepository {
 
     private companion object {
-        /**
-         * TOTP 不是独立 [EntryType]，而是 [VaultEntry.credential.otp] 中的可选配置。
-         * 以下列表用于 SQL 层面的粗筛（优化性能），实际精确匹配由解密后的二次过滤层完成。
-         */
         private val TOTP_ENTRY_TYPES = listOf(
             EntryType.LOGIN,
             EntryType.CARD,
@@ -49,6 +48,9 @@ class LookupRepositoryImpl @Inject constructor(
             EntryType.SSH_KEY,
             EntryType.CRYPTO_WALLET
         )
+
+        /** 搜索覆盖的所有字段 */
+        private val SEARCH_FIELDS = LookupField.entries
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -93,31 +95,22 @@ class LookupRepositoryImpl @Inject constructor(
                 }
                 entryFlow
                     .map { metaEntities ->
+                        // 使用盲索引预过滤：仅解密匹配的条目
+                        val filteredMetaEntities = if (query.isNotEmpty()) {
+                            filterByBlindIndex(this, metaEntities, query)
+                        } else {
+                            metaEntities
+                        }
+
                         val credEntities =
-                            credentialDao().getByEntryIds(metaEntities.map { it.entryId })
+                            credentialDao().getByEntryIds(filteredMetaEntities.map { it.entryId })
                         val credMap = credEntities.associateBy { it.entryId }
-                        metaEntities.mapNotNull {
+                        filteredMetaEntities.mapNotNull {
                             cryptoMapper.assembleListItem(
                                 it,
                                 credMap[it.entryId]
                             )
                         }
-                            .filter { item ->
-                                ((query.isEmpty() || item.title.contains(
-                                    query,
-                                    ignoreCase = true
-                                )
-                                        || item.username.contains(query, ignoreCase = true)
-                                        || item.category.contains(
-                                    query,
-                                    ignoreCase = true
-                                )) || item.tags.any {
-                                    it.contains(
-                                        query,
-                                        ignoreCase = true
-                                    )
-                                })
-                            }
                             .filter { item ->
                                 category == null || item.category == category
                             }
@@ -178,4 +171,32 @@ class LookupRepositoryImpl @Inject constructor(
                         .flowOn(Dispatchers.IO)
                 }
             }
+
+    /**
+     * 使用盲索引对 [metaEntities] 进行预过滤，仅返回与 [query] 匹配的条目。
+     * 如果查询词无法生成有效令牌（如长度不足），返回空列表。
+     */
+    private suspend fun filterByBlindIndex(
+        db: AppDatabase,
+        metaEntities: List<VaultMetadataEntity>,
+        query: String
+    ): List<VaultMetadataEntity> {
+        val searchTokens = blindIndexer.searchTokens(query)
+        if (searchTokens.isEmpty()) return emptyList()
+
+        // 对每个令牌查找匹配的 entryId，取交集
+        val candidateIdSets = searchTokens.map { token ->
+            db.lookupIndexDao()
+                .searchByHash(token.hash, token.length, SEARCH_FIELDS)
+                .toSet()
+        }
+
+        val matchingIds = candidateIdSets
+            .reduceOrNull { acc, ids -> acc.intersect(ids) }
+            ?: return emptyList()
+
+        if (matchingIds.isEmpty()) return emptyList()
+
+        return metaEntities.filter { it.entryId in matchingIds }
+    }
 }

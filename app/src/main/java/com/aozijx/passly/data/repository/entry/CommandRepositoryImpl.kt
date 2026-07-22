@@ -5,6 +5,8 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.Conflict
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
+import com.aozijx.passly.data.mapper.lookup.toLookupFields
+import com.aozijx.passly.data.model.entity.LookupIndexEntity
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.util.Clock
@@ -13,13 +15,14 @@ import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.repository.database.TransactionOperator
 import com.aozijx.passly.domain.repository.entry.CommandRepository
+import com.aozijx.passly.security.search.BlindIndexer
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * 命令 Repository 实现：负责业务逻辑修改，使用 withTransaction 保证原子性。
- * 写操作统一处理加解密和关联表的同步更新。
+ * 写操作统一处理加解密、关联表和盲索引的同步更新。
  */
 @Singleton
 class CommandRepositoryImpl @Inject constructor(
@@ -28,6 +31,7 @@ class CommandRepositoryImpl @Inject constructor(
     private val transactionOperator: TransactionOperator,
     private val sessionManager: UnifiedSessionManager,
     private val cryptoMapper: VaultEntryCryptoMapper,
+    private val blindIndexer: BlindIndexer,
     private val clock: Clock
 ) : CommandRepository {
 
@@ -55,6 +59,14 @@ class CommandRepositoryImpl @Inject constructor(
 
                     metadataDao().insert(metaEntity)
                     credentialDao().insert(credEntity)
+
+                    // 构建并写入盲索引
+                    val indexedEntry = entry.copy(metadata = entry.metadata.copy(entryId = entryId))
+                    val indexRecords = blindIndexer.index(entryId, indexedEntry.toLookupFields())
+                    if (indexRecords.isNotEmpty()) {
+                        lookupIndexDao().insertAll(indexRecords.toEntityList())
+                    }
+
                     0L
                 }
             }
@@ -68,16 +80,12 @@ class CommandRepositoryImpl @Inject constructor(
                 withTransaction {
                     val oldMetaEntity = metadataDao().getById(entry.id) ?: return@withTransaction
 
-                    // 乐观锁版本校验：检查当前版本是否与客户端读取的版本一致
+                    // 乐观锁版本校验
                     if (oldMetaEntity.entryVersion != expectedVersion) {
                         throw Conflict(
                             "entry:${entry.id} version mismatch: expected=$expectedVersion, actual=${oldMetaEntity.entryVersion}"
                         )
                     }
-
-                    val oldCredEntity = credentialDao().getByEntryId(entry.id)
-                    val old = cryptoMapper.assembleEntry(oldMetaEntity, oldCredEntity)
-                        ?: return@withTransaction
 
                     val metaBlob = cryptoMapper.encryptMetadata(entry.metadata, entry.id)
                     val credBlob = cryptoMapper.encryptCredential(entry.credential, entry.id)
@@ -98,6 +106,13 @@ class CommandRepositoryImpl @Inject constructor(
 
                     metadataDao().update(metaEntity)
                     credentialDao().update(credEntity)
+
+                    // 重建盲索引：先删后插
+                    lookupIndexDao().deleteByEntryId(entry.id)
+                    val indexRecords = blindIndexer.index(entry.id, entry.toLookupFields())
+                    if (indexRecords.isNotEmpty()) {
+                        lookupIndexDao().insertAll(indexRecords.toEntityList())
+                    }
                 }
             }
         }
@@ -107,8 +122,28 @@ class CommandRepositoryImpl @Inject constructor(
         stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.delete") {
-                metadataDao().softDelete(entry.id, System.currentTimeMillis())
+                withTransaction {
+                    metadataDao().softDelete(entry.id, System.currentTimeMillis())
+                    // 清除盲索引（外键 CASCADE 兜底）
+                    lookupIndexDao().deleteByEntryId(entry.id)
+                }
             }
         }
+    }
+
+    /**
+     * 将 [com.aozijx.passly.security.search.BlindIndexRecord] 转换为 [LookupIndexEntity]。
+     */
+    private companion object {
+        private fun List<com.aozijx.passly.security.search.BlindIndexRecord>.toEntityList(): List<LookupIndexEntity> =
+            map { record ->
+                LookupIndexEntity(
+                    entryId = record.entryId,
+                    field = record.field,
+                    keywordHash = record.keywordHash,
+                    gramLength = record.gramLength,
+                    weight = record.weight
+                )
+            }
     }
 }
