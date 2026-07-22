@@ -117,7 +117,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
                 entryId = entryId,
                 credentialBlob = credBlob
             )
-            metadataDao().insert(metaEntity)
+            metadataDao().insertStrict(metaEntity)
             credentialDao().insert(credEntity)
         }
         true
