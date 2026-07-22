@@ -5,6 +5,7 @@ import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.model.serializer.AppJson
+import com.aozijx.passly.data.model.serializer.SnapshotPayload
 import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
@@ -42,6 +43,29 @@ class VaultEntryCryptoMapper @Inject constructor(
     suspend fun encryptCredential(cred: VaultCredential, uuid: String): ByteArray {
         val json = AppJson.encodeToString(VaultCredential.serializer(), cred)
         return fieldEncryptor.encrypt(json, aad(uuid, "credential"))
+    }
+
+    /**
+     * 加密历史快照载荷。
+     *
+     * 将 Metadata 和 Credential 分别序列化为 JSON，
+     * 再包装为 [SnapshotPayload]（长度前缀二进制格式），整体加密。
+     * 区别于 [encryptMetadata]/[encryptCredential] 各自独立加密后拼接。
+     */
+    suspend fun encryptSnapshot(
+        meta: VaultMetadata,
+        cred: VaultCredential,
+        entryId: String
+    ): ByteArray {
+        val metaJson = AppJson.encodeToString(VaultMetadata.serializer(), meta)
+            .toByteArray(Charsets.UTF_8)
+        val credJson = AppJson.encodeToString(VaultCredential.serializer(), cred)
+            .toByteArray(Charsets.UTF_8)
+        val payload = SnapshotPayload(metaJson, credJson)
+        return fieldEncryptor.encrypt(
+            payload.toBytes().decodeToString(),
+            aad(entryId, "snapshot")
+        )
     }
 
     suspend fun assembleEntry(

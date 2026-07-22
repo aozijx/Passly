@@ -298,15 +298,16 @@ class EntryCommandHandler @Inject constructor(
         now: Long
     ) {
         val newVersion = oldMetaEntity.entryVersion + 1
-        val metaBlob = cryptoMapper.encryptMetadata(meta, id)
-        val credBlob = if (cred != null) cryptoMapper.encryptCredential(cred, id)
-        else credentialDao().getByEntryId(id)?.credentialBlob ?: ByteArray(0)
+        val resolvedCred = cred ?: credentialDao().getByEntryId(id)?.let {
+            cryptoMapper.decryptCredential(it)
+        } ?: VaultCredential(entryId = id)
+        val snapshotBlob = cryptoMapper.encryptSnapshot(meta, resolvedCred, id)
 
         historyDao().insert(
             VaultSnapshotEntity(
                 version = newVersion,
                 entryId = id,
-                snapshotBlob = metaBlob + credBlob,
+                snapshotBlob = snapshotBlob,
                 changeType = SnapshotType.VALUE_CHANGED.value,
                 createdAt = now
             )
