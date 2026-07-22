@@ -2,7 +2,6 @@ package com.aozijx.passly.data.repository.backup
 
 import android.content.Context
 import androidx.core.net.toUri
-import androidx.room.withTransaction
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
@@ -185,36 +184,34 @@ internal class BackupRepositoryImpl @Inject constructor(
 
     private suspend fun importSnapshots(snapshots: List<VaultSnapshot>, config: ImportMode) {
         sessionManager.transaction {
-            withTransaction {
-                if (config == ImportMode.OVERWRITE) {
-                    metadataDao().clear()
-                    credentialDao().clear()
-                }
+            if (config == ImportMode.OVERWRITE) {
+                metadataDao().clear()
+                credentialDao().clear()
+            }
 
-                snapshots.forEach { snapshot ->
-                    val entryId = snapshot.id
-                    val metaBlob = cryptoMapper.encryptMetadata(snapshot.metadata, entryId)
-                    val credBlob = cryptoMapper.encryptCredential(snapshot.credential, entryId)
+            snapshots.forEach { snapshot ->
+                val entryId = snapshot.id
+                val metaBlob = cryptoMapper.encryptMetadata(snapshot.metadata, entryId)
+                val credBlob = cryptoMapper.encryptCredential(snapshot.credential, entryId)
 
-                    val metaEntity = VaultMetadataEntity(
-                        entryId = entryId,
-                        vaultId = snapshot.vaultId,
-                        entryVersion = snapshot.revision,
-                        entryType = snapshot.entryType,
-                        metadataBlob = metaBlob,
-                        createdAt = snapshot.createdAt,
-                        updatedAt = snapshot.updatedAt,
-                        deletedAt = snapshot.deletedAt
-                    )
+                val metaEntity = VaultMetadataEntity(
+                    entryId = entryId,
+                    vaultId = snapshot.vaultId,
+                    entryVersion = snapshot.revision,
+                    entryType = snapshot.entryType,
+                    metadataBlob = metaBlob,
+                    createdAt = snapshot.createdAt,
+                    updatedAt = snapshot.updatedAt,
+                    deletedAt = snapshot.deletedAt
+                )
 
-                    val credEntity = VaultCredentialEntity(
-                        entryId = entryId,
-                        credentialBlob = credBlob
-                    )
+                val credEntity = VaultCredentialEntity(
+                    entryId = entryId,
+                    credentialBlob = credBlob
+                )
 
-                    metadataDao().insert(metaEntity)
-                    credentialDao().insert(credEntity)
-                }
+                metadataDao().insert(metaEntity)
+                credentialDao().insert(credEntity)
             }
         }
     }

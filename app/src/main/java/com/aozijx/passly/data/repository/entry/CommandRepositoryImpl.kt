@@ -1,6 +1,5 @@
 package com.aozijx.passly.data.repository.entry
 
-import androidx.room.withTransaction
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.Conflict
@@ -13,12 +12,10 @@ import com.aozijx.passly.data.model.entity.VaultCredentialEntity
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
-import com.aozijx.passly.domain.repository.database.TransactionOperator
 import com.aozijx.passly.domain.repository.entry.CommandRepository
 import com.aozijx.passly.security.search.BlindIndexer
 import com.github.f4b6a3.uuid.UuidCreator
@@ -34,9 +31,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class CommandRepositoryImpl @Inject constructor(
-    private val sessionState: VaultAccessState,
     private val stateProvider: SessionStateProvider,
-    private val transactionOperator: TransactionOperator,
     private val sessionManager: UnifiedSessionManager,
     private val cryptoMapper: VaultEntryCryptoMapper,
     private val blindIndexer: BlindIndexer,
@@ -47,36 +42,34 @@ class CommandRepositoryImpl @Inject constructor(
         stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.insert") {
-                withTransaction {
-                    val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
-                    val now = clock.now()
-                    val metaBlob = cryptoMapper.encryptMetadata(entry.metadata, entryId)
-                    val credBlob = cryptoMapper.encryptCredential(entry.credential, entryId)
+                val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
+                val now = clock.now()
+                val metaBlob = cryptoMapper.encryptMetadata(entry.metadata, entryId)
+                val credBlob = cryptoMapper.encryptCredential(entry.credential, entryId)
 
-                    val metaEntity = VaultMetadataEntity(
-                        entryId = entryId,
-                        entryType = entry.entryType,
-                        metadataBlob = metaBlob,
-                        createdAt = now,
-                        updatedAt = now
-                    )
-                    val credEntity = VaultCredentialEntity(
-                        entryId = entryId,
-                        credentialBlob = credBlob
-                    )
+                val metaEntity = VaultMetadataEntity(
+                    entryId = entryId,
+                    entryType = entry.entryType,
+                    metadataBlob = metaBlob,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                val credEntity = VaultCredentialEntity(
+                    entryId = entryId,
+                    credentialBlob = credBlob
+                )
 
-                    metadataDao().insert(metaEntity)
-                    credentialDao().insert(credEntity)
+                metadataDao().insert(metaEntity)
+                credentialDao().insert(credEntity)
 
-                    // 构建并写入盲索引
-                    val indexedEntry = entry.copy(metadata = entry.metadata.copy(entryId = entryId))
-                    val indexRecords = blindIndexer.index(entryId, indexedEntry.toLookupFields())
-                    if (indexRecords.isNotEmpty()) {
-                        lookupIndexDao().insertAll(indexRecords.toEntityList())
-                    }
-
-                    0L
+                // 构建并写入盲索引
+                val indexedEntry = entry.copy(metadata = entry.metadata.copy(entryId = entryId))
+                val indexRecords = blindIndexer.index(entryId, indexedEntry.toLookupFields())
+                if (indexRecords.isNotEmpty()) {
+                    lookupIndexDao().insertAll(indexRecords.toEntityList())
                 }
+
+                0L
             }
         }
     }
@@ -142,17 +135,15 @@ class CommandRepositoryImpl @Inject constructor(
         stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.moveToTrash") {
-                withTransaction {
-                    val oldMetaEntity = metadataDao().getById(id)
-                        ?: return@withTransaction
-                    if (oldMetaEntity.entryVersion != expectedVersion) {
-                        throw Conflict(
-                            "entry:$id version mismatch: expected=$expectedVersion, actual=${oldMetaEntity.entryVersion}"
-                        )
-                    }
-                    metadataDao().softDelete(id, clock.now())
-                    lookupIndexDao().deleteByEntryId(id)
+                val oldMetaEntity = metadataDao().getById(id)
+                    ?: return@runSuspendCatching
+                if (oldMetaEntity.entryVersion != expectedVersion) {
+                    throw Conflict(
+                        "entry:$id version mismatch: expected=$expectedVersion, actual=${oldMetaEntity.entryVersion}"
+                    )
                 }
+                metadataDao().softDelete(id, clock.now())
+                lookupIndexDao().deleteByEntryId(id)
             }
         }
     }
@@ -163,35 +154,33 @@ class CommandRepositoryImpl @Inject constructor(
         stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.rebuildIndex") {
-                withTransaction {
-                    val metaEntities = metadataDao().getActive()
-                    if (metaEntities.isEmpty()) return@withTransaction 0
+                val metaEntities = metadataDao().getActive()
+                if (metaEntities.isEmpty()) return@runSuspendCatching 0
 
-                    val entryIds = metaEntities.map { it.entryId }
-                    val credEntities = credentialDao().getByEntryIds(entryIds)
-                    val credMap = credEntities.associateBy { it.entryId }
+                val entryIds = metaEntities.map { it.entryId }
+                val credEntities = credentialDao().getByEntryIds(entryIds)
+                val credMap = credEntities.associateBy { it.entryId }
 
-                    lookupIndexDao().clear()
+                lookupIndexDao().clear()
 
-                    var indexedCount = 0
-                    for (metaEntity in metaEntities) {
-                        val credEntity = credMap[metaEntity.entryId]
-                        val entry = cryptoMapper.assembleEntry(metaEntity, credEntity) ?: continue
-                        val indexRecords = blindIndexer.index(entry.id, entry.toLookupFields())
-                        if (indexRecords.isNotEmpty()) {
-                            lookupIndexDao().insertAll(indexRecords.toEntityList())
-                            indexedCount++
-                        }
+                var indexedCount = 0
+                for (metaEntity in metaEntities) {
+                    val credEntity = credMap[metaEntity.entryId]
+                    val entry = cryptoMapper.assembleEntry(metaEntity, credEntity) ?: continue
+                    val indexRecords = blindIndexer.index(entry.id, entry.toLookupFields())
+                    if (indexRecords.isNotEmpty()) {
+                        lookupIndexDao().insertAll(indexRecords.toEntityList())
+                        indexedCount++
                     }
-
-                    AppLog.i(
-                        TAG, "Rebuilt blind index for $indexedCount/${
-                            metaEntities.size
-                        } entries"
-                    )
-
-                    indexedCount
                 }
+
+                AppLog.i(
+                    TAG, "Rebuilt blind index for $indexedCount/${
+                        metaEntities.size
+                    } entries"
+                )
+
+                indexedCount
             }
         }
     }
@@ -264,15 +253,13 @@ class CommandRepositoryImpl @Inject constructor(
         stateProvider.assertWritable()
         return sessionManager.transaction {
             AppResult.runSuspendCatching("vault.$logTag") {
-                withTransaction {
-                    val snapshot = readEntry(id) ?: return@withTransaction
-                    if (snapshot.metaEntity.entryVersion != expectedVersion) {
-                        throw Conflict(
-                            "entry:$id version mismatch: expected=$expectedVersion, actual=${snapshot.metaEntity.entryVersion}"
-                        )
-                    }
-                    block(snapshot)
+                val snapshot = readEntry(id) ?: return@runSuspendCatching
+                if (snapshot.metaEntity.entryVersion != expectedVersion) {
+                    throw Conflict(
+                        "entry:$id version mismatch: expected=$expectedVersion, actual=${snapshot.metaEntity.entryVersion}"
+                    )
                 }
+                block(snapshot)
             }
         }
     }

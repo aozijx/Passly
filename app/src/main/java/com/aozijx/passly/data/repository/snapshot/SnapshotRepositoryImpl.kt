@@ -60,13 +60,13 @@ class SnapshotRepositoryImpl @Inject constructor(
     override suspend fun insert(snapshot: VaultSnapshot) {
         if (sessionState.isLocked()) return
         AppResult.runSuspendCatching("history.insert") {
-            sessionManager.query { historyDao().insert(snapshot.toEntity()) }
+            sessionManager.transaction { historyDao().insert(snapshot.toEntity()) }
         }.onFailureLog("HistoryRepo")
     }
 
     override suspend fun deleteByEntryId(entryId: String) {
         if (sessionState.isLocked()) return
-        sessionManager.query { historyDao().deleteByEntryId(entryId) }
+        sessionManager.transaction { historyDao().deleteByEntryId(entryId) }
     }
 
     private fun List<VaultSnapshotEntity>.toDomainList(): List<VaultSnapshot> =

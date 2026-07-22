@@ -60,11 +60,11 @@ class ActivityRepositoryImpl @Inject constructor(
 
     override suspend fun deleteByEntryId(entryId: String) {
         if (sessionState.isLocked()) return
-        sessionManager.query { activityDao().deleteByEntryId(entryId) }
+        sessionManager.transaction { activityDao().deleteByEntryId(entryId) }
     }
 
     override suspend fun deleteBefore(timestamp: Long) {
         if (sessionState.isLocked()) return
-        sessionManager.query { activityDao().deleteBefore(timestamp) }
+        sessionManager.transaction { activityDao().deleteBefore(timestamp) }
     }
 }
