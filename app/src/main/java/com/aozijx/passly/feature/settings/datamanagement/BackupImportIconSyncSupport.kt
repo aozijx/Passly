@@ -7,6 +7,7 @@ import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
 import com.aozijx.passly.data.repository.command.EntryCommandHandler
+import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import kotlinx.coroutines.Dispatchers
@@ -74,8 +75,9 @@ internal class BackupImportIconSyncSupport(
 
             val outcome = FaviconUtils.downloadAndSaveFavicon(source, appContext, whitelist)
             if (outcome.result == FaviconUtils.DownloadResult.SUCCESS && !outcome.filePath.isNullOrBlank()) {
-                val updateResult = entryCommandHandler.setIcon(
-                    entry.id, entry.entryVersion, outcome.filePath
+                val updateResult = entryCommandHandler.updateEntry(
+                    entry.id, entry.entryVersion,
+                    EntryChanges(metadata = entry.metadata.copy(icon = outcome.filePath))
                 )
                 if (updateResult.isSuccess) {
                     successCount++

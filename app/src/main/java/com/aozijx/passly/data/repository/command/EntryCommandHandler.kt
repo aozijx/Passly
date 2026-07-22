@@ -12,10 +12,10 @@ import com.aozijx.passly.data.repository.VaultUnitOfWork
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
-import com.aozijx.passly.domain.model.entry.WebsiteInfo
 import com.aozijx.passly.domain.model.history.SnapshotType
 import com.aozijx.passly.security.search.BlindIndexer
 import com.github.f4b6a3.uuid.UuidCreator
@@ -95,156 +95,52 @@ class EntryCommandHandler @Inject constructor(
         0L
     }
 
-    // =========================== 元数据字段更新 ===========================
+    // =========================== 通用更新 ===========================
 
-    suspend fun updateTitle(
-        id: String, expectedVersion: Int, title: String, domain: String? = null
-    ): AppResult<Unit> = unitOfWork.write("entry.updateTitle") {
+    /**
+     * 更新条目的 Metadata 和/或 Credential。
+     *
+     * 一次事务原子写入：Metadata(含版本) + Credential + 盲索引 + 历史快照。
+     * 覆盖所有字段（title, username, password, email, notes, otp, card,
+     * ssh, seedPhrase, customFields 等），替代原有的多个单字段命令。
+     */
+    suspend fun updateEntry(
+        id: String, expectedVersion: Int, changes: EntryChanges
+    ): AppResult<Unit> = unitOfWork.write("entry.update") {
         val metaEntity = metadataDao().getById(id) ?: return@write
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
-        val newMeta = meta.copy(title = title)
-
-        val now = clock.now()
-        val metaBlob = cryptoMapper.encryptMetadata(newMeta, id)
-
-        val affected = metadataDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
-        unitOfWork.checkAffectedRows(id, expectedVersion, affected)
-
-        rebuildBlindIndex(id, metaEntity, newMeta)
-        snapshotChanges(id, metaEntity, newMeta, null, now)
-    }
-
-    suspend fun updateUsername(
-        id: String, expectedVersion: Int, username: String
-    ): AppResult<Unit> = unitOfWork.write("entry.updateUsername") {
-        val metaEntity = metadataDao().getById(id) ?: return@write
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
-        val newMeta = meta.copy(username = username)
-
-        val now = clock.now()
-        val metaBlob = cryptoMapper.encryptMetadata(newMeta, id)
-
-        val affected = metadataDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
-        unitOfWork.checkAffectedRows(id, expectedVersion, affected)
-
-        rebuildBlindIndex(id, metaEntity, newMeta)
-        snapshotChanges(id, metaEntity, newMeta, null, now)
-    }
-
-    suspend fun toggleFavorite(
-        id: String, expectedVersion: Int
-    ): AppResult<Unit> = unitOfWork.write("entry.toggleFavorite") {
-        val metaEntity = metadataDao().getById(id) ?: return@write
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
-        val newMeta = meta.copy(favorite = !meta.favorite)
-
-        val now = clock.now()
-        val metaBlob = cryptoMapper.encryptMetadata(newMeta, id)
-
-        val affected = metadataDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
-        unitOfWork.checkAffectedRows(id, expectedVersion, affected)
-
-        snapshotChanges(id, metaEntity, newMeta, null, now)
-    }
-
-    suspend fun setIcon(
-        id: String, expectedVersion: Int, iconPath: String?
-    ): AppResult<Unit> = unitOfWork.write("entry.setIcon") {
-        val metaEntity = metadataDao().getById(id) ?: return@write
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
-        val newMeta = meta.copy(icon = iconPath)
-
-        val now = clock.now()
-        val metaBlob = cryptoMapper.encryptMetadata(newMeta, id)
-
-        val affected = metadataDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
-        unitOfWork.checkAffectedRows(id, expectedVersion, affected)
-
-        snapshotChanges(id, metaEntity, newMeta, null, now)
-    }
-
-    suspend fun updateWebsite(
-        id: String, expectedVersion: Int, website: WebsiteInfo?
-    ): AppResult<Unit> = unitOfWork.write("entry.updateWebsite") {
-        val metaEntity = metadataDao().getById(id) ?: return@write
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
-        val newMeta = meta.copy(website = website)
-
-        val now = clock.now()
-        val metaBlob = cryptoMapper.encryptMetadata(newMeta, id)
-
-        val affected = metadataDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
-        unitOfWork.checkAffectedRows(id, expectedVersion, affected)
-
-        rebuildBlindIndex(id, metaEntity, newMeta)
-        snapshotChanges(id, metaEntity, newMeta, null, now)
-    }
-
-    // =========================== 凭据字段更新 ===========================
-
-    suspend fun updatePassword(
-        id: String, expectedVersion: Int, password: String
-    ): AppResult<Unit> = unitOfWork.write("entry.updatePassword") {
-        val metaEntity = metadataDao().getById(id) ?: return@write
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
+        val oldMeta = cryptoMapper.decryptMetadata(metaEntity)
         val credEntity = credentialDao().getByEntryId(id)
-        val cred = credEntity?.let { cryptoMapper.decryptCredential(it) }
-            ?: VaultCredential(entryId = id)
-        val newCred = cred.copy(password = password)
+        val oldCred = credEntity?.let { cryptoMapper.decryptCredential(it) }
 
+        val newMeta = changes.metadata ?: oldMeta
+        val newCred = changes.credential ?: (oldCred ?: VaultCredential(entryId = id))
         val now = clock.now()
-        updateCredentialAndVersion(
+
+        // 1. 版本校验 + metadata 更新（原子操作）
+        val metaBlob = cryptoMapper.encryptMetadata(newMeta, id)
+        val affected = metadataDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
+        unitOfWork.checkAffectedRows(id, expectedVersion, affected)
+
+        // 2. 写入 Credential（有变更或首次创建凭据时更新）
+        if (changes.credential != null || oldCred == null) {
+            val credBlob = cryptoMapper.encryptCredential(newCred, id)
+            credentialDao().updateBlob(id, credBlob)
+        }
+
+        // 3. 重建盲索引（仅搜索相关字段变化时）
+        val searchFieldsChanged =
+            oldMeta.title != newMeta.title || oldMeta.username != newMeta.username
+        if (changes.metadata != null && searchFieldsChanged) {
+            rebuildBlindIndex(id, metaEntity, newMeta)
+        }
+
+        // 4. 历史快照
+        snapshotChanges(
             id,
-            meta,
-            newCred,
             metaEntity,
-            expectedVersion,
-            now,
-            rebuildIndex = false
-        )
-    }
-
-    suspend fun updateEmail(
-        id: String, expectedVersion: Int, email: String
-    ): AppResult<Unit> = unitOfWork.write("entry.updateEmail") {
-        val metaEntity = metadataDao().getById(id) ?: return@write
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
-        val credEntity = credentialDao().getByEntryId(id)
-        val cred = credEntity?.let { cryptoMapper.decryptCredential(it) }
-            ?: VaultCredential(entryId = id)
-        val newCred = cred.copy(email = email)
-
-        val now = clock.now()
-        updateCredentialAndVersion(
-            id,
-            meta,
-            newCred,
-            metaEntity,
-            expectedVersion,
-            now,
-            rebuildIndex = true
-        )
-    }
-
-    suspend fun updateNotes(
-        id: String, expectedVersion: Int, notes: String
-    ): AppResult<Unit> = unitOfWork.write("entry.updateNotes") {
-        val metaEntity = metadataDao().getById(id) ?: return@write
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
-        val credEntity = credentialDao().getByEntryId(id)
-        val cred = credEntity?.let { cryptoMapper.decryptCredential(it) }
-            ?: VaultCredential(entryId = id)
-        val newCred = cred.copy(notes = notes)
-
-        val now = clock.now()
-        updateCredentialAndVersion(
-            id,
-            meta,
-            newCred,
-            metaEntity,
-            expectedVersion,
-            now,
-            rebuildIndex = false
+            oldMeta,
+            if (changes.credential != null) newCred else null,
+            now
         )
     }
 
@@ -348,40 +244,6 @@ class EntryCommandHandler @Inject constructor(
     }
 
     // =========================== 内部方法 ===========================
-
-    /**
-     * 更新凭据 Blob 并同步 metadata 版本。
-     *
-     * 写入顺序：
-     * 1. 先校验版本（乐观锁）—— 通过则 metadataBlob + 版本号同时更新
-     * 2. 版本通过后再写入 Credential Blob
-     *
-     * 确保异常先触发 Room 事务回滚，错误后再由 [VaultUnitOfWork.write] 转换为 [AppResult.Failure]。
-     */
-    private suspend fun AppDatabase.updateCredentialAndVersion(
-        id: String,
-        meta: VaultMetadata,
-        newCred: VaultCredential,
-        metaEntity: VaultMetadataEntity,
-        expectedVersion: Int,
-        now: Long,
-        rebuildIndex: Boolean
-    ) {
-        // 1. 先校验版本——乐观锁通过时 metadataBlob + 版本同时更新
-        val metaBlob = cryptoMapper.encryptMetadata(meta, id)
-        val affected = metadataDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
-        unitOfWork.checkAffectedRows(id, expectedVersion, affected)
-
-        // 2. 版本通过后再写入 Credential
-        val credBlob = cryptoMapper.encryptCredential(newCred, id)
-        credentialDao().updateBlob(id, credBlob)
-
-        if (rebuildIndex) {
-            rebuildBlindIndex(id, metaEntity, meta)
-        }
-
-        snapshotChanges(id, metaEntity, meta, newCred, now)
-    }
 
     /**
      * 重建指定条目的盲索引。

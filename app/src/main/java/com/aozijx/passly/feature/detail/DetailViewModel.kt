@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.data.repository.command.EntryCommandHandler
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
@@ -185,8 +186,10 @@ class DetailViewModel @Inject constructor(
             val domain = entry.associatedDomain
             val outcome = downloadFavicon(domain)
             if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                entryCommandHandler.setIcon(entry.id, entry.entryVersion, outcome.filePath)
-                    .onSuccess {
+                val iconMeta = entry.metadata.copy(icon = outcome.filePath)
+                entryCommandHandler.updateEntry(
+                    entry.id, entry.entryVersion, EntryChanges(metadata = iconMeta)
+                ).onSuccess {
                         refreshFromEntry(
                             entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath)),
                             _uiState.value.isEditingTitle,
