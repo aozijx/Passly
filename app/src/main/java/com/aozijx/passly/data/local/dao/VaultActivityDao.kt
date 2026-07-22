@@ -64,7 +64,7 @@ interface VaultActivityDao {
     suspend fun deleteByEntryId(entryId: String)
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_ACTIVITY}")
-    suspend fun clear()
+    suspend fun clear(): Int
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_ACTIVITY} WHERE createdAt < :timestamp")
     suspend fun deleteBefore(timestamp: Long)

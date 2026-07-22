@@ -151,5 +151,5 @@ interface VaultMetadataDao {
     suspend fun purgeDeleted(before: Long)
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_METADATA}")
-    suspend fun clear()
+    suspend fun clear(): Int
 }

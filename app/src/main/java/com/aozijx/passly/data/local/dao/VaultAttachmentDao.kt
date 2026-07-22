@@ -57,5 +57,5 @@ interface VaultAttachmentDao {
     suspend fun deleteByEntryId(entryId: String)
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_ATTACHMENT}")
-    suspend fun clear()
+    suspend fun clear(): Int
 }

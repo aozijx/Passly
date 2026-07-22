@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
 import com.aozijx.passly.data.mapper.snapshot.toSnapshot
@@ -34,6 +35,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val stateProvider: SessionStateProvider,
     private val cryptoMapper: VaultEntryCryptoMapper,
+    private val vaultDatabaseCleaner: VaultDatabaseCleaner,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
 
@@ -181,11 +183,10 @@ internal class BackupRepositoryImpl @Inject constructor(
     }
 
     private suspend fun importSnapshots(snapshots: List<VaultSnapshot>, config: ImportMode) {
+        if (config == ImportMode.OVERWRITE) {
+            vaultDatabaseCleaner.clearVaultData()
+        }
         sessionManager.transaction {
-            if (config == ImportMode.OVERWRITE) {
-                metadataDao().clear()
-                credentialDao().clear()
-            }
 
             snapshots.forEach { snapshot ->
                 val entryId = snapshot.id

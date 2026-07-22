@@ -72,5 +72,5 @@ interface VaultHistoryDao {
     suspend fun deleteOldVersions(entryId: String, keepCount: Int)
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_HISTORY}")
-    suspend fun clear()
+    suspend fun clear(): Int
 }

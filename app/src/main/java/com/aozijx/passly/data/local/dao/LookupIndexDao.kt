@@ -51,5 +51,5 @@ interface LookupIndexDao {
     suspend fun deleteByEntryAndField(entryId: String, field: LookupField)
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_LOOKUP_INDEX}")
-    suspend fun clear()
+    suspend fun clear(): Int
 }

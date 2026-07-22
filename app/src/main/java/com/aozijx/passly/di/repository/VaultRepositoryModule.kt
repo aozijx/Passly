@@ -56,4 +56,10 @@ abstract class VaultRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindEntryCommands(impl: EntryCommandHandler): EntryCommands
+
+    @Binds
+    @Singleton
+    abstract fun bindVaultDatabaseCleaner(
+        impl: com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleanerImpl
+    ): com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 }

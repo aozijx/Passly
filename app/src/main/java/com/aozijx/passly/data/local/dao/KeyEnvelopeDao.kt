@@ -51,5 +51,5 @@ interface KeyEnvelopeDao {
     suspend fun deleteByType(type: Int)
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_KEY_ENVELOPE}")
-    suspend fun clear()
+    suspend fun clear(): Int
 }

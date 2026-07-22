@@ -49,5 +49,5 @@ interface VaultCredentialDao {
     suspend fun delete(entryId: String)
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_CREDENTIALS}")
-    suspend fun clear()
+    suspend fun clear(): Int
 }
