@@ -80,12 +80,16 @@ class EntryCommandHandler @Inject constructor(
             lookupIndexDao().insertAll(indexRecords.toEntityList())
         }
 
-        // 历史快照
+            // 历史快照（使用统一 SnapshotPayload 格式）
         historyDao().insert(
             VaultSnapshotEntity(
                 version = 1,
                 entryId = entryId,
-                snapshotBlob = metaBlob + credBlob,
+                snapshotBlob = cryptoMapper.encryptSnapshot(
+                    entry.metadata,
+                    entry.credential,
+                    entryId
+                ),
                 changeType = SnapshotType.VALUE_CHANGED.value,
                 createdAt = now
             )
