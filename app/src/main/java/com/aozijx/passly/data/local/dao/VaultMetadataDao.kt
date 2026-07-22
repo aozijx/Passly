@@ -131,6 +131,14 @@ interface VaultMetadataDao {
     @Query("UPDATE ${DatabaseSchema.TABLE_METADATA} SET deletedAt = :timestamp, updatedAt = :timestamp WHERE entryId = :entryId")
     suspend fun softDelete(entryId: String, timestamp: Long)
 
+    /**
+     * 带乐观锁版本校验的恢复。
+     *
+     * @return 影响的行数（0 表示版本冲突）
+     */
+    @Query("UPDATE ${DatabaseSchema.TABLE_METADATA} SET deletedAt = NULL, entryVersion = entryVersion + 1, updatedAt = :now WHERE entryId = :entryId AND entryVersion = :expectedVersion AND deletedAt IS NOT NULL")
+    suspend fun restoreOptimistic(entryId: String, expectedVersion: Int, now: Long): Int
+
     @Query("UPDATE ${DatabaseSchema.TABLE_METADATA} SET deletedAt = NULL, updatedAt = :now WHERE entryId = :entryId")
     suspend fun restore(entryId: String, now: Long)
 

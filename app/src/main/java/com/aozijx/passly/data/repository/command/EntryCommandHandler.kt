@@ -171,18 +171,26 @@ class EntryCommandHandler @Inject constructor(
 
     /**
      * 恢复回收站中的条目。
+     *
+     * 使用乐观锁版本校验，原子写入：恢复 + 版本自增 + 盲索引重建 + 活动记录。
      */
     override suspend fun restoreEntry(
-        id: String
+        id: String, expectedVersion: Int
     ): AppResult<Unit> = unitOfWork.write("entry.restore") {
         val now = clock.now()
-        metadataDao().restore(id, now)
+        val affected = metadataDao().restoreOptimistic(id, expectedVersion, now)
+        unitOfWork.checkAffectedRows(id, expectedVersion, affected)
 
         // 重建盲索引
         val metaEntity = metadataDao().getById(id)
             ?: throw NotFound("entry:$id not found")
         val meta = cryptoMapper.decryptMetadata(metaEntity)
         rebuildBlindIndex(id, metaEntity, meta)
+
+        // 活动记录
+        activityDao().insert(
+            VaultActivity(entryId = id, activityType = ActivityType.RESTORE).toEntity(now)
+        )
     }
 
     // =========================== 搜索索引 ===========================

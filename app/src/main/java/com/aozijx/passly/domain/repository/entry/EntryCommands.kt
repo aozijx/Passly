@@ -20,7 +20,7 @@ interface EntryCommands {
     ): AppResult<Unit>
 
     suspend fun moveToTrash(id: String, expectedVersion: Int): AppResult<Unit>
-    suspend fun restoreEntry(id: String): AppResult<Unit>
+    suspend fun restoreEntry(id: String, expectedVersion: Int): AppResult<Unit>
     suspend fun rebuildIndex(): AppResult<Int>
     suspend fun recordUsage(
         entryId: String,
