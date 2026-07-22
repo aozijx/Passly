@@ -98,6 +98,34 @@ interface VaultMetadataDao {
     @Update
     suspend fun update(entry: VaultMetadataEntity)
 
+    /**
+     * 带乐观锁版本校验的更新。
+     * 仅当 entryId 和 entryVersion 同时匹配时才执行更新，
+     * 并将 entryVersion 自增 1。
+     *
+     * @return 影响的行数（0 表示版本冲突）
+     */
+    @Query("UPDATE ${DatabaseSchema.TABLE_METADATA} SET metadataBlob = :metadataBlob, entryVersion = entryVersion + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND entryVersion = :expectedVersion")
+    suspend fun optimisticUpdate(
+        entryId: String,
+        expectedVersion: Int,
+        metadataBlob: ByteArray,
+        updatedAt: Long
+    ): Int
+
+    /**
+     * 带乐观锁版本校验的软删除。
+     *
+     * @return 影响的行数（0 表示版本冲突）
+     */
+    @Query("UPDATE ${DatabaseSchema.TABLE_METADATA} SET deletedAt = :deletedAt, entryVersion = entryVersion + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND entryVersion = :expectedVersion")
+    suspend fun optimisticSoftDelete(
+        entryId: String,
+        expectedVersion: Int,
+        deletedAt: Long,
+        updatedAt: Long
+    ): Int
+
     // ---- soft delete / restore ----
 
     @Query("UPDATE ${DatabaseSchema.TABLE_METADATA} SET deletedAt = :timestamp, updatedAt = :timestamp WHERE entryId = :entryId")

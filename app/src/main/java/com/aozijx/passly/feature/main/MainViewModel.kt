@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.ui.toUiMessage
+import com.aozijx.passly.data.repository.command.EntryCommandHandler
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.repository.entry.CommandRepository
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.feature.main.contract.MainEffect
@@ -33,7 +33,7 @@ class MainViewModel @Inject constructor(
     private val portableSettingsUseCases: PortableSettingsUseCases,
     private val authenticationManager: AuthenticationManager,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
-    private val commandRepository: CommandRepository,
+    private val entryCommandHandler: EntryCommandHandler,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -171,7 +171,7 @@ class MainViewModel @Inject constructor(
      */
     private fun rebuildSearchIndex() {
         viewModelScope.launch {
-            val result = commandRepository.rebuildIndex()
+            val result = entryCommandHandler.rebuildIndex()
             result.onSuccess { count ->
                 AppLog.i("MainViewModel", "Blind index rebuild complete: $count entries")
             }.onFailure { error ->

@@ -4,12 +4,12 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.data.repository.command.EntryCommandHandler
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.SortOption
+import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.domain.usecase.vault.ActivityCommandUseCases
-import com.aozijx.passly.domain.usecase.vault.VaultCommandUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
@@ -40,9 +40,9 @@ import javax.inject.Inject
 class VaultViewModel @Inject constructor(
     application: Application,
     private val vaultQueryUseCases: VaultQueryUseCases,
-    private val vaultCommandUseCases: VaultCommandUseCases,
-    private val activityCommandUseCases: ActivityCommandUseCases,
-    private val portableSettingsUseCases: PortableSettingsUseCases
+    private val entryCommandHandler: EntryCommandHandler,
+    private val portableSettingsUseCases: PortableSettingsUseCases,
+    private val faviconRepository: FaviconRepository
 ) : AndroidViewModel(application) {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
@@ -59,8 +59,9 @@ class VaultViewModel @Inject constructor(
     private val detail = DetailCoordinator()
     private val entryManager = EntryManager(
         scope = viewModelScope,
-        vaultCommandUseCases = vaultCommandUseCases,
+        entryCommandHandler = entryCommandHandler,
         vaultQueryUseCases = vaultQueryUseCases,
+        faviconRepository = faviconRepository,
         iconHelper = EntryIconHelper(),
         detail = detail,
         totp = totp,
@@ -191,7 +192,10 @@ class VaultViewModel @Inject constructor(
             val entry = vaultQueryUseCases.getById(item.id) ?: return@launch
             detail.showDetail(entry)
             totp.autoUnlock(item.id)
-            activityCommandUseCases.recordUsage(item.id)
+            entryCommandHandler.recordUsage(
+                item.id,
+                com.aozijx.passly.domain.model.activity.ActivityType.VIEW
+            )
         }
     }
 

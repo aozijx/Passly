@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 fun VaultEntry.toSnapshot(): VaultSnapshot = VaultSnapshot(
     id = id,
     entryType = entryType,
+    revision = entryVersion,
     deletedAt = deletedAt,
     createdAt = createdAt,
     updatedAt = updatedAt,

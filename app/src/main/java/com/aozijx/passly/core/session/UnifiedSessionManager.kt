@@ -7,7 +7,7 @@ import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseProvider
 import com.aozijx.passly.domain.authentication.SessionLockedException
 import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.repository.database.TransactionOperator
+
 import com.aozijx.passly.security.crypto.DekManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +44,7 @@ import kotlin.time.Duration.Companion.seconds
 class UnifiedSessionManager @Inject constructor(
     private val databaseProvider: DatabaseProvider,
     private val dekManager: DekManager
-) : SessionStateProvider, TransactionOperator {
+) : SessionStateProvider {
 
     companion object {
         private const val TAG = "UnifiedSessionManager"
@@ -132,23 +132,6 @@ class UnifiedSessionManager @Inject constructor(
             return block()
         } finally {
             activeOps.decrementAndGet()
-        }
-    }
-
-    // ============================== TransactionOperator ==============================
-
-    override suspend fun <T> withTransaction(block: suspend () -> T): T {
-        return executeWithGuard { db ->
-            db.withTransaction { block() }
-        }
-    }
-
-    override suspend fun <T> withNewTransaction(block: suspend () -> T): T {
-        // Room 的 withTransaction 已支持嵌套 —— 内部若检测到已有事务，会挂起等待
-        // 新事务可用；这里直接委托给 withTransaction（Room 自动处理传播）
-        // 如需强制独立事务，可使用 runInTransaction 并传递独立连接。
-        return executeWithGuard { db ->
-            db.withTransaction { block() }
         }
     }
 

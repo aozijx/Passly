@@ -40,6 +40,9 @@ interface VaultCredentialDao {
     @Update
     suspend fun update(credential: VaultCredentialEntity)
 
+    @Query("UPDATE ${DatabaseSchema.TABLE_CREDENTIALS} SET credentialBlob = :credentialBlob WHERE entryId = :entryId")
+    suspend fun updateBlob(entryId: String, credentialBlob: ByteArray)
+
     // ---- delete ----
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_CREDENTIALS} WHERE entryId = :entryId")

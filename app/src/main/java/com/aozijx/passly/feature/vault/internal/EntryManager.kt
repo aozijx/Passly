@@ -4,8 +4,11 @@ import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.data.repository.command.EntryCommandHandler
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.usecase.vault.VaultCommandUseCases
+import com.aozijx.passly.domain.model.favicon.FaviconResult
+import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -16,8 +19,9 @@ import kotlinx.coroutines.sync.withLock
 
 internal class EntryManager(
     private val scope: CoroutineScope,
-    private val vaultCommandUseCases: VaultCommandUseCases,
+    private val entryCommandHandler: EntryCommandHandler,
     private val vaultQueryUseCases: VaultQueryUseCases,
+    private val faviconRepository: FaviconRepository,
     private val iconHelper: EntryIconHelper,
     private val detail: DetailCoordinator,
     private val totp: TotpCoordinator,
@@ -32,16 +36,32 @@ internal class EntryManager(
 
     fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
-            vaultCommandUseCases.addEntry(entry, domain)
-                .onSuccess {
+            val insertResult = entryCommandHandler.createEntry(entry)
+            when (insertResult) {
+                is AppResult.Success -> {
+                    if (!domain.isNullOrBlank()) {
+                        val outcome = downloadFavicon(domain)
+                        if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                            val savedEntry = vaultQueryUseCases.getById(entry.id)
+                            if (savedEntry != null) {
+                                entryCommandHandler.setIcon(
+                                    savedEntry.id,
+                                    savedEntry.entryVersion,
+                                    outcome.filePath
+                                )
+                            }
+                        }
+                    }
                     detail.setAddType(null)
                     onComplete()
                 }
-                .onFailure { error ->
-                    onError(error.message)
+
+                is AppResult.Failure -> {
+                    onError(insertResult.error.message)
                     detail.setAddType(null)
                     onComplete()
                 }
+            }
         }
     }
 
@@ -53,40 +73,40 @@ internal class EntryManager(
     fun updateEntry(entry: VaultEntry) {
         scope.launch(Dispatchers.IO + handler) {
             val current = vaultQueryUseCases.getById(entry.id) ?: return@launch
-            val version = current.metadata.entryVersion
+            val version = current.entryVersion
 
             val result = when {
                 current.title != entry.title ->
-                    vaultCommandUseCases.updateTitle(entry.id, version, entry.title)
+                    entryCommandHandler.updateTitle(entry.id, version, entry.title)
 
                 current.username != entry.username ->
-                    vaultCommandUseCases.updateUsername(entry.id, version, entry.username)
+                    entryCommandHandler.updateUsername(entry.id, version, entry.username)
 
                 current.metadata.favorite != entry.favorite ->
-                    vaultCommandUseCases.toggleFavorite(entry.id, version)
+                    entryCommandHandler.toggleFavorite(entry.id, version)
 
                 current.metadata.icon != entry.metadata.icon ->
-                    vaultCommandUseCases.setIcon(entry.id, version, entry.metadata.icon)
+                    entryCommandHandler.setIcon(entry.id, version, entry.metadata.icon)
 
                 current.metadata.website != entry.website ->
-                    vaultCommandUseCases.updateWebsite(entry.id, version, entry.website)
+                    entryCommandHandler.updateWebsite(entry.id, version, entry.website)
 
                 current.credential.password != entry.credential.password ->
-                    vaultCommandUseCases.updatePassword(
+                    entryCommandHandler.updatePassword(
                         entry.id,
                         version,
                         entry.credential.password ?: ""
                     )
 
                 current.credential.email != entry.credential.email ->
-                    vaultCommandUseCases.updateEmail(
+                    entryCommandHandler.updateEmail(
                         entry.id,
                         version,
                         entry.credential.email ?: ""
                     )
 
                 current.credential.notes != entry.credential.notes ->
-                    vaultCommandUseCases.updateNotes(
+                    entryCommandHandler.updateNotes(
                         entry.id,
                         version,
                         entry.credential.notes ?: ""
@@ -129,7 +149,7 @@ internal class EntryManager(
                 detail.dismissDetail()
             }
             iconHelper.cleanupIcon(entry.iconCustomPath)
-            vaultCommandUseCases.moveToTrash(entry.id, entry.metadata.entryVersion)
+            entryCommandHandler.moveToTrash(entry.id, entry.entryVersion)
             detail.setItemToDelete(null)
             totp.clearSensitiveState(entryId)
         } catch (e: AppError) {
@@ -144,8 +164,8 @@ internal class EntryManager(
             try {
                 val internalPath = iconHelper.saveCustomIcon(context, item, uri)
                 if (internalPath != null) {
-                    vaultCommandUseCases.setIcon(
-                        item.id, item.metadata.entryVersion, internalPath
+                    entryCommandHandler.setIcon(
+                        item.id, item.entryVersion, internalPath
                     ).onSuccess {
                         detail.updateEntry(item.copy(metadata = item.metadata.copy(icon = internalPath)))
                         totp.onEntryUpdated(item.id)
@@ -165,7 +185,26 @@ internal class EntryManager(
 
     fun downloadMissingIcons(summaries: List<VaultEntry>) {
         scope.launch(Dispatchers.IO + handler) {
-            vaultCommandUseCases.downloadMissingFavicons(summaries)
+            summaries
+                .filter { !it.associatedDomain.isNullOrBlank() && it.iconCustomPath.isNullOrBlank() }
+                .forEach { summary ->
+                    val domain = summary.associatedDomain ?: return@forEach
+                    val outcome = downloadFavicon(domain)
+                    if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                        vaultQueryUseCases.getById(summary.id)?.let { entry ->
+                            entryCommandHandler.setIcon(
+                                entry.id,
+                                entry.entryVersion,
+                                outcome.filePath
+                            )
+                        }
+                    }
+                }
         }
+    }
+
+    private suspend fun downloadFavicon(input: String): com.aozijx.passly.domain.model.favicon.FaviconOutcome {
+        if (input.isBlank()) return com.aozijx.passly.domain.model.favicon.FaviconOutcome(com.aozijx.passly.domain.model.favicon.FaviconResult.EMPTY_INPUT)
+        return faviconRepository.download(input)
     }
 }

@@ -18,7 +18,6 @@ import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.model.backup.ImportMode
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.repository.backup.BackupRepository
-import com.aozijx.passly.domain.repository.database.TransactionOperator
 import com.aozijx.passly.security.crypto.CryptoEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -34,7 +33,6 @@ internal class BackupRepositoryImpl @Inject constructor(
     private val cryptoEngine: CryptoEngine,
     private val sessionManager: UnifiedSessionManager,
     private val stateProvider: SessionStateProvider,
-    private val transactionOperator: TransactionOperator,
     private val cryptoMapper: VaultEntryCryptoMapper,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {

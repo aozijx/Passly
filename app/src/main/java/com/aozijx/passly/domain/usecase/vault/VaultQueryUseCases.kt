@@ -28,5 +28,8 @@ class VaultQueryUseCases @Inject constructor(
 
     suspend fun getById(entryId: String): VaultEntry? = queryRepository.getById(entryId)
 
+    suspend fun getEntriesForIconResync(): List<VaultEntry> =
+        queryRepository.getEntriesForIconResync()
+
     fun getTotpCode(config: OtpConfig): String = otpRepository.generate(config)
 }

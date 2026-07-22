@@ -4,7 +4,6 @@ import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.repository.settings.DatabaseControllerImpl
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.repository.database.DatabaseController
-import com.aozijx.passly.domain.repository.database.TransactionOperator
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -33,9 +32,4 @@ abstract class DatabaseModule {
         impl: UnifiedSessionManager
     ): SessionStateProvider
 
-    @Binds
-    @Singleton
-    internal abstract fun bindTransactionOperator(
-        impl: UnifiedSessionManager
-    ): TransactionOperator
 }

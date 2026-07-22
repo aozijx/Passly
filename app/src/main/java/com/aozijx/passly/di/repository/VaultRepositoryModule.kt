@@ -2,9 +2,7 @@ package com.aozijx.passly.di.repository
 
 import com.aozijx.passly.data.repository.activity.ActivityRepositoryImpl
 import com.aozijx.passly.data.repository.autofill.CredentialServiceRepositoryImpl
-import com.aozijx.passly.data.repository.entry.CommandRepositoryImpl
 import com.aozijx.passly.data.repository.entry.QueryRepositoryImpl
-import com.aozijx.passly.data.repository.entry.RecordEntryUsageFacadeImpl
 import com.aozijx.passly.data.repository.favicon.FaviconRepositoryImpl
 import com.aozijx.passly.data.repository.lookup.LookupRepositoryImpl
 import com.aozijx.passly.data.repository.otp.OtpRepositoryImpl
@@ -12,9 +10,7 @@ import com.aozijx.passly.data.repository.snapshot.SnapshotRepositoryImpl
 import com.aozijx.passly.domain.repository.activity.CommandActivityRepository
 import com.aozijx.passly.domain.repository.activity.QueryActivityRepository
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
-import com.aozijx.passly.domain.repository.entry.CommandRepository
 import com.aozijx.passly.domain.repository.entry.QueryRepository
-import com.aozijx.passly.domain.repository.entry.RecordEntryUsageFacade
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import com.aozijx.passly.domain.repository.otp.OtpRepository
@@ -33,14 +29,6 @@ abstract class VaultRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindQueryRepository(impl: QueryRepositoryImpl): QueryRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindCommandRepository(impl: CommandRepositoryImpl): CommandRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindRecordEntryUsageFacade(impl: RecordEntryUsageFacadeImpl): RecordEntryUsageFacade
 
     @Binds
     @Singleton

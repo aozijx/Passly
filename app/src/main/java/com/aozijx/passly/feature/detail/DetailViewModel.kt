@@ -2,13 +2,15 @@ package com.aozijx.passly.feature.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.data.repository.command.EntryCommandHandler
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.VaultActivity
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.usecase.detail.DetailCommandUseCases
+import com.aozijx.passly.domain.model.favicon.FaviconOutcome
+import com.aozijx.passly.domain.model.favicon.FaviconResult
+import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.usecase.detail.DetailQueryUseCases
 import com.aozijx.passly.domain.usecase.settings.RuntimeSettingsUseCases
-import com.aozijx.passly.domain.usecase.vault.ActivityCommandUseCases
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
@@ -27,9 +29,9 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val detailQueryUseCases: DetailQueryUseCases,
-    private val detailCommandUseCases: DetailCommandUseCases,
+    private val entryCommandHandler: EntryCommandHandler,
     private val runtimeSettingsUseCases: RuntimeSettingsUseCases,
-    private val activityCommandUseCases: ActivityCommandUseCases
+    private val faviconRepository: FaviconRepository
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer()
 
@@ -150,7 +152,7 @@ class DetailViewModel @Inject constructor(
                 }
 
                 viewModelScope.launch {
-                    activityCommandUseCases.recordUsage(current.id, event.type)
+                    entryCommandHandler.recordUsage(current.id, event.type)
                 }
             }
 
@@ -180,11 +182,24 @@ class DetailViewModel @Inject constructor(
     private fun autoDownloadFavicon(entry: VaultEntry) {
         if (entry.associatedDomain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return
         viewModelScope.launch {
-            val updated = detailCommandUseCases.downloadAndApplyFavicon(entry)
-            if (updated != null) {
-                refreshFromEntry(updated, _uiState.value.isEditingTitle, _uiState.value.editedTitle)
+            val domain = entry.associatedDomain
+            val outcome = downloadFavicon(domain)
+            if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
+                entryCommandHandler.setIcon(entry.id, entry.entryVersion, outcome.filePath)
+                    .onSuccess {
+                        refreshFromEntry(
+                            entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath)),
+                            _uiState.value.isEditingTitle,
+                            _uiState.value.editedTitle
+                        )
+                    }
             }
         }
+    }
+
+    private suspend fun downloadFavicon(input: String): FaviconOutcome {
+        if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)
+        return faviconRepository.download(input)
     }
 
     private fun refreshFromEntry(entry: VaultEntry, isEditingTitle: Boolean, editedTitle: String) {

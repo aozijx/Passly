@@ -17,13 +17,13 @@ object VaultEntryAssembler {
         return VaultEntry(
             metadata = meta.copy(
                 entryId = entity.entryId,
-                entryVersion = entity.entryVersion,
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt,
                 deletedAt = entity.deletedAt
             ),
             credential = cred?.copy(entryId = entity.entryId)
-                ?: VaultCredential(entryId = entity.entryId)
+                ?: VaultCredential(entryId = entity.entryId),
+            entryVersion = entity.entryVersion
         )
     }
 
@@ -35,7 +35,8 @@ object VaultEntryAssembler {
                 updatedAt = snapshot.updatedAt,
                 deletedAt = snapshot.deletedAt
             ),
-            credential = snapshot.credential.copy(entryId = snapshot.id)
+            credential = snapshot.credential.copy(entryId = snapshot.id),
+            entryVersion = snapshot.revision
         )
     }
 

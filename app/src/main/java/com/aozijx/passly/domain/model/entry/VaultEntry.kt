@@ -5,7 +5,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class VaultEntry(
     val metadata: VaultMetadata,
-    val credential: VaultCredential
+    val credential: VaultCredential,
+    /** 乐观锁版本号，来自数据库实体，不存储在加密 JSON 中。 */
+    val entryVersion: Int = 0
 ) : VaultIconable {
     override val category: String get() = metadata.entryType.name
     override val iconName: String? = metadata.icon
