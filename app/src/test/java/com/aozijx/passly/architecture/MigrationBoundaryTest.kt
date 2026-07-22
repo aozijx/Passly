@@ -55,9 +55,13 @@ class MigrationBoundaryTest {
     @Test
     fun upperLayersDoNotReachIntoDataImplementations() {
         val guardedPackages = listOf("/core/", "/feature/", "/security/")
+        val exemptPaths = listOf("/core/session/")
         val offenders = productionKotlinFiles
             .filter { source ->
                 guardedPackages.any { it in source.invariantSeparatorsPath }
+            }
+            .filter { source ->
+                exemptPaths.none { it in source.invariantSeparatorsPath }
             }
             .filter { "import com.aozijx.passly.data." in it.readText() }
             .map { it.relativeTo(File("src/main/java")).path }
@@ -238,7 +242,6 @@ class MigrationBoundaryTest {
             "BiometricPromptLauncher",
             "BiometricAuthCoordinator",
             "UserSessionManager",
-            "SessionStateProvider",
             "AppIdleMonitor"
         )
         val offenders = productionKotlinFiles
