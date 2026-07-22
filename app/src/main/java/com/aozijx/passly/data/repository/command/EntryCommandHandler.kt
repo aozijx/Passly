@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.command
 
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.NotFound
+import com.aozijx.passly.data.local.dao.scanIndexStatus
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.mapper.lookup.toLookupFields
@@ -69,7 +70,7 @@ class EntryCommandHandler @Inject constructor(
             credentialBlob = credBlob
         )
 
-        metadataDao().insert(metaEntity)
+            metadataDao().insertStrict(metaEntity)
         credentialDao().insert(credEntity)
 
         // 盲索引
@@ -199,16 +200,20 @@ class EntryCommandHandler @Inject constructor(
      * 重建所有条目的盲索引。
      *
      * 仅在以下情况实际执行重建：
-     * - 索引表为空（首次构建）
+     * - 索引不完整（[scanIndexStatus.isComplete] == false）
      * - [force] = true（如备份导入后）
      *
-     * 避免每次解锁都重复解密全库。
+     * 完整性通过扫描实际数据库状态判断（已索引去重条目数 vs 活跃条目数），
+     * 而非硬编码版本号或总行数。
      */
     override suspend fun rebuildIndex(force: Boolean): AppResult<Int> =
         unitOfWork.write("entry.rebuildIndex") {
             if (!force) {
-                val existingCount = lookupIndexDao().count()
-                if (existingCount > 0) return@write 0  // 索引已存在，跳过重建
+                val scanResult = scanIndexStatus(
+                    indexedEntryCount = lookupIndexDao().countDistinctEntryIds(),
+                    activeEntryCount = metadataDao().countActive()
+                )
+                if (scanResult.isComplete) return@write 0
             }
 
         val metaEntities = metadataDao().getActive()

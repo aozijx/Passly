@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.lookup
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
@@ -85,11 +86,11 @@ class LookupRepositoryImpl @Inject constructor(
             else sessionManager.observeFlow {
                 val entryFlow = when (filter) {
                     LookupRepository.EntryFilter.ALL -> metadataDao().observeActive()
-                    LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeByEntryTypes(
+                    LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeActiveByTypes(
                         TOTP_ENTRY_TYPES
                     )
 
-                    LookupRepository.EntryFilter.PASSWORD_ONLY -> metadataDao().observeByEntryTypes(
+                    LookupRepository.EntryFilter.PASSWORD_ONLY -> metadataDao().observeActiveByTypes(
                         PASSWORD_ENTRY_TYPES
                     )
                 }
@@ -139,11 +140,11 @@ class LookupRepositoryImpl @Inject constructor(
                 else sessionManager.observeFlow {
                     val entryFlow = when (filter) {
                         LookupRepository.EntryFilter.ALL -> metadataDao().observeActive()
-                        LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeByEntryTypes(
+                        LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeActiveByTypes(
                             TOTP_ENTRY_TYPES
                         )
 
-                        LookupRepository.EntryFilter.PASSWORD_ONLY -> metadataDao().observeByEntryTypes(
+                        LookupRepository.EntryFilter.PASSWORD_ONLY -> metadataDao().observeActiveByTypes(
                             PASSWORD_ENTRY_TYPES
                         )
                     }
@@ -175,6 +176,8 @@ class LookupRepositoryImpl @Inject constructor(
     /**
      * 使用盲索引对 [metaEntities] 进行预过滤，仅返回与 [query] 匹配的条目。
      * 如果查询词无法生成有效令牌（如长度不足），返回空列表。
+     *
+     * 多 Token 交集在 SQL 层通过 INTERSECT 完成，避免在内存中加载大量候选结果。
      */
     private suspend fun filterByBlindIndex(
         db: AppDatabase,
@@ -184,16 +187,10 @@ class LookupRepositoryImpl @Inject constructor(
         val searchTokens = blindIndexer.searchTokens(query)
         if (searchTokens.isEmpty()) return emptyList()
 
-        // 对每个令牌查找匹配的 entryId，取交集
-        val candidateIdSets = searchTokens.map { token ->
-            db.lookupIndexDao()
-                .searchByHash(token.hash, token.length, SEARCH_FIELDS)
-                .toSet()
-        }
-
-        val matchingIds = candidateIdSets
-            .reduceOrNull { acc, ids -> acc.intersect(ids) }
-            ?: return emptyList()
+        val sqlQuery = buildEntryIdIntersectionQuery(searchTokens, SEARCH_FIELDS)
+        val matchingIds = db.lookupIndexDao()
+            .searchByTokenIntersection(sqlQuery)
+            .toSet()
 
         if (matchingIds.isEmpty()) return emptyList()
 
