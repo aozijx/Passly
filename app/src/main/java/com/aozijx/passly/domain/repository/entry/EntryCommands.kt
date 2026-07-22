@@ -21,7 +21,7 @@ interface EntryCommands {
 
     suspend fun moveToTrash(id: String, expectedVersion: Int): AppResult<Unit>
     suspend fun restoreEntry(id: String, expectedVersion: Int): AppResult<Unit>
-    suspend fun rebuildIndex(): AppResult<Int>
+    suspend fun rebuildIndex(force: Boolean = false): AppResult<Int>
     suspend fun recordUsage(
         entryId: String,
         type: ActivityType = ActivityType.VIEW

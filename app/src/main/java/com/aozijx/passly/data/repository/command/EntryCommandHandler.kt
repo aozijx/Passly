@@ -197,9 +197,20 @@ class EntryCommandHandler @Inject constructor(
 
     /**
      * 重建所有条目的盲索引。
-     * 用于首次解锁后的存量数据迁移。
+     *
+     * 仅在以下情况实际执行重建：
+     * - 索引表为空（首次构建）
+     * - [force] = true（如备份导入后）
+     *
+     * 避免每次解锁都重复解密全库。
      */
-    override suspend fun rebuildIndex(): AppResult<Int> = unitOfWork.write("entry.rebuildIndex") {
+    override suspend fun rebuildIndex(force: Boolean): AppResult<Int> =
+        unitOfWork.write("entry.rebuildIndex") {
+            if (!force) {
+                val existingCount = lookupIndexDao().count()
+                if (existingCount > 0) return@write 0  // 索引已存在，跳过重建
+            }
+
         val metaEntities = metadataDao().getActive()
         if (metaEntities.isEmpty()) return@write 0
 
