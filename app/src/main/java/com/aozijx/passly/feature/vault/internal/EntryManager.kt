@@ -50,7 +50,7 @@ internal class EntryManager(
             vaultCommandUseCases.updateEntry(entry)
                 .onSuccess {
                     detail.updateEntry(entry)
-                    totp.onEntryUpdated(entry)
+                    totp.onEntryUpdated(entry.id)
                 }
                 .onFailure { error ->
                     onError(error.message)

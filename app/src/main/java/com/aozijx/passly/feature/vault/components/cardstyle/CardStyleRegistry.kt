@@ -4,58 +4,84 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.VaultCredential
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
 import com.aozijx.passly.feature.vault.model.TotpState
 
 object CardStyleRegistry {
-    private val previewBaseEntry = VaultEntry(
-        metadata = VaultMetadata(
-            entryId = "-100",
-            entryType = EntryType.LOGIN,
-            title = "示例账号",
-            username = "demo_user",
-            icon = null,
-            website = WebsiteInfo(primaryUrl = "example.com")
-        ),
-        credential = VaultCredential(entryId = "-100")
+    private val previewBaseEntry = VaultListItem(
+        id = "-100",
+        entryType = EntryType.LOGIN,
+        title = "示例账号",
+        username = "demo_user",
+        icon = null,
+        iconCustomPath = null,
+        website = WebsiteInfo(primaryUrl = "example.com"),
+        favorite = false,
+        tags = emptyList(),
+        color = null,
+        createdAt = 0L,
+        updatedAt = 0L,
+        deletedAt = null,
+        expiresAt = null,
+        lastUsedAt = null,
+        usageCount = 0,
+        entryVersion = 0,
+        hasTotp = false
     )
 
-    private val previewPasswordEntry = VaultEntry(
-        metadata = VaultMetadata(
-            entryId = "-101",
-            entryType = EntryType.LOGIN,
-            title = "我的邮箱",
-            username = "me@example.com",
-            icon = null,
-            website = WebsiteInfo(primaryUrl = "example.com")
-        ),
-        credential = VaultCredential(entryId = "-101")
+    private val previewPasswordEntry = VaultListItem(
+        id = "-101",
+        entryType = EntryType.LOGIN,
+        title = "我的邮箱",
+        username = "me@example.com",
+        icon = null,
+        iconCustomPath = null,
+        website = WebsiteInfo(primaryUrl = "example.com"),
+        favorite = false,
+        tags = emptyList(),
+        color = null,
+        createdAt = 0L,
+        updatedAt = 0L,
+        deletedAt = null,
+        expiresAt = null,
+        lastUsedAt = null,
+        usageCount = 0,
+        entryVersion = 0,
+        hasTotp = false
     )
 
-    private val previewTotpEntry = VaultEntry(
-        metadata = VaultMetadata(
-            entryId = "-102",
-            entryType = EntryType.LOGIN,
-            title = "示例二步验证",
-            username = "totp_user",
-            icon = null
-        ),
-        credential = VaultCredential(entryId = "-102")
+    private val previewTotpEntry = VaultListItem(
+        id = "-102",
+        entryType = EntryType.LOGIN,
+        title = "示例二步验证",
+        username = "totp_user",
+        icon = null,
+        iconCustomPath = null,
+        website = null,
+        favorite = false,
+        tags = emptyList(),
+        color = null,
+        createdAt = 0L,
+        updatedAt = 0L,
+        deletedAt = null,
+        expiresAt = null,
+        lastUsedAt = null,
+        usageCount = 0,
+        entryVersion = 0,
+        hasTotp = true
     )
 
     @Composable
     fun RenderVaultItem(
         style: VaultCardStyle,
-        entry: VaultEntry,
+        entry: VaultListItem,
         totpStates: Map<String, TotpState>,
         showTotpCode: Boolean,
         onClick: () -> Unit
     ) {
-        val isTotp = entry.credential.otp?.secret?.isNotBlank() == true
+        val isTotp = entry.hasTotp
         val isAutofill = entry.category == stringResource(R.string.category_autofill)
         val totpState = totpStates[entry.id]
 

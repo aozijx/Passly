@@ -28,13 +28,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.feature.vault.model.TotpState
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 @Composable
 fun VaultItem(
-    entry: VaultEntry,
+    entry: VaultListItem,
     onClick: () -> Unit
 ) {
     Card(
@@ -76,7 +76,7 @@ fun VaultItem(
 
 @Composable
 fun TwoFAItem(
-    entry: VaultEntry,
+    entry: VaultListItem,
     totpState: TotpState?,
     showCode: Boolean = true,
     previewCode: String? = null,
@@ -86,8 +86,8 @@ fun TwoFAItem(
     val currentState =
         previewCode?.let { TotpState(code = it, progress = previewProgress ?: 0f) } ?: totpState
 
-    val isSteam = remember(entry.credential.otp?.algorithm ?: "SHA1") {
-        (entry.credential.otp?.algorithm ?: "SHA1").uppercase() == "STEAM"
+    val isSteam = remember(entry.totpAlgorithm) {
+        entry.totpAlgorithm.uppercase() == "STEAM"
     }
 
     Card(
@@ -161,7 +161,7 @@ fun TwoFAItem(
 
 @Composable
 fun AutoFillItem(
-    entry: VaultEntry,
+    entry: VaultListItem,
     onClick: () -> Unit
 ) {
     val isAutoCaptured = entry.category == stringResource(R.string.category_autofill)

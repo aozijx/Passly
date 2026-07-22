@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.ActivityCommandUseCases
@@ -28,7 +29,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -54,7 +54,7 @@ class VaultViewModel @Inject constructor(
     private val totp = TotpCoordinator(
         scope = viewModelScope,
         codeGenerator = { config -> vaultQueryUseCases.getTotpCode(config) },
-        decryptSecret = { encrypted -> encrypted }
+        loadEntryById = { vaultQueryUseCases.getById(it) }
     )
     private val detail = DetailCoordinator()
     private val entryManager = EntryManager(
@@ -167,27 +167,16 @@ class VaultViewModel @Inject constructor(
 
     val addType: AddType? get() = detail.addType
     fun setAddType(type: AddType?) = detail.setAddType(type)
-    val itemToDelete: VaultEntry? get() = detail.itemToDelete
-    fun setItemToDelete(entry: VaultEntry?) = detail.setItemToDelete(entry)
+    val itemToDelete: VaultListItem? get() = detail.itemToDelete
+    fun setItemToDelete(item: VaultListItem?) = detail.setItemToDelete(item)
 
     fun showDetailIconPicker() = detail.showIconPicker()
     fun hideDetailIconPicker() = detail.hideIconPicker()
 
-    fun autoUnlockTotp(entry: VaultEntry) = totp.autoUnlock(entry)
+    fun autoUnlockTotp(entryId: String) = totp.autoUnlock(entryId)
 
     init {
         totp.start { listCoordinator.state.value.items }
-
-        // 观察列表变化，自动解锁所有包含 TOTP 的条目
-        viewModelScope.launch {
-            listCoordinator.state.collectLatest { state ->
-                state.items.forEach { entry ->
-                    if (!entry.credential.otp?.secret.isNullOrBlank()) {
-                        totp.autoUnlock(entry)
-                    }
-                }
-            }
-        }
 
         viewModelScope.launch {
             portableSettingsUseCases.vaultSortOption.first().let {
@@ -197,10 +186,13 @@ class VaultViewModel @Inject constructor(
     }
 
     // --- 业务协调 ---
-    fun showDetail(entry: VaultEntry) {
-        detail.showDetail(entry)
-        totp.autoUnlock(entry)
-        viewModelScope.launch { activityCommandUseCases.recordUsage(entry.id) }
+    fun showDetail(item: VaultListItem) {
+        viewModelScope.launch {
+            val entry = vaultQueryUseCases.getById(item.id) ?: return@launch
+            detail.showDetail(entry)
+            totp.autoUnlock(item.id)
+            activityCommandUseCases.recordUsage(item.id)
+        }
     }
 
     fun dismissDetail() {
@@ -229,13 +221,19 @@ class VaultViewModel @Inject constructor(
     fun addItem(entry: VaultEntry) = entryManager.addItem(entry)
     fun addItem(entry: VaultEntry, domain: String) = entryManager.addItem(entry, domain)
     fun updateVaultEntry(entry: VaultEntry) = entryManager.updateEntry(entry)
-    fun quickDelete(entry: VaultEntry) = entryManager.deleteEntryById(entry.id)
-    fun confirmDelete() = detail.itemToDelete?.let { entryManager.deleteEntry(it) }
+    fun quickDelete(item: VaultListItem) = entryManager.deleteEntryById(item.id)
+    fun confirmDelete() {
+        val item = itemToDelete ?: return
+        viewModelScope.launch {
+            val entry = vaultQueryUseCases.getById(item.id) ?: return@launch
+            entryManager.deleteEntry(entry)
+        }
+    }
 
-    fun saveCustomIcon(item: VaultEntry, uri: Uri) {
+    fun saveCustomIcon(entry: VaultEntry, uri: Uri) {
         entryManager.saveCustomIcon(
             context = getApplication(),
-            item = item,
+            item = entry,
             uri = uri,
             onFailed = {
                 _effects.tryEmit(VaultEffect.ShowToast("图标保存失败"))

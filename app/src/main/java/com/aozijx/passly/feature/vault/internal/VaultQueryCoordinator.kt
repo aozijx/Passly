@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import com.aozijx.passly.feature.vault.model.VaultTab
@@ -18,7 +18,7 @@ internal class VaultQueryCoordinator(
         debouncedSearchQuery: Flow<String>,
         normalizedSelectedCategory: Flow<String?>,
         distinctSelectedTab: Flow<VaultTab>
-    ): Flow<List<VaultEntry>> = combine(
+    ): Flow<List<VaultListItem>> = combine(
         debouncedSearchQuery, normalizedSelectedCategory, distinctSelectedTab
     ) { query, category, tab ->
         QueryParams(query = query, category = category, tab = tab)

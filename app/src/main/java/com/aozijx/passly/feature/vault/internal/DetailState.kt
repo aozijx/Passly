@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.vault.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.feature.vault.model.AddType
 
 internal class DetailState {
@@ -11,6 +11,6 @@ internal class DetailState {
         internal set
     var detailCoordinatorState by mutableStateOf(VaultDetailCoordinatorState())
         internal set
-    var itemToDelete by mutableStateOf<VaultEntry?>(null)
+    var itemToDelete by mutableStateOf<VaultListItem?>(null)
         internal set
 }

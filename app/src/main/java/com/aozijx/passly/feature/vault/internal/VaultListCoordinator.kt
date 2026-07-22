@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.apply
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import com.aozijx.passly.feature.vault.model.VaultTab
@@ -21,8 +21,8 @@ import kotlinx.coroutines.launch
 data class VaultListState(
     val isLoading: Boolean = true,
     val categories: List<String> = emptyList(),
-    val items: List<VaultEntry> = emptyList(),
-    val itemsByTab: Map<VaultTab, List<VaultEntry>> = emptyMap()
+    val items: List<VaultListItem> = emptyList(),
+    val itemsByTab: Map<VaultTab, List<VaultListItem>> = emptyMap()
 )
 
 internal class VaultListCoordinator(
@@ -48,18 +48,15 @@ internal class VaultListCoordinator(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val rawItems: Flow<List<VaultEntry>> = queryCoordinator.observeItems(
+    private val rawItems: Flow<List<VaultListItem>> = queryCoordinator.observeItems(
         debouncedSearchQuery = searchFilter.debouncedSearchQuery,
         normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
         distinctSelectedTab = searchFilter.distinctSelectedTab
     ).onEach { items ->
         _isLoading.value = false
-        if (isAutoDownloadIcons.value) {
-            entryManager.downloadMissingIcons(items)
-        }
     }
 
-    private val sortedItems: StateFlow<List<VaultEntry>> = combine(
+    private val sortedItems: StateFlow<List<VaultListItem>> = combine(
         rawItems,
         searchFilter.selectedSort
     ) { items, sort ->
@@ -83,8 +80,8 @@ internal class VaultListCoordinator(
             items = items,
             itemsByTab = mapOf(
                 VaultTab.ALL to items,
-                VaultTab.PASSWORDS to items.filter { it.credential.otp?.secret.isNullOrBlank() },
-                VaultTab.TOTP to items.filter { !it.credential.otp?.secret.isNullOrBlank() }
+                VaultTab.PASSWORDS to items.filter { !it.hasTotp },
+                VaultTab.TOTP to items.filter { it.hasTotp }
             )
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())

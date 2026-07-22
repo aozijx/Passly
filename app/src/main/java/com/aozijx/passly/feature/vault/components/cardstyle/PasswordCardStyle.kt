@@ -43,7 +43,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 private object PasswordCardPaletteCache {
@@ -65,13 +65,13 @@ private object PasswordCardPaletteCache {
 
 @Composable
 fun PasswordStyleVaultItem(
-    entry: VaultEntry,
+    entry: VaultListItem,
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
     val secondaryText = when {
-        !entry.associatedDomain.isNullOrBlank() -> entry.associatedDomain
-        !entry.associatedAppPackage.isNullOrBlank() -> entry.associatedAppPackage
+        !entry.associatedDomain.isNullOrBlank() -> entry.associatedDomain.orEmpty()
+        !entry.associatedAppPackage.isNullOrBlank() -> entry.associatedAppPackage.orEmpty()
         else -> entry.category
     }
     val tertiaryText = when {

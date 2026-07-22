@@ -8,6 +8,7 @@ import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.VaultMetadata
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -53,6 +54,49 @@ class VaultEntryCryptoMapper @Inject constructor(
             VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
         } catch (e: Exception) {
             AppLog.w("VaultRepo", "Skipping corrupt entry ${metaEntity.entryId}: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * 组装 [VaultListItem] —— 解密凭据但仅提取 TOTP 非敏感信息，
+     * 不暴露密码、TOTP Secret 等敏感数据到内存中。
+     */
+    suspend fun assembleListItem(
+        metaEntity: VaultMetadataEntity,
+        credEntity: VaultCredentialEntity?
+    ): VaultListItem? {
+        return try {
+            val meta = decryptMetadata(metaEntity)
+            val hasTotp: Boolean
+            val totpPeriod: Int
+            val totpDigits: Int
+            val totpAlgorithm: String
+            if (credEntity != null) {
+                val cred = decryptCredential(credEntity)
+                val otp = cred.otp
+                if (otp != null && otp.secret.isNotBlank()) {
+                    hasTotp = true
+                    totpPeriod = otp.period
+                    totpDigits = otp.digits
+                    totpAlgorithm = otp.algorithm
+                } else {
+                    hasTotp = false
+                    totpPeriod = 30
+                    totpDigits = 6
+                    totpAlgorithm = "SHA1"
+                }
+            } else {
+                hasTotp = false
+                totpPeriod = 30
+                totpDigits = 6
+                totpAlgorithm = "SHA1"
+            }
+            VaultEntryAssembler.assembleListItem(
+                metaEntity, meta, hasTotp, totpPeriod, totpDigits, totpAlgorithm
+            )
+        } catch (e: Exception) {
+            AppLog.w("VaultRepo", "Skipping corrupt list item ${metaEntity.entryId}: ${e.message}")
             null
         }
     }

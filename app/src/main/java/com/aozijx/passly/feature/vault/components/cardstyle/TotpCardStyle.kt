@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.feature.vault.model.TotpState
 import com.aozijx.passly.ui.components.VaultItemIcon
 
@@ -43,7 +43,7 @@ private object TotpBehaviorTokens {
 
 @Composable
 fun TotpStyleVaultItem(
-    entry: VaultEntry,
+    entry: VaultListItem,
     totpState: TotpState?,
     showCode: Boolean = true,
     previewCode: String? = null,
@@ -52,8 +52,8 @@ fun TotpStyleVaultItem(
 ) {
     val currentState =
         previewCode?.let { TotpState(code = it, progress = previewProgress ?: 0f) } ?: totpState
-    val isSteam = remember(entry.credential.otp?.algorithm ?: "SHA1") {
-        (entry.credential.otp?.algorithm ?: "SHA1").uppercase() == "STEAM"
+    val isSteam = remember(entry.totpAlgorithm) {
+        entry.totpAlgorithm.uppercase() == "STEAM"
     }
 
     val targetProgress = previewProgress ?: (currentState?.progress ?: 0f)

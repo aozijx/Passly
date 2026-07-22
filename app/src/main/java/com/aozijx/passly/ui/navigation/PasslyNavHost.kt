@@ -113,7 +113,7 @@ fun PasslyNavHost(
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
                     onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
-                    onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it) },
+                    onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
                     onAuthenticate = { success ->
                         mainViewModel.requestAuth(onSuccess = success)
                     }

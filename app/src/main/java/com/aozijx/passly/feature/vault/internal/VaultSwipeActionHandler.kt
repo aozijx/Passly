@@ -1,15 +1,15 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.domain.model.entry.FieldKey
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 
 fun handleSwipeAction(
     actionType: SwipeActionType,
-    item: VaultEntry,
+    item: VaultListItem,
     onAuthRequired: (onSuccess: () -> Unit) -> Unit,
-    onQuickDelete: (VaultEntry) -> Unit,
-    onShowDetail: (VaultEntry) -> Unit,
+    onQuickDelete: (VaultListItem) -> Unit,
+    onShowDetail: (VaultListItem) -> Unit,
     onCopy: (FieldKey) -> Unit
 ) {
     val copyField = when (actionType) {

@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.entry.FieldKey
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.feature.backup.BackupViewModel
@@ -29,7 +29,7 @@ import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 
 class VaultActionProvider(
-    val onSwipeTriggered: (SwipeActionType, VaultEntry) -> Unit,
+    val onSwipeTriggered: (SwipeActionType, VaultListItem) -> Unit,
     val onUpdateInteraction: () -> Unit,
     val fabScrollConnection: NestedScrollConnection,
     val onExportClick: () -> Unit,
@@ -43,7 +43,7 @@ fun rememberVaultActionProvider(
     backupViewModel: BackupViewModel,
     backupDirectoryUri: String?,
     uiState: VaultUiState,
-    onShowDetail: (VaultEntry) -> Unit,
+    onShowDetail: (VaultListItem) -> Unit,
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
     val context = LocalContext.current
@@ -59,11 +59,11 @@ fun rememberVaultActionProvider(
         context, vaultViewModel, mainViewModel,
         decryptAuthTitle, decryptAuthSubtitle, totpCopiedText, fieldCopiedFormat
     ) {
-        { fieldKey: FieldKey, item: VaultEntry ->
+        { fieldKey: FieldKey, item: VaultListItem ->
             val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
             val label = strategy.getCopyLabel(fieldKey)
 
-            if (fieldKey == FieldKey.PASSWORD && !item.credential.otp?.secret.isNullOrBlank()) {
+            if (fieldKey == FieldKey.PASSWORD && item.hasTotp) {
                 latestTotpStates[item.id]?.let { state ->
                     if (state.code.isNotEmpty() && !state.code.contains("-")) {
                         ClipboardUtils.copy(context, state.code)
@@ -95,7 +95,7 @@ fun rememberVaultActionProvider(
     val onSwipeTriggered = remember(
         mainViewModel, vaultViewModel, authTitle, onShowDetail, performCopy
     ) {
-        { action: SwipeActionType, item: VaultEntry ->
+        { action: SwipeActionType, item: VaultListItem ->
             handleSwipeAction(
                 actionType = action,
                 item = item,
@@ -106,7 +106,7 @@ fun rememberVaultActionProvider(
                 },
                 onQuickDelete = { vaultViewModel.quickDelete(it) },
                 onCopy = { fieldKey -> performCopy(fieldKey, item) },
-                onShowDetail = { vaultViewModel.loadEntryById(item.id) { onShowDetail(it) } })
+                onShowDetail = { vaultViewModel.showDetail(item) })
         }
     }
 

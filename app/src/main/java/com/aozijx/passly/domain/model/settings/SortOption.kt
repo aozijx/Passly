@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.model.settings
 
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 
 enum class SortOption(val group: SortGroup) {
     DEFAULT(SortGroup.STANDALONE),
@@ -47,9 +47,9 @@ enum class SortOption(val group: SortGroup) {
     }
 }
 
-fun SortOption.apply(items: List<VaultEntry>): List<VaultEntry> = when (this) {
+fun SortOption.apply(items: List<VaultListItem>): List<VaultListItem> = when (this) {
     SortOption.DEFAULT -> items.sortedWith(
-        compareByDescending<VaultEntry> { it.favorite }
+        compareByDescending<VaultListItem> { it.favorite }
             .thenByDescending { it.usageCount }
             .thenByDescending { it.createdAt }
     )

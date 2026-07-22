@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.repository.lookup
 
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import kotlinx.coroutines.flow.Flow
 
 interface LookupRepository {
@@ -10,6 +10,6 @@ interface LookupRepository {
     }
 
     val allCategories: Flow<List<String>>
-    fun observe(query: String, category: String?, filter: EntryFilter): Flow<List<VaultEntry>>
+    fun observe(query: String, category: String?, filter: EntryFilter): Flow<List<VaultListItem>>
     fun observeCategories(filter: EntryFilter): Flow<List<String>>
 }

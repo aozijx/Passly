@@ -2,6 +2,7 @@ package com.aozijx.passly.domain.usecase.vault
 
 import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.repository.entry.QueryRepository
 import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import com.aozijx.passly.domain.repository.otp.OtpRepository
@@ -18,7 +19,7 @@ class VaultQueryUseCases @Inject constructor(
 
     fun observe(
         query: String, category: String?, filter: LookupRepository.EntryFilter
-    ): Flow<List<VaultEntry>> =
+    ): Flow<List<VaultListItem>> =
         lookupRepository.observe(query, category, filter)
 
     fun observeCategories(

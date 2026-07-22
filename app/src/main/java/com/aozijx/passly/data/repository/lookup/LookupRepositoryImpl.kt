@@ -5,7 +5,7 @@ import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,7 +26,20 @@ class LookupRepositoryImpl @Inject constructor(
 ) : LookupRepository {
 
     private companion object {
-        private val TOTP_ENTRY_TYPES = emptyList<EntryType>()
+        /**
+         * TOTP 不是独立 [EntryType]，而是 [VaultEntry.credential.otp] 中的可选配置。
+         * 以下列表用于 SQL 层面的粗筛（优化性能），实际精确匹配由解密后的二次过滤层完成。
+         */
+        private val TOTP_ENTRY_TYPES = listOf(
+            EntryType.LOGIN,
+            EntryType.CARD,
+            EntryType.IDENTITY,
+            EntryType.NOTE,
+            EntryType.WIFI,
+            EntryType.SSH_KEY,
+            EntryType.CRYPTO_WALLET
+        )
+
         private val PASSWORD_ENTRY_TYPES = listOf(
             EntryType.LOGIN,
             EntryType.CARD,
@@ -49,7 +62,7 @@ class LookupRepositoryImpl @Inject constructor(
                             credentialDao().getByEntryIds(metaEntities.map { it.entryId })
                         val credMap = credEntities.associateBy { it.entryId }
                         metaEntities.mapNotNull {
-                            cryptoMapper.assembleEntry(
+                            cryptoMapper.assembleListItem(
                                 it,
                                 credMap[it.entryId]
                             )
@@ -64,7 +77,7 @@ class LookupRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observe(
         query: String, category: String?, filter: LookupRepository.EntryFilter
-    ): Flow<List<VaultEntry>> = sessionState.isAuthorized
+    ): Flow<List<VaultListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
@@ -84,43 +97,39 @@ class LookupRepositoryImpl @Inject constructor(
                             credentialDao().getByEntryIds(metaEntities.map { it.entryId })
                         val credMap = credEntities.associateBy { it.entryId }
                         metaEntities.mapNotNull {
-                            cryptoMapper.assembleEntry(
+                            cryptoMapper.assembleListItem(
                                 it,
                                 credMap[it.entryId]
                             )
                         }
-                            .filter { entry ->
-                                ((query.isEmpty() || entry.title.contains(
+                            .filter { item ->
+                                ((query.isEmpty() || item.title.contains(
                                     query,
                                     ignoreCase = true
                                 )
-                                        || entry.username.contains(query, ignoreCase = true)
-                                        || entry.credential.email?.contains(
+                                        || item.username.contains(query, ignoreCase = true)
+                                        || item.category.contains(
                                     query,
                                     ignoreCase = true
-                                ) == true
-                                        || entry.category.contains(
-                                    query,
-                                    ignoreCase = true
-                                )) || entry.tags.any {
+                                )) || item.tags.any {
                                     it.contains(
                                         query,
                                         ignoreCase = true
                                     )
                                 })
                             }
-                            .filter { entry ->
-                                category == null || entry.category == category
+                            .filter { item ->
+                                category == null || item.category == category
                             }
-                            .filter { entry ->
+                            .filter { item ->
                                 when (filter) {
                                     LookupRepository.EntryFilter.ALL -> true
-                                    LookupRepository.EntryFilter.PASSWORD_ONLY -> entry.credential.otp?.secret.isNullOrEmpty()
-                                    LookupRepository.EntryFilter.TOTP_ONLY -> !entry.credential.otp?.secret.isNullOrEmpty()
+                                    LookupRepository.EntryFilter.PASSWORD_ONLY -> !item.hasTotp
+                                    LookupRepository.EntryFilter.TOTP_ONLY -> item.hasTotp
                                 }
                             }
                             .sortedWith(
-                                compareByDescending<VaultEntry> { it.favorite }
+                                compareByDescending<VaultListItem> { it.favorite }
                                     .thenByDescending { it.usageCount }
                                     .thenByDescending { it.createdAt }
                             )
@@ -151,16 +160,16 @@ class LookupRepositoryImpl @Inject constructor(
                                 credentialDao().getByEntryIds(metaEntities.map { it.entryId })
                             val credMap = credEntities.associateBy { it.entryId }
                             metaEntities.mapNotNull {
-                                cryptoMapper.assembleEntry(
+                                cryptoMapper.assembleListItem(
                                     it,
                                     credMap[it.entryId]
                                 )
                             }
-                                .filter { entry ->
+                                .filter { item ->
                                     when (filter) {
                                         LookupRepository.EntryFilter.ALL -> true
-                                        LookupRepository.EntryFilter.PASSWORD_ONLY -> entry.credential.otp?.secret.isNullOrEmpty()
-                                        LookupRepository.EntryFilter.TOTP_ONLY -> !entry.credential.otp?.secret.isNullOrEmpty()
+                                        LookupRepository.EntryFilter.PASSWORD_ONLY -> !item.hasTotp
+                                        LookupRepository.EntryFilter.TOTP_ONLY -> item.hasTotp
                                     }
                                 }
                                 .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }
