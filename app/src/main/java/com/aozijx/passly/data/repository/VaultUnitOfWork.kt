@@ -27,30 +27,30 @@ class VaultUnitOfWork @Inject constructor(
 
     /**
      * 在写事务中执行 [block]。
-     * 自动包装 [AppResult.runSuspendCatching] 错误处理。
+     * 错误捕获在外层，确保异常先触发 Room 事务回滚，再转为 [AppResult.Failure]。
      */
     suspend fun <T> write(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
         stateProvider.assertWritable()
-        return sessionManager.transaction {
-            AppResult.runSuspendCatching(operation) {
+        return AppResult.runSuspendCatching(operation) {
+            sessionManager.transaction {
                 block()
             }
         }
     }
 
     /**
-     * 在读事务中执行 [block]。
+     * 在读操作中执行 [block]。
      */
     suspend fun <T> read(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
         stateProvider.assertWritable()
-        return sessionManager.query {
-            AppResult.runSuspendCatching(operation) {
+        return AppResult.runSuspendCatching(operation) {
+            sessionManager.query {
                 block()
             }
         }
