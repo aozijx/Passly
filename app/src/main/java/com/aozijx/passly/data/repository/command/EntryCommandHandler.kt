@@ -351,6 +351,12 @@ class EntryCommandHandler @Inject constructor(
 
     /**
      * 更新凭据 Blob 并同步 metadata 版本。
+     *
+     * 写入顺序：
+     * 1. 先校验版本（乐观锁）—— 通过则 metadataBlob + 版本号同时更新
+     * 2. 版本通过后再写入 Credential Blob
+     *
+     * 确保异常先触发 Room 事务回滚，错误后再由 [VaultUnitOfWork.write] 转换为 [AppResult.Failure]。
      */
     private suspend fun AppDatabase.updateCredentialAndVersion(
         id: String,
@@ -361,13 +367,14 @@ class EntryCommandHandler @Inject constructor(
         now: Long,
         rebuildIndex: Boolean
     ) {
-        val credBlob = cryptoMapper.encryptCredential(newCred, id)
-        credentialDao().updateBlob(id, credBlob)
-
-        // 仅更新 metadataBlob 和版本（凭据字段不改变元数据字段内容）
+        // 1. 先校验版本——乐观锁通过时 metadataBlob + 版本同时更新
         val metaBlob = cryptoMapper.encryptMetadata(meta, id)
         val affected = metadataDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
         unitOfWork.checkAffectedRows(id, expectedVersion, affected)
+
+        // 2. 版本通过后再写入 Credential
+        val credBlob = cryptoMapper.encryptCredential(newCred, id)
+        credentialDao().updateBlob(id, credBlob)
 
         if (rebuildIndex) {
             rebuildBlindIndex(id, metaEntity, meta)
