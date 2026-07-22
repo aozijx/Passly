@@ -6,8 +6,8 @@ import android.net.NetworkCapabilities
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
-import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.usecase.vault.IconResyncUseCases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -72,7 +72,7 @@ internal class BackupImportIconSyncSupport(
 
             val outcome = FaviconUtils.downloadAndSaveFavicon(source, appContext, whitelist)
             if (outcome.result == FaviconUtils.DownloadResult.SUCCESS && !outcome.filePath.isNullOrBlank()) {
-                val updateResult = iconResyncUseCases.update(
+                val updateResult = iconResyncUseCases.setIcon(
                     entry.copy(
                         metadata = entry.metadata.copy(icon = outcome.filePath)
                     )

@@ -45,16 +45,62 @@ internal class EntryManager(
         }
     }
 
+    /**
+     * 接收来自详情页面的完整条目更新，分解为独立的字段命令。
+     * 每个详情页面的编辑操作通常只修改一个字段（标题、密码等），
+     * 此处通过字段比较确定实际变更的字段并调用对应的命令。
+     */
     fun updateEntry(entry: VaultEntry) {
         scope.launch(Dispatchers.IO + handler) {
-            vaultCommandUseCases.updateEntry(entry)
-                .onSuccess {
-                    detail.updateEntry(entry)
-                    totp.onEntryUpdated(entry.id)
-                }
-                .onFailure { error ->
-                    onError(error.message)
-                }
+            val current = vaultQueryUseCases.getById(entry.id) ?: return@launch
+            val version = current.metadata.entryVersion
+
+            val result = when {
+                current.title != entry.title ->
+                    vaultCommandUseCases.updateTitle(entry.id, version, entry.title)
+
+                current.username != entry.username ->
+                    vaultCommandUseCases.updateUsername(entry.id, version, entry.username)
+
+                current.metadata.favorite != entry.favorite ->
+                    vaultCommandUseCases.toggleFavorite(entry.id, version)
+
+                current.metadata.icon != entry.metadata.icon ->
+                    vaultCommandUseCases.setIcon(entry.id, version, entry.metadata.icon)
+
+                current.metadata.website != entry.website ->
+                    vaultCommandUseCases.updateWebsite(entry.id, version, entry.website)
+
+                current.credential.password != entry.credential.password ->
+                    vaultCommandUseCases.updatePassword(
+                        entry.id,
+                        version,
+                        entry.credential.password ?: ""
+                    )
+
+                current.credential.email != entry.credential.email ->
+                    vaultCommandUseCases.updateEmail(
+                        entry.id,
+                        version,
+                        entry.credential.email ?: ""
+                    )
+
+                current.credential.notes != entry.credential.notes ->
+                    vaultCommandUseCases.updateNotes(
+                        entry.id,
+                        version,
+                        entry.credential.notes ?: ""
+                    )
+
+                else -> return@launch // nothing changed
+            }
+
+            result.onSuccess {
+                detail.updateEntry(entry)
+                totp.onEntryUpdated(entry.id)
+            }.onFailure { error ->
+                onError(error.message)
+            }
         }
     }
 
@@ -78,11 +124,12 @@ internal class EntryManager(
 
         try {
             val entry = presetEntry ?: vaultQueryUseCases.getById(entryId)
+            if (entry == null) return
             if (detail.isViewingEntry(entryId)) {
                 detail.dismissDetail()
             }
-            iconHelper.cleanupIcon(entry?.iconCustomPath)
-            entry?.let { vaultCommandUseCases.deleteEntry(it) }
+            iconHelper.cleanupIcon(entry.iconCustomPath)
+            vaultCommandUseCases.moveToTrash(entry.id, entry.metadata.entryVersion)
             detail.setItemToDelete(null)
             totp.clearSensitiveState(entryId)
         } catch (e: AppError) {
@@ -97,7 +144,15 @@ internal class EntryManager(
             try {
                 val internalPath = iconHelper.saveCustomIcon(context, item, uri)
                 if (internalPath != null) {
-                    updateEntry(item.copy(metadata = item.metadata.copy(icon = internalPath)))
+                    vaultCommandUseCases.setIcon(
+                        item.id, item.metadata.entryVersion, internalPath
+                    ).onSuccess {
+                        detail.updateEntry(item.copy(metadata = item.metadata.copy(icon = internalPath)))
+                        totp.onEntryUpdated(item.id)
+                    }.onFailure { error ->
+                        onError(error.message)
+                        onFailed()
+                    }
                 } else {
                     onFailed()
                 }

@@ -2,6 +2,7 @@ package com.aozijx.passly.domain.usecase.vault
 
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.entry.WebsiteInfo
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
 import com.aozijx.passly.domain.repository.entry.CommandRepository
@@ -25,9 +26,10 @@ class VaultCommandUseCases @Inject constructor(
                 // 插入后重新读取以获取正确的 entryVersion，避免乐观锁冲突
                 val savedEntry = queryRepository.getById(entry.id)
                 if (savedEntry != null) {
-                    commandRepository.update(
-                        savedEntry.copy(metadata = savedEntry.metadata.copy(icon = outcome.filePath)),
-                        savedEntry.metadata.entryVersion
+                    commandRepository.setIcon(
+                        savedEntry.id,
+                        savedEntry.metadata.entryVersion,
+                        outcome.filePath
                     )
                 }
             }
@@ -35,10 +37,44 @@ class VaultCommandUseCases @Inject constructor(
         return insertResult
     }
 
-    suspend fun updateEntry(entry: VaultEntry): AppResult<Unit> =
-        commandRepository.update(entry, entry.metadata.entryVersion)
+    suspend fun updateTitle(id: String, expectedVersion: Int, title: String): AppResult<Unit> =
+        commandRepository.updateTitle(id, expectedVersion, title)
 
-    suspend fun deleteEntry(entry: VaultEntry): AppResult<Unit> = commandRepository.delete(entry)
+    suspend fun updateUsername(
+        id: String,
+        expectedVersion: Int,
+        username: String
+    ): AppResult<Unit> =
+        commandRepository.updateUsername(id, expectedVersion, username)
+
+    suspend fun toggleFavorite(id: String, expectedVersion: Int): AppResult<Unit> =
+        commandRepository.toggleFavorite(id, expectedVersion)
+
+    suspend fun setIcon(id: String, expectedVersion: Int, iconPath: String?): AppResult<Unit> =
+        commandRepository.setIcon(id, expectedVersion, iconPath)
+
+    suspend fun updateWebsite(
+        id: String,
+        expectedVersion: Int,
+        website: WebsiteInfo?
+    ): AppResult<Unit> =
+        commandRepository.updateWebsite(id, expectedVersion, website)
+
+    suspend fun updatePassword(
+        id: String,
+        expectedVersion: Int,
+        password: String
+    ): AppResult<Unit> =
+        commandRepository.updatePassword(id, expectedVersion, password)
+
+    suspend fun updateEmail(id: String, expectedVersion: Int, email: String): AppResult<Unit> =
+        commandRepository.updateEmail(id, expectedVersion, email)
+
+    suspend fun updateNotes(id: String, expectedVersion: Int, notes: String): AppResult<Unit> =
+        commandRepository.updateNotes(id, expectedVersion, notes)
+
+    suspend fun moveToTrash(id: String, expectedVersion: Int): AppResult<Unit> =
+        commandRepository.moveToTrash(id, expectedVersion)
 
     suspend fun downloadFavicon(input: String): FaviconOutcome {
         if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)
@@ -53,9 +89,10 @@ class VaultCommandUseCases @Inject constructor(
                 val outcome = downloadFavicon(domain)
                 if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                     queryRepository.getById(summary.id)?.let { entry ->
-                        commandRepository.update(
-                            entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath)),
-                            entry.metadata.entryVersion
+                        commandRepository.setIcon(
+                            entry.id,
+                            entry.metadata.entryVersion,
+                            outcome.filePath
                         )
                     }
                 }
