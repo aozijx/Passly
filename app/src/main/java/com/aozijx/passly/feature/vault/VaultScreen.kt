@@ -50,6 +50,7 @@ fun VaultContent(
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val backupUiState by backupViewModel.uiState.collectAsStateWithLifecycle()
+    val totpStates by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     // 备份导入成功后刷新列表
@@ -75,7 +76,7 @@ fun VaultContent(
         vaultViewModel = vaultViewModel,
         backupViewModel = backupViewModel,
         backupDirectoryUri = backupDirectoryUri,
-        uiState = uiState,
+        totpStates = totpStates,
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
     )
@@ -174,6 +175,7 @@ fun VaultContent(
             pagerState = pagerState,
             uiState = uiState,
             perTypeStyleMap = perTypeStyleMap,
+            totpStates = totpStates,
             swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
             swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
             isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,

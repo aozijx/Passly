@@ -9,23 +9,24 @@ import com.aozijx.passly.feature.detail.DetailCardDialog
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.dialogs.DeleteConfirmDialog
+import com.aozijx.passly.feature.vault.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.ui.components.BackupPasswordDialog
 import com.aozijx.passly.ui.components.BackupPasswordDialogState
 
 // --- 详情对话框宿主 ---
 @Composable
 fun DetailDialogHost(
-    uiState: VaultUiState,
+    detailCoordinatorState: VaultDetailCoordinatorState,
+    totpStates: Map<String, OtpUiState>,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel
 ) {
-    val detailCoordinator = uiState.detailCoordinatorState
-    detailCoordinator.request?.let { request ->
+    detailCoordinatorState.request?.let { request ->
         val item = request.entry
-        if (detailCoordinator.isIconPickerVisible) {
+        if (detailCoordinatorState.isIconPickerVisible) {
             IconPickerDialog(
                 onDismiss = { vaultViewModel.hideDetailIconPicker() },
                 currentIconName = item.iconName,
@@ -47,7 +48,7 @@ fun DetailDialogHost(
             initialEntry = item,
             launchMode = request.launchMode,
             mainViewModel = mainViewModel,
-            totpState = uiState.totpStates[item.id],
+            totpState = totpStates[item.id],
             onDismiss = { vaultViewModel.dismissDetail() },
             onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
             onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
@@ -146,10 +147,12 @@ fun VaultDialogs(
     backupViewModel: BackupViewModel,
     onUpdateInteraction: () -> Unit
 ) {
-    val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
+    val totpStates by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
+    val detailState by vaultViewModel.detailStateFlow.collectAsStateWithLifecycle()
 
     DetailDialogHost(
-        uiState = uiState,
+        detailCoordinatorState = detailState,
+        totpStates = totpStates,
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel
     )

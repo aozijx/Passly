@@ -26,7 +26,7 @@ import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.feature.vault.contract.VaultUiState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 class VaultActionProvider(
     val onSwipeTriggered: (SwipeActionType, VaultListItem) -> Unit,
@@ -42,7 +42,7 @@ fun rememberVaultActionProvider(
     vaultViewModel: VaultViewModel,
     backupViewModel: BackupViewModel,
     backupDirectoryUri: String?,
-    uiState: VaultUiState,
+    totpStates: Map<String, OtpUiState>,
     onShowDetail: (VaultListItem) -> Unit,
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
@@ -53,7 +53,7 @@ fun rememberVaultActionProvider(
     val fieldCopiedFormat = stringResource(R.string.vault_field_copied_format)
     val authTitle = stringResource(R.string.auth_title)
 
-    val latestTotpStates by rememberUpdatedState(uiState.totpStates)
+    val latestTotpStates by rememberUpdatedState(totpStates)
 
     val performCopy = remember(
         context, vaultViewModel, mainViewModel,

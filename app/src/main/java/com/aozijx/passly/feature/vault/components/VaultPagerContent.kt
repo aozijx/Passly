@@ -33,6 +33,7 @@ fun VaultPagerContent(
     pagerState: PagerState,
     uiState: VaultUiState,
     perTypeStyleMap: Map<Int, VaultCardStyle>,
+    totpStates: Map<String, OtpUiState>,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
@@ -65,7 +66,7 @@ fun VaultPagerContent(
                         isSwipeEnabled = isSwipeEnabled,
                         onSwipeTriggered = onSwipeTriggered,
                         onItemClick = { onItemClick(item) },
-                        totpStates = uiState.totpStates,
+                        totpStates = totpStates,
                         showTotpCode = uiState.showTOTPCode
                     )
                 }

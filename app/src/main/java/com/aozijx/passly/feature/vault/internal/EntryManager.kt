@@ -7,6 +7,7 @@ import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
 import com.aozijx.passly.domain.repository.entry.EntryCommands
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
@@ -200,8 +201,8 @@ internal class EntryManager(
         }
     }
 
-    private suspend fun downloadFavicon(input: String): com.aozijx.passly.domain.model.favicon.FaviconOutcome {
-        if (input.isBlank()) return com.aozijx.passly.domain.model.favicon.FaviconOutcome(com.aozijx.passly.domain.model.favicon.FaviconResult.EMPTY_INPUT)
+    private suspend fun downloadFavicon(input: String): FaviconOutcome {
+        if (input.isBlank()) return FaviconOutcome(FaviconResult.EMPTY_INPUT)
         return faviconRepository.download(input)
     }
 }

@@ -116,6 +116,24 @@ class VaultViewModel @Inject constructor(
                 VaultTab.resolveVisible(VaultTab.defaultVisibleKeys)
             )
 
+    /**
+     * OTP 状态（高频率变化，每秒更新）。
+     * 独立 Flow 避免 OTP 更新触发整个 UI 状态重组。
+     */
+    val totpStatesFlow: StateFlow<Map<String, OtpUiState>> = totp.states
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    /**
+     * 详情协调器状态。
+     * 独立 Flow 避免详情状态变化触发整个 UI 状态重组。
+     */
+    val detailStateFlow: StateFlow<VaultDetailCoordinatorState> = detail.coordinatorStateFlow
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            VaultDetailCoordinatorState()
+        )
+
     private val settingsState: StateFlow<Triple<List<VaultTab>, Boolean, Boolean>> =
         combine(visibleTabs, isAutoDownloadIcons, _showTOTPCode) { tabs, auto, show ->
             Triple(tabs, auto, show)
@@ -129,23 +147,12 @@ class VaultViewModel @Inject constructor(
             )
         )
 
-    private val sensitiveState: StateFlow<Pair<VaultDetailCoordinatorState, Map<String, OtpUiState>>> =
-        combine(detail.coordinatorStateFlow, totp.states) { detailState, totpStates ->
-            detailState to totpStates
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            VaultDetailCoordinatorState() to emptyMap()
-        )
-
     val uiState: StateFlow<VaultUiState> = combine(
         searchFilter.uiStateFlow,
         settingsState,
-        listCoordinator.state,
-        sensitiveState
-    ) { search, settings, list, sensitive ->
+        listCoordinator.state
+    ) { search, settings, list ->
         val (tabs, autoIcons, showCode) = settings
-        val (detailState, totpStates) = sensitive
         VaultUiState(
             searchQuery = search.searchQuery,
             selectedCategory = search.selectedCategory,
@@ -159,9 +166,7 @@ class VaultViewModel @Inject constructor(
             isAutoDownloadIcons = autoIcons,
             vaultItems = list.items,
             vaultItemsByTab = list.itemsByTab,
-            showTOTPCode = showCode,
-            totpStates = totpStates,
-            detailCoordinatorState = detailState
+            showTOTPCode = showCode
         )
     }.stateIn(
         viewModelScope,

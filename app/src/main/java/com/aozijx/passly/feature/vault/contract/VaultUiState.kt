@@ -2,8 +2,6 @@ package com.aozijx.passly.feature.vault.contract
 
 import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.SortOption
-import com.aozijx.passly.feature.vault.internal.VaultDetailCoordinatorState
-import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
 
 data class VaultUiState(
@@ -19,7 +17,5 @@ data class VaultUiState(
     val isAutoDownloadIcons: Boolean = true,
     val vaultItems: List<VaultListItem> = emptyList(),
     val vaultItemsByTab: Map<VaultTab, List<VaultListItem>> = emptyMap(),
-    val showTOTPCode: Boolean = true,
-    val totpStates: Map<String, OtpUiState> = emptyMap(),
-    val detailCoordinatorState: VaultDetailCoordinatorState = VaultDetailCoordinatorState()
+    val showTOTPCode: Boolean = true
 )
