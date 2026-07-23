@@ -11,7 +11,8 @@ import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.settings.VaultSortSpec
-import com.aozijx.passly.domain.repository.entry.EntryCommands
+import com.aozijx.passly.domain.repository.activity.ActivityRecorder
+import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyProvider
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
@@ -45,7 +46,8 @@ import javax.inject.Inject
 class VaultViewModel @Inject constructor(
     application: Application,
     private val vaultQueryUseCases: VaultQueryUseCases,
-    private val entryCommandHandler: EntryCommands,
+    private val entryCommandRepository: EntryCommandRepository,
+    private val activityRecorder: ActivityRecorder,
     private val portableSettingsUseCases: PortableSettingsUseCases,
     private val faviconRepository: FaviconRepository,
     val strategyProvider: EntryTypeStrategyProvider
@@ -79,7 +81,7 @@ class VaultViewModel @Inject constructor(
     private val detail = DetailCoordinator()
     private val entryManager = EntryManager(
         scope = viewModelScope,
-        entryCommandHandler = entryCommandHandler,
+        entryCommandRepository = entryCommandRepository,
         vaultQueryUseCases = vaultQueryUseCases,
         faviconRepository = faviconRepository,
         iconHelper = EntryIconHelper(),
@@ -228,7 +230,7 @@ class VaultViewModel @Inject constructor(
 
                             else -> secret
                         }
-                        entryCommandHandler.updateEntry(
+                        entryCommandRepository.updateEntry(
                             entryId,
                             entry.entryVersion,
                             EntryChanges(secret = newSecret)
@@ -260,7 +262,7 @@ class VaultViewModel @Inject constructor(
             val entry = vaultQueryUseCases.getById(item.id) ?: return@launch
             detail.showDetail(entry)
             totp.autoUnlock(item.id)
-            entryCommandHandler.recordUsage(
+            activityRecorder.recordUsage(
                 item.id,
                 ActivityType.VIEW
             )

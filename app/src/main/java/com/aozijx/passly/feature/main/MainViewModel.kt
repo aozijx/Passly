@@ -10,7 +10,8 @@ import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.repository.entry.EntryCommands
+import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
+import com.aozijx.passly.domain.repository.search.SearchIndexMaintenance
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.feature.main.contract.MainEffect
@@ -33,7 +34,8 @@ class MainViewModel @Inject constructor(
     private val portableSettingsUseCases: PortableSettingsUseCases,
     private val authenticationManager: AuthenticationManager,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
-    private val entryCommandHandler: EntryCommands,
+    private val entryCommandRepository: EntryCommandRepository,
+    private val searchIndexMaintenance: SearchIndexMaintenance,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -171,7 +173,7 @@ class MainViewModel @Inject constructor(
      */
     private fun rebuildSearchIndex() {
         viewModelScope.launch {
-            val result = entryCommandHandler.rebuildIndex()
+            val result = searchIndexMaintenance.rebuildIndex()
             result.onSuccess { count ->
                 AppLog.i("MainViewModel", "Blind index rebuild complete: $count entries")
             }.onFailure { error ->

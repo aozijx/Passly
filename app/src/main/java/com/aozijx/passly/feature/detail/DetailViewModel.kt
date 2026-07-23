@@ -8,7 +8,8 @@ import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
-import com.aozijx.passly.domain.repository.entry.EntryCommands
+import com.aozijx.passly.domain.repository.activity.ActivityRecorder
+import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyProvider
 import com.aozijx.passly.domain.usecase.detail.DetailQueryUseCases
@@ -31,7 +32,8 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val detailQueryUseCases: DetailQueryUseCases,
-    private val entryCommandHandler: EntryCommands,
+    private val entryCommandRepository: EntryCommandRepository,
+    private val activityRecorder: ActivityRecorder,
     private val runtimeSettingsUseCases: RuntimeSettingsUseCases,
     private val faviconRepository: FaviconRepository,
     private val strategyProvider: EntryTypeStrategyProvider
@@ -158,7 +160,7 @@ class DetailViewModel @Inject constructor(
                 }
 
                 viewModelScope.launch {
-                    entryCommandHandler.recordUsage(current.id, event.type)
+                    activityRecorder.recordUsage(current.id, event.type)
                 }
             }
 
@@ -192,7 +194,7 @@ class DetailViewModel @Inject constructor(
             val outcome = downloadFavicon(domain!!)
             if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                 val iconSummary = entry.summary.copy(icon = outcome.filePath)
-                entryCommandHandler.updateEntry(
+                entryCommandRepository.updateEntry(
                     entry.id, entry.entryVersion, EntryChanges(summary = iconSummary)
                 ).onSuccess {
                         refreshFromEntry(

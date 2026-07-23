@@ -6,12 +6,10 @@ import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.lookup.LookupField
 import com.aozijx.passly.domain.repository.search.SearchIndexRepository
 import com.aozijx.passly.security.search.BlindIndexer
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,8 +29,8 @@ class BlindIndexRepository @Inject constructor(
                 if (searchTokens.isEmpty()) flowOf(emptyList())
                 else {
                     val sqlQuery = buildEntryIdIntersectionQuery(searchTokens, fields)
-                    searchTokenQueryDao().searchByTokenIntersection(sqlQuery)
-                        .flowOn(Dispatchers.IO)
+                    val result = searchTokenQueryDao().searchByTokenIntersection(sqlQuery)
+                    flowOf(result)
                 }
             }
         }

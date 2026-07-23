@@ -27,9 +27,9 @@ enum class VaultTab(
         settingsKey = "all",
         titleRes = R.string.vault_tab_all,
         icon = Icons.Default.Apps,
-        isToggleable = false,
+        isToggleable = true,
         isUiVisible = true,
-        entryFilter = LookupRepository.EntryFilter.ALL
+        entryFilter = EntryFilter.ALL
     ),
     PASSWORDS(
         settingsKey = "passwords",
@@ -37,7 +37,7 @@ enum class VaultTab(
         icon = Icons.Default.Key,
         isToggleable = true,
         isUiVisible = true,
-        entryFilter = LookupRepository.EntryFilter.PASSWORD_ONLY
+        entryFilter = EntryFilter.PASSWORD_ONLY
     ),
     TOTP(
         settingsKey = "totp",
