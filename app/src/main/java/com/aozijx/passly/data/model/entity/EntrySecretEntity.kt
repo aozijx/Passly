@@ -4,26 +4,21 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import com.aozijx.passly.data.local.database.DatabaseSchema
-import com.github.f4b6a3.uuid.UuidCreator
 
 @Entity(
-    tableName = DatabaseSchema.TABLE_CREDENTIALS,
+    tableName = "entry_secrets",
     foreignKeys = [
         ForeignKey(
-            entity = VaultMetadataEntity::class,
+            entity = EntryEntity::class,
             parentColumns = ["entryId"],
             childColumns = ["entryId"],
             onDelete = ForeignKey.CASCADE
         )
     ]
 )
-data class VaultCredentialEntity(
-    // 条目唯一标识
+data class EntrySecretEntity(
     @PrimaryKey
-    val entryId: String = UuidCreator.getTimeOrderedEpoch().toString(),
-
-    // VaultCredential（AES-256-GCM 加密）
+    val entryId: String,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val credentialBlob: ByteArray
+    val secretBlob: ByteArray
 )
