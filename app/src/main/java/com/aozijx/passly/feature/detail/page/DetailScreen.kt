@@ -115,16 +115,7 @@ fun DetailScreen(
         DetailScrollableContent(
             modifier = Modifier.padding(innerPadding),
             uiState = uiState,
-            currentState = currentState,
-            isSteam = isSteam,
-            totpEditState = totpEditState,
             editState = editState,
-            onShowQrDialog = {
-                onAuthenticate {
-                    totpEditState.isEditing = false
-                    onEvent(DetailIntent.ShowIconPicker) // 借用 Event 系统处理显示逻辑（或根据需要调整）
-                }
-            },
             onEvent = onEvent,
             onInteraction = onUpdateInteraction,
             onUpdateVaultEntry = onUpdateVaultEntry,

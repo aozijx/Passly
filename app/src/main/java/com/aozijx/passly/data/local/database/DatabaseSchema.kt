@@ -14,7 +14,4 @@ object DatabaseSchema {
     const val TABLE_ACTIVITY = "vault_activities"
     const val TABLE_ATTACHMENT = "vault_attachments"
     const val TABLE_LOOKUP_INDEX = "lookup_index"
-
-    // Bootstrap / 密钥管理
-    const val TABLE_KEY_ENVELOPE = "key_envelopes"
 }

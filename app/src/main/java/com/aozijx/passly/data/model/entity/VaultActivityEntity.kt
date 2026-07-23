@@ -21,7 +21,8 @@ import com.github.f4b6a3.uuid.UuidCreator
     ],
     indices = [
         Index(value = ["entryId", "createdAt"]),
-        Index(value = ["createdAt"])
+        Index(value = ["createdAt"]),
+        Index(value = ["activityType", "entryId", "createdAt"])
     ]
 )
 data class VaultActivityEntity(

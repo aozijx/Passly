@@ -6,6 +6,7 @@ import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
 import com.aozijx.passly.data.model.entity.VaultMetadataEntity
 import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.lookup.LookupField
 import com.aozijx.passly.domain.model.lookup.VaultListItem
@@ -14,6 +15,7 @@ import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -94,40 +96,48 @@ class LookupRepositoryImpl @Inject constructor(
                         PASSWORD_ENTRY_TYPES
                     )
                 }
-                entryFlow
-                    .map { metaEntities ->
-                        // 使用盲索引预过滤：仅解密匹配的条目
-                        val filteredMetaEntities = if (query.isNotEmpty()) {
-                            filterByBlindIndex(this, metaEntities, query)
-                        } else {
-                            metaEntities
-                        }
-
-                        val credEntities =
-                            credentialDao().getByEntryIds(filteredMetaEntities.map { it.entryId })
-                        val credMap = credEntities.associateBy { it.entryId }
-                        filteredMetaEntities.mapNotNull {
-                            cryptoMapper.assembleListItem(
-                                it,
-                                credMap[it.entryId]
-                            )
-                        }
-                            .filter { item ->
-                                category == null || item.category == category
-                            }
-                            .filter { item ->
-                                when (filter) {
-                                    LookupRepository.EntryFilter.ALL -> true
-                                    LookupRepository.EntryFilter.PASSWORD_ONLY -> !item.hasTotp
-                                    LookupRepository.EntryFilter.TOTP_ONLY -> item.hasTotp
-                                }
-                            }
-                            .sortedWith(
-                                compareByDescending<VaultListItem> { it.favorite }
-                                    .thenByDescending { it.usageCount }
-                                    .thenByDescending { it.createdAt }
-                            )
+                val statsFlow = activityDao().observeUsageStats(ActivityType.USAGE_TYPES)
+                combine(entryFlow, statsFlow) { metaEntities, statsList ->
+                    val statsMap = statsList.associateBy { it.entryId }
+                    // 使用盲索引预过滤：仅解密匹配的条目
+                    val filteredMetaEntities = if (query.isNotEmpty()) {
+                        filterByBlindIndex(this, metaEntities, query)
+                    } else {
+                        metaEntities
                     }
+
+                    val credEntities =
+                        credentialDao().getByEntryIds(filteredMetaEntities.map { it.entryId })
+                    val credMap = credEntities.associateBy { it.entryId }
+                    filteredMetaEntities.mapNotNull {
+                        cryptoMapper.assembleListItem(
+                            it,
+                            credMap[it.entryId]
+                        )
+                    }
+                        .map { item ->
+                            val stats = statsMap[item.id]
+                            if (stats != null) item.copy(
+                                usageCount = stats.usageCount,
+                                lastUsedAt = stats.lastUsedAt
+                            ) else item
+                        }
+                        .filter { item ->
+                            category == null || item.category == category
+                        }
+                        .filter { item ->
+                            when (filter) {
+                                LookupRepository.EntryFilter.ALL -> true
+                                LookupRepository.EntryFilter.PASSWORD_ONLY -> !item.hasTotp
+                                LookupRepository.EntryFilter.TOTP_ONLY -> item.hasTotp
+                            }
+                        }
+                        .sortedWith(
+                            compareByDescending<VaultListItem> { it.favorite }
+                                .thenByDescending { it.usageCount }
+                                .thenByDescending { it.createdAt }
+                        )
+                }
                     .flowOn(Dispatchers.IO)
             }
         }

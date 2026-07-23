@@ -210,7 +210,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                 )
 
                 metadataDao().upsertForImport(metaEntity)
-                credentialDao().insert(credEntity)
+                credentialDao().upsertForImport(credEntity)
             }
         }
     }

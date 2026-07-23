@@ -11,7 +11,6 @@ fun VaultEntry.toSnapshot(): VaultSnapshot = VaultSnapshot(
     deletedAt = deletedAt,
     createdAt = createdAt,
     updatedAt = updatedAt,
-    lastUsedAt = lastUsedAt,
     metadata = metadata,
     credential = credential
 )

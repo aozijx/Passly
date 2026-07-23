@@ -71,17 +71,17 @@ class EntryCommandHandler @Inject constructor(
         )
 
             metadataDao().insertStrict(metaEntity)
-        credentialDao().insert(credEntity)
+            credentialDao().insertStrict(credEntity)
 
         // 盲索引
         val indexedEntry = entry.copy(metadata = entry.metadata.copy(entryId = entryId))
         val indexRecords = blindIndexer.index(entryId, indexedEntry.toLookupFields())
         if (indexRecords.isNotEmpty()) {
-            lookupIndexDao().insertAll(indexRecords.toEntityList())
+            lookupIndexDao().upsertAllForImport(indexRecords.toEntityList())
         }
 
             // 历史快照（使用统一 SnapshotPayload 格式）
-        historyDao().insert(
+            historyDao().insertStrict(
             VaultSnapshotEntity(
                 version = 1,
                 entryId = entryId,
@@ -96,7 +96,7 @@ class EntryCommandHandler @Inject constructor(
         )
 
         // 活动记录
-        activityDao().insert(
+            activityDao().insertStrict(
             VaultActivity(entryId = entryId, activityType = ActivityType.CREATE).toEntity(now)
         )
 
@@ -169,7 +169,7 @@ class EntryCommandHandler @Inject constructor(
         lookupIndexDao().deleteByEntryId(id)
 
         // 活动记录
-        activityDao().insert(
+        activityDao().insertStrict(
             VaultActivity(entryId = id, activityType = ActivityType.DELETE).toEntity(now)
         )
     }
@@ -193,7 +193,7 @@ class EntryCommandHandler @Inject constructor(
         rebuildBlindIndex(id, metaEntity, meta)
 
         // 活动记录
-        activityDao().insert(
+        activityDao().insertStrict(
             VaultActivity(entryId = id, activityType = ActivityType.RESTORE).toEntity(now)
         )
     }
@@ -235,7 +235,7 @@ class EntryCommandHandler @Inject constructor(
             val entry = cryptoMapper.assembleEntry(metaEntity, credEntity) ?: continue
             val indexRecords = blindIndexer.index(entry.id, entry.toLookupFields())
             if (indexRecords.isNotEmpty()) {
-                lookupIndexDao().insertAll(indexRecords.toEntityList())
+                lookupIndexDao().upsertAllForImport(indexRecords.toEntityList())
                 indexedCount++
             }
         }
@@ -247,33 +247,16 @@ class EntryCommandHandler @Inject constructor(
 
     /**
      * 记录条目使用事件。
-     * 原子写入：活动记录 + 更新 usageCount / lastUsedAt。
+     * 仅插入 Activity 记录，使用统计由 Activity 表聚合查询提供，
+     * 不再修改 Metadata 或增加 entryVersion。
      */
     override suspend fun recordUsage(
         entryId: String, type: ActivityType
     ): AppResult<Unit> = unitOfWork.write("entry.recordUsage") {
         val now = clock.now()
-
-        // 1. 插入活动记录
-        activityDao().insert(
+        activityDao().insertStrict(
             VaultActivity(entryId = entryId, activityType = type).toEntity(now)
         )
-
-        // 2. 更新元数据中的使用统计
-        val metaEntity = metadataDao().getById(entryId)
-            ?: throw NotFound("entry:$entryId not found")
-        val meta = cryptoMapper.decryptMetadata(metaEntity)
-        val updatedMeta = meta.copy(
-            usageCount = meta.usageCount + 1,
-            lastUsedAt = now
-        )
-
-        val metaBlob = cryptoMapper.encryptMetadata(updatedMeta, entryId)
-        val expectedVersion = metaEntity.entryVersion
-        val affected = metadataDao().optimisticUpdate(entryId, expectedVersion, metaBlob, now)
-        if (affected == 0) {
-            // usageCount 更新不阻塞业务，版本冲突时静默跳过
-        }
     }
 
     // =========================== 内部方法 ===========================
@@ -292,7 +275,7 @@ class EntryCommandHandler @Inject constructor(
         lookupIndexDao().deleteByEntryId(id)
         val indexRecords = blindIndexer.index(id, entry.toLookupFields())
         if (indexRecords.isNotEmpty()) {
-            lookupIndexDao().insertAll(indexRecords.toEntityList())
+            lookupIndexDao().upsertAllForImport(indexRecords.toEntityList())
         }
     }
 
@@ -312,7 +295,7 @@ class EntryCommandHandler @Inject constructor(
         } ?: VaultCredential(entryId = id)
         val snapshotBlob = cryptoMapper.encryptSnapshot(meta, resolvedCred, id)
 
-        historyDao().insert(
+        historyDao().insertStrict(
             VaultSnapshotEntity(
                 version = newVersion,
                 entryId = id,

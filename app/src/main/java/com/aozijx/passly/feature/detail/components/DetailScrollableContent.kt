@@ -19,7 +19,6 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.EntryEditState
-import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.detail.sections.ActivityTimelineSection
 import com.aozijx.passly.feature.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.feature.detail.sections.BankCardSection
@@ -29,17 +28,12 @@ import com.aozijx.passly.feature.detail.sections.IdCardSection
 import com.aozijx.passly.feature.detail.sections.NotesSection
 import com.aozijx.passly.feature.detail.sections.SshKeySection
 import com.aozijx.passly.feature.detail.sections.WifiSection
-import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
 fun DetailScrollableContent(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
-    currentState: OtpUiState?,
-    isSteam: Boolean,
-    totpEditState: TotpEditState,
     editState: EntryEditState,
-    onShowQrDialog: () -> Unit,
     onEvent: (DetailIntent) -> Unit,
     onInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,

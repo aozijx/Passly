@@ -17,28 +17,24 @@ object VaultEntryAssembler {
         cred: VaultCredential?
     ): VaultEntry {
         return VaultEntry(
-            metadata = meta.copy(
-                entryId = entity.entryId,
-                createdAt = entity.createdAt,
-                updatedAt = entity.updatedAt,
-                deletedAt = entity.deletedAt
-            ),
+            metadata = meta.copy(entryId = entity.entryId),
             credential = cred?.copy(entryId = entity.entryId)
                 ?: VaultCredential(entryId = entity.entryId),
-            entryVersion = entity.entryVersion
+            entryVersion = entity.entryVersion,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt
         )
     }
 
     fun assembleFromSnapshot(snapshot: VaultSnapshot): VaultEntry {
         return VaultEntry(
-            metadata = snapshot.metadata.copy(
-                entryId = snapshot.id,
-                createdAt = snapshot.createdAt,
-                updatedAt = snapshot.updatedAt,
-                deletedAt = snapshot.deletedAt
-            ),
+            metadata = snapshot.metadata.copy(entryId = snapshot.id),
             credential = snapshot.credential.copy(entryId = snapshot.id),
-            entryVersion = snapshot.revision
+            entryVersion = snapshot.revision,
+            createdAt = snapshot.createdAt,
+            updatedAt = snapshot.updatedAt,
+            deletedAt = snapshot.deletedAt
         )
     }
 
@@ -66,8 +62,8 @@ object VaultEntryAssembler {
             updatedAt = entity.updatedAt,
             deletedAt = entity.deletedAt,
             expiresAt = meta.expiresAt,
-            lastUsedAt = meta.lastUsedAt,
-            usageCount = meta.usageCount,
+            lastUsedAt = null,
+            usageCount = 0,
             entryVersion = entity.entryVersion,
             hasTotp = hasTotp,
             totpPeriod = totpPeriod,

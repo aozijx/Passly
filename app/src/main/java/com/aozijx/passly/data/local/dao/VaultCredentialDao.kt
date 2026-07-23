@@ -29,13 +29,23 @@ interface VaultCredentialDao {
     @Query("SELECT COUNT(*) FROM ${DatabaseSchema.TABLE_CREDENTIALS}")
     suspend fun count(): Int
 
-    // ---- insert / update ----
+    // === Strict Insert (fail on duplicate PK) ===
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertStrict(credential: VaultCredentialEntity)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAllStrict(credentials: List<VaultCredentialEntity>)
+
+    // === Import Upsert (overwrite on duplicate) ===
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(credential: VaultCredentialEntity)
+    suspend fun upsertForImport(credential: VaultCredentialEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(credentials: List<VaultCredentialEntity>)
+    suspend fun upsertAllForImport(credentials: List<VaultCredentialEntity>)
+
+    // === Update ===
 
     @Update
     suspend fun update(credential: VaultCredentialEntity)
@@ -43,7 +53,7 @@ interface VaultCredentialDao {
     @Query("UPDATE ${DatabaseSchema.TABLE_CREDENTIALS} SET credentialBlob = :credentialBlob WHERE entryId = :entryId")
     suspend fun updateBlob(entryId: String, credentialBlob: ByteArray)
 
-    // ---- delete ----
+    // === Maintenance API ===
 
     @Query("DELETE FROM ${DatabaseSchema.TABLE_CREDENTIALS} WHERE entryId = :entryId")
     suspend fun delete(entryId: String)

@@ -14,10 +14,5 @@ data class VaultMetadata(
     val favorite: Boolean = false,
     val tags: List<String> = emptyList(),
     val color: String? = null,
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis(),
-    val deletedAt: Long? = null,
-    val expiresAt: Long? = null,
-    val lastUsedAt: Long? = null,
-    val usageCount: Int = 0
+    val expiresAt: Long? = null
 )

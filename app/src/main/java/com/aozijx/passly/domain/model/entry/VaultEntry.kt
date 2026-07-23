@@ -7,7 +7,13 @@ data class VaultEntry(
     val metadata: VaultMetadata,
     val credential: VaultCredential,
     /** 乐观锁版本号，来自数据库实体，不存储在加密 JSON 中。 */
-    val entryVersion: Int = 0
+    val entryVersion: Int = 0,
+    /** 创建时间，来自数据库实体，不存储在加密 JSON 中。 */
+    val createdAt: Long = System.currentTimeMillis(),
+    /** 最后更新时间，来自数据库实体，不存储在加密 JSON 中。 */
+    val updatedAt: Long = System.currentTimeMillis(),
+    /** 回收站时间，null 表示正常条目，来自数据库实体。 */
+    val deletedAt: Long? = null
 ) : VaultIconable {
     override val category: String get() = metadata.entryType.name
     override val iconName: String? = metadata.icon
@@ -25,10 +31,5 @@ data class VaultEntry(
     val entryType: EntryType get() = metadata.entryType
     val favorite: Boolean get() = metadata.favorite
     val tags: List<String> get() = metadata.tags
-    val createdAt: Long get() = metadata.createdAt
-    val updatedAt: Long get() = metadata.updatedAt
-    val deletedAt: Long? get() = metadata.deletedAt
     val expiresAt: Long? get() = metadata.expiresAt
-    val lastUsedAt: Long? get() = metadata.lastUsedAt
-    val usageCount: Int get() = metadata.usageCount
 }

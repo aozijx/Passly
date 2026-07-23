@@ -19,7 +19,6 @@ fun MetadataSection(entry: VaultEntry) {
     Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         MetadataText("创建于: ${df.format(Date(entry.createdAt))}")
         MetadataText("最后修改: ${df.format(Date(entry.updatedAt))}")
-        MetadataText("使用次数: ${entry.usageCount} 次")
     }
 }
 

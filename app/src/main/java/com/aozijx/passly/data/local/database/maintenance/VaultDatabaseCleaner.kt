@@ -40,8 +40,7 @@ class VaultDatabaseCleanerImpl @Inject constructor(
             historyDeleted = historyDao().clear(),
             activityDeleted = activityDao().clear(),
             attachmentsDeleted = attachmentDao().clear(),
-            lookupIndexDeleted = lookupIndexDao().clear(),
-            keyEnvelopesDeleted = keyEnvelopeDao().clear()
+            lookupIndexDeleted = lookupIndexDao().clear()
         )
     }
 }

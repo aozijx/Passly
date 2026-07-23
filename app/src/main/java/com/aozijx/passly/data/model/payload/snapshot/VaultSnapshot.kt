@@ -19,7 +19,6 @@ data class VaultSnapshot(
 
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
-    val lastUsedAt: Long? = null,
 
     val revision: Int = 1,
 
