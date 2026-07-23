@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.domain.repository.search.SearchIndexMaintenance
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.main.contract.MainUiState
@@ -31,10 +31,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val portableSettingsUseCases: PortableSettingsUseCases,
+    private val portableRepository: PortableRepository,
     private val authenticationManager: AuthenticationManager,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
-    private val entryCommandRepository: EntryCommandRepository,
     private val searchIndexMaintenance: SearchIndexMaintenance,
 ) : ViewModel() {
 
@@ -129,9 +128,9 @@ class MainViewModel @Inject constructor(
     private fun observeSettings() {
         viewModelScope.launch {
             combine(
-                portableSettingsUseCases.isDarkMode,
-                portableSettingsUseCases.isDynamicColor,
-                portableSettingsUseCases.themeColor
+                portableRepository.isDarkMode,
+                portableRepository.isDynamicColor,
+                portableRepository.themeColor
             ) { isDarkMode, isDynamicColor, themeColorStr ->
                 Triple(isDarkMode, isDynamicColor, themeColorStr)
             }.collect { (isDarkMode, isDynamicColor, themeColorStr) ->

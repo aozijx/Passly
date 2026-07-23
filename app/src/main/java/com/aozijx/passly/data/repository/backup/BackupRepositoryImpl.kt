@@ -36,7 +36,6 @@ internal class BackupRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val cryptoEngine: CryptoEngine,
     private val sessionManager: UnifiedSessionManager,
-    private val stateProvider: SessionStateProvider,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val vaultDatabaseCleaner: VaultDatabaseCleaner,

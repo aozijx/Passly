@@ -16,8 +16,6 @@ import javax.inject.Singleton
 class RoomActivityRecorder @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
-    private val stateProvider: SessionStateProvider
 ) : ActivityRecorder {
 
     override suspend fun recordUsage(

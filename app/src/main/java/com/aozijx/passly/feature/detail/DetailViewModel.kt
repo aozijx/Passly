@@ -13,8 +13,9 @@ import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.service.entry.EntryTypePolicy
 import com.aozijx.passly.domain.service.entry.EntryValidatorProvider
-import com.aozijx.passly.domain.usecase.detail.DetailQueryUseCases
-import com.aozijx.passly.domain.usecase.settings.RuntimeSettingsUseCases
+import com.aozijx.passly.domain.repository.activity.ActivityQueryRepository
+import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
+import com.aozijx.passly.domain.repository.settings.RuntimeRepository
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
@@ -32,10 +33,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
-    private val detailQueryUseCases: DetailQueryUseCases,
+    private val entryQueryRepository: EntryQueryRepository,
+    private val activityQueryRepository: ActivityQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
     private val activityRecorder: ActivityRecorder,
-    private val runtimeSettingsUseCases: RuntimeSettingsUseCases,
+    private val runtimeRepository: RuntimeRepository,
     private val faviconRepository: FaviconRepository,
     private val entryTypePolicy: EntryTypePolicy,
     private val entryValidatorProvider: EntryValidatorProvider
@@ -53,7 +55,7 @@ class DetailViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            runtimeSettingsUseCases.userConfigExtras.collect { extras ->
+            runtimeRepository.userConfigExtras.collect { extras ->
                 val enabled = extras[ACCESS_HISTORY_TOGGLE_KEY]
                     ?.toBooleanStrictOrNull()
                     ?: false
@@ -69,13 +71,13 @@ class DetailViewModel @Inject constructor(
 
                 viewModelScope.launch {
                     val latest =
-                        detailQueryUseCases.getById(event.initialEntry.id) ?: event.initialEntry
+                        entryQueryRepository.getById(event.initialEntry.id) ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
                     autoDownloadFavicon(latest)
                 }
 
                 viewModelScope.launch {
-                    detailQueryUseCases.getActivityByEntryId(event.initialEntry.id)
+                    activityQueryRepository.observeByEntryId(event.initialEntry.id)
                         .collect { list: List<EntryActivity> ->
                             _uiState.update { it.copy(history = list) }
                         }
@@ -169,7 +171,7 @@ class DetailViewModel @Inject constructor(
             is DetailIntent.ToggleAccessHistoryRecording -> {
                 _uiState.update { it.copy(isAccessHistoryEnabled = event.enabled) }
                 viewModelScope.launch {
-                    runtimeSettingsUseCases.setUserConfigExtra(ACCESS_HISTORY_TOGGLE_KEY, event.enabled.toString())
+                    runtimeRepository.setUserConfigExtra(ACCESS_HISTORY_TOGGLE_KEY, event.enabled.toString())
                 }
             }
 

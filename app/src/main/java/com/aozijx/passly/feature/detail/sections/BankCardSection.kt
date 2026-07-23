@@ -137,7 +137,7 @@ fun BankCardSection(
                             onEntryUpdated(
                                 entry.copy(
                                     secret = (entry.secret as EntrySecret.Card).copy(
-                                        data = (entry.secret as EntrySecret.Card).data.copy(
+                                        data = entry.secret.data.copy(
                                             cardNumber = it
                                         )
                                     )
@@ -196,7 +196,7 @@ fun BankCardSection(
                                 onEntryUpdated(
                                     entry.copy(
                                         secret = EntrySecret.Card(
-                                            (entry.secret as EntrySecret.Card).data.copy(
+                                            entry.secret.data.copy(
                                                 cardCvv = it
                                             )
                                         )
@@ -292,7 +292,7 @@ fun BankCardSection(
                         if (revealedCvv == null && (entry.secret as? EntrySecret.Card)?.data?.cardCvv != null) {
                             onRevealField(
                                 RevealedFieldKey.CVV,
-                                (entry.secret as? EntrySecret.Card)?.data?.cardCvv
+                                entry.secret.data.cardCvv
                             )
                             onEvent(
                                 DetailIntent.RecordAction(

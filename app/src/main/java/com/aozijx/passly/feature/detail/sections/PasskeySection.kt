@@ -25,7 +25,6 @@ import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 fun PasskeySection(
     entry: VaultEntry,
     revealedPasskeyData: String?,
-    revealedRecoveryCodes: String?,
     onRevealField: (String, String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEvent: (DetailIntent) -> Unit,
@@ -55,7 +54,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
-                    sourceValue = (entry.secret as EntrySecret.Passkey).data.privateKeyReference,
+                    sourceValue = entry.secret.data.privateKeyReference,
                     authTitle = "解密 Passkey 数据",
                     authSubtitle = "验证身份以复制数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) },
@@ -67,7 +66,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
-                    sourceValue = (entry.secret as EntrySecret.Passkey).data.privateKeyReference,
+                    sourceValue = entry.secret.data.privateKeyReference,
                     authTitle = "解密 Passkey 数据",
                     authSubtitle = "验证身份以查看数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) }
@@ -75,50 +74,15 @@ fun PasskeySection(
             }
         )
 
-        val recoveryCodes = (entry.secret as? EntrySecret.Identity)?.data?.recoveryCodes
-        DetailItem(
-            label = stringResource(R.string.passkey_recovery_codes),
-            value = when {
-                recoveryCodes.isNullOrEmpty() -> notSet
-                revealedRecoveryCodes != null -> revealedRecoveryCodes
-                else -> hidden
-            },
-            isRevealed = revealedRecoveryCodes != null,
-            onCopy = {
-                copySensitiveField(
-                    context = context,
-                    handler = actionHandler,
-                    fieldName = "recovery codes",
-                    revealedValue = revealedRecoveryCodes,
-                    sourceValue = recoveryCodes?.joinToString("\n"),
-                    authTitle = "解密恢复码",
-                    authSubtitle = "验证身份以复制恢复码",
-                    onReveal = { onRevealField(RevealedFieldKey.RECOVERY_CODES, it) },
-                    afterCopy = { Toast.makeText(context, copied, Toast.LENGTH_SHORT).show() }
-                )
-            },
-            onEdit = {
-                toggleRevealSensitiveField(
-                    handler = actionHandler,
-                    fieldName = "recovery codes",
-                    revealedValue = revealedRecoveryCodes,
-                    sourceValue = recoveryCodes?.joinToString("\n"),
-                    authTitle = "解密恢复码",
-                    authSubtitle = "验证身份以查看恢复码",
-                    onReveal = { onRevealField(RevealedFieldKey.RECOVERY_CODES, it) }
-                )
-            }
-        )
-
-        if (!(entry.secret as EntrySecret.Passkey).data.hardwareKeyInfo.isNullOrBlank()) {
+        if (!entry.secret.data.hardwareKeyInfo.isNullOrBlank()) {
             DetailItem(
                 label = stringResource(R.string.hardware_key_info),
-                value = (entry.secret as EntrySecret.Passkey).data.hardwareKeyInfo!!,
+                value = entry.secret.data.hardwareKeyInfo,
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(
                         context,
-                        (entry.secret as EntrySecret.Passkey).data.hardwareKeyInfo!!
+                        entry.secret.data.hardwareKeyInfo
                     )
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     actionHandler.record(

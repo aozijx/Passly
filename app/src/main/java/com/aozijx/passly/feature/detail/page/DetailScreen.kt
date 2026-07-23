@@ -36,7 +36,6 @@ import com.aozijx.passly.feature.vault.model.OtpUiState
 fun DetailScreen(
     initialEntry: VaultEntry,
     uiState: DetailUiState,
-    totpStates: Map<String, OtpUiState>,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onBack: () -> Unit,
     onEvent: (DetailIntent) -> Unit,
@@ -66,11 +65,7 @@ fun DetailScreen(
     val entry = uiState.entry ?: initialEntry
     val editState = remember(entry) { EntryEditState(entry) }
 
-    val currentState = totpStates[entry.id]
     val otpConfig = (entry.secret as? EntrySecret.Otp)?.data?.config
-    val isSteam = remember(
-        otpConfig?.type
-    ) { otpConfig?.type == OtpType.STEAM }
     val totpEditState = remember(entry, otpConfig?.secret) {
         TotpEditState(entry, otpConfig?.secret ?: "")
     }
