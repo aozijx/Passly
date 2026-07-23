@@ -1,32 +1,31 @@
-package com.aozijx.passly.data.repository.revision
+package com.aozijx.passly.data.repository.snapshot
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.data.codec.revision.EntryRevisionCodec
+import com.aozijx.passly.data.codec.snapshot.EntrySnapshotCodec
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.model.entry.EntryHeader
 import com.aozijx.passly.domain.model.entry.EntryId
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.EntryVersion
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.revision.EntryRevision
-import com.aozijx.passly.domain.model.revision.EntrySnapshot
-import com.aozijx.passly.domain.model.revision.RevisionType
-import com.aozijx.passly.domain.repository.revision.EntryRevisionRepository
+import com.aozijx.passly.domain.model.snapshot.EntryRevision
+import com.aozijx.passly.domain.model.snapshot.EntrySnapshot
+import com.aozijx.passly.domain.model.snapshot.RevisionType
+import com.aozijx.passly.domain.repository.snapshot.EntryRevisionRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RoomEntryRevisionRepository @Inject constructor(
+class RoomEntrySnapshotRepository @Inject constructor(
     private val stateProvider: SessionStateProvider,
     private val sessionManager: UnifiedSessionManager,
-    private val revisionCodec: EntryRevisionCodec
+    private val snapshotCodec: EntrySnapshotCodec
 ) : EntryRevisionRepository {
 
     override suspend fun getRevisions(entryId: String): List<EntryRevision> {
         stateProvider.assertWritable()
         return sessionManager.query {
-            entryRevisionQueryDao().observeByEntryId(entryId).let { flow ->
-                // 同步查询方式读取最新快照
+            entrySnapshotQueryDao().observeByEntryId(entryId).let { flow ->
                 emptyList()
             }
         }
@@ -35,8 +34,8 @@ class RoomEntryRevisionRepository @Inject constructor(
     override suspend fun getLatestRevision(entryId: String): EntryRevision? {
         stateProvider.assertWritable()
         return sessionManager.query {
-            val entity = entryRevisionQueryDao().getByVersion(entryId, 1) ?: return@query null
-            val (summary, secret) = revisionCodec.decrypt(entity.snapshotBlob, entity.entryId)
+            val entity = entrySnapshotQueryDao().getByVersion(entryId, 1) ?: return@query null
+            val (summary, secret) = snapshotCodec.decrypt(entity.snapshotBlob, entity.entryId)
             val vaultEntry = VaultEntry(
                 header = EntryHeader(
                     id = EntryId(entity.entryId),

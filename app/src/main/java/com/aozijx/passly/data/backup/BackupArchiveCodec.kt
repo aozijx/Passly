@@ -1,4 +1,4 @@
-package com.aozijx.passly.data.repository.backup.internal
+package com.aozijx.passly.data.backup
 
 import com.aozijx.passly.core.backup.BackupManager
 import com.aozijx.passly.core.security.KeyDerivation
@@ -12,12 +12,12 @@ import java.util.zip.ZipOutputStream
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
-internal data class BackupArchiveContent(
+data class BackupArchiveContent(
     val snapshotJson: ByteArray,
     val images: Map<String, ByteArray>
 )
 
-internal object BackupArchiveCodec {
+object BackupArchiveCodec {
     private const val MAX_ARCHIVE_BYTES = 128 * 1024 * 1024
     private const val MAX_ENTRY_BYTES = 16 * 1024 * 1024
 
@@ -114,6 +114,7 @@ internal object BackupArchiveCodec {
                         require(snapshotJson == null) { "备份包含重复数据条目" }
                         snapshotJson = zip.readLimited(MAX_ARCHIVE_BYTES)
                     }
+
                     else -> {
                         validateImageEntryName(entry.name)
                         require(images.put(entry.name, zip.readLimited(MAX_ENTRY_BYTES)) == null) {

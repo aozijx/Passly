@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.model.revision
+package com.aozijx.passly.domain.model.snapshot
 
 data class EntryRevision(
     val revisionId: String,

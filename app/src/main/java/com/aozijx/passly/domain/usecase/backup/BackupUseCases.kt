@@ -2,31 +2,31 @@ package com.aozijx.passly.domain.usecase.backup
 
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.backup.ImportMode
-import com.aozijx.passly.domain.repository.backup.BackupRepository
+import com.aozijx.passly.domain.service.backup.VaultBackupService
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class BackupUseCases @Inject constructor(private val repository: BackupRepository) {
+class BackupUseCases @Inject constructor(private val service: VaultBackupService) {
 
     suspend fun exportBackup(
         uri: String, password: CharArray, includeImages: Boolean
-    ): AppResult<Unit> = repository.exportEncryptedBackup(uri, password, includeImages)
+    ): AppResult<Unit> = service.exportEncryptedBackup(uri, password, includeImages)
 
     suspend fun importBackup(
         uri: String, password: CharArray, mode: ImportMode
-    ): AppResult<Unit> = repository.importBackup(uri, password, mode)
+    ): AppResult<Unit> = service.importBackup(uri, password, mode)
 
     suspend fun exportPlainBackup(uri: String): AppResult<Unit> =
-        repository.exportPlainBackup(uri)
+        service.exportPlainBackup(uri)
 
     suspend fun importPlainBackup(uri: String, mode: ImportMode): AppResult<Unit> =
-        repository.importPlainBackup(uri, mode)
+        service.importPlainBackup(uri, mode)
 
     suspend fun exportEmergencyBackup(): AppResult<File> =
-        repository.exportEmergencyBackup()
+        service.exportEmergencyBackup()
 
     suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
-        repository.checkDirectoryWritable(uri)
+        service.checkDirectoryWritable(uri)
 }

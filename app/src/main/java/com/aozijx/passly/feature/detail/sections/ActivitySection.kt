@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.EntryActivity
-import com.aozijx.passly.domain.model.revision.EntrySnapshot
+import com.aozijx.passly.domain.model.snapshot.EntrySnapshot
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date

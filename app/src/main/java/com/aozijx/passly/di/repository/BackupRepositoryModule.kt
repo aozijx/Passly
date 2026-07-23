@@ -1,7 +1,7 @@
 package com.aozijx.passly.di.repository
 
-import com.aozijx.passly.data.repository.backup.BackupRepositoryImpl
-import com.aozijx.passly.domain.repository.backup.BackupRepository
+import com.aozijx.passly.data.backup.VaultBackupServiceImpl
+import com.aozijx.passly.domain.service.backup.VaultBackupService
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -14,7 +14,7 @@ abstract class BackupRepositoryModule {
 
     @Binds
     @Singleton
-    internal abstract fun bindBackupRepository(
-        impl: BackupRepositoryImpl
-    ): BackupRepository
+    internal abstract fun bindVaultBackupService(
+        impl: VaultBackupServiceImpl
+    ): VaultBackupService
 }

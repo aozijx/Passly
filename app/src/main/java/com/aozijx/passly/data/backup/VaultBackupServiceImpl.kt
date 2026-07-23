@@ -1,7 +1,6 @@
-package com.aozijx.passly.data.repository.backup
+package com.aozijx.passly.data.backup
 
 import android.content.Context
-import androidx.core.net.toUri
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
@@ -15,32 +14,29 @@ import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
 import com.aozijx.passly.data.model.serializer.AppJson
-import com.aozijx.passly.data.repository.backup.internal.BackupArchiveCodec
-import com.aozijx.passly.data.repository.backup.internal.BackupArchiveContent
 import com.aozijx.passly.di.IoDispatcher
-import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.model.backup.ImportMode
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.repository.backup.BackupRepository
+import com.aozijx.passly.domain.service.backup.VaultBackupService
 import com.aozijx.passly.security.crypto.CryptoEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class BackupRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+internal class VaultBackupServiceImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val cryptoEngine: CryptoEngine,
     private val sessionManager: UnifiedSessionManager,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val vaultDatabaseCleaner: VaultDatabaseCleaner,
-    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
-) : BackupRepository {
+    private val fileStore: AndroidBackupFileStore,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
+) : VaultBackupService {
 
     private suspend fun getVaultEntries(): List<VaultEntry> {
         return sessionManager.query {
@@ -58,13 +54,6 @@ internal class BackupRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun imageEntryName(entryId: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest(entryId.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
-        return "images/${digest.take(32)}.bin"
-    }
-
     override suspend fun exportEncryptedBackup(
         uri: String,
         password: CharArray,
@@ -78,7 +67,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                     val snapshot = entry.toSnapshot()
                     val source = entry.iconCustomPath?.let(::File)
                     if (includeImages && source?.isFile == true) {
-                        val archivePath = imageEntryName(entry.id)
+                        val archivePath = fileStore.imageEntryName(entry.id)
                         images[archivePath] = source.readBytes()
                         snapshot.copy(
                             summary = snapshot.summary.copy(iconCustomPath = archivePath)
@@ -95,12 +84,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                     BackupArchiveContent(snapshotJson, images),
                     password
                 )
-                val output = context.contentResolver.openOutputStream(uri.toUri())
-                    ?: error("无法打开备份输出文件")
-                output.use {
-                    it.write(encoded)
-                    it.flush()
-                }
+                fileStore.writeBytes(uri, encoded)
             }
         }
     }
@@ -116,12 +100,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                     snapshots
                 )
 
-                val output = context.contentResolver.openOutputStream(uri.toUri())
-                    ?: error("无法打开明文备份输出文件")
-                output.use {
-                    it.write(backupData.toByteArray(Charsets.UTF_8))
-                    it.flush()
-                }
+                fileStore.writeBytes(uri, backupData.toByteArray(Charsets.UTF_8))
             }
         }
     }
@@ -139,9 +118,7 @@ internal class BackupRepositoryImpl @Inject constructor(
     ): AppResult<Unit> {
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.import") {
-                val input = context.contentResolver.openInputStream(uri.toUri())
-                    ?: error("无法打开备份文件")
-                val encoded = input.use { it.readBytes() }
+                val encoded = fileStore.readBytes(uri)
                 val archive = BackupArchiveCodec.decode(encoded, password)
                 val snapshots = decodeSnapshots(archive.snapshotJson)
                 importWithImages(snapshots, archive.images, config)
@@ -168,7 +145,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                 snapshot.copy(summary = snapshot.summary.copy(iconCustomPath = null))
             } else {
                 requireNotNull(imageBytes) { "备份缺少附件: $archivePath" }
-                val directory = File(context.filesDir, "vault_images").apply { mkdirs() }
+                val directory = fileStore.imageDirectory()
                 val target = File(directory, "restored_${archivePath.substringAfterLast('/')}")
                 target.outputStream().use { it.write(imageBytes) }
                 createdFiles += target
@@ -190,7 +167,6 @@ internal class BackupRepositoryImpl @Inject constructor(
             vaultDatabaseCleaner.clearVaultData()
         }
         sessionManager.transaction {
-
             snapshots.forEach { snapshot ->
                 val entryId = snapshot.id
                 val summary = snapshot.summary.toEntrySummary()
@@ -226,32 +202,19 @@ internal class BackupRepositoryImpl @Inject constructor(
     ): AppResult<Unit> {
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.import.plain") {
-                val input = context.contentResolver.openInputStream(uri.toUri())
-                    ?: error("无法打开明文备份文件")
-                input.use { inputStream ->
-                    val backupData = inputStream.readBytes()
-                    val snapshots = AppJson.decodeFromString(
-                        kotlinx.serialization.builtins.ListSerializer(VaultSnapshot.serializer()),
-                        String(backupData, Charsets.UTF_8)
-                    ).map {
-                        it.copy(summary = it.summary.copy(iconCustomPath = null))
-                    }
-
-                    importSnapshots(snapshots, config)
+                val backupData = fileStore.readBytes(uri)
+                val snapshots = AppJson.decodeFromString(
+                    kotlinx.serialization.builtins.ListSerializer(VaultSnapshot.serializer()),
+                    String(backupData, Charsets.UTF_8)
+                ).map {
+                    it.copy(summary = it.summary.copy(iconCustomPath = null))
                 }
+
+                importSnapshots(snapshots, config)
             }
         }
     }
 
     override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
-        withContext(ioDispatcher) {
-            AppResult.runSuspendCatching("backup.checkWritable") {
-                val parsedUri = uri.toUri()
-                // 尝试创建临时文件测试写入权限
-                context.contentResolver.openOutputStream(parsedUri)?.use {
-                    it.write(ByteArray(0))
-                    it.flush()
-                } ?: error("无法打开目录，可能没有写入权限")
-            }
-        }
+        fileStore.checkDirectoryWritable(uri)
 }

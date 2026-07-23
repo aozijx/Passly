@@ -15,10 +15,10 @@ import com.aozijx.passly.data.local.dao.entry.EntryQueryDao
 import com.aozijx.passly.data.local.dao.entry.EntrySecretCommandDao
 import com.aozijx.passly.data.local.dao.entry.EntrySecretQueryDao
 import com.aozijx.passly.data.local.dao.maintenance.VaultMaintenanceDao
-import com.aozijx.passly.data.local.dao.revision.EntryRevisionCommandDao
-import com.aozijx.passly.data.local.dao.revision.EntryRevisionQueryDao
 import com.aozijx.passly.data.local.dao.search.SearchTokenCommandDao
 import com.aozijx.passly.data.local.dao.search.SearchTokenQueryDao
+import com.aozijx.passly.data.local.dao.snapshot.EntrySnapshotCommandDao
+import com.aozijx.passly.data.local.dao.snapshot.EntrySnapshotQueryDao
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
@@ -54,8 +54,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun entryCommandDao(): EntryCommandDao
     abstract fun entrySecretQueryDao(): EntrySecretQueryDao
     abstract fun entrySecretCommandDao(): EntrySecretCommandDao
-    abstract fun entryRevisionQueryDao(): EntryRevisionQueryDao
-    abstract fun entryRevisionCommandDao(): EntryRevisionCommandDao
+    abstract fun entrySnapshotQueryDao(): EntrySnapshotQueryDao
+    abstract fun entrySnapshotCommandDao(): EntrySnapshotCommandDao
     abstract fun entryActivityQueryDao(): EntryActivityQueryDao
     abstract fun entryActivityCommandDao(): EntryActivityCommandDao
     abstract fun entryActivityAnalyticsDao(): EntryActivityAnalyticsDao

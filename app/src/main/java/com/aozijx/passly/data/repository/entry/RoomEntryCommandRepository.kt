@@ -4,7 +4,7 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.NotFound
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
-import com.aozijx.passly.data.codec.revision.EntryRevisionCodec
+import com.aozijx.passly.data.codec.snapshot.EntrySnapshotCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.mapper.search.toLookupFields
@@ -20,7 +20,7 @@ import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntrySummary
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.revision.RevisionType
+import com.aozijx.passly.domain.model.snapshot.RevisionType
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.security.search.BlindIndexRecord
 import com.aozijx.passly.security.search.BlindIndexer
@@ -41,7 +41,7 @@ class RoomEntryCommandRepository @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
-    private val revisionCodec: EntryRevisionCodec,
+    private val revisionCodec: EntrySnapshotCodec,
     private val blindIndexer: BlindIndexer,
     private val clock: Clock
 ) : EntryCommandRepository {
@@ -82,7 +82,7 @@ class RoomEntryCommandRepository @Inject constructor(
             }
 
             // 历史快照（使用统一 SnapshotPayload 格式）
-            entryRevisionCommandDao().insertIdempotent(
+            entrySnapshotCommandDao().insertIdempotent(
                 EntryRevisionEntity(
                     revisionId = UuidCreator.getTimeOrderedEpoch().toString(),
                     version = 1,
@@ -234,7 +234,7 @@ class RoomEntryCommandRepository @Inject constructor(
         } ?: EntrySecret.VaultData()
         val snapshotBlob = revisionCodec.encrypt(summary, resolvedSecret, id)
 
-        entryRevisionCommandDao().insertIdempotent(
+        entrySnapshotCommandDao().insertIdempotent(
             EntryRevisionEntity(
                 revisionId = UuidCreator.getTimeOrderedEpoch().toString(),
                 version = newVersion,
