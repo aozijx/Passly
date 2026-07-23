@@ -53,11 +53,15 @@ import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.util.TotpUtils
-import com.aozijx.passly.domain.model.core.OtpConfig
+import com.aozijx.passly.domain.model.entry.EntryHeader
+import com.aozijx.passly.domain.model.entry.EntryId
+import com.aozijx.passly.domain.model.entry.EntrySecret
+import com.aozijx.passly.domain.model.entry.EntrySummary
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.VaultCredential
+import com.aozijx.passly.domain.model.entry.EntryVersion
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.entry.VaultMetadata
+import com.aozijx.passly.domain.model.entry.secret.OtpSecret
+import com.aozijx.passly.domain.model.otp.OtpConfig
 import com.aozijx.passly.feature.scanner.components.ScannerView
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent
@@ -232,17 +236,22 @@ fun VaultScanner(
 
                                     try {
                                         val entry = VaultEntry(
-                                            metadata = VaultMetadata(
-                                                entryId = "",
+                                            EntryHeader(
+                                                id = EntryId(""),
                                                 entryType = EntryType.LOGIN,
+                                                version = EntryVersion.INITIAL,
+                                                createdAt = System.currentTimeMillis(),
+                                                updatedAt = System.currentTimeMillis()
+                                            ),
+                                            EntrySummary(
                                                 title = title,
                                                 username = parsedConfig.accountName ?: title,
                                                 icon = null
                                             ),
-                                            credential = VaultCredential(
-                                                entryId = "",
-                                                password = "",
-                                                otp = parsedConfig
+                                            EntrySecret.Otp(
+                                                OtpSecret(
+                                                    config = parsedConfig
+                                                )
                                             )
                                         )
                                         onSaveEntry(entry)

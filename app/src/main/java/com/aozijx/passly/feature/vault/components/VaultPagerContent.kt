@@ -17,7 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
@@ -37,8 +37,8 @@ fun VaultPagerContent(
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
-    onSwipeTriggered: (SwipeActionType, VaultListItem) -> Unit,
-    onItemClick: (VaultListItem) -> Unit,
+    onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
+    onItemClick: (EntryListItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     HorizontalPager(
@@ -58,7 +58,7 @@ fun VaultPagerContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(items = displayItems, key = { it.id }) { item ->
-                    VaultListItemRow(
+                    EntryListItemRow(
                         item = item,
                         perTypeStyleMap = perTypeStyleMap,
                         swipeLeftAction = swipeLeftAction,
@@ -81,13 +81,13 @@ fun VaultPagerContent(
 }
 
 @Composable
-private fun VaultListItemRow(
-    item: VaultListItem,
+private fun EntryListItemRow(
+    item: EntryListItem,
     perTypeStyleMap: Map<Int, VaultCardStyle>,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
-    onSwipeTriggered: (SwipeActionType, VaultListItem) -> Unit,
+    onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
     onItemClick: () -> Unit,
     totpStates: Map<String, OtpUiState>,
     showTotpCode: Boolean

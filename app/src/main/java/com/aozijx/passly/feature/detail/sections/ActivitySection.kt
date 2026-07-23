@@ -22,8 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.VaultActivity
-import com.aozijx.passly.domain.model.history.VaultSnapshot
+import com.aozijx.passly.domain.model.activity.EntryActivity
+import com.aozijx.passly.domain.model.revision.EntrySnapshot
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -33,8 +33,8 @@ private enum class ActivityTab { VERSION, ACTIVITY }
 
 @Composable
 fun ActivitySection(
-    historyList: List<VaultSnapshot>,
-    activityList: List<VaultActivity>,
+    historyList: List<EntrySnapshot>,
+    activityList: List<EntryActivity>,
     onRestore: (historyId: String) -> Unit
 ) {
     var currentTab by remember { mutableStateOf(ActivityTab.ACTIVITY) }
@@ -72,7 +72,7 @@ fun ActivitySection(
 }
 
 @Composable
-private fun VersionTab(historyList: List<VaultSnapshot>, onRestore: (String) -> Unit) {
+private fun VersionTab(historyList: List<EntrySnapshot>, onRestore: (String) -> Unit) {
     if (historyList.isEmpty()) return
 
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
@@ -104,7 +104,7 @@ private fun VersionTab(historyList: List<VaultSnapshot>, onRestore: (String) -> 
 }
 
 @Composable
-private fun ActivityTabContent(activityList: List<VaultActivity>) {
+private fun ActivityTabContent(activityList: List<EntryActivity>) {
     if (activityList.isEmpty()) return
 
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
@@ -141,7 +141,7 @@ private fun ActivityTabContent(activityList: List<VaultActivity>) {
 }
 
 @Composable
-private fun activityDescription(activity: VaultActivity): String = when (activity.activityType) {
+private fun activityDescription(activity: EntryActivity): String = when (activity.activityType) {
     ActivityType.CREATE -> stringResource(R.string.vault_detail_activity_create)
     ActivityType.UPDATE -> stringResource(R.string.vault_detail_activity_update)
     ActivityType.DELETE -> stringResource(R.string.vault_detail_activity_delete)

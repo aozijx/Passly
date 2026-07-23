@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.activity.EntryActivity
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -42,7 +42,7 @@ enum class ActivityFilter {
 }
 
 @Composable
-fun ActivityTimelineSection(activityList: List<VaultActivity>) {
+fun ActivityTimelineSection(activityList: List<EntryActivity>) {
     var currentFilter by remember { mutableStateOf(ActivityFilter.ALL) }
 
     val filteredList = remember(activityList, currentFilter) {
@@ -118,7 +118,7 @@ private fun ActivityFilterChip(
 }
 
 @Composable
-private fun ActivityItem(activity: VaultActivity) {
+private fun ActivityItem(activity: EntryActivity) {
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
@@ -162,7 +162,7 @@ private fun ActivityItem(activity: VaultActivity) {
 }
 
 @Composable
-private fun formatActivityDescription(activity: VaultActivity): String {
+private fun formatActivityDescription(activity: EntryActivity): String {
     return when (activity.activityType) {
         ActivityType.CREATE -> stringResource(R.string.vault_detail_activity_create)
         ActivityType.UPDATE -> stringResource(R.string.vault_detail_activity_update)

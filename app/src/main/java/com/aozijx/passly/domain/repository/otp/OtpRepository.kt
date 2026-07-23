@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.repository.otp
 
 import com.aozijx.passly.core.otp.OtpResult
-import com.aozijx.passly.domain.model.core.OtpConfig
+import com.aozijx.passly.domain.model.otp.OtpConfig
 
 interface OtpRepository {
     /**

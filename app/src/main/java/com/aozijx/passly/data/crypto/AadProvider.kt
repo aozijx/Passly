@@ -5,13 +5,16 @@ import com.aozijx.passly.data.local.database.DatabaseSchema
 object AadProvider {
 
     fun metadata(entryId: String): ByteArray =
-        "${DatabaseSchema.TABLE_METADATA}:${entryId}:metadataBlob".toByteArray(Charsets.UTF_8)
+        "${DatabaseSchema.TABLE_ENTRIES}:${entryId}:summaryBlob".toByteArray(Charsets.UTF_8)
 
     fun credential(entryId: String): ByteArray =
-        "${DatabaseSchema.TABLE_CREDENTIALS}:${entryId}:credentialBlob".toByteArray(Charsets.UTF_8)
+        "${DatabaseSchema.TABLE_SECRETS}:${entryId}:secretBlob".toByteArray(Charsets.UTF_8)
+
+    fun revision(entryId: String): ByteArray =
+        "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:snapshotBlob".toByteArray(Charsets.UTF_8)
 
     fun history(entryId: String): ByteArray =
-        "${DatabaseSchema.TABLE_HISTORY}:${entryId}:snapshotBlob".toByteArray(Charsets.UTF_8)
+        "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:historyBlob".toByteArray(Charsets.UTF_8)
 
     fun attachment(entryId: String, attachmentId: String): ByteArray =
         "${DatabaseSchema.TABLE_ATTACHMENT}:${entryId}:${attachmentId}:encryptedBlob".toByteArray(

@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.feature.detail.page.DetailLaunchMode
 import com.aozijx.passly.feature.detail.page.DetailOpenRequest
 import com.aozijx.passly.feature.vault.model.AddType
@@ -14,10 +14,10 @@ internal class DetailCoordinator {
     val coordinatorStateFlow: StateFlow<VaultDetailCoordinatorState> = _coordinatorState
 
     val addType: AddType? get() = state.addType
-    val itemToDelete: VaultListItem? get() = state.itemToDelete
+    val itemToDelete: EntryListItem? get() = state.itemToDelete
 
     fun setAddType(type: AddType?) { state.addType = type }
-    fun setItemToDelete(item: VaultListItem?) {
+    fun setItemToDelete(item: EntryListItem?) {
         state.itemToDelete = item
     }
 

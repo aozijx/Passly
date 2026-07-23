@@ -1,9 +1,9 @@
 package com.aozijx.passly.core.otp
 
-import com.aozijx.passly.domain.model.core.OtpConfig
-import com.aozijx.passly.domain.model.core.OtpHashAlgorithm
-import com.aozijx.passly.domain.model.core.OtpSecretEncoding
-import com.aozijx.passly.domain.model.core.OtpType
+import com.aozijx.passly.domain.model.otp.OtpConfig
+import com.aozijx.passly.domain.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.model.otp.OtpType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

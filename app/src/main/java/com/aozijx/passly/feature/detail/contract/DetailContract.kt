@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.detail.contract
 
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.activity.EntryActivity
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 
@@ -15,7 +15,7 @@ data class DetailUiState(
     val strategyReady: Boolean = false,
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<String, String> = emptyMap(),
-    val history: List<VaultActivity> = emptyList()
+    val history: List<EntryActivity> = emptyList()
 ) {
     fun revealed(key: String): String? = revealedFields[key]
 }

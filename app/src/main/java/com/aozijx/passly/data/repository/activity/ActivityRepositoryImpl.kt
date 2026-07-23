@@ -1,11 +1,11 @@
 package com.aozijx.passly.data.repository.activity
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.data.mapper.toDomain
+import com.aozijx.passly.data.mapper.activity.toDomain
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.activity.EntryActivity
 import com.aozijx.passly.domain.repository.activity.CommandActivityRepository
 import com.aozijx.passly.domain.repository.activity.QueryActivityRepository
 import kotlinx.coroutines.Dispatchers
@@ -26,33 +26,33 @@ class ActivityRepositoryImpl @Inject constructor(
 ) : QueryActivityRepository, CommandActivityRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeByEntryId(entryId: String): Flow<List<VaultActivity>> =
+    override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                activityDao().observeByEntryId(entryId)
+                entryActivityDao().observeByEntryId(entryId)
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
             }
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeAll(): Flow<List<VaultActivity>> =
+    override fun observeAll(): Flow<List<EntryActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                activityDao().observeAll()
+                entryActivityDao().observeAll()
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
             }
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeByType(activityType: ActivityType): Flow<List<VaultActivity>> =
+    override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                activityDao().observeByType(activityType)
+                entryActivityDao().observeByType(activityType)
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
             }
@@ -60,11 +60,11 @@ class ActivityRepositoryImpl @Inject constructor(
 
     override suspend fun deleteByEntryId(entryId: String) {
         if (sessionState.isLocked()) return
-        sessionManager.transaction { activityDao().deleteByEntryId(entryId) }
+        sessionManager.transaction { entryActivityDao().deleteByEntryId(entryId) }
     }
 
     override suspend fun deleteBefore(timestamp: Long) {
         if (sessionState.isLocked()) return
-        sessionManager.transaction { activityDao().deleteBefore(timestamp) }
+        sessionManager.transaction { entryActivityDao().deleteBefore(timestamp) }
     }
 }

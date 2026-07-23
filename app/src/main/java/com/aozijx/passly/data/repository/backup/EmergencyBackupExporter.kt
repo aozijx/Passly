@@ -5,12 +5,12 @@ import android.database.Cursor
 import android.util.Base64
 import android.util.JsonWriter
 import com.aozijx.passly.BuildConfig
+import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.error.logFailureWithContext
-import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.security.crypto.CryptoEngine
 import net.zetetic.database.sqlcipher.SQLiteDatabase
@@ -119,20 +119,20 @@ object EmergencyBackupExporter {
         val writer = JsonWriter(OutputStreamWriter(output, StandardCharsets.UTF_8))
         writer.setIndent("  ")
 
-        val cursor = db.rawQuery("SELECT * FROM ${DatabaseSchema.TABLE_METADATA}", null)
+        val cursor = db.rawQuery("SELECT * FROM ${DatabaseSchema.TABLE_ENTRIES}", null)
         writer.beginArray()
         cursor.use {
             while (cursor.moveToNext()) {
                 writer.beginObject()
-                val idIndex = cursor.getColumnIndex("id")
+                val idIndex = cursor.getColumnIndex("entryId")
                 if (idIndex >= 0) {
-                    writer.name("id")
-                    writer.value(cursor.getLong(idIndex))
+                    writer.name("entryId")
+                    writer.value(cursor.getString(idIndex))
                 }
 
-                val blobIndex = cursor.getColumnIndex("encryptedBlob")
+                val blobIndex = cursor.getColumnIndex("summaryBlob")
                 if (blobIndex >= 0) {
-                    writer.name("encryptedBlob")
+                    writer.name("summaryBlob")
                     when (cursor.getType(blobIndex)) {
                         Cursor.FIELD_TYPE_NULL -> writer.nullValue()
                         Cursor.FIELD_TYPE_STRING -> writer.value(cursor.getString(blobIndex))

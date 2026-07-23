@@ -1,15 +1,17 @@
 package com.aozijx.passly.data.repository.lookup
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.codec.entry.EntrySecretCodec
+import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
-import com.aozijx.passly.data.model.entity.VaultMetadataEntity
+import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
+import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.lookup.LookupField
-import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.repository.lookup.LookupRepository
 import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +29,8 @@ import javax.inject.Singleton
 class LookupRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
-    private val cryptoMapper: VaultEntryCryptoMapper,
+    private val summaryCodec: EntrySummaryCodec,
+    private val secretCodec: EntrySecretCodec,
     private val blindIndexer: BlindIndexer
 ) : LookupRepository {
 
@@ -67,10 +70,14 @@ class LookupRepositoryImpl @Inject constructor(
                             credentialDao().getByEntryIds(metaEntities.map { it.entryId })
                         val credMap = credEntities.associateBy { it.entryId }
                         metaEntities.mapNotNull {
-                            cryptoMapper.assembleListItem(
-                                it,
-                                credMap[it.entryId]
-                            )
+                            val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
+                            val secret = credMap[it.entryId]?.let { e ->
+                                secretCodec.decrypt(
+                                    e.secretBlob,
+                                    e.entryId
+                                )
+                            }
+                            EntryListItemMapper.assemble(it, summary, secret)
                         }
                             .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }
                             .distinct()
@@ -82,21 +89,21 @@ class LookupRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observe(
         query: String, category: String?, filter: LookupRepository.EntryFilter
-    ): Flow<List<VaultListItem>> = sessionState.isAuthorized
+    ): Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
                 val entryFlow = when (filter) {
-                    LookupRepository.EntryFilter.ALL -> metadataDao().observeActive()
-                    LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeActiveByTypes(
+                    LookupRepository.EntryFilter.ALL -> entryDao().observeActive()
+                    LookupRepository.EntryFilter.TOTP_ONLY -> entryDao().observeActiveByTypes(
                         TOTP_ENTRY_TYPES
                     )
 
-                    LookupRepository.EntryFilter.PASSWORD_ONLY -> metadataDao().observeActiveByTypes(
+                    LookupRepository.EntryFilter.PASSWORD_ONLY -> entryDao().observeActiveByTypes(
                         PASSWORD_ENTRY_TYPES
                     )
                 }
-                val statsFlow = activityDao().observeUsageStats(ActivityType.USAGE_TYPES)
+                val statsFlow = entryActivityDao().observeUsageStats(ActivityType.USAGE_TYPES)
                 combine(entryFlow, statsFlow) { metaEntities, statsList ->
                     val statsMap = statsList.associateBy { it.entryId }
                     // 使用盲索引预过滤：仅解密匹配的条目
@@ -110,10 +117,14 @@ class LookupRepositoryImpl @Inject constructor(
                         credentialDao().getByEntryIds(filteredMetaEntities.map { it.entryId })
                     val credMap = credEntities.associateBy { it.entryId }
                     filteredMetaEntities.mapNotNull {
-                        cryptoMapper.assembleListItem(
-                            it,
-                            credMap[it.entryId]
-                        )
+                        val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
+                        val secret = credMap[it.entryId]?.let { e ->
+                            secretCodec.decrypt(
+                                e.secretBlob,
+                                e.entryId
+                            )
+                        }
+                        EntryListItemMapper.assemble(it, summary, secret)
                     }
                         .map { item ->
                             val stats = statsMap[item.id]
@@ -133,7 +144,7 @@ class LookupRepositoryImpl @Inject constructor(
                             }
                         }
                         .sortedWith(
-                            compareByDescending<VaultListItem> { it.favorite }
+                            compareByDescending<EntryListItem> { it.favorite }
                                 .thenByDescending { it.usageCount }
                                 .thenByDescending { it.createdAt }
                         )
@@ -149,25 +160,29 @@ class LookupRepositoryImpl @Inject constructor(
                 if (!authorized) flowOf(emptyList())
                 else sessionManager.observeFlow {
                     val entryFlow = when (filter) {
-                        LookupRepository.EntryFilter.ALL -> metadataDao().observeActive()
-                        LookupRepository.EntryFilter.TOTP_ONLY -> metadataDao().observeActiveByTypes(
+                        LookupRepository.EntryFilter.ALL -> entryDao().observeActive()
+                        LookupRepository.EntryFilter.TOTP_ONLY -> entryDao().observeActiveByTypes(
                             TOTP_ENTRY_TYPES
                         )
 
-                        LookupRepository.EntryFilter.PASSWORD_ONLY -> metadataDao().observeActiveByTypes(
+                        LookupRepository.EntryFilter.PASSWORD_ONLY -> entryDao().observeActiveByTypes(
                             PASSWORD_ENTRY_TYPES
                         )
                     }
                     entryFlow
                         .map { metaEntities ->
                             val credEntities =
-                                credentialDao().getByEntryIds(metaEntities.map { it.entryId })
+                                entrySecretDao().getByEntryIds(metaEntities.map { it.entryId })
                             val credMap = credEntities.associateBy { it.entryId }
                             metaEntities.mapNotNull {
-                                cryptoMapper.assembleListItem(
-                                    it,
-                                    credMap[it.entryId]
-                                )
+                                val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
+                                val secret = credMap[it.entryId]?.let { e ->
+                                    secretCodec.decrypt(
+                                        e.secretBlob,
+                                        e.entryId
+                                    )
+                                }
+                                EntryListItemMapper.assemble(it, summary, secret)
                             }
                                 .filter { item ->
                                     when (filter) {
@@ -191,14 +206,14 @@ class LookupRepositoryImpl @Inject constructor(
      */
     private suspend fun filterByBlindIndex(
         db: AppDatabase,
-        metaEntities: List<VaultMetadataEntity>,
+        metaEntities: List<EntryEntity>,
         query: String
-    ): List<VaultMetadataEntity> {
+    ): List<EntryEntity> {
         val searchTokens = blindIndexer.searchTokens(query)
         if (searchTokens.isEmpty()) return emptyList()
 
         val sqlQuery = buildEntryIdIntersectionQuery(searchTokens, SEARCH_FIELDS)
-        val matchingIds = db.lookupIndexDao()
+        val matchingIds = db.searchTokenDao()
             .searchByTokenIntersection(sqlQuery)
             .toSet()
 

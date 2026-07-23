@@ -4,12 +4,13 @@ import android.content.Context
 import androidx.core.net.toUri
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.codec.entry.EntrySecretCodec
+import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
-import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
-import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
+import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.mapper.snapshot.toSnapshot
-import com.aozijx.passly.data.model.entity.VaultCredentialEntity
-import com.aozijx.passly.data.model.entity.VaultMetadataEntity
+import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
 import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.data.repository.backup.internal.BackupArchiveCodec
@@ -34,23 +35,24 @@ internal class BackupRepositoryImpl @Inject constructor(
     private val cryptoEngine: CryptoEngine,
     private val sessionManager: UnifiedSessionManager,
     private val stateProvider: SessionStateProvider,
-    private val cryptoMapper: VaultEntryCryptoMapper,
+    private val summaryCodec: EntrySummaryCodec,
+    private val secretCodec: EntrySecretCodec,
     private val vaultDatabaseCleaner: VaultDatabaseCleaner,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BackupRepository {
 
     private suspend fun getVaultEntries(): List<VaultEntry> {
         return sessionManager.query {
-            val metadataEntities = metadataDao().getActive()
+            val metadataEntities = entryDao().getActive()
             val credentialEntities =
-                credentialDao().getByEntryIds(metadataEntities.map { it.entryId })
+                entrySecretDao().getByEntryIds(metadataEntities.map { it.entryId })
             val credentialMap = credentialEntities.associateBy { it.entryId }
 
             metadataEntities.map { metaEntity ->
-                val meta = cryptoMapper.decryptMetadata(metaEntity)
+                val meta = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
                 val cred = credentialMap[metaEntity.entryId]
-                    ?.let { cryptoMapper.decryptCredential(it) }
-                VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
+                    ?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
+                EntryAggregateAssembler.assembleFromDatabase(metaEntity, meta, cred)
             }
         }
     }
@@ -190,27 +192,29 @@ internal class BackupRepositoryImpl @Inject constructor(
 
             snapshots.forEach { snapshot ->
                 val entryId = snapshot.id
-                val metaBlob = cryptoMapper.encryptMetadata(snapshot.metadata, entryId)
-                val credBlob = cryptoMapper.encryptCredential(snapshot.credential, entryId)
+                val summary = snapshot.summary.toEntrySummary()
+                val secret = snapshot.secret.toEntrySecret()
+                val metaBlob = summaryCodec.encrypt(summary, entryId)
+                val credBlob = secretCodec.encrypt(secret, entryId)
 
-                val metaEntity = VaultMetadataEntity(
+                val metaEntity = EntryEntity(
                     entryId = entryId,
                     vaultId = snapshot.vaultId,
-                    entryVersion = snapshot.revision,
+                    version = snapshot.revision,
                     entryType = snapshot.entryType,
-                    metadataBlob = metaBlob,
+                    summaryBlob = metaBlob,
                     createdAt = snapshot.createdAt,
                     updatedAt = snapshot.updatedAt,
                     deletedAt = snapshot.deletedAt
                 )
 
-                val credEntity = VaultCredentialEntity(
+                val credEntity = EntrySecretEntity(
                     entryId = entryId,
-                    credentialBlob = credBlob
+                    secretBlob = credBlob
                 )
 
-                metadataDao().upsertForImport(metaEntity)
-                credentialDao().upsertForImport(credEntity)
+                entryDao().upsertForImport(metaEntity)
+                entrySecretDao().upsertForImport(credEntity)
             }
         }
     }
@@ -229,7 +233,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                         kotlinx.serialization.builtins.ListSerializer(VaultSnapshot.serializer()),
                         String(backupData, Charsets.UTF_8)
                     ).map {
-                        it.copy(metadata = it.metadata.copy(iconCustomPath = null))
+                        it.copy(summary = it.summary.copy(iconCustomPath = null))
                     }
 
                     importSnapshots(snapshots, config)

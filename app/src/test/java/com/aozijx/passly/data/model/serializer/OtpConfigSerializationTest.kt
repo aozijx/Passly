@@ -1,10 +1,10 @@
 package com.aozijx.passly.data.model.serializer
 
-import com.aozijx.passly.domain.model.core.OtpConfig
-import com.aozijx.passly.domain.model.core.OtpHashAlgorithm
-import com.aozijx.passly.domain.model.core.OtpSecretEncoding
-import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.entry.VaultCredential
+import com.aozijx.passly.domain.model.otp.OtpConfig
+import com.aozijx.passly.domain.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.model.otp.OtpType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

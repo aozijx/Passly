@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.usecase.detail
 
-import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.activity.EntryActivity
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.repository.entry.QueryRepository
 import com.aozijx.passly.domain.usecase.vault.ActivityQueryUseCases
@@ -16,6 +16,6 @@ class DetailQueryUseCases @Inject constructor(
 
     suspend fun getById(entryId: String): VaultEntry? = queryRepository.getById(entryId)
 
-    fun getActivityByEntryId(entryId: String): Flow<List<VaultActivity>> =
+    fun getActivityByEntryId(entryId: String): Flow<List<EntryActivity>> =
         activityQueryUseCases.observeByEntryId(entryId)
 }

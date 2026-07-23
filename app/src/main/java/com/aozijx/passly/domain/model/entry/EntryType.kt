@@ -1,8 +1,5 @@
 package com.aozijx.passly.domain.model.entry
 
-import kotlinx.serialization.Serializable
-
-@Serializable
 enum class EntryType(val displayName: String) {
     LOGIN("登录"),
     NOTE("笔记"),
@@ -10,6 +7,8 @@ enum class EntryType(val displayName: String) {
     IDENTITY("身份"),
     SSH_KEY("SSH密钥"),
     WIFI("Wi-Fi"),
+    PASSKEY("Passkey"),
+    TOTP("TOTP"),
     PASSPORT("护照"),
     LICENSE("证件"),
     DATABASE("数据库"),
@@ -18,10 +17,8 @@ enum class EntryType(val displayName: String) {
     CRYPTO_WALLET("加密钱包"),
     BANK_CARD("银行卡"),
     ID_CARD("身份证"),
-    TOTP("TOTP"),
     SEED_PHRASE("助记词"),
-    RECOVERY_CODE("恢复码"),
-    PASSKEY("Passkey");
+    RECOVERY_CODE("恢复码");
 
     companion object {
         fun fromName(name: String): EntryType =

@@ -1,7 +1,9 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
+import com.aozijx.passly.data.codec.entry.EntrySecretCodec
+import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultEntry
@@ -18,30 +20,42 @@ class QueryRepositoryImpl @Inject constructor(
     private val sessionState: VaultAccessState,
     private val stateProvider: SessionStateProvider,
     private val sessionManager: UnifiedSessionManager,
-    private val cryptoMapper: VaultEntryCryptoMapper
+    private val summaryCodec: EntrySummaryCodec,
+    private val secretCodec: EntrySecretCodec
 ) : QueryRepository {
 
     override suspend fun getById(entryId: String): VaultEntry? {
         stateProvider.assertWritable()
         return sessionManager.query {
-            val metaEntity = metadataDao().getById(entryId) ?: return@query null
-            val credEntity = credentialDao().getByEntryId(entryId)
-            cryptoMapper.assembleEntry(metaEntity, credEntity)
+            val metaEntity = entryDao().getById(entryId) ?: return@query null
+            val credEntity = entrySecretDao().getByEntryId(entryId)
+            val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
+            val secret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
+            EntryAggregateAssembler.assembleFromDatabase(metaEntity, summary, secret)
         }
     }
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> {
         stateProvider.assertWritable()
         return sessionManager.query {
-            val metaEntities = metadataDao().getActive()
-            val credEntities = credentialDao().getByEntryIds(metaEntities.map { it.entryId })
+            val metaEntities = entryDao().getActive()
+            val credEntities = entrySecretDao().getByEntryIds(metaEntities.map { it.entryId })
             val credMap = credEntities.associateBy { it.entryId }
-            metaEntities.mapNotNull { cryptoMapper.assembleEntry(it, credMap[it.entryId]) }
+            metaEntities.map { metaEntity ->
+                val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
+                val secret = credMap[metaEntity.entryId]?.let {
+                    secretCodec.decrypt(
+                        it.secretBlob,
+                        it.entryId
+                    )
+                }
+                EntryAggregateAssembler.assembleFromDatabase(metaEntity, summary, secret)
+            }
         }
     }
 
     override suspend fun count(): Int {
         stateProvider.assertWritable()
-        return sessionManager.query { metadataDao().countActive() }
+        return sessionManager.query { entryDao().countActive() }
     }
 }

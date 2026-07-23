@@ -1,18 +1,20 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.data.mapper.VaultEntryCryptoMapper
-import com.aozijx.passly.data.mapper.assembler.VaultEntryAssembler
-import com.aozijx.passly.data.model.entity.VaultCredentialEntity
-import com.aozijx.passly.data.model.entity.VaultMetadataEntity
+import com.aozijx.passly.data.codec.entry.EntrySecretCodec
+import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.model.entry.EntrySecret
+import com.aozijx.passly.domain.model.entry.EntrySummary
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.VaultCredential
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
+import com.aozijx.passly.domain.model.entry.secret.LoginSecret
 import com.aozijx.passly.domain.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.model.lookup.MatchType
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
@@ -27,7 +29,8 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
     private val stateProvider: SessionStateProvider,
-    private val cryptoMapper: VaultEntryCryptoMapper,
+    private val summaryCodec: EntrySummaryCodec,
+    private val secretCodec: EntrySecretCodec,
     private val clock: Clock
 ) : CredentialServiceRepository {
 
@@ -37,17 +40,17 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
         stateProvider.assertWritable()
         sessionManager.query {
-            val metadataEntities = metadataDao().getActive()
+            val metadataEntities = entryDao().getActive()
             val credentialEntities =
-                credentialDao().getByEntryIds(metadataEntities.map { it.entryId })
+                entrySecretDao().getByEntryIds(metadataEntities.map { it.entryId })
             val credentialMap = credentialEntities.associateBy { it.entryId }
 
             metadataEntities.filter { it.entryType == EntryType.LOGIN }
                 .map { metaEntity ->
-                    val meta = cryptoMapper.decryptMetadata(metaEntity)
-                    val cred = credentialMap[metaEntity.entryId]
-                        ?.let { cryptoMapper.decryptCredential(it) }
-                    VaultEntryAssembler.assembleFromDatabase(metaEntity, meta, cred)
+                    val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
+                    val secret = credentialMap[metaEntity.entryId]
+                        ?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
+                    EntryAggregateAssembler.assembleFromDatabase(metaEntity, summary, secret)
                 }
                 .map { entry ->
                     CredentialCandidate(
@@ -88,37 +91,36 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         if (sessionState.isLocked()) return@runBlocking false
         sessionManager.query {
             val entryId = UuidCreator.getTimeOrderedEpoch().toString()
-            val meta = VaultMetadata(
-                entryId = entryId,
-                entryType = EntryType.LOGIN,
+            val summary = EntrySummary(
                 title = pageTitle ?: usernameValue,
                 username = usernameValue,
                 icon = null,
                 website = if (webDomain != null) WebsiteInfo(primaryUrl = webDomain) else null
             )
-            val cred = VaultCredential(
-                entryId = entryId,
-                email = null,
-                password = passwordValue
+            val secret = EntrySecret.Login(
+                LoginSecret(
+                    email = null,
+                    password = passwordValue
+                )
             )
-            val metaBlob = cryptoMapper.encryptMetadata(meta, entryId)
-            val credBlob = cryptoMapper.encryptCredential(cred, entryId)
+            val metaBlob = summaryCodec.encrypt(summary, entryId)
+            val credBlob = secretCodec.encrypt(secret, entryId)
 
             val now = clock.now()
-            val metaEntity = VaultMetadataEntity(
+            val metaEntity = EntryEntity(
                 entryId = entryId,
                 vaultId = "default",
                 entryType = EntryType.LOGIN,
-                metadataBlob = metaBlob,
+                summaryBlob = metaBlob,
                 createdAt = now,
                 updatedAt = now
             )
-            val credEntity = VaultCredentialEntity(
+            val credEntity = EntrySecretEntity(
                 entryId = entryId,
-                credentialBlob = credBlob
+                secretBlob = credBlob
             )
-            metadataDao().insertStrict(metaEntity)
-            credentialDao().insertStrict(credEntity)
+            entryDao().insertStrict(metaEntity)
+            entrySecretDao().insertStrict(credEntity)
         }
         true
     }

@@ -28,14 +28,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.core.OtpType
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.domain.model.lookup.EntryListItem
+import com.aozijx.passly.domain.model.otp.OtpType
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.ui.components.VaultItemIcon
 
 @Composable
 fun VaultItem(
-    entry: VaultListItem,
+    entry: EntryListItem,
     onClick: () -> Unit
 ) {
     Card(
@@ -77,7 +77,7 @@ fun VaultItem(
 
 @Composable
 fun TwoFAItem(
-    entry: VaultListItem,
+    entry: EntryListItem,
     totpState: OtpUiState?,
     showCode: Boolean = true,
     previewCode: String? = null,
@@ -162,7 +162,7 @@ fun TwoFAItem(
 
 @Composable
 fun AutoFillItem(
-    entry: VaultListItem,
+    entry: EntryListItem,
     onClick: () -> Unit
 ) {
     val isAutoCaptured = entry.category == stringResource(R.string.category_autofill)

@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.data.sorter.VaultListSorter
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import com.aozijx.passly.feature.vault.model.VaultTab
 import kotlinx.coroutines.CoroutineScope
@@ -20,8 +21,8 @@ import kotlinx.coroutines.launch
 data class VaultListState(
     val isLoading: Boolean = true,
     val categories: List<String> = emptyList(),
-    val items: List<VaultListItem> = emptyList(),
-    val itemsByTab: Map<VaultTab, List<VaultListItem>> = emptyMap()
+    val items: List<EntryListItem> = emptyList(),
+    val itemsByTab: Map<VaultTab, List<EntryListItem>> = emptyMap()
 )
 
 internal class VaultListCoordinator(
@@ -48,7 +49,7 @@ internal class VaultListCoordinator(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val rawItems: Flow<List<VaultListItem>> = queryCoordinator.observeItems(
+    private val rawItems: Flow<List<EntryListItem>> = queryCoordinator.observeItems(
         debouncedSearchQuery = searchFilter.debouncedSearchQuery,
         normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
         distinctSelectedTab = searchFilter.distinctSelectedTab,
@@ -57,11 +58,11 @@ internal class VaultListCoordinator(
         _isLoading.value = false
     }
 
-    private val sortedItems: StateFlow<List<VaultListItem>> = combine(
+    private val sortedItems: StateFlow<List<EntryListItem>> = combine(
         rawItems,
         searchFilter.selectedSort
     ) { items, sort ->
-        sort.apply(items)
+        VaultListSorter.sort(items, sort)
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)

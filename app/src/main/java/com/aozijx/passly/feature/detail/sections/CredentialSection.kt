@@ -19,8 +19,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.entry.secret.LoginSecret
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.components.EditTextField
@@ -69,13 +71,14 @@ fun CredentialSection(
             },
             onSave = { newValue ->
                 if (newValue != revealedUsername) {
-                    onEntryUpdated(item.copy(metadata = item.metadata.copy(username = newValue)))
+                    onEntryUpdated(item.copy(summary = item.summary.copy(username = newValue)))
                     onUsernameRevealed(newValue)
                 }
                 editState.isEditingUsername = false
             })
 
-        val showPassword = (item.credential.password?.isNotEmpty() == true) || item.entryType != EntryType.LOGIN
+        val showPassword =
+            ((item.secret as? EntrySecret.Login)?.data?.password?.isNotEmpty() == true) || item.entryType != EntryType.LOGIN
         if (showPassword) {
             CredentialRow(
                 label = stringResource(R.string.password),
@@ -90,7 +93,7 @@ fun CredentialSection(
                         handler = actionHandler,
                         fieldName = "password",
                         revealedValue = revealedPassword,
-                        sourceValue = item.credential.password,
+                        sourceValue = (item.secret as? EntrySecret.Login)?.data?.password,
                         authTitle = "解密信息",
                         authSubtitle = "验证身份以复制密码",
                         onReveal = onPasswordRevealed
@@ -98,7 +101,15 @@ fun CredentialSection(
                 },
                 onSave = { newValue ->
                     if (newValue != revealedPassword) {
-                        onEntryUpdated(item.copy(credential = item.credential.copy(password = newValue)))
+                        onEntryUpdated(
+                            item.copy(
+                                secret = EntrySecret.Login(
+                                    (item.secret as? EntrySecret.Login)?.data?.copy(
+                                        password = newValue
+                                    ) ?: LoginSecret(password = newValue)
+                                )
+                            )
+                        )
                         onPasswordRevealed(newValue)
                     }
                     editState.isEditingPassword = false
@@ -118,8 +129,8 @@ fun CredentialSection(
                                 )
                             )
                         }
-                        if (revealedPassword == null && item.credential.password?.isNotEmpty() == true) {
-                            onPasswordRevealed(item.credential.password)
+                        if (revealedPassword == null && (item.secret as? EntrySecret.Login)?.data?.password?.isNotEmpty() == true) {
+                            onPasswordRevealed((item.secret as? EntrySecret.Login)?.data?.password)
                             onEvent(
                                 DetailIntent.RecordAction(
                                     "password",

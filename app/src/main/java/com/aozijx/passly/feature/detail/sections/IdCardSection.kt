@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -41,7 +42,7 @@ fun IdCardSection(
         DetailItem(
             label = stringResource(R.string.id_number),
             value = when {
-                entry.credential.idNumber.isNullOrBlank() -> notSet
+                (entry.secret as? EntrySecret.Identity)?.data?.idNumber.isNullOrBlank() -> notSet
                 revealedIdNumber != null -> revealedIdNumber
                 else -> hidden
             },
@@ -52,7 +53,7 @@ fun IdCardSection(
                     handler = actionHandler,
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
-                    sourceValue = entry.credential.idNumber,
+                    sourceValue = (entry.secret as? EntrySecret.Identity)?.data?.idNumber,
                     authTitle = "解密身份证号",
                     authSubtitle = "验证身份以复制信息",
                     onReveal = onIdNumberRevealed,
@@ -89,15 +90,15 @@ fun IdCardSection(
             )
         }
 
-        if (!entry.credential.cardExpiry.isNullOrBlank()) {
+        if (!(entry.secret as? EntrySecret.Identity)?.data?.cardExpiry.isNullOrBlank()) {
             DetailItem(
                 label = stringResource(R.string.card_expiration),
-                value = entry.credential.cardExpiry,
+                value = (entry.secret as? EntrySecret.Identity)?.data?.cardExpiry,
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(
                         context,
-                        entry.credential.cardExpiry
+                        (entry.secret as? EntrySecret.Identity)?.data?.cardExpiry
                     )
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     actionHandler.record(

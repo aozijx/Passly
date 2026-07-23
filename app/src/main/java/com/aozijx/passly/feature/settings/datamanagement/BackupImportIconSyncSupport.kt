@@ -77,7 +77,7 @@ internal class BackupImportIconSyncSupport(
             if (outcome.result == FaviconUtils.DownloadResult.SUCCESS && !outcome.filePath.isNullOrBlank()) {
                 val updateResult = entryCommandHandler.updateEntry(
                     entry.id, entry.entryVersion,
-                    EntryChanges(metadata = entry.metadata.copy(icon = outcome.filePath))
+                    EntryChanges(summary = entry.summary.copy(icon = outcome.filePath))
                 )
                 if (updateResult.isSuccess) {
                     successCount++

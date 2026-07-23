@@ -34,7 +34,7 @@ fun DetailDialogHost(
                 onIconSelected = { name ->
                     vaultViewModel.updateVaultEntry(
                         item.copy(
-                            metadata = item.metadata.copy(icon = name)
+                            summary = item.summary.copy(icon = name)
                         )
                     )
                 },

@@ -18,7 +18,7 @@ fun buildEntryIdIntersectionQuery(
     tokens: List<SearchToken>,
     fields: List<LookupField>
 ): SimpleSQLiteQuery {
-    val table = DatabaseSchema.TABLE_LOOKUP_INDEX
+    val table = DatabaseSchema.TABLE_SEARCH_TOKENS
     val fieldPlaceholders = fields.joinToString(", ") { "?" }
     val subqueries = tokens.map { token ->
         "SELECT entryId FROM $table WHERE keywordHash = ? AND gramLength = ? AND field IN ($fieldPlaceholders)"
@@ -54,8 +54,8 @@ data class IndexScanResult(
 /**
  * 扫描盲索引状态，判断索引是否完整。
  *
- * @param indexedEntryCount [LookupIndexDao.countDistinctEntryIds] 结果
- * @param activeEntryCount [VaultMetadataDao.countActive] 结果
+ * @param indexedEntryCount [SearchTokenDao.countDistinctEntryIds] 结果
+ * @param activeEntryCount [EntryDao.countActive] 结果
  */
 fun scanIndexStatus(
     indexedEntryCount: Int,

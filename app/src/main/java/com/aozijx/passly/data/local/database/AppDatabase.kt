@@ -5,30 +5,33 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.error.database.DatabaseException
-import com.aozijx.passly.data.local.dao.LookupIndexDao
-import com.aozijx.passly.data.local.dao.VaultActivityDao
-import com.aozijx.passly.data.local.dao.VaultAttachmentDao
-import com.aozijx.passly.data.local.dao.VaultCredentialDao
-import com.aozijx.passly.data.local.dao.VaultHistoryDao
-import com.aozijx.passly.data.local.dao.VaultMetadataDao
+import com.aozijx.passly.data.local.dao.EntryActivityDao
+import com.aozijx.passly.data.local.dao.EntryAttachmentDao
+import com.aozijx.passly.data.local.dao.EntryDao
+import com.aozijx.passly.data.local.dao.EntryDraftDao
+import com.aozijx.passly.data.local.dao.EntryRevisionDao
+import com.aozijx.passly.data.local.dao.EntrySecretDao
+import com.aozijx.passly.data.local.dao.SearchTokenDao
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
-import com.aozijx.passly.data.model.entity.LookupIndexEntity
-import com.aozijx.passly.data.model.entity.VaultActivityEntity
-import com.aozijx.passly.data.model.entity.VaultAttachmentEntity
-import com.aozijx.passly.data.model.entity.VaultCredentialEntity
-import com.aozijx.passly.data.model.entity.VaultMetadataEntity
-import com.aozijx.passly.data.model.entity.VaultSnapshotEntity
+import com.aozijx.passly.data.model.entity.EntryActivityEntity
+import com.aozijx.passly.data.model.entity.EntryAttachmentEntity
+import com.aozijx.passly.data.model.entity.EntryDraftEntity
+import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.data.model.entity.EntryRevisionEntity
+import com.aozijx.passly.data.model.entity.EntrySecretEntity
+import com.aozijx.passly.data.model.entity.SearchTokenEntity
 
 @Database(
     entities = [
-        VaultMetadataEntity::class,
-        VaultCredentialEntity::class,
-        VaultSnapshotEntity::class,
-        VaultActivityEntity::class,
-        VaultAttachmentEntity::class,
-        LookupIndexEntity::class
+        EntryEntity::class,
+        EntrySecretEntity::class,
+        EntryRevisionEntity::class,
+        EntryActivityEntity::class,
+        EntryAttachmentEntity::class,
+        SearchTokenEntity::class,
+        EntryDraftEntity::class
     ],
     version = DatabaseSchema.VERSION,
     exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
@@ -40,12 +43,13 @@ import com.aozijx.passly.data.model.entity.VaultSnapshotEntity
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun metadataDao(): VaultMetadataDao
-    abstract fun credentialDao(): VaultCredentialDao
-    abstract fun historyDao(): VaultHistoryDao
-    abstract fun activityDao(): VaultActivityDao
-    abstract fun attachmentDao(): VaultAttachmentDao
-    abstract fun lookupIndexDao(): LookupIndexDao
+    abstract fun entryDao(): EntryDao
+    abstract fun entrySecretDao(): EntrySecretDao
+    abstract fun entryRevisionDao(): EntryRevisionDao
+    abstract fun entryActivityDao(): EntryActivityDao
+    abstract fun entryAttachmentDao(): EntryAttachmentDao
+    abstract fun searchTokenDao(): SearchTokenDao
+    abstract fun entryDraftDao(): EntryDraftDao
 
     companion object {
         private const val TAG = "AppDatabase"

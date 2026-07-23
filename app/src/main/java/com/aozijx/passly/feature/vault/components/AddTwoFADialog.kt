@@ -21,14 +21,18 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.util.TotpUtils
-import com.aozijx.passly.domain.model.core.OtpConfig
-import com.aozijx.passly.domain.model.core.OtpHashAlgorithm
-import com.aozijx.passly.domain.model.core.OtpType
+import com.aozijx.passly.domain.model.entry.EntryHeader
+import com.aozijx.passly.domain.model.entry.EntryId
+import com.aozijx.passly.domain.model.entry.EntrySecret
+import com.aozijx.passly.domain.model.entry.EntrySummary
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.VaultCredential
+import com.aozijx.passly.domain.model.entry.EntryVersion
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.entry.VaultMetadata
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
+import com.aozijx.passly.domain.model.entry.secret.OtpSecret
+import com.aozijx.passly.domain.model.otp.OtpConfig
+import com.aozijx.passly.domain.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.model.otp.OtpType
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.ui.components.AppDialog
 import com.aozijx.passly.ui.components.AppTextField
@@ -78,18 +82,22 @@ fun AddTwoFADialog(
         onConfirm = {
             try {
                 val entry = VaultEntry(
-                    metadata = VaultMetadata(
-                        entryId = "",
+                    EntryHeader(
+                        id = EntryId(""),
                         entryType = EntryType.LOGIN,
+                        version = EntryVersion.INITIAL,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    ),
+                    EntrySummary(
                         title = state.title,
                         username = state.username,
                         icon = null,
                         website = state.domain.ifBlank { null }?.let { WebsiteInfo(primaryUrl = it) }
                     ),
-                    credential = VaultCredential(
-                        entryId = "",
-                        password = "",
-                        otp = OtpConfig(
+                    EntrySecret.Otp(
+                        OtpSecret(
+                            config = OtpConfig(
                             type = state.type,
                             secret = state.secret.trim(),
                             digits = if (state.type == OtpType.STEAM) 5
@@ -109,6 +117,7 @@ fun AddTwoFADialog(
                             accountName = state.username.ifBlank { null }
                         )
                     )
+                )
                 )
                 viewModel.addItem(entry, state.domain)
                 viewModel.setAddType(null)

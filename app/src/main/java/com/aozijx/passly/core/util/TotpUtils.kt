@@ -2,10 +2,10 @@ package com.aozijx.passly.core.util
 
 import android.net.Uri
 import androidx.core.net.toUri
-import com.aozijx.passly.domain.model.core.OtpConfig
-import com.aozijx.passly.domain.model.core.OtpHashAlgorithm
-import com.aozijx.passly.domain.model.core.OtpSecretEncoding
-import com.aozijx.passly.domain.model.core.OtpType
+import com.aozijx.passly.domain.model.otp.OtpConfig
+import com.aozijx.passly.domain.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.model.otp.OtpType
 import java.net.URLDecoder
 
 /**

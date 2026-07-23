@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.entry.FieldKey
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupIntent
@@ -29,7 +29,7 @@ import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.feature.vault.strategy.EntryTypeDisplayProvider
 
 class VaultActionProvider(
-    val onSwipeTriggered: (SwipeActionType, VaultListItem) -> Unit,
+    val onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
     val onUpdateInteraction: () -> Unit,
     val fabScrollConnection: NestedScrollConnection,
     val onExportClick: () -> Unit,
@@ -43,7 +43,7 @@ fun rememberVaultActionProvider(
     backupViewModel: BackupViewModel,
     backupDirectoryUri: String?,
     totpStates: Map<String, OtpUiState>,
-    onShowDetail: (VaultListItem) -> Unit,
+    onShowDetail: (EntryListItem) -> Unit,
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
     val context = LocalContext.current
@@ -59,7 +59,7 @@ fun rememberVaultActionProvider(
         context, vaultViewModel, mainViewModel,
         decryptAuthTitle, decryptAuthSubtitle, totpCopiedText, fieldCopiedFormat
     ) {
-        { fieldKey: FieldKey, item: VaultListItem ->
+        { fieldKey: FieldKey, item: EntryListItem ->
             val strategy = vaultViewModel.strategyProvider.getStrategy(item.entryType)
             val label = EntryTypeDisplayProvider.getCopyLabel(fieldKey)
 
@@ -96,7 +96,7 @@ fun rememberVaultActionProvider(
     val onSwipeTriggered = remember(
         mainViewModel, vaultViewModel, authTitle, onShowDetail, performCopy
     ) {
-        { action: SwipeActionType, item: VaultListItem ->
+        { action: SwipeActionType, item: EntryListItem ->
             handleSwipeAction(
                 actionType = action,
                 item = item,

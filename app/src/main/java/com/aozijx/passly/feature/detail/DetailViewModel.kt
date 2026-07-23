@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.VaultActivity
+import com.aozijx.passly.domain.model.activity.EntryActivity
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
@@ -72,7 +72,7 @@ class DetailViewModel @Inject constructor(
 
                 viewModelScope.launch {
                     detailQueryUseCases.getActivityByEntryId(event.initialEntry.id)
-                        .collect { list: List<VaultActivity> ->
+                        .collect { list: List<EntryActivity> ->
                             _uiState.update { it.copy(history = list) }
                         }
                 }
@@ -129,13 +129,16 @@ class DetailViewModel @Inject constructor(
                         )
                     }
                 } else {
-                    commitEntryUpdate(current.copy(metadata = current.metadata.copy(title = newTitle)), isEditingTitle = false)
+                    commitEntryUpdate(
+                        current.copy(summary = current.summary.copy(title = newTitle)),
+                        isEditingTitle = false
+                    )
                 }
             }
 
             DetailIntent.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
-                commitEntryUpdate(current.copy(metadata = current.metadata.copy(favorite = !current.favorite)))
+                commitEntryUpdate(current.copy(summary = current.summary.copy(favorite = !current.favorite)))
             }
 
             is DetailIntent.RevealField -> {
@@ -188,12 +191,12 @@ class DetailViewModel @Inject constructor(
             val domain = entry.associatedDomain
             val outcome = downloadFavicon(domain)
             if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                val iconMeta = entry.metadata.copy(icon = outcome.filePath)
+                val iconSummary = entry.summary.copy(icon = outcome.filePath)
                 entryCommandHandler.updateEntry(
-                    entry.id, entry.entryVersion, EntryChanges(metadata = iconMeta)
+                    entry.id, entry.entryVersion, EntryChanges(summary = iconSummary)
                 ).onSuccess {
                         refreshFromEntry(
-                            entry.copy(metadata = entry.metadata.copy(icon = outcome.filePath)),
+                            entry.copy(summary = entry.summary.copy(icon = outcome.filePath)),
                             _uiState.value.isEditingTitle,
                             _uiState.value.editedTitle
                         )

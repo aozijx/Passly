@@ -2,7 +2,7 @@ package com.aozijx.passly.domain.model.entry
 
 /**
  * 条目版本值类型。
- * 版本号的唯一真相源是 [VaultMetadataEntity.entryVersion]，
+ * 版本号的唯一真相源是 [EntryEntity.version]，
  * 不再在加密 JSON (VaultMetadata) 或 UI 中维护副本。
  */
 @JvmInline

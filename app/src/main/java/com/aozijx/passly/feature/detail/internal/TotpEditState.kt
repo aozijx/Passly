@@ -3,9 +3,9 @@ package com.aozijx.passly.feature.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.domain.model.core.OtpSecretEncoding
-import com.aozijx.passly.domain.model.core.OtpType
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.model.otp.OtpType
 
 /**
  * TOTP 编辑状态（详情页修改配置）

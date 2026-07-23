@@ -5,9 +5,11 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.EntryChanges
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import com.aozijx.passly.domain.repository.entry.EntryCommands
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
@@ -193,8 +195,8 @@ class VaultViewModel @Inject constructor(
 
     val addType: AddType? get() = detail.addType
     fun setAddType(type: AddType?) = detail.setAddType(type)
-    val itemToDelete: VaultListItem? get() = detail.itemToDelete
-    fun setItemToDelete(item: VaultListItem?) = detail.setItemToDelete(item)
+    val itemToDelete: EntryListItem? get() = detail.itemToDelete
+    fun setItemToDelete(item: EntryListItem?) = detail.setItemToDelete(item)
 
     fun showDetailIconPicker() = detail.showIconPicker()
     fun hideDetailIconPicker() = detail.hideIconPicker()
@@ -217,12 +219,19 @@ class VaultViewModel @Inject constructor(
                 is OtpResult.Success -> {
                     val entry = vaultQueryUseCases.getById(entryId)
                     if (entry != null && result.nextCounter != null) {
-                        val newOtp = entry.credential.otp?.copy(counter = result.nextCounter)
-                        val newCredential = entry.credential.copy(otp = newOtp)
+                        val newSecret = when (val secret = entry.secret) {
+                            is EntrySecret.Otp -> {
+                                val updatedConfig =
+                                    secret.data.config?.copy(counter = result.nextCounter)
+                                EntrySecret.Otp(secret.data.copy(config = updatedConfig))
+                            }
+
+                            else -> secret
+                        }
                         entryCommandHandler.updateEntry(
                             entryId,
                             entry.entryVersion,
-                            EntryChanges(credential = newCredential)
+                            EntryChanges(secret = newSecret)
                         )
                     }
                     onResult(result.code)
@@ -246,14 +255,14 @@ class VaultViewModel @Inject constructor(
     }
 
     // --- 业务协调 ---
-    fun showDetail(item: VaultListItem) {
+    fun showDetail(item: EntryListItem) {
         viewModelScope.launch {
             val entry = vaultQueryUseCases.getById(item.id) ?: return@launch
             detail.showDetail(entry)
             totp.autoUnlock(item.id)
             entryCommandHandler.recordUsage(
                 item.id,
-                com.aozijx.passly.domain.model.activity.ActivityType.VIEW
+                ActivityType.VIEW
             )
         }
     }
@@ -284,7 +293,7 @@ class VaultViewModel @Inject constructor(
     fun addItem(entry: VaultEntry) = entryManager.addItem(entry)
     fun addItem(entry: VaultEntry, domain: String) = entryManager.addItem(entry, domain)
     fun updateVaultEntry(entry: VaultEntry) = entryManager.updateEntry(entry)
-    fun quickDelete(item: VaultListItem) = entryManager.deleteEntryById(item.id)
+    fun quickDelete(item: EntryListItem) = entryManager.deleteEntryById(item.id)
     fun confirmDelete() {
         val item = itemToDelete ?: return
         viewModelScope.launch {

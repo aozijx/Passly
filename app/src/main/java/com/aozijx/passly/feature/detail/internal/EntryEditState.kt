@@ -3,10 +3,10 @@ package com.aozijx.passly.feature.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.domain.model.core.OtpConfig
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
+import com.aozijx.passly.domain.model.otp.OtpConfig
 
 /**
  * 条目详情页统一编辑状态（原 EntryEditState）

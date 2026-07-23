@@ -47,11 +47,11 @@ internal class EntryManager(
                         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                             val savedEntry = vaultQueryUseCases.getById(entry.id)
                             if (savedEntry != null) {
-                                val iconMeta = savedEntry.metadata.copy(icon = outcome.filePath)
+                                val iconSummary = savedEntry.summary.copy(icon = outcome.filePath)
                                 entryCommandHandler.updateEntry(
                                     savedEntry.id,
                                     savedEntry.entryVersion,
-                                    EntryChanges(metadata = iconMeta)
+                                    EntryChanges(summary = iconSummary)
                                 )
                             }
                         }
@@ -80,33 +80,14 @@ internal class EntryManager(
         scope.launch(Dispatchers.IO + handler) {
             val current = vaultQueryUseCases.getById(entry.id) ?: return@launch
 
-            val metaChanged = current.metadata.title != entry.metadata.title
-                    || current.metadata.username != entry.metadata.username
-                    || current.metadata.icon != entry.metadata.icon
-                    || current.metadata.website != entry.metadata.website
-                    || current.metadata.favorite != entry.favorite
-            val credChanged = entry.credential.let { newCred ->
-                val oldCred = current.credential
-                oldCred.password != newCred.password
-                        || oldCred.email != newCred.email
-                        || oldCred.notes != newCred.notes
-                        || oldCred.otp != newCred.otp
-                        || oldCred.cardNumber != newCred.cardNumber
-                        || oldCred.cardExpiry != newCred.cardExpiry
-                        || oldCred.cardCvv != newCred.cardCvv
-                        || oldCred.cardHolder != newCred.cardHolder
-                        || oldCred.sshPrivateKey != newCred.sshPrivateKey
-                        || oldCred.sshPublicKey != newCred.sshPublicKey
-                        || oldCred.sshPassphrase != newCred.sshPassphrase
-                        || oldCred.seedPhrase != newCred.seedPhrase
-                        || oldCred.customFields != newCred.customFields
-            }
+            val metaChanged = current.summary != entry.summary
+            val credChanged = current.secret != entry.secret
 
             if (!metaChanged && !credChanged) return@launch
 
             val changes = EntryChanges(
-                metadata = if (metaChanged) entry.metadata else null,
-                credential = if (credChanged) entry.credential else null
+                summary = if (metaChanged) entry.summary else null,
+                secret = if (credChanged) entry.secret else null
             )
 
             entryCommandHandler.updateEntry(entry.id, current.entryVersion, changes)
@@ -160,11 +141,11 @@ internal class EntryManager(
             try {
                 val internalPath = iconHelper.saveCustomIcon(context, item, uri)
                 if (internalPath != null) {
-                    val iconMeta = item.metadata.copy(icon = internalPath)
+                    val iconMeta = item.summary.copy(icon = internalPath)
                     entryCommandHandler.updateEntry(
-                        item.id, item.entryVersion, EntryChanges(metadata = iconMeta)
+                        item.id, item.entryVersion, EntryChanges(summary = iconMeta)
                     ).onSuccess {
-                        detail.updateEntry(item.copy(metadata = item.metadata.copy(icon = internalPath)))
+                        detail.updateEntry(item.copy(summary = item.summary.copy(icon = internalPath)))
                         totp.onEntryUpdated(item.id)
                     }.onFailure { error ->
                         onError(error.message)
@@ -189,11 +170,11 @@ internal class EntryManager(
                     val outcome = downloadFavicon(domain)
                     if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                         vaultQueryUseCases.getById(summary.id)?.let { entry ->
-                            val iconMeta = entry.metadata.copy(icon = outcome.filePath)
+                            val iconSummary = entry.summary.copy(icon = outcome.filePath)
                             entryCommandHandler.updateEntry(
                                 entry.id,
                                 entry.entryVersion,
-                                EntryChanges(metadata = iconMeta)
+                                EntryChanges(summary = iconSummary)
                             )
                         }
                     }

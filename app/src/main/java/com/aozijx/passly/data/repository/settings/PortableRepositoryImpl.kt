@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
+import com.aozijx.passly.data.codec.VaultSortSpecCodec
 import com.aozijx.passly.data.local.datastore.appSettingsDataStore
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.model.settings.SwipeActionType
@@ -86,7 +87,7 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
         dataStore.data.map { s -> s.faviconDownloadDomainList.toSet() }
     override val vaultSortOption: Flow<VaultSortSpec> =
         dataStore.data.map { s ->
-            VaultSortSpec.parse(s.vaultSortOption)
+            VaultSortSpecCodec.parse(s.vaultSortOption)
         }
     override val themeColor: Flow<String> =
         dataStore.data.map { s -> s.themeColor }
@@ -255,7 +256,7 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
 
     override suspend fun setVaultSortOption(sort: VaultSortSpec) {
         dataStore.updateData {
-            it.toBuilder().setVaultSortOption(VaultSortSpec.serialize(sort)).build()
+            it.toBuilder().setVaultSortOption(VaultSortSpecCodec.serialize(sort)).build()
         }
     }
 

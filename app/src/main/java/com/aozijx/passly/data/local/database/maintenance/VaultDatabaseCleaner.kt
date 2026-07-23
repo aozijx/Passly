@@ -8,12 +8,12 @@ import javax.inject.Singleton
  * 清空保险库所有数据表的结果。
  */
 data class ClearDatabaseResult(
-    val metadataDeleted: Int = 0,
-    val credentialsDeleted: Int = 0,
-    val historyDeleted: Int = 0,
+    val entriesDeleted: Int = 0,
+    val secretsDeleted: Int = 0,
+    val revisionsDeleted: Int = 0,
     val activityDeleted: Int = 0,
     val attachmentsDeleted: Int = 0,
-    val lookupIndexDeleted: Int = 0,
+    val searchTokensDeleted: Int = 0,
     val keyEnvelopesDeleted: Int = 0
 )
 
@@ -35,12 +35,12 @@ class VaultDatabaseCleanerImpl @Inject constructor(
 
     override suspend fun clearVaultData(): ClearDatabaseResult = sessionManager.transaction {
         ClearDatabaseResult(
-            metadataDeleted = metadataDao().clear(),
-            credentialsDeleted = credentialDao().clear(),
-            historyDeleted = historyDao().clear(),
-            activityDeleted = activityDao().clear(),
-            attachmentsDeleted = attachmentDao().clear(),
-            lookupIndexDeleted = lookupIndexDao().clear()
+            entriesDeleted = entryDao().clear(),
+            secretsDeleted = entrySecretDao().clear(),
+            revisionsDeleted = entryRevisionDao().clear(),
+            activityDeleted = entryActivityDao().clear(),
+            attachmentsDeleted = entryAttachmentDao().clear(),
+            searchTokensDeleted = searchTokenDao().clear()
         )
     }
 }

@@ -39,7 +39,6 @@ class DatabaseProvider @Inject constructor(
             .openHelperFactory(factory)
             .build()
 
-        // 这里现在安全了
         runCatching { db.openHelper.writableDatabase }
             .onFailure { error ->
                 AppLog.e(TAG, "Database probe failed", error)

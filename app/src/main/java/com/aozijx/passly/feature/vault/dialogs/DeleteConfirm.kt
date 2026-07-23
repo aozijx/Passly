@@ -7,13 +7,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.feature.main.MainViewModel
 
 @Composable
 fun DeleteConfirmDialog(
     mainViewModel: MainViewModel,
-    item: VaultListItem,
+    item: EntryListItem,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {

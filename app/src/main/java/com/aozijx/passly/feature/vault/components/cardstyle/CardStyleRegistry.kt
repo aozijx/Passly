@@ -5,12 +5,12 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
 import com.aozijx.passly.feature.vault.model.OtpUiState
 
 object CardStyleRegistry {
-    private val previewBaseEntry = VaultListItem(
+    private val previewBaseEntry = EntryListItem(
         id = "-100",
         entryType = EntryType.LOGIN,
         title = "示例账号",
@@ -31,7 +31,7 @@ object CardStyleRegistry {
         hasTotp = false
     )
 
-    private val previewPasswordEntry = VaultListItem(
+    private val previewPasswordEntry = EntryListItem(
         id = "-101",
         entryType = EntryType.LOGIN,
         title = "我的邮箱",
@@ -52,7 +52,7 @@ object CardStyleRegistry {
         hasTotp = false
     )
 
-    private val previewTotpEntry = VaultListItem(
+    private val previewTotpEntry = EntryListItem(
         id = "-102",
         entryType = EntryType.LOGIN,
         title = "示例二步验证",
@@ -76,7 +76,7 @@ object CardStyleRegistry {
     @Composable
     fun RenderVaultItem(
         style: VaultCardStyle,
-        entry: VaultListItem,
+        entry: EntryListItem,
         totpStates: Map<String, OtpUiState>,
         showTotpCode: Boolean,
         onClick: () -> Unit

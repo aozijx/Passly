@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.contract
 
-import com.aozijx.passly.domain.model.lookup.VaultListItem
+import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import com.aozijx.passly.feature.vault.model.VaultTab
 
@@ -15,7 +15,7 @@ data class VaultUiState(
     val availableCategories: List<String> = emptyList(),
     val visibleTabs: List<VaultTab> = VaultTab.resolveVisible(VaultTab.defaultVisibleKeys),
     val isAutoDownloadIcons: Boolean = true,
-    val vaultItems: List<VaultListItem> = emptyList(),
-    val vaultItemsByTab: Map<VaultTab, List<VaultListItem>> = emptyMap(),
+    val vaultItems: List<EntryListItem> = emptyList(),
+    val vaultItemsByTab: Map<VaultTab, List<EntryListItem>> = emptyMap(),
     val showTOTPCode: Boolean = true
 )

@@ -48,7 +48,7 @@ class BlindIndexer @Inject constructor(
 
     /**
      * 搜索令牌列表（含哈希值和分词长度）。
-     * 用于 [LookupIndexDao.searchByHash] 的批量查询。
+     * 用于 [SearchTokenDao.searchByHash] 的批量查询。
      */
     suspend fun searchTokens(query: String): List<SearchToken> {
         val key = searchKeyProvider.get()
