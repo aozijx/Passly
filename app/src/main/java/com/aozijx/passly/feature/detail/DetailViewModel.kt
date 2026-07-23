@@ -189,7 +189,7 @@ class DetailViewModel @Inject constructor(
         if (entry.associatedDomain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return
         viewModelScope.launch {
             val domain = entry.associatedDomain
-            val outcome = downloadFavicon(domain)
+            val outcome = downloadFavicon(domain!!)
             if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                 val iconSummary = entry.summary.copy(icon = outcome.filePath)
                 entryCommandHandler.updateEntry(

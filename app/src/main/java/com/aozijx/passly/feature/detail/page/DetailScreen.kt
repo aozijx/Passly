@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.otp.OtpType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -56,7 +57,8 @@ fun DetailScreen(
     // 页面数据初始化（同 key 内串联首次 TOTP 自动解锁，避免重复 effect 触发）
     LaunchedEffect(initialEntry.id) {
         onEvent(DetailIntent.Initialize(initialEntry))
-        if (!initialEntry.credential.otp?.secret.isNullOrBlank()) {
+        val initialOtpSecret = (initialEntry.secret as? EntrySecret.Otp)?.data?.config?.secret
+        if (!initialOtpSecret.isNullOrBlank()) {
             onAutoUnlockTotp(initialEntry)
         }
     }
@@ -65,11 +67,12 @@ fun DetailScreen(
     val editState = remember(entry) { EntryEditState(entry) }
 
     val currentState = totpStates[entry.id]
+    val otpConfig = (entry.secret as? EntrySecret.Otp)?.data?.config
     val isSteam = remember(
-        entry.credential.otp?.type
-    ) { entry.credential.otp?.type == OtpType.STEAM }
-    val totpEditState = remember(entry, entry.credential.otp?.secret) {
-        TotpEditState(entry, entry.credential.otp?.secret ?: "")
+        otpConfig?.type
+    ) { otpConfig?.type == OtpType.STEAM }
+    val totpEditState = remember(entry, otpConfig?.secret) {
+        TotpEditState(entry, otpConfig?.secret ?: "")
     }
 
     // 处理外部启动模式（如编辑 TOTP）
@@ -81,7 +84,7 @@ fun DetailScreen(
         } else {
             if (entry.username.isNotEmpty()) {
                 editState.isEditingUsername = true
-            } else if (entry.credential.password?.isNotEmpty() == true) {
+            } else if ((entry.secret as? EntrySecret.Login)?.data?.password?.isNotEmpty() == true) {
                 editState.isEditingPassword = true
             }
         }

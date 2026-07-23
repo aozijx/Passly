@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -57,6 +58,9 @@ fun SeedPhraseSection(
         revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
     }
 
+    val seedPhrase = (entry.secret as? EntrySecret.Identity)?.data?.seedPhrase
+    val notes = (entry.secret as? EntrySecret.VaultData)?.notes
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.seed_phrase_title),
@@ -70,7 +74,7 @@ fun SeedPhraseSection(
                     handler = actionHandler,
                     fieldName = "seed phrase",
                     revealedValue = revealedSeedPhrase,
-                    sourceValue = entry.credential.seedPhrase,
+                    sourceValue = seedPhrase,
                     authTitle = "解密助记词",
                     authSubtitle = "验证身份以复制助记词",
                     onReveal = onSeedPhraseRevealed,
@@ -84,7 +88,7 @@ fun SeedPhraseSection(
                     handler = actionHandler,
                     fieldName = "seed phrase",
                     revealedValue = revealedSeedPhrase,
-                    sourceValue = entry.credential.seedPhrase,
+                    sourceValue = seedPhrase,
                     authTitle = "解密助记词",
                     authSubtitle = "验证身份以查看助记词",
                     onReveal = onSeedPhraseRevealed
@@ -124,7 +128,7 @@ fun SeedPhraseSection(
                         handler = actionHandler,
                         fieldName = "seed phrase",
                         revealedValue = revealedSeedPhrase,
-                        sourceValue = entry.credential.seedPhrase,
+                        sourceValue = seedPhrase,
                         authTitle = "解密助记词",
                         authSubtitle = "验证身份以显示助记词",
                         onReveal = onSeedPhraseRevealed
@@ -139,13 +143,13 @@ fun SeedPhraseSection(
             }
         }
 
-        if (entry.credential.notes != null) {
+        if (notes != null) {
             DetailItem(
                 label = stringResource(R.string.remark),
-                value = entry.credential.notes,
+                value = notes,
                 isRevealed = true,
                 onCopy = {
-                    ClipboardUtils.copy(context, entry.credential.notes)
+                    ClipboardUtils.copy(context, notes)
                     actionHandler.record("notes", ActivityType.COPY_PASSWORD)
                 },
                 onEdit = {}

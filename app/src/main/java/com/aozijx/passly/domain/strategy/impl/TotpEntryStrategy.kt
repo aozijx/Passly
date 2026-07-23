@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
@@ -16,13 +17,14 @@ class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "TOTP 标题不能为空"
-        if (entry.credential.otp?.secret.isNullOrBlank()) return "TOTP 密钥不能为空"
+        if ((entry.secret as? EntrySecret.Otp)?.data?.config?.secret.isNullOrBlank()) return "TOTP 密钥不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        if ((entry.credential.otp?.periodSeconds ?: 30) <= 0) return "TOTP 周期必须大于 0"
-        if ((entry.credential.otp?.digits ?: 6) !in 5..8) return "TOTP 位数应在 5-8 位"
+        val config = (entry.secret as? EntrySecret.Otp)?.data?.config
+        if ((config?.periodSeconds ?: 30) <= 0) return "TOTP 周期必须大于 0"
+        if ((config?.digits ?: 6) !in 5..8) return "TOTP 位数应在 5-8 位"
         return null
     }
 
@@ -31,7 +33,8 @@ class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
     }
 
     override fun extractSummary(entry: VaultEntry): String {
-        return "${entry.credential.otp?.digits ?: 6} 位 / ${entry.credential.otp?.periodSeconds ?: 30}s"
+        val config = (entry.secret as? EntrySecret.Otp)?.data?.config
+        return "${config?.digits ?: 6} 位 / ${config?.periodSeconds ?: 30}s"
     }
 
     override fun suggestedCategory(): String = "认证"

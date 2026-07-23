@@ -8,6 +8,8 @@ import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.data.mapper.snapshot.toEntrySecret
+import com.aozijx.passly.data.mapper.snapshot.toEntrySummary
 import com.aozijx.passly.data.mapper.snapshot.toSnapshot
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
@@ -80,10 +82,10 @@ internal class BackupRepositoryImpl @Inject constructor(
                         val archivePath = imageEntryName(entry.id)
                         images[archivePath] = source.readBytes()
                         snapshot.copy(
-                            metadata = snapshot.metadata.copy(iconCustomPath = archivePath)
+                            summary = snapshot.summary.copy(iconCustomPath = archivePath)
                         )
                     } else {
-                        snapshot.copy(metadata = snapshot.metadata.copy(iconCustomPath = null))
+                        snapshot.copy(summary = snapshot.summary.copy(iconCustomPath = null))
                     }
                 }
                 val snapshotJson = AppJson.encodeToString(
@@ -161,10 +163,10 @@ internal class BackupRepositoryImpl @Inject constructor(
     ) {
         val createdFiles = mutableListOf<File>()
         val restored = snapshots.map { snapshot ->
-            val archivePath = snapshot.metadata.iconCustomPath
+            val archivePath = snapshot.summary.iconCustomPath
             val imageBytes = archivePath?.let(images::get)
             if (archivePath == null) {
-                snapshot.copy(metadata = snapshot.metadata.copy(iconCustomPath = null))
+                snapshot.copy(summary = snapshot.summary.copy(iconCustomPath = null))
             } else {
                 requireNotNull(imageBytes) { "备份缺少附件: $archivePath" }
                 val directory = File(context.filesDir, "vault_images").apply { mkdirs() }
@@ -172,7 +174,7 @@ internal class BackupRepositoryImpl @Inject constructor(
                 target.outputStream().use { it.write(imageBytes) }
                 createdFiles += target
                 snapshot.copy(
-                    metadata = snapshot.metadata.copy(iconCustomPath = target.absolutePath)
+                    summary = snapshot.summary.copy(iconCustomPath = target.absolutePath)
                 )
             }
         }

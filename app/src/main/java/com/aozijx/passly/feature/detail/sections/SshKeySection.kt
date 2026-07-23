@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -77,7 +78,16 @@ fun SshKeySection(
                 label = stringResource(R.string.edit_field, passphraseLabel),
                 onSave = {
                     if (editState.editedPassword != revealedPassword) {
-                        onEntryUpdated(entry.copy(credential = entry.credential.copy(password = editState.editedPassword)))
+                        val sshSecret = entry.secret as EntrySecret.SshKey
+                        onEntryUpdated(
+                            entry.copy(
+                                secret = sshSecret.copy(
+                                    data = sshSecret.data.copy(
+                                        passphrase = editState.editedPassword
+                                    )
+                                )
+                            )
+                        )
                         onPasswordRevealed(editState.editedPassword)
                     }
                     editState.isEditingPassword = false
@@ -94,7 +104,7 @@ fun SshKeySection(
                         handler = actionHandler,
                         fieldName = "passphrase",
                         revealedValue = revealedPassword,
-                        sourceValue = entry.credential.password,
+                        sourceValue = (entry.secret as EntrySecret.SshKey).data.passphrase,
                         authTitle = "解密 SSH 密码",
                         authSubtitle = "验证身份以复制信息",
                         onReveal = onPasswordRevealed,
@@ -117,7 +127,7 @@ fun SshKeySection(
                     handler = actionHandler,
                     fieldName = "private key",
                     revealedValue = revealedSshPrivateKey,
-                    sourceValue = entry.credential.sshPrivateKey,
+                    sourceValue = (entry.secret as EntrySecret.SshKey).data.privateKey,
                     authTitle = "解密 SSH 私钥",
                     authSubtitle = "验证身份以复制信息",
                     onReveal = onSshPrivateKeyRevealed,
@@ -178,7 +188,8 @@ fun SshKeySection(
         if (revealedSshPrivateKey == null && revealedPassword == null) {
             Button(
                 onClick = {
-                    val sshKey = entry.credential.sshPrivateKey
+                    val sshSecret = entry.secret as EntrySecret.SshKey
+                    val sshKey = sshSecret.data.privateKey
                     if (!sshKey.isNullOrBlank()) {
                         onAuthenticate {
                             onSshPrivateKeyRevealed(sshKey)
@@ -188,8 +199,9 @@ fun SshKeySection(
                                     ActivityType.VIEW
                                 )
                             )
-                            if (!entry.credential.password.isNullOrEmpty()) {
-                                onPasswordRevealed(entry.credential.password)
+                            val passphrase = sshSecret.data.passphrase
+                            if (!passphrase.isNullOrEmpty()) {
+                                onPasswordRevealed(passphrase)
                                 actionHandler.record("passphrase", ActivityType.VIEW)
                             }
                         }
@@ -204,17 +216,6 @@ fun SshKeySection(
             }
         }
 
-        if (entry.credential.paymentPin != null) {
-            DetailItem(
-                label = stringResource(R.string.ssh_key_pin),
-                value = entry.credential.paymentPin,
-                isRevealed = true,
-                onCopy = {
-                    ClipboardUtils.copy(context, entry.credential.paymentPin)
-                    actionHandler.record("SSH key PIN", ActivityType.COPY_PASSWORD)
-                },
-                onEdit = {}
-            )
-        }
+        // paymentPin is not present in SshSecret; skipped for SSH key type.
     }
 }

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -80,7 +81,7 @@ fun BankCardSection(
                 trailingIcon = {
                     IconButton(onClick = {
                         savePlaintext(editState.editedUsername, revealedCardholder, { editState.isEditingUsername = false }) {
-                            onEntryUpdated(entry.copy(metadata = entry.metadata.copy(username = it)))
+                            onEntryUpdated(entry.copy(summary = entry.summary.copy(username = it)))
                             onRevealField(RevealedFieldKey.CARDHOLDER, editState.editedUsername)
                         }
                     }) {
@@ -133,7 +134,15 @@ fun BankCardSection(
                 trailingIcon = {
                     IconButton(onClick = {
                         savePlaintext(editState.editedPassword, revealedCardNumber, { editState.isEditingPassword = false }) {
-                            onEntryUpdated(entry.copy(credential = entry.credential.copy(password = it)))
+                            onEntryUpdated(
+                                entry.copy(
+                                    secret = (entry.secret as EntrySecret.Card).copy(
+                                        data = (entry.secret as EntrySecret.Card).data.copy(
+                                            cardNumber = it
+                                        )
+                                    )
+                                )
+                            )
                             onRevealField(RevealedFieldKey.CARD_NUMBER, editState.editedPassword)
                         }
                     }) {
@@ -153,7 +162,7 @@ fun BankCardSection(
                         handler = actionHandler,
                         fieldName = "card number",
                         revealedValue = revealedCardNumber,
-                        sourceValue = entry.credential.password,
+                        sourceValue = (entry.secret as? EntrySecret.Card)?.data?.cardNumber,
                         authTitle = "解密卡号",
                         authSubtitle = "验证身份以复制信息",
                         onReveal = { onRevealField(RevealedFieldKey.CARD_NUMBER, it) },
@@ -166,7 +175,7 @@ fun BankCardSection(
             )
         }
 
-        entry.credential.cardCvv?.let { cvv ->
+        (entry.secret as? EntrySecret.Card)?.data?.cardCvv?.let { cvv ->
             if (editState.isEditingTotp) {
                 OutlinedTextField(
                     value = editState.editedTotp,
@@ -184,7 +193,15 @@ fun BankCardSection(
                     trailingIcon = {
                         IconButton(onClick = {
                             savePlaintext(editState.editedTotp, revealedCvv, { editState.isEditingTotp = false }) {
-                                onEntryUpdated(entry.copy(credential = entry.credential.copy(cardCvv = it)))
+                                onEntryUpdated(
+                                    entry.copy(
+                                        secret = EntrySecret.Card(
+                                            (entry.secret as EntrySecret.Card).data.copy(
+                                                cardCvv = it
+                                            )
+                                        )
+                                    )
+                                )
                                 onRevealField(RevealedFieldKey.CVV, editState.editedTotp)
                             }
                         }) {
@@ -220,7 +237,7 @@ fun BankCardSection(
             }
         }
 
-        entry.credential.cardExpiry?.let { expiration ->
+        (entry.secret as? EntrySecret.Card)?.data?.cardExpiry?.let { expiration ->
             DetailItem(
                 label = stringResource(R.string.card_expiration),
                 value = expiration,
@@ -234,7 +251,7 @@ fun BankCardSection(
             )
         }
 
-        entry.credential.paymentPin?.let { pin ->
+        (entry.secret as? EntrySecret.Card)?.data?.paymentPin?.let { pin ->
             DetailItem(
                 label = stringResource(R.string.payment_pin),
                 value = revealedPaymentPin ?: stringResource(R.string.hidden_mask),
@@ -262,15 +279,21 @@ fun BankCardSection(
             Button(
                 onClick = {
                     onAuthenticate {
-                        onRevealField(RevealedFieldKey.CARD_NUMBER, entry.credential.password)
+                        onRevealField(
+                            RevealedFieldKey.CARD_NUMBER,
+                            (entry.secret as? EntrySecret.Card)?.data?.cardNumber
+                        )
                         onEvent(
                             DetailIntent.RecordAction(
                                 "card number",
                                 ActivityType.VIEW
                             )
                         )
-                        if (revealedCvv == null && entry.credential.cardCvv != null) {
-                            onRevealField(RevealedFieldKey.CVV, entry.credential.cardCvv)
+                        if (revealedCvv == null && (entry.secret as? EntrySecret.Card)?.data?.cardCvv != null) {
+                            onRevealField(
+                                RevealedFieldKey.CVV,
+                                (entry.secret as? EntrySecret.Card)?.data?.cardCvv
+                            )
                             onEvent(
                                 DetailIntent.RecordAction(
                                     "CVV",

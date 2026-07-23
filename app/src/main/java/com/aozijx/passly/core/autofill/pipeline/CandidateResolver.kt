@@ -5,6 +5,7 @@ import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.model.lookup.MatchType
@@ -53,7 +54,7 @@ class CandidateResolver @Inject constructor(
             candidateId = entry.id.toIntOrNull() ?: 0,
             displayName = entry.title,
             username = entry.username,
-            password = entry.credential.password ?: "",
+            password = (entry.secret as? EntrySecret.Login)?.data?.password ?: "",
             totpCode = generateTotpFromEntry(entry),
             associatedDomain = entry.associatedDomain,
             associatedAppPackage = entry.associatedAppPackage,
@@ -72,7 +73,7 @@ class CandidateResolver @Inject constructor(
             candidateId = id.toIntOrNull() ?: 0,
             displayName = title,
             username = username,
-            password = credential.password ?: "",
+            password = (secret as? EntrySecret.Login)?.data?.password ?: "",
             totpCode = generateTotpFromEntry(this),
             associatedDomain = associatedDomain,
             associatedAppPackage = associatedAppPackage,
@@ -84,9 +85,9 @@ class CandidateResolver @Inject constructor(
     }
 
     private fun generateTotpFromEntry(entry: VaultEntry): String? {
-        val config = entry.credential.otp ?: return null
-        if (config.secret.isBlank()) return null
-        return when (val result = OtpGenerator.generate(config)) {
+        val otpConfig = (entry.secret as? EntrySecret.Otp)?.data?.config ?: return null
+        if (otpConfig.secret.isBlank()) return null
+        return when (val result = OtpGenerator.generate(otpConfig)) {
             is OtpResult.Success -> result.code
             is OtpResult.Failure -> null
         }
@@ -99,7 +100,7 @@ class CandidateResolver @Inject constructor(
             MatchType.WEB_DOMAIN -> candidate.matchedDomain?.let { parts.add(it) }
             else -> {}
         }
-        if (candidate.entry.credential.otp?.secret?.isNotBlank() == true) {
+        if ((candidate.entry.secret as? EntrySecret.Otp)?.data?.config?.secret?.isNotBlank() == true) {
             parts.add("2FA")
         }
         return parts.joinToString(" · ")

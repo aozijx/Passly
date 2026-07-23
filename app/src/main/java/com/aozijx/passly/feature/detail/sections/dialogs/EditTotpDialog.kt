@@ -14,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.entry.secret.OtpSecret
 import com.aozijx.passly.domain.model.otp.OtpConfig
 import com.aozijx.passly.domain.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.model.otp.OtpType
@@ -53,28 +55,30 @@ fun EditTotpSection(
                     try {
                         onEntryUpdated(
                             item.copy(
-                                credential = item.credential.copy(
-                                    otp = OtpConfig(
-                                        type = editState.type,
-                                        secret = editState.secret.trim(),
-                                        digits = if (editState.type == OtpType.STEAM) 5
-                                        else (editState.digits.toIntOrNull() ?: 6),
-                                        periodSeconds = if (editState.type == OtpType.HOTP) null
-                                        else (editState.period.toIntOrNull() ?: 30),
-                                        counter = if (editState.type == OtpType.HOTP) {
-                                            editState.counter.toLongOrNull() ?: 0L
-                                        } else null,
-                                        algorithm = run {
-                                            val a = editState.algorithm.uppercase()
-                                            when (a) {
-                                                "SHA256" -> OtpHashAlgorithm.SHA256
-                                                "SHA512" -> OtpHashAlgorithm.SHA512
-                                                else -> OtpHashAlgorithm.SHA1
-                                            }
-                                        },
-                                        encoding = editState.encoding,
-                                        issuer = item.credential.otp?.issuer,
-                                        accountName = item.credential.otp?.accountName
+                                secret = EntrySecret.Otp(
+                                    data = OtpSecret(
+                                        config = OtpConfig(
+                                            type = editState.type,
+                                            secret = editState.secret.trim(),
+                                            digits = if (editState.type == OtpType.STEAM) 5
+                                            else (editState.digits.toIntOrNull() ?: 6),
+                                            periodSeconds = if (editState.type == OtpType.HOTP) null
+                                            else (editState.period.toIntOrNull() ?: 30),
+                                            counter = if (editState.type == OtpType.HOTP) {
+                                                editState.counter.toLongOrNull() ?: 0L
+                                            } else null,
+                                            algorithm = run {
+                                                val a = editState.algorithm.uppercase()
+                                                when (a) {
+                                                    "SHA256" -> OtpHashAlgorithm.SHA256
+                                                    "SHA512" -> OtpHashAlgorithm.SHA512
+                                                    else -> OtpHashAlgorithm.SHA1
+                                                }
+                                            },
+                                            encoding = editState.encoding,
+                                            issuer = (item.secret as? EntrySecret.Otp)?.data?.config?.issuer,
+                                            accountName = (item.secret as? EntrySecret.Otp)?.data?.config?.accountName
+                                        )
                                     )
                                 )
                             )

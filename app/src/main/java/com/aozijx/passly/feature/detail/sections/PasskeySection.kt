@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -43,7 +44,7 @@ fun PasskeySection(
         DetailItem(
             label = stringResource(R.string.passkey_data),
             value = when {
-                entry.credential.passkeyPrivateKeyReference.isNullOrBlank() -> notSet
+                (entry.secret as EntrySecret.Passkey).data.privateKeyReference.isNullOrBlank() -> notSet
                 revealedPasskeyData != null -> revealedPasskeyData
                 else -> hidden
             },
@@ -54,7 +55,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
-                    sourceValue = entry.credential.passkeyPrivateKeyReference,
+                    sourceValue = (entry.secret as EntrySecret.Passkey).data.privateKeyReference,
                     authTitle = "解密 Passkey 数据",
                     authSubtitle = "验证身份以复制数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) },
@@ -66,7 +67,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
-                    sourceValue = entry.credential.passkeyPrivateKeyReference,
+                    sourceValue = (entry.secret as EntrySecret.Passkey).data.privateKeyReference,
                     authTitle = "解密 Passkey 数据",
                     authSubtitle = "验证身份以查看数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) }
@@ -74,10 +75,11 @@ fun PasskeySection(
             }
         )
 
+        val recoveryCodes = (entry.secret as? EntrySecret.Identity)?.data?.recoveryCodes
         DetailItem(
             label = stringResource(R.string.passkey_recovery_codes),
             value = when {
-                entry.credential.recoveryCodes.isEmpty() -> notSet
+                recoveryCodes.isNullOrEmpty() -> notSet
                 revealedRecoveryCodes != null -> revealedRecoveryCodes
                 else -> hidden
             },
@@ -88,7 +90,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "recovery codes",
                     revealedValue = revealedRecoveryCodes,
-                    sourceValue = entry.credential.recoveryCodes.joinToString("\n"),
+                    sourceValue = recoveryCodes?.joinToString("\n"),
                     authTitle = "解密恢复码",
                     authSubtitle = "验证身份以复制恢复码",
                     onReveal = { onRevealField(RevealedFieldKey.RECOVERY_CODES, it) },
@@ -100,7 +102,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "recovery codes",
                     revealedValue = revealedRecoveryCodes,
-                    sourceValue = entry.credential.recoveryCodes.joinToString("\n"),
+                    sourceValue = recoveryCodes?.joinToString("\n"),
                     authTitle = "解密恢复码",
                     authSubtitle = "验证身份以查看恢复码",
                     onReveal = { onRevealField(RevealedFieldKey.RECOVERY_CODES, it) }
@@ -108,15 +110,15 @@ fun PasskeySection(
             }
         )
 
-        if (!entry.credential.hardwareKeyInfo.isNullOrBlank()) {
+        if (!(entry.secret as EntrySecret.Passkey).data.hardwareKeyInfo.isNullOrBlank()) {
             DetailItem(
                 label = stringResource(R.string.hardware_key_info),
-                value = entry.credential.hardwareKeyInfo,
+                value = (entry.secret as EntrySecret.Passkey).data.hardwareKeyInfo!!,
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(
                         context,
-                        entry.credential.hardwareKeyInfo
+                        (entry.secret as EntrySecret.Passkey).data.hardwareKeyInfo!!
                     )
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     actionHandler.record(

@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.model.otp.OtpType
@@ -11,16 +12,17 @@ import com.aozijx.passly.domain.model.otp.OtpType
  * TOTP 编辑状态（详情页修改配置）
  */
 class TotpEditState(entry: VaultEntry, initialSecret: String) {
+    val otpConfig = (entry.secret as? EntrySecret.Otp)?.data?.config
     var isEditing by mutableStateOf(false)
     var secret by mutableStateOf(initialSecret)
-    var period by mutableStateOf((entry.credential.otp?.periodSeconds ?: 30).toString())
-    var digits by mutableStateOf((entry.credential.otp?.digits ?: 6).toString())
-    var type by mutableStateOf(entry.credential.otp?.type ?: OtpType.TOTP)
-    var algorithm by mutableStateOf(entry.credential.otp?.algorithm?.name ?: "SHA1")
+    var period by mutableStateOf((otpConfig?.periodSeconds ?: 30).toString())
+    var digits by mutableStateOf((otpConfig?.digits ?: 6).toString())
+    var type by mutableStateOf(otpConfig?.type ?: OtpType.TOTP)
+    var algorithm by mutableStateOf(otpConfig?.algorithm?.name ?: "SHA1")
     var encoding by mutableStateOf(
-        entry.credential.otp?.encoding ?: OtpSecretEncoding.BASE32
+        otpConfig?.encoding ?: OtpSecretEncoding.BASE32
     )
-    var counter by mutableStateOf((entry.credential.otp?.counter ?: 0L).toString())
+    var counter by mutableStateOf((otpConfig?.counter ?: 0L).toString())
 
     fun selectType(value: OtpType) {
         type = value

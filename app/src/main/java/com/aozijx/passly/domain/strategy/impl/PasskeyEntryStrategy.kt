@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
@@ -16,14 +17,11 @@ class PasskeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "Passkey 标题不能为空"
-        if (entry.credential.passkeyPrivateKeyReference.isNullOrBlank()) return "Passkey 数据不能为空"
+        if ((entry.secret as? EntrySecret.Passkey)?.data?.privateKeyReference.isNullOrBlank()) return "Passkey 数据不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        if (entry.credential.recoveryCodes.isNotEmpty() && entry.credential.recoveryCodes.any { it.length < 6 }) {
-            return "恢复码内容异常"
-        }
         return null
     }
 
@@ -32,7 +30,7 @@ class PasskeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
     }
 
     override fun extractSummary(entry: VaultEntry): String {
-        return if (entry.credential.recoveryCodes.isEmpty()) "Passkey" else "Passkey + 恢复码"
+        return "Passkey"
     }
 
     override fun suggestedCategory(): String = "认证"

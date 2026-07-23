@@ -182,8 +182,8 @@ private suspend fun downloadFavicon(
     val message = when (outcome.result) {
         FaviconUtils.DownloadResult.SUCCESS -> {
             val updated = entry.copy(
-                metadata = entry.metadata.copy(
-                    website = (entry.metadata.website ?: WebsiteInfo()).copy(
+                summary = entry.summary.copy(
+                    website = (entry.summary.website ?: WebsiteInfo()).copy(
                         primaryUrl = domain
                     ),
                     icon = null

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -81,7 +82,11 @@ fun WifiSection(
                 trailingIcon = {
                     IconButton(onClick = {
                         if (editState.editedPassword != revealedPassword) {
-                            onEntryUpdated(entry.copy(credential = entry.credential.copy(password = editState.editedPassword)))
+                            onEntryUpdated(entry.copy(secret = with(entry.secret as EntrySecret.Wifi) {
+                                copy(
+                                    data = data.copy(password = editState.editedPassword)
+                                )
+                            }))
                             onPasswordRevealed(editState.editedPassword)
                         }
                         editState.isEditingPassword = false
@@ -102,7 +107,7 @@ fun WifiSection(
                         handler = actionHandler,
                         fieldName = "wifi password",
                         revealedValue = revealedPassword,
-                        sourceValue = entry.credential.password,
+                        sourceValue = (entry.secret as EntrySecret.Wifi).data.password,
                         authTitle = "解密 WiFi 密码",
                         authSubtitle = "验证身份以复制密码",
                         onReveal = onPasswordRevealed,
@@ -125,7 +130,7 @@ fun WifiSection(
                         handler = actionHandler,
                         fieldName = "wifi password",
                         revealedValue = revealedPassword,
-                        sourceValue = entry.credential.password,
+                        sourceValue = (entry.secret as EntrySecret.Wifi).data.password,
                         authTitle = "解密 WiFi 密码",
                         authSubtitle = "验证身份以查看密码",
                         onReveal = onPasswordRevealed
@@ -152,7 +157,7 @@ fun WifiSection(
                 ) {
                     Text(wifiEncryptionLabel, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        entry.credential.wifiSecurityType ?: "WPA",
+                        (entry.secret as EntrySecret.Wifi).data.securityType ?: "WPA",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -165,7 +170,7 @@ fun WifiSection(
                 ) {
                     Text(wifiHiddenLabel, style = MaterialTheme.typography.bodyLarge)
                     Switch(
-                        checked = entry.credential.wifiIsHidden,
+                        checked = (entry.secret as EntrySecret.Wifi).data.isHidden,
                         onCheckedChange = null,
                         enabled = false
                     )

@@ -81,7 +81,7 @@ private fun EntrySummary.toSummaryPayload(): SummaryPayload = SummaryPayload(
     expiresAt = expiresAt
 )
 
-private fun SummaryPayload.toEntrySummary(): EntrySummary = EntrySummary(
+internal fun SummaryPayload.toEntrySummary(): EntrySummary = EntrySummary(
     title = title,
     username = username,
     website = website?.let { w ->
@@ -178,14 +178,14 @@ private fun EntrySecret.toSecretPayload(): SecretPayload = when (this) {
 
     is EntrySecret.VaultData -> SecretPayload.VaultData(
         VaultDataPayload(
-            customFields = data.customFields.map { cf ->
+            customFields = customFields.map { cf ->
                 CustomFieldPayload(
                     name = cf.name,
                     value = cf.value,
                     type = cf.type
                 )
             },
-            notes = data.notes
+            notes = notes
         )
     )
 }
@@ -266,13 +266,13 @@ internal fun SecretPayload.toEntrySecret(): EntrySecret = when (this) {
     )
 
     is SecretPayload.VaultData -> EntrySecret.VaultData(
-        customFields = data.data.customFields.map { cf ->
+        customFields = data.customFields.map { cf ->
             CustomField(
                 name = cf.name,
                 value = cf.value,
                 type = cf.type
             )
         },
-        notes = data.data.notes
+        notes = data.notes
     )
 }

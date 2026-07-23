@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
@@ -17,13 +18,13 @@ class PasswordEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "标题不能为空"
         if (entry.username.isBlank()) return "用户名不能为空"
-        if (entry.credential.password.isNullOrBlank()) return "密码不能为空"
+        if ((entry.secret as? EntrySecret.Login)?.data?.password.isNullOrBlank()) return "密码不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
         // 检查是否存在基本的密码安全性
-        val passwordLength = entry.credential.password?.length ?: 0
+        val passwordLength = (entry.secret as? EntrySecret.Login)?.data?.password?.length ?: 0
         if (passwordLength < 1) return "密码为空"
         // 可以添加更复杂的密码强度检查
         return null

@@ -64,10 +64,10 @@ class LookupRepositoryImpl @Inject constructor(
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                metadataDao().observeActive()
+                entryDao().observeActive()
                     .map { metaEntities ->
                         val credEntities =
-                            credentialDao().getByEntryIds(metaEntities.map { it.entryId })
+                            entrySecretDao().getByEntryIds(metaEntities.map { it.entryId })
                         val credMap = credEntities.associateBy { it.entryId }
                         metaEntities.mapNotNull {
                             val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
@@ -114,7 +114,7 @@ class LookupRepositoryImpl @Inject constructor(
                     }
 
                     val credEntities =
-                        credentialDao().getByEntryIds(filteredMetaEntities.map { it.entryId })
+                        entrySecretDao().getByEntryIds(filteredMetaEntities.map { it.entryId })
                     val credMap = credEntities.associateBy { it.entryId }
                     filteredMetaEntities.mapNotNull {
                         val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)

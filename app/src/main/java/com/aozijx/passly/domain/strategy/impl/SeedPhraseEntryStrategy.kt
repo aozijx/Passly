@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
@@ -16,12 +17,12 @@ class SeedPhraseEntryStrategy @Inject constructor() : EntryTypeStrategy {
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "钱包名称不能为空"
-        if (entry.credential.seedPhrase.isNullOrBlank()) return "助记词不能为空"
+        if ((entry.secret as? EntrySecret.Identity)?.data?.seedPhrase.isNullOrBlank()) return "助记词不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        entry.credential.seedPhrase?.let { phrase ->
+        (entry.secret as? EntrySecret.Identity)?.data?.seedPhrase?.let { phrase ->
             val wordCount = phrase.split(Regex("\\s+")).size
             if (wordCount !in setOf(12, 24)) {
                 return "助记词应包含 12 或 24 个单词，实际 $wordCount 个"
@@ -43,11 +44,7 @@ class SeedPhraseEntryStrategy @Inject constructor() : EntryTypeStrategy {
     override fun supportsAutofill(): Boolean = false
 
     override fun initializeDefaults(entry: VaultEntry): VaultEntry {
-        return if (entry.credential.notes == null) {
-            entry.copy(credential = entry.credential.copy(notes = "备份好这个助记词，永远不要分享给任何人"))
-        } else {
-            entry
-        }
+        return entry
     }
 
 

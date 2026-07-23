@@ -65,7 +65,7 @@ fun IdCardSection(
                     handler = actionHandler,
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
-                    sourceValue = entry.credential.idNumber,
+                    sourceValue = (entry.secret as? EntrySecret.Identity)?.data?.idNumber,
                     authTitle = "解密身份证号",
                     authSubtitle = "验证身份以查看信息",
                     onReveal = onIdNumberRevealed
@@ -83,26 +83,6 @@ fun IdCardSection(
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     actionHandler.record(
                         "username",
-                        ActivityType.COPY_PASSWORD
-                    )
-                },
-                onEdit = {}
-            )
-        }
-
-        if (!(entry.secret as? EntrySecret.Identity)?.data?.cardExpiry.isNullOrBlank()) {
-            DetailItem(
-                label = stringResource(R.string.card_expiration),
-                value = (entry.secret as? EntrySecret.Identity)?.data?.cardExpiry,
-                isRevealed = true,
-                onCopy = {
-                    ClipboardUtils.copy(
-                        context,
-                        (entry.secret as? EntrySecret.Identity)?.data?.cardExpiry
-                    )
-                    Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
-                    actionHandler.record(
-                        "expiration",
                         ActivityType.COPY_PASSWORD
                     )
                 },

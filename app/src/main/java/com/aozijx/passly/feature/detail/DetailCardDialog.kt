@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.util.TotpUtils
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.otp.OtpType
@@ -76,16 +77,16 @@ fun DetailCardDialog(
     val editState = remember(entry) { EntryEditState(entry) }
 
     val currentState = totpState
-    val isSteam = remember(entry.credential.otp?.type) {
-        entry.credential.otp?.type == OtpType.STEAM
+    val isSteam = remember((entry.secret as? EntrySecret.Otp)?.data?.config?.type) {
+        (entry.secret as? EntrySecret.Otp)?.data?.config?.type == OtpType.STEAM
     }
-    val totpEditState = remember(entry, entry.credential.otp?.secret) {
-        TotpEditState(entry, entry.credential.otp?.secret ?: "")
+    val totpEditState = remember(entry, (entry.secret as? EntrySecret.Otp)?.data?.config?.secret) {
+        TotpEditState(entry, (entry.secret as? EntrySecret.Otp)?.data?.config?.secret ?: "")
     }
     var showQrDialog by remember { mutableStateOf(false) }
 
-    val hasTotp = !entry.credential.otp?.secret.isNullOrBlank()
-    val isHotp = entry.credential.otp?.type == OtpType.HOTP
+    val hasTotp = !(entry.secret as? EntrySecret.Otp)?.data?.config?.secret.isNullOrBlank()
+    val isHotp = (entry.secret as? EntrySecret.Otp)?.data?.config?.type == OtpType.HOTP
 
     LaunchedEffect(entry.id) {
         if (hasTotp) {
@@ -110,7 +111,7 @@ fun DetailCardDialog(
         } else {
             if (entry.username.isNotEmpty()) {
                 editState.isEditingUsername = true
-            } else if (entry.credential.password?.isNotEmpty() == true) {
+            } else if ((entry.secret as? EntrySecret.Login)?.data?.password?.isNotEmpty() == true) {
                 editState.isEditingPassword = true
             }
         }
@@ -204,7 +205,7 @@ fun DetailCardDialog(
     }
 
     if (showQrDialog && hasTotp) {
-        val otpConfig = entry.credential.otp
+        val otpConfig = (entry.secret as? EntrySecret.Otp)?.data?.config ?: return
         val qrContent = TotpUtils.constructOtpAuthUri(otpConfig, entry.title)
         val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
         QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })

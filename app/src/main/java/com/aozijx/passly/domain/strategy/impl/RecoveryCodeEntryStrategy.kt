@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
@@ -16,12 +17,14 @@ class RecoveryCodeEntryStrategy @Inject constructor() : EntryTypeStrategy {
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "恢复码标题不能为空"
-        if (entry.credential.recoveryCodes.isEmpty()) return "恢复码不能为空"
+        val recoveryCodes = (entry.secret as? EntrySecret.Identity)?.data?.recoveryCodes
+        if (recoveryCodes.isNullOrEmpty()) return "恢复码不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        if (entry.credential.recoveryCodes.isNotEmpty() && entry.credential.recoveryCodes.any { it.length < 4 }) {
+        val recoveryCodes = (entry.secret as? EntrySecret.Identity)?.data?.recoveryCodes.orEmpty()
+        if (recoveryCodes.isNotEmpty() && recoveryCodes.any { it.length < 4 }) {
             return "恢复码内容异常"
         }
         return null

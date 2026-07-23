@@ -83,13 +83,13 @@ private fun VersionTab(historyList: List<EntrySnapshot>, onRestore: (String) -> 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "v${history.version}",
+                        text = "v${history.entry.entryVersion}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "${dateFormat.format(Date(history.createdAt))} ${
-                            timeFormat.format(Date(history.createdAt))
+                        text = "${dateFormat.format(Date(history.entry.createdAt))} ${
+                            timeFormat.format(Date(history.entry.createdAt))
                         }",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant

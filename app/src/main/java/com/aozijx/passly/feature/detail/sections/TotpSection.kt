@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.components.TotpCodeCard
@@ -59,7 +60,7 @@ fun TotpSection(
             title = totpLabel
         )
 
-        if (totpEditState.isEditing && entry.credential.otp?.secret != null) {
+        if (totpEditState.isEditing && (entry.secret as? EntrySecret.Otp)?.data?.config?.secret != null) {
             InfoGroupCard(title = stringResource(R.string.vault_edit_totp_title)) {
                 EditTotpSection(
                     item = entry,

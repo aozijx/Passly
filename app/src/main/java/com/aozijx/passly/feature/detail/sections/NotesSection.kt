@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
@@ -73,7 +74,7 @@ fun NotesSection(
                     .combinedClickable(
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            editState.editedNotes = entry.credential.notes ?: ""
+                            editState.editedNotes = entry.resolveNotes() ?: ""
                             editState.isEditingNotes = true
                         },
                         onClick = { /* 不做任何事，只有长按触发 */ }
@@ -81,10 +82,17 @@ fun NotesSection(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = entry.credential.notes ?: noNotesLabel,
+                    text = entry.resolveNotes() ?: noNotesLabel,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
     }
+}
+
+private fun VaultEntry.resolveNotes(): String? = when (val s = secret) {
+    is EntrySecret.Login -> s.data.notes
+    is EntrySecret.Note -> s.notes
+    is EntrySecret.VaultData -> s.notes
+    else -> null
 }

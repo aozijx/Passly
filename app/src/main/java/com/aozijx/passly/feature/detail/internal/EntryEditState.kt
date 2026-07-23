@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
@@ -16,11 +17,22 @@ class EntryEditState(initialEntry: VaultEntry) {
     var editedUsername by mutableStateOf("")
     var editedPassword by mutableStateOf("")
     var editedCategory by mutableStateOf(initialEntry.category)
-    var editedNotes by mutableStateOf(initialEntry.credential.notes ?: "")
+    var editedNotes by mutableStateOf(
+        when (val s = initialEntry.secret) {
+            is EntrySecret.Login -> s.data.notes ?: ""
+            is EntrySecret.Note -> s.notes
+            is EntrySecret.VaultData -> s.notes ?: ""
+            else -> ""
+        }
+    )
     var editedDomain by mutableStateOf(initialEntry.associatedDomain ?: "")
     var editedPackage by mutableStateOf(initialEntry.associatedAppPackage ?: "")
-    var editedTotpSecret by mutableStateOf(initialEntry.credential.otp?.secret ?: "")
-    var editedTotp by mutableStateOf(initialEntry.credential.otp?.secret ?: "")
+    var editedTotpSecret by mutableStateOf(
+        (initialEntry.secret as? EntrySecret.Otp)?.data?.config?.secret ?: ""
+    )
+    var editedTotp by mutableStateOf(
+        (initialEntry.secret as? EntrySecret.Otp)?.data?.config?.secret ?: ""
+    )
 
     // --- 字段编辑标志 ---
     var isEditingTitle by mutableStateOf(false)
@@ -33,33 +45,32 @@ class EntryEditState(initialEntry: VaultEntry) {
     var isEditingTotp by mutableStateOf(false)
 
     fun applyTo(entry: VaultEntry): VaultEntry {
-        val newMetadata = entry.metadata.copy(
+        val newSummary = entry.summary.copy(
             title = editedTitle,
-            entryType = runCatching { EntryType.valueOf(editedCategory) }.getOrDefault(entry.metadata.entryType),
-            website = buildWebsite(entry.metadata.website)
+            website = buildWebsite(entry.summary.website)
         )
-        val newCredential = entry.credential.copy(
-            notes = editedNotes.ifBlank { null },
-            otp = updateTwoFactorSecret(entry.credential.otp, editedTotpSecret.ifBlank { null })
+        val newHeader = entry.header.copy(
+            entryType = runCatching { EntryType.valueOf(editedCategory) }.getOrDefault(entry.header.entryType)
         )
-        return entry.copy(metadata = newMetadata, credential = newCredential)
+        val newSecret = updateSecret(entry.secret)
+        return entry.copy(summary = newSummary, header = newHeader, secret = newSecret)
     }
 
     fun applyCategoryOnly(entry: VaultEntry): VaultEntry = entry.copy(
-        metadata = entry.metadata.copy(
-            entryType = runCatching { EntryType.valueOf(editedCategory) }.getOrDefault(entry.metadata.entryType)
+        header = entry.header.copy(
+            entryType = runCatching { EntryType.valueOf(editedCategory) }.getOrDefault(entry.header.entryType)
         )
     )
 
     fun applyTitleOnly(entry: VaultEntry): VaultEntry = entry.copy(
-        metadata = entry.metadata.copy(title = editedTitle)
+        summary = entry.summary.copy(title = editedTitle)
     )
 
     fun applyNotesOnly(entry: VaultEntry): VaultEntry =
-        entry.copy(credential = entry.credential.copy(notes = editedNotes.ifBlank { null }))
+        entry.copy(secret = updateSecretNotes(entry.secret))
 
     fun applyAssociatedOnly(entry: VaultEntry): VaultEntry = entry.copy(
-        metadata = entry.metadata.copy(website = buildWebsite(entry.metadata.website))
+        summary = entry.summary.copy(website = buildWebsite(entry.summary.website))
     )
 
     private fun buildWebsite(existing: WebsiteInfo?): WebsiteInfo? {
@@ -72,8 +83,33 @@ class EntryEditState(initialEntry: VaultEntry) {
         )
     }
 
-    private fun updateTwoFactorSecret(existing: OtpConfig?, secret: String?): OtpConfig? {
-        if (secret == null) return null
-        return existing?.copy(secret = secret)
+    private fun updateSecret(secret: EntrySecret): EntrySecret {
+        val notes = editedNotes.ifBlank { null }
+        val totpSecret = editedTotpSecret.ifBlank { null }
+        return when (secret) {
+            is EntrySecret.Login -> secret.copy(data = secret.data.copy(notes = notes))
+            is EntrySecret.Note -> EntrySecret.Note(notes = notes ?: "")
+            is EntrySecret.VaultData -> secret.copy(notes = notes)
+            is EntrySecret.Otp -> {
+                val newConfig = if (totpSecret != null) {
+                    (secret.data.config ?: OtpConfig(secret = totpSecret)).copy(secret = totpSecret)
+                } else {
+                    secret.data.config?.copy(secret = "") ?: OtpConfig(secret = "")
+                }
+                EntrySecret.Otp(secret.data.copy(config = newConfig))
+            }
+
+            else -> secret
+        }
+    }
+
+    private fun updateSecretNotes(secret: EntrySecret): EntrySecret {
+        val notes = editedNotes.ifBlank { null }
+        return when (secret) {
+            is EntrySecret.Login -> secret.copy(data = secret.data.copy(notes = notes))
+            is EntrySecret.Note -> EntrySecret.Note(notes = notes ?: "")
+            is EntrySecret.VaultData -> secret.copy(notes = notes)
+            else -> secret
+        }
     }
 }

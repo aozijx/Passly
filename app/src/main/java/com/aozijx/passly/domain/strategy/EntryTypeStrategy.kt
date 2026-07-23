@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.strategy
 
+import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.FieldKey
 import com.aozijx.passly.domain.model.entry.VaultEntry
@@ -30,53 +31,83 @@ interface EntryTypeStrategy {
 
     // --- 分组提取逻辑 (私有辅助函数) ---
 
-    private fun getCommonFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.TITLE -> entry.title
-        FieldKey.USERNAME -> entry.username
-        FieldKey.PASSWORD -> entry.credential.password
-        FieldKey.EMAIL -> entry.credential.email
-        FieldKey.NOTES -> entry.credential.notes
-        FieldKey.URIS -> entry.website?.matchDomains?.joinToString(", ")
-        else -> null
+    private fun getCommonFieldValue(entry: VaultEntry, key: FieldKey): String? {
+        val secret = entry.secret
+        return when (key) {
+            FieldKey.TITLE -> entry.title
+            FieldKey.USERNAME -> entry.username
+            FieldKey.PASSWORD -> when (secret) {
+                is EntrySecret.Login -> secret.data.password
+                is EntrySecret.Wifi -> secret.data.password
+                is EntrySecret.SshKey -> secret.data.passphrase
+                else -> null
+            }
+
+            FieldKey.EMAIL -> (secret as? EntrySecret.Login)?.data?.email
+            FieldKey.NOTES -> when (secret) {
+                is EntrySecret.Login -> secret.data.notes
+                is EntrySecret.Note -> secret.notes
+                is EntrySecret.VaultData -> secret.notes
+                else -> null
+            }
+
+            FieldKey.URIS -> entry.website?.matchDomains?.joinToString(", ")
+            else -> null
+        }
     }
 
-    private fun getTotpFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.TOTP_SECRET -> entry.credential.otp?.secret
-        FieldKey.TOTP_ISSUER -> entry.credential.otp?.issuer
-        FieldKey.TOTP_PERIOD -> (entry.credential.otp?.periodSeconds ?: 30).toString()
-        FieldKey.TOTP_DIGITS -> (entry.credential.otp?.digits ?: 6).toString()
-        FieldKey.TOTP_ALGORITHM -> entry.credential.otp?.algorithm?.name ?: "SHA1"
-        else -> null
+    private fun getTotpFieldValue(entry: VaultEntry, key: FieldKey): String? {
+        val otp = (entry.secret as? EntrySecret.Otp)?.data
+        return when (key) {
+            FieldKey.TOTP_SECRET -> otp?.config?.secret
+            FieldKey.TOTP_ISSUER -> otp?.config?.issuer
+            FieldKey.TOTP_PERIOD -> (otp?.config?.periodSeconds ?: 30).toString()
+            FieldKey.TOTP_DIGITS -> (otp?.config?.digits ?: 6).toString()
+            FieldKey.TOTP_ALGORITHM -> otp?.config?.algorithm?.name ?: "SHA1"
+            else -> null
+        }
     }
 
-    private fun getCryptoFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.PASSKEY_DATA -> entry.credential.passkeyPrivateKeyReference
-        FieldKey.RECOVERY_CODES -> entry.credential.recoveryCodes.joinToString("\n")
-        FieldKey.HARDWARE_INFO -> entry.credential.hardwareKeyInfo
-        FieldKey.SSH_KEY -> entry.credential.sshPrivateKey
-        FieldKey.SEED_PHRASE -> entry.credential.seedPhrase
-        else -> null
+    private fun getCryptoFieldValue(entry: VaultEntry, key: FieldKey): String? {
+        val secret = entry.secret
+        return when (key) {
+            FieldKey.PASSKEY_DATA -> (secret as? EntrySecret.Passkey)?.data?.privateKeyReference
+            FieldKey.RECOVERY_CODES -> (secret as? EntrySecret.Identity)?.data?.recoveryCodes?.joinToString(
+                "\n"
+            )
+
+            FieldKey.HARDWARE_INFO -> (secret as? EntrySecret.Passkey)?.data?.hardwareKeyInfo
+            FieldKey.SSH_KEY -> (secret as? EntrySecret.SshKey)?.data?.privateKey
+            FieldKey.SEED_PHRASE -> (secret as? EntrySecret.Identity)?.data?.seedPhrase
+            else -> null
+        }
     }
 
-    private fun getFinanceFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.CARD_EXPIRATION -> entry.credential.cardExpiry
-        FieldKey.CARD_CVV -> entry.credential.cardCvv
-        FieldKey.PAYMENT_PIN -> entry.credential.paymentPin
-        FieldKey.PAYMENT_PLATFORM -> entry.credential.paymentPlatform
-        FieldKey.SECURITY_QUESTION -> entry.credential.securityQuestion
-        FieldKey.SECURITY_ANSWER -> entry.credential.securityAnswer
-        else -> null
+    private fun getFinanceFieldValue(entry: VaultEntry, key: FieldKey): String? {
+        val card = (entry.secret as? EntrySecret.Card)?.data
+        return when (key) {
+            FieldKey.CARD_EXPIRATION -> card?.cardExpiry
+            FieldKey.CARD_CVV -> card?.cardCvv
+            FieldKey.PAYMENT_PIN -> card?.paymentPin
+            FieldKey.PAYMENT_PLATFORM -> card?.paymentPlatform
+            FieldKey.SECURITY_QUESTION -> (entry.secret as? EntrySecret.Identity)?.data?.securityQuestion
+            FieldKey.SECURITY_ANSWER -> (entry.secret as? EntrySecret.Identity)?.data?.securityAnswer
+            else -> null
+        }
     }
 
     private fun getIdentityFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.ID_NUMBER -> entry.credential.idNumber
+        FieldKey.ID_NUMBER -> (entry.secret as? EntrySecret.Identity)?.data?.idNumber
         else -> null
     }
 
-    private fun getConnectivityFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.WIFI_SECURITY -> entry.credential.wifiSecurityType
-        FieldKey.WIFI_HIDDEN -> if (entry.credential.wifiIsHidden) "是" else "否"
-        else -> null
+    private fun getConnectivityFieldValue(entry: VaultEntry, key: FieldKey): String? {
+        val wifi = (entry.secret as? EntrySecret.Wifi)?.data
+        return when (key) {
+            FieldKey.WIFI_SECURITY -> wifi?.securityType
+            FieldKey.WIFI_HIDDEN -> if (wifi?.isHidden == true) "\u662F" else "\u5426"
+            else -> null
+        }
     }
 
     // --- FieldKey 扩展判定 (建议定义在 FieldKey 枚举中，此处仅作演示) ---
