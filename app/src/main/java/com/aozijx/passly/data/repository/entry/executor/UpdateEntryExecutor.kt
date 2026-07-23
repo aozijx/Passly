@@ -65,14 +65,13 @@ class UpdateEntryExecutor @Inject constructor(
             blindIndexHelper.rebuildForEntry(this, id, vaultEntry.toLookupFields())
         }
 
-        // 4. 历史快照
-        val resolvedSecret = if (changes.secret != null) newSecret else oldSecret ?: EntrySecret()
+        // 4. 历史快照（保存 newSummary + newSecret，保证恢复后可还原完全一致的数据）
         snapshotHelper.snapshotChanges(
             db = this,
             entryId = id,
             oldVersion = metaEntity.version,
             summary = newSummary,
-            secret = resolvedSecret,
+            secret = newSecret,
             now = now
         )
     }
