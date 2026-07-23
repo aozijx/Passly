@@ -1,42 +1,44 @@
 package com.aozijx.passly.domain.usecase.vault
 
+import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.model.lookup.EntryFilter
 import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.otp.OtpConfig
-import com.aozijx.passly.domain.repository.entry.QueryRepository
-import com.aozijx.passly.domain.repository.lookup.LookupRepository
-import com.aozijx.passly.domain.repository.otp.OtpRepository
+import com.aozijx.passly.domain.repository.entry.EntryListQueryRepository
+import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
+import com.aozijx.passly.domain.repository.otp.OtpConfigRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class VaultQueryUseCases @Inject constructor(
-    private val queryRepository: QueryRepository,
-    private val lookupRepository: LookupRepository,
-    private val otpRepository: OtpRepository
+    private val entryQueryRepository: EntryQueryRepository,
+    private val entryListQueryRepository: EntryListQueryRepository,
+    private val otpConfigRepository: OtpConfigRepository
 ) {
 
     fun observe(
-        query: String, category: String?, filter: LookupRepository.EntryFilter
+        query: String, category: String?, filter: EntryFilter
     ): Flow<List<EntryListItem>> =
-        lookupRepository.observe(query, category, filter)
+        entryListQueryRepository.observe(query, category, filter)
 
     fun observeCategories(
-        filter: LookupRepository.EntryFilter
-    ): Flow<List<String>> = lookupRepository.observeCategories(filter)
+        filter: EntryFilter
+    ): Flow<List<String>> = entryListQueryRepository.observeCategories(filter)
 
-    suspend fun getById(entryId: String): VaultEntry? = queryRepository.getById(entryId)
+    suspend fun getById(entryId: String): VaultEntry? = entryQueryRepository.getById(entryId)
 
-    suspend fun getOtpConfig(entryId: String): OtpConfig? = otpRepository.getConfig(entryId)
+    suspend fun getOtpConfig(entryId: String): OtpConfig? = otpConfigRepository.getConfig(entryId)
 
     suspend fun getEntriesForIconResync(): List<VaultEntry> =
-        queryRepository.getEntriesForIconResync()
+        entryQueryRepository.getEntriesForIconResync()
 
     fun getTotpCode(
         config: OtpConfig,
         overrideCounter: Long? = null,
         timestamp: Long = System.currentTimeMillis() / 1000
-    ): OtpResult = otpRepository.generate(config, overrideCounter, timestamp)
+    ): OtpResult = OtpGenerator.generate(config, overrideCounter, timestamp)
 }

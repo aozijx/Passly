@@ -2,9 +2,9 @@ package com.aozijx.passly.domain.usecase.autofill
 
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.repository.activity.ActivityRecorder
 import com.aozijx.passly.domain.repository.autofill.AutofillStatusRepository
 import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
-import com.aozijx.passly.domain.repository.entry.EntryCommands
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,10 +39,10 @@ class OpenAutofillSettingsUseCase @Inject constructor(
 
 @Singleton
 class RecordAutofillUsageUseCase @Inject constructor(
-    private val entryCommandHandler: EntryCommands
+    private val activityRecorder: ActivityRecorder
 ) {
     suspend operator fun invoke(candidateId: Int): AppResult<Unit> =
-        entryCommandHandler.recordUsage(candidateId.toString(), ActivityType.AUTOFILL)
+        activityRecorder.recordUsage(candidateId.toString(), ActivityType.AUTOFILL)
 }
 
 @Singleton

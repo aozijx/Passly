@@ -6,7 +6,7 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Pin
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.repository.lookup.LookupRepository
+import com.aozijx.passly.domain.model.lookup.EntryFilter
 
 /**
  * 保险箱列表 Tab 筛选器。
@@ -21,7 +21,7 @@ enum class VaultTab(
     val icon: ImageVector,
     val isToggleable: Boolean,
     val isUiVisible: Boolean,
-    val entryFilter: LookupRepository.EntryFilter
+    val entryFilter: EntryFilter
 ) {
     ALL(
         settingsKey = "all",
@@ -45,7 +45,7 @@ enum class VaultTab(
         icon = Icons.Default.Pin,
         isToggleable = true,
         isUiVisible = true,
-        entryFilter = LookupRepository.EntryFilter.TOTP_ONLY
+        entryFilter = EntryFilter.TOTP_ONLY
     );
 
     companion object {
