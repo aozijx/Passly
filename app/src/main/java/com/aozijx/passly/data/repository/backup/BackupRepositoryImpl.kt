@@ -45,9 +45,9 @@ internal class BackupRepositoryImpl @Inject constructor(
 
     private suspend fun getVaultEntries(): List<VaultEntry> {
         return sessionManager.query {
-            val metadataEntities = entryDao().getActive()
+            val metadataEntities = entryQueryDao().getActive()
             val credentialEntities =
-                entrySecretDao().getByEntryIds(metadataEntities.map { it.entryId })
+                entrySecretQueryDao().getByEntryIds(metadataEntities.map { it.entryId })
             val credentialMap = credentialEntities.associateBy { it.entryId }
 
             metadataEntities.map { metaEntity ->
@@ -215,8 +215,8 @@ internal class BackupRepositoryImpl @Inject constructor(
                     secretBlob = credBlob
                 )
 
-                entryDao().upsertForImport(metaEntity)
-                entrySecretDao().upsertForImport(credEntity)
+                entryCommandDao().upsertForImport(metaEntity)
+                entrySecretCommandDao().upsertForImport(credEntity)
             }
         }
     }

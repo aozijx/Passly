@@ -5,13 +5,20 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.error.database.DatabaseException
-import com.aozijx.passly.data.local.dao.EntryActivityDao
-import com.aozijx.passly.data.local.dao.EntryAttachmentDao
-import com.aozijx.passly.data.local.dao.EntryDao
-import com.aozijx.passly.data.local.dao.EntryDraftDao
-import com.aozijx.passly.data.local.dao.EntryRevisionDao
-import com.aozijx.passly.data.local.dao.EntrySecretDao
-import com.aozijx.passly.data.local.dao.SearchTokenDao
+import com.aozijx.passly.data.local.dao.activity.EntryActivityAnalyticsDao
+import com.aozijx.passly.data.local.dao.activity.EntryActivityCommandDao
+import com.aozijx.passly.data.local.dao.activity.EntryActivityQueryDao
+import com.aozijx.passly.data.local.dao.attachment.EntryAttachmentCommandDao
+import com.aozijx.passly.data.local.dao.attachment.EntryAttachmentQueryDao
+import com.aozijx.passly.data.local.dao.entry.EntryCommandDao
+import com.aozijx.passly.data.local.dao.entry.EntryQueryDao
+import com.aozijx.passly.data.local.dao.entry.EntrySecretCommandDao
+import com.aozijx.passly.data.local.dao.entry.EntrySecretQueryDao
+import com.aozijx.passly.data.local.dao.maintenance.VaultMaintenanceDao
+import com.aozijx.passly.data.local.dao.revision.EntryRevisionCommandDao
+import com.aozijx.passly.data.local.dao.revision.EntryRevisionQueryDao
+import com.aozijx.passly.data.local.dao.search.SearchTokenCommandDao
+import com.aozijx.passly.data.local.dao.search.SearchTokenQueryDao
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
@@ -43,13 +50,20 @@ import com.aozijx.passly.data.model.entity.SearchTokenEntity
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun entryDao(): EntryDao
-    abstract fun entrySecretDao(): EntrySecretDao
-    abstract fun entryRevisionDao(): EntryRevisionDao
-    abstract fun entryActivityDao(): EntryActivityDao
-    abstract fun entryAttachmentDao(): EntryAttachmentDao
-    abstract fun searchTokenDao(): SearchTokenDao
-    abstract fun entryDraftDao(): EntryDraftDao
+    abstract fun entryQueryDao(): EntryQueryDao
+    abstract fun entryCommandDao(): EntryCommandDao
+    abstract fun entrySecretQueryDao(): EntrySecretQueryDao
+    abstract fun entrySecretCommandDao(): EntrySecretCommandDao
+    abstract fun entryRevisionQueryDao(): EntryRevisionQueryDao
+    abstract fun entryRevisionCommandDao(): EntryRevisionCommandDao
+    abstract fun entryActivityQueryDao(): EntryActivityQueryDao
+    abstract fun entryActivityCommandDao(): EntryActivityCommandDao
+    abstract fun entryActivityAnalyticsDao(): EntryActivityAnalyticsDao
+    abstract fun entryAttachmentQueryDao(): EntryAttachmentQueryDao
+    abstract fun entryAttachmentCommandDao(): EntryAttachmentCommandDao
+    abstract fun searchTokenQueryDao(): SearchTokenQueryDao
+    abstract fun searchTokenCommandDao(): SearchTokenCommandDao
+    abstract fun vaultMaintenanceDao(): VaultMaintenanceDao
 
     companion object {
         private const val TAG = "AppDatabase"

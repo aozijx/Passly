@@ -27,8 +27,8 @@ class QueryRepositoryImpl @Inject constructor(
     override suspend fun getById(entryId: String): VaultEntry? {
         stateProvider.assertWritable()
         return sessionManager.query {
-            val metaEntity = entryDao().getById(entryId) ?: return@query null
-            val credEntity = entrySecretDao().getByEntryId(entryId)
+            val metaEntity = entryQueryDao().getById(entryId) ?: return@query null
+            val credEntity = entrySecretQueryDao().getByEntryId(entryId)
             val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
             val secret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
             EntryAggregateAssembler.assembleFromDatabase(metaEntity, summary, secret)
@@ -38,8 +38,8 @@ class QueryRepositoryImpl @Inject constructor(
     override suspend fun getEntriesForIconResync(): List<VaultEntry> {
         stateProvider.assertWritable()
         return sessionManager.query {
-            val metaEntities = entryDao().getActive()
-            val credEntities = entrySecretDao().getByEntryIds(metaEntities.map { it.entryId })
+            val metaEntities = entryQueryDao().getActive()
+            val credEntities = entrySecretQueryDao().getByEntryIds(metaEntities.map { it.entryId })
             val credMap = credEntities.associateBy { it.entryId }
             metaEntities.map { metaEntity ->
                 val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
@@ -56,6 +56,6 @@ class QueryRepositoryImpl @Inject constructor(
 
     override suspend fun count(): Int {
         stateProvider.assertWritable()
-        return sessionManager.query { entryDao().countActive() }
+        return sessionManager.query { entryQueryDao().countActive() }
     }
 }

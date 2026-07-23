@@ -40,9 +40,9 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
         stateProvider.assertWritable()
         sessionManager.query {
-            val metadataEntities = entryDao().getActive()
+            val metadataEntities = entryQueryDao().getActive()
             val credentialEntities =
-                entrySecretDao().getByEntryIds(metadataEntities.map { it.entryId })
+                entrySecretQueryDao().getByEntryIds(metadataEntities.map { it.entryId })
             val credentialMap = credentialEntities.associateBy { it.entryId }
 
             metadataEntities.filter { it.entryType == EntryType.LOGIN }
@@ -119,8 +119,8 @@ class CredentialServiceRepositoryImpl @Inject constructor(
                 entryId = entryId,
                 secretBlob = credBlob
             )
-            entryDao().insertStrict(metaEntity)
-            entrySecretDao().insertStrict(credEntity)
+            entryCommandDao().insertStrict(metaEntity)
+            entrySecretCommandDao().insertStrict(credEntity)
         }
         true
     }

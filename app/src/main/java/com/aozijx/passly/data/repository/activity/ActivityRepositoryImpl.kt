@@ -30,7 +30,7 @@ class ActivityRepositoryImpl @Inject constructor(
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                entryActivityDao().observeByEntryId(entryId)
+                entryActivityQueryDao().observeByEntryId(entryId)
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
             }
@@ -41,7 +41,7 @@ class ActivityRepositoryImpl @Inject constructor(
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                entryActivityDao().observeAll()
+                entryActivityQueryDao().observeAll()
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
             }
@@ -52,7 +52,7 @@ class ActivityRepositoryImpl @Inject constructor(
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                entryActivityDao().observeByType(activityType)
+                entryActivityQueryDao().observeByType(activityType)
                     .map { entities -> entities.map { it.toDomain() } }
                     .flowOn(Dispatchers.IO)
             }
@@ -60,11 +60,11 @@ class ActivityRepositoryImpl @Inject constructor(
 
     override suspend fun deleteByEntryId(entryId: String) {
         if (sessionState.isLocked()) return
-        sessionManager.transaction { entryActivityDao().deleteByEntryId(entryId) }
+        sessionManager.transaction { entryActivityCommandDao().deleteByEntryId(entryId) }
     }
 
     override suspend fun deleteBefore(timestamp: Long) {
         if (sessionState.isLocked()) return
-        sessionManager.transaction { entryActivityDao().deleteBefore(timestamp) }
+        sessionManager.transaction { entryActivityCommandDao().deleteBefore(timestamp) }
     }
 }

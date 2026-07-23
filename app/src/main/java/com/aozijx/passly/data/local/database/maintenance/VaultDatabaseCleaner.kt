@@ -34,13 +34,14 @@ class VaultDatabaseCleanerImpl @Inject constructor(
 ) : VaultDatabaseCleaner {
 
     override suspend fun clearVaultData(): ClearDatabaseResult = sessionManager.transaction {
+        val maintenance = vaultMaintenanceDao()
         ClearDatabaseResult(
-            entriesDeleted = entryDao().clear(),
-            secretsDeleted = entrySecretDao().clear(),
-            revisionsDeleted = entryRevisionDao().clear(),
-            activityDeleted = entryActivityDao().clear(),
-            attachmentsDeleted = entryAttachmentDao().clear(),
-            searchTokensDeleted = searchTokenDao().clear()
+            entriesDeleted = maintenance.clearEntries(),
+            secretsDeleted = maintenance.clearSecrets(),
+            revisionsDeleted = maintenance.clearRevisions(),
+            activityDeleted = maintenance.clearActivities(),
+            attachmentsDeleted = maintenance.clearAttachments(),
+            searchTokensDeleted = maintenance.clearSearchTokens()
         )
     }
 }

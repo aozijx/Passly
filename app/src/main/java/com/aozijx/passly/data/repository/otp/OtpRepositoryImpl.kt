@@ -21,7 +21,7 @@ class OtpRepositoryImpl @Inject constructor(
     override suspend fun getConfig(entryId: String): OtpConfig? {
         stateProvider.assertWritable()
         return sessionManager.query {
-            val entity = entrySecretDao().getByEntryId(entryId) ?: return@query null
+            val entity = entrySecretQueryDao().getByEntryId(entryId) ?: return@query null
             val secret = secretCodec.decrypt(entity.secretBlob, entity.entryId)
             when (secret) {
                 is EntrySecret.Otp -> secret.data.config

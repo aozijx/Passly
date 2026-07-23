@@ -75,17 +75,17 @@ class EntryCommandHandler @Inject constructor(
                 secretBlob = credBlob
         )
 
-            entryDao().insertStrict(metaEntity)
-            entrySecretDao().insertStrict(credEntity)
+            entryCommandDao().insertStrict(metaEntity)
+            entrySecretCommandDao().insertStrict(credEntity)
 
         // 盲索引
             val indexRecords = blindIndexer.index(entryId, entry.toLookupFields())
         if (indexRecords.isNotEmpty()) {
-            searchTokenDao().upsertAllForImport(indexRecords.toEntityList())
+            searchTokenCommandDao().upsertAllForImport(indexRecords.toEntityList())
         }
 
             // 历史快照（使用统一 SnapshotPayload 格式）
-            entryRevisionDao().insertStrict(
+            entryRevisionCommandDao().insertIdempotent(
                 EntryRevisionEntity(
                     revisionId = UuidCreator.getTimeOrderedEpoch().toString(),
                 version = 1,
@@ -101,7 +101,7 @@ class EntryCommandHandler @Inject constructor(
         )
 
         // 活动记录
-            entryActivityDao().insertStrict(
+            entryActivityCommandDao().insertIdempotent(
                 EntryActivity(entryId = entryId, activityType = ActivityType.CREATE).toEntity(now)
         )
 
@@ -120,10 +120,10 @@ class EntryCommandHandler @Inject constructor(
     override suspend fun updateEntry(
         id: String, expectedVersion: Int, changes: EntryChanges
     ): AppResult<Unit> = unitOfWork.write("entry.update") {
-        val metaEntity = entryDao().getById(id)
+        val metaEntity = entryQueryDao().getById(id)
             ?: throw NotFound("entry:$id not found")
         val oldSummary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
-        val credEntity = entrySecretDao().getByEntryId(id)
+        val credEntity = entrySecretQueryDao().getByEntryId(id)
         val oldSecret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
 
         val newSummary = changes.summary ?: oldSummary
@@ -132,13 +132,13 @@ class EntryCommandHandler @Inject constructor(
 
         // 1. 版本校验 + metadata 更新（原子操作）
         val metaBlob = summaryCodec.encrypt(newSummary, id)
-        val affected = entryDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
+        val affected = entryCommandDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
         unitOfWork.checkAffectedRows(id, expectedVersion, affected)
 
         // 2. 写入 Secret（有变更或首次创建凭据时更新）
         if (changes.secret != null || oldSecret == null) {
             val credBlob = secretCodec.encrypt(newSecret, id)
-            entrySecretDao().updateBlob(id, credBlob)
+            entrySecretCommandDao().updateBlob(id, credBlob)
         }
 
         // 3. 重建盲索引（仅搜索相关字段变化时）
@@ -168,13 +168,13 @@ class EntryCommandHandler @Inject constructor(
         id: String, expectedVersion: Int
     ): AppResult<Unit> = unitOfWork.write("entry.moveToTrash") {
         val now = clock.now()
-        val affected = entryDao().optimisticSoftDelete(id, expectedVersion, now, now)
+        val affected = entryCommandDao().optimisticSoftDelete(id, expectedVersion, now, now)
         unitOfWork.checkAffectedRows(id, expectedVersion, affected)
 
-        searchTokenDao().deleteByEntryId(id)
+        searchTokenCommandDao().deleteByEntryId(id)
 
         // 活动记录
-        entryActivityDao().insertStrict(
+        entryActivityCommandDao().insertIdempotent(
             EntryActivity(entryId = id, activityType = ActivityType.DELETE).toEntity(now)
         )
     }
@@ -188,17 +188,17 @@ class EntryCommandHandler @Inject constructor(
         id: String, expectedVersion: Int
     ): AppResult<Unit> = unitOfWork.write("entry.restore") {
         val now = clock.now()
-        val affected = entryDao().restoreOptimistic(id, expectedVersion, now)
+        val affected = entryCommandDao().restoreOptimistic(id, expectedVersion, now)
         unitOfWork.checkAffectedRows(id, expectedVersion, affected)
 
         // 重建盲索引
-        val metaEntity = entryDao().getById(id)
+        val metaEntity = entryQueryDao().getById(id)
             ?: throw NotFound("entry:$id not found")
         val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
         rebuildBlindIndex(id, metaEntity, summary)
 
         // 活动记录
-        entryActivityDao().insertStrict(
+        entryActivityCommandDao().insertIdempotent(
             EntryActivity(entryId = id, activityType = ActivityType.RESTORE).toEntity(now)
         )
     }
@@ -219,20 +219,20 @@ class EntryCommandHandler @Inject constructor(
         unitOfWork.write("entry.rebuildIndex") {
             if (!force) {
                 val scanResult = scanIndexStatus(
-                    indexedEntryCount = searchTokenDao().countDistinctEntryIds(),
-                    activeEntryCount = entryDao().countActive()
+                    indexedEntryCount = searchTokenQueryDao().countDistinctEntryIds(),
+                    activeEntryCount = entryQueryDao().countActive()
                 )
                 if (scanResult.isComplete) return@write 0
             }
 
-            val metaEntities = entryDao().getActive()
+            val metaEntities = entryQueryDao().getActive()
         if (metaEntities.isEmpty()) return@write 0
 
         val entryIds = metaEntities.map { it.entryId }
-            val credEntities = entrySecretDao().getByEntryIds(entryIds)
+            val credEntities = entrySecretQueryDao().getByEntryIds(entryIds)
         val credMap = credEntities.associateBy { it.entryId }
 
-            searchTokenDao().clear()
+            vaultMaintenanceDao().clearSearchTokens()
 
         var indexedCount = 0
         for (metaEntity in metaEntities) {
@@ -242,7 +242,7 @@ class EntryCommandHandler @Inject constructor(
             val entry = EntryAggregateAssembler.assembleFromDatabase(metaEntity, summary, secret)
             val indexRecords = blindIndexer.index(entry.id, entry.toLookupFields())
             if (indexRecords.isNotEmpty()) {
-                searchTokenDao().upsertAllForImport(indexRecords.toEntityList())
+                searchTokenCommandDao().upsertAllForImport(indexRecords.toEntityList())
                 indexedCount++
             }
         }
@@ -261,7 +261,7 @@ class EntryCommandHandler @Inject constructor(
         entryId: String, type: ActivityType
     ): AppResult<Unit> = unitOfWork.write("entry.recordUsage") {
         val now = clock.now()
-        entryActivityDao().insertStrict(
+        entryActivityCommandDao().insertIdempotent(
             EntryActivity(entryId = entryId, activityType = type).toEntity(now)
         )
     }
@@ -276,11 +276,11 @@ class EntryCommandHandler @Inject constructor(
         metaEntity: EntryEntity,
         summary: EntrySummary
     ) {
-        searchTokenDao().deleteByEntryId(id)
+        searchTokenCommandDao().deleteByEntryId(id)
         val entry = metaEntity.toVaultEntry(summary)
         val indexRecords = blindIndexer.index(id, entry.toLookupFields())
         if (indexRecords.isNotEmpty()) {
-            searchTokenDao().upsertAllForImport(indexRecords.toEntityList())
+            searchTokenCommandDao().upsertAllForImport(indexRecords.toEntityList())
         }
     }
 
@@ -295,12 +295,12 @@ class EntryCommandHandler @Inject constructor(
         now: Long
     ) {
         val newVersion = oldMetaEntity.version + 1
-        val resolvedSecret = secret ?: entrySecretDao().getByEntryId(id)?.let {
+        val resolvedSecret = secret ?: entrySecretQueryDao().getByEntryId(id)?.let {
             secretCodec.decrypt(it.secretBlob, it.entryId)
         } ?: EntrySecret.VaultData()
         val snapshotBlob = revisionCodec.encrypt(summary, resolvedSecret, id)
 
-        entryRevisionDao().insertStrict(
+        entryRevisionCommandDao().insertIdempotent(
             EntryRevisionEntity(
                 revisionId = UuidCreator.getTimeOrderedEpoch().toString(),
                 version = newVersion,
