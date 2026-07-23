@@ -1,6 +1,5 @@
 package com.aozijx.passly.domain.service.entry
 
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -9,12 +8,12 @@ import javax.inject.Singleton
 class BankCardEntryValidator @Inject constructor() : EntryValidator {
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.summary.title.isBlank()) return "银行名称不能为空"
-        if ((entry.secret as? EntrySecret.Card)?.data?.cardNumber.isNullOrBlank()) return "卡号不能为空"
+        if (entry.secret.card?.cardNumber.isNullOrBlank()) return "卡号不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
-        val cardSecret = (entry.secret as? EntrySecret.Card)?.data
+        val cardSecret = entry.secret.card
         val cardNumber = cardSecret?.cardNumber.orEmpty().filter { it.isDigit() }
         if (cardNumber.length !in 13..19) return "无效的卡号长度"
 

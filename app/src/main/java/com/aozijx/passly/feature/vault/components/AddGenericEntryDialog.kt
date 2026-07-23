@@ -65,11 +65,11 @@ fun AddGenericEntryDialog(
                         username = state.username,
                         icon = null
                     ),
-                    EntrySecret.Login(
-                        LoginSecret(
-                            password = state.password,
-                            notes = state.notes.ifBlank { null }
-                        )
+                    EntrySecret(
+                        login = LoginSecret(
+                            password = state.password
+                        ),
+                        notes = state.notes.ifBlank { null }
                     )
                 )
                 viewModel.addItem(entry)

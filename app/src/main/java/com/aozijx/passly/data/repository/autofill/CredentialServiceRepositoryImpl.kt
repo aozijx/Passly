@@ -97,8 +97,8 @@ class CredentialServiceRepositoryImpl @Inject constructor(
                 icon = null,
                 website = if (webDomain != null) WebsiteInfo(primaryUrl = webDomain) else null
             )
-            val secret = EntrySecret.Login(
-                LoginSecret(
+            val secret = EntrySecret(
+                login = LoginSecret(
                     email = null,
                     password = passwordValue
                 )

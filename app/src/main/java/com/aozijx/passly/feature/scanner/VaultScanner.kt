@@ -248,8 +248,8 @@ fun VaultScanner(
                                                 username = parsedConfig.accountName ?: title,
                                                 icon = null
                                             ),
-                                            EntrySecret.Otp(
-                                                OtpSecret(
+                                            EntrySecret(
+                                                otp = OtpSecret(
                                                     config = parsedConfig
                                                 )
                                             )

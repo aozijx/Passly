@@ -44,8 +44,7 @@ data class OtpConfigPayload(
 @Serializable
 data class LoginSecretPayload(
     val email: String? = null,
-    val password: String? = null,
-    val notes: String? = null
+    val password: String? = null
 )
 
 @Serializable
@@ -102,41 +101,24 @@ data class CustomFieldPayload(
     val type: Int = 0
 )
 
+// --- Flat root payload ---
+
+/**
+ * 扁平化凭据载荷。
+ *
+ * 所有字段均为可选，支持同时存储多种凭据类型（如登录 + OTP）。
+ * 兼容旧版密封类序列化可以通过 [schemaVersion] 判断。
+ */
 @Serializable
-data class VaultDataPayload(
+data class SecretPayload(
+    val login: LoginSecretPayload? = null,
+    val notes: String? = null,
+    val card: CardSecretPayload? = null,
+    val identity: IdentitySecretPayload? = null,
+    val ssh: SshSecretPayload? = null,
+    val wifi: WifiSecretPayload? = null,
+    val passkey: PasskeySecretPayload? = null,
+    val otp: OtpSecretPayload? = null,
     val customFields: List<CustomFieldPayload> = emptyList(),
-    val notes: String? = null
+    val schemaVersion: Int = 2
 )
-
-// --- Sealed class root ---
-
-@Serializable
-sealed class SecretPayload {
-
-    @Serializable
-    data class Login(val data: LoginSecretPayload) : SecretPayload()
-
-    @Serializable
-    data class Note(val notes: String) : SecretPayload()
-
-    @Serializable
-    data class Card(val data: CardSecretPayload) : SecretPayload()
-
-    @Serializable
-    data class Identity(val data: IdentitySecretPayload) : SecretPayload()
-
-    @Serializable
-    data class SshKey(val data: SshSecretPayload) : SecretPayload()
-
-    @Serializable
-    data class Wifi(val data: WifiSecretPayload) : SecretPayload()
-
-    @Serializable
-    data class Passkey(val data: PasskeySecretPayload) : SecretPayload()
-
-    @Serializable
-    data class Otp(val data: OtpSecretPayload) : SecretPayload()
-
-    @Serializable
-    data class VaultData(val data: VaultDataPayload) : SecretPayload()
-}

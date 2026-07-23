@@ -12,7 +12,6 @@ import com.aozijx.passly.data.model.payload.secret.OtpTypePayload
 import com.aozijx.passly.data.model.payload.secret.PasskeySecretPayload
 import com.aozijx.passly.data.model.payload.secret.SecretPayload
 import com.aozijx.passly.data.model.payload.secret.SshSecretPayload
-import com.aozijx.passly.data.model.payload.secret.VaultDataPayload
 import com.aozijx.passly.data.model.payload.secret.WifiSecretPayload
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
 import com.aozijx.passly.data.model.payload.summary.SummaryPayload
@@ -101,66 +100,54 @@ internal fun SummaryPayload.toEntrySummary(): EntrySummary = EntrySummary(
 
 // --- Secret conversion ---
 
-private fun EntrySecret.toSecretPayload(): SecretPayload = when (this) {
-    is EntrySecret.Login -> SecretPayload.Login(
-        LoginSecretPayload(
-            email = data.email,
-            password = data.password,
-            notes = data.notes
-        )
-    )
-
-    is EntrySecret.Note -> SecretPayload.Note(notes)
-    is EntrySecret.Card -> SecretPayload.Card(
+private fun EntrySecret.toSecretPayload(): SecretPayload = SecretPayload(
+    login = login?.let { LoginSecretPayload(email = it.email, password = it.password) },
+    notes = notes,
+    card = card?.let {
         CardSecretPayload(
-            cardNumber = data.cardNumber,
-            cardExpiry = data.cardExpiry,
-            cardCvv = data.cardCvv,
-            cardHolder = data.cardHolder,
-            paymentPin = data.paymentPin,
-            paymentPlatform = data.paymentPlatform
+            cardNumber = it.cardNumber,
+            cardExpiry = it.cardExpiry,
+            cardCvv = it.cardCvv,
+            cardHolder = it.cardHolder,
+            paymentPin = it.paymentPin,
+            paymentPlatform = it.paymentPlatform
         )
-    )
-
-    is EntrySecret.Identity -> SecretPayload.Identity(
+    },
+    identity = identity?.let {
         IdentitySecretPayload(
-            idNumber = data.idNumber,
-            securityQuestion = data.securityQuestion,
-            securityAnswer = data.securityAnswer,
-            seedPhrase = data.seedPhrase,
-            recoveryCodes = data.recoveryCodes
+            idNumber = it.idNumber,
+            securityQuestion = it.securityQuestion,
+            securityAnswer = it.securityAnswer,
+            seedPhrase = it.seedPhrase,
+            recoveryCodes = it.recoveryCodes
         )
-    )
-
-    is EntrySecret.SshKey -> SecretPayload.SshKey(
+    },
+    ssh = ssh?.let {
         SshSecretPayload(
-            privateKey = data.privateKey,
-            publicKey = data.publicKey,
-            passphrase = data.passphrase
+            privateKey = it.privateKey,
+            publicKey = it.publicKey,
+            passphrase = it.passphrase
         )
-    )
-
-    is EntrySecret.Wifi -> SecretPayload.Wifi(
+    },
+    wifi = wifi?.let {
         WifiSecretPayload(
-            password = data.password,
-            securityType = data.securityType,
-            isHidden = data.isHidden
+            password = it.password,
+            securityType = it.securityType,
+            isHidden = it.isHidden
         )
-    )
-
-    is EntrySecret.Passkey -> SecretPayload.Passkey(
+    },
+    passkey = passkey?.let {
         PasskeySecretPayload(
-            credentialId = data.credentialId,
-            rpId = data.rpId,
-            userHandle = data.userHandle,
-            privateKeyReference = data.privateKeyReference,
-            hardwareKeyInfo = data.hardwareKeyInfo
+            credentialId = it.credentialId,
+            rpId = it.rpId,
+            userHandle = it.userHandle,
+            privateKeyReference = it.privateKeyReference,
+            hardwareKeyInfo = it.hardwareKeyInfo
         )
-    )
-
-    is EntrySecret.Otp -> SecretPayload.Otp(
+    },
+    otp = otp?.let {
         OtpSecretPayload(
-            config = data.config?.let { otp ->
+            config = it.config?.let { otp ->
                 OtpConfigPayload(
                     type = OtpTypePayload.valueOf(otp.type.name),
                     secret = otp.secret,
@@ -174,82 +161,64 @@ private fun EntrySecret.toSecretPayload(): SecretPayload = when (this) {
                 )
             }
         )
-    )
-
-    is EntrySecret.VaultData -> SecretPayload.VaultData(
-        VaultDataPayload(
-            customFields = customFields.map { cf ->
-                CustomFieldPayload(
-                    name = cf.name,
-                    value = cf.value,
-                    type = cf.type
-                )
-            },
-            notes = notes
+    },
+    customFields = customFields.map { cf ->
+        CustomFieldPayload(
+            name = cf.name,
+            value = cf.value,
+            type = cf.type
         )
-    )
-}
+    }
+)
 
-internal fun SecretPayload.toEntrySecret(): EntrySecret = when (this) {
-    is SecretPayload.Login -> EntrySecret.Login(
-        LoginSecret(
-            email = data.email,
-            password = data.password,
-            notes = data.notes
-        )
-    )
-
-    is SecretPayload.Note -> EntrySecret.Note(notes)
-    is SecretPayload.Card -> EntrySecret.Card(
+internal fun SecretPayload.toEntrySecret(): EntrySecret = EntrySecret(
+    login = login?.let { LoginSecret(email = it.email, password = it.password) },
+    notes = notes,
+    card = card?.let {
         CardSecret(
-            cardNumber = data.cardNumber,
-            cardExpiry = data.cardExpiry,
-            cardCvv = data.cardCvv,
-            cardHolder = data.cardHolder,
-            paymentPin = data.paymentPin,
-            paymentPlatform = data.paymentPlatform
+            cardNumber = it.cardNumber,
+            cardExpiry = it.cardExpiry,
+            cardCvv = it.cardCvv,
+            cardHolder = it.cardHolder,
+            paymentPin = it.paymentPin,
+            paymentPlatform = it.paymentPlatform
         )
-    )
-
-    is SecretPayload.Identity -> EntrySecret.Identity(
+    },
+    identity = identity?.let {
         IdentitySecret(
-            idNumber = data.idNumber,
-            securityQuestion = data.securityQuestion,
-            securityAnswer = data.securityAnswer,
-            seedPhrase = data.seedPhrase,
-            recoveryCodes = data.recoveryCodes
+            idNumber = it.idNumber,
+            securityQuestion = it.securityQuestion,
+            securityAnswer = it.securityAnswer,
+            seedPhrase = it.seedPhrase,
+            recoveryCodes = it.recoveryCodes
         )
-    )
-
-    is SecretPayload.SshKey -> EntrySecret.SshKey(
+    },
+    ssh = ssh?.let {
         SshSecret(
-            privateKey = data.privateKey,
-            publicKey = data.publicKey,
-            passphrase = data.passphrase
+            privateKey = it.privateKey,
+            publicKey = it.publicKey,
+            passphrase = it.passphrase
         )
-    )
-
-    is SecretPayload.Wifi -> EntrySecret.Wifi(
+    },
+    wifi = wifi?.let {
         WifiSecret(
-            password = data.password,
-            securityType = data.securityType,
-            isHidden = data.isHidden
+            password = it.password,
+            securityType = it.securityType,
+            isHidden = it.isHidden
         )
-    )
-
-    is SecretPayload.Passkey -> EntrySecret.Passkey(
+    },
+    passkey = passkey?.let {
         PasskeySecret(
-            credentialId = data.credentialId,
-            rpId = data.rpId,
-            userHandle = data.userHandle,
-            privateKeyReference = data.privateKeyReference,
-            hardwareKeyInfo = data.hardwareKeyInfo
+            credentialId = it.credentialId,
+            rpId = it.rpId,
+            userHandle = it.userHandle,
+            privateKeyReference = it.privateKeyReference,
+            hardwareKeyInfo = it.hardwareKeyInfo
         )
-    )
-
-    is SecretPayload.Otp -> EntrySecret.Otp(
+    },
+    otp = otp?.let {
         OtpSecret(
-            config = data.config?.let { p ->
+            config = it.config?.let { p ->
                 OtpConfig(
                     type = OtpType.valueOf(p.type.name),
                     secret = p.secret,
@@ -263,16 +232,12 @@ internal fun SecretPayload.toEntrySecret(): EntrySecret = when (this) {
                 )
             }
         )
-    )
-
-    is SecretPayload.VaultData -> EntrySecret.VaultData(
-        customFields = data.customFields.map { cf ->
-            CustomField(
-                name = cf.name,
-                value = cf.value,
-                type = cf.type
-            )
-        },
-        notes = data.notes
-    )
-}
+    },
+    customFields = customFields.map { cf ->
+        CustomField(
+            name = cf.name,
+            value = cf.value,
+            type = cf.type
+        )
+    }
+)

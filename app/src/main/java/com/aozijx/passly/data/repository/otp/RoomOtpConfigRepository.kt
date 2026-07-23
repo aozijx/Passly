@@ -3,7 +3,6 @@ package com.aozijx.passly.data.repository.otp
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.otp.OtpConfig
 import com.aozijx.passly.domain.repository.otp.OtpConfigRepository
 import javax.inject.Inject
@@ -21,10 +20,7 @@ class RoomOtpConfigRepository @Inject constructor(
         return sessionManager.query {
             val entity = entrySecretQueryDao().getByEntryId(entryId) ?: return@query null
             val secret = secretCodec.decrypt(entity.secretBlob, entity.entryId)
-            when (secret) {
-                is EntrySecret.Otp -> secret.data.config
-                else -> null
-            }
+            secret.otp?.config
         }
     }
 }

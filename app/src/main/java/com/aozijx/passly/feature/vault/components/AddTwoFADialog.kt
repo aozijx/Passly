@@ -95,8 +95,8 @@ fun AddTwoFADialog(
                         icon = null,
                         website = state.domain.ifBlank { null }?.let { WebsiteInfo(primaryUrl = it) }
                     ),
-                    EntrySecret.Otp(
-                        OtpSecret(
+                    EntrySecret(
+                        otp = OtpSecret(
                             config = OtpConfig(
                             type = state.type,
                             secret = state.secret.trim(),

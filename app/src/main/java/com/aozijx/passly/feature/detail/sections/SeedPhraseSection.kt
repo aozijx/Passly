@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -58,8 +57,8 @@ fun SeedPhraseSection(
         revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
     }
 
-    val seedPhrase = (entry.secret as? EntrySecret.Identity)?.data?.seedPhrase
-    val notes = (entry.secret as? EntrySecret.VaultData)?.notes
+    val seedPhrase = entry.secret.identity?.seedPhrase
+    val notes = entry.secret.notes
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(

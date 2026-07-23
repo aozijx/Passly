@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
@@ -90,9 +89,4 @@ fun NotesSection(
     }
 }
 
-private fun VaultEntry.resolveNotes(): String? = when (val s = secret) {
-    is EntrySecret.Login -> s.data.notes
-    is EntrySecret.Note -> s.notes
-    is EntrySecret.VaultData -> s.notes
-    else -> null
-}
+private fun VaultEntry.resolveNotes(): String? = secret.notes

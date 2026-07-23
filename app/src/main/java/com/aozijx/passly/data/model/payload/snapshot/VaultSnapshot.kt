@@ -25,6 +25,6 @@ data class VaultSnapshot(
     val appVersion: String? = null,
 
     val summary: SummaryPayload,
-    val secret: SecretPayload = SecretPayload.VaultData(com.aozijx.passly.data.model.payload.secret.VaultDataPayload()),
+    val secret: SecretPayload = SecretPayload(),
     val attachments: List<AttachmentPayload> = emptyList()
 )

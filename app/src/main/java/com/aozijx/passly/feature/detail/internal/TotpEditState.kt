@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.model.otp.OtpType
@@ -12,7 +11,7 @@ import com.aozijx.passly.domain.model.otp.OtpType
  * TOTP 编辑状态（详情页修改配置）
  */
 class TotpEditState(entry: VaultEntry, initialSecret: String) {
-    val otpConfig = (entry.secret as? EntrySecret.Otp)?.data?.config
+    val otpConfig = entry.secret.otp?.config
     var isEditing by mutableStateOf(false)
     var secret by mutableStateOf(initialSecret)
     var period by mutableStateOf((otpConfig?.periodSeconds ?: 30).toString())

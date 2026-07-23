@@ -8,7 +8,6 @@ import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.EntryChanges
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.settings.VaultSortSpec
@@ -226,15 +225,11 @@ class VaultViewModel @Inject constructor(
                 is OtpResult.Success -> {
                     val entry = entryQueryRepository.getById(entryId)
                     if (entry != null && result.nextCounter != null) {
-                        val newSecret = when (val secret = entry.secret) {
-                            is EntrySecret.Otp -> {
-                                val updatedConfig =
-                                    secret.data.config?.copy(counter = result.nextCounter)
-                                EntrySecret.Otp(secret.data.copy(config = updatedConfig))
-                            }
-
-                            else -> secret
-                        }
+                        val newSecret = entry.secret.otp?.let { otpData ->
+                            val updatedConfig =
+                                otpData.config?.copy(counter = result.nextCounter)
+                            entry.secret.copy(otp = otpData.copy(config = updatedConfig))
+                        } ?: entry.secret
                         entryCommandRepository.updateEntry(
                             entryId,
                             entry.entryVersion,

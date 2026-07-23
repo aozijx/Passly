@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -42,7 +41,7 @@ fun IdCardSection(
         DetailItem(
             label = stringResource(R.string.id_number),
             value = when {
-                (entry.secret as? EntrySecret.Identity)?.data?.idNumber.isNullOrBlank() -> notSet
+                entry.secret.identity?.idNumber.isNullOrBlank() -> notSet
                 revealedIdNumber != null -> revealedIdNumber
                 else -> hidden
             },
@@ -53,7 +52,7 @@ fun IdCardSection(
                     handler = actionHandler,
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
-                    sourceValue = (entry.secret as? EntrySecret.Identity)?.data?.idNumber,
+                    sourceValue = entry.secret.identity?.idNumber,
                     authTitle = "解密身份证号",
                     authSubtitle = "验证身份以复制信息",
                     onReveal = onIdNumberRevealed,
@@ -65,7 +64,7 @@ fun IdCardSection(
                     handler = actionHandler,
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
-                    sourceValue = (entry.secret as? EntrySecret.Identity)?.data?.idNumber,
+                    sourceValue = entry.secret.identity?.idNumber,
                     authTitle = "解密身份证号",
                     authSubtitle = "验证身份以查看信息",
                     onReveal = onIdNumberRevealed

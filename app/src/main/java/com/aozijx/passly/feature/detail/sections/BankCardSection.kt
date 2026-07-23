@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -136,8 +135,8 @@ fun BankCardSection(
                         savePlaintext(editState.editedPassword, revealedCardNumber, { editState.isEditingPassword = false }) {
                             onEntryUpdated(
                                 entry.copy(
-                                    secret = (entry.secret as EntrySecret.Card).copy(
-                                        data = entry.secret.data.copy(
+                                    secret = entry.secret.copy(
+                                        card = entry.secret.card?.copy(
                                             cardNumber = it
                                         )
                                     )
@@ -162,7 +161,7 @@ fun BankCardSection(
                         handler = actionHandler,
                         fieldName = "card number",
                         revealedValue = revealedCardNumber,
-                        sourceValue = (entry.secret as? EntrySecret.Card)?.data?.cardNumber,
+                        sourceValue = entry.secret.card?.cardNumber,
                         authTitle = "解密卡号",
                         authSubtitle = "验证身份以复制信息",
                         onReveal = { onRevealField(RevealedFieldKey.CARD_NUMBER, it) },
@@ -175,7 +174,7 @@ fun BankCardSection(
             )
         }
 
-        (entry.secret as? EntrySecret.Card)?.data?.cardCvv?.let { cvv ->
+        entry.secret.card?.cardCvv?.let { cvv ->
             if (editState.isEditingTotp) {
                 OutlinedTextField(
                     value = editState.editedTotp,
@@ -195,8 +194,8 @@ fun BankCardSection(
                             savePlaintext(editState.editedTotp, revealedCvv, { editState.isEditingTotp = false }) {
                                 onEntryUpdated(
                                     entry.copy(
-                                        secret = EntrySecret.Card(
-                                            entry.secret.data.copy(
+                                        secret = entry.secret.copy(
+                                            card = entry.secret.card?.copy(
                                                 cardCvv = it
                                             )
                                         )
@@ -237,7 +236,7 @@ fun BankCardSection(
             }
         }
 
-        (entry.secret as? EntrySecret.Card)?.data?.cardExpiry?.let { expiration ->
+        entry.secret.card?.cardExpiry?.let { expiration ->
             DetailItem(
                 label = stringResource(R.string.card_expiration),
                 value = expiration,
@@ -251,7 +250,7 @@ fun BankCardSection(
             )
         }
 
-        (entry.secret as? EntrySecret.Card)?.data?.paymentPin?.let { pin ->
+        entry.secret.card?.paymentPin?.let { pin ->
             DetailItem(
                 label = stringResource(R.string.payment_pin),
                 value = revealedPaymentPin ?: stringResource(R.string.hidden_mask),
@@ -281,7 +280,7 @@ fun BankCardSection(
                     onAuthenticate {
                         onRevealField(
                             RevealedFieldKey.CARD_NUMBER,
-                            (entry.secret as? EntrySecret.Card)?.data?.cardNumber
+                            entry.secret.card?.cardNumber
                         )
                         onEvent(
                             DetailIntent.RecordAction(
@@ -289,10 +288,10 @@ fun BankCardSection(
                                 ActivityType.VIEW
                             )
                         )
-                        if (revealedCvv == null && (entry.secret as? EntrySecret.Card)?.data?.cardCvv != null) {
+                        if (revealedCvv == null && entry.secret.card?.cardCvv != null) {
                             onRevealField(
                                 RevealedFieldKey.CVV,
-                                entry.secret.data.cardCvv
+                                entry.secret.card?.cardCvv
                             )
                             onEvent(
                                 DetailIntent.RecordAction(

@@ -55,8 +55,8 @@ fun EditTotpSection(
                     try {
                         onEntryUpdated(
                             item.copy(
-                                secret = EntrySecret.Otp(
-                                    data = OtpSecret(
+                                secret = EntrySecret(
+                                    otp = OtpSecret(
                                         config = OtpConfig(
                                             type = editState.type,
                                             secret = editState.secret.trim(),
@@ -76,8 +76,8 @@ fun EditTotpSection(
                                                 }
                                             },
                                             encoding = editState.encoding,
-                                            issuer = (item.secret as? EntrySecret.Otp)?.data?.config?.issuer,
-                                            accountName = (item.secret as? EntrySecret.Otp)?.data?.config?.accountName
+                                            issuer = item.secret.otp?.config?.issuer,
+                                            accountName = item.secret.otp?.config?.accountName
                                         )
                                     )
                                 )

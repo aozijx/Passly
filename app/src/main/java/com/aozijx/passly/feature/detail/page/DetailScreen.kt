@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailScrollableContent
@@ -54,7 +53,7 @@ fun DetailScreen(
     // 页面数据初始化（同 key 内串联首次 TOTP 自动解锁，避免重复 effect 触发）
     LaunchedEffect(initialEntry.id) {
         onEvent(DetailIntent.Initialize(initialEntry))
-        val initialOtpSecret = (initialEntry.secret as? EntrySecret.Otp)?.data?.config?.secret
+        val initialOtpSecret = initialEntry.secret.otp?.config?.secret
         if (!initialOtpSecret.isNullOrBlank()) {
             onAutoUnlockTotp(initialEntry)
         }
@@ -63,7 +62,7 @@ fun DetailScreen(
     val entry = uiState.entry ?: initialEntry
     val editState = remember(entry) { EntryEditState(entry) }
 
-    val otpConfig = (entry.secret as? EntrySecret.Otp)?.data?.config
+    val otpConfig = entry.secret.otp?.config
     val totpEditState = remember(entry, otpConfig?.secret) {
         TotpEditState(entry, otpConfig?.secret ?: "")
     }
@@ -77,7 +76,7 @@ fun DetailScreen(
         } else {
             if (entry.username.isNotEmpty()) {
                 editState.isEditingUsername = true
-            } else if ((entry.secret as? EntrySecret.Login)?.data?.password?.isNotEmpty() == true) {
+            } else if (entry.secret.login?.password?.isNotEmpty() == true) {
                 editState.isEditingPassword = true
             }
         }

@@ -47,8 +47,8 @@ fun AddPasswordDialog(
                     username = state.username,
                     icon = null
                 ),
-                EntrySecret.Login(
-                    LoginSecret(
+                EntrySecret(
+                    login = LoginSecret(
                         password = state.password
                     )
                 )

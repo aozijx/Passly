@@ -25,7 +25,7 @@ object EntryAggregateAssembler {
                 deletedAt = entity.deletedAt
             ),
             summary = summary,
-            secret = secret ?: EntrySecret.VaultData()
+            secret = secret ?: EntrySecret()
         )
     }
 }

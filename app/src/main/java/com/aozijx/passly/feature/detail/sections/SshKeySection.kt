@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -78,11 +77,10 @@ fun SshKeySection(
                 label = stringResource(R.string.edit_field, passphraseLabel),
                 onSave = {
                     if (editState.editedPassword != revealedPassword) {
-                        val sshSecret = entry.secret as EntrySecret.SshKey
                         onEntryUpdated(
                             entry.copy(
-                                secret = sshSecret.copy(
-                                    data = sshSecret.data.copy(
+                                secret = entry.secret.copy(
+                                    ssh = entry.secret.ssh?.copy(
                                         passphrase = editState.editedPassword
                                     )
                                 )
@@ -104,7 +102,7 @@ fun SshKeySection(
                         handler = actionHandler,
                         fieldName = "passphrase",
                         revealedValue = revealedPassword,
-                        sourceValue = (entry.secret as EntrySecret.SshKey).data.passphrase,
+                        sourceValue = entry.secret.ssh?.passphrase,
                         authTitle = "解密 SSH 密码",
                         authSubtitle = "验证身份以复制信息",
                         onReveal = onPasswordRevealed,
@@ -127,7 +125,7 @@ fun SshKeySection(
                     handler = actionHandler,
                     fieldName = "private key",
                     revealedValue = revealedSshPrivateKey,
-                    sourceValue = (entry.secret as EntrySecret.SshKey).data.privateKey,
+                    sourceValue = entry.secret.ssh?.privateKey,
                     authTitle = "解密 SSH 私钥",
                     authSubtitle = "验证身份以复制信息",
                     onReveal = onSshPrivateKeyRevealed,
@@ -188,8 +186,7 @@ fun SshKeySection(
         if (revealedSshPrivateKey == null && revealedPassword == null) {
             Button(
                 onClick = {
-                    val sshSecret = entry.secret as EntrySecret.SshKey
-                    val sshKey = sshSecret.data.privateKey
+                    val sshKey = entry.secret.ssh?.privateKey
                     if (!sshKey.isNullOrBlank()) {
                         onAuthenticate {
                             onSshPrivateKeyRevealed(sshKey)
@@ -199,7 +196,7 @@ fun SshKeySection(
                                     ActivityType.VIEW
                                 )
                             )
-                            val passphrase = sshSecret.data.passphrase
+                            val passphrase = entry.secret.ssh?.passphrase
                             if (!passphrase.isNullOrEmpty()) {
                                 onPasswordRevealed(passphrase)
                                 actionHandler.record("passphrase", ActivityType.VIEW)

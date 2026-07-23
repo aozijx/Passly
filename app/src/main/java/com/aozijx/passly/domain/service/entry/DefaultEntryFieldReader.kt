@@ -1,6 +1,5 @@
 package com.aozijx.passly.domain.service.entry
 
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.FieldKey
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import javax.inject.Inject
@@ -34,20 +33,12 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         return when (key) {
             FieldKey.TITLE -> entry.summary.title
             FieldKey.USERNAME -> entry.summary.username
-            FieldKey.PASSWORD -> when (secret) {
-                is EntrySecret.Login -> secret.data.password
-                is EntrySecret.Wifi -> secret.data.password
-                is EntrySecret.SshKey -> secret.data.passphrase
-                else -> null
-            }
+            FieldKey.PASSWORD -> secret.login?.password
+                ?: secret.wifi?.password
+                ?: secret.ssh?.passphrase
 
-            FieldKey.EMAIL -> (secret as? EntrySecret.Login)?.data?.email
-            FieldKey.NOTES -> when (secret) {
-                is EntrySecret.Login -> secret.data.notes
-                is EntrySecret.Note -> secret.notes
-                is EntrySecret.VaultData -> secret.notes
-                else -> null
-            }
+            FieldKey.EMAIL -> secret.login?.email
+            FieldKey.NOTES -> secret.notes
 
             FieldKey.URIS -> entry.summary.website?.matchDomains?.joinToString(", ")
             else -> null
@@ -55,7 +46,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
     }
 
     private fun getTotpFieldValue(entry: VaultEntry, key: FieldKey): String? {
-        val otp = (entry.secret as? EntrySecret.Otp)?.data
+        val otp = entry.secret.otp
         return when (key) {
             FieldKey.TOTP_SECRET -> otp?.config?.secret
             FieldKey.TOTP_ISSUER -> otp?.config?.issuer
@@ -69,38 +60,38 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
     private fun getCryptoFieldValue(entry: VaultEntry, key: FieldKey): String? {
         val secret = entry.secret
         return when (key) {
-            FieldKey.PASSKEY_DATA -> (secret as? EntrySecret.Passkey)?.data?.privateKeyReference
-            FieldKey.RECOVERY_CODES -> (secret as? EntrySecret.Identity)?.data?.recoveryCodes?.joinToString(
+            FieldKey.PASSKEY_DATA -> secret.passkey?.privateKeyReference
+            FieldKey.RECOVERY_CODES -> secret.identity?.recoveryCodes?.joinToString(
                 "\n"
             )
 
-            FieldKey.HARDWARE_INFO -> (secret as? EntrySecret.Passkey)?.data?.hardwareKeyInfo
-            FieldKey.SSH_KEY -> (secret as? EntrySecret.SshKey)?.data?.privateKey
-            FieldKey.SEED_PHRASE -> (secret as? EntrySecret.Identity)?.data?.seedPhrase
+            FieldKey.HARDWARE_INFO -> secret.passkey?.hardwareKeyInfo
+            FieldKey.SSH_KEY -> secret.ssh?.privateKey
+            FieldKey.SEED_PHRASE -> secret.identity?.seedPhrase
             else -> null
         }
     }
 
     private fun getFinanceFieldValue(entry: VaultEntry, key: FieldKey): String? {
-        val card = (entry.secret as? EntrySecret.Card)?.data
+        val card = entry.secret.card
         return when (key) {
             FieldKey.CARD_EXPIRATION -> card?.cardExpiry
             FieldKey.CARD_CVV -> card?.cardCvv
             FieldKey.PAYMENT_PIN -> card?.paymentPin
             FieldKey.PAYMENT_PLATFORM -> card?.paymentPlatform
-            FieldKey.SECURITY_QUESTION -> (entry.secret as? EntrySecret.Identity)?.data?.securityQuestion
-            FieldKey.SECURITY_ANSWER -> (entry.secret as? EntrySecret.Identity)?.data?.securityAnswer
+            FieldKey.SECURITY_QUESTION -> entry.secret.identity?.securityQuestion
+            FieldKey.SECURITY_ANSWER -> entry.secret.identity?.securityAnswer
             else -> null
         }
     }
 
     private fun getIdentityFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
-        FieldKey.ID_NUMBER -> (entry.secret as? EntrySecret.Identity)?.data?.idNumber
+        FieldKey.ID_NUMBER -> entry.secret.identity?.idNumber
         else -> null
     }
 
     private fun getConnectivityFieldValue(entry: VaultEntry, key: FieldKey): String? {
-        val wifi = (entry.secret as? EntrySecret.Wifi)?.data
+        val wifi = entry.secret.wifi
         return when (key) {
             FieldKey.WIFI_SECURITY -> wifi?.securityType
             FieldKey.WIFI_HIDDEN -> if (wifi?.isHidden == true) "\u662F" else "\u5426"

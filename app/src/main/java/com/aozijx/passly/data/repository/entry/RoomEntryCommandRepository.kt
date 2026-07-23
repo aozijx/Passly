@@ -124,7 +124,7 @@ class RoomEntryCommandRepository @Inject constructor(
         val oldSecret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
 
         val newSummary = changes.summary ?: oldSummary
-        val newSecret = changes.secret ?: (oldSecret ?: EntrySecret.VaultData())
+        val newSecret = changes.secret ?: (oldSecret ?: EntrySecret())
         val now = clock.now()
 
         // 1. 版本校验 + metadata 更新（原子操作）
@@ -231,7 +231,7 @@ class RoomEntryCommandRepository @Inject constructor(
         val newVersion = oldMetaEntity.version + 1
         val resolvedSecret = secret ?: entrySecretQueryDao().getByEntryId(id)?.let {
             secretCodec.decrypt(it.secretBlob, it.entryId)
-        } ?: EntrySecret.VaultData()
+        } ?: EntrySecret()
         val snapshotBlob = revisionCodec.encrypt(summary, resolvedSecret, id)
 
         entrySnapshotCommandDao().insertIdempotent(

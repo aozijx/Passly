@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
+import com.aozijx.passly.domain.model.entry.secret.OtpSecret
 import com.aozijx.passly.domain.model.otp.OtpConfig
 
 /**
@@ -18,20 +19,15 @@ class EntryEditState(initialEntry: VaultEntry) {
     var editedPassword by mutableStateOf("")
     var editedCategory by mutableStateOf(initialEntry.category)
     var editedNotes by mutableStateOf(
-        when (val s = initialEntry.secret) {
-            is EntrySecret.Login -> s.data.notes ?: ""
-            is EntrySecret.Note -> s.notes
-            is EntrySecret.VaultData -> s.notes ?: ""
-            else -> ""
-        }
+        initialEntry.secret.notes ?: ""
     )
     var editedDomain by mutableStateOf(initialEntry.associatedDomain ?: "")
     var editedPackage by mutableStateOf(initialEntry.associatedAppPackage ?: "")
     var editedTotpSecret by mutableStateOf(
-        (initialEntry.secret as? EntrySecret.Otp)?.data?.config?.secret ?: ""
+        initialEntry.secret.otp?.config?.secret ?: ""
     )
     var editedTotp by mutableStateOf(
-        (initialEntry.secret as? EntrySecret.Otp)?.data?.config?.secret ?: ""
+        initialEntry.secret.otp?.config?.secret ?: ""
     )
 
     // --- 字段编辑标志 ---
@@ -86,30 +82,24 @@ class EntryEditState(initialEntry: VaultEntry) {
     private fun updateSecret(secret: EntrySecret): EntrySecret {
         val notes = editedNotes.ifBlank { null }
         val totpSecret = editedTotpSecret.ifBlank { null }
-        return when (secret) {
-            is EntrySecret.Login -> secret.copy(data = secret.data.copy(notes = notes))
-            is EntrySecret.Note -> EntrySecret.Note(notes = notes ?: "")
-            is EntrySecret.VaultData -> secret.copy(notes = notes)
-            is EntrySecret.Otp -> {
-                val newConfig = if (totpSecret != null) {
-                    (secret.data.config ?: OtpConfig(secret = totpSecret)).copy(secret = totpSecret)
-                } else {
-                    secret.data.config?.copy(secret = "") ?: OtpConfig(secret = "")
-                }
-                EntrySecret.Otp(secret.data.copy(config = newConfig))
+        val currentOtpData = secret.otp
+        return if (totpSecret != null || currentOtpData != null) {
+            val newConfig = if (totpSecret != null) {
+                (currentOtpData?.config ?: OtpConfig(secret = totpSecret)).copy(secret = totpSecret)
+            } else {
+                currentOtpData?.config?.copy(secret = "") ?: OtpConfig(secret = "")
             }
-
-            else -> secret
+            secret.copy(
+                notes = notes,
+                otp = (currentOtpData ?: OtpSecret()).copy(config = newConfig)
+            )
+        } else {
+            secret.copy(notes = notes)
         }
     }
 
     private fun updateSecretNotes(secret: EntrySecret): EntrySecret {
         val notes = editedNotes.ifBlank { null }
-        return when (secret) {
-            is EntrySecret.Login -> secret.copy(data = secret.data.copy(notes = notes))
-            is EntrySecret.Note -> EntrySecret.Note(notes = notes ?: "")
-            is EntrySecret.VaultData -> secret.copy(notes = notes)
-            else -> secret
-        }
+        return secret.copy(notes = notes)
     }
 }

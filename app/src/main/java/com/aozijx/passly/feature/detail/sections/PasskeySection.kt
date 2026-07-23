@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
@@ -43,7 +42,7 @@ fun PasskeySection(
         DetailItem(
             label = stringResource(R.string.passkey_data),
             value = when {
-                (entry.secret as EntrySecret.Passkey).data.privateKeyReference.isNullOrBlank() -> notSet
+                entry.secret.passkey?.privateKeyReference.isNullOrBlank() -> notSet
                 revealedPasskeyData != null -> revealedPasskeyData
                 else -> hidden
             },
@@ -54,7 +53,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
-                    sourceValue = entry.secret.data.privateKeyReference,
+                    sourceValue = entry.secret.passkey?.privateKeyReference,
                     authTitle = "解密 Passkey 数据",
                     authSubtitle = "验证身份以复制数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) },
@@ -66,7 +65,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
-                    sourceValue = entry.secret.data.privateKeyReference,
+                    sourceValue = entry.secret.passkey?.privateKeyReference,
                     authTitle = "解密 Passkey 数据",
                     authSubtitle = "验证身份以查看数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) }
@@ -74,15 +73,15 @@ fun PasskeySection(
             }
         )
 
-        if (!entry.secret.data.hardwareKeyInfo.isNullOrBlank()) {
+        if (!entry.secret.passkey?.hardwareKeyInfo.isNullOrBlank()) {
             DetailItem(
                 label = stringResource(R.string.hardware_key_info),
-                value = entry.secret.data.hardwareKeyInfo,
+                value = entry.secret.passkey?.hardwareKeyInfo.orEmpty(),
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(
                         context,
-                        entry.secret.data.hardwareKeyInfo
+                        entry.secret.passkey?.hardwareKeyInfo.orEmpty()
                     )
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     actionHandler.record(

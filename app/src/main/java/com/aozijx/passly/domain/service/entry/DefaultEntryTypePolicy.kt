@@ -1,6 +1,5 @@
 package com.aozijx.passly.domain.service.entry
 
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import javax.inject.Inject
@@ -33,7 +32,7 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
             suggestedCategory = "认证",
             sensitiveFields = setOf("totpSecret"),
             summaryExtractor = { entry ->
-                val config = (entry.secret as? EntrySecret.Otp)?.data?.config
+                val config = entry.secret.otp?.config
                 "${config?.digits ?: 6} 位 / ${config?.periodSeconds ?: 30}s"
             }
         ),
@@ -62,7 +61,7 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
             suggestedCategory = "网络",
             sensitiveFields = setOf("password"),
             summaryExtractor = { entry ->
-                "加密类型 ${(entry.secret as? EntrySecret.Wifi)?.data?.securityType ?: "WPA/WPA2"}"
+                "加密类型 ${entry.secret.wifi?.securityType ?: "WPA/WPA2"}"
             }
         ),
         EntryType.BANK_CARD to PolicyConfig(
@@ -77,7 +76,7 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
             ),
             summaryExtractor = { entry ->
                 val lastFour =
-                    (entry.secret as? EntrySecret.Card)?.data?.cardNumber.orEmpty().takeLast(4)
+                    entry.secret.card?.cardNumber.orEmpty().takeLast(4)
                 "\u2022\u2022${lastFour}"
             }
         ),

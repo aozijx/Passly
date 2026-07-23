@@ -19,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.entry.secret.LoginSecret
@@ -78,7 +77,7 @@ fun CredentialSection(
             })
 
         val showPassword =
-            ((item.secret as? EntrySecret.Login)?.data?.password?.isNotEmpty() == true) || item.entryType != EntryType.LOGIN
+            (item.secret.login?.password?.isNotEmpty() == true) || item.entryType != EntryType.LOGIN
         if (showPassword) {
             CredentialRow(
                 label = stringResource(R.string.password),
@@ -93,7 +92,7 @@ fun CredentialSection(
                         handler = actionHandler,
                         fieldName = "password",
                         revealedValue = revealedPassword,
-                        sourceValue = (item.secret as? EntrySecret.Login)?.data?.password,
+                        sourceValue = item.secret.login?.password,
                         authTitle = "解密信息",
                         authSubtitle = "验证身份以复制密码",
                         onReveal = onPasswordRevealed
@@ -103,8 +102,8 @@ fun CredentialSection(
                     if (newValue != revealedPassword) {
                         onEntryUpdated(
                             item.copy(
-                                secret = EntrySecret.Login(
-                                    (item.secret as? EntrySecret.Login)?.data?.copy(
+                                secret = item.secret.copy(
+                                    login = item.secret.login?.copy(
                                         password = newValue
                                     ) ?: LoginSecret(password = newValue)
                                 )
@@ -129,8 +128,8 @@ fun CredentialSection(
                                 )
                             )
                         }
-                        if (revealedPassword == null && (item.secret as? EntrySecret.Login)?.data?.password?.isNotEmpty() == true) {
-                            onPasswordRevealed((item.secret as? EntrySecret.Login)?.data?.password)
+                        if (revealedPassword == null && item.secret.login?.password?.isNotEmpty() == true) {
+                            onPasswordRevealed(item.secret.login?.password)
                             onEvent(
                                 DetailIntent.RecordAction(
                                     "password",

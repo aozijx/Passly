@@ -20,10 +20,7 @@ object EntryListItemMapper {
         val otpType: OtpType
         val totpAlgorithm: OtpHashAlgorithm
         if (secret != null) {
-            val otpConfig = when (secret) {
-                is EntrySecret.Otp -> secret.data.config
-                else -> null
-            }
+            val otpConfig = secret?.otp?.config
             if (otpConfig != null && otpConfig.secret.isNotBlank()) {
                 hasTotp = true
                 totpPeriod = otpConfig.periodSeconds ?: 30
