@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class RecoveryCodeEntryStrategy @Inject constructor() : EntryTypeStrategy {
-    override val entryType = EntryType.LOGIN
+    override val entryType = EntryType.RECOVERY_CODE
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "恢复码标题不能为空"

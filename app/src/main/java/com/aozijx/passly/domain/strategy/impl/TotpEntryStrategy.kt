@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class TotpEntryStrategy @Inject constructor() : EntryTypeStrategy {
-    override val entryType = EntryType.LOGIN
+    override val entryType = EntryType.TOTP
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "TOTP 标题不能为空"

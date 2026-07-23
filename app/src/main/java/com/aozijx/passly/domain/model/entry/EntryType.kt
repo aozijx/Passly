@@ -17,7 +17,11 @@ enum class EntryType(val displayName: String) {
     API_KEY("API密钥"),
     CRYPTO_WALLET("加密钱包"),
     BANK_CARD("银行卡"),
-    ID_CARD("身份证");
+    ID_CARD("身份证"),
+    TOTP("TOTP"),
+    SEED_PHRASE("助记词"),
+    RECOVERY_CODE("恢复码"),
+    PASSKEY("Passkey");
 
     companion object {
         fun fromName(name: String): EntryType =

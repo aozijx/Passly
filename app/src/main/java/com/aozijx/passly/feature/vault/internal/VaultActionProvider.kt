@@ -20,7 +20,6 @@ import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.entry.FieldKey
 import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.domain.model.settings.SwipeActionType
-import com.aozijx.passly.domain.strategy.EntryTypeStrategyFactory
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.main.MainViewModel
@@ -61,7 +60,7 @@ fun rememberVaultActionProvider(
         decryptAuthTitle, decryptAuthSubtitle, totpCopiedText, fieldCopiedFormat
     ) {
         { fieldKey: FieldKey, item: VaultListItem ->
-            val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
+            val strategy = vaultViewModel.strategyProvider.getStrategy(item.entryType)
             val label = EntryTypeDisplayProvider.getCopyLabel(fieldKey)
 
             if (fieldKey == FieldKey.PASSWORD && item.hasTotp) {

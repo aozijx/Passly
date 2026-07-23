@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SeedPhraseEntryStrategy @Inject constructor() : EntryTypeStrategy {
-    override val entryType = EntryType.LOGIN
+    override val entryType = EntryType.SEED_PHRASE
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "钱包名称不能为空"

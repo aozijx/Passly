@@ -65,7 +65,7 @@ fun DetailScrollableContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         when (vaultType) {
-            EntryType.LOGIN -> {
+            EntryType.LOGIN, EntryType.TOTP, EntryType.SEED_PHRASE, EntryType.RECOVERY_CODE, EntryType.PASSKEY -> {
                 item {
                     CredentialSection(
                         item = entry,

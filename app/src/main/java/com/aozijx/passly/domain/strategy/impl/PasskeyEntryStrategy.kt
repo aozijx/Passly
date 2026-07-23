@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PasskeyEntryStrategy @Inject constructor() : EntryTypeStrategy {
-    override val entryType = EntryType.LOGIN
+    override val entryType = EntryType.PASSKEY
 
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.title.isBlank()) return "Passkey 标题不能为空"

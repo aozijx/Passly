@@ -109,27 +109,3 @@ interface EntryTypeStrategy {
     fun initializeDefaults(entry: VaultEntry): VaultEntry = entry
     fun cleanup(entry: VaultEntry): VaultEntry = entry
 }
-
-object EntryTypeStrategyFactory {
-    private val strategies = mutableMapOf<EntryType, EntryTypeStrategy>()
-
-    fun register(strategy: EntryTypeStrategy) {
-        strategies[strategy.entryType] = strategy
-    }
-
-    fun registerAll(strategies: Map<EntryType, @JvmSuppressWildcards EntryTypeStrategy>) {
-        this.strategies.putAll(strategies)
-    }
-
-    fun getStrategy(entryType: EntryType): EntryTypeStrategy {
-        return strategies[entryType]
-            ?: throw IllegalArgumentException("没有找到类型 $entryType 对应的策略")
-    }
-
-    fun getStrategy(typeName: String): EntryTypeStrategy {
-        val entryType = EntryType.fromName(typeName)
-        return getStrategy(entryType)
-    }
-
-    fun hasStrategy(entryType: EntryType): Boolean = entryType in strategies
-}
