@@ -1,5 +1,6 @@
 package com.aozijx.passly.data.codec.snapshot
 
+import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
 import com.aozijx.passly.data.mapper.entry.EntrySummaryMapper
 import com.aozijx.passly.data.model.payload.secret.SecretPayload
@@ -62,9 +63,6 @@ data class SnapshotPayload(
 class EntrySnapshotCodec @Inject constructor(
     private val fieldEncryptor: FieldEncryptor
 ) {
-    private fun aad(entryId: String): ByteArray =
-        "vault:$entryId:snapshot".toByteArray(Charsets.UTF_8)
-
     suspend fun encrypt(
         summary: EntrySummary,
         secret: EntrySecret,
@@ -79,7 +77,7 @@ class EntrySnapshotCodec @Inject constructor(
         val payload = SnapshotPayload(summaryJson, secretJson)
         return fieldEncryptor.encrypt(
             payload.toBytes().decodeToString(),
-            aad(entryId)
+            AadProvider.revision(entryId)
         )
     }
 
@@ -87,7 +85,7 @@ class EntrySnapshotCodec @Inject constructor(
         blob: ByteArray,
         entryId: String
     ): Pair<EntrySummary, EntrySecret> {
-        val json = fieldEncryptor.decrypt(blob, aad(entryId))
+        val json = fieldEncryptor.decrypt(blob, AadProvider.revision(entryId))
         val snapshotPayload = SnapshotPayload.fromBytes(json.toByteArray(Charsets.UTF_8))
         val summary = AppJson.decodeFromString(
             SummaryPayload.serializer(),
