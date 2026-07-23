@@ -1,9 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.FieldDefinition
-import com.aozijx.passly.domain.model.entry.FieldGroup
-import com.aozijx.passly.domain.model.entry.FieldType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
@@ -46,23 +43,5 @@ class RecoveryCodeEntryStrategy @Inject constructor() : EntryTypeStrategy {
         return entry
     }
 
-    override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
-        return listOf(
-            FieldGroup(
-                title = "恢复凭据", fields = listOf(
-                    FieldDefinition("title", "名称", isRequired = true), FieldDefinition(
-                        "recoveryCodes",
-                        "恢复码内容",
-                        isSensitive = true,
-                        isRequired = true,
-                        fieldType = FieldType.TEXTAREA
-                    ), FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
-                )
-            ), FieldGroup(
-                title = "其他", fields = listOf(
-                    FieldDefinition("notes", "备注", fieldType = FieldType.TEXTAREA)
-                )
-            )
-        )
-    }
+
 }

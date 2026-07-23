@@ -1,37 +1,20 @@
 package com.aozijx.passly.domain.strategy
 
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.FieldGroup
 import com.aozijx.passly.domain.model.entry.FieldKey
 import com.aozijx.passly.domain.model.entry.VaultEntry
 
 /**
  * 条目类型策略基类
+ *
+ * Domain 层职责：验证、字段提取、字段标识、摘要。
+ * UI 层相关（标签、组件类型）由 [com.aozijx.passly.feature.vault.strategy.EntryTypeDisplayProvider] 提供。
  */
 interface EntryTypeStrategy {
     val entryType: EntryType
 
     /**
-     * 根据 FieldKey 获取对应的显示标签（用于复制提示）
-     */
-    fun getCopyLabel(key: FieldKey): String = when (key) {
-        FieldKey.PASSWORD -> "密码"
-        FieldKey.USERNAME -> "账号"
-        FieldKey.EMAIL -> "邮箱"
-        FieldKey.CARD_CVV -> "CVV"
-        FieldKey.PAYMENT_PIN -> "支付密码"
-        FieldKey.SSH_KEY -> "SSH 私钥"
-        FieldKey.SEED_PHRASE -> "助记词"
-        FieldKey.ID_NUMBER -> "证件号"
-        FieldKey.PASSKEY_DATA -> "Passkey"
-        FieldKey.RECOVERY_CODES -> "恢复码"
-        FieldKey.NOTES -> "备注"
-        else -> "内容"
-    }
-
-    /**
      * 根据 FieldKey 从条目中提取数据值
-     * 采用分组拆分逻辑，提高可维护性
      */
     fun getFieldValue(entry: VaultEntry, key: FieldKey): String? {
         return when {
@@ -117,10 +100,6 @@ interface EntryTypeStrategy {
     private fun FieldKey.isConnectivity() = this.name.startsWith("WIFI")
 
 
-    /**
-     * 获取详情页面的字段分组定义
-     */
-    fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup>
     fun validateRequiredFields(entry: VaultEntry): String?
     fun validateFieldContent(entry: VaultEntry): String?
     fun getSensitiveFields(): Set<String>

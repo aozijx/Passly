@@ -1,9 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.FieldDefinition
-import com.aozijx.passly.domain.model.entry.FieldGroup
-import com.aozijx.passly.domain.model.entry.FieldType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
@@ -45,31 +42,5 @@ class WiFiEntryStrategy @Inject constructor() : EntryTypeStrategy {
         return entry
     }
 
-    override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
-        return listOf(
-            FieldGroup(
-                title = "网络连接", fields = listOf(
-                    FieldDefinition("title", "名称", isRequired = true),
-                    FieldDefinition("username", "SSID", isRequired = true),
-                    FieldDefinition(
-                        "password",
-                        "WiFi 密码",
-                        isSensitive = true,
-                        isRequired = true,
-                        fieldType = FieldType.PASSWORD
-                    ),
-                    FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
-                )
-            ), FieldGroup(
-                title = "网络详情", fields = listOf(
-                    FieldDefinition("wifiSecurityType", "安全性", fieldType = FieldType.SELECT),
-                    FieldDefinition("wifiIsHidden", "隐藏网络", fieldType = FieldType.TOGGLE)
-                )
-            ), FieldGroup(
-                title = "其他", fields = listOf(
-                    FieldDefinition("notes", "备注", fieldType = FieldType.TEXTAREA)
-                )
-            )
-        )
-    }
+
 }

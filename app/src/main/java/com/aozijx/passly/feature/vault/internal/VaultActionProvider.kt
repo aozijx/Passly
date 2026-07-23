@@ -27,6 +27,7 @@ import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.model.OtpUiState
+import com.aozijx.passly.feature.vault.strategy.EntryTypeDisplayProvider
 
 class VaultActionProvider(
     val onSwipeTriggered: (SwipeActionType, VaultListItem) -> Unit,
@@ -61,7 +62,7 @@ fun rememberVaultActionProvider(
     ) {
         { fieldKey: FieldKey, item: VaultListItem ->
             val strategy = EntryTypeStrategyFactory.getStrategy(item.entryType)
-            val label = strategy.getCopyLabel(fieldKey)
+            val label = EntryTypeDisplayProvider.getCopyLabel(fieldKey)
 
             if (fieldKey == FieldKey.PASSWORD && item.hasTotp) {
                 latestTotpStates[item.id]?.let { state ->

@@ -1,9 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.FieldDefinition
-import com.aozijx.passly.domain.model.entry.FieldGroup
-import com.aozijx.passly.domain.model.entry.FieldType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
@@ -48,40 +45,5 @@ class PasswordEntryStrategy @Inject constructor() : EntryTypeStrategy {
         return entry
     }
 
-    // UI 表现层相关：重写接口方法
-    override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
-        return listOf(
-            FieldGroup(
-                title = "基本信息", fields = listOf(
-                    FieldDefinition("title", "标题", isRequired = true),
-                    FieldDefinition("username", "用户名", isRequired = true),
-                    FieldDefinition("email", "邮箱"),
-                    FieldDefinition(
-                        "password",
-                        "密码",
-                        isSensitive = true,
-                        isRequired = true,
-                        fieldType = FieldType.PASSWORD
-                    ),
-                    FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
-                )
-            ), FieldGroup(
-                title = "两步验证", fields = listOf(
-                    FieldDefinition("totpSecret", "TOTP 密钥", isSensitive = true),
-                    FieldDefinition("totpDigits", "位数", fieldType = FieldType.SELECT),
-                    FieldDefinition("totpPeriod", "更新周期 (s)", fieldType = FieldType.SELECT),
-                    FieldDefinition("totpAlgorithm", "算法", fieldType = FieldType.SELECT)
-                )
-            ), FieldGroup(
-                title = "额外信息", fields = listOf(
-                    FieldDefinition("uriList", "网址", fieldType = FieldType.URL),
-                    FieldDefinition("notes", "备注", fieldType = FieldType.TEXTAREA)
-                )
-            ), FieldGroup(
-                title = "安全设置", fields = listOf(
-                    FieldDefinition("favorite", "收藏", fieldType = FieldType.TOGGLE)
-                )
-            )
-        )
-    }
+
 }

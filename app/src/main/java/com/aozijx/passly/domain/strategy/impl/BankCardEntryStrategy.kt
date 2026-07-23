@@ -1,9 +1,6 @@
 package com.aozijx.passly.domain.strategy.impl
 
 import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.FieldDefinition
-import com.aozijx.passly.domain.model.entry.FieldGroup
-import com.aozijx.passly.domain.model.entry.FieldType
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.strategy.EntryTypeStrategy
 
@@ -67,27 +64,5 @@ class BankCardEntryStrategy @Inject constructor() : EntryTypeStrategy {
         return entry
     }
 
-    override fun getDetailFieldGroups(entry: VaultEntry): List<FieldGroup> {
-        return listOf(
-            FieldGroup(
-                title = "卡片信息", fields = listOf(
-                    FieldDefinition("title", "银行/机构名称", isRequired = true),
-                    FieldDefinition("password", "卡号", isSensitive = true, isRequired = true),
-                    FieldDefinition("username", "持卡人姓名"),
-                    FieldDefinition("category", "分类", fieldType = FieldType.SELECT)
-                )
-            ), FieldGroup(
-                title = "安全详情", fields = listOf(
-                    FieldDefinition("cardExpiration", "有效期 (MM/YY)"),
-                    FieldDefinition("cardCvv", "CVV", isSensitive = true),
-                    FieldDefinition("paymentPin", "支付密码", isSensitive = true),
-                    FieldDefinition("securityAnswer", "密保答案", isSensitive = true)
-                )
-            ), FieldGroup(
-                title = "其他", fields = listOf(
-                    FieldDefinition("notes", "备注", fieldType = FieldType.TEXTAREA)
-                )
-            )
-        )
-    }
+
 }
