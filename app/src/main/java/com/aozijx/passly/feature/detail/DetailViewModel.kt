@@ -11,7 +11,8 @@ import com.aozijx.passly.domain.model.favicon.FaviconResult
 import com.aozijx.passly.domain.repository.activity.ActivityRecorder
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
-import com.aozijx.passly.domain.strategy.EntryTypeStrategyProvider
+import com.aozijx.passly.domain.service.entry.EntryTypePolicy
+import com.aozijx.passly.domain.service.entry.EntryValidatorProvider
 import com.aozijx.passly.domain.usecase.detail.DetailQueryUseCases
 import com.aozijx.passly.domain.usecase.settings.RuntimeSettingsUseCases
 import com.aozijx.passly.feature.detail.contract.DetailEffect
@@ -36,9 +37,10 @@ class DetailViewModel @Inject constructor(
     private val activityRecorder: ActivityRecorder,
     private val runtimeSettingsUseCases: RuntimeSettingsUseCases,
     private val faviconRepository: FaviconRepository,
-    private val strategyProvider: EntryTypeStrategyProvider
+    private val entryTypePolicy: EntryTypePolicy,
+    private val entryValidatorProvider: EntryValidatorProvider
 ) : ViewModel() {
-    private val entryAnalyzer = DetailEntryAnalyzer(strategyProvider)
+    private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy, entryValidatorProvider)
 
     companion object {
         private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"

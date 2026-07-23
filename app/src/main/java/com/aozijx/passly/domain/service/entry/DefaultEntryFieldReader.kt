@@ -1,23 +1,21 @@
-package com.aozijx.passly.domain.strategy
+package com.aozijx.passly.domain.service.entry
 
 import com.aozijx.passly.domain.model.entry.EntrySecret
-import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.FieldKey
 import com.aozijx.passly.domain.model.entry.VaultEntry
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * 条目类型策略基类
+ * 默认字段读取器。
  *
- * Domain 层职责：验证、字段提取、字段标识、摘要。
- * UI 层相关（标签、组件类型）由 [com.aozijx.passly.feature.vault.strategy.EntryTypeDisplayProvider] 提供。
+ * 根据 [FieldKey] 从 [VaultEntry] 中提取原始数据值，处理逻辑对所有条目类型通用。
+ * 提取逻辑继承自原有的 [com.aozijx.passly.domain.strategy.EntryTypeStrategy] 中的 getFieldValue 实现。
  */
-interface EntryTypeStrategy {
-    val entryType: EntryType
+@Singleton
+class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
 
-    /**
-     * 根据 FieldKey 从条目中提取数据值
-     */
-    fun getFieldValue(entry: VaultEntry, key: FieldKey): String? {
+    override fun getFieldValue(entry: VaultEntry, key: FieldKey): String? {
         return when {
             key.isCommon() -> getCommonFieldValue(entry, key)
             key.isTotp() -> getTotpFieldValue(entry, key)
@@ -29,13 +27,13 @@ interface EntryTypeStrategy {
         }
     }
 
-    // --- 分组提取逻辑 (私有辅助函数) ---
+    // --- 分组提取逻辑 ---
 
     private fun getCommonFieldValue(entry: VaultEntry, key: FieldKey): String? {
         val secret = entry.secret
         return when (key) {
-            FieldKey.TITLE -> entry.title
-            FieldKey.USERNAME -> entry.username
+            FieldKey.TITLE -> entry.summary.title
+            FieldKey.USERNAME -> entry.summary.username
             FieldKey.PASSWORD -> when (secret) {
                 is EntrySecret.Login -> secret.data.password
                 is EntrySecret.Wifi -> secret.data.password
@@ -51,7 +49,7 @@ interface EntryTypeStrategy {
                 else -> null
             }
 
-            FieldKey.URIS -> entry.website?.matchDomains?.joinToString(", ")
+            FieldKey.URIS -> entry.summary.website?.matchDomains?.joinToString(", ")
             else -> null
         }
     }
@@ -110,9 +108,15 @@ interface EntryTypeStrategy {
         }
     }
 
-    // --- FieldKey 扩展判定 (建议定义在 FieldKey 枚举中，此处仅作演示) ---
+    // --- FieldKey 扩展判定 ---
+
     private fun FieldKey.isCommon() = this in listOf(
-        FieldKey.TITLE, FieldKey.USERNAME, FieldKey.PASSWORD, FieldKey.EMAIL, FieldKey.NOTES, FieldKey.URIS
+        FieldKey.TITLE,
+        FieldKey.USERNAME,
+        FieldKey.PASSWORD,
+        FieldKey.EMAIL,
+        FieldKey.NOTES,
+        FieldKey.URIS
     )
 
     private fun FieldKey.isTotp() = this.name.startsWith("TOTP")
@@ -129,14 +133,4 @@ interface EntryTypeStrategy {
 
     private fun FieldKey.isIdentity() = this == FieldKey.ID_NUMBER
     private fun FieldKey.isConnectivity() = this.name.startsWith("WIFI")
-
-
-    fun validateRequiredFields(entry: VaultEntry): String?
-    fun validateFieldContent(entry: VaultEntry): String?
-    fun getSensitiveFields(): Set<String>
-    fun extractSummary(entry: VaultEntry): String
-    fun suggestedCategory(): String
-    fun supportsAutofill(): Boolean
-    fun initializeDefaults(entry: VaultEntry): VaultEntry = entry
-    fun cleanup(entry: VaultEntry): VaultEntry = entry
 }

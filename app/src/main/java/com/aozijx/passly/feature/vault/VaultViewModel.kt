@@ -14,7 +14,7 @@ import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import com.aozijx.passly.domain.repository.activity.ActivityRecorder
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
-import com.aozijx.passly.domain.strategy.EntryTypeStrategyProvider
+import com.aozijx.passly.domain.service.entry.EntryFieldReader
 import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import com.aozijx.passly.feature.vault.contract.VaultEffect
@@ -50,7 +50,7 @@ class VaultViewModel @Inject constructor(
     private val activityRecorder: ActivityRecorder,
     private val portableSettingsUseCases: PortableSettingsUseCases,
     private val faviconRepository: FaviconRepository,
-    val strategyProvider: EntryTypeStrategyProvider
+    val entryFieldReader: EntryFieldReader
 ) : AndroidViewModel(application) {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)

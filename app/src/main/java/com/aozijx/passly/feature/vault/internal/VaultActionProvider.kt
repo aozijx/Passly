@@ -60,7 +60,6 @@ fun rememberVaultActionProvider(
         decryptAuthTitle, decryptAuthSubtitle, totpCopiedText, fieldCopiedFormat
     ) {
         { fieldKey: FieldKey, item: EntryListItem ->
-            val strategy = vaultViewModel.strategyProvider.getStrategy(item.entryType)
             val label = EntryTypeDisplayProvider.getCopyLabel(fieldKey)
 
             if (fieldKey == FieldKey.PASSWORD && item.hasTotp) {
@@ -74,7 +73,8 @@ fun rememberVaultActionProvider(
             } else {
                 vaultViewModel.loadEntryById(item.id) { fullEntry ->
                     val rawValue =
-                        strategy.getFieldValue(fullEntry, fieldKey) ?: return@loadEntryById
+                        vaultViewModel.entryFieldReader.getFieldValue(fullEntry, fieldKey)
+                            ?: return@loadEntryById
                     vaultViewModel.decryptSingle(
                         encryptedData = rawValue,
                         authenticate = { ok ->
