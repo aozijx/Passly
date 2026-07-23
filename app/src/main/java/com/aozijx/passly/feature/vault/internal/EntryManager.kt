@@ -39,8 +39,7 @@ internal class EntryManager(
 
     fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
-            val insertResult = entryCommandRepository.createEntry(entry)
-            when (insertResult) {
+            when (val insertResult = entryCommandRepository.createEntry(entry)) {
                 is AppResult.Success -> {
                     if (!domain.isNullOrBlank()) {
                         val outcome = downloadFavicon(domain)
