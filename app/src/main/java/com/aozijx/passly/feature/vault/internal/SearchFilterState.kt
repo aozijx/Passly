@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.domain.model.settings.SortOption
+import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import com.aozijx.passly.feature.vault.model.VaultTab
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -18,14 +18,14 @@ internal data class SearchFilterUiState(
     val searchQuery: String = "",
     val selectedCategory: String? = null,
     val selectedTab: VaultTab = VaultTab.ALL,
-    val selectedSort: SortOption = SortOption.DEFAULT,
+    val selectedSort: VaultSortSpec = VaultSortSpec.DEFAULT,
     val isSearchActive: Boolean = false,
     val isMoreMenuExpanded: Boolean = false
 )
 
 internal class SearchFilterState(
     scope: CoroutineScope,
-    initialSort: SortOption = SortOption.DEFAULT
+    initialSort: VaultSortSpec = VaultSortSpec.DEFAULT
 ) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -43,7 +43,7 @@ internal class SearchFilterState(
     val isMoreMenuExpanded: StateFlow<Boolean> = _isMoreMenuExpanded
 
     private val _selectedSort = MutableStateFlow(initialSort)
-    val selectedSort: StateFlow<SortOption> = _selectedSort
+    val selectedSort: StateFlow<VaultSortSpec> = _selectedSort
 
     val uiStateFlow: StateFlow<SearchFilterUiState> = combine(
         combine(
@@ -88,7 +88,7 @@ internal class SearchFilterState(
     fun updateSearchQuery(query: String) { _searchQuery.value = query }
     fun updateSelectedTab(tab: VaultTab) { _selectedTab.value = tab }
     fun updateSelectedCategory(category: String?) { _selectedCategory.value = category }
-    fun updateSelectedSort(sort: SortOption) {
+    fun updateSelectedSort(sort: VaultSortSpec) {
         _selectedSort.value = sort
     }
 

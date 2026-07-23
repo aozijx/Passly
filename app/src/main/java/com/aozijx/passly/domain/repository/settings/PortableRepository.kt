@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.repository.settings
 
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
-import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
+import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -26,7 +26,7 @@ data class PortableSettings(
     val tabBarMaxTabsWithoutScroll: Int,
     val isAutoDownloadIcons: Boolean,
     val faviconDownloadWhitelist: Set<String>,
-    val vaultSortOption: SortOption
+    val vaultSortOption: VaultSortSpec
 )
 
 interface PortableRepository {
@@ -51,7 +51,7 @@ interface PortableRepository {
     val tabBarMaxTabsWithoutScroll: Flow<Int>
     val isAutoDownloadIcons: Flow<Boolean>
     val faviconDownloadWhitelist: Flow<Set<String>>
-    val vaultSortOption: Flow<SortOption>
+    val vaultSortOption: Flow<VaultSortSpec>
     val statusBarNotificationsEnabled: Flow<Boolean>
     val iconDownloadNotificationsEnabled: Flow<Boolean>
     val clipboardClearToastsEnabled: Flow<Boolean>
@@ -72,7 +72,7 @@ interface PortableRepository {
     suspend fun setTabBarMaxTabsWithoutScroll(maxTabs: Int)
     suspend fun setAutoDownloadIcons(enabled: Boolean)
     suspend fun setFaviconDownloadWhitelist(whitelist: Set<String>)
-    suspend fun setVaultSortOption(sort: SortOption)
+    suspend fun setVaultSortOption(sort: VaultSortSpec)
     suspend fun setThemeColor(color: String)
     suspend fun setStatusBarNotificationsEnabled(enabled: Boolean)
     suspend fun setIconDownloadNotificationsEnabled(enabled: Boolean)

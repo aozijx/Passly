@@ -1,7 +1,5 @@
 package com.aozijx.passly.domain.model.settings
 
-import com.aozijx.passly.domain.model.lookup.VaultListItem
-
 enum class SortOption(val group: SortGroup) {
     DEFAULT(SortGroup.STANDALONE),
     NAME_ASC(SortGroup.NAME),
@@ -47,18 +45,15 @@ enum class SortOption(val group: SortGroup) {
     }
 }
 
-fun SortOption.apply(items: List<VaultListItem>): List<VaultListItem> = when (this) {
-    SortOption.DEFAULT -> items.sortedWith(
-        compareByDescending<VaultListItem> { it.favorite }
-            .thenByDescending { it.usageCount }
-            .thenByDescending { it.createdAt }
-    )
-    SortOption.NAME_ASC -> items.sortedBy { it.title.lowercase() }
-    SortOption.NAME_DESC -> items.sortedByDescending { it.title.lowercase() }
-    SortOption.CREATED_DESC -> items.sortedByDescending { it.createdAt }
-    SortOption.CREATED_ASC -> items.sortedBy { it.createdAt }
-    SortOption.UPDATED_DESC -> items.sortedByDescending { it.updatedAt }
-    SortOption.UPDATED_ASC -> items.sortedBy { it.updatedAt }
-    SortOption.USAGE_DESC -> items.sortedByDescending { it.usageCount }
-    SortOption.USAGE_ASC -> items.sortedBy { it.usageCount }
+/** 转换为新的 [VaultSortSpec] 结构。 */
+fun SortOption.toSpec(): VaultSortSpec = when (this) {
+    SortOption.DEFAULT -> VaultSortSpec.DEFAULT
+    SortOption.NAME_ASC -> VaultSortSpec(VaultSortField.TITLE, SortDirection.ASC)
+    SortOption.NAME_DESC -> VaultSortSpec(VaultSortField.TITLE, SortDirection.DESC)
+    SortOption.CREATED_DESC -> VaultSortSpec(VaultSortField.CREATED_AT, SortDirection.DESC)
+    SortOption.CREATED_ASC -> VaultSortSpec(VaultSortField.CREATED_AT, SortDirection.ASC)
+    SortOption.UPDATED_DESC -> VaultSortSpec(VaultSortField.UPDATED_AT, SortDirection.DESC)
+    SortOption.UPDATED_ASC -> VaultSortSpec(VaultSortField.UPDATED_AT, SortDirection.ASC)
+    SortOption.USAGE_DESC -> VaultSortSpec(VaultSortField.USAGE_FREQUENCY, SortDirection.DESC)
+    SortOption.USAGE_ASC -> VaultSortSpec(VaultSortField.USAGE_FREQUENCY, SortDirection.ASC)
 }

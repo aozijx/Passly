@@ -35,6 +35,8 @@
     <string name="sort_created">创建时间</string>
     <string name="sort_updated">修改时间</string>
     <string name="sort_usage">使用次数</string>
+    <string name="sort_last_used">最近使用</string>
+    <string name="sort_entry_type">条目类型</string>
     <string name="not_set">未设置</string>
 
     <!-- Autofill 服务相关 -->

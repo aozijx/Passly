@@ -3,10 +3,10 @@ package com.aozijx.passly.data.repository.settings
 import android.content.Context
 import com.aozijx.passly.data.local.datastore.appSettingsDataStore
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
-import com.aozijx.passly.domain.model.settings.SortOption
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.model.settings.TabLayoutConstraints
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
+import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import com.aozijx.passly.domain.repository.settings.PortableRepository
 import com.aozijx.passly.domain.repository.settings.PortableSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -84,9 +84,9 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
         dataStore.data.map { it.autoDownloadIcons }
     override val faviconDownloadWhitelist: Flow<Set<String>> =
         dataStore.data.map { s -> s.faviconDownloadDomainList.toSet() }
-    override val vaultSortOption: Flow<SortOption> =
+    override val vaultSortOption: Flow<VaultSortSpec> =
         dataStore.data.map { s ->
-            SortOption.entries.find { it.name == s.vaultSortOption } ?: SortOption.DEFAULT
+            VaultSortSpec.parse(s.vaultSortOption)
         }
     override val themeColor: Flow<String> =
         dataStore.data.map { s -> s.themeColor }
@@ -151,7 +151,7 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
     )
 
     private data class Group4(
-        val adi: Boolean, val fwl: Set<String>, val vso: SortOption
+        val adi: Boolean, val fwl: Set<String>, val vso: VaultSortSpec
     )
 
     override suspend fun setDarkMode(enabled: Boolean?) {
@@ -253,8 +253,10 @@ class PortableRepositoryImpl @Inject constructor(@ApplicationContext context: Co
         }
     }
 
-    override suspend fun setVaultSortOption(sort: SortOption) {
-        dataStore.updateData { it.toBuilder().setVaultSortOption(sort.name).build() }
+    override suspend fun setVaultSortOption(sort: VaultSortSpec) {
+        dataStore.updateData {
+            it.toBuilder().setVaultSortOption(VaultSortSpec.serialize(sort)).build()
+        }
     }
 
     override suspend fun setThemeColor(color: String) {

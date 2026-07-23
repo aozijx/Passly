@@ -8,7 +8,7 @@ import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.lookup.VaultListItem
-import com.aozijx.passly.domain.model.settings.SortOption
+import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import com.aozijx.passly.domain.repository.entry.EntryCommands
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.strategy.EntryTypeStrategyProvider
@@ -90,7 +90,7 @@ class VaultViewModel @Inject constructor(
     private val queryCoordinator = VaultQueryCoordinator(vaultQueryUseCases)
     private val searchFilter = SearchFilterState(
         viewModelScope,
-        initialSort = SortOption.DEFAULT
+        initialSort = VaultSortSpec.DEFAULT
     )
 
     private val isAutoDownloadIcons: StateFlow<Boolean> =
@@ -181,7 +181,7 @@ class VaultViewModel @Inject constructor(
     fun onSearchQueryChange(q: String) = searchFilter.updateSearchQuery(q)
     fun setSelectedCategory(category: String?) = searchFilter.updateSelectedCategory(category)
     fun clearSelectedCategory() = setSelectedCategory(null)
-    fun selectSortOption(sort: SortOption) {
+    fun selectSortOption(sort: VaultSortSpec) {
         searchFilter.updateSelectedSort(sort)
         viewModelScope.launch { portableSettingsUseCases.setVaultSortOption(sort) }
     }

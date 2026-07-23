@@ -34,7 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.settings.SortOption
+import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
 
@@ -56,7 +56,7 @@ fun VaultTopBar(
     onExpandMoreMenu: (Boolean) -> Unit,
     onToggleTotpVisibility: () -> Unit,
     onCategorySelected: (String?) -> Unit,
-    onSortSelected: (SortOption) -> Unit,
+    onSortSelected: (VaultSortSpec) -> Unit,
     onSelectTab: (VaultTab) -> Unit
 ) {
     val density = LocalDensity.current

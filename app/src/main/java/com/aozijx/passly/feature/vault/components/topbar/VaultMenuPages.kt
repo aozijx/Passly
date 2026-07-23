@@ -33,7 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.settings.SortOption
+import com.aozijx.passly.domain.model.settings.VaultSortSpec
 
 @Composable
 internal fun MainMenuContent(
@@ -110,30 +110,30 @@ internal fun MainMenuContent(
 
 @Composable
 internal fun SortSubMenu(
-    selectedSort: SortOption,
-    onSortSelected: (SortOption) -> Unit,
+    selectedSort: VaultSortSpec,
+    onSortSelected: (VaultSortSpec) -> Unit,
     onBack: () -> Unit
 ) {
     BackMenuItem(onBack)
-    SortOption.displayOptions().forEach { displayOption ->
-        val selected = selectedSort.group == displayOption.group
-        val effective = if (selected) selectedSort else displayOption
+    val isDefault = selectedSort == VaultSortSpec.DEFAULT
+    VaultSortSpec.presets().forEach { preset ->
+        val selected = preset.field == selectedSort.field
         val direction = when {
-            displayOption.group == SortOption.SortGroup.STANDALONE -> ""
-            effective.isDescending -> " \u2193"
-            else -> " \u2191"
+            preset == VaultSortSpec.DEFAULT -> ""
+            selected && !isDefault -> if (selectedSort.direction.name == "DESC") " \u2193" else " \u2191"
+            else -> ""
         }
         DropdownMenuItem(
             text = {
                 Text(
-                    text = stringResource(effective.labelResId()) + direction,
+                    text = stringResource(selectedSort.labelResId()) + direction,
                     color = if (selected) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                 )
             },
             onClick = {
-                onSortSelected(if (selected) selectedSort.toggled() else displayOption)
+                onSortSelected(if (selected && !isDefault) selectedSort.toggled() else preset)
             },
             modifier = selectedMenuModifier(selected)
         )

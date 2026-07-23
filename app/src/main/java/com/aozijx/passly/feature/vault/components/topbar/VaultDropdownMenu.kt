@@ -21,7 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.model.settings.SortOption
+import com.aozijx.passly.domain.model.settings.VaultSortSpec
 
 private enum class MenuPage { MAIN, SORT, FILTER }
 
@@ -38,8 +38,8 @@ fun VaultDropdownMenu(
     availableCategories: List<String>,
     selectedCategory: String?,
     onCategorySelected: (String?) -> Unit,
-    selectedSort: SortOption,
-    onSortSelected: (SortOption) -> Unit
+    selectedSort: VaultSortSpec,
+    onSortSelected: (VaultSortSpec) -> Unit
 ) {
     var currentPage by remember { mutableStateOf(MenuPage.MAIN) }
     var categorySearchQuery by remember { mutableStateOf("") }
@@ -67,7 +67,9 @@ fun VaultDropdownMenu(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
-        modifier = Modifier.widthIn(min = 150.dp).animateContentSize()
+        modifier = Modifier
+            .widthIn(min = 150.dp)
+            .animateContentSize()
     ) {
         AnimatedContent(
             targetState = currentPage,
