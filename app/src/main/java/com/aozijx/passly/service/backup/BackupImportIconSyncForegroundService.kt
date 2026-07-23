@@ -11,8 +11,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
+import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import com.aozijx.passly.feature.settings.datamanagement.BackupImportIconSyncSupport
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -31,16 +31,16 @@ class BackupImportIconSyncForegroundService : Service() {
     lateinit var entryCommandRepository: EntryCommandRepository
 
     @Inject
-    lateinit var vaultQueryUseCases: VaultQueryUseCases
+    lateinit var entryQueryRepository: EntryQueryRepository
 
     @Inject
-    lateinit var portableSettingsUseCases: PortableSettingsUseCases
+    lateinit var portableRepository: PortableRepository
 
     private val iconSyncSupport by lazy {
         BackupImportIconSyncSupport(
             entryCommandRepository,
-            vaultQueryUseCases,
-            portableSettingsUseCases
+            entryQueryRepository,
+            portableRepository
         )
     }
 

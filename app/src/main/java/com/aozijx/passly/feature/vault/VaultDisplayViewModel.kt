@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +42,7 @@ data class VaultDisplayUiState(
 
 @HiltViewModel
 class VaultDisplayViewModel @Inject constructor(
-    private val portableSettingsUseCases: PortableSettingsUseCases
+    private val portableRepository: PortableRepository
 ) : ViewModel() {
 
     /**
@@ -53,24 +53,24 @@ class VaultDisplayViewModel @Inject constructor(
      */
     val config: StateFlow<VaultDisplayUiState> = combine(
         combine(
-            portableSettingsUseCases.isStatusBarAutoHide,
-            portableSettingsUseCases.isTopBarCollapsible,
-            portableSettingsUseCases.isTabBarCollapsible,
-            portableSettingsUseCases.visibleVaultTabs,
-            portableSettingsUseCases.tabBarMaxTabsWithoutScroll
+            portableRepository.isStatusBarAutoHide,
+            portableRepository.isTopBarCollapsible,
+            portableRepository.isTabBarCollapsible,
+            portableRepository.visibleVaultTabs,
+            portableRepository.tabBarMaxTabsWithoutScroll
         ) { autoHide, top, tab, tabs, max ->
             VaultLayoutConfig(autoHide, top, tab, tabs, max)
         },
         combine(
-            portableSettingsUseCases.cardStyle,
-            portableSettingsUseCases.cardStyleByEntryType
+            portableRepository.cardStyle,
+            portableRepository.cardStyleByEntryType
         ) { style, perType ->
             VaultStyleConfig(style, perType)
         },
         combine(
-            portableSettingsUseCases.isSwipeEnabled,
-            portableSettingsUseCases.swipeLeftAction,
-            portableSettingsUseCases.swipeRightAction
+            portableRepository.isSwipeEnabled,
+            portableRepository.swipeLeftAction,
+            portableRepository.swipeRightAction
         ) { enabled, left, right ->
             VaultInteractionConfig(enabled, left, right)
         }
@@ -86,32 +86,32 @@ class VaultDisplayViewModel @Inject constructor(
 
     fun setCardStyle(style: VaultCardStyle) {
         viewModelScope.launch {
-            portableSettingsUseCases.setCardStyle(style)
+            portableRepository.setCardStyle(style)
         }
     }
 
     fun setCardStyleForType(type: Int, style: VaultCardStyle) {
         viewModelScope.launch {
-            portableSettingsUseCases.setCardStyleForEntryType(type, style)
+            portableRepository.setCardStyleForEntryType(type, style)
         }
     }
 
     fun setSwipeEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            portableSettingsUseCases.setSwipeEnabled(enabled)
+            portableRepository.setSwipeEnabled(enabled)
         }
     }
 
     fun setSwipeAction(isLeft: Boolean, action: SwipeActionType) {
         viewModelScope.launch {
-            if (isLeft) portableSettingsUseCases.setSwipeLeftAction(action)
-            else portableSettingsUseCases.setSwipeRightAction(action)
+            if (isLeft) portableRepository.setSwipeLeftAction(action)
+            else portableRepository.setSwipeRightAction(action)
         }
     }
 
     fun updateVisibleTabs(tabs: Set<String>) {
         viewModelScope.launch {
-            portableSettingsUseCases.setVisibleVaultTabs(tabs)
+            portableRepository.setVisibleVaultTabs(tabs)
         }
     }
 }

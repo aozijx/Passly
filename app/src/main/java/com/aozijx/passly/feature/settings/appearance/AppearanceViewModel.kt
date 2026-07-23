@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,13 +25,13 @@ sealed interface AppearanceUiAction {
 
 @HiltViewModel
 class AppearanceViewModel @Inject constructor(
-    private val portableSettingsUseCases: PortableSettingsUseCases
+    private val portableRepository: PortableRepository
 ) : ViewModel() {
 
     val config: StateFlow<AppearanceUiState> = combine(
-        portableSettingsUseCases.isDarkMode,
-        portableSettingsUseCases.isDynamicColor,
-        portableSettingsUseCases.themeColor
+        portableRepository.isDarkMode,
+        portableRepository.isDynamicColor,
+        portableRepository.themeColor
     ) { dm, dc, tc ->
         val themeColorLong = tc.toLongOrNull() ?: 0L
         AppearanceUiState(
@@ -48,16 +48,16 @@ class AppearanceViewModel @Inject constructor(
     fun onAction(action: AppearanceUiAction) {
         when (action) {
             is AppearanceUiAction.SetDarkMode -> viewModelScope.launch {
-                portableSettingsUseCases.setDarkMode(action.enabled)
+                portableRepository.setDarkMode(action.enabled)
             }
 
             is AppearanceUiAction.SetDynamicColor -> viewModelScope.launch {
-                portableSettingsUseCases.setDynamicColor(action.enabled)
+                portableRepository.setDynamicColor(action.enabled)
             }
 
             is AppearanceUiAction.SetThemeColor -> viewModelScope.launch {
                 val colorStr = if (action.color == 0L) "" else action.color.toString()
-                portableSettingsUseCases.setThemeColor(colorStr)
+                portableRepository.setThemeColor(colorStr)
             }
         }
     }

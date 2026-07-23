@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.EntryChanges
@@ -13,10 +14,12 @@ import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.settings.VaultSortSpec
 import com.aozijx.passly.domain.repository.activity.ActivityRecorder
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
+import com.aozijx.passly.domain.repository.entry.EntryListQueryRepository
+import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
+import com.aozijx.passly.domain.repository.otp.OtpConfigRepository
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import com.aozijx.passly.domain.service.entry.EntryFieldReader
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.internal.DetailCoordinator
@@ -45,10 +48,12 @@ import javax.inject.Inject
 @HiltViewModel
 class VaultViewModel @Inject constructor(
     application: Application,
-    private val vaultQueryUseCases: VaultQueryUseCases,
+    private val entryQueryRepository: EntryQueryRepository,
+    private val entryListQueryRepository: EntryListQueryRepository,
+    private val otpConfigRepository: OtpConfigRepository,
+    private val portableRepository: PortableRepository,
     private val entryCommandRepository: EntryCommandRepository,
     private val activityRecorder: ActivityRecorder,
-    private val portableSettingsUseCases: PortableSettingsUseCases,
     private val faviconRepository: FaviconRepository,
     val entryFieldReader: EntryFieldReader
 ) : AndroidViewModel(application) {
@@ -75,14 +80,14 @@ class VaultViewModel @Inject constructor(
 
     private val totp = TotpCoordinator(
         scope = viewModelScope,
-        codeGenerator = { config -> vaultQueryUseCases.getTotpCode(config) },
-        loadOtpConfig = { vaultQueryUseCases.getOtpConfig(it) }
+        codeGenerator = { config -> OtpGenerator.generate(config) },
+        loadOtpConfig = { otpConfigRepository.getConfig(it) }
     )
     private val detail = DetailCoordinator()
     private val entryManager = EntryManager(
         scope = viewModelScope,
         entryCommandRepository = entryCommandRepository,
-        vaultQueryUseCases = vaultQueryUseCases,
+        entryQueryRepository = entryQueryRepository,
         faviconRepository = faviconRepository,
         iconHelper = EntryIconHelper(),
         detail = detail,
@@ -91,21 +96,21 @@ class VaultViewModel @Inject constructor(
         onRefreshItems = { refreshItems() }
     )
 
-    private val queryCoordinator = VaultQueryCoordinator(vaultQueryUseCases)
+    private val queryCoordinator = VaultQueryCoordinator(entryListQueryRepository)
     private val searchFilter = SearchFilterState(
         viewModelScope,
         initialSort = VaultSortSpec.DEFAULT
     )
 
     private val isAutoDownloadIcons: StateFlow<Boolean> =
-        portableSettingsUseCases.isAutoDownloadIcons
+        portableRepository.isAutoDownloadIcons
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     private val listCoordinator = VaultListCoordinator(
         scope = viewModelScope,
         queryCoordinator = queryCoordinator,
         searchFilter = searchFilter,
-        vaultQueryUseCases = vaultQueryUseCases,
+        entryListQueryRepository = entryListQueryRepository,
         entryManager = entryManager,
         isAutoDownloadIcons = isAutoDownloadIcons,
         refreshTrigger = _refreshTrigger
@@ -114,7 +119,7 @@ class VaultViewModel @Inject constructor(
     private val _showTOTPCode = MutableStateFlow(true)
 
     private val visibleTabs: StateFlow<List<VaultTab>> =
-        portableSettingsUseCases.visibleVaultTabs
+        portableRepository.visibleVaultTabs
             .map { VaultTab.resolveVisible(it ?: VaultTab.defaultVisibleKeys) }
             .stateIn(
                 viewModelScope,
@@ -187,7 +192,7 @@ class VaultViewModel @Inject constructor(
     fun clearSelectedCategory() = setSelectedCategory(null)
     fun selectSortOption(sort: VaultSortSpec) {
         searchFilter.updateSelectedSort(sort)
-        viewModelScope.launch { portableSettingsUseCases.setVaultSortOption(sort) }
+        viewModelScope.launch { portableRepository.setVaultSortOption(sort) }
     }
     fun selectTab(tab: VaultTab) = searchFilter.updateSelectedTab(tab)
     fun toggleSearch(active: Boolean) = searchFilter.toggleSearch(active)
@@ -219,7 +224,7 @@ class VaultViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = totp.generateHotpCode(entryId)) {
                 is OtpResult.Success -> {
-                    val entry = vaultQueryUseCases.getById(entryId)
+                    val entry = entryQueryRepository.getById(entryId)
                     if (entry != null && result.nextCounter != null) {
                         val newSecret = when (val secret = entry.secret) {
                             is EntrySecret.Otp -> {
@@ -250,7 +255,7 @@ class VaultViewModel @Inject constructor(
         totp.start()
 
         viewModelScope.launch {
-            portableSettingsUseCases.vaultSortOption.first().let {
+            portableRepository.vaultSortOption.first().let {
                 searchFilter.updateSelectedSort(it)
             }
         }
@@ -259,7 +264,7 @@ class VaultViewModel @Inject constructor(
     // --- 业务协调 ---
     fun showDetail(item: EntryListItem) {
         viewModelScope.launch {
-            val entry = vaultQueryUseCases.getById(item.id) ?: return@launch
+            val entry = entryQueryRepository.getById(item.id) ?: return@launch
             detail.showDetail(entry)
             totp.autoUnlock(item.id)
             activityRecorder.recordUsage(
@@ -274,7 +279,7 @@ class VaultViewModel @Inject constructor(
     }
 
     fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) {
-        viewModelScope.launch { vaultQueryUseCases.getById(entryId)?.let { onLoaded(it) } }
+        viewModelScope.launch { entryQueryRepository.getById(entryId)?.let { onLoaded(it) } }
     }
 
     fun decryptSingle(
@@ -299,7 +304,7 @@ class VaultViewModel @Inject constructor(
     fun confirmDelete() {
         val item = itemToDelete ?: return
         viewModelScope.launch {
-            val entry = vaultQueryUseCases.getById(item.id) ?: return@launch
+            val entry = entryQueryRepository.getById(item.id) ?: return@launch
             entryManager.deleteEntry(entry)
         }
     }

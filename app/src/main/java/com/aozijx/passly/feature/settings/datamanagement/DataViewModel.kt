@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.settings.datamanagement
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.usecase.settings.DeviceSettingsUseCases
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.repository.settings.DeviceRepository
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,8 +26,8 @@ sealed interface DataUiAction {
 
 @HiltViewModel
 class DataViewModel @Inject constructor(
-    private val portableSettingsUseCases: PortableSettingsUseCases,
-    private val deviceSettingsUseCases: DeviceSettingsUseCases
+    private val portableRepository: PortableRepository,
+    private val deviceRepository: DeviceRepository
 ) : ViewModel() {
 
     private val _config = MutableStateFlow(DataUiState())
@@ -36,9 +36,9 @@ class DataViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                portableSettingsUseCases.isAutoDownloadIcons,
-                deviceSettingsUseCases.backupDirectoryUri,
-                deviceSettingsUseCases.lastBackupExportFileName
+                portableRepository.isAutoDownloadIcons,
+                deviceRepository.backupDirectoryUri,
+                deviceRepository.lastBackupExportFileName
             ) { adi, bdu, lef ->
                 DataUiState(
                     isAutoDownloadIcons = adi,
@@ -52,15 +52,15 @@ class DataViewModel @Inject constructor(
     fun onAction(action: DataUiAction) {
         when (action) {
             is DataUiAction.SetAutoDownloadIcons -> viewModelScope.launch {
-                portableSettingsUseCases.setAutoDownloadIcons(action.enabled)
+                portableRepository.setAutoDownloadIcons(action.enabled)
             }
 
             is DataUiAction.SetBackupDirectoryUri -> viewModelScope.launch {
-                deviceSettingsUseCases.setBackupDirectoryUri(action.uri)
+                deviceRepository.setBackupDirectoryUri(action.uri)
             }
 
             is DataUiAction.ClearBackupDirectory -> viewModelScope.launch {
-                deviceSettingsUseCases.clearBackupDirectoryUri()
+                deviceRepository.clearBackupDirectoryUri()
             }
         }
     }

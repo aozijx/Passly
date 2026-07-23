@@ -7,7 +7,7 @@ import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.core.message.AppMessagePresentation
 import com.aozijx.passly.core.message.AppStatusBarNotifier
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +41,7 @@ data class AppMessagePreferences(
 
 @HiltViewModel
 class AppMessageHostViewModel @Inject constructor(
-    settings: PortableSettingsUseCases,
+    settings: PortableRepository,
     private val statusBarNotifier: AppStatusBarNotifier
 ) : ViewModel() {
     private val preferences: StateFlow<AppMessagePreferences> = combine(

@@ -11,8 +11,8 @@ import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.backup.BackupException
 import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.util.PlainExportTokenManager
+import com.aozijx.passly.domain.repository.settings.DeviceRepository
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
-import com.aozijx.passly.domain.usecase.settings.DeviceSettingsUseCases
 import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
@@ -32,7 +32,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BackupViewModel @Inject constructor(
-    private val deviceSettingsUseCases: DeviceSettingsUseCases,
+    private val deviceRepository: DeviceRepository,
     private val backupUseCases: BackupUseCases,
     private val storageSupport: BackupExportStorageSupport,
     private val plainExportTokenManager: PlainExportTokenManager
@@ -98,11 +98,11 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun setBackupDirectoryUri(uri: String) {
-        viewModelScope.launch { deviceSettingsUseCases.setBackupDirectoryUri(uri) }
+        viewModelScope.launch { deviceRepository.setBackupDirectoryUri(uri) }
     }
 
     private fun clearBackupDirectoryUri() {
-        viewModelScope.launch { deviceSettingsUseCases.clearBackupDirectoryUri() }
+        viewModelScope.launch { deviceRepository.clearBackupDirectoryUri() }
     }
 
     // --- 导出/导入流程 ---
@@ -226,7 +226,7 @@ class BackupViewModel @Inject constructor(
     private suspend fun handleSuccess(oldState: BackupUiState) {
         if (oldState.isExporting) {
             oldState.pendingExportFileName?.let {
-                deviceSettingsUseCases.setLastBackupExportFileName(it)
+                deviceRepository.setLastBackupExportFileName(it)
             }
         } else {
             _effect.send(BackupEffect.StartImportSyncService)

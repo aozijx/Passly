@@ -5,8 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.model.settings.SwipeActionType
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,15 +32,15 @@ sealed interface InteractionUiAction {
 @HiltViewModel
 class InteractionViewModel @Inject constructor(
     private val application: Application,
-    private val portableSettingsUseCases: PortableSettingsUseCases,
+    private val portableRepository: PortableRepository,
     private val autofillUseCases: AutofillUseCases
 ) : AndroidViewModel(application) {
 
     val config: StateFlow<InteractionUiState> = combine(
-        portableSettingsUseCases.isSwipeEnabled,
-        portableSettingsUseCases.swipeLeftAction,
-        portableSettingsUseCases.swipeRightAction,
-        portableSettingsUseCases.autofillUiMode
+        portableRepository.isSwipeEnabled,
+        portableRepository.swipeLeftAction,
+        portableRepository.swipeRightAction,
+        portableRepository.autofillUiMode
     ) { se, sl, sr, af ->
         InteractionUiState(
             isSwipeEnabled = se,
@@ -57,15 +57,15 @@ class InteractionViewModel @Inject constructor(
     fun onAction(action: InteractionUiAction) {
         when (action) {
             is InteractionUiAction.SetSwipeEnabled -> viewModelScope.launch {
-                portableSettingsUseCases.setSwipeEnabled(action.enabled)
+                portableRepository.setSwipeEnabled(action.enabled)
             }
 
             is InteractionUiAction.SetSwipeLeftAction -> viewModelScope.launch {
-                portableSettingsUseCases.setSwipeLeftAction(action.action)
+                portableRepository.setSwipeLeftAction(action.action)
             }
 
             is InteractionUiAction.SetSwipeRightAction -> viewModelScope.launch {
-                portableSettingsUseCases.setSwipeRightAction(action.action)
+                portableRepository.setSwipeRightAction(action.action)
             }
 
             is InteractionUiAction.ToggleAutofillUiMode -> {
@@ -73,7 +73,7 @@ class InteractionViewModel @Inject constructor(
                     AutofillUiMode.SYSTEM_INLINE -> AutofillUiMode.BOTTOM_SHEET
                     AutofillUiMode.BOTTOM_SHEET -> AutofillUiMode.SYSTEM_INLINE
                 }
-                viewModelScope.launch { portableSettingsUseCases.setAutofillUiMode(next) }
+                viewModelScope.launch { portableRepository.setAutofillUiMode(next) }
             }
         }
     }

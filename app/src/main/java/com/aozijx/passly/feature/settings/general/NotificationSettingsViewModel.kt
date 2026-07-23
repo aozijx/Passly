@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.settings.general
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +18,7 @@ data class NotificationSettingsUiState(
 
 @HiltViewModel
 class NotificationSettingsViewModel @Inject constructor(
-    private val settings: PortableSettingsUseCases
+    private val settings: PortableRepository
 ) : ViewModel() {
     val uiState: StateFlow<NotificationSettingsUiState> = combine(
         settings.statusBarNotificationsEnabled,

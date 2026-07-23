@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.usecase.settings.DeviceSettingsUseCases
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.repository.settings.DeviceRepository
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,15 +20,15 @@ data class MainConfigUiState(
 
 @HiltViewModel
 class MainConfigViewModel @Inject constructor(
-    private val deviceSettingsUseCases: DeviceSettingsUseCases,
-    private val portableSettingsUseCases: PortableSettingsUseCases
+    private val deviceRepository: DeviceRepository,
+    private val portableRepository: PortableRepository
 ) : ViewModel() {
 
     val config: StateFlow<MainConfigUiState> = combine(
-        deviceSettingsUseCases.isSecureContentEnabled,
-        deviceSettingsUseCases.isFlipToLockEnabled,
-        deviceSettingsUseCases.isFlipExitAndClearStackEnabled,
-        portableSettingsUseCases.isStatusBarAutoHide
+        deviceRepository.isSecureContentEnabled,
+        deviceRepository.isFlipToLockEnabled,
+        deviceRepository.isFlipExitAndClearStackEnabled,
+        portableRepository.isStatusBarAutoHide
     ) { sec, ftl, fec, sb ->
         MainConfigUiState(
             isSecureContentEnabled = sec,

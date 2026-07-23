@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.settings.appearance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,27 +33,27 @@ sealed interface InterfaceUiAction {
 
 @HiltViewModel
 class InterfaceViewModel @Inject constructor(
-    private val portableSettingsUseCases: PortableSettingsUseCases
+    private val portableRepository: PortableRepository
 ) : ViewModel() {
 
     val config: StateFlow<InterfaceUiState> = combine(
-        portableSettingsUseCases.isStatusBarAutoHide,
-        portableSettingsUseCases.isTopBarCollapsible,
-        portableSettingsUseCases.isTabBarCollapsible
+        portableRepository.isStatusBarAutoHide,
+        portableRepository.isTopBarCollapsible,
+        portableRepository.isTabBarCollapsible
     ) { sb, tb, tbb ->
         Triple(sb, tb, tbb)
-    }.combine(portableSettingsUseCases.cardStyle) { (sb, tb, tbb), cs ->
+    }.combine(portableRepository.cardStyle) { (sb, tb, tbb), cs ->
         InterfaceUiState(
             isStatusBarAutoHide = sb,
             isTopBarCollapsible = tb,
             isTabBarCollapsible = tbb,
             cardStyle = cs,
         )
-    }.combine(portableSettingsUseCases.cardStyleByEntryType) { st, ptm ->
+    }.combine(portableRepository.cardStyleByEntryType) { st, ptm ->
         st.copy(perTypeMap = ptm)
-    }.combine(portableSettingsUseCases.visibleVaultTabs) { st, vvt ->
+    }.combine(portableRepository.visibleVaultTabs) { st, vvt ->
         st.copy(visibleVaultTabs = vvt)
-    }.combine(portableSettingsUseCases.tabBarMaxTabsWithoutScroll) { st, tbm ->
+    }.combine(portableRepository.tabBarMaxTabsWithoutScroll) { st, tbm ->
         st.copy(tabBarMaxTabsWithoutScroll = tbm)
     }.stateIn(
         viewModelScope,
@@ -64,27 +64,27 @@ class InterfaceViewModel @Inject constructor(
     fun onAction(action: InterfaceUiAction) {
         when (action) {
             is InterfaceUiAction.SetStatusBarAutoHide -> viewModelScope.launch {
-                portableSettingsUseCases.setStatusBarAutoHide(action.enabled)
+                portableRepository.setStatusBarAutoHide(action.enabled)
             }
 
             is InterfaceUiAction.SetTopBarCollapsible -> viewModelScope.launch {
-                portableSettingsUseCases.setTopBarCollapsible(action.enabled)
+                portableRepository.setTopBarCollapsible(action.enabled)
             }
 
             is InterfaceUiAction.SetTabBarCollapsible -> viewModelScope.launch {
-                portableSettingsUseCases.setTabBarCollapsible(action.enabled)
+                portableRepository.setTabBarCollapsible(action.enabled)
             }
 
             is InterfaceUiAction.SetLoginCardStyle -> viewModelScope.launch {
-                portableSettingsUseCases.setCardStyleForEntryType(0, action.style)
+                portableRepository.setCardStyleForEntryType(0, action.style)
             }
 
             is InterfaceUiAction.SetVisibleVaultTabs -> viewModelScope.launch {
-                portableSettingsUseCases.setVisibleVaultTabs(action.tabs)
+                portableRepository.setVisibleVaultTabs(action.tabs)
             }
 
             is InterfaceUiAction.SetTabBarMaxTabsWithoutScroll -> viewModelScope.launch {
-                portableSettingsUseCases.setTabBarMaxTabsWithoutScroll(action.maxTabs)
+                portableRepository.setTabBarMaxTabsWithoutScroll(action.maxTabs)
             }
         }
     }

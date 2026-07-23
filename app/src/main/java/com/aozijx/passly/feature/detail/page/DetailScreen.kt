@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.otp.OtpType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailScrollableContent
 import com.aozijx.passly.feature.detail.components.DetailTopBar
@@ -24,7 +23,6 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.TotpEditState
-import com.aozijx.passly.feature.vault.model.OtpUiState
 
 /**
  * 详情页 UI 组件 (Stateless)

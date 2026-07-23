@@ -88,7 +88,6 @@ fun PasslyNavHost(
             val detailViewModel: DetailViewModel = hiltViewModel()
             val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
             val vaultUiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
-            val totpStates by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
 
             LaunchedEffect(detailViewModel) {
                 detailViewModel.effects.collectLatest { effect ->
@@ -108,7 +107,6 @@ fun PasslyNavHost(
                 DetailScreen(
                     initialEntry = entry,
                     uiState = detailUiState,
-                    totpStates = totpStates,
                     onBack = { navController.popBackStack() },
                     onEvent = detailViewModel::handleIntent,
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },

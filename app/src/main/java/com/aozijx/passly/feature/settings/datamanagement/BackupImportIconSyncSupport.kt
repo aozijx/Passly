@@ -8,8 +8,8 @@ import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
-import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
+import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -25,8 +25,8 @@ internal data class BackupImportIconSyncResult(
 
 internal class BackupImportIconSyncSupport(
     private val entryCommandRepository: EntryCommandRepository,
-    private val vaultQueryUseCases: VaultQueryUseCases,
-    private val portableSettingsUseCases: PortableSettingsUseCases
+    private val entryQueryRepository: EntryQueryRepository,
+    private val portableRepository: PortableRepository
 ) {
 
     private companion object {
@@ -37,7 +37,7 @@ internal class BackupImportIconSyncSupport(
         context: Context,
         onProgress: ((processed: Int, total: Int, success: Int, failed: Int) -> Unit)?
     ): BackupImportIconSyncResult = withContext(Dispatchers.IO) {
-        val whitelist = portableSettingsUseCases.faviconDownloadWhitelist.first()
+        val whitelist = portableRepository.faviconDownloadWhitelist.first()
         val appContext = context.applicationContext
         if (!hasActiveNetwork(appContext)) {
             AppLog.w(TAG, "Skip icon sync: no active network")
@@ -49,7 +49,7 @@ internal class BackupImportIconSyncSupport(
             )
         }
 
-        val targets = vaultQueryUseCases.getEntriesForIconResync()
+        val targets = entryQueryRepository.getEntriesForIconResync()
 
         if (targets.isEmpty()) {
             onProgress?.invoke(0, 0, 0, 0)

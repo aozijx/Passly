@@ -10,8 +10,8 @@ import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
+import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
-import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +22,7 @@ import kotlinx.coroutines.sync.withLock
 internal class EntryManager(
     private val scope: CoroutineScope,
     private val entryCommandRepository: EntryCommandRepository,
-    private val vaultQueryUseCases: VaultQueryUseCases,
+    private val entryQueryRepository: EntryQueryRepository,
     private val faviconRepository: FaviconRepository,
     private val iconHelper: EntryIconHelper,
     private val detail: DetailCoordinator,
@@ -45,7 +45,7 @@ internal class EntryManager(
                     if (!domain.isNullOrBlank()) {
                         val outcome = downloadFavicon(domain)
                         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                            val savedEntry = vaultQueryUseCases.getById(entry.id)
+                            val savedEntry = entryQueryRepository.getById(entry.id)
                             if (savedEntry != null) {
                                 val iconSummary = savedEntry.summary.copy(icon = outcome.filePath)
                                 entryCommandRepository.updateEntry(
@@ -78,7 +78,7 @@ internal class EntryManager(
      */
     fun updateEntry(entry: VaultEntry) {
         scope.launch(Dispatchers.IO + handler) {
-            val current = vaultQueryUseCases.getById(entry.id) ?: return@launch
+            val current = entryQueryRepository.getById(entry.id) ?: return@launch
 
             val metaChanged = current.summary != entry.summary
             val credChanged = current.secret != entry.secret
@@ -120,7 +120,7 @@ internal class EntryManager(
         if (!acquired) return
 
         try {
-            val entry = presetEntry ?: vaultQueryUseCases.getById(entryId)
+            val entry = presetEntry ?: entryQueryRepository.getById(entryId)
             if (entry == null) return
             if (detail.isViewingEntry(entryId)) {
                 detail.dismissDetail()
@@ -169,7 +169,7 @@ internal class EntryManager(
                     val domain = summary.associatedDomain ?: return@forEach
                     val outcome = downloadFavicon(domain)
                     if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                        vaultQueryUseCases.getById(summary.id)?.let { entry ->
+                        entryQueryRepository.getById(summary.id)?.let { entry ->
                             val iconSummary = entry.summary.copy(icon = outcome.filePath)
                             entryCommandRepository.updateEntry(
                                 entry.id,

@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.data.sorter.VaultListSorter
 import com.aozijx.passly.domain.model.lookup.EntryListItem
-import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
+import com.aozijx.passly.domain.repository.entry.EntryListQueryRepository
 import com.aozijx.passly.feature.vault.model.VaultTab
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,7 +29,7 @@ internal class VaultListCoordinator(
     private val scope: CoroutineScope,
     private val queryCoordinator: VaultQueryCoordinator,
     private val searchFilter: SearchFilterState,
-    private val vaultQueryUseCases: VaultQueryUseCases,
+    private val entryListQueryRepository: EntryListQueryRepository,
     private val entryManager: EntryManager,
     private val isAutoDownloadIcons: StateFlow<Boolean>,
     private val refreshTrigger: Flow<Long>
@@ -68,7 +68,7 @@ internal class VaultListCoordinator(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val categories: StateFlow<List<String>> =
         searchFilter.selectedTab.flatMapLatest { tab: VaultTab ->
-            vaultQueryUseCases.observeCategories(tab.entryFilter)
+            entryListQueryRepository.observeCategories(tab.entryFilter)
         }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val state: StateFlow<VaultListState> = combine(

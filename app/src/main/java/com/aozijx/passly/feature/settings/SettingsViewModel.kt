@@ -2,11 +2,11 @@ package com.aozijx.passly.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.model.settings.SwipeActionType
-import com.aozijx.passly.domain.usecase.settings.PortableSettingsUseCases
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.model.settings.SwipeActionType
+import com.aozijx.passly.domain.repository.settings.PortableRepository
 import com.aozijx.passly.feature.settings.contract.SettingsEffect
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
@@ -14,14 +14,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -29,7 +29,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     val authenticationManager: AuthenticationManager,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
-    private val portableSettingsUseCases: PortableSettingsUseCases
+    private val portableRepository: PortableRepository
 ) : ViewModel() {
 
     val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
@@ -58,8 +58,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             runCatching {
-                val swipeLeft = portableSettingsUseCases.swipeLeftAction.first()
-                val swipeRight = portableSettingsUseCases.swipeRightAction.first()
+                val swipeLeft = portableRepository.swipeLeftAction.first()
+                val swipeRight = portableRepository.swipeRightAction.first()
                 _uiState.update {
                     it.copy(
                         swipeLeftAction = swipeLeft,
@@ -77,7 +77,7 @@ class SettingsViewModel @Inject constructor(
     private fun setSwipeLeftAction(action: SwipeActionType) {
         viewModelScope.launch {
             runCatching {
-                portableSettingsUseCases.setSwipeLeftAction(action)
+                portableRepository.setSwipeLeftAction(action)
                 _uiState.update { it.copy(swipeLeftAction = action) }
                 _effects.tryEmit(SettingsEffect.SettingsSaved)
             }.onFailure { error ->
@@ -89,7 +89,7 @@ class SettingsViewModel @Inject constructor(
     private fun setSwipeRightAction(action: SwipeActionType) {
         viewModelScope.launch {
             runCatching {
-                portableSettingsUseCases.setSwipeRightAction(action)
+                portableRepository.setSwipeRightAction(action)
                 _uiState.update { it.copy(swipeRightAction = action) }
                 _effects.tryEmit(SettingsEffect.SettingsSaved)
             }.onFailure { error ->

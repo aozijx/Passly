@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.domain.model.lookup.EntryListItem
-import com.aozijx.passly.domain.usecase.vault.VaultQueryUseCases
+import com.aozijx.passly.domain.repository.entry.EntryListQueryRepository
 import com.aozijx.passly.feature.vault.model.VaultTab
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 
 internal class VaultQueryCoordinator(
-    private val vaultQueryUseCases: VaultQueryUseCases
+    private val entryListQueryRepository: EntryListQueryRepository
 ) {
     /**
      * 观察条目列表。
@@ -31,7 +31,7 @@ internal class VaultQueryCoordinator(
     ) { query, category, tab, refreshId ->
         QueryParams(query = query, category = category, tab = tab, refreshId = refreshId)
     }.distinctUntilChanged().flatMapLatest { params ->
-        vaultQueryUseCases.observe(
+        entryListQueryRepository.observe(
             query = params.query,
             category = params.category,
             filter = params.tab.entryFilter
