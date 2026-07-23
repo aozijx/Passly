@@ -41,10 +41,11 @@ internal class EntryManager(
         scope.launch(Dispatchers.IO + handler) {
             when (val insertResult = entryCommandRepository.createEntry(entry)) {
                 is AppResult.Success -> {
+                    val entryId = insertResult.data.value
                     if (!domain.isNullOrBlank()) {
                         val outcome = downloadFavicon(domain)
                         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                            val savedEntry = entryQueryRepository.getById(entry.id)
+                            val savedEntry = entryQueryRepository.getById(entryId)
                             if (savedEntry != null) {
                                 val iconSummary = savedEntry.summary.copy(icon = outcome.filePath)
                                 entryCommandRepository.updateEntry(

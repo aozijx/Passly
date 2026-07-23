@@ -2,10 +2,11 @@ package com.aozijx.passly.domain.repository.entry
 
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.model.entry.EntryChanges
+import com.aozijx.passly.domain.model.entry.EntryId
 import com.aozijx.passly.domain.model.entry.VaultEntry
 
 interface EntryCommandRepository {
-    suspend fun createEntry(entry: VaultEntry): AppResult<Long>
+    suspend fun createEntry(entry: VaultEntry): AppResult<EntryId>
     suspend fun updateEntry(
         id: String,
         expectedVersion: Int,
