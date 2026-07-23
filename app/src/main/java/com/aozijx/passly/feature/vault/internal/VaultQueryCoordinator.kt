@@ -12,16 +12,24 @@ import kotlinx.coroutines.flow.flatMapLatest
 internal class VaultQueryCoordinator(
     private val vaultQueryUseCases: VaultQueryUseCases
 ) {
+    /**
+     * 观察条目列表。
+     *
+     * [refreshTrigger] 为递增计数器，每次刷新自增。
+     * 纳入 [QueryParams] 确保 [distinctUntilChanged] 不会过滤连续的刷新请求。
+     * 下游 [flatMapLatest] 在刷新值变化时自动取消前一次 Room 订阅，
+     * 防止快速连续刷新产生竞态条件。
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeItems(
         debouncedSearchQuery: Flow<String>,
         normalizedSelectedCategory: Flow<String?>,
         distinctSelectedTab: Flow<VaultTab>,
-        refreshTrigger: Flow<Unit>
+        refreshTrigger: Flow<Long>
     ): Flow<List<VaultListItem>> = combine(
         debouncedSearchQuery, normalizedSelectedCategory, distinctSelectedTab, refreshTrigger
-    ) { query, category, tab, _ ->
-        QueryParams(query = query, category = category, tab = tab)
+    ) { query, category, tab, refreshId ->
+        QueryParams(query = query, category = category, tab = tab, refreshId = refreshId)
     }.distinctUntilChanged().flatMapLatest { params ->
         vaultQueryUseCases.observe(
             query = params.query,
@@ -33,6 +41,7 @@ internal class VaultQueryCoordinator(
     private data class QueryParams(
         val query: String,
         val category: String?,
-        val tab: VaultTab
+        val tab: VaultTab,
+        val refreshId: Long
     )
 }

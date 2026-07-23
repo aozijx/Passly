@@ -27,7 +27,6 @@ import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -103,7 +102,7 @@ class VaultViewModel @Inject constructor(
         vaultQueryUseCases = vaultQueryUseCases,
         entryManager = entryManager,
         isAutoDownloadIcons = isAutoDownloadIcons,
-        refreshTrigger = refreshTrigger
+        refreshTrigger = _refreshTrigger
     )
 
     private val _showTOTPCode = MutableStateFlow(true)

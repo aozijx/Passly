@@ -32,7 +32,7 @@ internal class VaultListCoordinator(
     private val vaultQueryUseCases: VaultQueryUseCases,
     private val entryManager: EntryManager,
     private val isAutoDownloadIcons: StateFlow<Boolean>,
-    private val refreshTrigger: Flow<Unit>
+    private val refreshTrigger: Flow<Long>
 ) {
     private val _isLoading = MutableStateFlow(true)
 
