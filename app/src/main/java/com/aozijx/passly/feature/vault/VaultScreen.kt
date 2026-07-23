@@ -26,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.model.lookup.VaultListItem
 import com.aozijx.passly.feature.backup.BackupViewModel
+import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.vault.components.VaultContentTopBar
 import com.aozijx.passly.feature.vault.components.VaultDialogs
@@ -48,7 +49,18 @@ fun VaultContent(
 ) {
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
+    val backupUiState by backupViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    // 备份导入成功后刷新列表
+    LaunchedEffect(backupUiState.status) {
+        val status = backupUiState.status
+        if (status is BackupOperationStatus.Success &&
+            status.type == BackupOperationStatus.OperationType.IMPORT
+        ) {
+            vaultViewModel.refreshItems()
+        }
+    }
 
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()

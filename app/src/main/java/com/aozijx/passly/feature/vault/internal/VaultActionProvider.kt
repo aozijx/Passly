@@ -107,7 +107,8 @@ fun rememberVaultActionProvider(
                 },
                 onQuickDelete = { vaultViewModel.quickDelete(it) },
                 onCopy = { fieldKey -> performCopy(fieldKey, item) },
-                onShowDetail = { vaultViewModel.showDetail(item) })
+                onShowDetail = onShowDetail
+            )
         }
     }
 

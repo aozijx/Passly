@@ -26,7 +26,8 @@ internal class EntryManager(
     private val iconHelper: EntryIconHelper,
     private val detail: DetailCoordinator,
     private val totp: TotpCoordinator,
-    private val onError: (String) -> Unit = {}
+    private val onError: (String) -> Unit = {},
+    private val onRefreshItems: () -> Unit = {}
 ) {
     private val handler = CoroutineExceptionHandler { _, throwable ->
         AppLog.e("EntryManager", "Operation failed", throwable)
@@ -55,6 +56,7 @@ internal class EntryManager(
                         }
                     }
                     detail.setAddType(null)
+                    onRefreshItems()
                     onComplete()
                 }
 
@@ -110,6 +112,7 @@ internal class EntryManager(
                 .onSuccess {
                     detail.updateEntry(entry)
                     totp.onEntryUpdated(entry.id)
+                    onRefreshItems()
                 }.onFailure { error ->
                     onError(error.message)
                 }

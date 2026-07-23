@@ -27,6 +27,7 @@ import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -53,6 +54,20 @@ class VaultViewModel @Inject constructor(
         _effects.tryEmit(VaultEffect.ShowError(message))
     }
 
+    private val _refreshTrigger = MutableStateFlow(0L)
+
+    /**
+     * 强制重新读取数据库，刷新整个列表。
+     * 保存密码或导入备份后调用此方法确保 UI 反映最新数据。
+     *
+     * 使用递增计数器作为触发值，确保每次调用都产生不同的 [refreshTrigger] 发射，
+     * 从而绕过后继 [distinctUntilChanged]，并使 [flatMapLatest] 自动取消
+     * 前一次未完成的数据库订阅，防止竞态条件。
+     */
+    fun refreshItems() {
+        _refreshTrigger.value++
+    }
+
     private val totp = TotpCoordinator(
         scope = viewModelScope,
         codeGenerator = { config -> vaultQueryUseCases.getTotpCode(config) },
@@ -67,7 +82,8 @@ class VaultViewModel @Inject constructor(
         iconHelper = EntryIconHelper(),
         detail = detail,
         totp = totp,
-        onError = { emitError(it) }
+        onError = { emitError(it) },
+        onRefreshItems = { refreshItems() }
     )
 
     private val queryCoordinator = VaultQueryCoordinator(vaultQueryUseCases)
@@ -86,7 +102,8 @@ class VaultViewModel @Inject constructor(
         searchFilter = searchFilter,
         vaultQueryUseCases = vaultQueryUseCases,
         entryManager = entryManager,
-        isAutoDownloadIcons = isAutoDownloadIcons
+        isAutoDownloadIcons = isAutoDownloadIcons,
+        refreshTrigger = refreshTrigger
     )
 
     private val _showTOTPCode = MutableStateFlow(true)

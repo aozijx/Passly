@@ -16,10 +16,11 @@ internal class VaultQueryCoordinator(
     fun observeItems(
         debouncedSearchQuery: Flow<String>,
         normalizedSelectedCategory: Flow<String?>,
-        distinctSelectedTab: Flow<VaultTab>
+        distinctSelectedTab: Flow<VaultTab>,
+        refreshTrigger: Flow<Unit>
     ): Flow<List<VaultListItem>> = combine(
-        debouncedSearchQuery, normalizedSelectedCategory, distinctSelectedTab
-    ) { query, category, tab ->
+        debouncedSearchQuery, normalizedSelectedCategory, distinctSelectedTab, refreshTrigger
+    ) { query, category, tab, _ ->
         QueryParams(query = query, category = category, tab = tab)
     }.distinctUntilChanged().flatMapLatest { params ->
         vaultQueryUseCases.observe(

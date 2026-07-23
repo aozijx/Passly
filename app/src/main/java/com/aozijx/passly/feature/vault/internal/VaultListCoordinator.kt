@@ -31,7 +31,8 @@ internal class VaultListCoordinator(
     private val searchFilter: SearchFilterState,
     private val vaultQueryUseCases: VaultQueryUseCases,
     private val entryManager: EntryManager,
-    private val isAutoDownloadIcons: StateFlow<Boolean>
+    private val isAutoDownloadIcons: StateFlow<Boolean>,
+    private val refreshTrigger: Flow<Unit>
 ) {
     private val _isLoading = MutableStateFlow(true)
 
@@ -51,7 +52,8 @@ internal class VaultListCoordinator(
     private val rawItems: Flow<List<VaultListItem>> = queryCoordinator.observeItems(
         debouncedSearchQuery = searchFilter.debouncedSearchQuery,
         normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
-        distinctSelectedTab = searchFilter.distinctSelectedTab
+        distinctSelectedTab = searchFilter.distinctSelectedTab,
+        refreshTrigger = refreshTrigger
     ).onEach { items ->
         _isLoading.value = false
     }
