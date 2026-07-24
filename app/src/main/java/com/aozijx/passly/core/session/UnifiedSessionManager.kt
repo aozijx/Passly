@@ -7,7 +7,6 @@ import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseProvider
 import com.aozijx.passly.domain.authentication.SessionLockedException
 import com.aozijx.passly.domain.authentication.SessionStateProvider
-
 import com.aozijx.passly.security.crypto.DekManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +32,11 @@ import kotlin.time.Duration.Companion.seconds
  *
  * 唯一真实来源，持有 AppDatabase 实例引用和锁状态。
  *
+ * ## 数据库生命周期
+ * - **解锁时开库**：[unlock()] 同步打开数据库，期间复用同一实例
+ * - **锁定时关库**：[lock()] 阻止新访问 → 排干活跃操作 → 关闭数据库 → 设 null
+ * - 锁定后不存在可继续使用的连接，下一次 [unlock()] 重新创建
+ *
  * API 分三类：
  * - [query]：即查即返，用于一次性的挂起查询，计数只在执行期间生效
  * - [transaction]：写事务，自动包裹 Room 事务边界 + 自动回滚
@@ -49,9 +53,7 @@ class UnifiedSessionManager @Inject constructor(
     companion object {
         private const val TAG = "UnifiedSessionManager"
 
-        /**
-         * Flow 观察超时：如果上游 30 秒内无新数据，触发熔断释放计数。
-         */
+        /** Flow 观察超时：如果上游 30 秒内无新数据，触发熔断释放计数。 */
         private val TIMEOUT_FLOW_EMISSION = 30.seconds
     }
 
@@ -70,19 +72,17 @@ class UnifiedSessionManager @Inject constructor(
      * 即查即返（一次性挂起查询）。
      * 计数仅在方法执行期间生效，返回值后立即释放。
      */
-    suspend fun <T> query(block: suspend AppDatabase.() -> T): T {
-        return executeWithGuard(block)
-    }
+    suspend fun <T> query(block: suspend AppDatabase.() -> T): T =
+        executeWithGuard(block)
 
     /**
      * 写事务（强制包裹 Room 事务边界）。
      * 使用 [AppDatabase.withTransaction] 自动管理 begin/setSuccessful/endTransaction。
      */
-    suspend fun <T> transaction(block: suspend AppDatabase.() -> T): T {
-        return executeWithGuard { db ->
+    suspend fun <T> transaction(block: suspend AppDatabase.() -> T): T =
+        executeWithGuard { db ->
             db.withTransaction { block(db) }
         }
-    }
 
     /**
      * 持续观察（专用于 Flow）。
@@ -100,10 +100,6 @@ class UnifiedSessionManager @Inject constructor(
         try {
             ensureNotLocked()
             val db = resolveDatabase()
-            // 使用 collect 替代 emitAll，以便在每次发射前检查锁状态
-            // .timeout(30.seconds) 实现 per-emission 超时兜底：
-            //   如果 30 秒内上游无新数据发射，抛出 TimeoutCancellationException，
-            //   防止僵尸流永久占用 activeOps 计数。
             db.block()
                 .collect { value ->
                     ensureNotLocked()
@@ -138,11 +134,26 @@ class UnifiedSessionManager @Inject constructor(
     // ============================== 锁管理 ==============================
 
     /**
-     * 解锁会话。允许新的 [query] / [transaction] / [observeFlow] 操作。
+     * 解锁会话并在解锁成功后打开数据库。
+     *
+     * 数据库实例在解锁期间复用，不会频繁开关。
+     * 若打开数据库失败，状态保持 [LockState.LOCKED] 并返回异常。
      */
-    fun unlock() {
-        lockState.set(LockState.UNLOCKED)
-        AppLog.i(TAG, "Session unlocked")
+    suspend fun unlock(): Throwable? {
+        return try {
+            val dek = dekManager.withDek { it.clone() }
+            val db = databaseProvider.open(dek)
+            dek.fill(0)
+            mutex.withLock { database = db }
+            lockState.set(LockState.UNLOCKED)
+            AppLog.i(TAG, "Session unlocked, database opened")
+            null
+        } catch (e: Exception) {
+            AppLog.e(TAG, "Failed to open database on unlock", e)
+            mutex.withLock { database = null }
+            lockState.set(LockState.LOCKED)
+            DatabaseInitFailed("数据库初始化失败", cause = e)
+        }
     }
 
     /**
@@ -151,9 +162,10 @@ class UnifiedSessionManager @Inject constructor(
      * 1. 设置 [LockState.LOCKING] 状态阻止新操作
      * 2. 等待活跃操作排干（最多 [timeout] 时间）
      * 3. 若超时：强制取消 [operationScope] 取消僵尸协程，重置计数
-     * 4. 设置 [LockState.LOCKED] 状态
+     * 4. 关闭数据库连接，置空引用
+     * 5. 设置 [LockState.LOCKED] 状态
      *
-     * **不关闭数据库连接** —— 物理连接与进程生命周期绑定。
+     * 锁定后不存在可用连接，DEK 由调用方负责擦除。
      */
     suspend fun lock(timeout: Duration = 5.seconds) {
         lockState.set(LockState.LOCKING)
@@ -175,33 +187,25 @@ class UnifiedSessionManager @Inject constructor(
             AppLog.e(TAG, "Forced rollback completed, ${activeOps.get()} active ops remaining")
         }
 
+        // 关闭数据库并置空引用 —— 锁定后不允许任何连接可继续使用
+        mutex.withLock {
+            database?.let { db ->
+                runCatching { db.close() }
+                    .onFailure { e -> AppLog.e(TAG, "Database close error on lock", e) }
+                database = null
+                AppLog.i(TAG, "Database closed on lock")
+            }
+        }
+
         lockState.set(LockState.LOCKED)
-        AppLog.i(TAG, "Session locked (database connection preserved)")
+        AppLog.i(TAG, "Session locked")
     }
 
     // ============================== 数据库生命周期 ==============================
 
     /**
-     * 打开数据库连接。
-     */
-    suspend fun openDatabase(): Throwable? {
-        return try {
-            val dek = dekManager.withDek { it.clone() }
-            val db = databaseProvider.open(dek)
-            dek.fill(0)
-            mutex.withLock { database = db }
-            AppLog.i(TAG, "Database connection opened")
-            null
-        } catch (e: Exception) {
-            AppLog.e(TAG, "Failed to open database", e)
-            mutex.withLock { database = null }
-            DatabaseInitFailed("数据库初始化失败", cause = e)
-        }
-    }
-
-    /**
      * 关闭数据库连接。
-     * **仅**在应用进入后台（onStop）或销毁（onDestroy）时调用。
+     * 仅在应用进入后台（onStop）或销毁（onDestroy）时调用，非锁定期关闭。
      */
     suspend fun closeDatabase() {
         mutex.withLock {
@@ -219,7 +223,6 @@ class UnifiedSessionManager @Inject constructor(
     private suspend fun <T> executeWithGuard(
         block: suspend (AppDatabase) -> T
     ): T {
-        // 在 operationScope 内启动，使 lock() 超时时能通过 cancelChildren 取消僵尸操作
         return operationScope.async(Dispatchers.IO) {
             activeOps.incrementAndGet()
             try {
@@ -243,27 +246,16 @@ class UnifiedSessionManager @Inject constructor(
 
     /**
      * 获取当前数据库实例。
-     * 如果尚未打开，则自动打开（首次使用时惰性初始化）。
      *
-     * 初始化失败时清理 database = null 并将底层异常包装为 [DatabaseInitFailed]，
-     * 防止"死连接"残留导致后续操作持续失败。
+     * 数据库在 [unlock()] 时打开，在 [lock()] 或 [closeDatabase()] 时关闭。
+     * 本方法不做惰性初始化，锁定后直接抛出异常。
      */
     private suspend fun resolveDatabase(): AppDatabase {
         mutex.withLock {
             database?.let { return it }
-
-            try {
-                // 惰性初始化：首次访问时打开
-                val dek = dekManager.withDek { it.clone() }
-                val db = databaseProvider.open(dek)
-                dek.fill(0)
-                database = db
-                return db
-            } catch (e: Exception) {
-                // 清理现场，防止"死连接"残留
-                database = null
-                throw DatabaseInitFailed("数据库初始化失败", cause = e)
-            }
         }
+        throw SessionLockedException(
+            "Database not opened — session is locked or never unlocked"
+        )
     }
 }

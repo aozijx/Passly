@@ -53,8 +53,13 @@ class VaultSessionController @Inject constructor(
             transition(AuthenticationState.Unlocking(correlationId))
             when (dekManager.setDek(type, dek)) {
                 UnlockResult.Success -> {
-                    // 打开会话（解锁状态），数据库在首次 read/write 时惰性初始化
-                    sessionManager.unlock()
+                    // 打开数据库并设为解锁状态
+                    val err = sessionManager.unlock()
+                    if (err != null) {
+                        // 返回前 dek 会在 finally 中 fill(0)
+                        transition(AuthenticationState.Locked)
+                        return@withLock false
+                    }
                     markAuthenticatedInternal()
                     true
                 }
@@ -72,10 +77,14 @@ class VaultSessionController @Inject constructor(
     /**
      * 标记会话为已认证。
      * 必须在确保 DEK 已正确设置后调用。
+     *
+     * @return true 如果解锁并打开数据库成功，false 否则
      */
-    suspend fun markAuthenticated() = mutex.withLock {
-        sessionManager.unlock()
+    suspend fun markAuthenticated(): Boolean = mutex.withLock {
+        val err = sessionManager.unlock()
+        if (err != null) return@withLock false
         markAuthenticatedInternal()
+        true
     }
 
     private suspend fun markAuthenticatedInternal() = withContext(Dispatchers.Main.immediate) {
