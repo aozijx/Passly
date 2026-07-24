@@ -1,5 +1,7 @@
 package com.aozijx.passly.domain.model.entry
 
+import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.secret.LoginSecret
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret

@@ -1,6 +1,19 @@
 package com.aozijx.passly.domain.service.entry
 
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.service.BankCardEntryValidator
+import com.aozijx.passly.domain.entry.service.DefaultEntryTypePolicy
+import com.aozijx.passly.domain.entry.service.DefaultEntryValidator
+import com.aozijx.passly.domain.entry.service.EntryValidator
+import com.aozijx.passly.domain.entry.service.EntryValidatorProvider
+import com.aozijx.passly.domain.entry.service.IdCardEntryValidator
+import com.aozijx.passly.domain.entry.service.LoginEntryValidator
+import com.aozijx.passly.domain.entry.service.PasskeyEntryValidator
+import com.aozijx.passly.domain.entry.service.RecoveryCodeEntryValidator
+import com.aozijx.passly.domain.entry.service.SeedPhraseEntryValidator
+import com.aozijx.passly.domain.entry.service.SshKeyEntryValidator
+import com.aozijx.passly.domain.entry.service.TotpEntryValidator
+import com.aozijx.passly.domain.entry.service.WiFiEntryValidator
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
