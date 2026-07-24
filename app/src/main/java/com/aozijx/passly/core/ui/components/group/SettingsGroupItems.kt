@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.components.group
+package com.aozijx.passly.core.ui.components.group
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.slideInVertically

@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.components
+package com.aozijx.passly.core.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

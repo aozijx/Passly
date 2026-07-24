@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.components.widgets
+package com.aozijx.passly.core.ui.components.widgets
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring

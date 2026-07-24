@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.components.common
+package com.aozijx.passly.core.ui.components.common
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn

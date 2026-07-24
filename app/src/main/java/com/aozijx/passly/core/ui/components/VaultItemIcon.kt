@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.components
+package com.aozijx.passly.core.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box

@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.authentication
+package com.aozijx.passly.feature.authentication
 
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -11,8 +11,8 @@ import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.security.authentication.SecretChars
 import com.aozijx.passly.security.authentication.host.AuthHostSnapshot
 import com.aozijx.passly.security.authentication.host.AuthUiHost
-import com.aozijx.passly.security.authentication.host.BiometricHostResult
 import com.aozijx.passly.security.authentication.host.BiometricHostFailure
+import com.aozijx.passly.security.authentication.host.BiometricHostResult
 import com.aozijx.passly.security.authentication.host.BiometricPromptSpec
 import com.aozijx.passly.security.authentication.host.SecretHostResult
 import kotlinx.coroutines.CancellableContinuation

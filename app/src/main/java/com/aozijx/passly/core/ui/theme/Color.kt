@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.theme
+package com.aozijx.passly.core.ui.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme

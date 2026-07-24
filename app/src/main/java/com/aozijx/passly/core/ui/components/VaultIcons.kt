@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.components
+package com.aozijx.passly.core.ui.components
 
 import android.content.Context
 import androidx.compose.material.icons.Icons

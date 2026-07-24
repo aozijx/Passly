@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.authentication
+package com.aozijx.passly.feature.authentication
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -120,7 +120,9 @@ private fun SecretDialog(
                 label = { Text(if (method == AuthenticationMethod.RECOVERY_CODE) "恢复码" else "应用密码") },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
             )
         },
         confirmButton = {

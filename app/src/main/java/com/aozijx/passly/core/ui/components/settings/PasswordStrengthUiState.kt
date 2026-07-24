@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.components.settings
+package com.aozijx.passly.core.ui.components.settings
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme

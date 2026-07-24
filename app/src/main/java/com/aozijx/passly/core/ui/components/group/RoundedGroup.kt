@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.components.group
+package com.aozijx.passly.core.ui.components.group
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
