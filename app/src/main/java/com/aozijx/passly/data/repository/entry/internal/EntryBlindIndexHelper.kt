@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.entry.internal
 
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.model.entity.SearchTokenEntity
-import com.aozijx.passly.domain.model.lookup.LookupFieldValue
+import com.aozijx.passly.domain.entry.model.lookup.LookupFieldValue
 import com.aozijx.passly.security.search.BlindIndexRecord
 import com.aozijx.passly.security.search.BlindIndexer
 import javax.inject.Inject

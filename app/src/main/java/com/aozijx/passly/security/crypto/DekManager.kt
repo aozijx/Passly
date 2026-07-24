@@ -1,11 +1,11 @@
 package com.aozijx.passly.security.crypto
 
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.domain.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.model.envelope.KdfAlgorithm
-import com.aozijx.passly.domain.model.envelope.KeyEnvelope
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
+import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
+import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
 import com.aozijx.passly.security.MemoryCleaner
+import com.aozijx.passly.security.envelope.BootstrapStore
 import com.aozijx.passly.security.vault.VerificationTag
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

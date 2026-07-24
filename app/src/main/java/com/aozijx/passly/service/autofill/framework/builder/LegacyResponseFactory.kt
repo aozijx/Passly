@@ -8,9 +8,9 @@ import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.lookup.MatchType
-import com.aozijx.passly.domain.model.settings.AutofillUiMode
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.lookup.MatchType
+import com.aozijx.passly.domain.settings.model.AutofillUiMode
 import com.aozijx.passly.feature.autofill.framework.AutofillFillActivity
 import com.aozijx.passly.feature.autofill.framework.AutofillRemoteViewFactory
 import com.aozijx.passly.service.autofill.framework.parser.ParsedStructure

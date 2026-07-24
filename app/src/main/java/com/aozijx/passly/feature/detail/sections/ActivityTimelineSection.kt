@@ -28,8 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date

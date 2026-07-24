@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.mapper.entry
 
 import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.domain.model.entry.EntrySummary
-import com.aozijx.passly.domain.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 
 object EntryListItemMapper {
 

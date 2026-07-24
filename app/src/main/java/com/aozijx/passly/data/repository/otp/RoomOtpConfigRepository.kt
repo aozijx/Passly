@@ -2,8 +2,8 @@ package com.aozijx.passly.data.repository.otp
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
-import com.aozijx.passly.domain.model.otp.OtpConfig
-import com.aozijx.passly.domain.repository.otp.OtpConfigRepository
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.repository.OtpConfigRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 

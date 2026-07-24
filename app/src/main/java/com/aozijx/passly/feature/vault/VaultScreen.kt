@@ -24,7 +24,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.domain.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.main.MainViewModel

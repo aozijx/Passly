@@ -4,8 +4,8 @@ import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 

@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.domain.model.attachment.AttachmentStatus
+import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 
 @Entity(
     tableName = "entry_attachments",

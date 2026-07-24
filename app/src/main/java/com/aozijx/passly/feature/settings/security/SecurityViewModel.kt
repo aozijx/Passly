@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.command.settings.SettingsCommand
-import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
+import com.aozijx.passly.domain.settings.command.SettingsCommand
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

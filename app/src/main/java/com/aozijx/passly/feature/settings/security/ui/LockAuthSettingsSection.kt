@@ -20,7 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.model.settings.LockTimeoutConstraints
+import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
 import com.aozijx.passly.feature.settings.security.formatLockTimeoutText
 import com.aozijx.passly.ui.components.group.GroupCard
 import com.aozijx.passly.ui.components.group.RoundedGroup

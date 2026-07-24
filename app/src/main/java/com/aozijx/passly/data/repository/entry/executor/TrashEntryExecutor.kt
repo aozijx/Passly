@@ -5,7 +5,7 @@ import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.util.Clock
-import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import javax.inject.Inject
 
 /**

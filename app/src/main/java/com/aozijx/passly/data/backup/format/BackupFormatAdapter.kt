@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.backup.format
 
 import com.aozijx.passly.data.backup.model.BackupBundle
-import com.aozijx.passly.domain.model.backup.BackupFormatId
+import com.aozijx.passly.domain.backup.model.BackupFormatId
 
 /**
  * Encodes the canonical [BackupBundle] into one external format.

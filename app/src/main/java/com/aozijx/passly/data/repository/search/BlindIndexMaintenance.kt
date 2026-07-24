@@ -8,7 +8,7 @@ import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.model.entity.SearchTokenEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
-import com.aozijx.passly.domain.repository.search.SearchIndexMaintenance
+import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
 import com.aozijx.passly.security.search.BlindIndexRecord
 import com.aozijx.passly.security.search.BlindIndexer
 import javax.inject.Inject

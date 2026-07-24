@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.feature.detail.page.DetailLaunchMode
 import com.aozijx.passly.feature.detail.page.DetailOpenRequest
 import com.aozijx.passly.feature.vault.model.AddType

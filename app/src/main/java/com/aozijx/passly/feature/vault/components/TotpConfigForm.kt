@@ -14,8 +14,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 @Composable
 fun TotpConfigForm(

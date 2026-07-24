@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault.internal
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.otp.OtpError
 import com.aozijx.passly.core.otp.OtpResult
-import com.aozijx.passly.domain.model.otp.OtpConfig
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext

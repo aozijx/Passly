@@ -3,7 +3,7 @@ package com.aozijx.passly.di.database
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.repository.database.DatabaseControllerImpl
 import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.repository.database.DatabaseController
+import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

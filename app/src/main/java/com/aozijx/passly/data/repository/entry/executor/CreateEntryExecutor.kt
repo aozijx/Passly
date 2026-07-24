@@ -11,10 +11,10 @@ import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
 import com.aozijx.passly.data.util.Clock
-import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
-import com.aozijx.passly.domain.model.entry.EntryId
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 

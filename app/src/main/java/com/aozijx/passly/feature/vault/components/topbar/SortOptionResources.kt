@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.vault.components.topbar
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.settings.VaultSortField
-import com.aozijx.passly.domain.model.settings.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.VaultSortField
+import com.aozijx.passly.domain.settings.model.VaultSortSpec
 
 @StringRes
 fun VaultSortSpec.labelResId(): Int = when (field) {

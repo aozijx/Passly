@@ -4,10 +4,10 @@ import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.diagnostics.LogCategory
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.domain.auth.model.VaultLockState
+import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.authentication.VaultAccessState
-import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.UnlockResult
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +29,7 @@ import javax.inject.Singleton
 class VaultSessionController @Inject constructor(
     private val dekManager: DekManager,
     private val sessionManager: UnifiedSessionManager,
-    idleTimeoutSettings: com.aozijx.passly.domain.repository.settings.IdleTimeoutSettings
+    idleTimeoutSettings: com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
 ) : VaultAccessState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()

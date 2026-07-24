@@ -5,22 +5,22 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import com.aozijx.passly.data.crypto.proto.BootstrapData
 import com.aozijx.passly.data.crypto.proto.EnvelopeEntry
-import com.aozijx.passly.domain.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.model.envelope.KdfAlgorithm
-import com.aozijx.passly.domain.model.envelope.KeyEnvelope
-import com.aozijx.passly.security.envelope.BootstrapStore
+import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
+import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
+import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
 import com.aozijx.passly.security.envelope.BiometricBinding
 import com.aozijx.passly.security.envelope.BiometricBootstrapState
 import com.aozijx.passly.security.envelope.BiometricRotationJournal
 import com.aozijx.passly.security.envelope.BiometricRotationPhase
-import com.aozijx.passly.data.crypto.proto.BiometricBinding as BiometricBindingProto
-import com.aozijx.passly.data.crypto.proto.BiometricRotationJournal as BiometricRotationJournalProto
+import com.aozijx.passly.security.envelope.BootstrapStore
 import com.google.protobuf.ByteString
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.aozijx.passly.data.crypto.proto.BiometricBinding as BiometricBindingProto
+import com.aozijx.passly.data.crypto.proto.BiometricRotationJournal as BiometricRotationJournalProto
 
 private val Context.bootstrapDataStore: DataStore<BootstrapData> by dataStore(
     fileName = "bootstrap.pb",

@@ -11,7 +11,7 @@ import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.domain.model.settings.AutofillUiMode
+import com.aozijx.passly.domain.settings.model.AutofillUiMode
 import com.aozijx.passly.feature.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.ui.authentication.AuthenticationHost

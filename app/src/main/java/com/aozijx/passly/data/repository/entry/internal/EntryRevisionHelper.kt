@@ -3,9 +3,9 @@ package com.aozijx.passly.data.repository.entry.internal
 import com.aozijx.passly.data.codec.revision.EntryRevisionCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.model.entity.EntryRevisionEntity
-import com.aozijx.passly.domain.model.entry.EntrySecret
-import com.aozijx.passly.domain.model.entry.EntrySummary
-import com.aozijx.passly.domain.model.revision.RevisionType
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.revision.RevisionType
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton

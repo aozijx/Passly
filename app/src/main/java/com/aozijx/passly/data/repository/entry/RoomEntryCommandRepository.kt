@@ -5,10 +5,10 @@ import com.aozijx.passly.data.repository.entry.executor.CreateEntryExecutor
 import com.aozijx.passly.data.repository.entry.executor.RestoreEntryExecutor
 import com.aozijx.passly.data.repository.entry.executor.TrashEntryExecutor
 import com.aozijx.passly.data.repository.entry.executor.UpdateEntryExecutor
-import com.aozijx.passly.domain.model.entry.EntryChanges
-import com.aozijx.passly.domain.model.entry.EntryId
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
+import com.aozijx.passly.domain.entry.model.EntryChanges
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 

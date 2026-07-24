@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 
 @Entity(
     tableName = "entry_activities",

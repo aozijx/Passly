@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.settings.contract
 
-import com.aozijx.passly.domain.model.settings.SwipeActionType
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 data class SettingsUiState(
     val isAppPasswordEnabled: Boolean = false,

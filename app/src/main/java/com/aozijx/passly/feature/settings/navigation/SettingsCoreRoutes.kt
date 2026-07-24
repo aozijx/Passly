@@ -8,8 +8,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.settings.VaultCardStyle
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.AppearanceDetail
 import com.aozijx.passly.feature.settings.appearance.AppearanceUiAction
@@ -22,8 +22,8 @@ import com.aozijx.passly.feature.settings.security.PrivacyUiAction
 import com.aozijx.passly.feature.settings.security.PrivacyViewModel
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
 import com.aozijx.passly.feature.settings.security.SecurityViewModel
-import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
 import com.aozijx.passly.feature.settings.security.handleBiometricToggle
+import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
 import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
 import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
 import com.aozijx.passly.feature.settings.shell.SettingsMainPage

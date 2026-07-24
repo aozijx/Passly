@@ -1,14 +1,14 @@
 package com.aozijx.passly.security.authentication
 
+import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.security.authentication.host.AuthUiHost
-import com.aozijx.passly.security.authentication.host.BiometricHostResult
 import com.aozijx.passly.security.authentication.host.BiometricHostFailure
+import com.aozijx.passly.security.authentication.host.BiometricHostResult
 import com.aozijx.passly.security.authentication.host.BiometricPromptSpec
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.UnlockError

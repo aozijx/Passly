@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.model.settings.SwipeActionType
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 private val SWIPE_ACTIONS = listOf(
     SwipeActionType.DELETE,

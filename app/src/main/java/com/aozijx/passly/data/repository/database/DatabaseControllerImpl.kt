@@ -3,7 +3,7 @@ package com.aozijx.passly.data.repository.database
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.domain.repository.database.DatabaseController
+import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext

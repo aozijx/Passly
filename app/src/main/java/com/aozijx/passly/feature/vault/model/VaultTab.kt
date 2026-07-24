@@ -6,7 +6,7 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Pin
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.lookup.EntryFilter
+import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
 
 /**
  * 保险箱列表 Tab 筛选器。

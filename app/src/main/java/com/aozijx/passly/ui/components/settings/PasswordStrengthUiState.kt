@@ -7,8 +7,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.aozijx.passly.R
 import com.aozijx.passly.core.util.PasswordStrengthEngine
-import com.aozijx.passly.domain.model.core.PasswordStrengthLevel
-import com.aozijx.passly.domain.model.core.PasswordStrengthResult
+import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
+import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 
 /**
  * UI 状态数据类，包装显示所需的所有信息

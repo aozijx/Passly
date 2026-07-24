@@ -10,7 +10,7 @@ import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.model.settings.VaultCardStyle
+import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.ui.components.group.GroupCard
 import com.aozijx.passly.ui.components.group.RoundedGroup
 import com.aozijx.passly.ui.components.group.RoundedGroupItem

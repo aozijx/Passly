@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.draft
 
-import com.aozijx.passly.domain.model.draft.EntryDraft
-import com.aozijx.passly.domain.repository.draft.EntryDraftRepository
+import com.aozijx.passly.domain.entry.model.draft.EntryDraft
+import com.aozijx.passly.domain.entry.repository.EntryDraftRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 

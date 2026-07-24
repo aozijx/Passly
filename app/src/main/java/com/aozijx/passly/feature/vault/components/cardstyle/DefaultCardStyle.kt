@@ -28,8 +28,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.lookup.EntryListItem
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.ui.components.VaultItemIcon
 

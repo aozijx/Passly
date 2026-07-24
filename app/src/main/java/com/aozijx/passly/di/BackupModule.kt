@@ -1,7 +1,7 @@
 package com.aozijx.passly.di
 
-import com.aozijx.passly.data.backup.VaultBackupServiceImpl
 import com.aozijx.passly.data.backup.AndroidBackupFileStore
+import com.aozijx.passly.data.backup.VaultBackupServiceImpl
 import com.aozijx.passly.data.backup.format.BackupExportAdapter
 import com.aozijx.passly.data.backup.format.BackupImportAdapter
 import com.aozijx.passly.data.backup.format.bitwarden.BitwardenJsonImportAdapter
@@ -9,12 +9,12 @@ import com.aozijx.passly.data.backup.format.encrypted.PasslyEncryptedFormatAdapt
 import com.aozijx.passly.data.backup.format.json.PasslyJsonFormatAdapter
 import com.aozijx.passly.data.backup.format.text.ReadableTextFormatAdapter
 import com.aozijx.passly.data.backup.io.BackupFileStore
-import com.aozijx.passly.domain.service.backup.VaultBackupService
+import com.aozijx.passly.domain.backup.service.VaultBackupService
 import dagger.Binds
 import dagger.Module
-import dagger.multibindings.IntoSet
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoSet
 import javax.inject.Singleton
 
 @Module

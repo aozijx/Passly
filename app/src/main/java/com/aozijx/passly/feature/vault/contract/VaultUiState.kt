@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.contract
 
-import com.aozijx.passly.domain.model.lookup.EntryListItem
-import com.aozijx.passly.domain.model.settings.VaultSortSpec
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.feature.vault.model.VaultTab
 
 data class VaultUiState(

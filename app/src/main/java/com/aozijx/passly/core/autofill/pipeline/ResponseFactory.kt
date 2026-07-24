@@ -14,7 +14,7 @@ import javax.inject.Singleton
  * 接收已由 [CandidateResolver] 解析的 [ResolvedCandidate] 列表，
  * 根据 [FieldRole] 映射填充 fields，供下游（Legacy/Modern Factory、BottomSheet）统一消费。
  *
- * 不再依赖 [com.aozijx.passly.domain.model.credential.CredentialCandidate] 或 [com.aozijx.passly.domain.model.entry.VaultEntry]。
+ * 不再依赖 [com.aozijx.passly.domain.model.credential.CredentialCandidate] 或 [com.aozijx.passly.domain.entry.model.VaultEntry]。
  */
 @Singleton
 class ResponseFactory @Inject constructor() {

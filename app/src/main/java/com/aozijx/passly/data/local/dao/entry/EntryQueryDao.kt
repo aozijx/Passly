@@ -4,7 +4,7 @@ import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Query
 import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.flow.Flow
 
 @Dao

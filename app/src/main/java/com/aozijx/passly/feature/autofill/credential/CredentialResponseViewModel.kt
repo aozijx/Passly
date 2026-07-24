@@ -9,8 +9,8 @@ import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.domain.usecase.credential.CredentialResponseUseCases
-import com.aozijx.passly.domain.usecase.credential.PasswordCredentialResult
+import com.aozijx.passly.domain.autofill.usecase.CredentialResponseUseCases
+import com.aozijx.passly.domain.autofill.usecase.PasswordCredentialResult
 import com.aozijx.passly.service.autofill.credential.CredentialResponseFactory
 import com.aozijx.passly.service.autofill.credential.ModernCredentialService
 import dagger.hilt.android.lifecycle.HiltViewModel

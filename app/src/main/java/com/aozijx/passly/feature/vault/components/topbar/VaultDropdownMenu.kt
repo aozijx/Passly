@@ -21,7 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.model.settings.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.VaultSortSpec
 
 private enum class MenuPage { MAIN, SORT, FILTER }
 

@@ -1,6 +1,6 @@
 package com.aozijx.passly.di.entry
 
-import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.entry.model.EntryType
 import dagger.MapKey
 
 @MapKey

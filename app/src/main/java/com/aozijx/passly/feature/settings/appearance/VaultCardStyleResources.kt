@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.settings.VaultCardStyle
+import com.aozijx.passly.domain.settings.model.VaultCardStyle
 
 @StringRes
 fun VaultCardStyle.displayNameRes(): Int = when (this) {

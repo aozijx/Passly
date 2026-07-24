@@ -1,7 +1,7 @@
 package com.aozijx.passly.di.repository
 
 import com.aozijx.passly.data.repository.autofill.AutofillStatusRepositoryImpl
-import com.aozijx.passly.domain.repository.autofill.AutofillStatusRepository
+import com.aozijx.passly.domain.autofill.repository.AutofillStatusRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

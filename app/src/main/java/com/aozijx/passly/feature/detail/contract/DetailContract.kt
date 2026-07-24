@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.detail.contract
 
-import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.EntryActivity
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 
 data class DetailUiState(
     val entry: VaultEntry? = null,

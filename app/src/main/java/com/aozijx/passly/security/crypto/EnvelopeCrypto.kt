@@ -1,8 +1,8 @@
 package com.aozijx.passly.security.crypto
 
-import com.aozijx.passly.domain.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.model.envelope.KdfAlgorithm
-import com.aozijx.passly.domain.model.envelope.KeyEnvelope
+import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
+import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
+import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec

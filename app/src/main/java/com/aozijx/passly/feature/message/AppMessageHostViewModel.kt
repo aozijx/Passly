@@ -7,7 +7,7 @@ import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.core.message.AppMessagePresentation
 import com.aozijx.passly.core.message.AppStatusBarNotifier
-import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

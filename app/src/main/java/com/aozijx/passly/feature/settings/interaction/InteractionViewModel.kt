@@ -3,11 +3,11 @@ package com.aozijx.passly.feature.settings.interaction
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.command.settings.SettingsCommand
-import com.aozijx.passly.domain.model.settings.AutofillUiMode
-import com.aozijx.passly.domain.model.settings.SwipeActionType
-import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
-import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
+import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
+import com.aozijx.passly.domain.settings.command.SettingsCommand
+import com.aozijx.passly.domain.settings.model.AutofillUiMode
+import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

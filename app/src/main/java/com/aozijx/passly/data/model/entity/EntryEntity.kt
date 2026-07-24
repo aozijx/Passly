@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.entry.model.EntryType
 
 @Entity(
     tableName = "vault_entries",

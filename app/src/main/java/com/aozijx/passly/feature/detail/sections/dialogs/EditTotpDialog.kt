@@ -14,12 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.entry.EntrySecret
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.entry.secret.OtpSecret
-import com.aozijx.passly.domain.model.otp.OtpConfig
-import com.aozijx.passly.domain.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.vault.components.TotpConfigForm
 

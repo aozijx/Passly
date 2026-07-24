@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.codec
 
-import com.aozijx.passly.domain.model.settings.SortDirection
-import com.aozijx.passly.domain.model.settings.VaultSortField
-import com.aozijx.passly.domain.model.settings.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.SortDirection
+import com.aozijx.passly.domain.settings.model.VaultSortField
+import com.aozijx.passly.domain.settings.model.VaultSortSpec
 
 /**
  * [VaultSortSpec] 序列化/反序列化工具。

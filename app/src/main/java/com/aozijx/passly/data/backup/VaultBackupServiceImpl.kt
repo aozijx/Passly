@@ -7,9 +7,9 @@ import com.aozijx.passly.data.backup.io.BackupFileStore
 import com.aozijx.passly.data.backup.source.VaultBackupReader
 import com.aozijx.passly.data.backup.source.VaultBackupRestorer
 import com.aozijx.passly.di.IoDispatcher
-import com.aozijx.passly.domain.model.backup.BackupExportRequest
-import com.aozijx.passly.domain.model.backup.BackupImportRequest
-import com.aozijx.passly.domain.service.backup.VaultBackupService
+import com.aozijx.passly.domain.backup.model.BackupExportRequest
+import com.aozijx.passly.domain.backup.model.BackupImportRequest
+import com.aozijx.passly.domain.backup.service.VaultBackupService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

@@ -24,7 +24,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.backup.ImportMode
+import com.aozijx.passly.domain.backup.model.ImportMode
 
 data class BackupPasswordDialogState(
     val isExporting: Boolean = false,

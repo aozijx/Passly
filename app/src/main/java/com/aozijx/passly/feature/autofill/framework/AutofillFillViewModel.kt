@@ -12,8 +12,8 @@ import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.model.settings.AutofillUiMode
-import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
+import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
+import com.aozijx.passly.domain.settings.model.AutofillUiMode
 import com.aozijx.passly.service.autofill.framework.builder.LegacyDatasetFactory
 import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
 import dagger.hilt.android.lifecycle.HiltViewModel

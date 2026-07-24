@@ -1,12 +1,12 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.core.security.KeyDerivation
+import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
-import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.SecretHostResult
 import com.aozijx.passly.security.envelope.BootstrapStore

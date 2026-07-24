@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.settings.interaction
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.settings.AutofillUiMode
+import com.aozijx.passly.domain.settings.model.AutofillUiMode
 import com.aozijx.passly.ui.components.group.RoundedGroup
 import com.aozijx.passly.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.ui.components.settings.SettingsSectionTitle

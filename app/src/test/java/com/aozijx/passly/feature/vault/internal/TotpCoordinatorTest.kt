@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.core.otp.OtpResult
-import com.aozijx.passly.domain.model.otp.OtpConfig
-import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

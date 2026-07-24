@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.autofill.model
 
-import com.aozijx.passly.domain.model.entry.VaultIconable
-import com.aozijx.passly.domain.model.lookup.MatchType
+import com.aozijx.passly.domain.entry.model.VaultIconable
+import com.aozijx.passly.domain.entry.model.lookup.MatchType
 
 /**
  * 已解析的候选凭据：裁剪后的 UI 安全子集 + Fill 所需的全部字段。

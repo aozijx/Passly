@@ -2,7 +2,7 @@ package com.aozijx.passly.data.local.dao.activity
 
 import androidx.room.Dao
 import androidx.room.Query
-import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import kotlinx.coroutines.flow.Flow
 
 @Dao

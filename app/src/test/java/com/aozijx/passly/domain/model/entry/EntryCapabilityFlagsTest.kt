@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.model.entry
 
-import com.aozijx.passly.domain.model.entry.secret.LoginSecret
-import com.aozijx.passly.domain.model.entry.secret.OtpSecret
-import com.aozijx.passly.domain.model.entry.secret.WifiSecret
-import com.aozijx.passly.domain.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.secret.LoginSecret
+import com.aozijx.passly.domain.entry.model.secret.OtpSecret
+import com.aozijx.passly.domain.entry.model.secret.WifiSecret
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

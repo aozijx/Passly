@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.strategy
 
-import com.aozijx.passly.domain.model.entry.FieldKey
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.feature.vault.strategy.EntryTypeDisplayProvider.getCopyLabel
 
 /**

@@ -7,7 +7,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.feature.main.MainViewModel
 
 @Composable

@@ -6,10 +6,10 @@ import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.mapper.attachment.AttachmentMapper
 import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
-import com.aozijx.passly.domain.model.attachment.AttachmentStatus
-import com.aozijx.passly.domain.model.attachment.EntryAttachment
-import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
-import com.aozijx.passly.domain.repository.attachment.AttachmentRepository
+import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
+import com.aozijx.passly.domain.entry.model.attachment.EntryAttachment
+import com.aozijx.passly.domain.entry.repository.AttachmentRepository
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File

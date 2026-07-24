@@ -5,10 +5,10 @@ import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.lookup.CredentialCandidate
-import com.aozijx.passly.domain.model.lookup.MatchType
-import com.aozijx.passly.domain.repository.autofill.CredentialServiceRepository
+import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
+import com.aozijx.passly.domain.entry.model.lookup.MatchType
 import javax.inject.Inject
 import javax.inject.Singleton
 

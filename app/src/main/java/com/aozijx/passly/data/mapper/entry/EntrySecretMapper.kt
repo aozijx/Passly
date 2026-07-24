@@ -13,19 +13,19 @@ import com.aozijx.passly.data.model.payload.secret.PasskeySecretPayload
 import com.aozijx.passly.data.model.payload.secret.SecretPayload
 import com.aozijx.passly.data.model.payload.secret.SshSecretPayload
 import com.aozijx.passly.data.model.payload.secret.WifiSecretPayload
-import com.aozijx.passly.domain.model.entry.EntrySecret
-import com.aozijx.passly.domain.model.entry.secret.CardSecret
-import com.aozijx.passly.domain.model.entry.secret.CustomField
-import com.aozijx.passly.domain.model.entry.secret.IdentitySecret
-import com.aozijx.passly.domain.model.entry.secret.LoginSecret
-import com.aozijx.passly.domain.model.entry.secret.OtpSecret
-import com.aozijx.passly.domain.model.entry.secret.PasskeySecret
-import com.aozijx.passly.domain.model.entry.secret.SshSecret
-import com.aozijx.passly.domain.model.entry.secret.WifiSecret
-import com.aozijx.passly.domain.model.otp.OtpConfig
-import com.aozijx.passly.domain.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.secret.CardSecret
+import com.aozijx.passly.domain.entry.model.secret.CustomField
+import com.aozijx.passly.domain.entry.model.secret.IdentitySecret
+import com.aozijx.passly.domain.entry.model.secret.LoginSecret
+import com.aozijx.passly.domain.entry.model.secret.OtpSecret
+import com.aozijx.passly.domain.entry.model.secret.PasskeySecret
+import com.aozijx.passly.domain.entry.model.secret.SshSecret
+import com.aozijx.passly.domain.entry.model.secret.WifiSecret
 
 object EntrySecretMapper {
 

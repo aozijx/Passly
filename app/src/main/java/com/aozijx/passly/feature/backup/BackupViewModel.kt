@@ -10,12 +10,12 @@ import com.aozijx.passly.core.error.BackupFailed
 import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.util.PlainExportTokenManager
-import com.aozijx.passly.domain.command.settings.SettingsCommand
-import com.aozijx.passly.domain.model.backup.BackupExportRequest
-import com.aozijx.passly.domain.model.backup.BackupFormats
-import com.aozijx.passly.domain.model.backup.BackupImportRequest
-import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
-import com.aozijx.passly.domain.service.backup.VaultBackupService
+import com.aozijx.passly.domain.backup.model.BackupExportRequest
+import com.aozijx.passly.domain.backup.model.BackupFormats
+import com.aozijx.passly.domain.backup.model.BackupImportRequest
+import com.aozijx.passly.domain.backup.service.VaultBackupService
+import com.aozijx.passly.domain.settings.command.SettingsCommand
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
@@ -138,7 +138,7 @@ class BackupViewModel @Inject constructor(
         _uiState.update { it.copy(backupPassword = password) }
     }
 
-    private fun updateImportMode(mode: com.aozijx.passly.domain.model.backup.ImportMode) {
+    private fun updateImportMode(mode: com.aozijx.passly.domain.backup.model.ImportMode) {
         _uiState.update { it.copy(importMode = mode) }
     }
 

@@ -1,7 +1,7 @@
 package com.aozijx.passly.security.search
 
-import com.aozijx.passly.domain.model.lookup.LookupField
-import com.aozijx.passly.domain.model.lookup.LookupFieldValue
+import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.lookup.LookupFieldValue
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject

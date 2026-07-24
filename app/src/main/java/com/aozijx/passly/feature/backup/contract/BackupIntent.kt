@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.backup.contract
 
 import android.net.Uri
-import com.aozijx.passly.domain.model.backup.ImportMode
+import com.aozijx.passly.domain.backup.model.ImportMode
 
 sealed class BackupIntent {
     data class CheckDirectoryPermission(val uri: String?) : BackupIntent()

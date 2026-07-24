@@ -1,9 +1,9 @@
 package com.aozijx.passly.core.otp
 
-import com.aozijx.passly.domain.model.otp.OtpConfig
-import com.aozijx.passly.domain.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec

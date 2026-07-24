@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.backup.contract
 
 import android.net.Uri
 import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.domain.model.backup.ImportMode
+import com.aozijx.passly.domain.backup.model.ImportMode
 
 sealed class BackupOperationStatus {
     data object Idle : BackupOperationStatus()

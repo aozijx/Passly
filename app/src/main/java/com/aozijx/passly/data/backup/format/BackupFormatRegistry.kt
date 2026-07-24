@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.backup.format
 
 import com.aozijx.passly.core.error.BackupFailed
-import com.aozijx.passly.domain.model.backup.BackupFormatId
+import com.aozijx.passly.domain.backup.model.BackupFormatId
 import javax.inject.Inject
 import javax.inject.Singleton
 

@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.autofill
 
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.lookup.CredentialCandidate
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 
 /**
  * 填充配置：集中管理 Legacy Autofill / Modern CredentialManager 共用的策略常量和规则。
@@ -22,7 +22,7 @@ object AutofillConfiguration {
      * 排序权重：score（降序） > 收藏 > 使用次数 > 更新时间
      *
      * Repository 负责匹配并计算 score，Dispatcher 通过此比较器排序即可。
-     * 新增匹配策略只需在 [com.aozijx.passly.domain.model.lookup.MatchType] 中添加枚举值。
+     * 新增匹配策略只需在 [com.aozijx.passly.domain.entry.model.lookup.MatchType] 中添加枚举值。
      */
     fun compareCandidates(a: CredentialCandidate, b: CredentialCandidate): Int {
         return compareByDescending<CredentialCandidate> { it.score }

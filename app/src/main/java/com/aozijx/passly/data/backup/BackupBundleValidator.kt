@@ -4,7 +4,7 @@ import com.aozijx.passly.data.backup.model.BackupBundle
 import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupOtpType
 import com.aozijx.passly.data.backup.model.BackupResourceKind
-import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.entry.model.EntryType
 import java.security.MessageDigest
 
 internal object BackupBundleValidator {

@@ -6,8 +6,8 @@ import com.aozijx.passly.data.mapper.entry.EntrySummaryMapper
 import com.aozijx.passly.data.model.payload.secret.SecretPayload
 import com.aozijx.passly.data.model.payload.summary.SummaryPayload
 import com.aozijx.passly.data.model.serializer.AppJson
-import com.aozijx.passly.domain.model.entry.EntrySecret
-import com.aozijx.passly.domain.model.entry.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream

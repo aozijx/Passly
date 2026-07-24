@@ -10,9 +10,9 @@ import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
 import com.aozijx.passly.data.util.Clock
-import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
-import com.aozijx.passly.domain.model.entry.EntryChanges
-import com.aozijx.passly.domain.model.entry.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.EntryChanges
+import com.aozijx.passly.domain.entry.model.EntrySecret
 import javax.inject.Inject
 
 /**

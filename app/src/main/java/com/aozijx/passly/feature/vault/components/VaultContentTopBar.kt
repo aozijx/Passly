@@ -8,7 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.aozijx.passly.domain.model.settings.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.feature.vault.components.topbar.VaultTopBar
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.VaultTab

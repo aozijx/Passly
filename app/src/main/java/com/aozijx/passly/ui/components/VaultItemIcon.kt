@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
-import com.aozijx.passly.domain.model.entry.VaultIconable
+import com.aozijx.passly.domain.entry.model.VaultIconable
 
 @Composable
 fun VaultItemIcon(

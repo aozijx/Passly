@@ -3,9 +3,9 @@ package com.aozijx.passly.data.repository.activity
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.mapper.activity.toDomain
 import com.aozijx.passly.domain.authentication.VaultAccessState
-import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.EntryActivity
-import com.aozijx.passly.domain.repository.activity.ActivityQueryRepository
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

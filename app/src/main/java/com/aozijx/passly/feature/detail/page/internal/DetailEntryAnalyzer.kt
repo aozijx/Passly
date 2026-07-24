@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.detail.page.internal
 
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.service.entry.EntryTypePolicy
-import com.aozijx.passly.domain.service.entry.EntryValidatorProvider
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.service.EntryTypePolicy
+import com.aozijx.passly.domain.entry.service.EntryValidatorProvider
 
 internal data class DetailEntryAnalysis(
     val vaultType: EntryType,

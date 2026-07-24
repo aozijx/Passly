@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.detail.internal
 
 import android.content.Context
 import com.aozijx.passly.core.platform.ClipboardUtils
-import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 

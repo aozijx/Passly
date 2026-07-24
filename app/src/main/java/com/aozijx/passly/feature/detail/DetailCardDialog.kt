@@ -30,9 +30,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.core.util.TotpUtils
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.detail.components.DetailHeader
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent

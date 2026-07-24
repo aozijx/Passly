@@ -2,14 +2,14 @@ package com.aozijx.passly.data.repository.revision
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.revision.EntryRevisionCodec
-import com.aozijx.passly.domain.model.entry.EntryHeader
-import com.aozijx.passly.domain.model.entry.EntryId
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.EntryVersion
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.revision.EntryRevision
-import com.aozijx.passly.domain.model.revision.RevisionType
-import com.aozijx.passly.domain.repository.revision.EntryRevisionRepository
+import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.revision.EntryRevision
+import com.aozijx.passly.domain.entry.model.revision.RevisionType
+import com.aozijx.passly.domain.entry.repository.EntryRevisionRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 

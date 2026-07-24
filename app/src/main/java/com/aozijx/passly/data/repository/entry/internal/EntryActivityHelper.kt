@@ -2,8 +2,8 @@ package com.aozijx.passly.data.repository.entry.internal
 
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.model.entity.EntryActivityEntity
-import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import javax.inject.Inject
 import javax.inject.Singleton
 

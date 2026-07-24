@@ -1,6 +1,9 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.core.security.KeyDerivation
+import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
+import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
+import com.aozijx.passly.domain.auth.model.envelope.KeyEnvelope
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationManager
@@ -9,9 +12,6 @@ import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraft
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraftCreation
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
-import com.aozijx.passly.domain.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.model.envelope.KdfAlgorithm
-import com.aozijx.passly.domain.model.envelope.KeyEnvelope
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.EnvelopeCrypto
 import com.aozijx.passly.security.envelope.BootstrapStore

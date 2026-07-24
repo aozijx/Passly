@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.biometric.BiometricManager
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.diagnostics.LogCategory
+import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthMethodAvailability
 import com.aozijx.passly.domain.authentication.AuthenticationCallback
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
@@ -17,7 +18,6 @@ import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationSnapshot
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.model.envelope.EnvelopeType
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.envelope.BootstrapStore
 import dagger.hilt.android.qualifiers.ApplicationContext

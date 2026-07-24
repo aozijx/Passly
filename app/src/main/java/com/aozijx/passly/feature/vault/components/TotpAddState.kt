@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault.components
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.aozijx.passly.domain.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 class TotpAddState {
     var title by mutableStateOf("")

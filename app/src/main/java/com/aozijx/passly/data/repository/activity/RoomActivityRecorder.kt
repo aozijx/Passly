@@ -4,9 +4,9 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.EntryActivityEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
-import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.activity.EntryActivity
-import com.aozijx.passly.domain.repository.activity.ActivityRecorder
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import javax.inject.Inject
 import javax.inject.Singleton
 

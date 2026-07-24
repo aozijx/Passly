@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.domain.model.lookup.EntryListItem
-import com.aozijx.passly.domain.repository.entry.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
 import com.aozijx.passly.feature.vault.model.VaultTab
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

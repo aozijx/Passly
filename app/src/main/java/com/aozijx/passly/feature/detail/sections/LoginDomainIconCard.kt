@@ -43,8 +43,8 @@ import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.core.message.AppMessagePresentation
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.entry.WebsiteInfo
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import kotlinx.coroutines.launch

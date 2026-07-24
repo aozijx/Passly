@@ -3,8 +3,8 @@ package com.aozijx.passly.data.repository.search
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
 import com.aozijx.passly.domain.authentication.VaultAccessState
-import com.aozijx.passly.domain.model.lookup.LookupField
-import com.aozijx.passly.domain.repository.search.SearchIndexRepository
+import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.repository.SearchIndexRepository
 import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

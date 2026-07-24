@@ -4,7 +4,7 @@ import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.mapper.entry.EntrySummaryMapper
 import com.aozijx.passly.data.model.payload.summary.SummaryPayload
 import com.aozijx.passly.data.model.serializer.AppJson
-import com.aozijx.passly.domain.model.entry.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -1,12 +1,12 @@
 package com.aozijx.passly.data.mapper.entry
 
 import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.domain.model.entry.EntryHeader
-import com.aozijx.passly.domain.model.entry.EntryId
-import com.aozijx.passly.domain.model.entry.EntrySecret
-import com.aozijx.passly.domain.model.entry.EntrySummary
-import com.aozijx.passly.domain.model.entry.EntryVersion
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryHeader
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.VaultEntry
 
 object EntryAggregateAssembler {
 

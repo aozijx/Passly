@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.util
 
-import com.aozijx.passly.domain.model.core.PasswordStrengthLevel
-import com.aozijx.passly.domain.model.core.PasswordStrengthResult
+import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
+import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import kotlin.math.ln
 import kotlin.math.roundToInt
 

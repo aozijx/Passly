@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.mapper.search
 
-import com.aozijx.passly.domain.model.entry.VaultEntry
-import com.aozijx.passly.domain.model.lookup.LookupField
-import com.aozijx.passly.domain.model.lookup.LookupFieldValue
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.lookup.LookupFieldValue
 
 fun VaultEntry.buildSearchText(): String = buildString {
     title.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }

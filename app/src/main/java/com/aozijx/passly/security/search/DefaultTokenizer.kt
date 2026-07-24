@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.search
 
-import com.aozijx.passly.domain.model.lookup.LookupField
+import com.aozijx.passly.domain.entry.model.lookup.LookupField
 import java.text.Normalizer
 import javax.inject.Inject
 import javax.inject.Singleton

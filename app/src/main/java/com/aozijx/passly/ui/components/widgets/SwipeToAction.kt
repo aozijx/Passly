@@ -39,7 +39,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.model.settings.SwipeActionType
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt

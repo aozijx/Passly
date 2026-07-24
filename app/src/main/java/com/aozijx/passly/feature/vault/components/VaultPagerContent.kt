@@ -17,9 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.domain.model.lookup.EntryListItem
-import com.aozijx.passly.domain.model.settings.SwipeActionType
-import com.aozijx.passly.domain.model.settings.VaultCardStyle
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.OtpUiState

@@ -17,7 +17,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.aozijx.passly.domain.model.entry.VaultEntry
+import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect

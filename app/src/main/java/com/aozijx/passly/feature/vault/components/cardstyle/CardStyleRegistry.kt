@@ -3,11 +3,11 @@ package com.aozijx.passly.feature.vault.components.cardstyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
-import com.aozijx.passly.domain.model.entry.EntryType
-import com.aozijx.passly.domain.model.entry.WebsiteInfo
-import com.aozijx.passly.domain.model.lookup.EntryListItem
-import com.aozijx.passly.domain.model.settings.VaultCardStyle
+import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.WebsiteInfo
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.feature.vault.model.OtpUiState
 
 object CardStyleRegistry {
