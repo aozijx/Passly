@@ -72,7 +72,7 @@ class CandidateResolver @Inject constructor(
             candidateId = id.toIntOrNull() ?: 0,
             displayName = title,
             username = username,
-            password = secret?.login?.password ?: "",
+            password = secret.login?.password ?: "",
             totpCode = generateTotpFromEntry(this),
             associatedDomain = associatedDomain,
             associatedAppPackage = associatedAppPackage,

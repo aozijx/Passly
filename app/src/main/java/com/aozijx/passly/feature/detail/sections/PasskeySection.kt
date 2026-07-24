@@ -76,12 +76,12 @@ fun PasskeySection(
         if (!entry.secret.passkey?.hardwareKeyInfo.isNullOrBlank()) {
             DetailItem(
                 label = stringResource(R.string.hardware_key_info),
-                value = entry.secret.passkey?.hardwareKeyInfo.orEmpty(),
+                value = entry.secret.passkey.hardwareKeyInfo.orEmpty(),
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(
                         context,
-                        entry.secret.passkey?.hardwareKeyInfo.orEmpty()
+                        entry.secret.passkey.hardwareKeyInfo
                     )
                     Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     actionHandler.record(

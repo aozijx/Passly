@@ -196,7 +196,7 @@ fun SshKeySection(
                                     ActivityType.VIEW
                                 )
                             )
-                            val passphrase = entry.secret.ssh?.passphrase
+                            val passphrase = entry.secret.ssh.passphrase
                             if (!passphrase.isNullOrEmpty()) {
                                 onPasswordRevealed(passphrase)
                                 actionHandler.record("passphrase", ActivityType.VIEW)

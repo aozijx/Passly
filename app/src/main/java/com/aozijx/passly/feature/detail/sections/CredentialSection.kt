@@ -129,7 +129,7 @@ fun CredentialSection(
                             )
                         }
                         if (revealedPassword == null && item.secret.login?.password?.isNotEmpty() == true) {
-                            onPasswordRevealed(item.secret.login?.password)
+                            onPasswordRevealed(item.secret.login.password)
                             onEvent(
                                 DetailIntent.RecordAction(
                                     "password",
