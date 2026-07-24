@@ -1,6 +1,7 @@
 package com.aozijx.passly.ui.authentication
 
 import androidx.biometric.BiometricPrompt
+import com.aozijx.passly.feature.auth.ui.host.BiometricPromptErrorClassifier
 import com.aozijx.passly.security.authentication.host.BiometricHostFailure
 import org.junit.Assert.assertEquals
 import org.junit.Test
