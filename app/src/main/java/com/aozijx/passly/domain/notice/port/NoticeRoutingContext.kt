@@ -8,6 +8,39 @@ import com.aozijx.passly.domain.notice.model.AppMessageSettings
  */
 data class NoticeRoutingContext(
     val settings: AppMessageSettings,
-    /** 应用是否在前台 */
-    val isForeground: Boolean
+    val settingsVersion: Long,
+    val appVisibility: AppVisibility,
+    val systemNotificationState: SystemNotificationState
 )
+
+enum class AppVisibility { FOREGROUND, BACKGROUND }
+
+data class SystemNotificationState(
+    val userSettingEnabled: Boolean,
+    val runtimePermissionGranted: Boolean,
+    val notificationsEnabledBySystem: Boolean,
+    val channelEnabled: Boolean
+) {
+    val available: Boolean
+        get() = userSettingEnabled &&
+            runtimePermissionGranted &&
+            notificationsEnabledBySystem &&
+            channelEnabled
+}
+
+data class VersionedMessageSettings(
+    val version: Long,
+    val value: AppMessageSettings
+)
+
+fun interface MessageSettingsSnapshotProvider {
+    fun current(): VersionedMessageSettings
+}
+
+fun interface AppVisibilityProvider {
+    fun current(): AppVisibility
+}
+
+fun interface SystemNotificationStateProvider {
+    fun current(): SystemNotificationState
+}

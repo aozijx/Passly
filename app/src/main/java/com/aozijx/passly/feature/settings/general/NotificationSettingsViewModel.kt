@@ -16,8 +16,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class NotificationSettingsUiState(
-    val statusBarEnabled: Boolean = false,
-    val iconDownloadsEnabled: Boolean = true,
     val optionalMessagesEnabled: Boolean = true,
     val systemNotificationsEnabled: Boolean = true,
     val topicSettings: Map<NoticeTopic, TopicMessageSettings> = emptyMap()
@@ -31,10 +29,8 @@ class NotificationSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
     val uiState: StateFlow<NotificationSettingsUiState> = settingsRepository.settings.map { s ->
-        val n = s.notifications
+        val n = s.messages
         NotificationSettingsUiState(
-            statusBarEnabled = n.statusBarNotificationsEnabled,
-            iconDownloadsEnabled = n.iconDownloadNotificationsEnabled,
             optionalMessagesEnabled = n.optionalMessagesEnabled,
             systemNotificationsEnabled = n.systemNotificationsEnabled,
             topicSettings = n.topicSettings
@@ -44,14 +40,6 @@ class NotificationSettingsViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = NotificationSettingsUiState()
     )
-
-    fun setStatusBarEnabled(enabled: Boolean) = viewModelScope.launch {
-        settingsRepository.update(SettingsCommand.SetStatusBarNotificationsEnabled(enabled))
-    }
-
-    fun setIconDownloadsEnabled(enabled: Boolean) = viewModelScope.launch {
-        settingsRepository.update(SettingsCommand.SetIconDownloadNotificationsEnabled(enabled))
-    }
 
     fun setOptionalMessagesEnabled(enabled: Boolean) = viewModelScope.launch {
         settingsRepository.update(SettingsCommand.SetOptionalMessagesEnabled(enabled))

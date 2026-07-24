@@ -17,9 +17,7 @@ internal fun SecurityDetail(
     onAppPasswordClick: () -> Unit,
     onBiometricEnabledChange: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
-    onLockOnBackgroundChange: (Boolean) -> Unit,
-    onClipboardClearToastsChange: (Boolean) -> Unit,
-    onAppCloseToastsChange: (Boolean) -> Unit
+    onLockOnBackgroundChange: (Boolean) -> Unit
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -34,15 +32,6 @@ internal fun SecurityDetail(
             onBiometricEnabledChange = onBiometricEnabledChange,
             onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
             onLockOnBackgroundChange = onLockOnBackgroundChange
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        SecurityToastSettingsSection(
-            clipboardClearEnabled = state.clipboardClearToastsEnabled,
-            appCloseEnabled = state.appCloseToastsEnabled,
-            onClipboardClearEnabledChange = onClipboardClearToastsChange,
-            onAppCloseEnabledChange = onAppCloseToastsChange
         )
     }
 }

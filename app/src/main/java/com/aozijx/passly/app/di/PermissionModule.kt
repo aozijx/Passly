@@ -1,7 +1,11 @@
 package com.aozijx.passly.app.di
 
-import com.aozijx.passly.core.permission.AndroidAppPermissionManager
-import com.aozijx.passly.core.permission.AppPermissionManager
+import com.aozijx.passly.app.permission.AndroidPermissionStatusReader
+import com.aozijx.passly.app.permission.DefaultPermissionRequestArbiter
+import com.aozijx.passly.app.permission.SharedPreferencesPermissionRequestHistory
+import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
+import com.aozijx.passly.core.permission.contract.PermissionStatusReader
+import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -13,7 +17,19 @@ import javax.inject.Singleton
 abstract class PermissionModule {
     @Binds
     @Singleton
-    abstract fun bindPermissionManager(
-        implementation: AndroidAppPermissionManager
-    ): AppPermissionManager
+    abstract fun bindStatusReader(
+        impl: AndroidPermissionStatusReader
+    ): PermissionStatusReader
+
+    @Binds
+    @Singleton
+    abstract fun bindRequestArbiter(
+        impl: DefaultPermissionRequestArbiter
+    ): PermissionRequestArbiter
+
+    @Binds
+    @Singleton
+    abstract fun bindRequestHistory(
+        impl: SharedPreferencesPermissionRequestHistory
+    ): PermissionRequestHistory
 }

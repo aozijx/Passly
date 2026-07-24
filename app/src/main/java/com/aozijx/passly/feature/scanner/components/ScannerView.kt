@@ -45,8 +45,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.permission.AppPermission
-import com.aozijx.passly.core.permission.rememberAppPermissionRequester
+import com.aozijx.passly.core.permission.compose.rememberPermissionRequestHost
+import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
+import com.aozijx.passly.core.permission.model.PermissionStatus
+import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.launch
@@ -76,18 +78,20 @@ fun ScannerView(
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     val hasPermission = remember { mutableStateOf(false) }
 
-    val permissionRequester = rememberAppPermissionRequester { result ->
-        val isGranted = result[AppPermission.Camera]?.isSatisfied == true
+    val permissionHost = rememberPermissionRequestHost("scanner.camera") { permission, result ->
+        if (permission != RuntimePermission.CAMERA) return@rememberPermissionRequestHost
+        val isGranted = result is PermissionRequestOutcome.Granted
         hasPermission.value = isGranted
         if (!isGranted) onPermissionDenied()
     }
 
-    LaunchedEffect(permissionRequester) {
-        val cameraPermission = permissionRequester.snapshot(AppPermission.Camera)
-        hasPermission.value = cameraPermission.isSatisfied
+    LaunchedEffect(permissionHost) {
+        val cameraPermission = permissionHost.status(RuntimePermission.CAMERA)
+        hasPermission.value = cameraPermission == PermissionStatus.GRANTED
         when {
-            cameraPermission.isSatisfied -> Unit
-            cameraPermission.canRequest -> permissionRequester.request(AppPermission.Camera)
+            cameraPermission == PermissionStatus.GRANTED -> Unit
+            cameraPermission == PermissionStatus.DENIED ->
+                permissionHost.request(RuntimePermission.CAMERA)
             else -> onPermissionDenied()
         }
     }

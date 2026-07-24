@@ -41,13 +41,7 @@ sealed interface SettingsCommand {
     data class SetVisibleVaultTabs(val keys: Set<String>) : SettingsCommand
     data class SetVaultSortOption(val sort: VaultSortSpec) : SettingsCommand
 
-    // Notifications (legacy — 保留向后兼容)
-    data class SetStatusBarNotificationsEnabled(val enabled: Boolean) : SettingsCommand
-    data class SetIconDownloadNotificationsEnabled(val enabled: Boolean) : SettingsCommand
-    data class SetClipboardClearToastsEnabled(val enabled: Boolean) : SettingsCommand
-    data class SetAppCloseToastsEnabled(val enabled: Boolean) : SettingsCommand
-
-    // Notice settings (new structured)
+    // Messages
     data class SetOptionalMessagesEnabled(val enabled: Boolean) : SettingsCommand
     data class SetSystemNotificationsEnabled(val enabled: Boolean) : SettingsCommand
     data class SetMessageTopicEnabled(val topic: NoticeTopic, val enabled: Boolean) :

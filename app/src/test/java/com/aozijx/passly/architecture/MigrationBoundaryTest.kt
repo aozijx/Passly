@@ -126,7 +126,7 @@ class MigrationBoundaryTest {
     @Test
     fun roundedGroupUsesCommonUiWithMandatoryStableKeys() {
         val commonGroupRoot = File(
-            "src/main/java/com/aozijx/passly/ui/components/group"
+            "src/main/java/com/aozijx/passly/core/ui/components/group"
         )
         val roundedGroupSource = File(commonGroupRoot, "RoundedGroup.kt").readText()
         val legacyGroupRoot = File(
@@ -159,7 +159,7 @@ class MigrationBoundaryTest {
     @Test
     fun settingsSectionIsCustomizableAndLivesInCommonUi() {
         val sectionSource = File(
-            "src/main/java/com/aozijx/passly/ui/components/settings/SettingsSection.kt"
+            "src/main/java/com/aozijx/passly/core/ui/components/settings/SettingsSection.kt"
         ).readText()
         val legacyParts = File(
             "src/main/java/com/aozijx/passly/feature/settings/shell/SettingsUiParts.kt"
@@ -204,35 +204,64 @@ class MigrationBoundaryTest {
 
         assertTrue(
             "Startup must not request notification permission",
-            "AppPermission.Notifications" !in mainActivity
+            "request(RuntimePermission.POST_NOTIFICATIONS)" !in mainActivity
         )
         assertTrue(
-            "Status-bar setting must own notification permission requests",
-            "permissionRequester.request(AppPermission.Notifications)" in generalSettings
+            "Message setting must own notification permission requests",
+            "permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)" in generalSettings
         )
     }
 
     @Test
-    fun securitySettingsOwnToastPreferences() {
-        val securityToasts = File(
+    fun messageSettingsOwnTopicPreferences() {
+        val removedSecurityToasts = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/ui/SecurityToastSettingsSection.kt"
-        ).readText()
+        )
         val generalNotifications = File(
             "src/main/java/com/aozijx/passly/feature/settings/general/NotificationSettingsSection.kt"
         ).readText()
 
         assertTrue(
-            "Clipboard Toast setting must live under security",
-            "clipboard_clear" in securityToasts
+            "Legacy security Toast settings must be removed",
+            !removedSecurityToasts.exists()
         )
         assertTrue(
-            "App-close Toast setting must live under security",
-            "app_close" in securityToasts
+            "General message settings must expose topic controls",
+            "NoticeTopic.entries" in generalNotifications
         )
-        assertTrue(
-            "General notification settings must not contain Toast controls",
-            "toasts." !in generalNotifications
+    }
+
+    @Test
+    fun legacyMessageAndPermissionStacksCannotReturn() {
+        val forbiddenSymbols = listOf(
+            "AppMessageCenter",
+            "AppMessagePublisher",
+            "AppStatusBarNotifier",
+            "AppMessagePreferences",
+            "AppPermissionManager",
+            "ActivityPermissionRequester",
+            "PermissionManagerEntryPoint",
+            "rememberAppPermissionRequester"
         )
+        val offenders = productionKotlinFiles
+            .filter { source -> forbiddenSymbols.any { it in source.readText() } }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Legacy message/permission references: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun domainDoesNotEmitTelemetryOrUserMessages() {
+        val forbidden = listOf("TelemetryEmitter", "AppNoticePublisher", "AppLog")
+        val offenders = productionKotlinFiles
+            .filter { "/domain/" in it.invariantSeparatorsPath }
+            .filter { "/domain/notice/port/" !in it.invariantSeparatorsPath }
+            .filter { source -> forbidden.any { it in source.readText() } }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Domain side effects: $offenders", offenders.isEmpty())
     }
 
     @Test

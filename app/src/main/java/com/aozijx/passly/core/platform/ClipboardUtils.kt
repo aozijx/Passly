@@ -8,8 +8,9 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.message.AppMessageCategory
-import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.model.newAppNotice
+import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 
 /**
  * 剪贴板工具类，提供安全复制、自动清除以及内容获取功能
@@ -27,7 +28,12 @@ object ClipboardUtils {
     /**
      * 安全复制到剪贴板
      */
-    fun copy(context: Context, text: String, isSensitive: Boolean = true) {
+    fun copy(
+        context: Context,
+        text: String,
+        isSensitive: Boolean = true,
+        noticePublisher: AppNoticePublisher? = null
+    ) {
         val appContext = context.applicationContext
         val clipboard = appContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         
@@ -47,7 +53,7 @@ object ClipboardUtils {
         val clearRunnable = Runnable {
             try {
                 if (clipboard.hasPrimaryClip() && clipboard.primaryClipDescription?.label == CLIP_LABEL) {
-                    clear(appContext)
+                    clear(appContext, noticePublisher)
                 }
             } catch (e: Exception) {
                 AppLog.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
@@ -63,19 +69,17 @@ object ClipboardUtils {
     /**
      * 清除剪贴板内容
      */
-    fun clear(context: Context) {
+    fun clear(context: Context, noticePublisher: AppNoticePublisher? = null) {
         try {
             val clipboard = context.applicationContext
                 .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             if (clipboard.hasPrimaryClip()) {
                 clipboard.clearPrimaryClip()
-                AppMessageCenter.publish(
-                    text = "剪贴板中的敏感内容已清除",
-                    category = AppMessageCategory.CLIPBOARD_CLEAR
-                )
+                noticePublisher?.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEARED))
             }
         } catch (e: Exception) {
             AppLog.e("ClipboardUtils", "Clear clipboard failed", e)
+            noticePublisher?.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEAR_FAILED))
         }
     }
 

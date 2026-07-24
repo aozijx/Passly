@@ -391,4 +391,14 @@
     <string name="settings_card_style_totp_name">TOTPカード</string>
     <string name="settings_card_style_totp_desc">動的コードと進捗リングを強調</string>
 
+    <string name="notice_clipboard_cleared">クリップボードの機密データを消去しました</string>
+    <string name="notice_clipboard_clear_failed">クリップボードの機密データを消去できませんでした</string>
+    <string name="notice_app_locked">保管庫をロックしました</string>
+    <string name="notice_app_close_reminder">アプリを終了します</string>
+    <string name="notice_security_key_invalidated">セキュリティキーが無効です。認証を再設定してください。</string>
+    <string name="notice_security_recovery_required">復旧方法を使って本人確認を行ってください。</string>
+    <string name="notice_security_action_failed">セキュリティ操作に失敗しました</string>
+    <string name="notice_database_index_rebuild_completed">検索インデックスを再構築しました</string>
+    <string name="notice_database_index_rebuild_failed">検索インデックスの再構築に失敗しました</string>
+    <string name="notice_database_operation_failed">データベース操作に失敗しました</string>
 </resources>

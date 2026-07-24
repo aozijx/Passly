@@ -15,8 +15,7 @@ import com.aozijx.passly.domain.notice.model.NoticeTopic
 @Composable
 internal fun NotificationSettingsSection(
     state: NotificationSettingsUiState,
-    onStatusBarEnabledChange: (Boolean) -> Unit,
-    onIconDownloadsEnabledChange: (Boolean) -> Unit,
+    onSystemNotificationsEnabledChange: (Boolean) -> Unit,
     onOptionalMessagesEnabledChange: (Boolean) -> Unit = {},
     onTopicEnabledChange: (NoticeTopic, Boolean) -> Unit = { _, _ -> }
 ) {
@@ -29,15 +28,7 @@ internal fun NotificationSettingsSection(
                 title = stringResource(R.string.settings_system_notifications),
                 subtitle = stringResource(R.string.settings_system_notifications_summary),
                 checked = state.systemNotificationsEnabled,
-                onCheckedChange = onStatusBarEnabledChange
-            ),
-            switchSettingsGroupItem(
-                key = "notifications.icon_download",
-                visible = state.systemNotificationsEnabled,
-                title = stringResource(R.string.settings_icon_download_notifications),
-                subtitle = stringResource(R.string.settings_icon_download_notifications_summary),
-                checked = state.iconDownloadsEnabled,
-                onCheckedChange = onIconDownloadsEnabledChange
+                onCheckedChange = onSystemNotificationsEnabledChange
             )
         )
     )

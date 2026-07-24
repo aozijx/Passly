@@ -40,9 +40,10 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.media.FaviconUtils
-import com.aozijx.passly.core.message.AppMessageCategory
-import com.aozijx.passly.core.message.AppMessageCenter
-import com.aozijx.passly.core.message.AppMessagePresentation
+import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
+import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.model.newAppNotice
+import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
@@ -60,6 +61,7 @@ internal fun LoginDomainIconCard(
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val noticePublisher = LocalAppNoticePublisher.current
     var downloading by remember { mutableStateOf(false) }
     var domainInput by remember(entry.associatedDomain) {
         mutableStateOf(TextFieldValue(entry.associatedDomain.orEmpty()))
@@ -100,6 +102,7 @@ internal fun LoginDomainIconCard(
                                 domain = domainInput.text.trim(),
                                 entry = entry,
                                 context = context,
+                                noticePublisher = noticePublisher,
                                 onUpdateVaultEntry = onUpdateVaultEntry,
                                 onEntryUpdated = onEntryUpdated
                             )
@@ -174,12 +177,13 @@ private suspend fun downloadFavicon(
     domain: String,
     entry: VaultEntry,
     context: android.content.Context,
+    noticePublisher: AppNoticePublisher,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     if (domain.isBlank()) return
     val outcome = FaviconUtils.downloadAndSaveFavicon(domain, context)
-    val message = when (outcome.result) {
+    val code = when (outcome.result) {
         FaviconUtils.DownloadResult.SUCCESS -> {
             val updated = entry.copy(
                 summary = entry.summary.copy(
@@ -191,21 +195,12 @@ private suspend fun downloadFavicon(
             )
             onUpdateVaultEntry(updated)
             onEntryUpdated(updated)
-            R.string.vault_detail_icon_download_success
+            NoticeCode.ICON_DOWNLOAD_COMPLETED
         }
-        FaviconUtils.DownloadResult.NETWORK_ERROR ->
-            R.string.vault_detail_icon_download_network_error
-        FaviconUtils.DownloadResult.DECODE_ERROR ->
-            R.string.vault_detail_icon_download_decode_error
-        FaviconUtils.DownloadResult.SAVE_ERROR ->
-            R.string.vault_detail_icon_download_save_error
-        FaviconUtils.DownloadResult.EMPTY_INPUT ->
-            R.string.vault_detail_icon_download_failed
+        FaviconUtils.DownloadResult.NETWORK_ERROR,
+        FaviconUtils.DownloadResult.DECODE_ERROR,
+        FaviconUtils.DownloadResult.SAVE_ERROR,
+        FaviconUtils.DownloadResult.EMPTY_INPUT -> NoticeCode.ICON_DOWNLOAD_FAILED
     }
-    AppMessageCenter.publish(
-        text = context.getString(message),
-        category = AppMessageCategory.ICON_DOWNLOAD,
-        presentation = AppMessagePresentation.STATUS_BAR,
-        title = context.getString(R.string.settings_icon_download_notifications)
-    )
+    noticePublisher.publish(newAppNotice(code))
 }

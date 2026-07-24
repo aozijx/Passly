@@ -41,8 +41,7 @@ class DefaultAuthenticationManager @Inject constructor(
     private val bootstrapStore: BootstrapStore,
     private val biometricExecutor: BiometricMethodExecutor,
     private val credentialExecutor: CredentialMethodExecutor,
-    private val session: VaultSessionController,
-    private val feedback: AuthFeedbackPresenter
+    private val session: VaultSessionController
 ) : AuthenticationManager {
     private val biometricManager = BiometricManager.from(context)
     private val requestMutex = Mutex()
@@ -290,7 +289,6 @@ class DefaultAuthenticationManager @Inject constructor(
                 )
             )
         }
-        feedback.present(result, request.correlationId)
         return result
     }
 }

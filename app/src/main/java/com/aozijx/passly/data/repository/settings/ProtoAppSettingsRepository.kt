@@ -3,6 +3,11 @@ package com.aozijx.passly.data.repository.settings
 import android.content.Context
 import com.aozijx.passly.data.codec.VaultSortSpecCodec
 import com.aozijx.passly.data.local.datastore.appSettingsDataStore
+import com.aozijx.passly.data.local.datastore.settings.MessagePreferences
+import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
+import com.aozijx.passly.data.local.datastore.settings.NoticeTopicProto
+import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
+import com.aozijx.passly.domain.notice.model.AppMessageSettings
 import com.aozijx.passly.domain.notice.model.NoticeLevel
 import com.aozijx.passly.domain.notice.model.NoticeTopic
 import com.aozijx.passly.domain.notice.model.TopicMessageSettings
@@ -12,7 +17,6 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.AutofillUiMode
 import com.aozijx.passly.domain.settings.model.BackupSettings
 import com.aozijx.passly.domain.settings.model.InteractionSettings
-import com.aozijx.passly.domain.settings.model.NotificationSettings
 import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.VaultCardStyle
@@ -40,42 +44,73 @@ class ProtoAppSettingsRepository @Inject constructor(
         fun encodeCardStyles(styles: Map<Int, VaultCardStyle>): Map<Int, String> =
             styles.mapValues { (_, value) -> value.key }
 
-        // ----- Notice topic settings encoding -----
-        private const val SEP = ","
-        private const val ENABLED_PREFIX = "enabled="
-        private const val MIN_LEVEL_PREFIX = "minLevel="
+        fun NoticeTopic.toProto(): NoticeTopicProto = when (this) {
+            NoticeTopic.CLIPBOARD -> NoticeTopicProto.NOTICE_TOPIC_CLIPBOARD
+            NoticeTopic.APP_LIFECYCLE -> NoticeTopicProto.NOTICE_TOPIC_APP_LIFECYCLE
+            NoticeTopic.ICON_DOWNLOAD -> NoticeTopicProto.NOTICE_TOPIC_ICON_DOWNLOAD
+            NoticeTopic.BACKUP -> NoticeTopicProto.NOTICE_TOPIC_BACKUP
+            NoticeTopic.SECURITY -> NoticeTopicProto.NOTICE_TOPIC_SECURITY
+            NoticeTopic.DATABASE -> NoticeTopicProto.NOTICE_TOPIC_DATABASE
+        }
 
-        fun encodeTopicSettings(settings: Map<NoticeTopic, TopicMessageSettings>): Map<String, String> =
-            settings.mapKeys { it.key.name }
-                .mapValues { (_, s) -> "${ENABLED_PREFIX}${s.enabled}${SEP}${MIN_LEVEL_PREFIX}${s.minimumLevel.name}" }
+        fun NoticeTopicProto.toDomain(): NoticeTopic? = when (this) {
+            NoticeTopicProto.NOTICE_TOPIC_CLIPBOARD -> NoticeTopic.CLIPBOARD
+            NoticeTopicProto.NOTICE_TOPIC_APP_LIFECYCLE -> NoticeTopic.APP_LIFECYCLE
+            NoticeTopicProto.NOTICE_TOPIC_ICON_DOWNLOAD -> NoticeTopic.ICON_DOWNLOAD
+            NoticeTopicProto.NOTICE_TOPIC_BACKUP -> NoticeTopic.BACKUP
+            NoticeTopicProto.NOTICE_TOPIC_SECURITY -> NoticeTopic.SECURITY
+            NoticeTopicProto.NOTICE_TOPIC_DATABASE -> NoticeTopic.DATABASE
+        }
 
-        fun decodeTopicSettings(encoded: Map<String, String>): Map<NoticeTopic, TopicMessageSettings> =
-            encoded.mapNotNull { (key, value) ->
-                val topic = try {
-                    NoticeTopic.valueOf(key)
-                } catch (_: IllegalArgumentException) {
-                    return@mapNotNull null
+        fun NoticeLevel.toProto(): NoticeLevelProto = when (this) {
+            NoticeLevel.INFO -> NoticeLevelProto.NOTICE_LEVEL_INFO
+            NoticeLevel.SUCCESS -> NoticeLevelProto.NOTICE_LEVEL_SUCCESS
+            NoticeLevel.WARNING -> NoticeLevelProto.NOTICE_LEVEL_WARNING
+            NoticeLevel.ERROR -> NoticeLevelProto.NOTICE_LEVEL_ERROR
+            NoticeLevel.CRITICAL -> NoticeLevelProto.NOTICE_LEVEL_CRITICAL
+        }
+
+        fun NoticeLevelProto.toDomain(): NoticeLevel = when (this) {
+            NoticeLevelProto.NOTICE_LEVEL_INFO -> NoticeLevel.INFO
+            NoticeLevelProto.NOTICE_LEVEL_SUCCESS -> NoticeLevel.SUCCESS
+            NoticeLevelProto.NOTICE_LEVEL_WARNING -> NoticeLevel.WARNING
+            NoticeLevelProto.NOTICE_LEVEL_ERROR -> NoticeLevel.ERROR
+            NoticeLevelProto.NOTICE_LEVEL_CRITICAL -> NoticeLevel.CRITICAL
+        }
+
+        fun decodeMessageSettings(proto: MessagePreferences?): AppMessageSettings {
+            if (proto == null) return AppMessageSettings()
+            val configured = proto.topicsList.mapNotNull { item ->
+                item.topic.toDomain()?.let { topic ->
+                    topic to TopicMessageSettings(
+                        enabled = item.enabled,
+                        minimumLevel = item.minimumLevel.toDomain()
+                    )
                 }
-                val parts = value.split(SEP)
-                val enabled = parts.firstOrNull { it.startsWith(ENABLED_PREFIX) }
-                    ?.removePrefix(ENABLED_PREFIX)?.let { v ->
-                        try {
-                            v.toBoolean()
-                        } catch (_: IllegalArgumentException) {
-                            true
-                        }
-                    } ?: true
-                val minLevelName = parts.firstOrNull { it.startsWith(MIN_LEVEL_PREFIX) }
-                    ?.removePrefix(MIN_LEVEL_PREFIX)
-                val minLevel = if (minLevelName != null) {
-                    try {
-                        NoticeLevel.valueOf(minLevelName)
-                    } catch (_: IllegalArgumentException) {
-                        NoticeLevel.INFO
-                    }
-                } else NoticeLevel.INFO
-                topic to TopicMessageSettings(enabled, minLevel)
             }.toMap()
+            return AppMessageSettings(
+                optionalMessagesEnabled = proto.optionalMessagesEnabled,
+                systemNotificationsEnabled = proto.systemNotificationsEnabled,
+                topicSettings = com.aozijx.passly.domain.notice.model.defaultTopicSettings() +
+                    configured
+            )
+        }
+
+        fun encodeMessageSettings(settings: AppMessageSettings): MessagePreferences =
+            MessagePreferences.newBuilder()
+                .setOptionalMessagesEnabled(settings.optionalMessagesEnabled)
+                .setSystemNotificationsEnabled(settings.systemNotificationsEnabled)
+                .addAllTopics(
+                    NoticeTopic.entries.map { topic ->
+                        val value = settings.topic(topic)
+                        TopicMessagePreference.newBuilder()
+                            .setTopic(topic.toProto())
+                            .setEnabled(value.enabled)
+                            .setMinimumLevel(value.minimumLevel.toProto())
+                            .build()
+                    }
+                )
+                .build()
     }
 
     override val settings: Flow<AppSettingsSnapshot> =
@@ -112,14 +147,8 @@ class ProtoAppSettingsRepository @Inject constructor(
                     isFlipToLockEnabled = proto.flipToLock,
                     isFlipExitAndClearStackEnabled = proto.flipExitAndClearStack
                 ),
-                notifications = NotificationSettings(
-                    statusBarNotificationsEnabled = proto.statusBarNotificationsEnabled,
-                    iconDownloadNotificationsEnabled = proto.iconDownloadNotificationsEnabled,
-                    clipboardClearToastsEnabled = proto.clipboardClearToastsEnabled,
-                    appCloseToastsEnabled = proto.appCloseToastsEnabled,
-                    optionalMessagesEnabled = if (proto.hasOptionalMessagesEnabled()) proto.optionalMessagesEnabled else true,
-                    systemNotificationsEnabled = if (proto.hasSystemNotificationsEnabled()) proto.systemNotificationsEnabled else true,
-                    topicSettings = decodeTopicSettings(proto.topicMessageSettingsMap)
+                messages = decodeMessageSettings(
+                    proto.messagePreferences.takeIf { proto.hasMessagePreferences() }
                 ),
                 vault = VaultViewSettings(
                     cardStyle = decodeCardStyles(proto.cardStyleByEntryTypeMap)[DEFAULT_STYLE_KEY]
@@ -221,44 +250,50 @@ class ProtoAppSettingsRepository @Inject constructor(
                     b.setVaultSortOption(VaultSortSpecCodec.serialize(command.sort))
                 }
 
-                // Notifications
-                is SettingsCommand.SetStatusBarNotificationsEnabled -> b.setStatusBarNotificationsEnabled(
-                    command.enabled
-                )
+                is SettingsCommand.SetOptionalMessagesEnabled -> {
+                    val current = decodeMessageSettings(
+                        proto.messagePreferences.takeIf { proto.hasMessagePreferences() }
+                    )
+                    b.setMessagePreferences(
+                        encodeMessageSettings(
+                            current.copy(optionalMessagesEnabled = command.enabled)
+                        )
+                    )
+                }
 
-                is SettingsCommand.SetIconDownloadNotificationsEnabled -> b.setIconDownloadNotificationsEnabled(
-                    command.enabled
-                )
-
-                is SettingsCommand.SetClipboardClearToastsEnabled -> b.setClipboardClearToastsEnabled(
-                    command.enabled
-                )
-
-                is SettingsCommand.SetAppCloseToastsEnabled -> b.setAppCloseToastsEnabled(command.enabled)
-
-                // Notice settings (new structured)
-                is SettingsCommand.SetOptionalMessagesEnabled -> b.setOptionalMessagesEnabled(
-                    command.enabled
-                )
-
-                is SettingsCommand.SetSystemNotificationsEnabled -> b.setSystemNotificationsEnabled(
-                    command.enabled
-                )
+                is SettingsCommand.SetSystemNotificationsEnabled -> {
+                    val current = decodeMessageSettings(
+                        proto.messagePreferences.takeIf { proto.hasMessagePreferences() }
+                    )
+                    b.setMessagePreferences(
+                        encodeMessageSettings(
+                            current.copy(systemNotificationsEnabled = command.enabled)
+                        )
+                    )
+                }
 
                 is SettingsCommand.SetMessageTopicEnabled -> {
-                    val current = decodeTopicSettings(proto.topicMessageSettingsMap).toMutableMap()
+                    val currentSettings = decodeMessageSettings(
+                        proto.messagePreferences.takeIf { proto.hasMessagePreferences() }
+                    )
+                    val current = currentSettings.topicSettings.toMutableMap()
                     val existing = current[command.topic] ?: TopicMessageSettings()
                     current[command.topic] = existing.copy(enabled = command.enabled)
-                    b.clearTopicMessageSettings()
-                        .putAllTopicMessageSettings(encodeTopicSettings(current))
+                    b.setMessagePreferences(
+                        encodeMessageSettings(currentSettings.copy(topicSettings = current))
+                    )
                 }
 
                 is SettingsCommand.SetMessageTopicMinimumLevel -> {
-                    val current = decodeTopicSettings(proto.topicMessageSettingsMap).toMutableMap()
+                    val currentSettings = decodeMessageSettings(
+                        proto.messagePreferences.takeIf { proto.hasMessagePreferences() }
+                    )
+                    val current = currentSettings.topicSettings.toMutableMap()
                     val existing = current[command.topic] ?: TopicMessageSettings()
                     current[command.topic] = existing.copy(minimumLevel = command.level)
-                    b.clearTopicMessageSettings()
-                        .putAllTopicMessageSettings(encodeTopicSettings(current))
+                    b.setMessagePreferences(
+                        encodeMessageSettings(currentSettings.copy(topicSettings = current))
+                    )
                 }
 
                 // Backup

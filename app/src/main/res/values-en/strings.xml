@@ -392,4 +392,14 @@
     <string name="settings_card_style_totp_name">TOTP card</string>
     <string name="settings_card_style_totp_desc">Highlights dynamic code and progress ring</string>
 
+    <string name="notice_clipboard_cleared">Sensitive clipboard content was cleared</string>
+    <string name="notice_clipboard_clear_failed">Could not clear sensitive clipboard content</string>
+    <string name="notice_app_locked">Vault locked</string>
+    <string name="notice_app_close_reminder">The app is about to close</string>
+    <string name="notice_security_key_invalidated">The security key is invalid. Configure authentication again.</string>
+    <string name="notice_security_recovery_required">Use a recovery method to verify your identity again.</string>
+    <string name="notice_security_action_failed">Security action failed</string>
+    <string name="notice_database_index_rebuild_completed">Search index rebuilt</string>
+    <string name="notice_database_index_rebuild_failed">Search index rebuild failed</string>
+    <string name="notice_database_operation_failed">Database operation failed</string>
 </resources>

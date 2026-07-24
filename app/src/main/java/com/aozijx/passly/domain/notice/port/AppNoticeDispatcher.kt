@@ -4,9 +4,19 @@ import com.aozijx.passly.domain.notice.model.AppNotice
 
 data class NoticeDispatchReceipt(
     val eventId: String,
+    val settingsVersion: Long,
     val plan: NoticeRoutePlan,
-    val sinkResults: Map<NoticeTarget, SinkResult>
+    val sinkResults: Map<NoticeTarget, SinkResult>,
+    val status: NoticeDispatchStatus
 )
+
+enum class NoticeDispatchStatus {
+    DELIVERED,
+    PARTIALLY_DELIVERED,
+    SUPPRESSED,
+    DUPLICATE,
+    FAILED
+}
 
 /**
  * 消息分发编排入口。

@@ -1,88 +1,94 @@
 package com.aozijx.passly.data.notice
 
+import android.os.SystemClock
 import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.port.DeduplicationClaim
 import com.aozijx.passly.domain.notice.port.NoticeDeduplicator
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * 默认消息去重实现。
- *
- * 两层策略：
- * - eventId 精确去重：最多 1024 条目，TTL 2 分钟
- * - 语义去重：按 [NoticeCode] + 窗口时间，窗口由调用方传入
- */
 @Singleton
-class DefaultNoticeDeduplicator @Inject constructor() : NoticeDeduplicator {
+class DefaultNoticeDeduplicator internal constructor(
+    private val nowMs: () -> Long
+) : NoticeDeduplicator {
+    @Inject
+    constructor() : this(SystemClock::elapsedRealtime)
 
-    private val claimedIds = object : LinkedHashMap<String, Long>(1024, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>): Boolean {
-            return size > MAX_IDS
+    private data class EventClaim(
+        val token: Long,
+        val deadlineMs: Long,
+        val inFlight: Boolean
+    )
+
+    private val nextToken = AtomicLong(0)
+    private val eventClaims = object : LinkedHashMap<String, EventClaim>(
+        MAX_EVENT_IDS,
+        0.75f,
+        true
+    ) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<String, EventClaim>
+        ): Boolean = size > MAX_EVENT_IDS
+    }
+    private val semanticDeadlines = mutableMapOf<NoticeCode, Long>()
+
+    @Synchronized
+    override fun begin(eventId: String, ttlMs: Long): DeduplicationClaim {
+        require(eventId.isNotBlank())
+        require(ttlMs > 0)
+        evictExpired()
+        if (eventClaims.containsKey(eventId)) return DeduplicationClaim.Duplicate
+        val token = nextToken.incrementAndGet()
+        eventClaims[eventId] = EventClaim(
+            token = token,
+            deadlineMs = Long.MAX_VALUE,
+            inFlight = true
+        )
+        return DeduplicationClaim.Acquired(eventId, token, ttlMs)
+    }
+
+    @Synchronized
+    override fun complete(claim: DeduplicationClaim.Acquired) {
+        val current = eventClaims[claim.eventId] ?: return
+        if (current.token != claim.token) return
+        eventClaims[claim.eventId] = current.copy(
+            deadlineMs = safeDeadline(nowMs(), claim.ttlMs),
+            inFlight = false
+        )
+    }
+
+    @Synchronized
+    override fun release(claim: DeduplicationClaim.Acquired) {
+        val current = eventClaims[claim.eventId] ?: return
+        if (current.token == claim.token && current.inFlight) {
+            eventClaims.remove(claim.eventId)
         }
     }
 
-    private val semanticMap = mutableMapOf<NoticeCode, Long>()
-
     @Synchronized
-    override fun claim(eventId: String): Boolean {
-        evict()
-        val now = System.currentTimeMillis()
-        val deadline = claimedIds[eventId]
-        if (deadline != null && now < deadline) {
-            return true // 已被认领且未过期
-        }
-        // 预占：先设一个远期的 deadline，complete 时更新为真实 deadline
-        claimedIds[eventId] = now + 2 * 60 * 1000L
+    override fun claimSemantic(code: NoticeCode, windowMs: Long): Boolean {
+        require(windowMs > 0)
+        evictExpired()
+        val now = nowMs()
+        val current = semanticDeadlines[code]
+        if (current != null && now < current) return true
+        semanticDeadlines[code] = safeDeadline(now, windowMs)
         return false
     }
 
-    @Synchronized
-    override fun complete(eventId: String) {
-        // 保持现有 deadline（由 claim 设置的 TTL）
-    }
-
-    @Synchronized
-    override fun claimSemantic(code: NoticeCode): Boolean {
-        val now = System.currentTimeMillis()
-        val deadline = semanticMap[code]
-        return if (deadline != null && now < deadline) {
-            true
-        } else {
-            semanticMap[code] = now + DEFAULT_SEMANTIC_WINDOW_MS
-            false
+    private fun evictExpired() {
+        val now = nowMs()
+        eventClaims.entries.removeAll { (_, claim) ->
+            !claim.inFlight && now >= claim.deadlineMs
         }
+        semanticDeadlines.entries.removeAll { (_, deadline) -> now >= deadline }
     }
 
-    /** 使用指定的窗口进行语义去重。 */
-    @Synchronized
-    fun claimSemantic(code: NoticeCode, windowMs: Long): Boolean {
-        val now = System.currentTimeMillis()
-        val deadline = semanticMap[code]
-        return if (deadline != null && now < deadline) {
-            true
-        } else {
-            semanticMap[code] = now + windowMs
-            false
-        }
-    }
+    private fun safeDeadline(now: Long, duration: Long): Long =
+        if (Long.MAX_VALUE - now < duration) Long.MAX_VALUE else now + duration
 
-    @Synchronized
-    override fun evict() {
-        val now = System.currentTimeMillis()
-        claimedIds.entries.removeAll { (_, deadline) -> now >= deadline }
-        semanticMap.entries.removeAll { (_, deadline) -> now >= deadline }
-    }
-
-    /**
-     * 获取语义去重窗口。
-     * Dispatch 时根据 DeliceryPolicy.suppressWithinMs 传入具体窗口。
-     */
-    fun getSemanticDeadline(code: NoticeCode): Long? = semanticMap[code]
-
-    companion object {
-        const val MAX_IDS = 1024
-
-        /** 默认语义去重窗口 5 秒 */
-        private const val DEFAULT_SEMANTIC_WINDOW_MS = 5000L
+    private companion object {
+        const val MAX_EVENT_IDS = 1024
     }
 }
