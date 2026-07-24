@@ -34,34 +34,3 @@ fun buildEntryIdIntersectionQuery(
 
     return SimpleSQLiteQuery(sql, bindArgs.toTypedArray())
 }
-
-/**
- * 盲索引完整性扫描结果。
- *
- * 通过扫描实际数据库状态（已索引去重条目数 vs 活跃条目数）
- * 判断索引是否完整，替代硬编码版本号。
- *
- * @property isComplete 所有活跃条目均已建索引
- * @property indexedEntryCount 已索引的去重条目数
- * @property activeEntryCount 当前活跃条目总数
- */
-data class IndexScanResult(
-    val isComplete: Boolean,
-    val indexedEntryCount: Int,
-    val activeEntryCount: Int
-)
-
-/**
- * 扫描盲索引状态，判断索引是否完整。
- *
- * @param indexedEntryCount [SearchTokenDao.countDistinctEntryIds] 结果
- * @param activeEntryCount [EntryDao.countActive] 结果
- */
-fun scanIndexStatus(
-    indexedEntryCount: Int,
-    activeEntryCount: Int
-): IndexScanResult = IndexScanResult(
-    isComplete = indexedEntryCount >= activeEntryCount,
-    indexedEntryCount = indexedEntryCount,
-    activeEntryCount = activeEntryCount
-)

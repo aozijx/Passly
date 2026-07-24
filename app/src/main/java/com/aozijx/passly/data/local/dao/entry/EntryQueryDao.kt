@@ -91,4 +91,10 @@ interface EntryQueryDao {
 
     @Query("SELECT COUNT(*) FROM vault_entries WHERE deletedAt IS NOT NULL")
     suspend fun countDeleted(): Int
+
+    @Query("SELECT entryId FROM vault_entries WHERE deletedAt IS NULL AND searchIndexVersion < :currentVersion")
+    suspend fun getActiveEntryIdsNeedingIndexRebuild(currentVersion: Int): List<String>
+
+    @Query("SELECT * FROM vault_entries WHERE entryId IN (:entryIds)")
+    suspend fun getByIdsForMaintenance(entryIds: List<String>): List<EntryEntity>
 }

@@ -57,4 +57,10 @@ interface EntryCommandDao {
 
     @Query("DELETE FROM vault_entries WHERE deletedAt IS NOT NULL AND deletedAt < :before")
     suspend fun purgeDeleted(before: Long)
+
+    @Query("UPDATE vault_entries SET searchIndexVersion = :version WHERE entryId = :entryId")
+    suspend fun updateSearchIndexVersion(entryId: String, version: Int): Int
+
+    @Query("UPDATE vault_entries SET searchIndexVersion = :version WHERE entryId IN (:entryIds)")
+    suspend fun updateSearchIndexVersions(entryIds: List<String>, version: Int): Int
 }
