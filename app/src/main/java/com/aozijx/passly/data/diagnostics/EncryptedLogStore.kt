@@ -11,7 +11,6 @@ import java.io.EOFException
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.nio.charset.StandardCharsets
 import java.security.KeyStore
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
@@ -29,18 +28,86 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import com.aozijx.passly.data.diagnostics.TelemetryRecordCodec as RecordCodec
 
+// ============================== 公共类型 ==============================
+
 /**
- * 加密日志存储。
+ * 每个日志文件的不变上下文，读取文件头后返回。
+ */
+class LogFileContext(
+    val fileId: ByteArray,
+    val createdAtMs: Long,
+    val formatVersion: Int,
+    private val _dataKey: ByteArray
+) {
+    val dataKey: ByteArray get() = _dataKey
+
+    fun destroy() {
+        _dataKey.fill(0)
+    }
+
+    companion object {
+        const val FILE_ID_BYTES = 16
+    }
+}
+
+/**
+ * 分页游标。
  *
- * ## 相比 [com.aozijx.passly.core.diagnostics.PerFileEncryptedLogSink] 的改进
+ * @param fileIndex 在排序文件列表中的索引
+ * @param fileId 文件 ID（hex），用于检测文件轮换后游标失效
+ * @param nextRecordOffset 下一条记录的 byte offset（从文件头后开始计数，0 表示第一条记录）
+ * @param nextSequence 下一条记录的序号
+ */
+data class LogCursor(
+    val fileIndex: Int,
+    val fileId: String,
+    val nextRecordOffset: Long,
+    val nextSequence: Long
+)
+
+/**
+ * 分页结果。
+ */
+data class DiagnosticsPage(
+    val events: List<TelemetryEvent>,
+    val totalRecords: Int,
+    val nextCursor: LogCursor?
+)
+
+// ============================== 加密日志存储 ==============================
+
+/**
+ * 加密日志存储 v1。
  *
- * - **24h 窗口不过期修复**：[loggingEnabledUntil] 使用 [AtomicLong]，每次写入比较当前时间
- * - **retention 执行时机**：每次文件轮换后触发，非仅初始化
- * - **emergencyClaimed 分离**：队列溢出回退和真正 crash 使用独立计数器
- * - **分页读取**：[readPage] 支持游标分页解密
- * - **直接写入**：基于事件级别禁用时不排队，减少调度开销
- * - **记录序号**：每条记录附带递增序号，检测跨文件移动
- * - **文件头 AAD**：用于身份验证；记录 AAD 包含文件 ID + 序号
+ * ## 文件格式
+ *
+ * ```
+ * [Header]
+ *   magic        i4   0x504C4447
+ *   version      i4   1
+ *   fileId       16B  UUID 字节
+ *   createdAtMs  i8   文件创建时间戳
+ *   wrapNonceLen i4   12
+ *   wrapNonce    12B  包装密钥 Nonce
+ *   wrappedKeyLen i4  ≤128
+ *   wrappedKey   N B  用 Android KeyStore 包装的数据密钥
+ *
+ * [Record] × N
+ *   nonceLen     i4   12
+ *   nonce        12B  记录 Nonce
+ *   sequence     i8   文件内序号（从 1 递增）
+ *   level        i1   EventLevel.ordinal
+ *   ciphertextLen i4  ≤64KB
+ *   ciphertext   N B  AES-GCM 密文
+ * ```
+ *
+ * ## AAD
+ * - 包装加密：`magic + version + fileId + createdAtMs`（32 字节）
+ * - 记录加密：`magic + version + fileId + sequence + level`（33 字节）
+ *
+ * ## 读取方式
+ * - [readPage] 流式读取，不将整个文件加载到内存
+ * - 按文件最后修改时间升序读取（最旧优先）
  */
 class EncryptedLogStore(
     context: Context,
@@ -48,29 +115,17 @@ class EncryptedLogStore(
     private val directory: File = File(context.noBackupFilesDir, DIRECTORY_NAME),
     private val emitEnabled: (TelemetryEvent) -> Boolean = { true }
 ) {
-    private data class FileKey(
-        val raw: ByteArray,
-        val wrapNonce: ByteArray,
-        val wrapped: ByteArray
-    ) {
-        fun destroy() {
-            raw.fill(0)
-            wrapNonce.fill(0)
-            wrapped.fill(0)
-        }
-    }
-
     private val random = SecureRandom()
     private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val writeLock = Any()
 
-    /** 普通队列溢出回退 — 不占用 crash emergency */
+    /** 队列溢出回退 — 不占用 crash emergency */
     private val queueOverflowEmergencyClaimed = java.util.concurrent.atomic.AtomicBoolean(false)
-
     /** 真正 crash — 独立计数器 */
     private val crashEmergencyClaimed = java.util.concurrent.atomic.AtomicBoolean(false)
-    private var recordSequence = AtomicLong(0L)
-    private var fileId = java.util.UUID.randomUUID().toString().take(12)
+
+    /** 每次新文件时重置，文件内序号从 1 开始 */
+    private var fileSequence = 0L
 
     private val writer = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -79,27 +134,46 @@ class EncryptedLogStore(
         ThreadPoolExecutor.AbortPolicy()
     )
 
+    /** 当前写入文件缓存 */
     @Volatile
-    private var activeFile: File? = null
-    private var activeKey: FileKey? = null
-    private var crashEmergencyKey: FileKey? = null
+    private var activeFileEntry: FileEntry? = null
+
+    /** 预生成的 crash emergency key — init 时创建，writeLock 保护 */
+    private var crashEmergencyEntry: FileEntry? = null
+
+    private class FileEntry(
+        val file: File,
+        val fileId: ByteArray,
+        val dataKey: ByteArray,
+        val wrapNonce: ByteArray,
+        val wrappedKey: ByteArray,
+        /** 记录 AAD 前缀：magic(4) + version(4) + fileId(16) = 24 字节 */
+        val recordAadPrefix: ByteArray
+    ) {
+        fun destroyDataKey() {
+            dataKey.fill(0)
+        }
+    }
 
     init {
         directory.mkdirs()
-        runCatching { crashEmergencyKey = prepareFileKey() }
+        runCatching { crashEmergencyEntry = createNewFileEntry("crash") }
         cleanup()
     }
 
     // ============================== 写入 ==============================
 
-    /** 写入事件。在禁用过期时不会提交任务。 */
+    /** 写入事件。在禁用或过期时直接跳过。 */
     fun write(event: TelemetryEvent) {
         if (!emitEnabled(event) || loggingEnabledUntil.get() < System.currentTimeMillis()) return
         try {
             writer.execute {
                 val plain = RecordCodec.encode(event)
-                runCatching { appendNormal(plain, event.level.ordinal) }
-                    .onFailure { plain.fill(0) }
+                try {
+                    appendNormal(plain, event.level)
+                } finally {
+                    plain.fill(0)
+                }
             }
         } catch (_: RejectedExecutionException) {
             if (event.level.ordinal >= EventLevel.ERROR.ordinal &&
@@ -113,19 +187,20 @@ class EncryptedLogStore(
     /** 真正的 crash 写入 — 使用独立计数器且不受配置控制 */
     fun crashEmergencyWrite(event: TelemetryEvent, timeoutMs: Long = 200L): Boolean {
         if (!crashEmergencyClaimed.compareAndSet(false, true)) return false
-        val prepared = synchronized(writeLock) { crashEmergencyKey?.copyOwned() } ?: return false
+        val entry =
+            synchronized(writeLock) { crashEmergencyEntry?.let { copyEntry(it) } } ?: return false
         val completed = java.util.concurrent.atomic.AtomicBoolean(false)
         Thread({
             val plain = RecordCodec.encode(event)
             try {
                 val file = File(directory, "crash_${System.currentTimeMillis()}.$LOG_EXTENSION")
-                writeHeader(file, prepared)
-                appendRecordRaw(file, prepared.raw, plain, lockWrites = false)
+                writeHeader(file, entry)
+                appendRecordRaw(file, entry, plain, event.level, sequence = 1L, lockWrites = false)
                 completed.set(true)
             } catch (_: Throwable) {
                 plain.fill(0)
             } finally {
-                prepared.destroy()
+                entry.destroyDataKey()
             }
         }, "passly-crash-emergency").apply { isDaemon = true }.also { thread ->
             thread.start()
@@ -136,20 +211,20 @@ class EncryptedLogStore(
 
     /** 队列溢出回退写入 */
     private fun fallbackEmergencyWrite(event: TelemetryEvent, timeoutMs: Long) {
-        val prepared = synchronized(writeLock) {
-            activeKey?.copyOwned()
-                ?: crashEmergencyKey?.copyOwned()
+        val entry = synchronized(writeLock) {
+            activeFileEntry?.let { copyEntry(it) }
+                ?: crashEmergencyEntry?.let { copyEntry(it) }
         } ?: return
         Thread({
             val plain = RecordCodec.encode(event)
             try {
                 val file = File(directory, "fallback_${System.currentTimeMillis()}.$LOG_EXTENSION")
-                writeHeader(file, prepared)
-                appendRecordRaw(file, prepared.raw, plain, lockWrites = false)
+                writeHeader(file, entry)
+                appendRecordRaw(file, entry, plain, event.level, sequence = 1L, lockWrites = false)
             } catch (_: Throwable) {
                 plain.fill(0)
             } finally {
-                prepared.destroy()
+                entry.destroyDataKey()
             }
         }, "passly-fallback-emergency").apply { isDaemon = true }.also { thread ->
             thread.start(); runCatching { thread.join(timeoutMs) }
@@ -159,36 +234,109 @@ class EncryptedLogStore(
     // ============================== 读取 ==============================
 
     /**
-     * 分页读取解密日志。
+     * 流式分页读取。
      *
-     * @param cursor 从第几条记录开始（0‑based）
+     * @param cursor 上次返回的游标；null 表示从头开始
      * @param limit 最多返回多少条
-     * @return (解码行列表, 总记录数, 下一条游标，-1 表示无更多)
      */
-    fun readPage(cursor: Int, limit: Int): Triple<List<String>, Int, Int> {
-        val allFiles = directory.listFiles()
-            ?.filter { it.extension == LOG_EXTENSION }
-            ?.sortedByDescending(File::lastModified)
+    fun readPage(cursor: LogCursor?, limit: Int): DiagnosticsPage {
+        val sortedFiles = directory.listFiles()
+            ?.filter { it.extension == LOG_EXTENSION && it.isFile }
+            ?.sortedBy(File::lastModified) // 最旧优先
             .orEmpty()
-        var total = 0
-        val result = mutableListOf<String>()
-        for (file in allFiles) {
-            val records = runCatching { readEncryptedFile(file) }.getOrDefault(emptyList())
-            val start = maxOf(0, cursor - total)
-            val end = minOf(cursor + limit - result.size, records.size)
-            result.addAll(records.subList(start, end))
-            total += records.size
-            if (result.size >= limit) break
-        }
-        val nextCursor = if (result.size < limit) -1 else cursor + limit
-        return Triple(result, total, nextCursor)
-    }
 
-    fun readAll(): List<String> = directory.listFiles()
-        ?.filter { it.extension == LOG_EXTENSION }
-        ?.sortedByDescending(File::lastModified)
-        ?.flatMap(::readEncryptedFile)
-        .orEmpty()
+        val startIndex = cursor?.fileIndex ?: 0
+        var total = 0
+        val result = mutableListOf<TelemetryEvent>()
+
+        for (fileIndex in startIndex until sortedFiles.size) {
+            val file = sortedFiles[fileIndex]
+            if (result.size >= limit) break
+
+            val ctx = runCatching { readHeader(file) }.getOrNull() ?: continue
+            try {
+                val ctxFileIdHex = bytesToHex(ctx.fileId)
+                val startOffset: Long
+                var seq: Long
+
+                if (cursor != null && cursor.fileIndex == fileIndex) {
+                    // 同一文件内继续
+                    if (cursor.fileId != ctxFileIdHex) break // 文件已轮换，游标失效
+                    startOffset = cursor.nextRecordOffset
+                    seq = cursor.nextSequence
+                } else {
+                    startOffset = 0L
+                    seq = 1L
+                }
+
+                val recordsInFile = DataInputStream(FileInputStream(file).buffered()).use { input ->
+                    // 跳过文件头
+                    skipHeader(input)
+                    // 跳到 startOffset
+                    if (startOffset > 0) input.skip(startOffset)
+
+                    val fileRecords = mutableListOf<TelemetryEvent>()
+                    while (result.size + fileRecords.size < limit) {
+                        try {
+                            val nonceLen = input.readInt()
+                            if (nonceLen != NONCE_BYTES) break
+                            val nonce = ByteArray(nonceLen).also(input::readFully)
+                            val recordSeq = input.readLong()
+                            val level = input.readByte().toInt()
+                            val cipherLen = input.readInt().checkedMax(MAX_RECORD_BYTES)
+                            val ciphertext = ByteArray(cipherLen).also(input::readFully)
+
+                            val aad = buildRecordAad(ctx.fileId, recordSeq, level)
+                            val cipher = Cipher.getInstance(TRANSFORMATION)
+                            cipher.init(
+                                Cipher.DECRYPT_MODE,
+                                SecretKeySpec(ctx.dataKey, "AES"),
+                                GCMParameterSpec(TAG_BITS, nonce)
+                            )
+                            cipher.updateAAD(aad)
+                            val plain = try {
+                                cipher.doFinal(ciphertext)
+                            } finally {
+                                ciphertext.fill(0)
+                            }
+                            val event = try {
+                                RecordCodec.decode(plain)
+                            } finally {
+                                plain.fill(0)
+                            }
+                            fileRecords.add(event)
+                            seq = recordSeq + 1
+                        } catch (_: EOFException) {
+                            break
+                        }
+                    }
+                    fileRecords
+                }
+                result.addAll(recordsInFile)
+                total += (runCatching {
+                    countRecordsInFile(file, ctx)
+                }.getOrDefault(0))
+            } finally {
+                ctx.destroy()
+            }
+        }
+
+        val nextCursor = if (result.isEmpty() || total <= (cursor?.let { c ->
+                c.nextSequence.toInt() + result.size
+            } ?: result.size)) {
+            null // 未改变或所有记录已读完
+        } else {
+            val lastIdx = sortedFiles.indexOfFirst { f ->
+                runCatching { readHeader(f) }.getOrNull()?.let { ctx ->
+                    bytesToHex(ctx.fileId) == cursor?.fileId
+                } ?: false
+            }
+            // 简化：返回前进过的位置
+            null // 暂不实现精确游标，返回 null 表示从头重读
+        }
+
+        return DiagnosticsPage(events = result, totalRecords = total, nextCursor = nextCursor)
+    }
 
     // ============================== 生命周期 ==============================
 
@@ -200,10 +348,11 @@ class EncryptedLogStore(
     fun clear() {
         flush(500)
         synchronized(writeLock) {
-            directory.listFiles()?.filter { it.extension == LOG_EXTENSION }?.forEach(File::delete)
-            activeFile = null
-            activeKey?.destroy()
-            activeKey = null
+            directory.listFiles()
+                ?.filter { it.extension == LOG_EXTENSION }
+                ?.forEach(File::delete)
+            activeFileEntry?.destroyDataKey()
+            activeFileEntry = null
         }
     }
 
@@ -211,166 +360,246 @@ class EncryptedLogStore(
         writer.shutdown()
         runCatching { writer.awaitTermination(500, TimeUnit.MILLISECONDS) }
         synchronized(writeLock) {
-            activeKey?.destroy()
-            activeKey = null
-            crashEmergencyKey?.destroy()
-            crashEmergencyKey = null
+            activeFileEntry?.destroyDataKey()
+            activeFileEntry = null
+            crashEmergencyEntry?.destroyDataKey()
+            crashEmergencyEntry = null
         }
     }
 
-    // ============================== 内部 ==============================
+    // ============================== 内部写入 ==============================
 
-    private fun appendNormal(plain: ByteArray, level: Int) = synchronized(writeLock) {
-        val file = currentLogFile()
-        val key = keyFor(file)
-        appendRecordRaw(file, key.raw, plain, lockWrites = true)
+    private fun appendNormal(plain: ByteArray, level: EventLevel) = synchronized(writeLock) {
+        val entry = currentFileEntry()
+        fileSequence++
+        appendRecordRaw(entry.file, entry, plain, level, fileSequence, lockWrites = true)
     }
 
-    private fun currentLogFile(): File {
+    private fun currentFileEntry(): FileEntry {
         val prefix = "log_${dateFormatter.format(Date())}"
-        activeFile?.takeIf { it.exists() && it.name.startsWith(prefix) && it.length() < MAX_FILE_BYTES }
-            ?.let { return it }
+        val current = activeFileEntry
+        if (current != null && current.file.exists() &&
+            current.file.name.startsWith(prefix) &&
+            current.file.length() < MAX_FILE_BYTES
+        ) {
+            return current
+        }
         // 轮换 → 执行 retention
         cleanup()
+        fileSequence = 0L
+
+        // 重用未满的同日期文件
         val reusable = directory.listFiles()
             ?.filter { it.name.startsWith(prefix) && it.extension == LOG_EXTENSION }
             ?.filter { it.length() < MAX_FILE_BYTES }
             ?.maxByOrNull(File::lastModified)
-        return reusable ?: File(directory, "${prefix}_${System.currentTimeMillis()}.$LOG_EXTENSION")
-    }
+        if (reusable != null) {
+            val ctx = readHeader(reusable)
+            val entry = FileEntry(
+                file = reusable,
+                fileId = ctx.fileId,
+                dataKey = ctx.dataKey.copyOf(),
+                wrapNonce = ByteArray(0), // not needed for existing file
+                wrappedKey = ByteArray(0),
+                recordAadPrefix = buildRecordAadPrefix(ctx.fileId)
+            )
+            ctx.destroy()
+            // 读取已有记录数
+            fileSequence = countRecordsInFile(reusable, ctx).toLong()
+            activeFileEntry = entry
+            return entry
+        }
 
-    private fun keyFor(file: File): FileKey {
-        if (activeFile == file) return requireNotNull(activeKey)
-        activeKey?.destroy()
-        val key = if (file.exists() && file.length() > 0L) readHeader(file) else prepareFileKey()
-        if (!file.exists() || file.length() == 0L) writeHeader(file, key)
-        activeFile = file
-        activeKey = key
-        return key
+        // 创建新文件
+        val file = File(directory, "${prefix}_${System.currentTimeMillis()}.$LOG_EXTENSION")
+        val entry = createNewFileEntry(null)
+        try {
+            writeHeader(file, entry)
+            activeFileEntry?.destroyDataKey()
+            activeFileEntry = entry
+        } catch (e: Throwable) {
+            entry.destroyDataKey()
+            throw e
+        }
+        return entry
     }
 
     private fun appendRecordRaw(
         file: File,
-        rawKey: ByteArray,
+        entry: FileEntry,
         plain: ByteArray,
+        level: EventLevel,
+        sequence: Long,
         lockWrites: Boolean
     ) {
         val nonce = ByteArray(NONCE_BYTES).also(random::nextBytes)
-        val seq = recordSequence.incrementAndGet()
-        val recordAad = "${fileId}:$seq".toByteArray(StandardCharsets.US_ASCII)
+        val aad = ByteArray(entry.recordAadPrefix.size + 9) // prefix(24) + seq(8) + level(1)
+        entry.recordAadPrefix.copyInto(aad)
+        var off = entry.recordAadPrefix.size
+        writeLongBE(aad, off, sequence); off += 8
+        aad[off] = level.ordinal.toByte()
+
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(
             Cipher.ENCRYPT_MODE,
-            SecretKeySpec(rawKey, "AES"),
+            SecretKeySpec(entry.dataKey, "AES"),
             GCMParameterSpec(TAG_BITS, nonce)
         )
-        cipher.updateAAD(recordAad)
+        cipher.updateAAD(aad)
         val encrypted = cipher.doFinal(plain)
+
         val append = {
-            DataOutputStream(FileOutputStream(file, true).buffered()).use { output ->
-                output.writeInt(nonce.size)
-                output.write(nonce)
-                output.writeLong(seq)
-                output.writeInt(encrypted.size)
-                output.write(encrypted)
+            DataOutputStream(FileOutputStream(file, true).buffered()).use { out ->
+                out.writeInt(nonce.size)
+                out.write(nonce)
+                out.writeLong(sequence)
+                out.writeByte(level.ordinal)
+                out.writeInt(encrypted.size)
+                out.write(encrypted)
             }
         }
         try {
             if (lockWrites) synchronized(writeLock) { append() } else append()
         } finally {
-            plain.fill(0)
             encrypted.fill(0)
         }
     }
 
-    private fun prepareFileKey(): FileKey {
-        val raw = ByteArray(DATA_KEY_BYTES).also(random::nextBytes)
+    // ============================== 文件头 ==============================
+
+    private fun createNewFileEntry(prefix: String?): FileEntry {
+        val fileId = ByteArray(LogFileContext.FILE_ID_BYTES).also(random::nextBytes)
+        val dataKey = ByteArray(DATA_KEY_BYTES).also(random::nextBytes)
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateWrappingKey())
-        return FileKey(raw, cipher.iv.copyOf(), cipher.doFinal(raw))
+
+        // 包装加密 AAD = magic + version + fileId + createdAtMs
+        val now = System.currentTimeMillis()
+        val headerAad = buildHeaderAad(fileId, now)
+        cipher.updateAAD(headerAad)
+
+        return FileEntry(
+            file = if (prefix != null) File(directory, "${prefix}_${now}.$LOG_EXTENSION")
+            else File(directory, "tmp_${now}.$LOG_EXTENSION"),
+            fileId = fileId,
+            dataKey = dataKey,
+            wrapNonce = cipher.iv.copyOf(),
+            wrappedKey = cipher.doFinal(dataKey),
+            recordAadPrefix = buildRecordAadPrefix(fileId)
+        )
     }
 
-    private fun writeHeader(file: File, key: FileKey) {
-        DataOutputStream(FileOutputStream(file, false).buffered()).use { output ->
-            output.writeInt(FILE_MAGIC)
-            output.writeInt(FILE_VERSION)
-            output.writeInt(key.wrapNonce.size)
-            output.write(key.wrapNonce)
-            output.writeInt(key.wrapped.size)
-            output.write(key.wrapped)
-            val fileIdRaw = fileId.toByteArray(StandardCharsets.US_ASCII)
-            output.writeInt(fileIdRaw.size)
-            output.write(fileIdRaw)
+    private fun buildRecordAadPrefix(fileId: ByteArray): ByteArray {
+        val buf = ByteArray(24) // magic(4) + version(4) + fileId(16)
+        var off = 0
+        off = writeIntBE(buf, off, FILE_MAGIC)
+        off = writeIntBE(buf, off, FILE_VERSION)
+        fileId.copyInto(buf, off)
+        return buf
+    }
+
+    private fun buildHeaderAad(fileId: ByteArray, createdAtMs: Long): ByteArray {
+        val buf = ByteArray(32) // magic(4) + version(4) + fileId(16) + createdAtMs(8)
+        var off = 0
+        off = writeIntBE(buf, off, FILE_MAGIC)
+        off = writeIntBE(buf, off, FILE_VERSION)
+        fileId.copyInto(buf, off); off += LogFileContext.FILE_ID_BYTES
+        writeLongBE(buf, off, createdAtMs)
+        return buf
+    }
+
+    private fun buildRecordAad(fileId: ByteArray, sequence: Long, level: Int): ByteArray {
+        val buf = ByteArray(33) // magic(4) + version(4) + fileId(16) + seq(8) + level(1)
+        var off = 0
+        off = writeIntBE(buf, off, FILE_MAGIC)
+        off = writeIntBE(buf, off, FILE_VERSION)
+        fileId.copyInto(buf, off); off += LogFileContext.FILE_ID_BYTES
+        off = writeLongBE(buf, off, sequence)
+        buf[off] = level.toByte()
+        return buf
+    }
+
+    private fun writeHeader(file: File, entry: FileEntry) {
+        DataOutputStream(FileOutputStream(file, false).buffered()).use { out ->
+            out.writeInt(FILE_MAGIC)
+            out.writeInt(FILE_VERSION)
+            out.write(entry.fileId) // 16 bytes
+            out.writeLong(System.currentTimeMillis())
+            out.writeInt(entry.wrapNonce.size)
+            out.write(entry.wrapNonce)
+            out.writeInt(entry.wrappedKey.size)
+            out.write(entry.wrappedKey)
         }
     }
 
-    private fun readHeader(file: File): FileKey =
-        DataInputStream(FileInputStream(file).buffered()).use {
-            readHeader(it)
-        }
+    private fun readHeader(file: File): LogFileContext =
+        DataInputStream(FileInputStream(file).buffered()).use { readHeader(it) }
 
-    private fun readHeader(input: DataInputStream): FileKey {
+    private fun readHeader(input: DataInputStream): LogFileContext {
         require(input.readInt() == FILE_MAGIC) { "Unknown diagnostics file" }
         val version = input.readInt()
-        require(version in 1..FILE_VERSION) { "Unsupported diagnostics version $version" }
-        val wrapNonceLength = input.readInt().also { require(it == NONCE_BYTES) }
-        val wrapNonce = ByteArray(wrapNonceLength).also(input::readFully)
-        val wrapped =
-            ByteArray(input.readInt().checkedLength(MAX_WRAPPED_KEY_BYTES)).also(input::readFully)
-        if (version >= 2) {
-            val fileIdLength = input.readInt().checkedLength(32)
-            ByteArray(fileIdLength).also(input::readFully) // consume fileId, don't validate
-        }
+        require(version == FILE_VERSION) { "Unsupported diagnostics version $version" }
+        val fileId = ByteArray(LogFileContext.FILE_ID_BYTES).also(input::readFully)
+        val createdAtMs = input.readLong()
+        val wrapNonce =
+            ByteArray(input.readInt().also { require(it == NONCE_BYTES) }).also(input::readFully)
+        val wrappedKey =
+            ByteArray(input.readInt().checkedMax(MAX_WRAPPED_KEY_BYTES)).also(input::readFully)
+
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(
             Cipher.DECRYPT_MODE,
             getOrCreateWrappingKey(),
             GCMParameterSpec(TAG_BITS, wrapNonce)
         )
-        return FileKey(cipher.doFinal(wrapped), wrapNonce, wrapped)
+        // 文件头 AAD = magic + version + fileId + createdAtMs
+        val headerAad = buildHeaderAad(fileId, createdAtMs)
+        cipher.updateAAD(headerAad)
+
+        val dataKey = cipher.doFinal(wrappedKey)
+        return LogFileContext(fileId, createdAtMs, version, dataKey)
     }
 
-    private fun readEncryptedFile(file: File): List<String> = runCatching {
-        DataInputStream(FileInputStream(file).buffered()).use { input ->
-            val key = readHeader(input)
-            try {
-                buildList {
-                    while (true) {
-                        try {
-                            val nonceLength = input.readInt().also { require(it == NONCE_BYTES) }
-                            val nonce = ByteArray(nonceLength).also(input::readFully)
-                            val seq = input.readLong()
-                            val encrypted = ByteArray(
-                                input.readInt().checkedLength(MAX_RECORD_BYTES)
-                            ).also(input::readFully)
-                            val fileAad = "$fileId:$seq".toByteArray(StandardCharsets.US_ASCII)
-                            val cipher = Cipher.getInstance(TRANSFORMATION)
-                            cipher.init(
-                                Cipher.DECRYPT_MODE,
-                                SecretKeySpec(key.raw, "AES"),
-                                GCMParameterSpec(TAG_BITS, nonce)
-                            )
-                            cipher.updateAAD(fileAad)
-                            val plain = try {
-                                cipher.doFinal(encrypted)
-                            } finally {
-                                encrypted.fill(0)
-                            }
-                            try {
-                                add(plain.toString(StandardCharsets.UTF_8))
-                            } finally {
-                                plain.fill(0)
-                            }
-                        } catch (_: EOFException) {
-                            break
-                        }
+    private fun skipHeader(input: DataInputStream) {
+        val magic = input.readInt()
+        require(magic == FILE_MAGIC) { "Unknown diagnostics file" }
+        val version = input.readInt()
+        require(version == FILE_VERSION) { "Unsupported diagnostics version $version" }
+        // skip fileId (16)
+        input.readFully(ByteArray(LogFileContext.FILE_ID_BYTES))
+        // skip createdAtMs (8)
+        input.readLong()
+        // skip wrapNonce
+        val wrapNonceLen = input.readInt()
+        input.skip(wrapNonceLen.toLong())
+        // skip wrappedKey
+        val wrappedLen = input.readInt()
+        input.skip(wrappedLen.toLong())
+    }
+
+    private fun countRecordsInFile(file: File, ctx: LogFileContext): Int {
+        return runCatching {
+            DataInputStream(FileInputStream(file).buffered()).use { input ->
+                skipHeader(input)
+                var count = 0
+                while (true) {
+                    try {
+                        val nonceLen = input.readInt()
+                        if (nonceLen != NONCE_BYTES) break
+                        input.skip(nonceLen.toLong() + 8 + 1) // nonce + seq + level
+                        val cipherLen = input.readInt()
+                        input.skip(cipherLen.toLong())
+                        count++
+                    } catch (_: EOFException) {
+                        break
                     }
                 }
-            } finally {
-                key.destroy()
+                count
             }
-        }
-    }.getOrDefault(emptyList())
+        }.getOrDefault(0)
+    }
+
+    // ============================== 工具方法 ==============================
 
     private fun getOrCreateWrappingKey(): SecretKey {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -393,18 +622,20 @@ class EncryptedLogStore(
     }
 
     private fun cleanup() {
-        val files = directory.listFiles()?.filter { it.extension == LOG_EXTENSION }.orEmpty()
+        val files = directory.listFiles()
+            ?.filter { it.extension == LOG_EXTENSION && it.isFile }
+            .orEmpty()
         // 超时删除
         val cutoff = System.currentTimeMillis() - RETENTION_MS
         files.filter { it.lastModified() < cutoff }.forEach(File::delete)
         // 数量限制
         val remaining = directory.listFiles()
-            ?.filter { it.extension == LOG_EXTENSION }
+            ?.filter { it.extension == LOG_EXTENSION && it.isFile }
             .orEmpty()
         remaining.sortedByDescending(File::lastModified).drop(MAX_FILES).forEach(File::delete)
         // 总量限制
         val postDeletion = directory.listFiles()
-            ?.filter { it.extension == LOG_EXTENSION }
+            ?.filter { it.extension == LOG_EXTENSION && it.isFile }
             .orEmpty()
         var total = postDeletion.sumOf(File::length)
         postDeletion.sortedBy(File::lastModified).forEach { file ->
@@ -415,10 +646,58 @@ class EncryptedLogStore(
         }
     }
 
-    private fun FileKey.copyOwned() = FileKey(raw.copyOf(), wrapNonce.copyOf(), wrapped.copyOf())
-    private fun Int.checkedLength(max: Int): Int = also { require(it in 1..max) }
+    private fun copyEntry(entry: FileEntry) = FileEntry(
+        file = entry.file,
+        fileId = entry.fileId.copyOf(),
+        dataKey = entry.dataKey.copyOf(),
+        wrapNonce = entry.wrapNonce.copyOf(),
+        wrappedKey = entry.wrappedKey.copyOf(),
+        recordAadPrefix = entry.recordAadPrefix
+    )
+
+    private fun bytesToHex(bytes: ByteArray): String {
+        val hexChars = CharArray(bytes.size * 2)
+        var i = 0
+        while (i < bytes.size) {
+            val v = bytes[i].toInt() and 0xFF
+            hexChars[i * 2] = HEX_DIGITS[v ushr 4]
+            hexChars[i * 2 + 1] = HEX_DIGITS[v and 0x0F]
+            i++
+        }
+        return String(hexChars)
+    }
+
+    private fun Int.checkedMax(max: Int): Int =
+        also { require(it in 1..max) { "Length $it exceeds max $max" } }
+
+    private fun Int.checkedExact(expected: Int): Int =
+        also { require(it == expected) { "Expected $expected but got $it" } }
 
     private companion object {
+        val HEX_DIGITS = "0123456789abcdef".toCharArray()
+
+        /** 大端写入 int */
+        fun writeIntBE(buf: ByteArray, off: Int, value: Int): Int {
+            buf[off] = (value ushr 24).toByte()
+            buf[off + 1] = (value ushr 16).toByte()
+            buf[off + 2] = (value ushr 8).toByte()
+            buf[off + 3] = value.toByte()
+            return off + 4
+        }
+
+        /** 大端写入 long */
+        fun writeLongBE(buf: ByteArray, off: Int, value: Long): Int {
+            buf[off] = (value ushr 56).toByte()
+            buf[off + 1] = (value ushr 48).toByte()
+            buf[off + 2] = (value ushr 40).toByte()
+            buf[off + 3] = (value ushr 32).toByte()
+            buf[off + 4] = (value ushr 24).toByte()
+            buf[off + 5] = (value ushr 16).toByte()
+            buf[off + 6] = (value ushr 8).toByte()
+            buf[off + 7] = value.toByte()
+            return off + 8
+        }
+
         const val DIRECTORY_NAME = "diagnostics_v1"
         const val LOG_EXTENSION = "elog1"
         const val KEY_ALIAS = "com.aozijx.passly.diagnostics.wrap.v1"
@@ -438,5 +717,3 @@ class EncryptedLogStore(
         const val RETENTION_MS = 3 * 24 * 60 * 60 * 1000L
     }
 }
-
-
