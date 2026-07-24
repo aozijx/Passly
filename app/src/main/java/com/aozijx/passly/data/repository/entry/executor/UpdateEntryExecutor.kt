@@ -8,7 +8,7 @@ import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.mapper.search.toLookupFields
 import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
-import com.aozijx.passly.data.repository.entry.internal.EntrySnapshotHelper
+import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.model.entry.EntryChanges
@@ -27,7 +27,7 @@ class UpdateEntryExecutor @Inject constructor(
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val blindIndexHelper: EntryBlindIndexHelper,
-    private val snapshotHelper: EntrySnapshotHelper,
+    private val snapshotHelper: EntryRevisionHelper,
     private val clock: Clock
 ) {
     suspend fun execute(
@@ -47,7 +47,13 @@ class UpdateEntryExecutor @Inject constructor(
 
         // 1. 版本校验 + metadata 更新（原子操作）
         val metaBlob = summaryCodec.encrypt(newSummary, id)
-        val capabilityFlags = EntryCapabilityFlags.computeFrom(newSecret)
+        val capabilityFlags = EntryCapabilityFlags.computeFrom(
+            secret = newSecret,
+            hasAttachments = EntryCapabilityFlags.has(
+                metaEntity.capabilityFlags,
+                EntryCapabilityFlags.HAS_ATTACHMENTS
+            )
+        )
         val otpType = EntryCapabilityFlags.otpTypeFrom(newSecret)
         val affected = entryCommandDao().optimisticUpdate(
             id, expectedVersion, metaBlob, capabilityFlags, otpType, now

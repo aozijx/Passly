@@ -1,20 +1,20 @@
 # ADR-0013: 使用 Vault Snapshot 聚合模型
 
-- 状态：Accepted
+- 状态：Superseded（备份部分由 ADR-0016 替代；历史部分由 ADR-0015 约束）
 - 日期：未记录
 
 ## 背景
 
-历史、备份、导出和恢复都需要表达某一时点的完整条目，分别定义格式容易漂移。
+历史曾计划与备份共用 Vault Snapshot，但两者的兼容周期和内容边界不同。
 
 ## 决策
 
-用 Vault Snapshot 语义统一聚合 metadata、credential 与相关附件。数据库 Entity、Domain model 和备份 DTO
-仍由 Mapper 隔离，并各自版本化。
+历史记录可以使用内部 Entry Snapshot；长期备份使用独立、冻结的 v1 wire model，
+不再复用历史 Snapshot、Room Entity 或数据库 Payload。
 
 ## 后果
 
-流程复用更强、恢复语义一致；聚合对象可能较大，需要限制附件大小并避免在列表路径构造。
+避免历史模型演进无意破坏备份。两者允许通过 Mapper 共享业务转换，但不共享序列化协议。
 
 ## 备选方案
 

@@ -127,13 +127,13 @@ fun BackupDialogHost(
             state = BackupPasswordDialogState(
                 isExporting = backupState.isExporting,
                 importMode = backupState.importMode,
-                includeImages = backupState.includeImages,
+                includeIcons = backupState.includeIcons,
                 backupPassword = backupState.backupPassword
             ),
             onDismiss = { backupViewModel.onIntent(BackupIntent.DismissPasswordDialog) },
             onConfirm = { backupViewModel.onIntent(BackupIntent.ProcessBackupAction) },
             onImportModeChange = { backupViewModel.onIntent(BackupIntent.UpdateImportMode(it)) },
-            onIncludeImagesChange = { backupViewModel.onIntent(BackupIntent.UpdateIncludeImages(it)) },
+            onIncludeIconsChange = { backupViewModel.onIntent(BackupIntent.UpdateIncludeIcons(it)) },
             onPasswordChange = { backupViewModel.onIntent(BackupIntent.UpdatePassword(it)) }
         )
     }

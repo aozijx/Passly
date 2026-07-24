@@ -103,12 +103,6 @@
                 android:resource="@xml/credential_service_config" />
         </service>
 
-        <!-- 声明前台服务类型为 dataSync -->
-        <service
-            android:name=".service.backup.BackupImportIconSyncForegroundService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
         <!-- 支持 Android 13（API 33）及以上系统的“按应用语言偏好”（Per-App Language）功能。-->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

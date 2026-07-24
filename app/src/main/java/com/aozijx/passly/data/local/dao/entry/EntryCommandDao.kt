@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Upsert
 import com.aozijx.passly.data.model.entity.EntryEntity
 
 @Dao
@@ -14,14 +13,6 @@ interface EntryCommandDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStrict(entry: EntryEntity)
-
-    // === Import Upsert (overwrite on duplicate) ===
-
-    @Upsert
-    suspend fun upsertForImport(entry: EntryEntity)
-
-    @Upsert
-    suspend fun upsertAllForImport(entries: List<EntryEntity>)
 
     // === Optimistic Lock Update ===
 
@@ -63,4 +54,10 @@ interface EntryCommandDao {
 
     @Query("UPDATE vault_entries SET searchIndexVersion = :version WHERE entryId IN (:entryIds)")
     suspend fun updateSearchIndexVersions(entryIds: List<String>, version: Int): Int
+
+    @Query("UPDATE vault_entries SET capabilityFlags = capabilityFlags | :capability WHERE entryId = :entryId")
+    suspend fun addCapability(entryId: String, capability: Int): Int
+
+    @Query("UPDATE vault_entries SET capabilityFlags = capabilityFlags & :retainedMask WHERE entryId = :entryId")
+    suspend fun retainCapabilities(entryId: String, retainedMask: Int): Int
 }

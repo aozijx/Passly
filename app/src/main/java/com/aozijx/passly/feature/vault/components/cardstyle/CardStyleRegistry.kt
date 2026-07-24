@@ -85,7 +85,7 @@ object CardStyleRegistry {
         showTotpCode: Boolean,
         onClick: () -> Unit
     ) {
-        val isTotp = entry.hasTotp
+        val isTotp = entry.hasOtp
         val isAutofill = entry.category == stringResource(R.string.category_autofill)
         val totpState = totpStates[entry.id]
 

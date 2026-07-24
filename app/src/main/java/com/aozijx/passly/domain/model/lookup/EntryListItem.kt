@@ -25,10 +25,15 @@ data class EntryListItem(
     val usageCount: Int,
     val entryVersion: Int,
     val capabilityFlags: Int,
-    /** OTP 类型名（TOTP/HOTP/STEAM），仅 hasTotp=true 时有意义 */
+    /** OTP 类型名（TOTP/HOTP/STEAM），仅 [hasOtp] 为 true 时有意义。 */
     val otpTypeName: String = ""
 ) : VaultIconable {
-    val hasTotp: Boolean get() = capabilityFlags and EntryCapabilityFlags.HAS_OTP != 0
+    val hasPassword: Boolean
+        get() = EntryCapabilityFlags.has(capabilityFlags, EntryCapabilityFlags.HAS_PASSWORD)
+    val hasOtp: Boolean
+        get() = EntryCapabilityFlags.has(capabilityFlags, EntryCapabilityFlags.HAS_OTP)
+    val hasAttachments: Boolean
+        get() = EntryCapabilityFlags.has(capabilityFlags, EntryCapabilityFlags.HAS_ATTACHMENTS)
     val otpType: OtpType get() = runCatching { OtpType.valueOf(otpTypeName) }.getOrDefault(OtpType.TOTP)
     override val category: String get() = entryType.name
     override val iconName: String? get() = icon

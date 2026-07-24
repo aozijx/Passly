@@ -29,7 +29,7 @@ import com.aozijx.passly.domain.model.backup.ImportMode
 data class BackupPasswordDialogState(
     val isExporting: Boolean = false,
     val importMode: ImportMode = ImportMode.OVERWRITE,
-    val includeImages: Boolean = false,
+    val includeIcons: Boolean = false,
     val backupPassword: String = ""
 )
 
@@ -40,7 +40,7 @@ fun BackupPasswordDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     onImportModeChange: (ImportMode) -> Unit,
-    onIncludeImagesChange: (Boolean) -> Unit,
+    onIncludeIconsChange: (Boolean) -> Unit,
     onPasswordChange: (String) -> Unit
 ) {
     val confirmText = stringResource(R.string.confirm)
@@ -150,8 +150,8 @@ fun BackupPasswordDialog(
                             )
                         }
                         Switch(
-                            checked = state.includeImages,
-                            onCheckedChange = onIncludeImagesChange
+                            checked = state.includeIcons,
+                            onCheckedChange = onIncludeIconsChange
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))

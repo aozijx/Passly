@@ -2,14 +2,18 @@ package com.aozijx.passly.data.repository.attachment
 
 import android.content.Context
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.mapper.attachment.AttachmentMapper
-import com.aozijx.passly.data.model.payload.backup.AttachmentPayload
+import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
+import com.aozijx.passly.domain.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.model.attachment.EntryAttachment
+import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.repository.attachment.AttachmentRepository
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.io.FileOutputStream
 import java.security.MessageDigest
 import java.util.Base64
 import javax.inject.Inject
@@ -31,7 +35,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class FileBackedAttachmentRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
     private val fieldEncryptor: FieldEncryptor
 ) : AttachmentRepository {
@@ -60,34 +64,43 @@ class FileBackedAttachmentRepository @Inject constructor(
         val now = System.currentTimeMillis()
         val attachmentId = attachment.attachmentId
 
-        // 1. 加密文件内容并落盘
+        // 1. 准备加密内容；先完成 DB 严格插入，避免 ID 冲突覆盖已有文件。
         val sha256Hex = sha256Hex(content)
         val encryptedContent = fieldEncryptor.encrypt(
             Base64.getEncoder().encodeToString(content),
-            null
+            AadProvider.attachmentContent(entryId, attachmentId)
         )
         val file = resolveFile(entryId, attachmentId)
-        file.parentFile?.mkdirs()
-        file.writeBytes(encryptedContent)
 
-        // 2. 构建加密元数据（AttachmentPayload → encryptedBlob）
-        val payload = AttachmentPayload(
-            attachmentId = attachmentId,
-            fileName = attachment.fileName,
-            mimeType = attachment.mimeType ?: "",
-            fileSize = attachment.fileSize,
-            encryptedPath = "${entryId}/${attachmentId}.enc",
-            sha256 = sha256Hex,
-            createdAt = now
-        )
-        val encryptedBlob = AttachmentCipher.encrypt(payload, entryId, attachmentId, fieldEncryptor)
+        try {
+            // 2. 构建加密元数据（AttachmentPayload → encryptedBlob）
+            val payload = AttachmentPayload(
+                attachmentId = attachmentId,
+                fileName = attachment.fileName,
+                mimeType = attachment.mimeType ?: "",
+                fileSize = attachment.fileSize,
+                encryptedPath = "${entryId}/${attachmentId}.enc",
+                sha256 = sha256Hex,
+                createdAt = now
+            )
+            val encryptedBlob =
+                AttachmentCipher.encrypt(payload, entryId, attachmentId, fieldEncryptor)
 
-        // 3. 写入 DB
-        val entity = AttachmentMapper.toEntity(
-            attachment.copy(createdAt = now),
-            encryptedBlob
-        )
-        entryAttachmentCommandDao().insertStrict(entity)
+            // 3. 写入 DB
+            val entity = AttachmentMapper.toEntity(
+                attachment.copy(createdAt = now),
+                encryptedBlob
+            )
+            entryAttachmentCommandDao().insertStrict(entity)
+            if (entity.status == AttachmentStatus.COMMITTED.name) {
+                entryCommandDao().addCapability(entryId, EntryCapabilityFlags.HAS_ATTACHMENTS)
+            }
+
+            // 4. 最后原子替换文件；失败会抛出并回滚 Room 事务。
+            writeAtomically(file, encryptedContent)
+        } finally {
+            encryptedContent.fill(0)
+        }
     }
 
     override suspend fun deleteAttachment(attachmentId: String) =
@@ -95,6 +108,15 @@ class FileBackedAttachmentRepository @Inject constructor(
             // 先查实体获取路径
             val entity = entryAttachmentQueryDao().getById(attachmentId) ?: return@transaction
             entryAttachmentCommandDao().deleteById(attachmentId)
+            if (
+                entity.status == AttachmentStatus.COMMITTED.name &&
+                entryAttachmentQueryDao().countCommittedByEntryId(entity.entryId) == 0
+            ) {
+                entryCommandDao().retainCapabilities(
+                    entity.entryId,
+                    EntryCapabilityFlags.HAS_ATTACHMENTS.inv()
+                )
+            }
 
             // 删除对应磁盘文件
             val file = resolveFile(entity.entryId, attachmentId)
@@ -105,6 +127,23 @@ class FileBackedAttachmentRepository @Inject constructor(
 
     private fun resolveFile(entryId: String, attachmentId: String): File =
         File(attachmentsDir, "${entryId}/${attachmentId}.enc")
+
+    private fun writeAtomically(target: File, content: ByteArray) {
+        val parent = requireNotNull(target.parentFile)
+        require(parent.isDirectory || parent.mkdirs()) { "无法创建附件目录" }
+        val temporary = File(parent, ".${target.name}.importing")
+        try {
+            FileOutputStream(temporary).use { output ->
+                output.write(content)
+                output.flush()
+                output.fd.sync()
+            }
+            if (target.exists()) require(target.delete()) { "无法替换已有附件文件" }
+            require(temporary.renameTo(target)) { "无法提交附件文件" }
+        } finally {
+            temporary.delete()
+        }
+    }
 
     private fun sha256Hex(data: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256")

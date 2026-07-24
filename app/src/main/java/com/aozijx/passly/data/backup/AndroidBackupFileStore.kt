@@ -3,9 +3,9 @@ package com.aozijx.passly.data.backup
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.backup.BackupException
+import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.data.backup.io.BackupFileStore
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.OutputStream
@@ -14,51 +14,55 @@ import javax.inject.Singleton
 
 @Singleton
 class AndroidBackupFileStore @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+    @param:ApplicationContext private val context: Context
+) : BackupFileStore {
 
-    fun openInputStream(uri: String): InputStream {
+    private fun openInputStream(uri: String): InputStream {
         val parsed = Uri.parse(uri)
         return try {
             context.contentResolver.openInputStream(parsed)
-                ?: throw BackupException.FileCorrupted()
+                ?: throw BackupFailed("无法打开备份输入流")
         } catch (_: SecurityException) {
-            throw BackupException.StoragePermissionDenied()
+            throw BackupFailed("没有文件读取权限，请重新授权")
         } catch (_: FileNotFoundException) {
-            throw BackupException.FileCorrupted()
+            throw BackupFailed("备份文件未找到")
         }
     }
 
-    fun openOutputStream(uri: String): OutputStream {
+    private fun openOutputStream(uri: String): OutputStream {
         val parsed = Uri.parse(uri)
         return try {
-            context.contentResolver.openOutputStream(parsed)
-                ?: throw BackupException.StoragePermissionDenied()
+            context.contentResolver.openOutputStream(parsed, "rwt")
+                ?: throw BackupFailed("没有文件写入权限，请重新授权")
         } catch (_: SecurityException) {
-            throw BackupException.StoragePermissionDenied()
+            throw BackupFailed("没有文件写入权限，请重新授权")
         } catch (_: FileNotFoundException) {
-            throw BackupException.StoragePermissionDenied()
+            throw BackupFailed("无法创建备份文件")
         }
     }
 
-    fun readBytes(uri: String): ByteArray = openInputStream(uri).use { it.readBytes() }
-
-    fun writeBytes(uri: String, data: ByteArray) {
+    override fun writeBytes(uri: String, data: ByteArray) {
         openOutputStream(uri).use { it.write(data); it.flush() }
     }
 
-    suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
-        AppResult.runSuspendCatching("backup.checkWritable") {
-            writeBytes(uri, ByteArray(0))
+    override fun readBytesSafely(uri: String, maxBytes: Long): ByteArray {
+        val stream = openInputStream(uri)
+        return stream.use { input ->
+            val limited = com.aozijx.passly.data.backup.io.LimitedInputStream(input, maxBytes)
+            limited.readBytes()
         }
-
-    fun imageDirectory(): File =
-        File(context.filesDir, "vault_images").apply { mkdirs() }
-
-    fun imageEntryName(entryId: String): String {
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-            .digest(entryId.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
-        return "images/${digest.take(32)}.bin"
     }
+
+    override suspend fun checkWritable(uri: String): AppResult<Unit> =
+        AppResult.runSuspendCatching("backup.checkWritable") {
+            val parsed = Uri.parse(uri)
+            val persistedWritable = context.contentResolver.persistedUriPermissions.any {
+                it.uri == parsed && it.isWritePermission
+            }
+            if (!persistedWritable) {
+                context.contentResolver.openFileDescriptor(parsed, "rw")
+                    ?.use { /* 打开但不写入，避免截断现有文件。 */ }
+                    ?: throw BackupFailed("没有文件写入权限，请重新授权")
+            }
+        }
 }

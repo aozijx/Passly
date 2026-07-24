@@ -58,7 +58,6 @@ class MainViewModel @Inject constructor(
 
             MainIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
-            else -> Unit
         }
     }
 

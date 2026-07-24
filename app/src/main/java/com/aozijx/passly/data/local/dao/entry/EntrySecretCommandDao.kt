@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Upsert
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 
 @Dao
@@ -17,14 +16,6 @@ interface EntrySecretCommandDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAllStrict(secrets: List<EntrySecretEntity>)
-
-    // === Import Upsert (overwrite on duplicate) ===
-
-    @Upsert
-    suspend fun upsertForImport(secret: EntrySecretEntity)
-
-    @Upsert
-    suspend fun upsertAllForImport(secrets: List<EntrySecretEntity>)
 
     // === Update ===
 

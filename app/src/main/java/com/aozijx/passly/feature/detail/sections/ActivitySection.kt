@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.activity.EntryActivity
-import com.aozijx.passly.domain.model.snapshot.EntrySnapshot
+import com.aozijx.passly.domain.model.revision.EntryRevision
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -33,7 +33,7 @@ private enum class ActivityTab { VERSION, ACTIVITY }
 
 @Composable
 fun ActivitySection(
-    historyList: List<EntrySnapshot>,
+    historyList: List<EntryRevision>,
     activityList: List<EntryActivity>,
     onRestore: (historyId: String) -> Unit
 ) {
@@ -72,7 +72,7 @@ fun ActivitySection(
 }
 
 @Composable
-private fun VersionTab(historyList: List<EntrySnapshot>, onRestore: (String) -> Unit) {
+private fun VersionTab(historyList: List<EntryRevision>, onRestore: (String) -> Unit) {
     if (historyList.isEmpty()) return
 
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
@@ -95,7 +95,7 @@ private fun VersionTab(historyList: List<EntrySnapshot>, onRestore: (String) -> 
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                TextButton(onClick = { onRestore(history.snapshotId) }) {
+                TextButton(onClick = { onRestore(history.revisionId) }) {
                     Text(stringResource(R.string.vault_detail_history_restore))
                 }
             }

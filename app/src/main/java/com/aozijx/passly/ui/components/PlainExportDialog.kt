@@ -35,7 +35,7 @@ fun PlainExportDialog(
         PlainExportDialogType.DatabaseError -> {
             title = stringResource(R.string.vault_plain_export_db_error_title)
             message = stringResource(R.string.vault_plain_export_db_error_message)
-            confirmText = stringResource(R.string.vault_plain_export_emergency_confirm)
+            confirmText = stringResource(R.string.vault_database_retry)
             dismissText = stringResource(R.string.vault_plain_export_db_error_dismiss)
             dismissColor = MaterialTheme.colorScheme.error
         }

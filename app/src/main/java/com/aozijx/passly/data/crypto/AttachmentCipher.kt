@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.crypto
 
-import com.aozijx.passly.data.model.payload.backup.AttachmentPayload
+import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
 import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.security.crypto.FieldEncryptor
 

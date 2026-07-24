@@ -9,7 +9,7 @@ import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
-import com.aozijx.passly.data.repository.entry.internal.EntrySnapshotHelper
+import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
@@ -28,7 +28,7 @@ class CreateEntryExecutor @Inject constructor(
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val blindIndexHelper: EntryBlindIndexHelper,
-    private val snapshotHelper: EntrySnapshotHelper,
+    private val snapshotHelper: EntryRevisionHelper,
     private val activityHelper: EntryActivityHelper,
     private val clock: Clock
 ) {

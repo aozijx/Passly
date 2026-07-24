@@ -11,13 +11,18 @@ object AadProvider {
         "${DatabaseSchema.TABLE_SECRETS}:${entryId}:secretBlob".toByteArray(Charsets.UTF_8)
 
     fun revision(entryId: String): ByteArray =
-        "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:snapshotBlob".toByteArray(Charsets.UTF_8)
+        "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:entryBlob".toByteArray(Charsets.UTF_8)
 
     fun history(entryId: String): ByteArray =
         "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:historyBlob".toByteArray(Charsets.UTF_8)
 
     fun attachment(entryId: String, attachmentId: String): ByteArray =
         "${DatabaseSchema.TABLE_ATTACHMENT}:${entryId}:${attachmentId}:encryptedBlob".toByteArray(
+            Charsets.UTF_8
+        )
+
+    fun attachmentContent(entryId: String, attachmentId: String): ByteArray =
+        "${DatabaseSchema.TABLE_ATTACHMENT}:${entryId}:${attachmentId}:content".toByteArray(
             Charsets.UTF_8
         )
 }

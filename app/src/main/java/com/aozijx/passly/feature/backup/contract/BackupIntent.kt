@@ -18,7 +18,7 @@ sealed class BackupIntent {
 
     data class UpdatePassword(val password: String) : BackupIntent()
     data class UpdateImportMode(val mode: ImportMode) : BackupIntent()
-    data class UpdateIncludeImages(val include: Boolean) : BackupIntent()
+    data class UpdateIncludeIcons(val include: Boolean) : BackupIntent()
 
     data object DismissPasswordDialog : BackupIntent()
     data object ResetBackupStatus : BackupIntent()
@@ -33,7 +33,7 @@ sealed class BackupIntent {
 
     data class ExportPlainBackup(val dirUri: String?) : BackupIntent()
     data class ExportPlainBackupToUri(val uri: Uri) : BackupIntent()
-    data object ExportEmergencyBackup : BackupIntent()
+    data class ExportTextBackup(val uri: Uri) : BackupIntent()
 
     data object IssuePlainExportToken : BackupIntent()
 }

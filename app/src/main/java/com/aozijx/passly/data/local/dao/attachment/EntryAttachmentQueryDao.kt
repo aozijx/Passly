@@ -33,6 +33,12 @@ interface EntryAttachmentQueryDao {
     @Query("SELECT COUNT(*) FROM entry_attachments WHERE entryId = :entryId")
     suspend fun countByEntryId(entryId: String): Int
 
+    @Query("SELECT COUNT(*) FROM entry_attachments WHERE entryId = :entryId AND status = 'COMMITTED'")
+    suspend fun countCommittedByEntryId(entryId: String): Int
+
+    @Query("SELECT * FROM entry_attachments WHERE entryId IN (:entryIds) AND status = 'COMMITTED' ORDER BY entryId, createdAt")
+    suspend fun getCommittedByEntryIds(entryIds: List<String>): List<EntryAttachmentEntity>
+
     @Query("SELECT * FROM entry_attachments WHERE owner = :owner AND status = 'PENDING' ORDER BY createdAt DESC")
     suspend fun getPendingByOwner(owner: String): List<EntryAttachmentEntity>
 

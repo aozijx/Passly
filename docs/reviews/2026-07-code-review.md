@@ -28,15 +28,16 @@ mutex 外直接把引用置空；`RoomDatabase.close()` 是阻塞调用，协程
 
 证据：`DatabaseSession.kt:51-89`。
 
-### P1：备份 v1 不是自描述 KDF 格式
+### 已解决：旧实验备份不是自描述 KDF 格式
 
 头部只写 magic、version、salt、nonce 和密文长度，解码始终调用当前 `deriveKeyArgon2id` 默认参数。未来调整
 Argon2id 参数后，旧备份可能无法恢复；头部也未作为明确 AAD 认证。
 
-建议新增 v2：写入 KDF algorithm id、内存、迭代、并行度、salt/nonce 长度，并以规范化 header 作为 AES-GCM
-AAD；保留 v1 reader 测试向量。
+处理结果：旧实验格式整体废弃。正式格式重新从 container v1 开始，使用新 magic
+`PSLYBKP1`，写入 KDF/cipher ID、Argon2 参数和所有长度，并把完整头作为 AAD。旧
+`PASSLYBK` 文件明确不兼容，不保留实验 reader。
 
-证据：`BackupArchiveCodec.kt:24-78`、`BackupManager.kt`。
+证据：`EncryptedBackupContainerCodec.kt`、`docs/data/backup-format.md`。
 
 ### P1：消息生产者同时“发布错误”和“返回错误”
 
@@ -82,15 +83,16 @@ id，不基于文本猜测。
 
 证据：`BiometricAuthenticator.kt:40-48`、`AppMessageCenter.kt:19-38`。
 
-### P2：密钥擦除注释可能高估保证
+### 已解决：密钥擦除注释可能高估保证
 
 `key.encoded.fill(0)` 通常覆盖 `SecretKeySpec` 返回的编码副本，不保证覆盖对象内部字节；同时 ZIP/加密
 API 可能产生不可控副本。
 
-建议由密钥派生函数返回可控 `ByteArray`，在构造短生命周期 `SecretKeySpec` 后覆盖源数组，并把文档/注释表述为
-best-effort，而非可靠清零。
+处理结果：容器 KDF 返回可控 `ByteArray`，所有异常路径都会覆盖；密码 UTF-8 backing
+buffer、归档和资源缓冲也执行 best-effort 清零。协议文档明确说明 JCE/JVM 内部副本无法
+保证物理擦除。
 
-证据：`BackupArchiveCodec.kt:46-48,77-79`。
+证据：`EncryptedBackupContainerCodec.kt`、`KeyDerivation.kt`。
 
 ## 低优先级与维护项
 

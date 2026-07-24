@@ -29,10 +29,10 @@ import com.aozijx.passly.feature.main.MainConfigViewModel
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
+import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.message.AppMessageHostViewModel
 import com.aozijx.passly.feature.verification.VerificationScreen
 import com.aozijx.passly.feature.verification.VerificationViewModel
-import com.aozijx.passly.service.backup.BackupImportIconSyncForegroundService
 import com.aozijx.passly.ui.components.PlainExportDialog
 import com.aozijx.passly.ui.components.PlainExportDialogType
 import com.aozijx.passly.ui.theme.AppTheme
@@ -69,7 +69,6 @@ internal fun MainScreen(
     val importSuccessMsg = stringResource(R.string.backup_import_success)
     val permOkMsg = stringResource(R.string.backup_directory_permission_ok)
     val plainExportSuccessMsg = stringResource(R.string.backup_plain_export_success)
-    val emergencyExportSuccessMsg = stringResource(R.string.backup_emergency_export_success)
     val unknownErrorMsg = stringResource(R.string.backup_error_unknown)
 
     val plainExportPickerLauncher = rememberLauncherForActivityResult(
@@ -88,10 +87,6 @@ internal fun MainScreen(
                 }
 
                 is BackupEffect.ShowPlainExportPicker -> plainExportPickerLauncher.launch(effect.fileName)
-                BackupEffect.StartImportSyncService -> {
-                    BackupImportIconSyncForegroundService.start(context)
-                }
-
                 BackupEffect.RequestAuth -> {
                     viewModel.requestAuth(
                         onSuccess = { backupViewModel.onIntent(BackupIntent.ExecuteBackup) }
@@ -108,7 +103,6 @@ internal fun MainScreen(
                     BackupOperationStatus.OperationType.EXPORT -> exportSuccessMsg
                     BackupOperationStatus.OperationType.IMPORT -> importSuccessMsg
                     BackupOperationStatus.OperationType.PLAIN_EXPORT -> plainExportSuccessMsg
-                    BackupOperationStatus.OperationType.EMERGENCY_EXPORT -> emergencyExportSuccessMsg
                     BackupOperationStatus.OperationType.PERMISSION_CHECK -> permOkMsg
                 }
                 AppMessageCenter.publish(msg, longDuration = true)
@@ -163,7 +157,7 @@ internal fun MainScreen(
                     PlainExportDialog(
                         type = PlainExportDialogType.DatabaseError,
                         onExportBackup = {
-                            backupViewModel.onIntent(BackupIntent.ExportEmergencyBackup)
+                            viewModel.handleIntent(MainIntent.RetryDatabaseInitialization)
                         },
                         onResetOrCancel = {
                             AppMessageCenter.publish(

@@ -62,7 +62,7 @@ fun rememberVaultActionProvider(
         { fieldKey: FieldKey, item: EntryListItem ->
             val label = EntryTypeDisplayProvider.getCopyLabel(fieldKey)
 
-            if (fieldKey == FieldKey.PASSWORD && item.hasTotp) {
+            if (fieldKey == FieldKey.PASSWORD && item.hasOtp) {
                 latestTotpStates[item.id]?.let { state ->
                     val code = state.code
                     if (!code.isNullOrEmpty() && !code.contains("-")) {

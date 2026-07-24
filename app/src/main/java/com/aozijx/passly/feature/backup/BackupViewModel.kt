@@ -8,12 +8,14 @@ import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.BackupFailed
 import com.aozijx.passly.core.error.ErrorLayer
-import com.aozijx.passly.core.error.backup.BackupException
 import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.util.PlainExportTokenManager
 import com.aozijx.passly.domain.command.settings.SettingsCommand
+import com.aozijx.passly.domain.model.backup.BackupExportRequest
+import com.aozijx.passly.domain.model.backup.BackupFormats
+import com.aozijx.passly.domain.model.backup.BackupImportRequest
 import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
-import com.aozijx.passly.domain.usecase.backup.BackupUseCases
+import com.aozijx.passly.domain.service.backup.VaultBackupService
 import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
@@ -34,7 +36,7 @@ import javax.inject.Inject
 @HiltViewModel
 class BackupViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
-    private val backupUseCases: BackupUseCases,
+    private val backupService: VaultBackupService,
     private val storageSupport: BackupExportStorageSupport,
     private val plainExportTokenManager: PlainExportTokenManager
 ) : ViewModel() {
@@ -59,7 +61,7 @@ class BackupViewModel @Inject constructor(
             is BackupIntent.StartImport -> startImport(intent.uri)
             is BackupIntent.UpdatePassword -> updatePassword(intent.password)
             is BackupIntent.UpdateImportMode -> updateImportMode(intent.mode)
-            is BackupIntent.UpdateIncludeImages -> updateIncludeImages(intent.include)
+            is BackupIntent.UpdateIncludeIcons -> updateIncludeIcons(intent.include)
             BackupIntent.DismissPasswordDialog -> dismissPasswordDialog()
             BackupIntent.ResetBackupStatus -> resetBackupStatus()
             is BackupIntent.TryStartExportInConfiguredDirectory -> tryStartExportInConfiguredDirectory(
@@ -70,7 +72,7 @@ class BackupViewModel @Inject constructor(
             BackupIntent.ExecuteBackup -> executeBackup()
             is BackupIntent.ExportPlainBackup -> exportPlainBackup(intent.dirUri)
             is BackupIntent.ExportPlainBackupToUri -> exportPlainBackupToUri(intent.uri)
-            BackupIntent.ExportEmergencyBackup -> exportEmergencyBackup()
+            is BackupIntent.ExportTextBackup -> exportTextBackup(intent.uri)
             BackupIntent.IssuePlainExportToken -> plainExportTokenManager.issueToken()
         }
     }
@@ -85,7 +87,7 @@ class BackupViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(status = BackupOperationStatus.Loading) }
-            val result = backupUseCases.checkDirectoryWritable(uri)
+            val result = backupService.checkDirectoryWritable(uri)
             _uiState.update { state ->
                 state.copy(
                     status = when (result) {
@@ -140,8 +142,8 @@ class BackupViewModel @Inject constructor(
         _uiState.update { it.copy(importMode = mode) }
     }
 
-    private fun updateIncludeImages(include: Boolean) {
-        _uiState.update { it.copy(includeImages = include) }
+    private fun updateIncludeIcons(include: Boolean) {
+        _uiState.update { it.copy(includeIcons = include) }
     }
 
     private fun dismissPasswordDialog() {
@@ -208,7 +210,9 @@ class BackupViewModel @Inject constructor(
             targetUri.toString(),
             currentState.pendingExportFileName ?: storageSupport.buildBackupFileName()
         )
-        if (createResult.isFailure) throw BackupException.StoragePermissionDenied()
+        if (createResult.isFailure) {
+            throw BackupFailed("没有文件写入权限，请重新授权")
+        }
         return createResult.getOrThrow().fileUri
     }
 
@@ -218,9 +222,23 @@ class BackupViewModel @Inject constructor(
         password: CharArray
     ): AppResult<Unit> {
         return if (currentState.isExporting) {
-            backupUseCases.exportBackup(finalUri.toString(), password, currentState.includeImages)
+            backupService.export(
+                BackupExportRequest(
+                    targetUri = finalUri.toString(),
+                    format = BackupFormats.PASSLY_ENCRYPTED,
+                    password = password,
+                    includeIcons = currentState.includeIcons
+                )
+            )
         } else {
-            backupUseCases.importBackup(finalUri.toString(), password, currentState.importMode)
+            backupService.import(
+                BackupImportRequest(
+                    sourceUri = finalUri.toString(),
+                    mode = currentState.importMode,
+                    format = null,
+                    password = password
+                )
+            )
         }
     }
 
@@ -229,8 +247,6 @@ class BackupViewModel @Inject constructor(
             oldState.pendingExportFileName?.let {
                 settingsRepository.update(SettingsCommand.SetLastBackupExportFileName(it))
             }
-        } else {
-            _effect.send(BackupEffect.StartImportSyncService)
         }
         val type = if (oldState.isExporting) BackupOperationStatus.OperationType.EXPORT
         else BackupOperationStatus.OperationType.IMPORT
@@ -281,7 +297,13 @@ class BackupViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(status = BackupOperationStatus.Loading) }
-            val result = backupUseCases.exportPlainBackup(uri.toString())
+            val result = backupService.export(
+                BackupExportRequest(
+                    targetUri = uri.toString(),
+                    format = BackupFormats.PASSLY_JSON,
+                    includeIcons = true
+                )
+            )
             when (result) {
                 is AppResult.Success -> {
                     _uiState.update {
@@ -306,23 +328,27 @@ class BackupViewModel @Inject constructor(
         }
     }
 
-    // --- 紧急备份 ---
+    // --- 文本导出 ---
 
-    private fun exportEmergencyBackup() {
+    private fun exportTextBackup(uri: Uri) {
         viewModelScope.launch {
             _uiState.update { it.copy(status = BackupOperationStatus.Loading) }
-            val result = backupUseCases.exportEmergencyBackup()
+            val result = backupService.export(
+                BackupExportRequest(
+                    targetUri = uri.toString(),
+                    format = BackupFormats.READABLE_TEXT
+                )
+            )
             when (result) {
                 is AppResult.Success -> {
                     _uiState.update {
                         it.copy(
-                            emergencyBackupFile = result.data,
-                            status = BackupOperationStatus.Success(BackupOperationStatus.OperationType.EMERGENCY_EXPORT),
-                            error = null
+                            status = BackupOperationStatus.Success(
+                                BackupOperationStatus.OperationType.PLAIN_EXPORT
+                            ), error = null
                         )
                     }
                 }
-
                 is AppResult.Failure -> {
                     _uiState.update {
                         it.copy(

@@ -27,7 +27,7 @@ data class EntryRevisionEntity(
     val entryId: String,
     val version: Int,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val snapshotBlob: ByteArray,
+    val entryBlob: ByteArray,
     val changeType: String,
     val createdAt: Long = System.currentTimeMillis()
 )

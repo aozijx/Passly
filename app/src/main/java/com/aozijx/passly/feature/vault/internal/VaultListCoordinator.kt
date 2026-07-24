@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.data.sorter.VaultListSorter
 import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.repository.entry.EntryListQueryRepository
+import com.aozijx.passly.domain.service.entry.VaultListSorter
 import com.aozijx.passly.feature.vault.model.VaultTab
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -82,8 +82,8 @@ internal class VaultListCoordinator(
             items = items,
             itemsByTab = mapOf(
                 VaultTab.ALL to items,
-                VaultTab.PASSWORDS to items.filter { !it.hasTotp },
-                VaultTab.TOTP to items.filter { it.hasTotp }
+                VaultTab.PASSWORDS to items.filter { it.hasPassword },
+                VaultTab.TOTP to items.filter { it.hasOtp }
             )
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())

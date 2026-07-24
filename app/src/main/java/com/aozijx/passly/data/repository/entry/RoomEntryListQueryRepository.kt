@@ -8,7 +8,7 @@ import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.activity.ActivityType
-import com.aozijx.passly.domain.model.entry.EntryType
+import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.model.lookup.EntryFilter
 import com.aozijx.passly.domain.model.lookup.EntryListItem
 import com.aozijx.passly.domain.model.lookup.LookupField
@@ -38,16 +38,8 @@ class RoomEntryListQueryRepository @Inject constructor(
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
-                entryQueryDao().observeActive()
-                    .map { entities ->
-                        entities.map {
-                            val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
-                            EntryListItemMapper.assemble(it, summary)
-                        }
-                            .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }
-                            .distinct()
-                    }
-                    .flowOn(Dispatchers.IO)
+                entryQueryDao().observeDistinctActiveEntryTypes()
+                    .map { types -> types.map { it.name } }
             }
         }
 
@@ -60,12 +52,12 @@ class RoomEntryListQueryRepository @Inject constructor(
             else sessionManager.observeFlow {
                 val entryFlow = when (filter) {
                     EntryFilter.ALL -> entryQueryDao().observeActive()
-                    EntryFilter.TOTP_ONLY -> entryQueryDao().observeActiveByTypes(
-                        TOTP_ENTRY_TYPES
+                    EntryFilter.TOTP_ONLY -> entryQueryDao().observeActiveWithCapability(
+                        EntryCapabilityFlags.HAS_OTP
                     )
 
-                    EntryFilter.PASSWORD_ONLY -> entryQueryDao().observeActiveByTypes(
-                        PASSWORD_ENTRY_TYPES
+                    EntryFilter.PASSWORD_ONLY -> entryQueryDao().observeActiveWithCapability(
+                        EntryCapabilityFlags.HAS_PASSWORD
                     )
                 }
                 val statsFlow =
@@ -96,8 +88,8 @@ class RoomEntryListQueryRepository @Inject constructor(
                         .filter { item ->
                             when (filter) {
                                 EntryFilter.ALL -> true
-                                EntryFilter.PASSWORD_ONLY -> !item.hasTotp
-                                EntryFilter.TOTP_ONLY -> item.hasTotp
+                                EntryFilter.PASSWORD_ONLY -> item.hasPassword
+                                EntryFilter.TOTP_ONLY -> item.hasOtp
                             }
                         }
                         .sortedWith(
@@ -117,31 +109,17 @@ class RoomEntryListQueryRepository @Inject constructor(
                 if (!authorized) flowOf(emptyList())
                 else sessionManager.observeFlow {
                     val entryFlow = when (filter) {
-                        EntryFilter.ALL -> entryQueryDao().observeActive()
-                        EntryFilter.TOTP_ONLY -> entryQueryDao().observeActiveByTypes(
-                            TOTP_ENTRY_TYPES
-                        )
+                        EntryFilter.ALL -> entryQueryDao().observeDistinctActiveEntryTypes()
+                        EntryFilter.TOTP_ONLY -> entryQueryDao()
+                            .observeActiveWithCapability(EntryCapabilityFlags.HAS_OTP)
+                            .map { entries -> entries.map { it.entryType }.distinct() }
 
-                        EntryFilter.PASSWORD_ONLY -> entryQueryDao().observeActiveByTypes(
-                            PASSWORD_ENTRY_TYPES
-                        )
+                        EntryFilter.PASSWORD_ONLY -> entryQueryDao()
+                            .observeActiveWithCapability(EntryCapabilityFlags.HAS_PASSWORD)
+                            .map { entries -> entries.map { it.entryType }.distinct() }
                     }
                     entryFlow
-                        .map { entities ->
-                            entities.map {
-                                val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
-                                EntryListItemMapper.assemble(it, summary)
-                            }
-                                .filter { item ->
-                                    when (filter) {
-                                        EntryFilter.ALL -> true
-                                        EntryFilter.PASSWORD_ONLY -> !item.hasTotp
-                                        EntryFilter.TOTP_ONLY -> item.hasTotp
-                                    }
-                                }
-                                .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }
-                                .distinct()
-                        }
+                        .map { types -> types.map { it.name }.distinct() }
                         .flowOn(Dispatchers.IO)
                 }
             }
@@ -168,26 +146,6 @@ class RoomEntryListQueryRepository @Inject constructor(
     }
 
     private companion object {
-        private val TOTP_ENTRY_TYPES = listOf(
-            EntryType.LOGIN,
-            EntryType.CARD,
-            EntryType.IDENTITY,
-            EntryType.NOTE,
-            EntryType.WIFI,
-            EntryType.SSH_KEY,
-            EntryType.CRYPTO_WALLET
-        )
-
-        private val PASSWORD_ENTRY_TYPES = listOf(
-            EntryType.LOGIN,
-            EntryType.CARD,
-            EntryType.IDENTITY,
-            EntryType.NOTE,
-            EntryType.WIFI,
-            EntryType.SSH_KEY,
-            EntryType.CRYPTO_WALLET
-        )
-
         private val SEARCH_FIELDS = LookupField.entries
     }
 }

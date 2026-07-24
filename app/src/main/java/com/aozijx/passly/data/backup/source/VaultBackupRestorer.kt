@@ -1,0 +1,210 @@
+package com.aozijx.passly.data.backup.source
+
+import android.content.Context
+import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.backup.BackupBundleValidator
+import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
+import com.aozijx.passly.data.backup.model.BackupBundle
+import com.aozijx.passly.data.backup.model.BackupResourceKind
+import com.aozijx.passly.data.codec.entry.EntrySecretCodec
+import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.crypto.AadProvider
+import com.aozijx.passly.data.crypto.AttachmentCipher
+import com.aozijx.passly.data.model.entity.EntryAttachmentEntity
+import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.data.model.entity.EntrySecretEntity
+import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
+import com.aozijx.passly.domain.model.attachment.AttachmentStatus
+import com.aozijx.passly.domain.model.backup.ImportMode
+import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
+import com.aozijx.passly.security.crypto.FieldEncryptor
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.util.Base64
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * 备份恢复器。
+ *
+ * 唯一负责将 [BackupBundle] 写入数据库：
+ * - 校验 entryId/type/version
+ * - 生成 Summary/Secret 密文
+ * - 写 Entry、Secret
+ * - OVERWRITE 时在同一个事务中清库并插入
+ * - 重建或标记 Blind Index 待重建
+ */
+@Singleton
+class VaultBackupRestorer @Inject constructor(
+    @param:ApplicationContext private val context: Context,
+    private val sessionManager: UnifiedSessionManager,
+    private val summaryCodec: EntrySummaryCodec,
+    private val secretCodec: EntrySecretCodec,
+    private val documentMapper: BackupDocumentMapper,
+    private val fieldEncryptor: FieldEncryptor
+) {
+
+    suspend fun restore(bundle: BackupBundle, mode: ImportMode) {
+        BackupBundleValidator.validate(
+            bundle,
+            requireResourceData = bundle.document.resources.isNotEmpty()
+        )
+        val resourcesByEntry = bundle.document.resources.groupBy { it.entryId }
+        val fileJournal = RestoreFileJournal()
+        val restoredFiles = mutableSetOf<String>()
+
+        try {
+            sessionManager.transaction {
+                if (mode == ImportMode.OVERWRITE) {
+                    val maintenance = vaultMaintenanceDao()
+                    maintenance.clearSearchTokens()
+                    maintenance.clearDrafts()
+                    maintenance.clearAttachments()
+                    maintenance.clearActivities()
+                    maintenance.clearRevisions()
+                    maintenance.clearSecrets()
+                    maintenance.clearEntries()
+                }
+
+                bundle.document.entries.forEach { record ->
+                    val entryId = record.id
+                    if (mode == ImportMode.APPEND && entryQueryDao().exists(entryId)) {
+                        return@forEach
+                    }
+                    val restoredEntry = documentMapper.toEntry(record)
+                    val entryResources = resourcesByEntry[entryId].orEmpty()
+                    val iconRecord = entryResources.singleOrNull {
+                        it.kind == BackupResourceKind.ICON
+                    }
+                    val iconPath = iconRecord?.let { resource ->
+                        val content = requireNotNull(bundle.resourceData[resource.id])
+                        val iconDir = File(context.filesDir, "vault_images").apply { mkdirs() }
+                        val target = File(
+                            iconDir,
+                            "restored_${
+                                BackupBundleValidator.sha256Hex(resource.id.toByteArray()).take(32)
+                            }.bin"
+                        )
+                        fileJournal.replace(target, content)
+                        restoredFiles += target.canonicalPath
+                        target.absolutePath
+                    }
+                    val summary = restoredEntry.summary.copy(iconCustomPath = iconPath)
+                    val secret = restoredEntry.secret
+                    val metaBlob = summaryCodec.encrypt(summary, entryId)
+                    val credBlob = secretCodec.encrypt(secret, entryId)
+
+                    val attachmentResources = entryResources.filter {
+                        it.kind == BackupResourceKind.ATTACHMENT
+                    }
+                    val capabilityFlags = EntryCapabilityFlags.computeFrom(
+                        secret = secret,
+                        hasAttachments = attachmentResources.isNotEmpty()
+                    )
+                    val otpType = EntryCapabilityFlags.otpTypeFrom(secret)
+
+                    val metaEntity = EntryEntity(
+                        entryId = entryId,
+                        entryType = com.aozijx.passly.domain.model.entry.EntryType.valueOf(record.type),
+                        version = record.version,
+                        capabilityFlags = capabilityFlags,
+                        otpType = otpType,
+                        summaryBlob = metaBlob,
+                        createdAt = record.createdAt,
+                        updatedAt = record.updatedAt,
+                        deletedAt = record.deletedAt
+                    )
+
+                    val credEntity = EntrySecretEntity(
+                        entryId = entryId,
+                        secretBlob = credBlob
+                    )
+
+                    entryCommandDao().insertStrict(metaEntity)
+                    entrySecretCommandDao().insertStrict(credEntity)
+
+                    attachmentResources.forEach { resource ->
+                        val content = requireNotNull(bundle.resourceData[resource.id])
+                        val attachmentDir =
+                            File(context.filesDir, "attachments/$entryId").apply { mkdirs() }
+                        val target = File(attachmentDir, "${resource.id}.enc")
+                        val encryptedContent = fieldEncryptor.encrypt(
+                            Base64.getEncoder().encodeToString(content),
+                            AadProvider.attachmentContent(entryId, resource.id)
+                        )
+                        try {
+                            fileJournal.replace(target, encryptedContent)
+                            restoredFiles += target.canonicalPath
+                        } finally {
+                            encryptedContent.fill(0)
+                        }
+
+                        val payload = AttachmentPayload(
+                            attachmentId = resource.id,
+                            fileName = resource.fileName.orEmpty(),
+                            mimeType = resource.mimeType.orEmpty(),
+                            fileSize = resource.size,
+                            encryptedPath = "$entryId/${resource.id}.enc",
+                            sha256 = resource.sha256,
+                            createdAt = resource.createdAt ?: record.updatedAt
+                        )
+                        entryAttachmentCommandDao().insertStrict(
+                            EntryAttachmentEntity(
+                                attachmentId = resource.id,
+                                entryId = entryId,
+                                fileName = resource.fileName.orEmpty(),
+                                fileSize = resource.size,
+                                mimeType = resource.mimeType,
+                                status = AttachmentStatus.COMMITTED.name,
+                                owner = entryId,
+                                encryptedBlob = AttachmentCipher.encrypt(
+                                    payload,
+                                    entryId,
+                                    resource.id,
+                                    fieldEncryptor
+                                ),
+                                createdAt = resource.createdAt ?: record.updatedAt
+                            )
+                        )
+                    }
+                }
+            }
+            fileJournal.commit()
+            if (mode == ImportMode.OVERWRITE) {
+                runCatching {
+                    cleanupUnreferencedFiles(
+                        roots = listOf(
+                            File(context.filesDir, "attachments"),
+                            File(context.filesDir, "vault_images")
+                        ),
+                        retainedCanonicalPaths = restoredFiles
+                    )
+                }.onFailure {
+                    AppLog.w("VaultBackupRestorer", "恢复成功，但旧资源清理未完全完成")
+                }
+            }
+        } catch (error: Throwable) {
+            fileJournal.rollback()
+            throw error
+        }
+    }
+
+    private fun cleanupUnreferencedFiles(
+        roots: List<File>,
+        retainedCanonicalPaths: Set<String>
+    ) {
+        roots.filter(File::isDirectory).forEach { root ->
+            root.walkBottomUp().forEach candidateLoop@{ candidate ->
+                if (candidate == root) return@candidateLoop
+                if (candidate.isFile && candidate.canonicalPath !in retainedCanonicalPaths) {
+                    if (!candidate.delete()) {
+                        AppLog.w("VaultBackupRestorer", "无法删除未引用恢复文件: ${candidate.name}")
+                    }
+                } else if (candidate.isDirectory) {
+                    candidate.delete()
+                }
+            }
+        }
+    }
+}
