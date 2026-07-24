@@ -9,9 +9,9 @@ import com.aozijx.passly.domain.model.entry.EntryType
 @Entity(
     tableName = "vault_entries",
     indices = [
-        Index(value = ["entryType"]),
-        Index(value = ["deletedAt"]),
-        Index(value = ["updatedAt"])
+        Index(value = ["deletedAt", "updatedAt"]),
+        Index(value = ["entryType", "deletedAt", "updatedAt"]),
+        Index(value = ["deletedAt", "createdAt"])
     ]
 )
 data class EntryEntity(
