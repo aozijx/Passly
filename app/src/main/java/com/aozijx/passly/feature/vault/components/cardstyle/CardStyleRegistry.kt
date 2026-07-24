@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.components.cardstyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.model.entry.EntryType
 import com.aozijx.passly.domain.model.entry.WebsiteInfo
 import com.aozijx.passly.domain.model.lookup.EntryListItem
@@ -28,7 +29,8 @@ object CardStyleRegistry {
         lastUsedAt = null,
         usageCount = 0,
         entryVersion = 0,
-        hasTotp = false
+        capabilityFlags = 0,
+        otpTypeName = ""
     )
 
     private val previewPasswordEntry = EntryListItem(
@@ -49,7 +51,8 @@ object CardStyleRegistry {
         lastUsedAt = null,
         usageCount = 0,
         entryVersion = 0,
-        hasTotp = false
+        capabilityFlags = 0,
+        otpTypeName = ""
     )
 
     private val previewTotpEntry = EntryListItem(
@@ -70,7 +73,8 @@ object CardStyleRegistry {
         lastUsedAt = null,
         usageCount = 0,
         entryVersion = 0,
-        hasTotp = true
+        capabilityFlags = EntryCapabilityFlags.HAS_OTP,
+        otpTypeName = "TOTP"
     )
 
     @Composable

@@ -10,6 +10,7 @@ import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.repository.entry.internal.EntrySnapshotHelper
 import com.aozijx.passly.data.util.Clock
+import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.EntrySecret
 import javax.inject.Inject
@@ -46,7 +47,11 @@ class UpdateEntryExecutor @Inject constructor(
 
         // 1. 版本校验 + metadata 更新（原子操作）
         val metaBlob = summaryCodec.encrypt(newSummary, id)
-        val affected = entryCommandDao().optimisticUpdate(id, expectedVersion, metaBlob, now)
+        val capabilityFlags = EntryCapabilityFlags.computeFrom(newSecret)
+        val otpType = EntryCapabilityFlags.otpTypeFrom(newSecret)
+        val affected = entryCommandDao().optimisticUpdate(
+            id, expectedVersion, metaBlob, capabilityFlags, otpType, now
+        )
         transactionRunner.checkAffectedRows(id, expectedVersion, affected)
 
         // 2. 写入 Secret（有变更或首次创建凭据时更新）

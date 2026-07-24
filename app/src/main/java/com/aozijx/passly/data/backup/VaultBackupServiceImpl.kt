@@ -16,6 +16,7 @@ import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
 import com.aozijx.passly.data.model.serializer.AppJson
 import com.aozijx.passly.di.IoDispatcher
 import com.aozijx.passly.domain.model.backup.ImportMode
+import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.service.backup.VaultBackupService
 import com.aozijx.passly.security.crypto.CryptoEngine
@@ -174,11 +175,16 @@ internal class VaultBackupServiceImpl @Inject constructor(
                 val metaBlob = summaryCodec.encrypt(summary, entryId)
                 val credBlob = secretCodec.encrypt(secret, entryId)
 
+                val capabilityFlags = EntryCapabilityFlags.computeFrom(secret)
+                val otpType = EntryCapabilityFlags.otpTypeFrom(secret)
+
                 val metaEntity = EntryEntity(
                     entryId = entryId,
                     vaultId = snapshot.vaultId,
                     version = snapshot.revision,
                     entryType = snapshot.entryType,
+                    capabilityFlags = capabilityFlags,
+                    otpType = otpType,
                     summaryBlob = metaBlob,
                     createdAt = snapshot.createdAt,
                     updatedAt = snapshot.updatedAt,

@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.AppDatabase
@@ -31,34 +30,8 @@ class RoomEntryListQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
     private val summaryCodec: EntrySummaryCodec,
-    private val secretCodec: EntrySecretCodec,
     private val blindIndexer: BlindIndexer
 ) : EntryListQueryRepository {
-
-    private companion object {
-        private val TOTP_ENTRY_TYPES = listOf(
-            EntryType.LOGIN,
-            EntryType.CARD,
-            EntryType.IDENTITY,
-            EntryType.NOTE,
-            EntryType.WIFI,
-            EntryType.SSH_KEY,
-            EntryType.CRYPTO_WALLET
-        )
-
-        private val PASSWORD_ENTRY_TYPES = listOf(
-            EntryType.LOGIN,
-            EntryType.CARD,
-            EntryType.IDENTITY,
-            EntryType.NOTE,
-            EntryType.WIFI,
-            EntryType.SSH_KEY,
-            EntryType.CRYPTO_WALLET
-        )
-
-        /** 搜索覆盖的所有字段 */
-        private val SEARCH_FIELDS = LookupField.entries
-    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override val allCategories: Flow<List<String>> = sessionState.isAuthorized
@@ -66,19 +39,10 @@ class RoomEntryListQueryRepository @Inject constructor(
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
                 entryQueryDao().observeActive()
-                    .map { metaEntities ->
-                        val credEntities =
-                            entrySecretQueryDao().getByEntryIds(metaEntities.map { it.entryId })
-                        val credMap = credEntities.associateBy { it.entryId }
-                        metaEntities.mapNotNull {
+                    .map { entities ->
+                        entities.map {
                             val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
-                            val secret = credMap[it.entryId]?.let { e ->
-                                secretCodec.decrypt(
-                                    e.secretBlob,
-                                    e.entryId
-                                )
-                            }
-                            EntryListItemMapper.assemble(it, summary, secret)
+                            EntryListItemMapper.assemble(it, summary)
                         }
                             .mapNotNull { it.category.takeIf { c -> c.isNotEmpty() } }
                             .distinct()
@@ -115,18 +79,9 @@ class RoomEntryListQueryRepository @Inject constructor(
                         metaEntities
                     }
 
-                    val credEntities =
-                        entrySecretQueryDao().getByEntryIds(filteredMetaEntities.map { it.entryId })
-                    val credMap = credEntities.associateBy { it.entryId }
-                    filteredMetaEntities.mapNotNull {
+                    filteredMetaEntities.map {
                         val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
-                        val secret = credMap[it.entryId]?.let { e ->
-                            secretCodec.decrypt(
-                                e.secretBlob,
-                                e.entryId
-                            )
-                        }
-                        EntryListItemMapper.assemble(it, summary, secret)
+                        EntryListItemMapper.assemble(it, summary)
                     }
                         .map { item ->
                             val stats = statsMap[item.id]
@@ -172,19 +127,10 @@ class RoomEntryListQueryRepository @Inject constructor(
                         )
                     }
                     entryFlow
-                        .map { metaEntities ->
-                            val credEntities =
-                                entrySecretQueryDao().getByEntryIds(metaEntities.map { it.entryId })
-                            val credMap = credEntities.associateBy { it.entryId }
-                            metaEntities.mapNotNull {
+                        .map { entities ->
+                            entities.map {
                                 val summary = summaryCodec.decrypt(it.summaryBlob, it.entryId)
-                                val secret = credMap[it.entryId]?.let { e ->
-                                    secretCodec.decrypt(
-                                        e.secretBlob,
-                                        e.entryId
-                                    )
-                                }
-                                EntryListItemMapper.assemble(it, summary, secret)
+                                EntryListItemMapper.assemble(it, summary)
                             }
                                 .filter { item ->
                                     when (filter) {
@@ -202,9 +148,6 @@ class RoomEntryListQueryRepository @Inject constructor(
 
     /**
      * 使用盲索引对 [metaEntities] 进行预过滤，仅返回与 [query] 匹配的条目。
-     * 如果查询词无法生成有效令牌（如长度不足），返回空列表。
-     *
-     * 多 Token 交集在 SQL 层通过 INTERSECT 完成，避免在内存中加载大量候选结果。
      */
     private suspend fun filterByBlindIndex(
         db: AppDatabase,
@@ -222,5 +165,29 @@ class RoomEntryListQueryRepository @Inject constructor(
         if (matchingIds.isEmpty()) return emptyList()
 
         return metaEntities.filter { it.entryId in matchingIds }
+    }
+
+    private companion object {
+        private val TOTP_ENTRY_TYPES = listOf(
+            EntryType.LOGIN,
+            EntryType.CARD,
+            EntryType.IDENTITY,
+            EntryType.NOTE,
+            EntryType.WIFI,
+            EntryType.SSH_KEY,
+            EntryType.CRYPTO_WALLET
+        )
+
+        private val PASSWORD_ENTRY_TYPES = listOf(
+            EntryType.LOGIN,
+            EntryType.CARD,
+            EntryType.IDENTITY,
+            EntryType.NOTE,
+            EntryType.WIFI,
+            EntryType.SSH_KEY,
+            EntryType.CRYPTO_WALLET
+        )
+
+        private val SEARCH_FIELDS = LookupField.entries
     }
 }

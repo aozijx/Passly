@@ -21,6 +21,8 @@ data class EntryEntity(
     val entryType: EntryType = EntryType.LOGIN,
     val version: Int = 1,
     val capabilityFlags: Int = 0,
+    /** 条目有 OTP 时的类型（TOTP/HOTP/STEAM），null 表示无 OTP */
+    val otpType: String? = null,
     val searchIndexVersion: Int = 0,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val summaryBlob: ByteArray,

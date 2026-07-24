@@ -9,6 +9,7 @@ import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.model.entry.EntrySecret
 import com.aozijx.passly.domain.model.entry.EntrySummary
 import com.aozijx.passly.domain.model.entry.EntryType
@@ -107,10 +108,14 @@ class CredentialServiceRepositoryImpl @Inject constructor(
             val credBlob = secretCodec.encrypt(secret, entryId)
 
             val now = clock.now()
+            val capabilityFlags = EntryCapabilityFlags.computeFrom(secret)
+            val otpType = EntryCapabilityFlags.otpTypeFrom(secret)
             val metaEntity = EntryEntity(
                 entryId = entryId,
                 vaultId = "default",
                 entryType = EntryType.LOGIN,
+                capabilityFlags = capabilityFlags,
+                otpType = otpType,
                 summaryBlob = metaBlob,
                 createdAt = now,
                 updatedAt = now

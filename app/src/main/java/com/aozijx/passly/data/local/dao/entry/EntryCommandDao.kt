@@ -25,11 +25,13 @@ interface EntryCommandDao {
 
     // === Optimistic Lock Update ===
 
-    @Query("UPDATE vault_entries SET summaryBlob = :summaryBlob, version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion")
+    @Query("UPDATE vault_entries SET summaryBlob = :summaryBlob, capabilityFlags = :capabilityFlags, otpType = :otpType, version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion")
     suspend fun optimisticUpdate(
         entryId: String,
         expectedVersion: Int,
         summaryBlob: ByteArray,
+        capabilityFlags: Int,
+        otpType: String?,
         updatedAt: Long
     ): Int
 

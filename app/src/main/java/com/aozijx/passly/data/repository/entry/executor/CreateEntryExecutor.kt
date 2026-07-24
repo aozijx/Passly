@@ -12,6 +12,7 @@ import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.repository.entry.internal.EntrySnapshotHelper
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.model.activity.ActivityType
+import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.model.entry.EntryId
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.github.f4b6a3.uuid.UuidCreator
@@ -39,9 +40,14 @@ class CreateEntryExecutor @Inject constructor(
             val metaBlob = summaryCodec.encrypt(entry.summary, entryId)
             val credBlob = secretCodec.encrypt(entry.secret, entryId)
 
+            val capabilityFlags = EntryCapabilityFlags.computeFrom(entry.secret)
+            val otpType = EntryCapabilityFlags.otpTypeFrom(entry.secret)
+
             val metaEntity = EntryEntity(
                 entryId = entryId,
                 entryType = entry.entryType,
+                capabilityFlags = capabilityFlags,
+                otpType = otpType,
                 summaryBlob = metaBlob,
                 createdAt = now,
                 updatedAt = now
