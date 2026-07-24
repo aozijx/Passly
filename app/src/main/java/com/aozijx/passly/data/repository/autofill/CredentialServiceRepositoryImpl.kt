@@ -7,7 +7,6 @@ import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.util.Clock
-import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.EntryCapabilityFlags
 import com.aozijx.passly.domain.model.entry.EntrySecret
@@ -29,7 +28,6 @@ import javax.inject.Singleton
 class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: VaultAccessState,
-    private val stateProvider: SessionStateProvider,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val clock: Clock
@@ -39,7 +37,6 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         packageName: String?,
         webDomain: String?
     ): List<CredentialCandidate> = runBlocking(Dispatchers.IO) {
-        stateProvider.assertWritable()
         sessionManager.query {
             val metadataEntities = entryQueryDao().getActive()
             val credentialEntities =
@@ -66,19 +63,16 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     }
 
     override fun getById(entryId: Int): VaultEntry? = runBlocking(Dispatchers.IO) {
-        stateProvider.assertWritable()
         null
     }
 
     override fun getByIds(entryIds: List<Int>): List<VaultEntry> =
         runBlocking(Dispatchers.IO) {
-            stateProvider.assertWritable()
             emptyList()
         }
 
     override fun updateLastUsed(entryId: Int) {
         runBlocking(Dispatchers.IO) {
-            stateProvider.assertWritable()
         }
     }
 

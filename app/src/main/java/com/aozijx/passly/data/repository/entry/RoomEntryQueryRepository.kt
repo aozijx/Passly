@@ -4,8 +4,6 @@ import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
-import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
 import javax.inject.Inject
@@ -17,14 +15,12 @@ import javax.inject.Singleton
  */
 @Singleton
 class RoomEntryQueryRepository @Inject constructor(
-    private val stateProvider: SessionStateProvider,
     private val sessionManager: UnifiedSessionManager,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec
 ) : EntryQueryRepository {
 
     override suspend fun getById(entryId: String): VaultEntry? {
-        stateProvider.assertWritable()
         return sessionManager.query {
             val metaEntity = entryQueryDao().getById(entryId) ?: return@query null
             val credEntity = entrySecretQueryDao().getByEntryId(entryId)
@@ -35,7 +31,6 @@ class RoomEntryQueryRepository @Inject constructor(
     }
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> {
-        stateProvider.assertWritable()
         return sessionManager.query {
             val metaEntities = entryQueryDao().getActive()
             val credEntities = entrySecretQueryDao().getByEntryIds(metaEntities.map { it.entryId })
@@ -54,7 +49,6 @@ class RoomEntryQueryRepository @Inject constructor(
     }
 
     override suspend fun count(): Int {
-        stateProvider.assertWritable()
         return sessionManager.query { entryQueryDao().countActive() }
     }
 }

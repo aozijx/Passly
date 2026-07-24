@@ -1,261 +1,139 @@
 package com.aozijx.passly.core.session
 
-import androidx.room.withTransaction
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.DatabaseInitFailed
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.data.local.database.DatabaseProvider
-import com.aozijx.passly.domain.authentication.SessionLockedException
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.security.crypto.DekManager
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 统一会话管理器（策略层）。
+ * 统一会话管理器。
  *
- * 唯一真实来源，持有 AppDatabase 实例引用和锁状态。
+ * 作为 [DatabaseLeaseGate] 的外层协调者，负责：
+ * - 从 [DekManager] 获取 DEK 传递给 [DatabaseLeaseGate]
+ * - 提供向后兼容的 [query]/[transaction]/[observeFlow] API
+ * - 实现 [SessionStateProvider] 接口
  *
- * ## 数据库生命周期
- * - **解锁时开库**：[unlock()] 同步打开数据库，期间复用同一实例
- * - **锁定时关库**：[lock()] 阻止新访问 → 排干活跃操作 → 关闭数据库 → 设 null
- * - 锁定后不存在可继续使用的连接，下一次 [unlock()] 重新创建
+ * ## 锁策略
+ * - [softLock]：阻止新租约，数据库保持打开（SOFT_LOCKED）。
+ *   适用于 UI 手动锁定或空闲超时。
+ * - [seal]：排干租约、关闭数据库（SEALED）。
+ *   适用于应用进后台、完整性异常、删除 Vault。
+ * - [unlock]：打开数据库或恢复解锁状态。
  *
- * API 分三类：
- * - [query]：即查即返，用于一次性的挂起查询，计数只在执行期间生效
- * - [transaction]：写事务，自动包裹 Room 事务边界 + 自动回滚
- * - [observeFlow]：持续观察，计数包裹整个 Flow 收集生命周期，取消收集时自动释放
- *
- * 锁定流程 ([lock]) 包含超时熔断机制：超时后强制取消僵尸协程 ([operationScope])。
+ * DEK 擦除由 [DekManager] 负责，本类不触及 DEK 生命周期。
  */
 @Singleton
 class UnifiedSessionManager @Inject constructor(
-    private val databaseProvider: DatabaseProvider,
+    private val leaseGate: DatabaseLeaseGate,
     private val dekManager: DekManager
 ) : SessionStateProvider {
 
-    companion object {
+    private companion object {
         private const val TAG = "UnifiedSessionManager"
-
-        /** Flow 观察超时：如果上游 30 秒内无新数据，触发熔断释放计数。 */
-        private val TIMEOUT_FLOW_EMISSION = 30.seconds
     }
 
-    /** 用于强制取消僵尸事务的协程作用域。所有 DB 操作均在此作用域内启动。 */
-    private val operationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // ============================== SessionStateProvider ==============================
 
-    private val activeOps = AtomicInteger(0)
-    private val lockState = AtomicReference(LockState.LOCKED)
-
-    private val mutex = Mutex()
-    private var database: AppDatabase? = null
+    override val lockState: LockState
+        get() = leaseGate.lockState.value
 
     // ============================== 公共 API ==============================
 
     /**
      * 即查即返（一次性挂起查询）。
-     * 计数仅在方法执行期间生效，返回值后立即释放。
+     * 委派给 [DatabaseLeaseGate.withReadLease]。
      */
     suspend fun <T> query(block: suspend AppDatabase.() -> T): T =
-        executeWithGuard(block)
+        leaseGate.withReadLease {
+            block()
+        }
 
     /**
-     * 写事务（强制包裹 Room 事务边界）。
-     * 使用 [AppDatabase.withTransaction] 自动管理 begin/setSuccessful/endTransaction。
+     * 写事务。
+     * 委派给 [DatabaseLeaseGate.withWriteLease]。
      */
     suspend fun <T> transaction(block: suspend AppDatabase.() -> T): T =
-        executeWithGuard { db ->
-            db.withTransaction { block(db) }
+        leaseGate.withWriteLease {
+            block()
         }
 
     /**
-     * 持续观察（专用于 Flow）。
-     *
-     * 返回的 Flow 在每次 [collect] 时：
-     * 1. 递增活跃计数 + 检查锁状态
-     * 2. 获取数据库实例，调用 [block] 获取上游 Flow
-     * 3. 透传上游 Flow 的所有元素
-     * 4. [collect] 取消或异常终止时递减计数
-     *
-     * 这样 [lock] 中的排干逻辑能正确等待所有正在收集的 Flow 完成。
+     * 持续观察 Flow。
+     * 委派给 [DatabaseLeaseGate.observeWithLease]。
      */
-    fun <T> observeFlow(block: suspend AppDatabase.() -> Flow<T>): Flow<T> = flow {
-        activeOps.incrementAndGet()
-        try {
-            ensureNotLocked()
-            val db = resolveDatabase()
-            db.block()
-                .collect { value ->
-                    ensureNotLocked()
-                    emit(value)
-                }
-        } catch (e: TimeoutCancellationException) {
-            AppLog.w(TAG, "observeFlow timeout after ${TIMEOUT_FLOW_EMISSION.inWholeSeconds}s")
-            throw IllegalStateException(
-                "Flow emission timeout, no data for ${TIMEOUT_FLOW_EMISSION.inWholeSeconds}s",
-                e
-            )
-        } finally {
-            activeOps.decrementAndGet()
+    fun <T> observeFlow(block: suspend AppDatabase.() -> Flow<T>): Flow<T> =
+        leaseGate.observeWithLease {
+            block()
         }
-    }.flowOn(Dispatchers.IO)
-
-    // ============================== SessionStateProvider ==============================
-
-    override fun assertWritable() {
-        ensureNotLocked()
-    }
-
-    override fun <T> trackReadOperation(block: () -> T): T {
-        activeOps.incrementAndGet()
-        try {
-            return block()
-        } finally {
-            activeOps.decrementAndGet()
-        }
-    }
 
     // ============================== 锁管理 ==============================
 
     /**
-     * 解锁会话并在解锁成功后打开数据库。
+     * 解锁会话。
      *
-     * 数据库实例在解锁期间复用，不会频繁开关。
-     * 若打开数据库失败，状态保持 [LockState.LOCKED] 并返回异常。
+     * - 数据库已打开（SOFT_LOCKED → UNLOCKED）：仅恢复状态
+     * - 数据库未打开（SEALED → UNLOCKED）：获取 DEK 打开数据库
+     *
+     * @return 打开数据库失败时返回 [DatabaseInitFailed]，成功返回 null
      */
     suspend fun unlock(): Throwable? {
-        return try {
-            val dek = dekManager.withDek { it.clone() }
-            val db = databaseProvider.open(dek)
-            dek.fill(0)
-            mutex.withLock { database = db }
-            lockState.set(LockState.UNLOCKED)
-            AppLog.i(TAG, "Session unlocked, database opened")
-            null
-        } catch (e: Exception) {
-            AppLog.e(TAG, "Failed to open database on unlock", e)
-            mutex.withLock { database = null }
-            lockState.set(LockState.LOCKED)
-            DatabaseInitFailed("数据库初始化失败", cause = e)
+        val currentLock = leaseGate.lockState.value
+        // SOFT_LOCKED → UNLOCKED: 数据库已打开，仅恢复状态
+        if (currentLock == LockState.SOFT_LOCKED) {
+            return leaseGate.unlock(ByteArray(0)) // DEK 不被使用，传空数组
+        }
+        // SEALED → UNLOCKED: 需要 DEK 打开数据库
+        return withContext(Dispatchers.IO) {
+            val dek = try {
+                dekManager.withDek { it.clone() }
+            } catch (e: IllegalStateException) {
+                AppLog.e(TAG, "DEK not available for unlock", e)
+                return@withContext DatabaseInitFailed("DEK not available, re-authentication required")
+            }
+            try {
+                val err = leaseGate.unlock(dek)
+                if (err != null) {
+                    AppLog.e(TAG, "Failed to open database on unlock", err)
+                }
+                err
+            } finally {
+                dek.fill(0)
+            }
         }
     }
 
     /**
-     * 锁定会话。
-     *
-     * 1. 设置 [LockState.LOCKING] 状态阻止新操作
-     * 2. 等待活跃操作排干（最多 [timeout] 时间）
-     * 3. 若超时：强制取消 [operationScope] 取消僵尸协程，重置计数
-     * 4. 关闭数据库连接，置空引用
-     * 5. 设置 [LockState.LOCKED] 状态
-     *
-     * 锁定后不存在可用连接，DEK 由调用方负责擦除。
+     * 软锁定：阻止新租约，数据库保持打开。
+     * 适用于 UI 手动锁定或空闲超时。
      */
-    suspend fun lock(timeout: Duration = 5.seconds) {
-        lockState.set(LockState.LOCKING)
-
-        val drained = withTimeoutOrNull(timeout) {
-            while (activeOps.get() > 0) {
-                kotlinx.coroutines.delay(50)
-            }
-        }
-
-        if (drained == null) {
-            // 超时熔断：强制杀死僵尸协程
-            AppLog.w(TAG, "Lock drain timeout, cancelling zombie operations")
-            operationScope.coroutineContext[Job]?.let { job ->
-                job.children.forEach { it.cancel() }
-            }
-            // 兜底重置计数
-            activeOps.set(0)
-            AppLog.e(TAG, "Forced rollback completed, ${activeOps.get()} active ops remaining")
-        }
-
-        // 关闭数据库并置空引用 —— 锁定后不允许任何连接可继续使用
-        mutex.withLock {
-            database?.let { db ->
-                runCatching { db.close() }
-                    .onFailure { e -> AppLog.e(TAG, "Database close error on lock", e) }
-                database = null
-                AppLog.i(TAG, "Database closed on lock")
-            }
-        }
-
-        lockState.set(LockState.LOCKED)
-        AppLog.i(TAG, "Session locked")
+    suspend fun softLock() {
+        AppLog.i(TAG, "Soft locking session")
+        leaseGate.softLock()
     }
 
-    // ============================== 数据库生命周期 ==============================
+    /**
+     * 封存：排干租约 → 关闭数据库。
+     * 适用于应用进后台、完整性异常、删除 Vault。
+     * 调用方应在此后擦除 DEK。
+     */
+    suspend fun seal(timeout: Duration = 5.seconds) {
+        AppLog.i(TAG, "Sealing session")
+        leaseGate.seal(timeout)
+    }
 
     /**
-     * 关闭数据库连接。
-     * 仅在应用进入后台（onStop）或销毁（onDestroy）时调用，非锁定期关闭。
+     * 关闭数据库连接（旧 API）。
+     * 仅由 [DatabaseController] 在预热/重试时调用。
      */
     suspend fun closeDatabase() {
-        mutex.withLock {
-            database?.let { db ->
-                runCatching { db.close() }
-                    .onFailure { e -> AppLog.e(TAG, "Database close error", e) }
-                database = null
-                AppLog.i(TAG, "Database connection closed")
-            }
-        }
-    }
-
-    // ============================== 内部方法 ==============================
-
-    private suspend fun <T> executeWithGuard(
-        block: suspend (AppDatabase) -> T
-    ): T {
-        return operationScope.async(Dispatchers.IO) {
-            activeOps.incrementAndGet()
-            try {
-                ensureNotLocked()
-                val db = resolveDatabase()
-                block(db)
-            } finally {
-                activeOps.decrementAndGet()
-            }
-        }.await()
-    }
-
-    private fun ensureNotLocked() {
-        when (lockState.get()) {
-            LockState.UNLOCKED -> { /* ok */
-            }
-            LockState.LOCKING -> throw SessionLockedException("Vault session is locking")
-            LockState.LOCKED -> throw SessionLockedException("Vault session is locked")
-        }
-    }
-
-    /**
-     * 获取当前数据库实例。
-     *
-     * 数据库在 [unlock()] 时打开，在 [lock()] 或 [closeDatabase()] 时关闭。
-     * 本方法不做惰性初始化，锁定后直接抛出异常。
-     */
-    private suspend fun resolveDatabase(): AppDatabase {
-        mutex.withLock {
-            database?.let { return it }
-        }
-        throw SessionLockedException(
-            "Database not opened — session is locked or never unlocked"
-        )
+        leaseGate.closeDatabase()
     }
 }

@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.model.envelope.EnvelopeType
-import com.aozijx.passly.domain.repository.settings.IdleTimeoutSettings
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.UnlockResult
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +28,7 @@ import javax.inject.Singleton
 class VaultSessionController @Inject constructor(
     private val dekManager: DekManager,
     private val sessionManager: UnifiedSessionManager,
-    idleTimeoutSettings: IdleTimeoutSettings
+    idleTimeoutSettings: com.aozijx.passly.domain.repository.settings.IdleTimeoutSettings
 ) : VaultAccessState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
@@ -43,6 +42,13 @@ class VaultSessionController @Inject constructor(
         scope.launch { idleTimeoutSettings.lockTimeout.collect { timeoutMs = it } }
     }
 
+    /**
+     * 提交解锁：设置 DEK 并打开数据库。
+     *
+     * 此方法处理两种场景：
+     * 1. 全新解锁（SEALED → UNLOCKED）：需要 DEK 打开数据库
+     * 2. 软锁定恢复（SOFT_LOCKED → UNLOCKED）：数据库已打开，仅恢复状态
+     */
     suspend fun commitUnlock(
         type: EnvelopeType,
         ownedDek: OwnedBytes,
@@ -53,10 +59,9 @@ class VaultSessionController @Inject constructor(
             transition(AuthenticationState.Unlocking(correlationId))
             when (dekManager.setDek(type, dek)) {
                 UnlockResult.Success -> {
-                    // 打开数据库并设为解锁状态
+                    // 打开数据库（SOFT_LOCKED 时不需 DEK，SEALED 时从 DekManager 获取）
                     val err = sessionManager.unlock()
                     if (err != null) {
-                        // 返回前 dek 会在 finally 中 fill(0)
                         transition(AuthenticationState.Locked)
                         return@withLock false
                     }
@@ -76,13 +81,18 @@ class VaultSessionController @Inject constructor(
 
     /**
      * 标记会话为已认证。
-     * 必须在确保 DEK 已正确设置后调用。
+     *
+     * 在确保 DEK 已正确设置后调用。
+     * 若数据库已被封存（SEALED）且 DEK 不可用，返回 false 并回退到 Locked。
      *
      * @return true 如果解锁并打开数据库成功，false 否则
      */
     suspend fun markAuthenticated(): Boolean = mutex.withLock {
         val err = sessionManager.unlock()
-        if (err != null) return@withLock false
+        if (err != null) {
+            _state.value = AuthenticationState.Locked
+            return@withLock false
+        }
         markAuthenticatedInternal()
         true
     }
@@ -96,18 +106,40 @@ class VaultSessionController @Inject constructor(
         _state.value = state
     }
 
+    /**
+     * 锁定会话。
+     *
+     * 根据 [LockReason] 决定锁定策略：
+     * - [LockReason.USER], [LockReason.IDLE_TIMEOUT] → softLock（阻止新租约，数据库保持打开）
+     * - [LockReason.BACKGROUND], [LockReason.INTEGRITY_FAILURE], [LockReason.APP_EXIT] → seal（排干 + 关库 + 擦 DEK）
+     */
     suspend fun lock(reason: LockReason) {
         mutex.withLock {
             if (_state.value == AuthenticationState.Locked) return
             transition(AuthenticationState.Locking(reason))
             idleJob?.cancel()
 
-            // 通知会话管理器锁定（阻塞新操作，等待活跃操作排干）
-            runCatching { sessionManager.lock() }
-                .onFailure { AppLog.e(LogCategory.DATABASE, "session_lock_failed", throwable = it) }
+            when (reason) {
+                LockReason.USER, LockReason.IDLE_TIMEOUT -> {
+                    // 软锁定：阻止新租约，数据库保持打开，不擦 DEK
+                    runCatching { sessionManager.softLock() }
+                        .onFailure { e ->
+                            AppLog.e(LogCategory.DATABASE, "soft_lock_failed", throwable = e)
+                        }
+                }
 
-            // 擦除 DEK —— 数据库连接保持打开，但无 DEK 无法写入新数据
-            dekManager.lock()
+                LockReason.BACKGROUND,
+                LockReason.INTEGRITY_FAILURE,
+                LockReason.APP_EXIT -> {
+                    // 封存：排干租约 → 关闭数据库 → 擦除 DEK
+                    runCatching { sessionManager.seal() }
+                        .onFailure { e ->
+                            AppLog.e(LogCategory.DATABASE, "seal_failed", throwable = e)
+                        }
+                    dekManager.lock()
+                }
+            }
+
             transition(AuthenticationState.Locked)
         }
     }

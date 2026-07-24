@@ -4,7 +4,6 @@ import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.Conflict
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.domain.authentication.SessionStateProvider
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,10 +17,11 @@ import javax.inject.Singleton
  * - 错误映射（乐观锁冲突等）
  *
  * Command Handler 通过此类间接访问数据库，不直接引用 DAO、Room、withTransaction。
+ *
+ * 读/写操作的租约管理由 [UnifiedSessionManager] 负责，本类不再额外调用 [SessionStateProvider]。
  */
 @Singleton
 class VaultTransactionRunner @Inject constructor(
-    private val stateProvider: SessionStateProvider,
     private val sessionManager: UnifiedSessionManager
 ) {
 
@@ -33,7 +33,6 @@ class VaultTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
-        stateProvider.assertWritable()
         return AppResult.runSuspendCatching(operation) {
             sessionManager.transaction {
                 block()
@@ -48,7 +47,6 @@ class VaultTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
-        stateProvider.assertWritable()
         return AppResult.runSuspendCatching(operation) {
             sessionManager.query {
                 block()
