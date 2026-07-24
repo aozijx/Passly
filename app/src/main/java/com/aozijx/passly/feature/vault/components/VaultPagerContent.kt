@@ -17,6 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.components.widgets.SwipeDirection
+import com.aozijx.passly.core.ui.components.widgets.SwipeToAction
+import com.aozijx.passly.core.ui.components.widgets.createSwipeAction
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.VaultCardStyle
@@ -24,9 +27,6 @@ import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
-import com.aozijx.passly.ui.components.widgets.SwipeDirection
-import com.aozijx.passly.ui.components.widgets.SwipeToAction
-import com.aozijx.passly.ui.components.widgets.createSwipeAction
 
 @Composable
 fun VaultPagerContent(

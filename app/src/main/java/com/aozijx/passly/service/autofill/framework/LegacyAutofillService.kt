@@ -6,10 +6,10 @@ import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
+import com.aozijx.passly.app.di.Heuristic
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.di.Heuristic
 import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
 import com.aozijx.passly.domain.settings.model.AutofillUiMode
 import com.aozijx.passly.service.autofill.framework.adapter.LegacyPlatformAdapter

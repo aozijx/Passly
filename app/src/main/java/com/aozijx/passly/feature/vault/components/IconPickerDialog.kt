@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
-import com.aozijx.passly.ui.components.VaultIcons
+import com.aozijx.passly.core.ui.components.VaultIcons
 
 @Composable
 fun IconPickerDialog(

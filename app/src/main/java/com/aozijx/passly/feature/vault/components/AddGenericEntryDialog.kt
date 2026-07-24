@@ -11,6 +11,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.core.ui.components.AppDialog
+import com.aozijx.passly.core.ui.components.AppTextField
+import com.aozijx.passly.core.ui.components.PasswordInput
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -21,9 +24,6 @@ import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.secret.LoginSecret
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.ui.components.AppDialog
-import com.aozijx.passly.ui.components.AppTextField
-import com.aozijx.passly.ui.components.PasswordInput
 
 @Composable
 fun AddGenericEntryDialog(

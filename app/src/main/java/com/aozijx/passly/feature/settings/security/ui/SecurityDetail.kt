@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.feature.settings.security.SecurityUiState
-import com.aozijx.passly.ui.components.settings.SettingsSection
 
 @Composable
 internal fun SecurityDetail(

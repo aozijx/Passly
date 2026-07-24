@@ -27,8 +27,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.security.crypto.SecureString
-import com.aozijx.passly.ui.components.common.InputActionButton
 
 @Composable
 fun RecoveryCodeDetail(

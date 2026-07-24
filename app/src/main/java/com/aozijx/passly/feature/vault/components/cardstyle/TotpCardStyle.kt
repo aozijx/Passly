@@ -29,10 +29,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import com.aozijx.passly.core.ui.components.VaultItemIcon
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.model.OtpUiState
-import com.aozijx.passly.ui.components.VaultItemIcon
 
 private object TotpBehaviorTokens {
     const val FALLBACK_CODE = "------"

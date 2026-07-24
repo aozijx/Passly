@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.autofill.usecase
 
+import com.aozijx.passly.app.di.Strict
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.autofill.model.FieldDescriptor
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
-import com.aozijx.passly.di.Strict
 import javax.inject.Inject
 
 sealed interface PasswordCredentialResult {

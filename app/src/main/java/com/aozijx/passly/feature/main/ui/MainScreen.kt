@@ -21,6 +21,11 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.core.ui.components.PlainExportDialog
+import com.aozijx.passly.core.ui.components.PlainExportDialogType
+import com.aozijx.passly.core.ui.theme.AppTheme
+import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
+import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
@@ -31,11 +36,6 @@ import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.message.AppMessageHostViewModel
-import com.aozijx.passly.feature.verification.VerificationScreen
-import com.aozijx.passly.feature.verification.VerificationViewModel
-import com.aozijx.passly.ui.components.PlainExportDialog
-import com.aozijx.passly.ui.components.PlainExportDialogType
-import com.aozijx.passly.ui.theme.AppTheme
 
 @Composable
 internal fun MainScreen(
@@ -52,7 +52,7 @@ internal fun MainScreen(
     val backupViewModel: BackupViewModel = hiltViewModel()
     val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
 
-    val verificationViewModel: VerificationViewModel = hiltViewModel()
+    val authenticationViewModel: AuthenticationViewModel = hiltViewModel()
     val messageHostViewModel: AppMessageHostViewModel = hiltViewModel()
 
     LaunchedEffect(messageHostViewModel) {
@@ -180,7 +180,7 @@ internal fun MainScreen(
                 }
 
                 else -> {
-                    VerificationScreen(viewModel = verificationViewModel)
+                    AuthenticationScreen(viewModel = authenticationViewModel)
                 }
             }
         }

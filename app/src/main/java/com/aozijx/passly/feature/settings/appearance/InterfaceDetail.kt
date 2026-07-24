@@ -10,13 +10,13 @@ import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.components.group.GroupCard
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
+import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSection
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.VaultCardStyle
-import com.aozijx.passly.ui.components.group.GroupCard
-import com.aozijx.passly.ui.components.group.RoundedGroup
-import com.aozijx.passly.ui.components.group.RoundedGroupItem
-import com.aozijx.passly.ui.components.group.switchSettingsGroupItem
-import com.aozijx.passly.ui.components.settings.SettingsSection
-import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 
 @Composable
 internal fun InterfaceDetail(

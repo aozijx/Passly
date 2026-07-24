@@ -43,8 +43,8 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
+import com.aozijx.passly.core.ui.components.VaultItemIcon
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.ui.components.VaultItemIcon
 
 private object PasswordCardPaletteCache {
     private const val MAX = 48

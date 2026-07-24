@@ -33,8 +33,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
+import com.aozijx.passly.core.ui.components.VaultItemIcon
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.ui.components.VaultItemIcon
 
 @Composable
 fun DetailHeader(

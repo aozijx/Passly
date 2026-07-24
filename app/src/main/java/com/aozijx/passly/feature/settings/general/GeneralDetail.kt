@@ -21,7 +21,7 @@ import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.core.permission.AppPermission
 import com.aozijx.passly.core.permission.rememberAppPermissionRequester
 import com.aozijx.passly.core.platform.CacheUtils
-import com.aozijx.passly.ui.components.settings.SettingsSection
+import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

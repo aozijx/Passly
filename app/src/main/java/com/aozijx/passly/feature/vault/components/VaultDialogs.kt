@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.vault.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.core.ui.components.BackupPasswordDialog
+import com.aozijx.passly.core.ui.components.BackupPasswordDialogState
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.detail.DetailCardDialog
@@ -13,8 +15,6 @@ import com.aozijx.passly.feature.vault.dialogs.DeleteConfirmDialog
 import com.aozijx.passly.feature.vault.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpUiState
-import com.aozijx.passly.ui.components.BackupPasswordDialog
-import com.aozijx.passly.ui.components.BackupPasswordDialogState
 
 // --- 详情对话框宿主 ---
 @Composable

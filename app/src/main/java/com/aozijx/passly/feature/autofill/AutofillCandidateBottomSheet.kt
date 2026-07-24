@@ -31,7 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.ui.components.VaultItemIcon
+import com.aozijx.passly.core.ui.components.VaultItemIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

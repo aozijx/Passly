@@ -1,9 +1,9 @@
-package com.aozijx.passly.feature.verification
+package com.aozijx.passly.feature.auth.presentation
 
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.security.crypto.SecureString
 
-data class VerificationUiState(
+data class AuthenticationUiState(
     val showSetPasswordDialog: Boolean = false,
     val newAppPassword: SecureString = SecureString.EMPTY,
     val confirmAppPassword: SecureString = SecureString.EMPTY,

@@ -33,7 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.ui.theme.themePresets
+import com.aozijx.passly.core.ui.theme.themePresets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

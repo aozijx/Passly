@@ -20,14 +20,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.components.group.GroupCard
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
+import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
 import com.aozijx.passly.feature.settings.security.formatLockTimeoutText
-import com.aozijx.passly.ui.components.group.GroupCard
-import com.aozijx.passly.ui.components.group.RoundedGroup
-import com.aozijx.passly.ui.components.group.RoundedGroupItem
-import com.aozijx.passly.ui.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.ui.components.group.switchSettingsGroupItem
-import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 import kotlin.math.roundToInt
 
 private const val SLIDER_MIN_SECONDS = (LockTimeoutConstraints.SLIDER_MIN_MS / 1000L).toFloat()

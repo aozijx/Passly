@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.verification
+package com.aozijx.passly.feature.auth.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class VerificationViewModel @Inject constructor(
+class AuthenticationViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val methodProvisioner: AuthenticationMethodProvisioner,
     private val feedback: AuthFeedbackPresenter
@@ -30,8 +30,8 @@ class VerificationViewModel @Inject constructor(
     val state: StateFlow<AuthenticationState> = authenticationManager.state
     val methodAvailability = authenticationManager.methods
 
-    private val _uiState = MutableStateFlow(VerificationUiState())
-    val uiState: StateFlow<VerificationUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AuthenticationUiState())
+    val uiState: StateFlow<AuthenticationUiState> = _uiState.asStateFlow()
 
     fun verifyWithBiometric() {
         resetInputState()

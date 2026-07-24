@@ -20,6 +20,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.ui.components.AppDialog
+import com.aozijx.passly.core.ui.components.AppTextField
 import com.aozijx.passly.core.util.TotpUtils
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -34,8 +36,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.ui.components.AppDialog
-import com.aozijx.passly.ui.components.AppTextField
 
 @Composable
 fun AddTwoFADialog(

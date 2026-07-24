@@ -5,9 +5,9 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.ui.components.group.RoundedGroup
-import com.aozijx.passly.ui.components.group.switchSettingsGroupItem
-import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 fun DataSettingsSection(

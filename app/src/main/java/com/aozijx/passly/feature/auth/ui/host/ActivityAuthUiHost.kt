@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.authentication
+package com.aozijx.passly.feature.auth.ui.host
 
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -96,27 +96,33 @@ class ActivityAuthUiHost(
         }
         return suspendCancellableCoroutine { continuation ->
             val callback = object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        activePrompt.set(null)
-                        if (continuation.isActive) continuation.resume(BiometricHostResult.Success(result))
-                    }
-
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                        activePrompt.set(null)
-                        if (!continuation.isActive) return
-                        val result = when (errorCode) {
-                            BiometricPrompt.ERROR_NEGATIVE_BUTTON,
-                            BiometricPrompt.ERROR_USER_CANCELED -> BiometricHostResult.Cancelled(true)
-                            BiometricPrompt.ERROR_CANCELED,
-                            BiometricPrompt.ERROR_TIMEOUT -> BiometricHostResult.Cancelled(false)
-                            else -> BiometricHostResult.Failure(
-                                BiometricPromptErrorClassifier.classify(errorCode),
-                                errorCode
-                            )
-                        }
-                        continuation.resume(result)
-                    }
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    activePrompt.set(null)
+                    if (continuation.isActive) continuation.resume(
+                        BiometricHostResult.Success(
+                            result
+                        )
+                    )
                 }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    activePrompt.set(null)
+                    if (!continuation.isActive) return
+                    val result = when (errorCode) {
+                        BiometricPrompt.ERROR_NEGATIVE_BUTTON,
+                        BiometricPrompt.ERROR_USER_CANCELED -> BiometricHostResult.Cancelled(true)
+
+                        BiometricPrompt.ERROR_CANCELED,
+                        BiometricPrompt.ERROR_TIMEOUT -> BiometricHostResult.Cancelled(false)
+
+                        else -> BiometricHostResult.Failure(
+                            BiometricPromptErrorClassifier.classify(errorCode),
+                            errorCode
+                        )
+                    }
+                    continuation.resume(result)
+                }
+            }
             val prompt = try {
                 BiometricPrompt(activity, activity.mainExecutor, callback)
             } catch (failure: IllegalStateException) {
@@ -224,7 +230,7 @@ internal object BiometricPromptSpecFactory {
         }
         val authenticators = if (spec.allowDeviceCredential) {
             BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
         } else {
             BiometricManager.Authenticators.BIOMETRIC_STRONG
         }

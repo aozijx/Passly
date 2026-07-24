@@ -4,9 +4,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.ui.components.group.RoundedGroup
-import com.aozijx.passly.ui.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 fun CacheSettingsSection(

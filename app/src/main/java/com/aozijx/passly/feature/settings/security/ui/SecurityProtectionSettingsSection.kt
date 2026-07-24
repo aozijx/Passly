@@ -4,9 +4,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.ui.components.group.RoundedGroup
-import com.aozijx.passly.ui.components.group.switchSettingsGroupItem
-import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 fun SecurityProtectionSettingsSection(

@@ -23,11 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.feature.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.navigation.SettingsRoute
-import com.aozijx.passly.ui.components.group.RoundedGroup
-import com.aozijx.passly.ui.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.ui.components.settings.SettingsSectionTitle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

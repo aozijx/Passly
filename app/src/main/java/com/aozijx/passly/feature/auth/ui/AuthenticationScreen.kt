@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.verification
+package com.aozijx.passly.feature.auth.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,14 +27,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.common.ActionButton
+import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
-import com.aozijx.passly.ui.components.common.ActionButton
-import com.aozijx.passly.ui.components.common.InputActionButton
 
 @Composable
-fun VerificationScreen(
-    viewModel: VerificationViewModel
+fun AuthenticationScreen(
+    viewModel: AuthenticationViewModel
 ) {
     val methods by viewModel.methodAvailability.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

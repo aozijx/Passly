@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.authentication
+package com.aozijx.passly.feature.auth.ui.host
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +53,7 @@ fun AuthenticationHost(
                         registry.invalidateOwner(host.ownerId)
                     }
                 }
+
                 else -> Unit
             }
         }
@@ -70,11 +71,13 @@ fun AuthenticationHost(
             onSelected = host::submitMethod,
             onCancel = { host.submitMethod(null) }
         )
+
         is AuthenticationDialogRequest.Secret -> SecretDialog(
             method = request.method,
             onSubmit = host::submitSecret,
             onCancel = { host.submitSecret(null) }
         )
+
         null -> Unit
     }
 }
