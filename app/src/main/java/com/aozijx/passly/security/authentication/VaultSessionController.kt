@@ -3,6 +3,7 @@ package com.aozijx.passly.security.authentication
 import com.aozijx.passly.core.diagnostics.AppLog
 import com.aozijx.passly.core.diagnostics.LogCategory
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.domain.auth.model.VaultLockState
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.authentication.VaultAccessState
@@ -36,18 +37,25 @@ class VaultSessionController @Inject constructor(
     private var idleJob: Job? = null
     private var timeoutMs = 30_000L
 
+    /** 内部锁强度追踪，解决 SoftLocked 无法可靠升级为 Sealed 的问题 */
+    @Volatile
+    private var lockLevel: VaultLockState = VaultLockState.SEALED
+
     override val authenticationState: StateFlow<AuthenticationState> = _state.asStateFlow()
+
+    override fun isUnlocked(): Boolean = lockLevel == VaultLockState.UNLOCKED
+    override fun isLocked(): Boolean = lockLevel != VaultLockState.UNLOCKED
 
     init {
         scope.launch { idleTimeoutSettings.lockTimeout.collect { timeoutMs = it } }
     }
 
+    // ============================== 解锁 ==============================
+
     /**
-     * 提交解锁：设置 DEK 并打开数据库。
+     * 提交完整解锁（SEALED → UNLOCKED）。
      *
-     * 此方法处理两种场景：
-     * 1. 全新解锁（SEALED → UNLOCKED）：需要 DEK 打开数据库
-     * 2. 软锁定恢复（SOFT_LOCKED → UNLOCKED）：数据库已打开，仅恢复状态
+     * 设置 DEK 并打开数据库。用于密码/恢复码解锁路径。
      */
     suspend fun commitUnlock(
         type: EnvelopeType,
@@ -59,12 +67,12 @@ class VaultSessionController @Inject constructor(
             transition(AuthenticationState.Unlocking(correlationId))
             when (dekManager.setDek(type, dek)) {
                 UnlockResult.Success -> {
-                    // 打开数据库（SOFT_LOCKED 时不需 DEK，SEALED 时从 DekManager 获取）
                     val err = sessionManager.unlock()
                     if (err != null) {
                         transition(AuthenticationState.Locked)
                         return@withLock false
                     }
+                    lockLevel = VaultLockState.UNLOCKED
                     markAuthenticatedInternal()
                     true
                 }
@@ -80,18 +88,44 @@ class VaultSessionController @Inject constructor(
     }
 
     /**
-     * 标记会话为已认证。
+     * 恢复软锁定（SOFT_LOCKED → UNLOCKED）。
      *
-     * 在确保 DEK 已正确设置后调用。
-     * 若数据库已被封存（SEALED）且 DEK 不可用，返回 false 并回退到 Locked。
+     * 不设置 DEK（DEK 仍然在 [DekManager] 中），只重新打开 Session Gate。
+     * 用于生物识别等不需要外部凭据的重新认证。
      *
-     * @return true 如果解锁并打开数据库成功，false 否则
+     * @return true 如果恢复成功
      */
-    suspend fun markAuthenticated(): Boolean = mutex.withLock {
+    suspend fun resumeSoftLock(correlationId: String = ""): Boolean = mutex.withLock {
+        if (lockLevel != VaultLockState.SOFT_LOCKED) return@withLock false
         val err = sessionManager.unlock()
         if (err != null) {
-            _state.value = AuthenticationState.Locked
+            transition(AuthenticationState.Locked)
             return@withLock false
+        }
+        lockLevel = VaultLockState.UNLOCKED
+        markAuthenticatedInternal()
+        true
+    }
+
+    /**
+     * 标记会话为已认证。
+     *
+     * 用于生物识别路径（无需显式 DEK 的场景）。
+     */
+    suspend fun markAuthenticated(): Boolean = mutex.withLock {
+        if (lockLevel == VaultLockState.UNLOCKED) {
+            // 已经是 UNLOCKED，仅重置计时器
+            resetIdleTimer()
+            return@withLock true
+        }
+        // 尝试恢复软锁定；如果不是 SOFT_LOCKED 则走完整解锁路径
+        if (lockLevel == VaultLockState.SOFT_LOCKED) {
+            val err = sessionManager.unlock()
+            if (err != null) {
+                _state.value = AuthenticationState.Locked
+                return@withLock false
+            }
+            lockLevel = VaultLockState.UNLOCKED
         }
         markAuthenticatedInternal()
         true
@@ -106,37 +140,46 @@ class VaultSessionController @Inject constructor(
         _state.value = state
     }
 
+    // ============================== 锁定 ==============================
+
     /**
      * 锁定会话。
      *
-     * 根据 [LockReason] 决定锁定策略：
-     * - [LockReason.USER], [LockReason.IDLE_TIMEOUT] → softLock（阻止新租约，数据库保持打开）
-     * - [LockReason.BACKGROUND], [LockReason.INTEGRITY_FAILURE], [LockReason.APP_EXIT] → seal（排干 + 关库 + 擦 DEK）
+     * 根据 [LockReason] 决定锁定强度。
+     * 使用 [VaultLockState] 强度比较，仅当目标强度高于当前状态时才执行。
+     *
+     * - SOFT_LOCKED（USER / IDLE_TIMEOUT）：阻止新租约，数据库保持打开
+     * - SEALED（BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：排干 + 关库 + 擦 DEK
      */
     suspend fun lock(reason: LockReason) {
         mutex.withLock {
-            if (_state.value == AuthenticationState.Locked) return
+            val targetLevel = reason.toLockLevel()
+            if (!lockLevel.shouldEscalateTo(targetLevel)) {
+                // 当前强度已 ≥ 目标强度，跳过
+                return@withLock
+            }
             transition(AuthenticationState.Locking(reason))
             idleJob?.cancel()
 
-            when (reason) {
-                LockReason.USER, LockReason.IDLE_TIMEOUT -> {
-                    // 软锁定：阻止新租约，数据库保持打开，不擦 DEK
+            when (targetLevel) {
+                VaultLockState.SOFT_LOCKED -> {
                     runCatching { sessionManager.softLock() }
                         .onFailure { e ->
                             AppLog.e(LogCategory.DATABASE, "soft_lock_failed", throwable = e)
                         }
+                    lockLevel = VaultLockState.SOFT_LOCKED
                 }
 
-                LockReason.BACKGROUND,
-                LockReason.INTEGRITY_FAILURE,
-                LockReason.APP_EXIT -> {
-                    // 封存：排干租约 → 关闭数据库 → 擦除 DEK
+                VaultLockState.SEALED -> {
                     runCatching { sessionManager.seal() }
                         .onFailure { e ->
                             AppLog.e(LogCategory.DATABASE, "seal_failed", throwable = e)
                         }
                     dekManager.lock()
+                    lockLevel = VaultLockState.SEALED
+                }
+
+                VaultLockState.UNLOCKED -> { /* 锁定不可能目标是 UNLOCKED */
                 }
             }
 
@@ -148,13 +191,20 @@ class VaultSessionController @Inject constructor(
         if (isUnlocked()) resetIdleTimer()
     }
 
-    override fun isUnlocked(): Boolean = _state.value is AuthenticationState.Authenticated
-
     private fun resetIdleTimer() {
         idleJob?.cancel()
         idleJob = scope.launch {
             delay(timeoutMs)
             lock(LockReason.IDLE_TIMEOUT)
         }
+    }
+
+    private fun LockReason.toLockLevel(): VaultLockState = when (this) {
+        LockReason.USER,
+        LockReason.IDLE_TIMEOUT -> VaultLockState.SOFT_LOCKED
+
+        LockReason.BACKGROUND,
+        LockReason.INTEGRITY_FAILURE,
+        LockReason.APP_EXIT -> VaultLockState.SEALED
     }
 }
