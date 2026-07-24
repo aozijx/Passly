@@ -144,6 +144,7 @@ class EncryptedLogStore(
     private class FileEntry(
         val file: File,
         val fileId: ByteArray,
+        val createdAtMs: Long,
         val dataKey: ByteArray,
         val wrapNonce: ByteArray,
         val wrappedKey: ByteArray,
@@ -157,7 +158,13 @@ class EncryptedLogStore(
 
     init {
         directory.mkdirs()
-        runCatching { crashEmergencyEntry = createNewFileEntry("crash") }
+        runCatching {
+            val now = System.currentTimeMillis()
+            crashEmergencyEntry = createNewFileEntry(
+                File(directory, "crash_$now.$LOG_EXTENSION"),
+                now
+            )
+        }
         cleanup()
     }
 
@@ -398,6 +405,7 @@ class EncryptedLogStore(
             val entry = FileEntry(
                 file = reusable,
                 fileId = ctx.fileId,
+                createdAtMs = ctx.createdAtMs,
                 dataKey = ctx.dataKey.copyOf(),
                 wrapNonce = ByteArray(0), // not needed for existing file
                 wrappedKey = ByteArray(0),
@@ -411,8 +419,9 @@ class EncryptedLogStore(
         }
 
         // 创建新文件
-        val file = File(directory, "${prefix}_${System.currentTimeMillis()}.$LOG_EXTENSION")
-        val entry = createNewFileEntry(null)
+        val now = System.currentTimeMillis()
+        val file = File(directory, "${prefix}_${now}.$LOG_EXTENSION")
+        val entry = createNewFileEntry(file, now)
         try {
             writeHeader(file, entry)
             activeFileEntry?.destroyDataKey()
@@ -467,21 +476,20 @@ class EncryptedLogStore(
 
     // ============================== 文件头 ==============================
 
-    private fun createNewFileEntry(prefix: String?): FileEntry {
+    private fun createNewFileEntry(file: File, createdAtMs: Long): FileEntry {
         val fileId = ByteArray(LogFileContext.FILE_ID_BYTES).also(random::nextBytes)
         val dataKey = ByteArray(DATA_KEY_BYTES).also(random::nextBytes)
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateWrappingKey())
 
         // 包装加密 AAD = magic + version + fileId + createdAtMs
-        val now = System.currentTimeMillis()
-        val headerAad = buildHeaderAad(fileId, now)
+        val headerAad = buildHeaderAad(fileId, createdAtMs)
         cipher.updateAAD(headerAad)
 
         return FileEntry(
-            file = if (prefix != null) File(directory, "${prefix}_${now}.$LOG_EXTENSION")
-            else File(directory, "tmp_${now}.$LOG_EXTENSION"),
+            file = file,
             fileId = fileId,
+            createdAtMs = createdAtMs,
             dataKey = dataKey,
             wrapNonce = cipher.iv.copyOf(),
             wrappedKey = cipher.doFinal(dataKey),
@@ -524,7 +532,7 @@ class EncryptedLogStore(
             out.writeInt(FILE_MAGIC)
             out.writeInt(FILE_VERSION)
             out.write(entry.fileId) // 16 bytes
-            out.writeLong(System.currentTimeMillis())
+            out.writeLong(entry.createdAtMs)
             out.writeInt(entry.wrapNonce.size)
             out.write(entry.wrapNonce)
             out.writeInt(entry.wrappedKey.size)
@@ -649,6 +657,7 @@ class EncryptedLogStore(
     private fun copyEntry(entry: FileEntry) = FileEntry(
         file = entry.file,
         fileId = entry.fileId.copyOf(),
+        createdAtMs = entry.createdAtMs,
         dataKey = entry.dataKey.copyOf(),
         wrapNonce = entry.wrapNonce.copyOf(),
         wrappedKey = entry.wrappedKey.copyOf(),

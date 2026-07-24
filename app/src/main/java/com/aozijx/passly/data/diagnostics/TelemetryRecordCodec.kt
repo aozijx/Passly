@@ -26,11 +26,78 @@ import java.nio.charset.StandardCharsets
  */
 object TelemetryRecordCodec {
 
+    // ============================== 边界常量 ==============================
+
+    /** 单个字符串最大 UTF-8 字节数（兜底） */
+    const val MAX_STRING_BYTES = 4096
+
+    /** 事件名最大长度 */
+    const val MAX_NAME_BYTES = 256
+
+    /** 字段 key 最大长度 */
+    const val MAX_FIELD_KEY_BYTES = 128
+
+    /** 单条事件最大字段数 */
+    const val MAX_FIELDS_COUNT = 64
+
+    /** 最大栈帧数 */
+    const val MAX_FRAMES_COUNT = 64
+
+    /** 单帧字符串最大长度 */
+    const val MAX_FRAME_BYTES = 512
+
+    /** correlationId 最大长度（UUID 36 字符） */
+    const val MAX_CORRELATION_BYTES = 64
+
+    /** throwableType 最大长度 */
+    const val MAX_THROWABLE_BYTES = 256
+
+    /** SafeLogValue.EnumName 最大长度 */
+    const val MAX_ENUM_NAME_BYTES = 64
+
+    /** SafeLogValue.ErrorCodeValue / OperationCodeValue 最大长度 */
+    const val MAX_CODE_BYTES = 128
+
     fun encode(event: TelemetryEvent): ByteArray {
+        require(event.name.isNotEmpty()) { "Event name must not be empty" }
+
         val nameBytes = event.name.toByteArray(StandardCharsets.UTF_8)
+        require(nameBytes.size <= MAX_NAME_BYTES) {
+            "Event name exceeds $MAX_NAME_BYTES bytes: ${nameBytes.size}"
+        }
+
         val correlationBytes = event.correlationId.toByteArray(StandardCharsets.UTF_8)
+        require(correlationBytes.size <= MAX_CORRELATION_BYTES) {
+            "correlationId exceeds $MAX_CORRELATION_BYTES bytes: ${correlationBytes.size}"
+        }
+
         val throwableBytes = event.throwableType?.toByteArray(StandardCharsets.UTF_8)
-        val frameBytes = event.appStackFrames.map { it.toByteArray(StandardCharsets.UTF_8) }
+        throwableBytes?.let {
+            require(it.size <= MAX_THROWABLE_BYTES) {
+                "throwableType exceeds $MAX_THROWABLE_BYTES bytes: ${it.size}"
+            }
+        }
+
+        require(event.fields.size <= MAX_FIELDS_COUNT) {
+            "Fields count ${event.fields.size} exceeds max $MAX_FIELDS_COUNT"
+        }
+        event.fields.keys.forEach { key ->
+            val kb = key.toByteArray(StandardCharsets.UTF_8)
+            require(kb.size <= MAX_FIELD_KEY_BYTES) {
+                "Field key exceeds $MAX_FIELD_KEY_BYTES bytes: '${key.take(32)}' (${kb.size})"
+            }
+        }
+
+        require(event.appStackFrames.size <= MAX_FRAMES_COUNT) {
+            "Stack frames count ${event.appStackFrames.size} exceeds max $MAX_FRAMES_COUNT"
+        }
+        val frameBytes = event.appStackFrames.map { s ->
+            val b = s.toByteArray(StandardCharsets.UTF_8)
+            require(b.size <= MAX_FRAME_BYTES) {
+                "Stack frame exceeds $MAX_FRAME_BYTES bytes: ${b.size}"
+            }
+            b
+        }
 
         return ByteArrayOutputStream().use { bos ->
             DataOutputStream(bos).use { out ->
@@ -68,23 +135,41 @@ object TelemetryRecordCodec {
     }
 
     fun decode(bytes: ByteArray): TelemetryEvent {
+        require(bytes.isNotEmpty()) { "Empty record bytes" }
+
         return ByteArrayInputStream(bytes).use { bis ->
             DataInputStream(bis).use { input ->
                 val timestamp = input.readLong()
-                val level = EventLevel.entries[input.readByte().toInt()]
-                val category = EventCategory.entries[input.readByte().toInt()]
-                val name = readString(input)
+                val levelOrdinal = input.readByte().toInt()
+                require(levelOrdinal in EventLevel.entries.indices) {
+                    "Invalid EventLevel ordinal: $levelOrdinal"
+                }
+                val level = EventLevel.entries[levelOrdinal]
+
+                val categoryOrdinal = input.readByte().toInt()
+                require(categoryOrdinal in EventCategory.entries.indices) {
+                    "Invalid EventCategory ordinal: $categoryOrdinal"
+                }
+                val category = EventCategory.entries[categoryOrdinal]
+
+                val name = readString(input, MAX_NAME_BYTES)
                 val fields = mutableMapOf<String, SafeLogValue>()
                 val fieldsCount = input.readShort().toInt()
+                require(fieldsCount in 0..MAX_FIELDS_COUNT) {
+                    "Field count $fieldsCount exceeds max $MAX_FIELDS_COUNT"
+                }
                 repeat(fieldsCount) {
-                    val key = readString(input)
+                    val key = readString(input, MAX_FIELD_KEY_BYTES)
                     val value = decodeFieldValue(input)
                     fields[key] = value
                 }
-                val throwableType = readStringOrNull(input)
+                val throwableType = readStringOrNull(input, MAX_THROWABLE_BYTES)
                 val framesCount = input.readShort().toInt()
-                val frames = List(framesCount) { readString(input) }
-                val correlationId = readString(input)
+                require(framesCount in 0..MAX_FRAMES_COUNT) {
+                    "Frame count $framesCount exceeds max $MAX_FRAMES_COUNT"
+                }
+                val frames = List(framesCount) { readString(input, MAX_FRAME_BYTES) }
+                val correlationId = readString(input, MAX_CORRELATION_BYTES)
                 TelemetryEvent(
                     level = level,
                     category = category,
@@ -145,18 +230,16 @@ object TelemetryRecordCodec {
             2 -> SafeLogValue.DurationMs(input.readLong())
             3 -> SafeLogValue.Ratio(input.readDouble())
             4 -> SafeLogValue.BooleanValue(input.readBoolean())
-            5 -> SafeLogValue.EnumName(readString(input))
+            5 -> SafeLogValue.EnumName(readString(input, MAX_ENUM_NAME_BYTES))
             6 -> SafeLogValue.ErrorCodeValue(
                 com.aozijx.passly.core.telemetry.ErrorCode(
-                    readString(
-                        input
-                    )
+                    readString(input, MAX_CODE_BYTES)
                 )
             )
 
             7 -> SafeLogValue.OperationCodeValue(
                 com.aozijx.passly.core.telemetry.OperationCode(
-                    readString(input)
+                    readString(input, MAX_CODE_BYTES)
                 )
             )
 
@@ -164,16 +247,25 @@ object TelemetryRecordCodec {
         }
     }
 
-    private fun readString(input: DataInputStream): String {
+    private fun readString(input: DataInputStream, maxBytes: Int = MAX_STRING_BYTES): String {
         val len = input.readShort().toInt()
+        require(len in 0..maxBytes) {
+            "String length $len exceeds max $maxBytes"
+        }
         return if (len > 0) {
             val bytes = ByteArray(len); input.readFully(bytes)
             String(bytes, StandardCharsets.UTF_8)
         } else ""
     }
 
-    private fun readStringOrNull(input: DataInputStream): String? {
+    private fun readStringOrNull(
+        input: DataInputStream,
+        maxBytes: Int = MAX_STRING_BYTES
+    ): String? {
         val len = input.readShort().toInt()
+        require(len in 0..maxBytes) {
+            "String length $len exceeds max $maxBytes"
+        }
         return if (len > 0) {
             val bytes = ByteArray(len); input.readFully(bytes)
             String(bytes, StandardCharsets.UTF_8)
