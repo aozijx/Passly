@@ -22,27 +22,22 @@ enum class AuthenticationPurpose {
     EXPORT_DIAGNOSTICS
 }
 
+/**
+ * 认证请求。
+ *
+ * 调用者指定 [purpose] 和可选的 [correlationId]。
+ * [allowedMethods] 是调用者的偏好约束（缩小可选范围），
+ * 最终可用的认证方式由策略引擎与调用者约束的交集决定。
+ *
+ * 安全不变量：调用者无法覆盖。
+ * - [requireFreshAuthentication] 由 [purpose] 决定，调用者不可控
+ * - [allowedMethods] 最终受策略约束，调用者不能扩权
+ */
 data class AuthenticationRequest(
     val purpose: AuthenticationPurpose,
-    val allowedMethods: Set<AuthenticationMethod> = if (
-        purpose == AuthenticationPurpose.UNLOCK_VAULT
-    ) {
-        AuthenticationMethod.entries.toSet()
-    } else {
-        setOf(AuthenticationMethod.BIOMETRIC, AuthenticationMethod.APP_PASSWORD)
-    },
-    val requireFreshAuthentication: Boolean = purpose != AuthenticationPurpose.UNLOCK_VAULT,
+    val allowedMethods: Set<AuthenticationMethod> = AuthenticationMethod.entries.toSet(),
     val correlationId: String = UuidCreator.getTimeOrderedEpoch().toString()
-) {
-    init {
-        require(allowedMethods.isNotEmpty()) { "At least one authentication method is required" }
-        if (AuthenticationMethod.RECOVERY_CODE in allowedMethods) {
-            require(purpose == AuthenticationPurpose.UNLOCK_VAULT) {
-                "Recovery code may only unlock the vault"
-            }
-        }
-    }
-}
+)
 
 sealed interface AuthenticationState {
     data object Locked : AuthenticationState

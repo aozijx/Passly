@@ -49,12 +49,42 @@ class DefaultAuthenticationManager @Inject constructor(
     private val activeCorrelationId = AtomicReference<String?>(null)
     private val _methods = MutableStateFlow(AuthMethodAvailability())
 
+    /** 记录最近一次成功的认证方式，用于会话复用场景。 */
+    @Volatile
+    private var lastAuthMethod: AuthenticationMethod = AuthenticationMethod.BIOMETRIC
+
     override val state: StateFlow<AuthenticationState> = session.authenticationState
     override val methods: StateFlow<AuthMethodAvailability> = _methods
 
     init {
         scope.launch { refreshAvailability() }
     }
+
+    // ============================== 认证策略（Policy 内联实现） ==============================
+
+    /**
+     * 指定目的是否需要新鲜认证。
+     *
+     * 安全不变量：只有 UNLOCK_VAULT 可以在会话已解锁时复用。
+     * 所有其他目的（REVEAL_SECRET、BACKUP_EXPORT、EXPORT_DIAGNOSTICS 等）
+     * 必须始终触发重新认证。
+     */
+    private fun requiresFreshAuthentication(purpose: AuthenticationPurpose): Boolean =
+        purpose != AuthenticationPurpose.UNLOCK_VAULT
+
+    /**
+     * 指定目的允许的认证方式。
+     *
+     * - RECOVERY_CODE 仅限 UNLOCK_VAULT
+     * - 其他非解锁目的仅限 BIOMETRIC 和 APP_PASSWORD
+     */
+    private fun allowedMethods(purpose: AuthenticationPurpose): Set<AuthenticationMethod> =
+        when (purpose) {
+            AuthenticationPurpose.UNLOCK_VAULT -> AuthenticationMethod.entries.toSet()
+            else -> setOf(AuthenticationMethod.BIOMETRIC, AuthenticationMethod.APP_PASSWORD)
+        }
+
+    // ============================== 认证 ==============================
 
     override suspend fun authenticate(
         request: AuthenticationRequest,
@@ -72,10 +102,12 @@ class DefaultAuthenticationManager @Inject constructor(
         val wasUnlocked = session.isUnlocked()
         val isFullUnlock = request.purpose == AuthenticationPurpose.UNLOCK_VAULT
         try {
-            if (wasUnlocked && !request.requireFreshAuthentication) {
+            // 策略决策：是否可复用会话
+            if (wasUnlocked && !requiresFreshAuthentication(request.purpose)) {
                 session.onUserInteraction()
+                // 返回上一次认证方式，而非硬编码 BIOMETRIC
                 return AuthenticationResult.Success(
-                    method = AuthenticationMethod.BIOMETRIC,
+                    method = lastAuthMethod,
                     reusedSession = true
                 )
             }
@@ -85,16 +117,42 @@ class DefaultAuthenticationManager @Inject constructor(
             }
             val lease = hostRegistry.awaitLease() ?: return finish(
                 request,
-                failure(request, AuthenticationFailureCode.HOST_UNAVAILABLE)
+                AuthenticationResult.Failure(
+                    AuthenticationFailure(
+                        AuthenticationFailureCode.HOST_UNAVAILABLE,
+                        request.correlationId
+                    )
+                )
             ).also { if (isFullUnlock) restoreState(wasUnlocked) }
-            val available = request.allowedMethods.filter(_methods.value::available)
+            // 策略决策：根据目的确定可用的认证方式。
+            // 调用者的 allowedMethods 只能缩小范围，不能扩权。
+            val authorizedByPurpose = allowedMethods(request.purpose)
+            val available = request.allowedMethods
+                .intersect(authorizedByPurpose)
+                .filter(_methods.value::available)
             if (available.isEmpty()) {
                 if (isFullUnlock) restoreState(wasUnlocked)
-                return finish(request, failure(request, AuthenticationFailureCode.METHOD_UNAVAILABLE))
+                return finish(
+                    request,
+                    AuthenticationResult.Failure(
+                        AuthenticationFailure(
+                            AuthenticationFailureCode.METHOD_UNAVAILABLE,
+                            request.correlationId
+                        )
+                    )
+                )
             }
             val host = lease.hostOrNull() ?: run {
                 if (isFullUnlock) restoreState(wasUnlocked)
-                return finish(request, failure(request, AuthenticationFailureCode.HOST_UNAVAILABLE))
+                return finish(
+                    request,
+                    AuthenticationResult.Failure(
+                        AuthenticationFailure(
+                            AuthenticationFailureCode.HOST_UNAVAILABLE,
+                            request.correlationId
+                        )
+                    )
+                )
             }
             val method = when {
                 available.size == 1 -> available.first()
@@ -107,7 +165,15 @@ class DefaultAuthenticationManager @Inject constructor(
             }
             if (!hostRegistry.isCurrent(lease)) {
                 if (isFullUnlock) restoreState(wasUnlocked)
-                return finish(request, failure(request, AuthenticationFailureCode.HOST_UNAVAILABLE))
+                return finish(
+                    request,
+                    AuthenticationResult.Failure(
+                        AuthenticationFailure(
+                            AuthenticationFailureCode.HOST_UNAVAILABLE,
+                            request.correlationId
+                        )
+                    )
+                )
             }
             if (isFullUnlock) {
                 session.transition(
@@ -130,6 +196,7 @@ class DefaultAuthenticationManager @Inject constructor(
             val result = when (execution) {
                 is MethodExecutionResult.Success -> {
                     if (!isFullUnlock) session.onUserInteraction()
+                    lastAuthMethod = execution.method
                     AuthenticationResult.Success(execution.method)
                 }
                 is MethodExecutionResult.Cancelled -> {
@@ -147,7 +214,15 @@ class DefaultAuthenticationManager @Inject constructor(
             throw cancelled
         } catch (failure: Throwable) {
             if (isFullUnlock) restoreState(wasUnlocked)
-            return finish(request, failure(request, AuthenticationFailureCode.SESSION_TRANSITION_FAILED))
+            return finish(
+                request,
+                AuthenticationResult.Failure(
+                    AuthenticationFailure(
+                        AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
+                        request.correlationId
+                    )
+                )
+            )
         } finally {
             activeCorrelationId.compareAndSet(request.correlationId, null)
             requestMutex.unlock()
@@ -200,17 +275,6 @@ class DefaultAuthenticationManager @Inject constructor(
         if (wasUnlocked) session.markAuthenticated()
         else session.transition(AuthenticationState.Locked)
     }
-
-    private fun failure(request: AuthenticationRequest, code: AuthenticationFailureCode) =
-        AuthenticationResult.Failure(
-            AuthenticationFailure(
-                code,
-                request.correlationId,
-                safeFields = request.allowedMethods.singleOrNull()?.let { method ->
-                    mapOf("method" to method.name)
-                }.orEmpty()
-            )
-        )
 
     private fun finish(
         request: AuthenticationRequest,
