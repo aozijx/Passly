@@ -7,8 +7,8 @@ import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
-import com.aozijx.passly.data.mapper.snapshot.toEntrySecret
-import com.aozijx.passly.data.mapper.snapshot.toEntrySummary
+import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
+import com.aozijx.passly.data.mapper.entry.EntrySummaryMapper
 import com.aozijx.passly.data.mapper.snapshot.toSnapshot
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
@@ -169,8 +169,8 @@ internal class VaultBackupServiceImpl @Inject constructor(
         sessionManager.transaction {
             snapshots.forEach { snapshot ->
                 val entryId = snapshot.id
-                val summary = snapshot.summary.toEntrySummary()
-                val secret = snapshot.secret.toEntrySecret()
+                val summary = EntrySummaryMapper.toDomain(snapshot.summary)
+                val secret = EntrySecretMapper.toDomain(snapshot.secret)
                 val metaBlob = summaryCodec.encrypt(summary, entryId)
                 val credBlob = secretCodec.encrypt(secret, entryId)
 
