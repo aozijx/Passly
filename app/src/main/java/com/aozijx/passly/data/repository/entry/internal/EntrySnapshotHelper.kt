@@ -21,23 +21,22 @@ class EntrySnapshotHelper @Inject constructor(
 ) {
 
     /**
-     * 写入一条历史快照，版本号为 [oldVersion] + 1。
+     * 写入一条历史快照，版本号直接使用 [entryVersion]（即 EntryEntity.version）。
      */
     suspend fun snapshotChanges(
         db: AppDatabase,
         entryId: String,
-        oldVersion: Int,
+        entryVersion: Int,
         summary: EntrySummary,
         secret: EntrySecret,
         now: Long
     ) {
-        val newVersion = oldVersion + 1
         val snapshotBlob = revisionCodec.encrypt(summary, secret, entryId)
         with(db) {
-            entrySnapshotCommandDao().insertIdempotent(
+            entrySnapshotCommandDao().insertStrict(
                 EntryRevisionEntity(
                     revisionId = UuidCreator.getTimeOrderedEpoch().toString(),
-                    version = newVersion,
+                    version = entryVersion,
                     entryId = entryId,
                     snapshotBlob = snapshotBlob,
                     changeType = RevisionType.VALUE_CHANGED.value,

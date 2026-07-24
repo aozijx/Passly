@@ -10,11 +10,11 @@ import com.aozijx.passly.data.model.entity.EntryRevisionEntity
 @Dao
 interface EntrySnapshotCommandDao {
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertIdempotent(revision: EntryRevisionEntity)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertStrict(revision: EntryRevisionEntity)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertAllIdempotent(revisions: List<EntryRevisionEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAllStrict(revisions: List<EntryRevisionEntity>)
 
     @Upsert
     suspend fun upsertForImport(revision: EntryRevisionEntity)

@@ -63,11 +63,11 @@ class CreateEntryExecutor @Inject constructor(
             // 盲索引
             blindIndexHelper.rebuildForEntry(this, entryId, entry.toLookupFields())
 
-            // 历史快照（版本 1）
+            // 历史快照（version = 1，与 EntryEntity.version 一致）
             snapshotHelper.snapshotChanges(
                 db = this,
                 entryId = entryId,
-                oldVersion = 0,
+                entryVersion = 1,
                 summary = entry.summary,
                 secret = entry.secret,
                 now = now
