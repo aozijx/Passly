@@ -1,5 +1,7 @@
 package com.aozijx.passly.domain.settings.command
 
+import com.aozijx.passly.domain.notice.model.NoticeLevel
+import com.aozijx.passly.domain.notice.model.NoticeTopic
 import com.aozijx.passly.domain.settings.model.AutofillUiMode
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.VaultCardStyle
@@ -39,11 +41,20 @@ sealed interface SettingsCommand {
     data class SetVisibleVaultTabs(val keys: Set<String>) : SettingsCommand
     data class SetVaultSortOption(val sort: VaultSortSpec) : SettingsCommand
 
-    // Notifications
+    // Notifications (legacy — 保留向后兼容)
     data class SetStatusBarNotificationsEnabled(val enabled: Boolean) : SettingsCommand
     data class SetIconDownloadNotificationsEnabled(val enabled: Boolean) : SettingsCommand
     data class SetClipboardClearToastsEnabled(val enabled: Boolean) : SettingsCommand
     data class SetAppCloseToastsEnabled(val enabled: Boolean) : SettingsCommand
+
+    // Notice settings (new structured)
+    data class SetOptionalMessagesEnabled(val enabled: Boolean) : SettingsCommand
+    data class SetSystemNotificationsEnabled(val enabled: Boolean) : SettingsCommand
+    data class SetMessageTopicEnabled(val topic: NoticeTopic, val enabled: Boolean) :
+        SettingsCommand
+
+    data class SetMessageTopicMinimumLevel(val topic: NoticeTopic, val level: NoticeLevel) :
+        SettingsCommand
 
     // Backup
     data class SetBackupDirectoryUri(val uri: String) : SettingsCommand

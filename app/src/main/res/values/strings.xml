@@ -536,6 +536,23 @@
     <string name="log_export_title">分享错误日志</string>
     <string name="log_export_subject">Passly 错误日志</string>
     <string name="log_export_message">Passly 错误日志导出文件</string>
+    <string name="settings_system_notifications">系统通知</string>
+    <string name="settings_system_notifications_summary">在系统状态栏显示通知</string>
+    <string name="settings_app_notices">应用内消息</string>
+    <string name="settings_optional_notices">所有应用消息</string>
+    <string name="settings_optional_notices_summary">关闭后仅保留必要的安全与数据提醒</string>
+    <string name="settings_topic_clipboard">剪贴板</string>
+    <string name="settings_topic_clipboard_summary">敏感内容清除时提醒</string>
+    <string name="settings_topic_app_lifecycle">应用生命周期</string>
+    <string name="settings_topic_app_lifecycle_summary">关闭应用时提醒</string>
+    <string name="settings_topic_icon_download">图标下载</string>
+    <string name="settings_topic_icon_download_summary">图标下载结果通知</string>
+    <string name="settings_topic_backup">备份</string>
+    <string name="settings_topic_backup_summary">备份导入导出结果提醒</string>
+    <string name="settings_topic_security">安全</string>
+    <string name="settings_topic_security_summary">生物识别变化、恢复码变更等提醒</string>
+    <string name="settings_topic_database">数据</string>
+    <string name="settings_topic_database_summary">数据库异常、恢复结果提醒</string>
     <string name="empty"></string>
 
 </resources>

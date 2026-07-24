@@ -1,5 +1,10 @@
 package com.aozijx.passly.domain.settings.model
 
+import com.aozijx.passly.domain.notice.model.AppMessageSettings
+import com.aozijx.passly.domain.notice.model.NoticeTopic
+import com.aozijx.passly.domain.notice.model.TopicMessageSettings
+import com.aozijx.passly.domain.notice.model.defaultTopicSettings
+
 data class AppSettingsSnapshot(
     val appearance: AppearanceSettings,
     val interaction: InteractionSettings,
@@ -38,11 +43,23 @@ data class SecuritySettings(
 )
 
 data class NotificationSettings(
+    // 旧字段 — 向后兼容，逐步迁移到新模型
     val statusBarNotificationsEnabled: Boolean,
     val iconDownloadNotificationsEnabled: Boolean,
     val clipboardClearToastsEnabled: Boolean,
-    val appCloseToastsEnabled: Boolean
-)
+    val appCloseToastsEnabled: Boolean,
+    // 新的结构化通知设置
+    val optionalMessagesEnabled: Boolean = true,
+    val systemNotificationsEnabled: Boolean = true,
+    val topicSettings: Map<NoticeTopic, TopicMessageSettings> = defaultTopicSettings()
+) {
+    val appMessageSettings: AppMessageSettings
+        get() = AppMessageSettings(
+            optionalMessagesEnabled = optionalMessagesEnabled,
+            systemNotificationsEnabled = systemNotificationsEnabled,
+            topicSettings = topicSettings
+        )
+}
 
 data class VaultViewSettings(
     val cardStyle: VaultCardStyle,

@@ -63,7 +63,9 @@ internal fun GeneralDetail() {
                     else -> permissionRequester.request(AppPermission.Notifications)
                 }
             },
-            onIconDownloadsEnabledChange = notificationViewModel::setIconDownloadsEnabled
+            onIconDownloadsEnabledChange = notificationViewModel::setIconDownloadsEnabled,
+            onOptionalMessagesEnabledChange = notificationViewModel::setOptionalMessagesEnabled,
+            onTopicEnabledChange = notificationViewModel::setMessageTopicEnabled
         )
 
         Spacer(modifier = Modifier.height(24.dp))
