@@ -14,6 +14,11 @@ class FileBackedAttachmentRepository @Inject constructor(
         return emptyList()
     }
 
+    override suspend fun getPendingAttachments(draftId: String): List<EntryAttachment> {
+        // TODO: 附件功能尚未对接 DAO
+        return emptyList()
+    }
+
     override suspend fun saveAttachment(entryId: String, attachment: EntryAttachment) {
         // TODO: 附件功能尚未对接 DAO
     }

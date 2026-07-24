@@ -9,8 +9,12 @@ interface VaultMaintenanceDao {
     @Query("DELETE FROM entry_search_tokens")
     suspend fun clearSearchTokens(): Int
 
-    @Query("DELETE FROM entry_attachments")
+    @Query("DELETE FROM entry_attachments WHERE status = 'COMMITTED'")
     suspend fun clearAttachments(): Int
+
+    /** 清理所有 PENDING 附件（崩溃恢复时调用） */
+    @Query("DELETE FROM entry_attachments WHERE status = 'PENDING'")
+    suspend fun clearPending(): Int
 
     @Query("DELETE FROM entry_activities")
     suspend fun clearActivities(): Int
