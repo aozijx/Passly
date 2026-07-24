@@ -7,6 +7,7 @@ data class EntryAttachment(
     val fileSize: Long,
     val mimeType: String?,
     val status: AttachmentStatus,
+    val owner: String = "",
     val createdAt: Long = System.currentTimeMillis()
 )
 

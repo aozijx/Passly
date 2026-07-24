@@ -37,6 +37,4 @@ interface EntryDraftDao {
     @Query("DELETE FROM entry_drafts WHERE createdAt < :timestamp")
     suspend fun deleteBefore(timestamp: Long)
 
-    @Query("DELETE FROM entry_drafts")
-    suspend fun clear(): Int
 }

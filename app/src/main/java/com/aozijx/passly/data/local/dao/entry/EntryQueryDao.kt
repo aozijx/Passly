@@ -38,9 +38,6 @@ interface EntryQueryDao {
     @Query("SELECT * FROM vault_entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun pagingDeleted(): PagingSource<Int, EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun pagingActiveRecentlyUpdated(): PagingSource<Int, EntryEntity>
-
     @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY createdAt DESC")
     fun pagingActiveRecentlyCreated(): PagingSource<Int, EntryEntity>
 

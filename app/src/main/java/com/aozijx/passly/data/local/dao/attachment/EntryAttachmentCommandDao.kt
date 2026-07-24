@@ -23,11 +23,20 @@ interface EntryAttachmentCommandDao {
     suspend fun upsertAllForImport(attachments: List<EntryAttachmentEntity>)
 
     @Query("DELETE FROM entry_attachments WHERE attachmentId = :attachmentId")
-    suspend fun deleteById(attachmentId: String)
+    suspend fun deleteById(attachmentId: String): Int
 
     @Query("DELETE FROM entry_attachments WHERE entryId = :entryId")
-    suspend fun deleteByEntryId(entryId: String)
+    suspend fun deleteByEntryId(entryId: String): Int
 
     @Query("DELETE FROM entry_attachments WHERE attachmentId IN (:attachmentIds)")
-    suspend fun deleteByIds(attachmentIds: List<String>)
+    suspend fun deleteByIds(attachmentIds: List<String>): Int
+
+    @Query("UPDATE entry_attachments SET status = :status, owner = :owner WHERE attachmentId = :attachmentId")
+    suspend fun updateStatus(attachmentId: String, status: String, owner: String): Int
+
+    @Query("DELETE FROM entry_attachments WHERE owner = :owner AND status = 'PENDING'")
+    suspend fun deleteByOwner(owner: String): Int
+
+    @Query("DELETE FROM entry_attachments WHERE status = 'PENDING'")
+    suspend fun deleteAllPending(): Int
 }

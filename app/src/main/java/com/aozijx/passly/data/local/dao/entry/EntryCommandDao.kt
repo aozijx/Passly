@@ -53,10 +53,10 @@ interface EntryCommandDao {
     // === Hard Delete ===
 
     @Query("DELETE FROM vault_entries WHERE entryId = :entryId")
-    suspend fun deleteById(entryId: String)
+    suspend fun deleteById(entryId: String): Int
 
     @Query("DELETE FROM vault_entries WHERE deletedAt IS NOT NULL AND deletedAt < :before")
-    suspend fun purgeDeleted(before: Long)
+    suspend fun purgeDeleted(before: Long): Int
 
     @Query("UPDATE vault_entries SET searchIndexVersion = :version WHERE entryId = :entryId")
     suspend fun updateSearchIndexVersion(entryId: String, version: Int): Int
