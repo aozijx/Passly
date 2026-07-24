@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.navigation
+package com.aozijx.passly.app.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition

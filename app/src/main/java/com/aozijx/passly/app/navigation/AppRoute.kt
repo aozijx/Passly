@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.navigation
+package com.aozijx.passly.app.navigation
 
 /**
  * Passly 全局导航路由表

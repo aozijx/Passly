@@ -1,4 +1,4 @@
-package com.aozijx.passly.ui.navigation
+package com.aozijx.passly.app.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
