@@ -11,7 +11,8 @@ import com.aozijx.passly.core.error.ErrorLayer
 import com.aozijx.passly.core.error.backup.BackupException
 import com.aozijx.passly.core.error.fromThrowable
 import com.aozijx.passly.core.util.PlainExportTokenManager
-import com.aozijx.passly.domain.repository.settings.DeviceRepository
+import com.aozijx.passly.domain.command.settings.SettingsCommand
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import com.aozijx.passly.domain.usecase.backup.BackupUseCases
 import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
@@ -32,7 +33,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BackupViewModel @Inject constructor(
-    private val deviceRepository: DeviceRepository,
+    private val settingsRepository: AppSettingsRepository,
     private val backupUseCases: BackupUseCases,
     private val storageSupport: BackupExportStorageSupport,
     private val plainExportTokenManager: PlainExportTokenManager
@@ -98,11 +99,11 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun setBackupDirectoryUri(uri: String) {
-        viewModelScope.launch { deviceRepository.setBackupDirectoryUri(uri) }
+        viewModelScope.launch { settingsRepository.update(SettingsCommand.SetBackupDirectoryUri(uri)) }
     }
 
     private fun clearBackupDirectoryUri() {
-        viewModelScope.launch { deviceRepository.clearBackupDirectoryUri() }
+        viewModelScope.launch { settingsRepository.update(SettingsCommand.ClearBackupDirectoryUri()) }
     }
 
     // --- 导出/导入流程 ---
@@ -226,7 +227,7 @@ class BackupViewModel @Inject constructor(
     private suspend fun handleSuccess(oldState: BackupUiState) {
         if (oldState.isExporting) {
             oldState.pendingExportFileName?.let {
-                deviceRepository.setLastBackupExportFileName(it)
+                settingsRepository.update(SettingsCommand.SetLastBackupExportFileName(it))
             }
         } else {
             _effect.send(BackupEffect.StartImportSyncService)

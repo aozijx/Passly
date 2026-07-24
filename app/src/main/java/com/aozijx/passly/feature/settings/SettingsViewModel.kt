@@ -5,8 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.command.settings.SettingsCommand
 import com.aozijx.passly.domain.model.settings.SwipeActionType
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import com.aozijx.passly.feature.settings.contract.SettingsEffect
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
@@ -29,7 +30,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     val authenticationManager: AuthenticationManager,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
-    private val portableRepository: PortableRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
     val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
@@ -58,8 +59,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             runCatching {
-                val swipeLeft = portableRepository.swipeLeftAction.first()
-                val swipeRight = portableRepository.swipeRightAction.first()
+                val swipeLeft = settingsRepository.settings.first().interaction.swipeLeftAction
+                val swipeRight = settingsRepository.settings.first().interaction.swipeRightAction
                 _uiState.update {
                     it.copy(
                         swipeLeftAction = swipeLeft,
@@ -77,7 +78,7 @@ class SettingsViewModel @Inject constructor(
     private fun setSwipeLeftAction(action: SwipeActionType) {
         viewModelScope.launch {
             runCatching {
-                portableRepository.setSwipeLeftAction(action)
+                settingsRepository.update(SettingsCommand.SetSwipeLeftAction(action))
                 _uiState.update { it.copy(swipeLeftAction = action) }
                 _effects.tryEmit(SettingsEffect.SettingsSaved)
             }.onFailure { error ->
@@ -89,7 +90,7 @@ class SettingsViewModel @Inject constructor(
     private fun setSwipeRightAction(action: SwipeActionType) {
         viewModelScope.launch {
             runCatching {
-                portableRepository.setSwipeRightAction(action)
+                settingsRepository.update(SettingsCommand.SetSwipeRightAction(action))
                 _uiState.update { it.copy(swipeRightAction = action) }
                 _effects.tryEmit(SettingsEffect.SettingsSaved)
             }.onFailure { error ->

@@ -3,14 +3,16 @@ package com.aozijx.passly.feature.settings.interaction
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.command.settings.SettingsCommand
 import com.aozijx.passly.domain.model.settings.AutofillUiMode
 import com.aozijx.passly.domain.model.settings.SwipeActionType
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import com.aozijx.passly.domain.usecase.autofill.AutofillUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,15 +34,15 @@ sealed interface InteractionUiAction {
 @HiltViewModel
 class InteractionViewModel @Inject constructor(
     private val application: Application,
-    private val portableRepository: PortableRepository,
+    private val settingsRepository: AppSettingsRepository,
     private val autofillUseCases: AutofillUseCases
 ) : AndroidViewModel(application) {
 
     val config: StateFlow<InteractionUiState> = combine(
-        portableRepository.isSwipeEnabled,
-        portableRepository.swipeLeftAction,
-        portableRepository.swipeRightAction,
-        portableRepository.autofillUiMode
+        settingsRepository.settings.map { it.interaction.isSwipeEnabled },
+        settingsRepository.settings.map { it.interaction.swipeLeftAction },
+        settingsRepository.settings.map { it.interaction.swipeRightAction },
+        settingsRepository.settings.map { it.interaction.autofillUiMode }
     ) { se, sl, sr, af ->
         InteractionUiState(
             isSwipeEnabled = se,
@@ -57,15 +59,15 @@ class InteractionViewModel @Inject constructor(
     fun onAction(action: InteractionUiAction) {
         when (action) {
             is InteractionUiAction.SetSwipeEnabled -> viewModelScope.launch {
-                portableRepository.setSwipeEnabled(action.enabled)
+                settingsRepository.update(SettingsCommand.SetSwipeEnabled(action.enabled))
             }
 
             is InteractionUiAction.SetSwipeLeftAction -> viewModelScope.launch {
-                portableRepository.setSwipeLeftAction(action.action)
+                settingsRepository.update(SettingsCommand.SetSwipeLeftAction(action.action))
             }
 
             is InteractionUiAction.SetSwipeRightAction -> viewModelScope.launch {
-                portableRepository.setSwipeRightAction(action.action)
+                settingsRepository.update(SettingsCommand.SetSwipeRightAction(action.action))
             }
 
             is InteractionUiAction.ToggleAutofillUiMode -> {
@@ -73,7 +75,13 @@ class InteractionViewModel @Inject constructor(
                     AutofillUiMode.SYSTEM_INLINE -> AutofillUiMode.BOTTOM_SHEET
                     AutofillUiMode.BOTTOM_SHEET -> AutofillUiMode.SYSTEM_INLINE
                 }
-                viewModelScope.launch { portableRepository.setAutofillUiMode(next) }
+                viewModelScope.launch {
+                    settingsRepository.update(
+                        SettingsCommand.SetAutofillUiMode(
+                            next
+                        )
+                    )
+                }
             }
         }
     }

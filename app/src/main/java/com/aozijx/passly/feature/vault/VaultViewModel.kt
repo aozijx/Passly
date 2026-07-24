@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.domain.command.settings.SettingsCommand
 import com.aozijx.passly.domain.model.activity.ActivityType
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
@@ -17,7 +18,7 @@ import com.aozijx.passly.domain.repository.entry.EntryListQueryRepository
 import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.repository.otp.OtpConfigRepository
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import com.aozijx.passly.domain.service.entry.EntryFieldReader
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
@@ -50,7 +51,7 @@ class VaultViewModel @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
     private val otpConfigRepository: OtpConfigRepository,
-    private val portableRepository: PortableRepository,
+    private val settingsRepository: AppSettingsRepository,
     private val entryCommandRepository: EntryCommandRepository,
     private val activityRecorder: ActivityRecorder,
     private val faviconRepository: FaviconRepository,
@@ -102,7 +103,7 @@ class VaultViewModel @Inject constructor(
     )
 
     private val isAutoDownloadIcons: StateFlow<Boolean> =
-        portableRepository.isAutoDownloadIcons
+        settingsRepository.settings.map { it.interaction.isAutoDownloadIcons }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     private val listCoordinator = VaultListCoordinator(
@@ -118,7 +119,7 @@ class VaultViewModel @Inject constructor(
     private val _showTOTPCode = MutableStateFlow(true)
 
     private val visibleTabs: StateFlow<List<VaultTab>> =
-        portableRepository.visibleVaultTabs
+        settingsRepository.settings.map { it.vault.visibleVaultTabs }
             .map { VaultTab.resolveVisible(it ?: VaultTab.defaultVisibleKeys) }
             .stateIn(
                 viewModelScope,
@@ -191,7 +192,7 @@ class VaultViewModel @Inject constructor(
     fun clearSelectedCategory() = setSelectedCategory(null)
     fun selectSortOption(sort: VaultSortSpec) {
         searchFilter.updateSelectedSort(sort)
-        viewModelScope.launch { portableRepository.setVaultSortOption(sort) }
+        viewModelScope.launch { settingsRepository.update(SettingsCommand.SetVaultSortOption(sort)) }
     }
     fun selectTab(tab: VaultTab) = searchFilter.updateSelectedTab(tab)
     fun toggleSearch(active: Boolean) = searchFilter.toggleSearch(active)
@@ -250,7 +251,7 @@ class VaultViewModel @Inject constructor(
         totp.start()
 
         viewModelScope.launch {
-            portableRepository.vaultSortOption.first().let {
+            settingsRepository.settings.map { it.vault.vaultSortOption }.first().let {
                 searchFilter.updateSelectedSort(it)
             }
         }

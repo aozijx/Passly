@@ -9,9 +9,10 @@ import com.aozijx.passly.core.media.ImageResolver.isRemoteIconPath
 import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -26,7 +27,7 @@ internal data class BackupImportIconSyncResult(
 internal class BackupImportIconSyncSupport(
     private val entryCommandRepository: EntryCommandRepository,
     private val entryQueryRepository: EntryQueryRepository,
-    private val portableRepository: PortableRepository
+    private val settingsRepository: AppSettingsRepository
 ) {
 
     private companion object {
@@ -37,7 +38,8 @@ internal class BackupImportIconSyncSupport(
         context: Context,
         onProgress: ((processed: Int, total: Int, success: Int, failed: Int) -> Unit)?
     ): BackupImportIconSyncResult = withContext(Dispatchers.IO) {
-        val whitelist = portableRepository.faviconDownloadWhitelist.first()
+        val whitelist =
+            settingsRepository.settings.map { it.interaction.faviconDownloadWhitelist }.first()
         val appContext = context.applicationContext
         if (!hasActiveNetwork(appContext)) {
             AppLog.w(TAG, "Skip icon sync: no active network")

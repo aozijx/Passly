@@ -2,11 +2,13 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.command.settings.SettingsCommand
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -25,13 +27,13 @@ sealed interface AppearanceUiAction {
 
 @HiltViewModel
 class AppearanceViewModel @Inject constructor(
-    private val portableRepository: PortableRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
     val config: StateFlow<AppearanceUiState> = combine(
-        portableRepository.isDarkMode,
-        portableRepository.isDynamicColor,
-        portableRepository.themeColor
+        settingsRepository.settings.map { it.appearance.isDarkMode },
+        settingsRepository.settings.map { it.appearance.isDynamicColor },
+        settingsRepository.settings.map { it.appearance.themeColor }
     ) { dm, dc, tc ->
         val themeColorLong = tc.toLongOrNull() ?: 0L
         AppearanceUiState(
@@ -48,16 +50,16 @@ class AppearanceViewModel @Inject constructor(
     fun onAction(action: AppearanceUiAction) {
         when (action) {
             is AppearanceUiAction.SetDarkMode -> viewModelScope.launch {
-                portableRepository.setDarkMode(action.enabled)
+                settingsRepository.update(SettingsCommand.SetDarkMode(action.enabled))
             }
 
             is AppearanceUiAction.SetDynamicColor -> viewModelScope.launch {
-                portableRepository.setDynamicColor(action.enabled)
+                settingsRepository.update(SettingsCommand.SetDynamicColor(action.enabled))
             }
 
             is AppearanceUiAction.SetThemeColor -> viewModelScope.launch {
                 val colorStr = if (action.color == 0L) "" else action.color.toString()
-                portableRepository.setThemeColor(colorStr)
+                settingsRepository.update(SettingsCommand.SetThemeColor(colorStr))
             }
         }
     }

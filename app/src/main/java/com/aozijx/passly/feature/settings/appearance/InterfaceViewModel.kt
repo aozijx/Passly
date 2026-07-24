@@ -2,12 +2,14 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.command.settings.SettingsCommand
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,27 +35,28 @@ sealed interface InterfaceUiAction {
 
 @HiltViewModel
 class InterfaceViewModel @Inject constructor(
-    private val portableRepository: PortableRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
     val config: StateFlow<InterfaceUiState> = combine(
-        portableRepository.isStatusBarAutoHide,
-        portableRepository.isTopBarCollapsible,
-        portableRepository.isTabBarCollapsible
+        settingsRepository.settings.map { it.appearance.isStatusBarAutoHide },
+        settingsRepository.settings.map { it.appearance.isTopBarCollapsible },
+        settingsRepository.settings.map { it.appearance.isTabBarCollapsible }
     ) { sb, tb, tbb ->
         Triple(sb, tb, tbb)
-    }.combine(portableRepository.cardStyle) { (sb, tb, tbb), cs ->
+    }.combine(settingsRepository.settings.map { it.vault.cardStyle }) { (sb, tb, tbb), cs ->
         InterfaceUiState(
             isStatusBarAutoHide = sb,
             isTopBarCollapsible = tb,
             isTabBarCollapsible = tbb,
             cardStyle = cs,
         )
-    }.combine(portableRepository.cardStyleByEntryType) { st, ptm ->
+    }.combine(settingsRepository.settings.map { it.vault.cardStyleByEntryType }) { st, ptm ->
         st.copy(perTypeMap = ptm)
-    }.combine(portableRepository.visibleVaultTabs) { st, vvt ->
+    }.combine(settingsRepository.settings.map { it.vault.visibleVaultTabs }) { st, vvt ->
         st.copy(visibleVaultTabs = vvt)
-    }.combine(portableRepository.tabBarMaxTabsWithoutScroll) { st, tbm ->
+    }
+        .combine(settingsRepository.settings.map { it.interaction.tabBarMaxTabsWithoutScroll }) { st, tbm ->
         st.copy(tabBarMaxTabsWithoutScroll = tbm)
     }.stateIn(
         viewModelScope,
@@ -64,27 +67,27 @@ class InterfaceViewModel @Inject constructor(
     fun onAction(action: InterfaceUiAction) {
         when (action) {
             is InterfaceUiAction.SetStatusBarAutoHide -> viewModelScope.launch {
-                portableRepository.setStatusBarAutoHide(action.enabled)
+                settingsRepository.update(SettingsCommand.SetStatusBarAutoHide(action.enabled))
             }
 
             is InterfaceUiAction.SetTopBarCollapsible -> viewModelScope.launch {
-                portableRepository.setTopBarCollapsible(action.enabled)
+                settingsRepository.update(SettingsCommand.SetTopBarCollapsible(action.enabled))
             }
 
             is InterfaceUiAction.SetTabBarCollapsible -> viewModelScope.launch {
-                portableRepository.setTabBarCollapsible(action.enabled)
+                settingsRepository.update(SettingsCommand.SetTabBarCollapsible(action.enabled))
             }
 
             is InterfaceUiAction.SetLoginCardStyle -> viewModelScope.launch {
-                portableRepository.setCardStyleForEntryType(0, action.style)
+                settingsRepository.update(SettingsCommand.SetCardStyleForEntryType(0, action.style))
             }
 
             is InterfaceUiAction.SetVisibleVaultTabs -> viewModelScope.launch {
-                portableRepository.setVisibleVaultTabs(action.tabs)
+                settingsRepository.update(SettingsCommand.SetVisibleVaultTabs(action.tabs))
             }
 
             is InterfaceUiAction.SetTabBarMaxTabsWithoutScroll -> viewModelScope.launch {
-                portableRepository.setTabBarMaxTabsWithoutScroll(action.maxTabs)
+                settingsRepository.update(SettingsCommand.SetTabBarMaxTabsWithoutScroll(action.maxTabs))
             }
         }
     }

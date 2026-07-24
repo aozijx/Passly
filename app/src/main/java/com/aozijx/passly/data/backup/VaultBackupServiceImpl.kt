@@ -9,7 +9,6 @@ import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
 import com.aozijx.passly.data.mapper.entry.EntrySummaryMapper
-import com.aozijx.passly.data.mapper.snapshot.toSnapshot
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.model.payload.snapshot.VaultSnapshot
@@ -63,9 +62,9 @@ internal class VaultBackupServiceImpl @Inject constructor(
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.export.encrypted") {
                 val entries = getVaultEntries()
-                val images = linkedMapOf<String, ByteArray>()
+                val images = LinkedHashMap<String, ByteArray>()
                 val snapshots = entries.map { entry ->
-                    val snapshot = entry.toSnapshot()
+                    val snapshot = entry.toVaultSnapshot()
                     val source = entry.iconCustomPath?.let(::File)
                     if (includeImages && source?.isFile == true) {
                         val archivePath = fileStore.imageEntryName(entry.id)
@@ -94,7 +93,7 @@ internal class VaultBackupServiceImpl @Inject constructor(
         return withContext(ioDispatcher) {
             AppResult.runSuspendCatching("backup.export.plain") {
                 val entries = getVaultEntries()
-                val snapshots = entries.map { it.toSnapshot() }
+                val snapshots = entries.map { it.toVaultSnapshot() }
 
                 val backupData = AppJson.encodeToString(
                     kotlinx.serialization.builtins.ListSerializer(VaultSnapshot.serializer()),
@@ -223,4 +222,16 @@ internal class VaultBackupServiceImpl @Inject constructor(
 
     override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
         fileStore.checkDirectoryWritable(uri)
+
+    private fun VaultEntry.toVaultSnapshot(): VaultSnapshot = VaultSnapshot(
+        id = id,
+        vaultId = "default",
+        entryType = entryType,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        revision = entryVersion,
+        summary = EntrySummaryMapper.toPayload(summary),
+        secret = EntrySecretMapper.toPayload(secret)
+    )
 }

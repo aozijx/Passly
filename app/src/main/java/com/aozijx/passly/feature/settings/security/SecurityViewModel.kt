@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.repository.settings.DeviceRepository
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.command.settings.SettingsCommand
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,16 +39,15 @@ sealed interface SecurityUiAction {
 class SecurityViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val methodProvisioner: AuthenticationMethodProvisioner,
-    private val deviceRepository: DeviceRepository,
-    private val portableRepository: PortableRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
     val config: StateFlow<SecurityUiState> = combine(
-        deviceRepository.lockTimeout,
-        deviceRepository.isInvalidateKeyOnBioChange,
-        deviceRepository.isLockOnBackground,
-        portableRepository.clipboardClearToastsEnabled,
-        portableRepository.appCloseToastsEnabled
+        settingsRepository.lockTimeout,
+        settingsRepository.settings.map { it.security.isInvalidateKeyOnBioChange },
+        settingsRepository.isLockOnBackground,
+        settingsRepository.settings.map { it.notifications.clipboardClearToastsEnabled },
+        settingsRepository.settings.map { it.notifications.appCloseToastsEnabled }
     ) { lt, ibc, lob, clipboardToasts, closeToasts ->
         SecurityUiState(
             lockTimeout = lt,
@@ -80,19 +79,19 @@ class SecurityViewModel @Inject constructor(
     fun onAction(action: SecurityUiAction) {
         when (action) {
             is SecurityUiAction.SetLockTimeout -> viewModelScope.launch {
-                deviceRepository.setLockTimeout(action.timeoutMs)
+                settingsRepository.update(SettingsCommand.SetLockTimeout(action.timeoutMs))
             }
 
             is SecurityUiAction.ToggleLockOnBackground -> viewModelScope.launch {
-                deviceRepository.setLockOnBackground(action.enabled)
+                settingsRepository.update(SettingsCommand.SetLockOnBackground(action.enabled))
             }
 
             is SecurityUiAction.ToggleClipboardClearToasts -> viewModelScope.launch {
-                portableRepository.setClipboardClearToastsEnabled(action.enabled)
+                settingsRepository.update(SettingsCommand.SetClipboardClearToastsEnabled(action.enabled))
             }
 
             is SecurityUiAction.ToggleAppCloseToasts -> viewModelScope.launch {
-                portableRepository.setAppCloseToastsEnabled(action.enabled)
+                settingsRepository.update(SettingsCommand.SetAppCloseToastsEnabled(action.enabled))
             }
 
             is SecurityUiAction.VerifyRecoveryCode -> viewModelScope.launch {
@@ -120,7 +119,7 @@ class SecurityViewModel @Inject constructor(
         viewModelScope.launch {
             val result = methodProvisioner.rotateBiometricPolicy(enabled)
             if (result is AuthenticationResult.Success) {
-                deviceRepository.setInvalidateKeyOnBioChange(enabled)
+                settingsRepository.update(SettingsCommand.SetInvalidateKeyOnBioChange(enabled))
             }
             onResult(result is AuthenticationResult.Success)
         }

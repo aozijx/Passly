@@ -2,11 +2,13 @@ package com.aozijx.passly.feature.settings.general
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.command.settings.SettingsCommand
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,11 +20,11 @@ data class NotificationSettingsUiState(
 
 @HiltViewModel
 class NotificationSettingsViewModel @Inject constructor(
-    private val settings: PortableRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
     val uiState: StateFlow<NotificationSettingsUiState> = combine(
-        settings.statusBarNotificationsEnabled,
-        settings.iconDownloadNotificationsEnabled
+        settingsRepository.settings.map { it.notifications.statusBarNotificationsEnabled },
+        settingsRepository.settings.map { it.notifications.iconDownloadNotificationsEnabled }
     ) { statusBar, iconDownloads ->
         NotificationSettingsUiState(statusBar, iconDownloads)
     }.stateIn(
@@ -32,10 +34,10 @@ class NotificationSettingsViewModel @Inject constructor(
     )
 
     fun setStatusBarEnabled(enabled: Boolean) = viewModelScope.launch {
-        settings.setStatusBarNotificationsEnabled(enabled)
+        settingsRepository.update(SettingsCommand.SetStatusBarNotificationsEnabled(enabled))
     }
 
     fun setIconDownloadsEnabled(enabled: Boolean) = viewModelScope.launch {
-        settings.setIconDownloadNotificationsEnabled(enabled)
+        settingsRepository.update(SettingsCommand.SetIconDownloadNotificationsEnabled(enabled))
     }
 }

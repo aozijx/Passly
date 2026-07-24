@@ -2,11 +2,13 @@ package com.aozijx.passly.feature.settings.security
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.repository.settings.DeviceRepository
+import com.aozijx.passly.domain.command.settings.SettingsCommand
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -25,13 +27,13 @@ sealed interface PrivacyUiAction {
 
 @HiltViewModel
 class PrivacyViewModel @Inject constructor(
-    private val deviceRepository: DeviceRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
     val config: StateFlow<PrivacyUiState> = combine(
-        deviceRepository.isSecureContentEnabled,
-        deviceRepository.isFlipToLockEnabled,
-        deviceRepository.isFlipExitAndClearStackEnabled
+        settingsRepository.settings.map { it.security.isSecureContentEnabled },
+        settingsRepository.settings.map { it.security.isFlipToLockEnabled },
+        settingsRepository.settings.map { it.security.isFlipExitAndClearStackEnabled }
     ) { sec, ftl, fec ->
         PrivacyUiState(
             isSecureContentEnabled = sec,
@@ -47,15 +49,15 @@ class PrivacyViewModel @Inject constructor(
     fun onAction(action: PrivacyUiAction) {
         when (action) {
             is PrivacyUiAction.SetSecureContentEnabled -> viewModelScope.launch {
-                deviceRepository.setSecureContentEnabled(action.enabled)
+                settingsRepository.update(SettingsCommand.SetSecureContentEnabled(action.enabled))
             }
 
             is PrivacyUiAction.SetFlipToLockEnabled -> viewModelScope.launch {
-                deviceRepository.setFlipToLockEnabled(action.enabled)
+                settingsRepository.update(SettingsCommand.SetFlipToLockEnabled(action.enabled))
             }
 
             is PrivacyUiAction.SetFlipExitAndClearStackEnabled -> viewModelScope.launch {
-                deviceRepository.setFlipExitAndClearStackEnabled(action.enabled)
+                settingsRepository.update(SettingsCommand.SetFlipExitAndClearStackEnabled(action.enabled))
             }
         }
     }

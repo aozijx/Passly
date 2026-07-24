@@ -7,12 +7,13 @@ import com.aozijx.passly.core.message.AppMessageCategory
 import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.core.message.AppMessagePresentation
 import com.aozijx.passly.core.message.AppStatusBarNotifier
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -41,14 +42,14 @@ data class AppMessagePreferences(
 
 @HiltViewModel
 class AppMessageHostViewModel @Inject constructor(
-    settings: PortableRepository,
+    private val settingsRepository: AppSettingsRepository,
     private val statusBarNotifier: AppStatusBarNotifier
 ) : ViewModel() {
     private val preferences: StateFlow<AppMessagePreferences> = combine(
-        settings.statusBarNotificationsEnabled,
-        settings.iconDownloadNotificationsEnabled,
-        settings.clipboardClearToastsEnabled,
-        settings.appCloseToastsEnabled
+        settingsRepository.settings.map { it.notifications.statusBarNotificationsEnabled },
+        settingsRepository.settings.map { it.notifications.iconDownloadNotificationsEnabled },
+        settingsRepository.settings.map { it.notifications.clipboardClearToastsEnabled },
+        settingsRepository.settings.map { it.notifications.appCloseToastsEnabled }
     ) { statusBar, icon, clipboard, close ->
         AppMessagePreferences(statusBar, icon, clipboard, close)
     }.stateIn(

@@ -2,12 +2,12 @@ package com.aozijx.passly.feature.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.repository.settings.DeviceRepository
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -20,15 +20,14 @@ data class MainConfigUiState(
 
 @HiltViewModel
 class MainConfigViewModel @Inject constructor(
-    private val deviceRepository: DeviceRepository,
-    private val portableRepository: PortableRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
     val config: StateFlow<MainConfigUiState> = combine(
-        deviceRepository.isSecureContentEnabled,
-        deviceRepository.isFlipToLockEnabled,
-        deviceRepository.isFlipExitAndClearStackEnabled,
-        portableRepository.isStatusBarAutoHide
+        settingsRepository.settings.map { it.security.isSecureContentEnabled },
+        settingsRepository.settings.map { it.security.isFlipToLockEnabled },
+        settingsRepository.settings.map { it.security.isFlipExitAndClearStackEnabled },
+        settingsRepository.settings.map { it.appearance.isStatusBarAutoHide }
     ) { sec, ftl, fec, sb ->
         MainConfigUiState(
             isSecureContentEnabled = sec,

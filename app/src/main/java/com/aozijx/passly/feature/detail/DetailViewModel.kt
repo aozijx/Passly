@@ -8,14 +8,13 @@ import com.aozijx.passly.domain.model.entry.EntryChanges
 import com.aozijx.passly.domain.model.entry.VaultEntry
 import com.aozijx.passly.domain.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.model.favicon.FaviconResult
+import com.aozijx.passly.domain.repository.activity.ActivityQueryRepository
 import com.aozijx.passly.domain.repository.activity.ActivityRecorder
 import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
+import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
 import com.aozijx.passly.domain.repository.favicon.FaviconRepository
 import com.aozijx.passly.domain.service.entry.EntryTypePolicy
 import com.aozijx.passly.domain.service.entry.EntryValidatorProvider
-import com.aozijx.passly.domain.repository.activity.ActivityQueryRepository
-import com.aozijx.passly.domain.repository.entry.EntryQueryRepository
-import com.aozijx.passly.domain.repository.settings.RuntimeRepository
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
@@ -37,7 +36,6 @@ class DetailViewModel @Inject constructor(
     private val activityQueryRepository: ActivityQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
     private val activityRecorder: ActivityRecorder,
-    private val runtimeRepository: RuntimeRepository,
     private val faviconRepository: FaviconRepository,
     private val entryTypePolicy: EntryTypePolicy,
     private val entryValidatorProvider: EntryValidatorProvider
@@ -48,6 +46,8 @@ class DetailViewModel @Inject constructor(
         private const val ACCESS_HISTORY_TOGGLE_KEY = "detail.access_history_enabled"
     }
 
+    private val userConfigExtras = MutableStateFlow<Map<String, String>>(emptyMap())
+
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
     private val _effects = MutableSharedFlow<DetailEffect>(extraBufferCapacity = 1)
@@ -55,7 +55,7 @@ class DetailViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            runtimeRepository.userConfigExtras.collect { extras ->
+            userConfigExtras.collect { extras ->
                 val enabled = extras[ACCESS_HISTORY_TOGGLE_KEY]
                     ?.toBooleanStrictOrNull()
                     ?: false
@@ -170,9 +170,8 @@ class DetailViewModel @Inject constructor(
 
             is DetailIntent.ToggleAccessHistoryRecording -> {
                 _uiState.update { it.copy(isAccessHistoryEnabled = event.enabled) }
-                viewModelScope.launch {
-                    runtimeRepository.setUserConfigExtra(ACCESS_HISTORY_TOGGLE_KEY, event.enabled.toString())
-                }
+                userConfigExtras.value =
+                    userConfigExtras.value + (ACCESS_HISTORY_TOGGLE_KEY to event.enabled.toString())
             }
 
             DetailIntent.ClearSensitiveState -> {

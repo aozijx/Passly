@@ -2,13 +2,14 @@ package com.aozijx.passly.feature.settings.datamanagement
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.repository.settings.DeviceRepository
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.command.settings.SettingsCommand
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,8 +27,7 @@ sealed interface DataUiAction {
 
 @HiltViewModel
 class DataViewModel @Inject constructor(
-    private val portableRepository: PortableRepository,
-    private val deviceRepository: DeviceRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
     private val _config = MutableStateFlow(DataUiState())
@@ -36,9 +36,9 @@ class DataViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                portableRepository.isAutoDownloadIcons,
-                deviceRepository.backupDirectoryUri,
-                deviceRepository.lastBackupExportFileName
+                settingsRepository.settings.map { it.interaction.isAutoDownloadIcons },
+                settingsRepository.settings.map { it.backup.backupDirectoryUri },
+                settingsRepository.settings.map { it.backup.lastBackupExportFileName }
             ) { adi, bdu, lef ->
                 DataUiState(
                     isAutoDownloadIcons = adi,
@@ -52,15 +52,15 @@ class DataViewModel @Inject constructor(
     fun onAction(action: DataUiAction) {
         when (action) {
             is DataUiAction.SetAutoDownloadIcons -> viewModelScope.launch {
-                portableRepository.setAutoDownloadIcons(action.enabled)
+                settingsRepository.update(SettingsCommand.SetAutoDownloadIcons(action.enabled))
             }
 
             is DataUiAction.SetBackupDirectoryUri -> viewModelScope.launch {
-                deviceRepository.setBackupDirectoryUri(action.uri)
+                settingsRepository.update(SettingsCommand.SetBackupDirectoryUri(action.uri))
             }
 
             is DataUiAction.ClearBackupDirectory -> viewModelScope.launch {
-                deviceRepository.clearBackupDirectoryUri()
+                settingsRepository.update(SettingsCommand.ClearBackupDirectoryUri())
             }
         }
     }

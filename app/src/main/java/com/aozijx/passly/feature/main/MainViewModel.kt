@@ -10,10 +10,9 @@ import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.repository.entry.EntryCommandRepository
 import com.aozijx.passly.domain.repository.search.SearchIndexMaintenance
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import com.aozijx.passly.domain.usecase.database.DatabaseLifecycleUseCases
-import com.aozijx.passly.domain.repository.settings.PortableRepository
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.main.contract.MainUiState
@@ -25,13 +24,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val portableRepository: PortableRepository,
+    private val settingsRepository: AppSettingsRepository,
     private val authenticationManager: AuthenticationManager,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
     private val searchIndexMaintenance: SearchIndexMaintenance,
@@ -128,9 +128,9 @@ class MainViewModel @Inject constructor(
     private fun observeSettings() {
         viewModelScope.launch {
             combine(
-                portableRepository.isDarkMode,
-                portableRepository.isDynamicColor,
-                portableRepository.themeColor
+                settingsRepository.settings.map { it.appearance.isDarkMode },
+                settingsRepository.settings.map { it.appearance.isDynamicColor },
+                settingsRepository.settings.map { it.appearance.themeColor }
             ) { isDarkMode, isDynamicColor, themeColorStr ->
                 Triple(isDarkMode, isDynamicColor, themeColorStr)
             }.collect { (isDarkMode, isDynamicColor, themeColorStr) ->

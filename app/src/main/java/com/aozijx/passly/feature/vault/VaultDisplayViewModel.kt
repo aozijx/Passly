@@ -2,13 +2,15 @@ package com.aozijx.passly.feature.vault
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.command.settings.SettingsCommand
 import com.aozijx.passly.domain.model.settings.SwipeActionType
 import com.aozijx.passly.domain.model.settings.VaultCardStyle
-import com.aozijx.passly.domain.repository.settings.PortableRepository
+import com.aozijx.passly.domain.repository.settings.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -42,7 +44,7 @@ data class VaultDisplayUiState(
 
 @HiltViewModel
 class VaultDisplayViewModel @Inject constructor(
-    private val portableRepository: PortableRepository
+    private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
     /**
@@ -53,24 +55,24 @@ class VaultDisplayViewModel @Inject constructor(
      */
     val config: StateFlow<VaultDisplayUiState> = combine(
         combine(
-            portableRepository.isStatusBarAutoHide,
-            portableRepository.isTopBarCollapsible,
-            portableRepository.isTabBarCollapsible,
-            portableRepository.visibleVaultTabs,
-            portableRepository.tabBarMaxTabsWithoutScroll
+            settingsRepository.settings.map { it.appearance.isStatusBarAutoHide },
+            settingsRepository.settings.map { it.appearance.isTopBarCollapsible },
+            settingsRepository.settings.map { it.appearance.isTabBarCollapsible },
+            settingsRepository.settings.map { it.vault.visibleVaultTabs },
+            settingsRepository.settings.map { it.interaction.tabBarMaxTabsWithoutScroll }
         ) { autoHide, top, tab, tabs, max ->
             VaultLayoutConfig(autoHide, top, tab, tabs, max)
         },
         combine(
-            portableRepository.cardStyle,
-            portableRepository.cardStyleByEntryType
+            settingsRepository.settings.map { it.vault.cardStyle },
+            settingsRepository.settings.map { it.vault.cardStyleByEntryType }
         ) { style, perType ->
             VaultStyleConfig(style, perType)
         },
         combine(
-            portableRepository.isSwipeEnabled,
-            portableRepository.swipeLeftAction,
-            portableRepository.swipeRightAction
+            settingsRepository.settings.map { it.interaction.isSwipeEnabled },
+            settingsRepository.settings.map { it.interaction.swipeLeftAction },
+            settingsRepository.settings.map { it.interaction.swipeRightAction }
         ) { enabled, left, right ->
             VaultInteractionConfig(enabled, left, right)
         }
@@ -86,32 +88,32 @@ class VaultDisplayViewModel @Inject constructor(
 
     fun setCardStyle(style: VaultCardStyle) {
         viewModelScope.launch {
-            portableRepository.setCardStyle(style)
+            settingsRepository.update(SettingsCommand.SetCardStyle(style))
         }
     }
 
     fun setCardStyleForType(type: Int, style: VaultCardStyle) {
         viewModelScope.launch {
-            portableRepository.setCardStyleForEntryType(type, style)
+            settingsRepository.update(SettingsCommand.SetCardStyleForEntryType(type, style))
         }
     }
 
     fun setSwipeEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            portableRepository.setSwipeEnabled(enabled)
+            settingsRepository.update(SettingsCommand.SetSwipeEnabled(enabled))
         }
     }
 
     fun setSwipeAction(isLeft: Boolean, action: SwipeActionType) {
         viewModelScope.launch {
-            if (isLeft) portableRepository.setSwipeLeftAction(action)
-            else portableRepository.setSwipeRightAction(action)
+            if (isLeft) settingsRepository.update(SettingsCommand.SetSwipeLeftAction(action))
+            else settingsRepository.update(SettingsCommand.SetSwipeRightAction(action))
         }
     }
 
     fun updateVisibleTabs(tabs: Set<String>) {
         viewModelScope.launch {
-            portableRepository.setVisibleVaultTabs(tabs)
+            settingsRepository.update(SettingsCommand.SetVisibleVaultTabs(tabs))
         }
     }
 }
