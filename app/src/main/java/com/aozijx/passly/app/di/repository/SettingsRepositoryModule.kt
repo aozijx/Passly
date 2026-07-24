@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.repository
+package com.aozijx.passly.app.di.repository
 
 import com.aozijx.passly.data.repository.settings.ProtoAppSettingsRepository
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository

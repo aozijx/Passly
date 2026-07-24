@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.repository
+package com.aozijx.passly.app.di.repository
 
 import com.aozijx.passly.data.repository.autofill.AutofillStatusRepositoryImpl
 import com.aozijx.passly.domain.autofill.repository.AutofillStatusRepository

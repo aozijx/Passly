@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.repository
+package com.aozijx.passly.app.di.repository
 
 import com.aozijx.passly.data.local.datastore.ProtoDataStoreBootstrapStore
 import com.aozijx.passly.security.envelope.BootstrapStore

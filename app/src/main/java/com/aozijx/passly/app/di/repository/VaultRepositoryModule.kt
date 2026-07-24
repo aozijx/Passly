@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.repository
+package com.aozijx.passly.app.di.repository
 
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleanerImpl

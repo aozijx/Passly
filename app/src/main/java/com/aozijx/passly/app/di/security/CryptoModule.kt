@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.security
+package com.aozijx.passly.app.di.security
 
 import com.aozijx.passly.security.search.DefaultTokenizer
 import com.aozijx.passly.security.search.Tokenizer

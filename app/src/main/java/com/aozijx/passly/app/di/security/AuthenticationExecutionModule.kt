@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.security
+package com.aozijx.passly.app.di.security
 
 import com.aozijx.passly.security.authentication.KdfRunner
 import com.aozijx.passly.security.authentication.SingleThreadKdfRunner

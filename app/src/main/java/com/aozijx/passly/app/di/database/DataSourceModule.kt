@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.database
+package com.aozijx.passly.app.di.database
 
 /**
  * DataSource 绑定。

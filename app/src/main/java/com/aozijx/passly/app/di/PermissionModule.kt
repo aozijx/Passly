@@ -1,4 +1,4 @@
-package com.aozijx.passly.di
+package com.aozijx.passly.app.di
 
 import com.aozijx.passly.core.permission.AndroidAppPermissionManager
 import com.aozijx.passly.core.permission.AppPermissionManager

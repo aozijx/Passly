@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.entry
+package com.aozijx.passly.app.di.entry
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.service.BankCardEntryValidator

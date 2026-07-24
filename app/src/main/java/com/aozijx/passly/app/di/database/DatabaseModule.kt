@@ -1,4 +1,4 @@
-package com.aozijx.passly.di.database
+package com.aozijx.passly.app.di.database
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.repository.database.DatabaseControllerImpl

@@ -1,4 +1,4 @@
-package com.aozijx.passly.di
+package com.aozijx.passly.app.di
 
 import com.aozijx.passly.core.diagnostics.DiagnosticsPolicyController
 import com.aozijx.passly.data.local.datastore.diagnostics.ProtoDiagnosticsPolicyController

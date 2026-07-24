@@ -1,4 +1,4 @@
-package com.aozijx.passly.di
+package com.aozijx.passly.app.di
 
 import dagger.Module
 import dagger.Provides

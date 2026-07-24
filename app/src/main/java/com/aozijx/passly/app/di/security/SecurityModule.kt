@@ -1,13 +1,13 @@
-package com.aozijx.passly.di.security
+package com.aozijx.passly.app.di.security
 
 import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
-import com.aozijx.passly.security.authentication.VaultSessionController
-import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
-import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
+import com.aozijx.passly.security.authentication.VaultSessionController
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

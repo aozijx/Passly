@@ -1,4 +1,4 @@
-package com.aozijx.passly.di
+package com.aozijx.passly.app.di
 
 import com.aozijx.passly.core.message.AppMessagePublisher
 import com.aozijx.passly.core.message.DefaultAppMessagePublisher
