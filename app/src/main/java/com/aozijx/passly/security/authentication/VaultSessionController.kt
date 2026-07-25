@@ -1,9 +1,9 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.telemetry.EventCategory
-import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.core.session.LockState
+import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.auth.model.VaultLockState
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthenticationState
@@ -68,24 +68,39 @@ class VaultSessionController @Inject constructor(
         val dek = ownedDek.consume()
         return try {
             transition(AuthenticationState.Unlocking(correlationId))
-            when (dekManager.setDek(type, dek)) {
-                UnlockResult.Success -> {
-                    val err = sessionManager.unlock()
-                    if (err != null) {
-                        _databaseFailure.value = err
+
+            if (dekManager.isUnlocked.value) {
+                // SOFT_LOCKED: DEK 仍在内存中，凭据已验证，只需恢复数据库会话
+                val err = sessionManager.unlock()
+                if (err != null) {
+                    _databaseFailure.value = err
+                    transition(AuthenticationState.Locked)
+                    return@withLock false
+                }
+                _databaseFailure.value = null
+                lockLevel = VaultLockState.UNLOCKED
+            } else {
+                when (dekManager.setDek(type, dek)) {
+                    UnlockResult.Success -> {
+                        val err = sessionManager.unlock()
+                        if (err != null) {
+                            _databaseFailure.value = err
+                            transition(AuthenticationState.Locked)
+                            return@withLock false
+                        }
+                        _databaseFailure.value = null
+                        lockLevel = VaultLockState.UNLOCKED
+                    }
+
+                    is UnlockResult.Failed -> {
                         transition(AuthenticationState.Locked)
                         return@withLock false
                     }
-                    _databaseFailure.value = null
-                    lockLevel = VaultLockState.UNLOCKED
-                    markAuthenticatedInternal()
-                    true
-                }
-                is UnlockResult.Failed -> {
-                    transition(AuthenticationState.Locked)
-                    false
                 }
             }
+
+            markAuthenticatedInternal()
+            true
         } finally {
             dek.fill(0)
             ownedDek.discard()
@@ -160,7 +175,12 @@ class VaultSessionController @Inject constructor(
     ): Boolean = mutex.withLock {
         val dek = ownedDek.consume()
         return try {
-            dekManager.setDek(type, dek) is UnlockResult.Success
+            if (dekManager.isUnlocked.value) {
+                // SOFT_LOCKED: DEK 仍在内存中，无需重新设置
+                true
+            } else {
+                dekManager.setDek(type, dek) is UnlockResult.Success
+            }
         } finally {
             dek.fill(0)
             ownedDek.discard()
