@@ -53,12 +53,6 @@
 
     <!-- 自動入力タイトル生成 -->
     <string name="autofill_title_app_fallback">アプリ</string>
-    <string name="autofill_title_late_night">深夜の記録</string>
-    <string name="autofill_title_morning">朝の記録</string>
-    <string name="autofill_title_noon">昼の記録</string>
-    <string name="autofill_title_afternoon">午後の記録</string>
-    <string name="autofill_title_evening">夜の記録</string>
-    <string name="autofill_title_new_entry">新規記録</string>
 
     <!-- 金庫関連 -->
     <string name="vault_auth_subtitle">本人確認して金庫にアクセス</string>
@@ -84,12 +78,10 @@
     <string name="vault_menu_import">バックアップ復元</string>
     <string name="vault_menu_all_categories">全分類</string>
     <string name="vault_tab_all">すべて</string>
-    <string name="vault_tab_passwords">パスワード</string>
     <string name="vault_tab_totp">2段階認証</string>
 
     <string name="vault_fab_scan">スキャン</string>
     <string name="vault_fab_2fa">2FA</string>
-    <string name="vault_fab_password">パスワード</string>
     <string name="vault_empty_placeholder">金庫は空です</string>
     <string name="vault_scanner_error_not_otp">スキャン成功しましたが、有効な2FA QRコードではありません</string>
     <string name="vault_scanner_action_album">アルバムから選択</string>

@@ -132,7 +132,8 @@ class ProtoAppSettingsRepository @Inject constructor(
                     themeColor = proto.themeColor,
                     isStatusBarAutoHide = proto.autoHideStatusBar,
                     isTopBarCollapsible = proto.collapseTopBar,
-                    isTabBarCollapsible = proto.collapseTabBar
+                    isTabBarCollapsible = proto.collapseTabBar,
+                    useSystemFont = if (proto.hasUseSystemFont()) proto.useSystemFont else true
                 ),
                 interaction = InteractionSettings(
                     isSwipeEnabled = proto.swipeEnabled,
@@ -207,6 +208,7 @@ class ProtoAppSettingsRepository @Inject constructor(
                 is SettingsCommand.SetStatusBarAutoHide -> b.setAutoHideStatusBar(command.enabled)
                 is SettingsCommand.SetTopBarCollapsible -> b.setCollapseTopBar(command.enabled)
                 is SettingsCommand.SetTabBarCollapsible -> b.setCollapseTabBar(command.enabled)
+                is SettingsCommand.SetUseSystemFont -> b.setUseSystemFont(command.enabled)
 
                 // Interaction
                 is SettingsCommand.SetSwipeEnabled -> b.setSwipeEnabled(command.enabled)

@@ -23,6 +23,7 @@ sealed interface SettingsCommand {
     data class SetStatusBarAutoHide(val enabled: Boolean) : SettingsCommand
     data class SetTopBarCollapsible(val enabled: Boolean) : SettingsCommand
     data class SetTabBarCollapsible(val enabled: Boolean) : SettingsCommand
+    data class SetUseSystemFont(val enabled: Boolean) : SettingsCommand
 
     // Interaction
     data class SetSwipeEnabled(val enabled: Boolean) : SettingsCommand

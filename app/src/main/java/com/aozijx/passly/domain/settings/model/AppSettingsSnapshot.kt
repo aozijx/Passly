@@ -17,7 +17,8 @@ data class AppearanceSettings(
     val themeColor: String,
     val isStatusBarAutoHide: Boolean,
     val isTopBarCollapsible: Boolean,
-    val isTabBarCollapsible: Boolean
+    val isTabBarCollapsible: Boolean,
+    val useSystemFont: Boolean = true
 )
 
 data class InteractionSettings(

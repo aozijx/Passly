@@ -7,7 +7,6 @@
     <string name="sort_usage">Usage count</string>
     <string name="autofill_locked">Passly is locked</string>
     <string name="autofill_save_failed_repository">Couldn\'t save</string>
-    <string name="autofill_chevron_right">›</string>
     <string name="vault_menu_sort">Sort by</string>
     <string name="vault_field_copied_format">%1$s copied</string>
     <string name="vault_fab_bank_card">Bank card</string>

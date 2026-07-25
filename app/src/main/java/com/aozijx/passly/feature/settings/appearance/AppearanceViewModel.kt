@@ -17,12 +17,14 @@ data class AppearanceUiState(
     val isDarkMode: Boolean? = null,
     val isDynamicColor: Boolean = true,
     val themeColor: Long = 0,
+    val useSystemFont: Boolean = true
 )
 
 sealed interface AppearanceUiAction {
     data class SetDarkMode(val enabled: Boolean?) : AppearanceUiAction
     data class SetDynamicColor(val enabled: Boolean) : AppearanceUiAction
     data class SetThemeColor(val color: Long) : AppearanceUiAction
+    data class SetUseSystemFont(val enabled: Boolean) : AppearanceUiAction
 }
 
 @HiltViewModel
@@ -33,13 +35,15 @@ class AppearanceViewModel @Inject constructor(
     val config: StateFlow<AppearanceUiState> = combine(
         settingsRepository.settings.map { it.appearance.isDarkMode },
         settingsRepository.settings.map { it.appearance.isDynamicColor },
-        settingsRepository.settings.map { it.appearance.themeColor }
-    ) { dm, dc, tc ->
+        settingsRepository.settings.map { it.appearance.themeColor },
+        settingsRepository.settings.map { it.appearance.useSystemFont }
+    ) { dm, dc, tc, usf ->
         val themeColorLong = tc.toLongOrNull() ?: 0L
         AppearanceUiState(
             isDarkMode = dm,
             isDynamicColor = dc,
-            themeColor = themeColorLong
+            themeColor = themeColorLong,
+            useSystemFont = usf
         )
     }.stateIn(
         viewModelScope,
@@ -60,6 +64,10 @@ class AppearanceViewModel @Inject constructor(
             is AppearanceUiAction.SetThemeColor -> viewModelScope.launch {
                 val colorStr = if (action.color == 0L) "" else action.color.toString()
                 settingsRepository.update(SettingsCommand.SetThemeColor(colorStr))
+            }
+
+            is AppearanceUiAction.SetUseSystemFont -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetUseSystemFont(action.enabled))
             }
         }
     }

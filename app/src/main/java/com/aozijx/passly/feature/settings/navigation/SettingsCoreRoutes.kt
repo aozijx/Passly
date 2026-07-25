@@ -136,6 +136,9 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     },
                     onThemeColorChange = {
                         viewModel.onAction(AppearanceUiAction.SetThemeColor(it))
+                    },
+                    onUseSystemFontChange = {
+                        viewModel.onAction(AppearanceUiAction.SetUseSystemFont(it))
                     }
                 )
             }

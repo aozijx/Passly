@@ -33,7 +33,7 @@ enum class VaultTab(
     ),
     PASSWORDS(
         settingsKey = "passwords",
-        titleRes = R.string.vault_tab_passwords,
+        titleRes = R.string.password,
         icon = Icons.Default.Key,
         isToggleable = true,
         isUiVisible = true,

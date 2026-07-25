@@ -39,7 +39,7 @@ internal fun InterfaceDetail(
                 switchSettingsGroupItem(
                     key = "interface.status_bar_auto_hide",
                     icon = Icons.Default.Fullscreen,
-                    title = "自动隐藏系统状态栏",
+                    title = "隐藏状态栏",
                     subtitle = "浏览列表时释放屏幕顶部空间",
                     checked = state.isStatusBarAutoHide,
                     onCheckedChange = onStatusBarAutoHideChange
@@ -47,16 +47,16 @@ internal fun InterfaceDetail(
                 switchSettingsGroupItem(
                     key = "interface.top_bar_collapsible",
                     icon = Icons.Default.ViewDay,
-                    title = "标题栏跟随滚动",
-                    subtitle = "上滑时自动收缩标题以获得更多视野",
+                    title = "标题栏滚动",
+                    subtitle = "上滑时收缩标题以获得更多视野",
                     checked = state.isTopBarCollapsible,
                     onCheckedChange = onTopBarCollapsibleChange
                 ),
                 switchSettingsGroupItem(
                     key = "interface.tab_bar_collapsible",
                     icon = Icons.Default.SpaceDashboard,
-                    title = "分类标签栏跟随滚动",
-                    subtitle = "功能分类标签随列表滑动智能隐藏",
+                    title = "标签栏滚动",
+                    subtitle = "分类标签随列表滑动自动隐藏",
                     checked = state.isTabBarCollapsible,
                     onCheckedChange = onTabBarCollapsibleChange
                 )

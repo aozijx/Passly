@@ -10,10 +10,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SettingsBrightness
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.RadioButton
@@ -47,14 +48,14 @@ internal fun AppearanceDetail(
     state: AppearanceUiState,
     onDarkModeChange: (Boolean?) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
-    onThemeColorChange: (Long) -> Unit
+    onThemeColorChange: (Long) -> Unit,
+    onUseSystemFontChange: (Boolean) -> Unit
 ) {
     var showThemeColorSheet by remember { mutableStateOf(false) }
     var showThemeModeMenu by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
-
     val languageTag = AppCompatDelegate.getApplicationLocales()
         .toLanguageTags()
         .substringBefore(',')
@@ -83,13 +84,6 @@ internal fun AppearanceDetail(
                     onExpandedChange = { showThemeModeMenu = it },
                     onSelect = onDarkModeChange
                 ),
-                navigationSettingsGroupItem(
-                    key = "appearance.language",
-                    icon = Icons.Default.Language,
-                    title = stringResource(R.string.settings_language),
-                    value = stringResource(languageTag.languageLabelRes()),
-                    onClick = { showLanguageDialog = true }
-                ),
                 switchSettingsGroupItem(
                     key = "appearance.dynamic_color",
                     icon = Icons.Default.Palette,
@@ -103,7 +97,30 @@ internal fun AppearanceDetail(
                     icon = Icons.Default.Palette,
                     title = stringResource(R.string.settings_theme_color),
                     value = stringResource(themePresetByColor(state.themeColor).nameKey),
-                    onClick = { showThemeColorSheet = true }
+                    onClick = { showThemeColorSheet = !showThemeColorSheet }
+                )
+            )
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        SettingsSectionTitle(text = stringResource(R.string.settings_topic_language_font))
+        RoundedGroup(
+            items = listOf(
+                navigationSettingsGroupItem(
+                    key = "appearance.language",
+                    icon = Icons.Default.Translate,
+                    title = stringResource(R.string.settings_language),
+                    value = stringResource(languageTag.languageLabelRes()),
+                    onClick = { showLanguageDialog = !showLanguageDialog }
+                ),
+                switchSettingsGroupItem(
+                    key = "appearance.font",
+                    icon = Icons.Default.TextFields,
+                    title = stringResource(R.string.settings_font),
+                    subtitle = stringResource(R.string.settings_font_system),
+                    checked = state.useSystemFont,
+                    onCheckedChange = onUseSystemFontChange
                 )
             )
         )

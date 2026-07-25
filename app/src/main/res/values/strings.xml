@@ -58,19 +58,12 @@
     <string name="autofill_match_unknown">候选</string>
     <string name="autofill_prompt_title">使用 Passly 自动填充</string>
     <string name="select">选择</string>
-    <string name="autofill_chevron_right" translatable="false">›</string>
     <plurals name="autofill_trigger_count">
         <item quantity="other">找到 %d 个匹配账号 · 点击选择</item>
     </plurals>
 
     <!-- 自动填充标题生成相关 -->
     <string name="autofill_title_app_fallback">应用</string>
-    <string name="autofill_title_late_night">深夜记录</string>
-    <string name="autofill_title_morning">早晨记录</string>
-    <string name="autofill_title_noon">中午记录</string>
-    <string name="autofill_title_afternoon">下午记录</string>
-    <string name="autofill_title_evening">晚上记录</string>
-    <string name="autofill_title_new_entry">新记录</string>
 
     <!-- Vault 相关 -->
     <string name="vault_auth_subtitle">验证以访问保险箱</string>
@@ -98,12 +91,10 @@
     <string name="vault_menu_import">导入恢复</string>
     <string name="vault_menu_all_categories">全部分类</string>
     <string name="vault_tab_all">全部</string>
-    <string name="vault_tab_passwords">密码</string>
     <string name="vault_tab_totp">2FA</string>
 
     <string name="vault_fab_scan">扫码</string>
     <string name="vault_fab_2fa">2FA</string>
-    <string name="vault_fab_password">密码</string>
     <string name="vault_fab_bank_card">银行卡</string>
     <string name="vault_fab_wifi">WiFi</string>
     <string name="vault_fab_ssh_key">SSH密钥</string>
@@ -286,10 +277,13 @@
 
     <!-- 设置: 外观 -->
     <string name="settings_group_theme">主题</string>
-    <string name="settings_theme_mode">外观模式</string>
+    <string name="settings_theme_mode">外观</string>
     <string name="settings_theme_mode_light">浅色</string>
     <string name="settings_theme_mode_dark">深色</string>
+    <string name="settings_topic_language_font">语言与字体</string>
     <string name="settings_language">语言</string>
+    <string name="settings_font">字体</string>
+    <string name="settings_font_system">使用系统字体</string>
     <string name="settings_language_choose">选择语言</string>
     <string name="settings_language_chinese">简体中文</string>
     <string name="settings_language_english">English</string>

@@ -43,7 +43,6 @@ data class VaultSortSpec(
             VaultSortSpec(VaultSortField.TITLE, SortDirection.ASC),
             VaultSortSpec(VaultSortField.CREATED_AT, SortDirection.DESC),
             VaultSortSpec(VaultSortField.UPDATED_AT, SortDirection.DESC),
-            VaultSortSpec(VaultSortField.LAST_USED_AT, SortDirection.DESC),
             VaultSortSpec(VaultSortField.USAGE_FREQUENCY, SortDirection.DESC)
         )
     }

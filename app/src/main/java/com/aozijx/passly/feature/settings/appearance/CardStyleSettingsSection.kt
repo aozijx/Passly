@@ -56,8 +56,7 @@ private data class SettingsGroupSpec(
 }
 
 private data class TypeStylePolicy(
-    val defaultStyle: VaultCardStyle,
-    val selectableStyles: List<VaultCardStyle>
+    val defaultStyle: VaultCardStyle, val selectableStyles: List<VaultCardStyle>
 )
 
 private val TYPE_STYLE_POLICY_MAP: Map<EntryType, TypeStylePolicy> =
@@ -182,12 +181,11 @@ private fun CardStyleGroup(
         title = stringResource(spec.titleRes), expanded = expanded, onToggle = onToggle
     ) {
         styles.forEach { style ->
-                    CardStyleOption(
-                        style = style,
-                        selected = style == selectedStyle,
-                        entryTypeValue = spec.entryTypeName,
-                        onClick = { onStyleSelected(style) })
-                }
+            CardStyleOption(
+                style = style,
+                selected = style == selectedStyle,
+                onClick = { onStyleSelected(style) })
+        }
     }
 }
 
@@ -265,7 +263,7 @@ private fun GroupHeaderButton(
 
 @Composable
 private fun CardStyleOption(
-    style: VaultCardStyle, selected: Boolean, entryTypeValue: String, onClick: () -> Unit
+    style: VaultCardStyle, selected: Boolean, onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,

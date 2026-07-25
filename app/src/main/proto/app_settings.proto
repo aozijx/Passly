@@ -59,6 +59,7 @@ message AppSettings {
       "topic_message_settings";
 
   optional MessagePreferences message_preferences = 48;
+  optional bool use_system_font = 49 [default = true];
 }
 
 message MessagePreferences {

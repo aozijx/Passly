@@ -7,7 +7,6 @@
     <string name="sort_usage">使用回数</string>
     <string name="autofill_locked">Passly はロック中です</string>
     <string name="autofill_save_failed_repository">保存できませんでした</string>
-    <string name="autofill_chevron_right">›</string>
     <string name="vault_menu_sort">並び順</string>
     <string name="vault_field_copied_format">%1$sをコピーしました</string>
     <string name="vault_fab_bank_card">銀行カード</string>

@@ -23,7 +23,7 @@ enum class AddType(
     val labelRes: Int,
     val icon: ImageVector
 ) {
-    PASSWORD(R.string.vault_fab_password, Icons.Default.Key),
+    PASSWORD(R.string.password, Icons.Default.Key),
     TOTP(R.string.vault_fab_2fa, Icons.Default.Pin),
     SCAN(R.string.vault_fab_scan, Icons.Default.QrCodeScanner),
     BANK_CARD(R.string.vault_fab_bank_card, Icons.Default.CreditCard),

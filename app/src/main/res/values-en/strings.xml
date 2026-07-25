@@ -54,12 +54,6 @@
 
     <!-- Autofill title generation -->
     <string name="autofill_title_app_fallback">App</string>
-    <string name="autofill_title_late_night">Late Night Entry</string>
-    <string name="autofill_title_morning">Morning Entry</string>
-    <string name="autofill_title_noon">Noon Entry</string>
-    <string name="autofill_title_afternoon">Afternoon Entry</string>
-    <string name="autofill_title_evening">Evening Entry</string>
-    <string name="autofill_title_new_entry">New Entry</string>
 
     <!-- Vault - adjusted for clearer distinction -->
     <string name="vault_auth_subtitle">Verify your identity to access the vault</string>
@@ -85,12 +79,10 @@
     <string name="vault_menu_import">Import backup</string>
     <string name="vault_menu_all_categories">All categories</string>
     <string name="vault_tab_all">All</string>
-    <string name="vault_tab_passwords">Passwords</string>
     <string name="vault_tab_totp">2FA</string>
 
     <string name="vault_fab_scan">Scan</string>
     <string name="vault_fab_2fa">2FA</string>
-    <string name="vault_fab_password">Password</string>
     <string name="vault_empty_placeholder">Your vault is empty</string>
     <string name="vault_scanner_error_not_otp">Scanned successfully, but not a valid 2FA QR code</string>
     <string name="vault_scanner_action_album">Import from album</string>
