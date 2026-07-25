@@ -41,11 +41,12 @@ class BackupExportStorageSupport @Inject constructor(
         fileName: String,
         mimeType: String = BACKUP_FILE_MIME
     ): Result<ExportTarget> = runCatching {
-        val treeUri = directoryTreeUri.toUri()
+        val grantedTreeUri = directoryTreeUri.toUri()
         val resolver = context.contentResolver
-        require(hasTreeUriPermission(context, treeUri)) {
+        require(hasTreeUriPermission(context, grantedTreeUri)) {
             "目录访问权限已失效，请重新选择备份目录"
         }
+        val treeUri = ensureAppDirectoryTreeUri(context, grantedTreeUri).getOrThrow()
         val docId = DocumentsContract.getTreeDocumentId(treeUri)
         val parentDocUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
         val fileUri = try {

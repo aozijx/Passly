@@ -7,8 +7,6 @@ import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
 
 sealed interface BackupIntent {
     data class CheckDirectoryPermission(val uri: String?) : BackupIntent
-    data class SetBackupDirectoryUri(val uri: String) : BackupIntent
-    data object ClearBackupDirectoryUri : BackupIntent
 
     data class PrepareExport(val format: BackupExportUiFormat) : BackupIntent
 
@@ -18,7 +16,7 @@ sealed interface BackupIntent {
         val deleteOnFailure: Boolean = false
     ) : BackupIntent
 
-    data class StartExportInConfiguredDirectory(val directoryUri: String) : BackupIntent
+    data object StartExportInConfiguredDirectory : BackupIntent
     data class StartImport(val uri: Uri) : BackupIntent
 
     data class UpdatePassword(val password: String) : BackupIntent

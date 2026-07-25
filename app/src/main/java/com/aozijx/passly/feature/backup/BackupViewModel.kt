@@ -31,6 +31,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -52,16 +53,13 @@ class BackupViewModel @Inject constructor(
     fun onIntent(intent: BackupIntent) {
         when (intent) {
             is BackupIntent.CheckDirectoryPermission -> checkDirectoryPermission(intent.uri)
-            is BackupIntent.SetBackupDirectoryUri -> setBackupDirectoryUri(intent.uri)
-            BackupIntent.ClearBackupDirectoryUri -> clearBackupDirectoryUri()
             is BackupIntent.PrepareExport -> prepareExport(intent.format)
             is BackupIntent.StartExport -> startExport(
                 uri = intent.uri,
                 fileNameHint = intent.fileNameHint,
                 deleteOnFailure = intent.deleteOnFailure
             )
-            is BackupIntent.StartExportInConfiguredDirectory ->
-                startExportInConfiguredDirectory(intent.directoryUri)
+            BackupIntent.StartExportInConfiguredDirectory -> startExportInConfiguredDirectory()
             is BackupIntent.StartImport -> startImport(intent.uri)
             is BackupIntent.UpdatePassword -> updatePassword(intent.password)
             is BackupIntent.UpdateImportMode -> updateImportMode(intent.mode)
@@ -95,18 +93,6 @@ class BackupViewModel @Inject constructor(
                 }
                 is AppResult.Failure -> fail(result.error)
             }
-        }
-    }
-
-    private fun setBackupDirectoryUri(uri: String) {
-        viewModelScope.launch {
-            settingsRepository.update(SettingsCommand.SetBackupDirectoryUri(uri))
-        }
-    }
-
-    private fun clearBackupDirectoryUri() {
-        viewModelScope.launch {
-            settingsRepository.update(SettingsCommand.ClearBackupDirectoryUri())
         }
     }
 
@@ -145,12 +131,17 @@ class BackupViewModel @Inject constructor(
         }
     }
 
-    private fun startExportInConfiguredDirectory(directoryUri: String) {
+    private fun startExportInConfiguredDirectory() {
         val snapshot = _uiState.value
         if (!snapshot.isExporting || !snapshot.canSubmitExport) return
         viewModelScope.launch {
             if (!authenticate(AuthenticationPurpose.BACKUP_EXPORT)) return@launch
             _uiState.update { it.copy(status = BackupOperationStatus.Loading, error = null) }
+            val directoryUri = settingsRepository.settings.first().backup.backupDirectoryUri
+            if (directoryUri.isNullOrBlank()) {
+                fail(BackupFailed("尚未配置备份目录"))
+                return@launch
+            }
             val fileName = snapshot.pendingExportFileName
                 ?: buildExportFileName(snapshot.selectedExportFormat)
             val target = storageSupport.createNamedExportTarget(

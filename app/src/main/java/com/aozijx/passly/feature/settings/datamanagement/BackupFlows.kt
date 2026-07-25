@@ -17,18 +17,24 @@ internal fun handleBackupPathPicked(
         return
     }
 
-    // 持久化目录访问权限，避免进程重启后权限丢失
+    // 只持久化系统实际授权的原始 tree URI。Passly 子目录 URI 是派生值，
+    // 不能替代授权 URI 写入设置，否则进程重启后精确权限检查会失败。
     try {
         context.contentResolver.takePersistableUriPermission(
             uri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         )
-    } catch (_: SecurityException) {
-        // 部分设备或路径可能不支持持久化权限，不阻塞流程
+    } catch (error: SecurityException) {
+        Toast.makeText(
+            context,
+            error.toUiMessage("无法持久化目录权限，请重新选择"),
+            Toast.LENGTH_SHORT
+        ).show()
+        return
     }
 
     BackupExportStorageSupport.ensureAppDirectoryTreeUri(context, uri)
-        .onSuccess { resolvedUri -> onResolved(resolvedUri.toString()) }
+        .onSuccess { onResolved(uri.toString()) }
         .onFailure { error ->
             Toast.makeText(context, error.toUiMessage("无法解析目录"), Toast.LENGTH_SHORT).show()
         }

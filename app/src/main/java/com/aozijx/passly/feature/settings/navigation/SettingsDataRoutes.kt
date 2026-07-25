@@ -35,6 +35,9 @@ import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
 import com.aozijx.passly.feature.settings.datamanagement.DataUiAction
 import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
 import com.aozijx.passly.feature.settings.datamanagement.handleBackupPathPicked
+import com.aozijx.passly.feature.settings.SettingsViewModel
+import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiState
 import com.aozijx.passly.feature.settings.general.GeneralDetail
 import com.aozijx.passly.feature.settings.general.NotificationDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionDetail
@@ -57,7 +60,9 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionViewModel,
     dataViewModel: DataViewModel,
-    backupViewModel: BackupViewModel
+    backupViewModel: BackupViewModel,
+    settingsViewModel: SettingsViewModel,
+    settingsState: SettingsUiState
 ) {
     composable(SettingsRoute.Interaction.route) {
         val state by interactionViewModel.config.collectAsStateWithLifecycle()
@@ -87,8 +92,12 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
             item {
                 DataManagementDetail(
                     state = state,
+                    isClearingDatabase = settingsState.isClearingDatabase,
                     onAutoDownloadIconsChange = {
                         dataViewModel.onAction(DataUiAction.SetAutoDownloadIcons(it))
+                    },
+                    onClearDatabase = {
+                        settingsViewModel.handleIntent(SettingsIntent.ClearDatabase)
                     }
                 )
             }
@@ -243,9 +252,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                 activeSheet = null
                 val directoryUri = state.directoryUri
                 if (!directoryUri.isNullOrBlank()) {
-                    backupViewModel.onIntent(
-                        BackupIntent.StartExportInConfiguredDirectory(directoryUri)
-                    )
+                    backupViewModel.onIntent(BackupIntent.StartExportInConfiguredDirectory)
                 } else {
                     val fileName = backupViewModel.buildExportFileName()
                     when (backupState.selectedExportFormat) {
