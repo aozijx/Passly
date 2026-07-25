@@ -1,6 +1,7 @@
 package com.aozijx.passly.app.permission
 
 import android.content.Context
+import androidx.core.content.edit
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,6 +21,6 @@ class SharedPreferencesPermissionRequestHistory @Inject constructor(
         preferences.getBoolean(permission.name, false)
 
     override fun markRequested(permission: RuntimePermission) {
-        preferences.edit().putBoolean(permission.name, true).apply()
+        preferences.edit { putBoolean(permission.name, true) }
     }
 }

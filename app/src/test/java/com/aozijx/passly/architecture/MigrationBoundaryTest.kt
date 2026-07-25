@@ -238,6 +238,7 @@ class MigrationBoundaryTest {
             "AppMessagePublisher",
             "AppStatusBarNotifier",
             "AppMessagePreferences",
+            "AppPermission",
             "AppPermissionManager",
             "ActivityPermissionRequester",
             "PermissionManagerEntryPoint",
@@ -357,5 +358,78 @@ class MigrationBoundaryTest {
         )
         assertTrue("Every record must authenticate sequence and level", "buildRecordAad" in source)
         assertTrue("Record nonce must have an exact length", "checkedExact(NONCE_BYTES)" in source)
+    }
+
+    @Test
+    fun platformEffectsStayBehindTheirSingleGateway() {
+        val directLogOffenders = productionKotlinFiles
+            .filter {
+                it.invariantSeparatorsPath
+                    .endsWith("/core/telemetry/AndroidLogSink.kt")
+                    .not()
+            }
+            .filter { "android.util.Log" in it.readText() || "printStackTrace(" in it.readText() }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+        val directNotificationOffenders = productionKotlinFiles
+            .filter {
+                it.invariantSeparatorsPath
+                    .endsWith("/app/message/system/AndroidSystemNotificationGateway.kt")
+                    .not()
+            }
+            .filter {
+                val text = it.readText()
+                "NotificationManagerCompat" in text || "NotificationCompat." in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+        val directPermissionOffenders = productionKotlinFiles
+            .filter {
+                val path = it.invariantSeparatorsPath
+                !path.endsWith("/core/permission/catalog/RuntimePermissionCatalog.kt") &&
+                    !path.endsWith("/core/permission/compose/PermissionRequestHost.kt")
+            }
+            .filter {
+                val text = it.readText()
+                "Manifest.permission." in text ||
+                    "ActivityResultContracts.RequestPermission" in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Direct logging bypasses AndroidLogSink: $directLogOffenders", directLogOffenders.isEmpty())
+        assertTrue(
+            "Direct notification bypasses AndroidSystemNotificationGateway: $directNotificationOffenders",
+            directNotificationOffenders.isEmpty()
+        )
+        assertTrue(
+            "Direct runtime permission bypasses the permission center: $directPermissionOffenders",
+            directPermissionOffenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun newCentersContainNoStubOrTodoImplementation() {
+        val scopedRoots = listOf(
+            File("src/main/java/com/aozijx/passly/app/message"),
+            File("src/main/java/com/aozijx/passly/app/permission"),
+            File("src/main/java/com/aozijx/passly/app/diagnostics"),
+            File("src/main/java/com/aozijx/passly/core/permission"),
+            File("src/main/java/com/aozijx/passly/data/notice"),
+            File("src/main/java/com/aozijx/passly/data/diagnostics"),
+            File("src/main/java/com/aozijx/passly/domain/notice")
+        )
+        val offenders = scopedRoots.asSequence()
+            .filter(File::exists)
+            .flatMap { it.walkTopDown() }
+            .filter { it.isFile && it.extension == "kt" }
+            .filter {
+                val text = it.readText()
+                "TODO" in text || "FIXME" in text || "StubSystemNotificationGateway" in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Incomplete center implementations: $offenders", offenders.isEmpty())
     }
 }

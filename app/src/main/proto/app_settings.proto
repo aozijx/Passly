@@ -50,6 +50,13 @@ message AppSettings {
   optional bool visible_vault_tabs_configured = 40 [default = false];
 
   reserved 41 to 47;
+  reserved "status_bar_notifications_enabled",
+      "icon_download_notifications_enabled",
+      "clipboard_clear_toasts_enabled",
+      "app_close_toasts_enabled",
+      "optional_messages_enabled",
+      "system_notifications_enabled",
+      "topic_message_settings";
 
   optional MessagePreferences message_preferences = 48;
 }

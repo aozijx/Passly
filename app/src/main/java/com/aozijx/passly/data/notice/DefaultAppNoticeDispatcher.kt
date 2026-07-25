@@ -64,11 +64,14 @@ class DefaultAppNoticeDispatcher @Inject constructor(
     private suspend fun dispatchSerial(notice: AppNotice): NoticeDispatchReceipt {
         val policy = codeRegistry.policyFor(notice.code)
         val settings = settingsProvider.current()
+        val systemState = systemStateProvider.current().copy(
+            userSettingEnabled = settings.value.systemNotificationsEnabled
+        )
         val context = NoticeRoutingContext(
             settings = settings.value,
             settingsVersion = settings.version,
             appVisibility = visibilityProvider.current(),
-            systemNotificationState = systemStateProvider.current()
+            systemNotificationState = systemState
         )
         val claim = deduplicator.begin(notice.eventId, policy.eventIdTtlMs)
         if (claim is DeduplicationClaim.Duplicate) {

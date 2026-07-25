@@ -29,15 +29,15 @@ PendingIntent。锁定由 `VaultSessionController` 拒绝新 lease、等待活�
 
 ```mermaid
 flowchart LR
-    Producers["ViewModel / Service / Manager"] --> Center["AppMessageCenter"]
-    Center --> Toast["Toast host"]
-    Center --> Status["状态栏通知"]
-    Prefs["AppSettings"] --> Center
-    Permission["Notification permission"] --> Status
+    Producers["Publisher"] --> Dispatcher["AppNoticeDispatcher"]
+    Dispatcher --> InApp["In-app notice stream"]
+    Dispatcher --> System["SystemNotificationGateway"]
+    Prefs["Atomic AppMessageSettings snapshot"] --> Dispatcher
+    Permission["Notification permission / channel"] --> Dispatcher
 ```
 
-同一业务事件只能发布一次，并明确选择 Toast 或状态栏通知，避免 Verification 和 Main
-两条通道重复显示。通知偏好控制产品行为，系统权限决定状态栏通知是否可投递，两者不能混为一个布尔值。
+同一业务事件使用稳定 eventId；可信注册表决定等级、主题、投递目标和去重窗口。通知偏好控制产品行为，
+系统权限决定状态栏通知是否可投递，两者不能混为一个布尔值。详细规则见[消息中心](message-center.md)。
 
 ## 备份
 

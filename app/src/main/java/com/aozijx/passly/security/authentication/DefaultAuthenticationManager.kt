@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.biometric.BiometricManager
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.ErrorCode
+import com.aozijx.passly.core.telemetry.SafeLogValue
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthMethodAvailability
 import com.aozijx.passly.domain.authentication.AuthenticationCallback
@@ -284,8 +286,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 EventCategory.AUTHENTICATION,
                 "authentication_failed",
                 fields = mapOf(
-                    "code" to result.failure.code,
-                    "correlation_id" to request.correlationId
+                    "code" to SafeLogValue.ErrorCodeValue(ErrorCode(result.failure.code))
                 )
             )
         }

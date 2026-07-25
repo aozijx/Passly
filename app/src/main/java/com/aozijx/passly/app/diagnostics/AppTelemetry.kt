@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.diagnostics
 
 import android.security.keystore.UserNotAuthenticatedException
-import com.aozijx.passly.core.telemetry.ErrorCode
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.EventLevel
+import com.aozijx.passly.core.telemetry.OperationCode
 import com.aozijx.passly.core.telemetry.SafeLogValue
 import com.aozijx.passly.core.telemetry.TelemetryEmitter
 import com.aozijx.passly.core.telemetry.TelemetryEvent
@@ -13,7 +13,7 @@ import com.aozijx.passly.core.telemetry.TelemetryEvent
  * This application-bound bridge is installed once by [DiagnosticsRuntimeController].
  *
  * Free-form messages are never persisted. Structured names are accepted only when they match the
- * telemetry identifier grammar, and string fields are reduced to reviewed primitive forms.
+ * telemetry identifier grammar, and structured calls accept only [SafeLogValue] fields.
  */
 object AppTelemetry {
     @Volatile
@@ -41,26 +41,26 @@ object AppTelemetry {
     fun d(
         category: EventCategory,
         name: String,
-        fields: Map<String, String> = emptyMap()
+        fields: Map<String, SafeLogValue> = emptyMap()
     ) = emit(EventLevel.DEBUG, category, name, fields)
 
     fun i(
         category: EventCategory,
         name: String,
-        fields: Map<String, String> = emptyMap()
+        fields: Map<String, SafeLogValue> = emptyMap()
     ) = emit(EventLevel.INFO, category, name, fields)
 
     fun w(
         category: EventCategory,
         name: String,
-        fields: Map<String, String> = emptyMap(),
+        fields: Map<String, SafeLogValue> = emptyMap(),
         throwable: Throwable? = null
     ) = emit(EventLevel.WARN, category, name, fields, throwable)
 
     fun e(
         category: EventCategory,
         name: String,
-        fields: Map<String, String> = emptyMap(),
+        fields: Map<String, SafeLogValue> = emptyMap(),
         throwable: Throwable? = null
     ) = emit(EventLevel.ERROR, category, name, fields, throwable)
 
@@ -79,8 +79,10 @@ object AppTelemetry {
                 "crypto.operation_failed"
             },
             fields = mapOf(
-                "component" to tag,
-                "operation" to action
+                "component" to SafeLogValue.EnumName(safeEnumName(tag)),
+                "operation" to SafeLogValue.OperationCodeValue(
+                    OperationCode(safeOperationCode(action))
+                )
             ),
             throwable = error
         )
@@ -105,26 +107,12 @@ object AppTelemetry {
         level: EventLevel,
         category: EventCategory,
         name: String,
-        fields: Map<String, String>,
+        fields: Map<String, SafeLogValue>,
         throwable: Throwable? = null
     ) {
         val safeName = name.takeIf(EVENT_NAME::matches)
             ?: "legacy.${category.name.lowercase()}"
-        val safeFields = fields.mapNotNull { (key, value) ->
-            val safeKey = key.takeIf(FIELD_NAME::matches) ?: return@mapNotNull null
-            val safeValue = when {
-                value == "true" || value == "false" ->
-                    SafeLogValue.BooleanValue(value.toBooleanStrict())
-                value.toLongOrNull() != null ->
-                    SafeLogValue.Count(value.toLong())
-                ENUM_NAME.matches(value) ->
-                    SafeLogValue.EnumName(value)
-                ERROR_CODE.matches(value) ->
-                    SafeLogValue.ErrorCodeValue(ErrorCode(value))
-                else -> null
-            } ?: return@mapNotNull null
-            safeKey to safeValue
-        }.toMap()
+        val safeFields = fields.filterKeys(FIELD_NAME::matches)
         val throwableType = throwable?.javaClass?.simpleName
             ?.takeIf(ENUM_NAME::matches)
         val frames = throwable?.stackTrace
@@ -146,10 +134,27 @@ object AppTelemetry {
         )
     }
 
+    private fun safeEnumName(value: String): String =
+        value.uppercase()
+            .map { if (it.isLetterOrDigit()) it else '_' }
+            .joinToString("")
+            .trim('_')
+            .take(64)
+            .ifBlank { "UNKNOWN" }
+
+    private fun safeOperationCode(value: String): String =
+        value.lowercase()
+            .map { if (it.isLetterOrDigit()) it else '_' }
+            .joinToString("")
+            .trim('_')
+            .take(128)
+            .let { normalized ->
+                if (normalized.length >= 3) normalized else "unknown"
+            }
+
     private val EVENT_NAME = Regex("[a-z][a-z0-9_.]{2,95}")
     private val FIELD_NAME = Regex("[a-z][a-z0-9_]{0,63}")
     private val ENUM_NAME = Regex("[A-Z][A-Z0-9_]{0,63}")
-    private val ERROR_CODE = Regex("[A-Z_]{3,64}")
     private const val APP_PACKAGE_PREFIX = "com.aozijx.passly."
     private const val MAX_STACK_FRAMES = 16
 }

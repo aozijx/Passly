@@ -16,7 +16,9 @@ import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +49,9 @@ class PasslyApplication : Application() {
     lateinit var diagnosticsRuntimeController: DiagnosticsRuntimeController
 
     @Inject
+    lateinit var appNoticePublisher: AppNoticePublisher
+
+    @Inject
     lateinit var biometricRotationReconciler: BiometricRotationReconciler
 
     private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -66,6 +71,7 @@ class PasslyApplication : Application() {
         instance = this
 
         diagnosticsRuntimeController.start(diagnosticsScope)
+        ClipboardUtils.installNoticePublisher(appNoticePublisher)
         diagnosticsScope.launch { biometricRotationReconciler.reconcile() }
 
         try {

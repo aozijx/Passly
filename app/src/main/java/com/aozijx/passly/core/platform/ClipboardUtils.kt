@@ -25,14 +25,20 @@ object ClipboardUtils {
     @Volatile
     private var lastClearRunnable: Runnable? = null
 
+    @Volatile
+    private var noticePublisher: AppNoticePublisher? = null
+
+    fun installNoticePublisher(publisher: AppNoticePublisher) {
+        noticePublisher = publisher
+    }
+
     /**
      * 安全复制到剪贴板
      */
     fun copy(
         context: Context,
         text: String,
-        isSensitive: Boolean = true,
-        noticePublisher: AppNoticePublisher? = null
+        isSensitive: Boolean = true
     ) {
         val appContext = context.applicationContext
         val clipboard = appContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -53,7 +59,7 @@ object ClipboardUtils {
         val clearRunnable = Runnable {
             try {
                 if (clipboard.hasPrimaryClip() && clipboard.primaryClipDescription?.label == CLIP_LABEL) {
-                    clear(appContext, noticePublisher)
+                    clear(appContext)
                 }
             } catch (e: Exception) {
                 AppTelemetry.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
@@ -69,7 +75,7 @@ object ClipboardUtils {
     /**
      * 清除剪贴板内容
      */
-    fun clear(context: Context, noticePublisher: AppNoticePublisher? = null) {
+    fun clear(context: Context) {
         try {
             val clipboard = context.applicationContext
                 .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

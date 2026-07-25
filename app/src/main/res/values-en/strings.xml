@@ -392,6 +392,24 @@
     <string name="settings_card_style_totp_name">TOTP card</string>
     <string name="settings_card_style_totp_desc">Highlights dynamic code and progress ring</string>
 
+    <string name="settings_system_notifications">System notifications</string>
+    <string name="settings_system_notifications_summary">Show notifications in the system status bar</string>
+    <string name="settings_app_notices">In-app messages</string>
+    <string name="settings_optional_notices">All app messages</string>
+    <string name="settings_optional_notices_summary">When off, only required security and data alerts are shown</string>
+    <string name="settings_topic_clipboard">Clipboard</string>
+    <string name="settings_topic_clipboard_summary">Notify when sensitive content is cleared</string>
+    <string name="settings_topic_app_lifecycle">App lifecycle</string>
+    <string name="settings_topic_app_lifecycle_summary">Notify before the app closes</string>
+    <string name="settings_topic_icon_download">Icon downloads</string>
+    <string name="settings_topic_icon_download_summary">Notify about icon download results</string>
+    <string name="settings_topic_backup">Backup</string>
+    <string name="settings_topic_backup_summary">Notify about backup import and export results</string>
+    <string name="settings_topic_security">Security</string>
+    <string name="settings_topic_security_summary">Notify about authentication and recovery changes</string>
+    <string name="settings_topic_database">Data</string>
+    <string name="settings_topic_database_summary">Notify about database failures and recovery results</string>
+
     <string name="notice_clipboard_cleared">Sensitive clipboard content was cleared</string>
     <string name="notice_clipboard_clear_failed">Could not clear sensitive clipboard content</string>
     <string name="notice_app_locked">Vault locked</string>

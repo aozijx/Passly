@@ -88,6 +88,41 @@ class DefaultAppNoticeDispatcherTest {
         assertTrue(duplicate.sinkResults.isEmpty())
     }
 
+    @Test
+    fun appSystemNotificationSettingOverridesPlatformAvailability() = runBlocking {
+        val delivered = mutableListOf<NoticeTarget>()
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = DefaultNoticeRouter(),
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+            settingsProvider = MessageSettingsSnapshotProvider {
+                VersionedMessageSettings(
+                    3,
+                    AppMessageSettings(systemNotificationsEnabled = false)
+                )
+            },
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(
+                sink(NoticeTarget.SYSTEM) {
+                    delivered += NoticeTarget.SYSTEM
+                    SinkResult.Delivered
+                },
+                sink(NoticeTarget.IN_APP) {
+                    delivered += NoticeTarget.IN_APP
+                    SinkResult.Delivered
+                }
+            )
+        )
+
+        val receipt = dispatcher.dispatch(
+            newAppNotice(NoticeCode.ICON_DOWNLOAD_COMPLETED, eventId = "icon-setting-off")
+        )
+
+        assertEquals(listOf(NoticeTarget.IN_APP), delivered)
+        assertEquals(NoticeDispatchStatus.DELIVERED, receipt.status)
+    }
+
     private fun availableSystemState() = SystemNotificationStateProvider {
         SystemNotificationState(
             userSettingEnabled = true,
