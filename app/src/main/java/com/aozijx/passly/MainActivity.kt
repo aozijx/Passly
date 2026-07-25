@@ -86,10 +86,10 @@ class MainActivity : AppCompatActivity() {
             ) {
                 ProvideAppNoticePublisher(noticePublisher) {
                     AppTheme(
-                        darkTheme = mainUiState.isDarkMode,
+                        themeMode = mainUiState.themeMode,
                         dynamicColor = mainUiState.isDynamicColor,
-                        themeColor = mainUiState.themeColor,
-                        useSystemFont = mainUiState.useSystemFont
+                        customSeedArgb = mainUiState.customSeedArgb,
+                        fontFamily = mainUiState.fontFamily
                     ) {
                         AuthenticationHost(this, authenticationHostRegistry) {
                             MainScreen(

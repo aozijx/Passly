@@ -364,20 +364,17 @@
         <item>permission</item>
     </string-array>
 
-    <!-- Settings: Vault card style -->
-    <string name="settings_card_style_section_title">Vault card style</string>
-    <string name="settings_card_style_section_expanded_hint">Preview expanded</string>
-    <string name="settings_card_style_section_collapsed_hint">Tap to preview and switch</string>
-    <string name="settings_card_style_group_expanded_label">Collapse</string>
-    <string name="settings_card_style_group_collapsed_label">Expand</string>
-    <string name="settings_card_style_group_password">Password group</string>
-    <string name="settings_card_style_group_totp">TOTP group</string>
-    <string name="settings_card_style_default_name">default style</string>
-    <string name="settings_card_style_default_desc">Uses this category\'s default style</string>
-    <string name="settings_card_style_password_name">Password card</string>
-    <string name="settings_card_style_password_desc">Style emphasizing credential recognition</string>
-    <string name="settings_card_style_totp_name">TOTP card</string>
-    <string name="settings_card_style_totp_desc">Highlights dynamic code and progress ring</string>
+    <!-- Settings: Interface behavior -->
+    <string name="settings_interface_immersive_title">Immersive experience</string>
+    <string name="settings_interface_hide_status_bar">Hide status bar</string>
+    <string name="settings_interface_hide_status_bar_desc">Free up space at the top when scrolling</string>
+    <string name="settings_interface_top_bar_collapsible">Collapsible top bar</string>
+    <string name="settings_interface_top_bar_collapsible_desc">Shrink the top bar on scroll for more content</string>
+    <string name="settings_interface_tab_bar_collapsible">Collapsible tab bar</string>
+    <string name="settings_interface_tab_bar_collapsible_desc">Auto-hide tabs when scrolling</string>
+    <string name="settings_interface_vault_tabs_section">Vault tabs</string>
+    <string name="settings_interface_tab_threshold_label">Tab threshold</string>
+    <string name="settings_interface_tab_threshold_desc">When tab count is within threshold, tabs are evenly distributed; otherwise they scroll horizontally.</string>
 
     <string name="settings_system_notifications">System notifications</string>
     <string name="settings_system_notifications_summary">Show notifications in the system status bar</string>

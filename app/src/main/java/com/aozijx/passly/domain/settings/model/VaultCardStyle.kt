@@ -4,6 +4,8 @@ enum class AutofillUiMode { SYSTEM_INLINE, BOTTOM_SHEET }
 
 enum class SwipeActionType { DELETE, DETAIL, COPY_PASSWORD, COPY_USERNAME }
 
+const val DEFAULT_STYLE_KEY = -1
+
 enum class VaultCardStyle(val key: String) {
     DEFAULT("default"),
     PASSWORD("password"),
@@ -19,3 +21,5 @@ enum class VaultCardStyle(val key: String) {
             if (style in entries) style else DEFAULT
     }
 }
+
+fun VaultCardStyle.toVariantKey(): String = key

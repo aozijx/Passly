@@ -21,6 +21,7 @@ import com.aozijx.passly.core.ui.components.widgets.SwipeDirection
 import com.aozijx.passly.core.ui.components.widgets.SwipeToAction
 import com.aozijx.passly.core.ui.components.widgets.createSwipeAction
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
@@ -32,7 +33,7 @@ import com.aozijx.passly.feature.vault.model.VaultTab
 fun VaultPagerContent(
     pagerState: PagerState,
     uiState: VaultUiState,
-    perTypeStyleMap: Map<Int, VaultCardStyle>,
+    entryCardPresentations: List<EntryCardPresentation>,
     totpStates: Map<String, OtpUiState>,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
@@ -60,7 +61,7 @@ fun VaultPagerContent(
                 items(items = displayItems, key = { it.id }) { item ->
                     EntryListItemRow(
                         item = item,
-                        perTypeStyleMap = perTypeStyleMap,
+                        entryCardPresentations = entryCardPresentations,
                         swipeLeftAction = swipeLeftAction,
                         swipeRightAction = swipeRightAction,
                         isSwipeEnabled = isSwipeEnabled,
@@ -83,7 +84,7 @@ fun VaultPagerContent(
 @Composable
 private fun EntryListItemRow(
     item: EntryListItem,
-    perTypeStyleMap: Map<Int, VaultCardStyle>,
+    entryCardPresentations: List<EntryCardPresentation>,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
     isSwipeEnabled: Boolean,
@@ -92,9 +93,15 @@ private fun EntryListItemRow(
     totpStates: Map<String, OtpUiState>,
     showTotpCode: Boolean
 ) {
-    val cardStyle = remember(item.entryType, perTypeStyleMap) {
-        perTypeStyleMap[item.entryType.ordinal]?.takeIf { it != VaultCardStyle.DEFAULT }
-            ?: VaultCardStyle.DEFAULT
+    val cardStyle = remember(item.entryType, entryCardPresentations) {
+        val presentation = entryCardPresentations.find {
+            it.entryTypeValue == item.entryType.ordinal
+        }
+        when (presentation?.variantKey) {
+            "password" -> VaultCardStyle.PASSWORD
+            "totp" -> VaultCardStyle.TOTP
+            else -> VaultCardStyle.DEFAULT
+        }
     }
     val colorScheme = MaterialTheme.colorScheme
     val actions =

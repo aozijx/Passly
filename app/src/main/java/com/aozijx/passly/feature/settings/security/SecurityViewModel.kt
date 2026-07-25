@@ -40,7 +40,7 @@ class SecurityViewModel @Inject constructor(
 
     val config: StateFlow<SecurityUiState> = combine(
         settingsRepository.lockTimeout,
-        settingsRepository.settings.map { it.security.isInvalidateKeyOnBioChange },
+        settingsRepository.settings.map { it.security.isInvalidateBiometricKeyOnChange },
         settingsRepository.isLockOnBackground
     ) { lt, ibc, lob ->
         SecurityUiState(
@@ -103,7 +103,7 @@ class SecurityViewModel @Inject constructor(
         viewModelScope.launch {
             val result = methodProvisioner.rotateBiometricPolicy(enabled)
             if (result is AuthenticationResult.Success) {
-                settingsRepository.update(SettingsCommand.SetInvalidateKeyOnBioChange(enabled))
+                settingsRepository.update(SettingsCommand.SetInvalidateBiometricKeyOnChange(enabled))
             }
             onResult(result is AuthenticationResult.Success)
         }

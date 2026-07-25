@@ -44,7 +44,7 @@ fun DetailDialogHost(
             initialEntry = item,
             launchMode = request.launchMode,
             mainViewModel = mainViewModel,
-            totpState = totpStates[item.id],
+            otpState = totpStates[item.id],
             onDismiss = { vaultViewModel.dismissDetail() },
             onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
             onShowIconPicker = { vaultViewModel.showDetailIconPicker() },

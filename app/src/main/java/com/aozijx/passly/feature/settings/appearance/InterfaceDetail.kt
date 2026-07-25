@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.settings.appearance
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
@@ -9,74 +8,53 @@ import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.ui.components.group.GroupCard
+import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.settings.model.VaultCardStyle
 
 @Composable
 internal fun InterfaceDetail(
     state: InterfaceUiState,
-    availableCardStyles: List<VaultCardStyle>,
-    loginSelectedStyle: VaultCardStyle,
     onStatusBarAutoHideChange: (Boolean) -> Unit,
     onTopBarCollapsibleChange: (Boolean) -> Unit,
     onTabBarCollapsibleChange: (Boolean) -> Unit,
-    onLoginStyleSelected: (VaultCardStyle) -> Unit,
     onVisibleVaultTabsChange: (Set<String>) -> Unit,
     onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
 
-        SettingsSectionTitle(text = "沉浸式体验")
+        SettingsSectionTitle(text = stringResource(R.string.settings_interface_immersive_title))
         RoundedGroup(
             items = listOf(
                 switchSettingsGroupItem(
                     key = "interface.status_bar_auto_hide",
                     icon = Icons.Default.Fullscreen,
-                    title = "隐藏状态栏",
-                    subtitle = "浏览列表时释放屏幕顶部空间",
-                    checked = state.isStatusBarAutoHide,
+                    title = stringResource(R.string.settings_interface_hide_status_bar),
+                    subtitle = stringResource(R.string.settings_interface_hide_status_bar_desc),
+                    checked = state.hideSystemBars,
                     onCheckedChange = onStatusBarAutoHideChange
                 ),
                 switchSettingsGroupItem(
                     key = "interface.top_bar_collapsible",
                     icon = Icons.Default.ViewDay,
-                    title = "标题栏滚动",
-                    subtitle = "上滑时收缩标题以获得更多视野",
-                    checked = state.isTopBarCollapsible,
+                    title = stringResource(R.string.settings_interface_top_bar_collapsible),
+                    subtitle = stringResource(R.string.settings_interface_top_bar_collapsible_desc),
+                    checked = state.collapseTopBarOnScroll,
                     onCheckedChange = onTopBarCollapsibleChange
                 ),
                 switchSettingsGroupItem(
                     key = "interface.tab_bar_collapsible",
                     icon = Icons.Default.SpaceDashboard,
-                    title = "标签栏滚动",
-                    subtitle = "分类标签随列表滑动自动隐藏",
-                    checked = state.isTabBarCollapsible,
+                    title = stringResource(R.string.settings_interface_tab_bar_collapsible),
+                    subtitle = stringResource(R.string.settings_interface_tab_bar_collapsible_desc),
+                    checked = state.collapseTabBarOnScroll,
                     onCheckedChange = onTabBarCollapsibleChange
                 )
-            )
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        SettingsSectionTitle(text = "卡片样式")
-        RoundedGroup(
-            items = listOf(
-                RoundedGroupItem(key = "interface.card_style") { itemScope ->
-                    GroupCard(itemScope = itemScope, contentPadding = PaddingValues(0.dp)) {
-                        CardStyleSettingsSection(
-                            availableStyles = availableCardStyles,
-                            loginSelectedStyle = loginSelectedStyle,
-                            onLoginStyleSelected = onLoginStyleSelected
-                        )
-                    }
-                }
             )
         )
 

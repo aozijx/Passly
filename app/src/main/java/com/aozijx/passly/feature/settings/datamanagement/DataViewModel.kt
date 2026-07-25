@@ -15,8 +15,7 @@ import javax.inject.Inject
 
 data class DataUiState(
     val isAutoDownloadIcons: Boolean = true,
-    val directoryUri: String? = null,
-    val lastExportFileName: String? = null
+    val directoryUri: String? = null
 )
 
 sealed interface DataUiAction {
@@ -37,13 +36,11 @@ class DataViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 settingsRepository.settings.map { it.interaction.isAutoDownloadIcons },
-                settingsRepository.settings.map { it.backup.backupDirectoryUri },
-                settingsRepository.settings.map { it.backup.lastBackupExportFileName }
-            ) { adi, bdu, lef ->
+                settingsRepository.settings.map { it.backup.directoryTreeUri }
+            ) { adi, du ->
                 DataUiState(
                     isAutoDownloadIcons = adi,
-                    directoryUri = bdu,
-                    lastExportFileName = lef
+                    directoryUri = du
                 )
             }.collect { _config.value = it }
         }
@@ -60,7 +57,7 @@ class DataViewModel @Inject constructor(
             }
 
             is DataUiAction.ClearBackupDirectory -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.ClearBackupDirectoryUri())
+                settingsRepository.update(SettingsCommand.ClearBackupDirectoryUri)
             }
         }
     }

@@ -1,25 +1,14 @@
 package com.aozijx.passly.feature.settings.appearance
 
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,11 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.os.LocaleListCompat
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.dropdownSettingsGroupItem
@@ -40,25 +27,23 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.theme.themePresetByColor
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ThemeMode
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AppearanceDetail(
     state: AppearanceUiState,
-    onDarkModeChange: (Boolean?) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
-    onThemeColorChange: (Long) -> Unit,
-    onUseSystemFontChange: (Boolean) -> Unit
+    onCustomSeedArgbChange: (Long?) -> Unit,
+    onFontFamilyChange: (FontFamilyMode) -> Unit
 ) {
     var showThemeColorSheet by remember { mutableStateOf(false) }
     var showThemeModeMenu by remember { mutableStateOf(false) }
-    var showLanguageDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
-    val languageTag = AppCompatDelegate.getApplicationLocales()
-        .toLanguageTags()
-        .substringBefore(',')
 
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -67,22 +52,22 @@ internal fun AppearanceDetail(
             items = listOf(
                 dropdownSettingsGroupItem(
                     key = "appearance.theme_mode",
-                    icon = when (state.isDarkMode) {
-                        true -> Icons.Default.DarkMode
-                        false -> Icons.Default.LightMode
-                        null -> Icons.Default.SettingsBrightness
+                    icon = when (state.themeMode) {
+                        ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
+                        ThemeMode.LIGHT -> Icons.Default.LightMode
+                        ThemeMode.DARK -> Icons.Default.DarkMode
                     },
                     title = stringResource(R.string.settings_theme_mode),
-                    selected = state.isDarkMode,
-                    selectedLabel = stringResource(state.isDarkMode.labelRes()),
+                    selected = state.themeMode,
+                    selectedLabel = stringResource(state.themeMode.labelRes()),
                     options = listOf(
-                        null to stringResource(R.string.follow_system),
-                        false to stringResource(R.string.settings_theme_mode_light),
-                        true to stringResource(R.string.settings_theme_mode_dark)
+                        ThemeMode.SYSTEM to stringResource(R.string.follow_system),
+                        ThemeMode.LIGHT to stringResource(R.string.settings_theme_mode_light),
+                        ThemeMode.DARK to stringResource(R.string.settings_theme_mode_dark)
                     ),
                     expanded = showThemeModeMenu,
                     onExpandedChange = { showThemeModeMenu = it },
-                    onSelect = onDarkModeChange
+                    onSelect = onThemeModeChange
                 ),
                 switchSettingsGroupItem(
                     key = "appearance.dynamic_color",
@@ -96,7 +81,7 @@ internal fun AppearanceDetail(
                     key = "appearance.theme_color",
                     icon = Icons.Default.Palette,
                     title = stringResource(R.string.settings_theme_color),
-                    value = stringResource(themePresetByColor(state.themeColor).nameKey),
+                    value = stringResource(themePresetByColor(state.customSeedArgb ?: 0L).nameKey),
                     onClick = { showThemeColorSheet = !showThemeColorSheet }
                 )
             )
@@ -107,49 +92,28 @@ internal fun AppearanceDetail(
         SettingsSectionTitle(text = stringResource(R.string.settings_topic_language_font))
         RoundedGroup(
             items = listOf(
-                navigationSettingsGroupItem(
-                    key = "appearance.language",
-                    icon = Icons.Default.Translate,
-                    title = stringResource(R.string.settings_language),
-                    value = stringResource(languageTag.languageLabelRes()),
-                    onClick = { showLanguageDialog = !showLanguageDialog }
-                ),
                 switchSettingsGroupItem(
                     key = "appearance.font",
                     icon = Icons.Default.TextFields,
                     title = stringResource(R.string.settings_font),
                     subtitle = stringResource(R.string.settings_font_system),
-                    checked = state.useSystemFont,
-                    onCheckedChange = onUseSystemFontChange
+                    checked = state.fontFamily == FontFamilyMode.SYSTEM,
+                    onCheckedChange = { useSystem ->
+                        onFontFamilyChange(
+                            if (useSystem) FontFamilyMode.SYSTEM else FontFamilyMode.APP_BUNDLED
+                        )
+                    }
                 )
             )
         )
     }
 
-    if (showLanguageDialog) {
-        ChoiceDialog(
-            title = stringResource(R.string.settings_language_choose),
-            options = listOf(
-                "" to stringResource(R.string.follow_system),
-                "zh-CN" to stringResource(R.string.settings_language_chinese),
-                "en" to stringResource(R.string.settings_language_english),
-                "ja" to stringResource(R.string.settings_language_japanese)
-            ),
-            selected = languageTag,
-            onSelect = { tag ->
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
-                showLanguageDialog = false
-            },
-            onDismiss = { showLanguageDialog = false }
-        )
-    }
-
     if (showThemeColorSheet) {
         ThemeColorSheet(
-            selectedColor = state.themeColor,
+            selectedColor = state.customSeedArgb ?: 0L,
             sheetState = sheetState,
             onSelect = { color ->
-                onThemeColorChange(color)
+                onCustomSeedArgbChange(if (color == 0L) null else color)
                 scope.launch { sheetState.hide() }.invokeOnCompletion {
                     showThemeColorSheet = false
                 }
@@ -159,53 +123,8 @@ internal fun AppearanceDetail(
     }
 }
 
-private fun Boolean?.labelRes(): Int = when (this) {
-    null -> R.string.follow_system
-    false -> R.string.settings_theme_mode_light
-    true -> R.string.settings_theme_mode_dark
-}
-
-private fun String.languageLabelRes(): Int = when {
-    startsWith("zh", ignoreCase = true) -> R.string.settings_language_chinese
-    startsWith("en", ignoreCase = true) -> R.string.settings_language_english
-    startsWith("ja", ignoreCase = true) -> R.string.settings_language_japanese
-    else -> R.string.follow_system
-}
-
-@Composable
-private fun <T> ChoiceDialog(
-    title: String,
-    options: List<Pair<T, String>>,
-    selected: T,
-    onSelect: (T) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column {
-                options.forEach { (value, label) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(value) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = value == selected,
-                            onClick = { onSelect(value) }
-                        )
-                        Text(text = label, modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
+private fun ThemeMode.labelRes(): Int = when (this) {
+    ThemeMode.SYSTEM -> R.string.follow_system
+    ThemeMode.LIGHT -> R.string.settings_theme_mode_light
+    ThemeMode.DARK -> R.string.settings_theme_mode_dark
 }

@@ -1,15 +1,12 @@
 package com.aozijx.passly.feature.settings.navigation
 
 import android.content.Context
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.AppearanceDetail
 import com.aozijx.passly.feature.settings.appearance.AppearanceUiAction
@@ -128,17 +125,17 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
             item {
                 AppearanceDetail(
                     state = state,
-                    onDarkModeChange = {
-                        viewModel.onAction(AppearanceUiAction.SetDarkMode(it))
+                    onThemeModeChange = {
+                        viewModel.onAction(AppearanceUiAction.SetThemeMode(it))
                     },
                     onDynamicColorChange = {
                         viewModel.onAction(AppearanceUiAction.SetDynamicColor(it))
                     },
-                    onThemeColorChange = {
-                        viewModel.onAction(AppearanceUiAction.SetThemeColor(it))
+                    onCustomSeedArgbChange = {
+                        viewModel.onAction(AppearanceUiAction.SetCustomSeedArgb(it))
                     },
-                    onUseSystemFontChange = {
-                        viewModel.onAction(AppearanceUiAction.SetUseSystemFont(it))
+                    onFontFamilyChange = {
+                        viewModel.onAction(AppearanceUiAction.SetFontFamily(it))
                     }
                 )
             }
@@ -148,23 +145,13 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     composable(SettingsRoute.Interface.route) {
         val viewModel: InterfaceViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
-        val effectiveStyle = VaultCardStyle.normalizeGlobalStyle(state.cardStyle)
-        val loginStyle = state.perTypeMap[EntryType.LOGIN.ordinal] ?: VaultCardStyle.DEFAULT
-
-        LaunchedEffect(state.cardStyle) {
-            if (state.cardStyle != effectiveStyle) {
-                viewModel.onAction(InterfaceUiAction.SetLoginCardStyle(effectiveStyle))
-            }
-        }
 
         SettingsSecondaryPage(title = "界面设置", onBack = { navController.popBackStack() }) {
             item {
                 InterfaceDetail(
                     state = state,
-                    availableCardStyles = VaultCardStyle.entries.toList(),
-                    loginSelectedStyle = loginStyle,
                     onStatusBarAutoHideChange = {
-                        viewModel.onAction(InterfaceUiAction.SetStatusBarAutoHide(it))
+                        viewModel.onAction(InterfaceUiAction.SetHideSystemBars(it))
                     },
                     onTopBarCollapsibleChange = {
                         viewModel.onAction(InterfaceUiAction.SetTopBarCollapsible(it))
@@ -172,15 +159,12 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     onTabBarCollapsibleChange = {
                         viewModel.onAction(InterfaceUiAction.SetTabBarCollapsible(it))
                     },
-                    onLoginStyleSelected = {
-                        viewModel.onAction(InterfaceUiAction.SetLoginCardStyle(it))
-                    },
                     onVisibleVaultTabsChange = {
                         viewModel.onAction(InterfaceUiAction.SetVisibleVaultTabs(it))
                     },
                     onTabBarMaxTabsWithoutScrollChange = {
                         viewModel.onAction(
-                            InterfaceUiAction.SetTabBarMaxTabsWithoutScroll(it)
+                            InterfaceUiAction.SetMaxTabsWithoutScroll(it)
                         )
                     }
                 )

@@ -359,20 +359,17 @@
     <string name="auth_recovery_code_label">恢复码</string>
     <string name="auth_recovery_code_unlock">解锁保险库</string>
 
-    <!-- 设置: 列表卡片样式 -->
-    <string name="settings_card_style_section_title">列表卡片样式</string>
-    <string name="settings_card_style_section_expanded_hint">已展开预览</string>
-    <string name="settings_card_style_section_collapsed_hint">点击展开预览</string>
-    <string name="settings_card_style_group_expanded_label">收起</string>
-    <string name="settings_card_style_group_collapsed_label">展开</string>
-    <string name="settings_card_style_group_password">密码分组</string>
-    <string name="settings_card_style_group_totp">TOTP 分组</string>
-    <string name="settings_card_style_default_name">默认样式</string>
-    <string name="settings_card_style_default_desc">该分类默认样式</string>
-    <string name="settings_card_style_password_name">密码卡片</string>
-    <string name="settings_card_style_password_desc">强调凭据识别</string>
-    <string name="settings_card_style_totp_name">TOTP卡片</string>
-    <string name="settings_card_style_totp_desc">突出验证码与进度环</string>
+    <!-- 设置: 界面行为 -->
+    <string name="settings_interface_immersive_title">沉浸式体验</string>
+    <string name="settings_interface_hide_status_bar">隐藏状态栏</string>
+    <string name="settings_interface_hide_status_bar_desc">浏览列表时释放屏幕顶部空间</string>
+    <string name="settings_interface_top_bar_collapsible">标题栏滚动</string>
+    <string name="settings_interface_top_bar_collapsible_desc">上滑时收缩标题以获得更多视野</string>
+    <string name="settings_interface_tab_bar_collapsible">标签栏滚动</string>
+    <string name="settings_interface_tab_bar_collapsible_desc">分类标签随列表滑动自动隐藏</string>
+    <string name="settings_interface_vault_tabs_section">保险箱 Tab</string>
+    <string name="settings_interface_tab_threshold_label">Tab 均分阈值</string>
+    <string name="settings_interface_tab_threshold_desc">当 Tab 数量小于等于阈值时均分宽度，超过则横向滚动。</string>
 
     <!-- 类别 -->
     <string name="category_autofill">自动填充</string>

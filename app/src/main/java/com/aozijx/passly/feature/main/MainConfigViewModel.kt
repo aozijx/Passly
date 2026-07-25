@@ -27,7 +27,7 @@ class MainConfigViewModel @Inject constructor(
         settingsRepository.settings.map { it.security.isSecureContentEnabled },
         settingsRepository.settings.map { it.security.isFlipToLockEnabled },
         settingsRepository.settings.map { it.security.isFlipExitAndClearStackEnabled },
-        settingsRepository.settings.map { it.appearance.isStatusBarAutoHide }
+        settingsRepository.settings.map { it.interfacePrefs.hideSystemBars }
     ) { sec, ftl, fec, sb ->
         MainConfigUiState(
             isSecureContentEnabled = sec,

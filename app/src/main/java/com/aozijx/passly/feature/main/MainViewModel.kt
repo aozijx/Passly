@@ -129,18 +129,17 @@ class MainViewModel @Inject constructor(
     private fun observeSettings() {
         viewModelScope.launch {
             combine(
-                settingsRepository.settings.map { it.appearance.isDarkMode },
+                settingsRepository.settings.map { it.appearance.themeMode },
                 settingsRepository.settings.map { it.appearance.isDynamicColor },
-                settingsRepository.settings.map { it.appearance.themeColor },
-                settingsRepository.settings.map { it.appearance.useSystemFont }
-            ) { isDarkMode, isDynamicColor, themeColorStr, useSystemFont ->
-                val themeColorLong = themeColorStr.toLongOrNull() ?: 0L
+                settingsRepository.settings.map { it.appearance.customSeedArgb },
+                settingsRepository.settings.map { it.appearance.fontFamily }
+            ) { themeMode, isDynamicColor, customSeedArgb, fontFamily ->
                 _uiState.update {
                     it.copy(
-                        isDarkMode = isDarkMode,
+                        themeMode = themeMode,
                         isDynamicColor = isDynamicColor,
-                        themeColor = themeColorLong,
-                        useSystemFont = useSystemFont
+                        customSeedArgb = customSeedArgb,
+                        fontFamily = fontFamily
                     )
                 }
             }.collect { }

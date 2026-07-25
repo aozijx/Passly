@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,16 +18,14 @@ import javax.inject.Inject
 // --- 彻底优化的数据结构 ---
 
 data class VaultLayoutConfig(
-    val isStatusBarAutoHide: Boolean = true,
-    val isTopBarCollapsible: Boolean = true,
-    val isTabBarCollapsible: Boolean = true,
-    val visibleVaultTabs: Set<String>? = null,
+    val hideSystemBars: Boolean = false,
+    val collapseTopBarOnScroll: Boolean = false,
+    val collapseTabBarOnScroll: Boolean = false,
     val tabBarMaxTabsWithoutScroll: Int = 4,
 )
 
 data class VaultStyleConfig(
-    val cardStyle: VaultCardStyle = VaultCardStyle.DEFAULT,
-    val perTypeMap: Map<Int, VaultCardStyle> = mapOf(-1 to VaultCardStyle.DEFAULT),
+    val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
 )
 
 data class VaultInteractionConfig(
@@ -55,19 +53,15 @@ class VaultDisplayViewModel @Inject constructor(
      */
     val config: StateFlow<VaultDisplayUiState> = combine(
         combine(
-            settingsRepository.settings.map { it.appearance.isStatusBarAutoHide },
-            settingsRepository.settings.map { it.appearance.isTopBarCollapsible },
-            settingsRepository.settings.map { it.appearance.isTabBarCollapsible },
-            settingsRepository.settings.map { it.vault.visibleVaultTabs },
-            settingsRepository.settings.map { it.interaction.tabBarMaxTabsWithoutScroll }
-        ) { autoHide, top, tab, tabs, max ->
-            VaultLayoutConfig(autoHide, top, tab, tabs, max)
+            settingsRepository.settings.map { it.interfacePrefs.hideSystemBars },
+            settingsRepository.settings.map { it.interfacePrefs.collapseTopBarOnScroll },
+            settingsRepository.settings.map { it.interfacePrefs.collapseTabBarOnScroll },
+            settingsRepository.settings.map { it.vault.maxTabsWithoutScroll }
+        ) { autoHide, top, tab, max ->
+            VaultLayoutConfig(autoHide, top, tab, max)
         },
-        combine(
-            settingsRepository.settings.map { it.vault.cardStyle },
-            settingsRepository.settings.map { it.vault.cardStyleByEntryType }
-        ) { style, perType ->
-            VaultStyleConfig(style, perType)
+        settingsRepository.settings.map { it.vault.entryCardPresentations }.map { entries ->
+            VaultStyleConfig(entries)
         },
         combine(
             settingsRepository.settings.map { it.interaction.isSwipeEnabled },
@@ -85,18 +79,6 @@ class VaultDisplayViewModel @Inject constructor(
     )
 
     // --- Mutations ---
-
-    fun setCardStyle(style: VaultCardStyle) {
-        viewModelScope.launch {
-            settingsRepository.update(SettingsCommand.SetCardStyle(style))
-        }
-    }
-
-    fun setCardStyleForType(type: Int, style: VaultCardStyle) {
-        viewModelScope.launch {
-            settingsRepository.update(SettingsCommand.SetCardStyleForEntryType(type, style))
-        }
-    }
 
     fun setSwipeEnabled(enabled: Boolean) {
         viewModelScope.launch {

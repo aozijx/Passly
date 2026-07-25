@@ -112,9 +112,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
         val pathLabel = remember(state.directoryUri) {
             PathUtils.formatPath(state.directoryUri) ?: notSetText
         }
-        val lastExportLabel = remember(state.lastExportFileName) {
-            PathUtils.formatPath(state.lastExportFileName) ?: notSetText
-        }
+        val lastExportLabel = notSetText
         var activeSheet by remember { mutableStateOf<BackupSheet?>(null) }
 
         fun startManualExport(uri: Uri?) {

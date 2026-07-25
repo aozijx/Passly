@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.GroupCard
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
@@ -49,7 +50,7 @@ fun VaultTabsSettingsSection(
     val previewThreshold = sliderValue.roundToInt()
         .coerceIn(TAB_THRESHOLD_MIN, TAB_THRESHOLD_MAX)
 
-    SettingsSectionTitle(text = "保险箱 Tab")
+    SettingsSectionTitle(text = stringResource(R.string.settings_interface_vault_tabs_section))
     RoundedGroup(
         items = listOf(
             RoundedGroupItem(key = "interface.vault_tabs") { itemScope ->
@@ -61,7 +62,7 @@ fun VaultTabsSettingsSection(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "Tab 均分阈值")
+                    Text(text = stringResource(R.string.settings_interface_tab_threshold_label))
                     Text(text = "$previewThreshold")
                 }
 
@@ -83,7 +84,7 @@ fun VaultTabsSettingsSection(
                 )
 
                 Text(
-                    text = "当 Tab 数量小于等于阈值时均分宽度，超过则横向滚动。",
+                    text = stringResource(R.string.settings_interface_tab_threshold_desc),
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))

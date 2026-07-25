@@ -121,8 +121,11 @@ class VaultViewModel @Inject constructor(
     private val _showTOTPCode = MutableStateFlow(true)
 
     private val visibleTabs: StateFlow<List<VaultTab>> =
-        settingsRepository.settings.map { it.vault.visibleVaultTabs }
-            .map { VaultTab.resolveVisible(it ?: VaultTab.defaultVisibleKeys) }
+        settingsRepository.settings.map { it.vault.visibleTabs }
+            .map { config ->
+                val keys = config?.tabKeys ?: VaultTab.defaultVisibleKeys
+                VaultTab.resolveVisible(keys)
+            }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
@@ -253,7 +256,7 @@ class VaultViewModel @Inject constructor(
         totp.start()
 
         viewModelScope.launch {
-            settingsRepository.settings.map { it.vault.vaultSortOption }.first().let {
+            settingsRepository.settings.map { it.vault.sort }.first().let {
                 searchFilter.updateSelectedSort(it)
             }
         }

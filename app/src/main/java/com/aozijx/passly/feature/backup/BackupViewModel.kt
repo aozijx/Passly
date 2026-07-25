@@ -17,7 +17,6 @@ import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
 import com.aozijx.passly.domain.backup.service.VaultBackupService
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
@@ -26,7 +25,6 @@ import com.aozijx.passly.feature.backup.contract.BackupUiState
 import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +33,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class BackupViewModel @Inject constructor(
@@ -137,7 +136,7 @@ class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             if (!authenticate(AuthenticationPurpose.BACKUP_EXPORT)) return@launch
             _uiState.update { it.copy(status = BackupOperationStatus.Loading, error = null) }
-            val directoryUri = settingsRepository.settings.first().backup.backupDirectoryUri
+            val directoryUri = settingsRepository.settings.first().backup.directoryTreeUri
             if (directoryUri.isNullOrBlank()) {
                 fail(BackupFailed("尚未配置备份目录"))
                 return@launch
@@ -285,13 +284,6 @@ class BackupViewModel @Inject constructor(
     }
 
     private suspend fun handleSuccess(state: BackupUiState) {
-        if (state.isExporting) {
-            state.pendingExportFileName?.let { fileName ->
-                settingsRepository.update(
-                    SettingsCommand.SetLastBackupExportFileName(fileName)
-                )
-            }
-        }
         _uiState.update {
             it.copy(
                 status = BackupOperationStatus.Success(

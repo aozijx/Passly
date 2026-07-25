@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.settings.appearance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,22 +14,19 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class InterfaceUiState(
-    val isStatusBarAutoHide: Boolean = true,
-    val isTopBarCollapsible: Boolean = true,
-    val isTabBarCollapsible: Boolean = true,
-    val cardStyle: VaultCardStyle = VaultCardStyle.DEFAULT,
-    val perTypeMap: Map<Int, VaultCardStyle> = mapOf(-1 to VaultCardStyle.DEFAULT),
+    val hideSystemBars: Boolean = false,
+    val collapseTopBarOnScroll: Boolean = false,
+    val collapseTabBarOnScroll: Boolean = false,
     val visibleVaultTabs: Set<String>? = null,
     val tabBarMaxTabsWithoutScroll: Int = 4,
 )
 
 sealed interface InterfaceUiAction {
-    data class SetStatusBarAutoHide(val enabled: Boolean) : InterfaceUiAction
+    data class SetHideSystemBars(val enabled: Boolean) : InterfaceUiAction
     data class SetTopBarCollapsible(val enabled: Boolean) : InterfaceUiAction
     data class SetTabBarCollapsible(val enabled: Boolean) : InterfaceUiAction
-    data class SetLoginCardStyle(val style: VaultCardStyle) : InterfaceUiAction
     data class SetVisibleVaultTabs(val tabs: Set<String>) : InterfaceUiAction
-    data class SetTabBarMaxTabsWithoutScroll(val maxTabs: Int) : InterfaceUiAction
+    data class SetMaxTabsWithoutScroll(val maxTabs: Int) : InterfaceUiAction
 }
 
 @HiltViewModel
@@ -39,24 +35,20 @@ class InterfaceViewModel @Inject constructor(
 ) : ViewModel() {
 
     val config: StateFlow<InterfaceUiState> = combine(
-        settingsRepository.settings.map { it.appearance.isStatusBarAutoHide },
-        settingsRepository.settings.map { it.appearance.isTopBarCollapsible },
-        settingsRepository.settings.map { it.appearance.isTabBarCollapsible }
-    ) { sb, tb, tbb ->
-        Triple(sb, tb, tbb)
-    }.combine(settingsRepository.settings.map { it.vault.cardStyle }) { (sb, tb, tbb), cs ->
+        settingsRepository.settings.map { it.interfacePrefs.hideSystemBars },
+        settingsRepository.settings.map { it.interfacePrefs.collapseTopBarOnScroll },
+        settingsRepository.settings.map { it.interfacePrefs.collapseTabBarOnScroll }
+    ) { hsb, ctp, ctb ->
+        Triple(hsb, ctp, ctb)
+    }.combine(settingsRepository.settings.map { it.vault.visibleTabs }) { (hsb, ctp, ctb), vt ->
         InterfaceUiState(
-            isStatusBarAutoHide = sb,
-            isTopBarCollapsible = tb,
-            isTabBarCollapsible = tbb,
-            cardStyle = cs,
+            hideSystemBars = hsb,
+            collapseTopBarOnScroll = ctp,
+            collapseTabBarOnScroll = ctb,
+            visibleVaultTabs = vt?.tabKeys,
         )
-    }.combine(settingsRepository.settings.map { it.vault.cardStyleByEntryType }) { st, ptm ->
-        st.copy(perTypeMap = ptm)
-    }.combine(settingsRepository.settings.map { it.vault.visibleVaultTabs }) { st, vvt ->
-        st.copy(visibleVaultTabs = vvt)
     }
-        .combine(settingsRepository.settings.map { it.interaction.tabBarMaxTabsWithoutScroll }) { st, tbm ->
+        .combine(settingsRepository.settings.map { it.vault.maxTabsWithoutScroll }) { st, tbm ->
         st.copy(tabBarMaxTabsWithoutScroll = tbm)
     }.stateIn(
         viewModelScope,
@@ -66,8 +58,8 @@ class InterfaceViewModel @Inject constructor(
 
     fun onAction(action: InterfaceUiAction) {
         when (action) {
-            is InterfaceUiAction.SetStatusBarAutoHide -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetStatusBarAutoHide(action.enabled))
+            is InterfaceUiAction.SetHideSystemBars -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetHideSystemBars(action.enabled))
             }
 
             is InterfaceUiAction.SetTopBarCollapsible -> viewModelScope.launch {
@@ -78,16 +70,12 @@ class InterfaceViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetTabBarCollapsible(action.enabled))
             }
 
-            is InterfaceUiAction.SetLoginCardStyle -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetCardStyleForEntryType(0, action.style))
-            }
-
             is InterfaceUiAction.SetVisibleVaultTabs -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetVisibleVaultTabs(action.tabs))
             }
 
-            is InterfaceUiAction.SetTabBarMaxTabsWithoutScroll -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetTabBarMaxTabsWithoutScroll(action.maxTabs))
+            is InterfaceUiAction.SetMaxTabsWithoutScroll -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetMaxTabsWithoutScroll(action.maxTabs))
             }
         }
     }

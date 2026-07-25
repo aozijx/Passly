@@ -4,50 +4,109 @@ import com.aozijx.passly.domain.notice.model.AppMessageSettings
 
 data class AppSettingsSnapshot(
     val appearance: AppearanceSettings,
-    val interaction: InteractionSettings,
+    val interfacePrefs: InterfaceSettings,
     val security: SecuritySettings,
+    val interaction: InteractionSettings,
     val messages: AppMessageSettings,
     val vault: VaultViewSettings,
     val backup: BackupSettings
 )
 
+// ============================================================
+// 1. 外观
+// ============================================================
+
 data class AppearanceSettings(
-    val isDarkMode: Boolean?,
-    val isDynamicColor: Boolean,
-    val themeColor: String,
-    val isStatusBarAutoHide: Boolean,
-    val isTopBarCollapsible: Boolean,
-    val isTabBarCollapsible: Boolean,
-    val useSystemFont: Boolean = true
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val isDynamicColor: Boolean = true,
+    val fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
+    val customSeedArgb: Long? = null,
+    val language: AppLanguage = AppLanguage.SYSTEM,
+    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
 )
 
-data class InteractionSettings(
-    val isSwipeEnabled: Boolean,
-    val swipeLeftAction: SwipeActionType,
-    val swipeRightAction: SwipeActionType,
-    val autofillUiMode: AutofillUiMode,
-    val tabBarMaxTabsWithoutScroll: Int,
-    val isAutoDownloadIcons: Boolean,
-    val faviconDownloadWhitelist: Set<String>
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+enum class FallbackPalette { BLUE, GREEN, RED, PURPLE, ORANGE, TEAL, PINK }
+enum class AppLanguage { SYSTEM, ZH, EN }
+enum class FontFamilyMode { SYSTEM, APP_BUNDLED }
+
+// ============================================================
+// 2. 界面行为
+// ============================================================
+
+data class InterfaceSettings(
+    val hideSystemBars: Boolean = false,
+    val collapseTopBarOnScroll: Boolean = false,
+    val collapseTabBarOnScroll: Boolean = false
 )
+
+// ============================================================
+// 3. 安全
+// ============================================================
 
 data class SecuritySettings(
-    val lockTimeout: Long,
-    val isLockOnBackground: Boolean,
-    val isInvalidateKeyOnBioChange: Boolean,
-    val isSecureContentEnabled: Boolean,
-    val isFlipToLockEnabled: Boolean,
-    val isFlipExitAndClearStackEnabled: Boolean
+    val isSecureContentEnabled: Boolean = true,
+    val isFlipToLockEnabled: Boolean = true,
+    val isFlipExitAndClearStackEnabled: Boolean = false,
+    val isLockOnBackground: Boolean = false,
+    val lockTimeout: Long = 60000L,
+    val isInvalidateBiometricKeyOnChange: Boolean = true
 )
+
+// ============================================================
+// 4. 交互
+// ============================================================
+
+data class InteractionSettings(
+    val isSwipeEnabled: Boolean = false,
+    val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
+    val swipeRightAction: SwipeActionType = SwipeActionType.DETAIL,
+    val autofillUiMode: AutofillUiMode = AutofillUiMode.SYSTEM_INLINE,
+    val isAutoDownloadIcons: Boolean = true,
+    val faviconDownloadWhitelist: Set<String> = emptySet()
+)
+
+// ============================================================
+// 5. 保险库视图
+// ============================================================
 
 data class VaultViewSettings(
-    val cardStyle: VaultCardStyle,
-    val cardStyleByEntryType: Map<Int, VaultCardStyle>,
-    val visibleVaultTabs: Set<String>?,
-    val vaultSortOption: VaultSortSpec
+    val maxTabsWithoutScroll: Int = 4,
+    val visibleTabs: VisibleTabsConfig? = null,
+    val sort: VaultSortSpec = VaultSortSpec.DEFAULT,
+    val entryCardPresentations: List<EntryCardPresentation> = emptyList()
 )
 
-data class BackupSettings(
-    val backupDirectoryUri: String?,
-    val lastBackupExportFileName: String?
+data class VisibleTabsConfig(
+    val tabKeys: Set<String>,
+    val configured: Boolean = false
 )
+
+data class EntryCardPresentation(
+    val entryTypeValue: Int,
+    val variantKey: String = "",
+    val density: CardDensity = CardDensity.STANDARD,
+    val showIcon: Boolean = true,
+    val showFavorite: Boolean = true,
+    val showSecondaryText: Boolean = true,
+    val showQuickAction: Boolean = true
+)
+
+enum class CardDensity { COMPACT, STANDARD, COMFORTABLE }
+
+// ============================================================
+// 6. 备份
+// ============================================================
+
+data class BackupSettings(
+    val directoryTreeUri: String? = null,
+    val defaultExportFormat: ExportFormat = ExportFormat.ENCRYPTED,
+    val includeIcons: Boolean = true,
+    val includeAttachments: Boolean = true,
+    val includeDeletedEntries: Boolean = true,
+    val includedEntryTypes: Set<Int> = emptySet(),
+    val defaultImportMode: ImportMode = ImportMode.APPEND
+)
+
+enum class ExportFormat { ENCRYPTED, CSV, JSON }
+enum class ImportMode { APPEND, REPLACE, MERGE }

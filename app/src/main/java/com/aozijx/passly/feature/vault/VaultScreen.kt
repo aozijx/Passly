@@ -50,9 +50,7 @@ fun VaultContent(
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
 
-    val perTypeStyleMap = remember(vaultDisplayConfig.style.perTypeMap) {
-        vaultDisplayConfig.style.perTypeMap
-    }
+    val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations
     var isFabVisible by remember { mutableStateOf(true) }
 
     val actionProvider = rememberVaultActionProvider(
@@ -90,12 +88,12 @@ fun VaultContent(
 
     LaunchedEffect(
         scrollBehavior.state.collapsedFraction,
-        vaultDisplayConfig.layout.isStatusBarAutoHide
+        vaultDisplayConfig.layout.hideSystemBars
     ) {
         val activity = context as? FragmentActivity ?: return@LaunchedEffect
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        if (!vaultDisplayConfig.layout.isStatusBarAutoHide) {
+        if (!vaultDisplayConfig.layout.hideSystemBars) {
             insetsController.show(WindowInsetsCompat.Type.statusBars())
             return@LaunchedEffect
         }
@@ -115,9 +113,9 @@ fun VaultContent(
                 onClick = actionProvider.onUpdateInteraction
             )
             .then(
-                if (vaultDisplayConfig.layout.isTopBarCollapsible
-                    || vaultDisplayConfig.layout.isTabBarCollapsible
-                    || vaultDisplayConfig.layout.isStatusBarAutoHide
+                if (vaultDisplayConfig.layout.collapseTopBarOnScroll
+                    || vaultDisplayConfig.layout.collapseTabBarOnScroll
+                    || vaultDisplayConfig.layout.hideSystemBars
                 ) {
                     Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
                 } else Modifier
@@ -128,9 +126,9 @@ fun VaultContent(
                 uiState = uiState,
                 scrollBehavior = scrollBehavior,
                 onSettingsClick = onSettingsClick,
-                isStatusBarAutoHide = vaultDisplayConfig.layout.isStatusBarAutoHide,
-                isTopBarCollapsible = vaultDisplayConfig.layout.isTopBarCollapsible,
-                isTabBarCollapsible = vaultDisplayConfig.layout.isTabBarCollapsible,
+                isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
+                isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
+                isTabBarCollapsible = vaultDisplayConfig.layout.collapseTabBarOnScroll,
                 isDatabaseInitializing = isDatabaseInitializing,
                 onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
                 onToggleSearch = { vaultViewModel.toggleSearch(it) },
@@ -153,7 +151,7 @@ fun VaultContent(
         VaultPagerContent(
             pagerState = pagerState,
             uiState = uiState,
-            perTypeStyleMap = perTypeStyleMap,
+            entryCardPresentations = entryCardPresentations,
             totpStates = totpStates,
             swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
             swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,

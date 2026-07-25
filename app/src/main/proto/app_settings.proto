@@ -3,69 +3,165 @@ syntax = "proto2";
 option java_package = "com.aozijx.passly.data.local.datastore.settings";
 option java_multiple_files = true;
 
+// ============================================================
+// 顶层消息
+// ============================================================
+
 message AppSettings {
   optional int32 version = 1 [default = 1];
 
-  // Security
-  optional int64 lock_timeout_ms = 2 [default = 60000];
-  reserved 3; // Biometric availability is derived from BootstrapStore + platform capability.
-  optional bool invalidate_key_on_bio_change = 4 [default = true];
-  optional bool secure_content = 5 [default = true];
-  optional bool flip_to_lock = 6 [default = false];
-  optional bool flip_exit_and_clear_stack = 7 [default = false];
-  optional bool lock_on_background = 8 [default = false];
-
-  // Display
-  optional bool dark_mode = 9;
-  optional bool dynamic_color = 10 [default = true];
-  optional string card_style = 11 [default = "default"];
-  reserved 12;
-  optional bool auto_hide_status_bar = 13 [default = true];
-  optional bool collapse_top_bar = 14 [default = true];
-  optional bool collapse_tab_bar = 15 [default = true];
-
-  // Vault Interaction
-  optional bool swipe_enabled = 16 [default = true];
-  optional string swipe_left_action = 17 [default = "COPY_PASSWORD"];
-  optional string swipe_right_action = 18 [default = "DETAIL"];
-  reserved 19;
-  optional string autofill_ui_mode = 20 [default = "SYSTEM_INLINE"];
-  optional int32 tab_bar_max_tabs_without_scroll = 21 [default = 4];
-  optional bool auto_download_icons = 22 [default = true];
-  reserved 23;
-  optional string vault_sort_option = 24 [default = "DEFAULT"];
-  reserved 25;
-  optional string theme_color = 26 [default = ""];
-
-  // Backup
-  optional string backup_directory_uri = 27 [default = ""];
-  optional string last_backup_export_file_name = 28 [default = ""];
-
-  reserved 29 to 35;
-
-  map<int32, string> card_style_by_entry_type = 36;
-  repeated string visible_vault_tab = 37;
-  repeated string favicon_download_domain = 38;
-  map<string, string> runtime_extra = 39;
-  optional bool visible_vault_tabs_configured = 40 [default = false];
-
-  reserved 41 to 47;
-  reserved "status_bar_notifications_enabled",
-      "icon_download_notifications_enabled",
-      "clipboard_clear_toasts_enabled",
-      "app_close_toasts_enabled",
-      "optional_messages_enabled",
-      "system_notifications_enabled",
-      "topic_message_settings";
-
-  optional MessagePreferences message_preferences = 48;
-  optional bool use_system_font = 49 [default = true];
+  // === 新字段 v2，从 field 50 开始 ===
+  optional AppearancePreferences appearance = 2;
+  optional InterfacePreferences interface_prefs = 3;
+  optional SecurityPreferences security = 4;
+  optional InteractionPreferences interaction = 5;
+  optional VaultViewPreferences vault_view = 6;
+  optional MessagePreferences message = 7;
+  optional BackupPreferences backup = 8;
 }
+
+// ============================================================
+// 1. 外观
+// ============================================================
+
+message AppearancePreferences {
+  optional ThemeMode theme_mode = 1 [default = THEME_MODE_SYSTEM];
+  optional bool dynamic_color_enabled = 2 [default = true];
+  optional FallbackPalette fallback_palette = 3 [default = FALLBACK_PALETTE_BLUE];
+  optional fixed64 custom_seed_argb = 4;
+  optional AppLanguage language = 5 [default = APP_LANGUAGE_SYSTEM];
+  optional FontFamilyMode font_family = 6 [default = FONT_FAMILY_APP_BUNDLED];
+}
+
+enum ThemeMode {
+  THEME_MODE_SYSTEM = 0;
+  THEME_MODE_LIGHT = 1;
+  THEME_MODE_DARK = 2;
+}
+
+enum FallbackPalette {
+  FALLBACK_PALETTE_BLUE = 0;
+  FALLBACK_PALETTE_GREEN = 1;
+  FALLBACK_PALETTE_RED = 2;
+  FALLBACK_PALETTE_PURPLE = 3;
+  FALLBACK_PALETTE_ORANGE = 4;
+  FALLBACK_PALETTE_TEAL = 5;
+  FALLBACK_PALETTE_PINK = 6;
+}
+
+enum AppLanguage {
+  APP_LANGUAGE_SYSTEM = 0;
+  APP_LANGUAGE_ZH = 1;
+  APP_LANGUAGE_EN = 2;
+}
+
+enum FontFamilyMode {
+  FONT_FAMILY_SYSTEM = 0;
+  FONT_FAMILY_APP_BUNDLED = 1;
+}
+
+// ============================================================
+// 2. 界面交互行为
+// ============================================================
+
+message InterfacePreferences {
+  optional bool hide_system_bars = 1 [default = false];
+  optional bool collapse_top_bar_on_scroll = 2 [default = false];
+  optional bool collapse_tab_bar_on_scroll = 3 [default = false];
+}
+
+// ============================================================
+// 3. 安全
+// ============================================================
+
+message SecurityPreferences {
+  optional bool secure_content_enabled = 1 [default = true];
+  optional bool flip_to_lock_enabled = 2 [default = true];
+  optional bool flip_exit_and_clear_stack = 3 [default = false];
+  optional bool lock_on_background = 4 [default = false];
+  optional int64 lock_timeout_ms = 5 [default = 60000];
+  optional bool invalidate_biometric_key_on_change = 6 [default = true];
+}
+
+// ============================================================
+// 4. 交互
+// ============================================================
+
+message InteractionPreferences {
+  optional bool swipe_actions_enabled = 1 [default = false];
+  optional SwipeActionProto swipe_left_action = 2 [default = SWIPE_ACTION_COPY_PASSWORD];
+  optional SwipeActionProto swipe_right_action = 3 [default = SWIPE_ACTION_OPEN_DETAILS];
+  optional AutofillUiModeProto autofill_ui_mode = 4 [default = AUTOFILL_UI_SYSTEM_INLINE];
+  optional bool auto_download_icons = 5 [default = true];
+  repeated string favicon_allowed_domains = 6;
+}
+
+enum SwipeActionProto {
+  SWIPE_ACTION_NONE = 0;
+  SWIPE_ACTION_COPY_USERNAME = 1;
+  SWIPE_ACTION_COPY_PASSWORD = 2;
+  SWIPE_ACTION_COPY_TOTP = 3;
+  SWIPE_ACTION_OPEN_DETAILS = 4;
+  SWIPE_ACTION_OPEN_IN_BROWSER = 5;
+  SWIPE_ACTION_CALL = 6;
+  SWIPE_ACTION_SEND_SMS = 7;
+  SWIPE_ACTION_LAUNCH_APP = 8;
+}
+
+enum AutofillUiModeProto {
+  AUTOFILL_UI_SYSTEM_INLINE = 0;
+  AUTOFILL_UI_FULLSCREEN = 1;
+  AUTOFILL_UI_DIALOG = 2;
+}
+
+// ============================================================
+// 5. 保险库视图 / 条目卡片
+// ============================================================
+
+message VaultViewPreferences {
+  optional int32 max_tabs_without_scroll = 1 [default = 4];
+  optional VisibleTabs visible_tabs = 2;
+  optional VaultSortPreference sort = 3;
+  repeated EntryCardPresentation entry_card_presentations = 4;
+}
+
+message VisibleTabs {
+  repeated string tab_keys = 1;
+  optional bool configured = 2 [default = false];
+}
+
+message VaultSortPreference {
+  optional string field = 1 [default = "LAST_USED_AT"];
+  optional bool descending = 2 [default = true];
+  optional bool pin_favorites = 3 [default = true];
+  optional string tie_breaker_field = 4 [default = "ID"];
+}
+
+message EntryCardPresentation {
+  optional int32 entry_type_value = 1;
+  optional string variant_key = 2;
+  optional CardDensity density = 3 [default = CARD_DENSITY_STANDARD];
+  optional bool show_icon = 4 [default = true];
+  optional bool show_favorite = 5 [default = true];
+  optional bool show_secondary_text = 6 [default = true];
+  optional bool show_quick_action = 7 [default = true];
+}
+
+enum CardDensity {
+  CARD_DENSITY_COMPACT = 0;
+  CARD_DENSITY_STANDARD = 1;
+  CARD_DENSITY_COMFORTABLE = 2;
+}
+
+// ============================================================
+// 6. 消息
+// ============================================================
 
 message MessagePreferences {
   optional bool optional_messages_enabled = 1 [default = true];
   optional bool system_notifications_enabled = 2 [default = true];
   repeated TopicMessagePreference topics = 3;
+  optional int64 default_dedup_ttl_ms = 4 [default = 15000];
 }
 
 message TopicMessagePreference {
@@ -89,4 +185,39 @@ enum NoticeLevelProto {
   NOTICE_LEVEL_WARNING = 2;
   NOTICE_LEVEL_ERROR = 3;
   NOTICE_LEVEL_CRITICAL = 4;
+}
+
+// ============================================================
+// 7. 备份
+// ============================================================
+
+message BackupPreferences {
+  optional string directory_tree_uri = 1 [default = ""];
+  optional ExportFormat default_export_format = 2 [default = EXPORT_FORMAT_ENCRYPTED];
+  optional bool include_icons = 3 [default = true];
+  optional bool include_attachments = 4 [default = true];
+  optional bool include_deleted_entries = 5 [default = true];
+  repeated EntryTypeProto included_entry_types = 6;
+  optional ImportMode default_import_mode = 7 [default = IMPORT_MODE_APPEND];
+}
+
+enum ExportFormat {
+  EXPORT_FORMAT_ENCRYPTED = 0;
+  EXPORT_FORMAT_CSV = 1;
+  EXPORT_FORMAT_JSON = 2;
+}
+
+enum ImportMode {
+  IMPORT_MODE_APPEND = 0;
+  IMPORT_MODE_REPLACE = 1;
+  IMPORT_MODE_MERGE = 2;
+}
+
+enum EntryTypeProto {
+  ENTRY_TYPE_LOGIN = 0;
+  ENTRY_TYPE_TOTP = 1;
+  ENTRY_TYPE_CARD = 2;
+  ENTRY_TYPE_SSH_KEY = 3;
+  ENTRY_TYPE_NOTE = 4;
+  ENTRY_TYPE_IDENTITY = 5;
 }

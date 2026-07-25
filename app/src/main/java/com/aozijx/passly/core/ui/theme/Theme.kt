@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ThemeMode
 
 private val PasslyShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
@@ -53,16 +55,20 @@ fun themePresetByColor(color: Long): ThemePreset =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTheme(
-    darkTheme: Boolean? = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = true,
-    themeColor: Long = 0,
-    useSystemFont: Boolean = false,
+    customSeedArgb: Long? = null,
+    fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
     content: @Composable () -> Unit
 ) {
-    val isDark = darkTheme ?: isSystemInDarkTheme()
+    val isDark = when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
     val context = LocalContext.current
-    val seedColor = remember(themeColor) {
-        if (themeColor != 0L) Color(themeColor) else null
+    val seedColor = remember(customSeedArgb) {
+        if (customSeedArgb != null && customSeedArgb != 0L) Color(customSeedArgb) else null
     }
 
     val colorScheme = when {
@@ -77,7 +83,8 @@ fun AppTheme(
         else -> AppColor.lightScheme()
     }
 
-    val typography = if (useSystemFont) SystemTypography else themeTypography()
+    val typography =
+        if (fontFamily == FontFamilyMode.SYSTEM) SystemTypography else themeTypography()
 
     MaterialTheme(
         colorScheme = colorScheme,

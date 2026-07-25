@@ -363,20 +363,17 @@
         <item>権限</item>
     </string-array>
 
-    <!-- 設定: カードスタイル -->
-    <string name="settings_card_style_section_title">一覧カードスタイル</string>
-    <string name="settings_card_style_section_expanded_hint">プレビューを展開中</string>
-    <string name="settings_card_style_section_collapsed_hint">タップしてプレビューと切替</string>
-    <string name="settings_card_style_group_expanded_label">折りたたむ</string>
-    <string name="settings_card_style_group_collapsed_label">展開</string>
-    <string name="settings_card_style_group_password">パスワードグループ</string>
-    <string name="settings_card_style_group_totp">TOTPグループ</string>
-    <string name="settings_card_style_default_name">分類の既定</string>
-    <string name="settings_card_style_default_desc">各分類の推奨スタイルを自動的に使用します</string>
-    <string name="settings_card_style_password_name">パスワードカード</string>
-    <string name="settings_card_style_password_desc">認証情報を識別しやすいスタイル</string>
-    <string name="settings_card_style_totp_name">TOTPカード</string>
-    <string name="settings_card_style_totp_desc">動的コードと進捗リングを強調</string>
+    <!-- 設定: インターフェース動作 -->
+    <string name="settings_interface_immersive_title">没入体験</string>
+    <string name="settings_interface_hide_status_bar">ステータスバーを隠す</string>
+    <string name="settings_interface_hide_status_bar_desc">スクロール時に画面上部のスペースを解放</string>
+    <string name="settings_interface_top_bar_collapsible">トップバーを折りたたむ</string>
+    <string name="settings_interface_top_bar_collapsible_desc">スクロール時にトップバーを収縮</string>
+    <string name="settings_interface_tab_bar_collapsible">タブバーを折りたたむ</string>
+    <string name="settings_interface_tab_bar_collapsible_desc">スクロール時にタブを自動的に隠す</string>
+    <string name="settings_interface_vault_tabs_section">保管庫タブ</string>
+    <string name="settings_interface_tab_threshold_label">タブ均等配置のしきい値</string>
+    <string name="settings_interface_tab_threshold_desc">タブ数がしきい値以下の場合は均等配置、超えると横スクロールになります。</string>
 
     <string name="settings_system_notifications">システム通知</string>
     <string name="settings_system_notifications_summary">システムのステータスバーに通知を表示します</string>
