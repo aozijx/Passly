@@ -335,6 +335,59 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun destructiveDatabaseRecoveryRequiresFreshAuthentication() {
+        val mainViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"
+        ).readText()
+        val controller = File(
+            "src/main/java/com/aozijx/passly/data/repository/database/DatabaseControllerImpl.kt"
+        ).readText()
+        val authenticationManager = File(
+            "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
+        ).readText()
+
+        assertTrue(
+            "Database recovery must request its dedicated authentication purpose",
+            "AuthenticationPurpose.CLEAR_DATABASE" in mainViewModel
+        )
+        assertTrue(
+            "Database recovery must seal leases before deleting storage",
+            controller.indexOf("sessionManager.seal()") <
+                controller.indexOf("deleteDatabaseFiles()")
+        )
+        assertTrue(
+            "Database recovery must recreate the encrypted database after deletion",
+            "val reopenError = sessionManager.unlock()" in controller
+        )
+        assertTrue(
+            "Recovery code must remain available when Room cannot open",
+            "AuthenticationPurpose.CLEAR_DATABASE -> AuthenticationMethod.entries.toSet()" in
+                authenticationManager
+        )
+    }
+
+    @Test
+    fun biometricUnlockCannotPublishAuthenticatedBeforeDatabaseOpens() {
+        val sessionController = File(
+            "src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt"
+        ).readText()
+        val biometricExecutor = File(
+            "src/main/java/com/aozijx/passly/security/authentication/BiometricMethodExecutor.kt"
+        ).readText()
+
+        assertTrue(
+            "Sealed biometric sessions must open the database",
+            "if (lockLevel == VaultLockState.SEALED)" in sessionController &&
+                "val err = sessionManager.unlock()" in sessionController
+        )
+        assertTrue(
+            "Biometric authentication must fail when the database session cannot open",
+            "if (session.markAuthenticated())" in biometricExecutor &&
+                "AuthenticationFailureCode.SESSION_TRANSITION_FAILED" in biometricExecutor
+        )
+    }
+
+    @Test
     fun recoveryDraftViewModelDependsOnlyOnAuthenticationContracts() {
         val source = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/RecoveryDraftViewModel.kt"

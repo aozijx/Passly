@@ -19,6 +19,13 @@ interface DatabaseController {
     suspend fun retry(): Throwable?
 
     /**
+     * 删除无法打开的数据库及其关联 Vault 文件，并创建空数据库。
+     *
+     * 保留独立存储的设置、认证信封和密钥绑定。
+     */
+    suspend fun clearAndReinitialize(): Throwable?
+
+    /**
      * 关闭底层数据库连接，确保资源释放完毕后返回。
      */
     suspend fun close()

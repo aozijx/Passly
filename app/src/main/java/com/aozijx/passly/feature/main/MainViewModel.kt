@@ -58,6 +58,7 @@ class MainViewModel @Inject constructor(
 
             MainIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
+            MainIntent.ClearDatabase -> clearDatabase()
         }
     }
 
@@ -157,6 +158,45 @@ class MainViewModel @Inject constructor(
             outcome.error?.let { error ->
                 val msg = "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
                 emitEffect(MainEffect.ShowError(msg))
+            }
+        }
+    }
+
+    private fun clearDatabase() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDatabaseInitializing = true) }
+            when (
+                authenticationManager.authenticate(
+                    AuthenticationRequest(AuthenticationPurpose.CLEAR_DATABASE)
+                )
+            ) {
+                is AuthenticationResult.Success -> {
+                    val outcome = databaseLifecycleUseCases.clearAndReinitialize()
+                    _uiState.update {
+                        it.copy(
+                            isDatabaseInitializing = false,
+                            databaseError = outcome.error
+                        )
+                    }
+                    if (outcome.success) {
+                        emitEffect(MainEffect.ShowToast("保险库数据库已清除"))
+                        rebuildSearchIndex()
+                    } else {
+                        emitEffect(
+                            MainEffect.ShowError(
+                                outcome.error?.toUiMessage("清除数据库失败")
+                                    ?: "清除数据库失败"
+                            )
+                        )
+                    }
+                }
+
+                is AuthenticationResult.Cancelled ->
+                    _uiState.update { it.copy(isDatabaseInitializing = false) }
+                is AuthenticationResult.Failure -> {
+                    _uiState.update { it.copy(isDatabaseInitializing = false) }
+                    emitEffect(MainEffect.ShowError("身份验证失败，数据库未清除"))
+                }
             }
         }
     }

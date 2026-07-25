@@ -1,9 +1,14 @@
 package com.aozijx.passly.data.repository.database
 
+import android.content.Context
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -16,6 +21,7 @@ import javax.inject.Singleton
  */
 @Singleton
 internal class DatabaseControllerImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager
 ) : DatabaseController {
 
@@ -46,9 +52,24 @@ internal class DatabaseControllerImpl @Inject constructor(
     }
 
     override suspend fun retry(): Throwable? = withContext(Dispatchers.IO) {
-        // 关闭旧连接后重新预热（用于初始化失败后的用户重试）
-        sessionManager.closeDatabase()
-        preWarm()
+        sessionManager.seal()
+        sessionManager.unlock()
+    }
+
+    override suspend fun clearAndReinitialize(): Throwable? = withContext(Dispatchers.IO) {
+        var recoveryError: Throwable? = null
+        try {
+            sessionManager.seal()
+            deleteDatabaseFiles()
+            deleteVaultFileDirectory("attachments")
+            deleteVaultFileDirectory("vault_images")
+        } catch (error: Throwable) {
+            recoveryError = error
+            AppTelemetry.e(TAG, "Database recovery cleanup failed", error)
+        }
+
+        val reopenError = sessionManager.unlock()
+        recoveryError ?: reopenError
     }
 
     override suspend fun close() {
@@ -62,4 +83,30 @@ internal class DatabaseControllerImpl @Inject constructor(
             onSuccess = { null },
             onFailure = { it }
         )
+
+    private fun deleteDatabaseFiles() {
+        val databaseFile = context.getDatabasePath(DatabaseSchema.DATABASE_NAME)
+        val candidates = listOf(
+            databaseFile,
+            File(databaseFile.path + "-wal"),
+            File(databaseFile.path + "-shm"),
+            File(databaseFile.path + "-journal")
+        )
+        context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+        val remaining = candidates.filter(File::exists)
+        if (remaining.isNotEmpty()) {
+            throw IOException("Unable to delete database files: ${remaining.joinToString { it.name }}")
+        }
+    }
+
+    private fun deleteVaultFileDirectory(name: String) {
+        val filesRoot = context.filesDir.canonicalFile
+        val target = File(filesRoot, name).canonicalFile
+        require(target.parentFile == filesRoot) {
+            "Vault cleanup target escaped files directory"
+        }
+        if (target.exists() && !target.deleteRecursively()) {
+            throw IOException("Unable to delete Vault file directory: $name")
+        }
+    }
 }

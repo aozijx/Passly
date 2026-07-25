@@ -94,8 +94,12 @@ internal fun MainScreen(
             when (state) {
                 "error" -> {
                     DatabaseRecoveryDialog(
+                        isBusy = mainUiState.isDatabaseInitializing,
                         onRetry = {
                             viewModel.handleIntent(MainIntent.RetryDatabaseInitialization)
+                        },
+                        onClearDatabase = {
+                            viewModel.handleIntent(MainIntent.ClearDatabase)
                         },
                         onCloseApp = {
                             noticePublisher.publish(

@@ -163,6 +163,10 @@
     <string name="vault_plain_export_db_error_message">数据库密钥或结构不匹配。应用不会自动删除保险库，也不会从未解锁的数据库导出不完整数据。请先重试；如果仍然失败，请保留应用数据并检查日志。</string>
     <string name="vault_database_retry">重试打开数据库</string>
     <string name="vault_plain_export_db_error_dismiss">关闭应用</string>
+    <string name="database_recovery_clear_action">清除数据库</string>
+    <string name="database_recovery_clear_confirm_title">确定清除保险库数据？</string>
+    <string name="database_recovery_clear_confirm_message">此操作会永久删除数据库、附件和自定义图片，无法撤销。应用设置和认证方式会保留；确认后还需要重新验证身份。</string>
+    <string name="database_recovery_clear_confirm">验证并清除</string>
 
     <!-- 详情与编辑 -->
     <string name="vault_add_password_title">添加密码项</string>

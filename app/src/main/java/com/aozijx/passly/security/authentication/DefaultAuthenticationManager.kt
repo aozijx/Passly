@@ -77,11 +77,13 @@ class DefaultAuthenticationManager @Inject constructor(
      * 指定目的允许的认证方式。
      *
      * - RECOVERY_CODE 仅限 UNLOCK_VAULT
+     * - CLEAR_DATABASE 允许恢复码，确保数据库损坏时仍有恢复路径
      * - 其他非解锁目的仅限 BIOMETRIC 和 APP_PASSWORD
      */
     private fun allowedMethods(purpose: AuthenticationPurpose): Set<AuthenticationMethod> =
         when (purpose) {
-            AuthenticationPurpose.UNLOCK_VAULT -> AuthenticationMethod.entries.toSet()
+            AuthenticationPurpose.UNLOCK_VAULT,
+            AuthenticationPurpose.CLEAR_DATABASE -> AuthenticationMethod.entries.toSet()
             else -> setOf(AuthenticationMethod.BIOMETRIC, AuthenticationMethod.APP_PASSWORD)
         }
 

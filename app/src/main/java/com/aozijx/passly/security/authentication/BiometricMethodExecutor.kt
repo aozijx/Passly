@@ -49,8 +49,11 @@ class BiometricMethodExecutor @Inject constructor(
         return when (hostResult) {
             is BiometricHostResult.Success -> when (val unlock = dekManager.unlock(EnvelopeType.BIOMETRIC, cipher)) {
                 UnlockResult.Success -> {
-                    session.markAuthenticated()
-                    MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
+                    if (session.markAuthenticated()) {
+                        MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
+                    } else {
+                        failure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, request)
+                    }
                 }
                 is UnlockResult.Failed -> failure(unlock.reason.failureCode(), request)
             }

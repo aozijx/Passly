@@ -41,4 +41,7 @@ enum class AuthPurpose {
 
     /** 导出诊断信息 */
     EXPORT_DIAGNOSTICS,
+
+    /** 数据库损坏后的破坏性清理 */
+    CLEAR_DATABASE,
 }

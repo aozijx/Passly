@@ -250,6 +250,7 @@ internal object BiometricPromptSpecFactory {
         AuthenticationPurpose.BACKUP_EXPORT -> "验证后导出备份"
         AuthenticationPurpose.BACKUP_IMPORT -> "验证后导入备份"
         AuthenticationPurpose.EXPORT_DIAGNOSTICS -> "验证后导出诊断"
+        AuthenticationPurpose.CLEAR_DATABASE -> "验证后清除保险库数据"
         else -> "验证身份"
     }
 }

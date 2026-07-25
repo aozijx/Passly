@@ -110,7 +110,8 @@ class VaultSessionController @Inject constructor(
     /**
      * 标记会话为已认证。
      *
-     * 用于生物识别路径（无需显式 DEK 的场景）。
+     * 用于生物识别路径。冷启动时 DEK 已由 BiometricMethodExecutor 写入，
+     * 但仍必须在发布 Authenticated 前真正打开数据库。
      */
     suspend fun markAuthenticated(): Boolean = mutex.withLock {
         if (lockLevel == VaultLockState.UNLOCKED) {
@@ -120,6 +121,14 @@ class VaultSessionController @Inject constructor(
         }
         // 尝试恢复软锁定；如果不是 SOFT_LOCKED 则走完整解锁路径
         if (lockLevel == VaultLockState.SOFT_LOCKED) {
+            val err = sessionManager.unlock()
+            if (err != null) {
+                _state.value = AuthenticationState.Locked
+                return@withLock false
+            }
+            lockLevel = VaultLockState.UNLOCKED
+        }
+        if (lockLevel == VaultLockState.SEALED) {
             val err = sessionManager.unlock()
             if (err != null) {
                 _state.value = AuthenticationState.Locked

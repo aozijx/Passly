@@ -32,6 +32,10 @@ class DatabaseLifecycleUseCases @Inject constructor(
 
     suspend fun retry(): Throwable? = repository.retry()
 
+    suspend fun clearAndReinitialize(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
+        DatabaseInitOutcome(error = repository.clearAndReinitialize())
+    }
+
     /**
      * 关闭底层数据库连接。
      */
