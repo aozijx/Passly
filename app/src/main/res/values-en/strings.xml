@@ -31,7 +31,6 @@
 
     <!-- Autofill service -->
     <string name="autofill_service_name">Passly Autofill</string>
-    <string name="autofill_auth_title">Security Verification</string>
     <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>
     <string name="autofill_entry_compact_title">Choose account</string>
     <string name="autofill_save_prompt_title">Save %s?</string>
