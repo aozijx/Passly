@@ -49,10 +49,10 @@ internal fun buildSettingsDialogsActions(
                 when (event.event) {
                     AppPasswordDialogEvent.DismissAction -> localState.dismissAppPasswordActionDialog()
                     AppPasswordDialogEvent.ShowChange -> localState.openChangeAppPasswordDialog()
-                    AppPasswordDialogEvent.ShowDisable -> localState.openDisableAppPasswordDialog()
+                    AppPasswordDialogEvent.ShowDisable ->
+                        submitAppPasswordAction(AppPasswordAction.DISABLE)
                     AppPasswordDialogEvent.DismissSet -> localState.dismissSetAppPasswordDialog()
                     AppPasswordDialogEvent.DismissChange -> localState.dismissChangeAppPasswordDialog()
-                    AppPasswordDialogEvent.DismissDisable -> localState.dismissDisableAppPasswordDialog()
                     is AppPasswordDialogEvent.CurrentChanged ->
                         localState.appPasswordCurrent = event.event.value
 
@@ -68,8 +68,7 @@ internal fun buildSettingsDialogsActions(
                     AppPasswordDialogEvent.ConfirmChange ->
                         submitAppPasswordAction(AppPasswordAction.CHANGE)
 
-                    AppPasswordDialogEvent.ConfirmDisable ->
-                        submitAppPasswordAction(AppPasswordAction.DISABLE)
+
                 }
             }
         }

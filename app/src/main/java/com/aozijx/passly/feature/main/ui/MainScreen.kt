@@ -9,16 +9,13 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.R
 import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.core.ui.components.DatabaseRecoveryDialog
-import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
@@ -77,20 +74,15 @@ internal fun MainScreen(
         }
     }
 
-    AppTheme(
-        darkTheme = mainUiState.isDarkMode,
-        dynamicColor = mainUiState.isDynamicColor,
-        themeColor = mainUiState.themeColor
-    ) {
-        Crossfade(
-            targetState = when {
-                mainUiState.databaseError != null -> "error"
-                mainUiState.isAuthorized -> "main"
-                else -> "verification"
-            },
-            animationSpec = tween(300),
-            label = "auth_transition"
-        ) { state ->
+    Crossfade(
+        targetState = when {
+            mainUiState.databaseError != null -> "error"
+            mainUiState.isAuthorized -> "main"
+            else -> "verification"
+        },
+        animationSpec = tween(300),
+        label = "auth_transition"
+    ) { state ->
             when (state) {
                 "error" -> {
                     DatabaseRecoveryDialog(
@@ -123,7 +115,6 @@ internal fun MainScreen(
                     AuthenticationScreen(viewModel = authenticationViewModel)
                 }
             }
-        }
     }
 
     val window = activity.window

@@ -3,11 +3,10 @@ package com.aozijx.passly.feature.settings.apppassword
 import android.content.Context
 import android.widget.Toast
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.AuthenticationState
+import com.aozijx.passly.feature.settings.SettingsViewModel
 
 enum class AppPasswordAction {
     SET,
@@ -56,10 +55,6 @@ internal fun handleAppPasswordAction(
         }
 
         AppPasswordAction.DISABLE -> {
-            if (currentPassword.isEmpty()) {
-                context.showToast(R.string.auth_current_password_required)
-                return
-            }
             settingsViewModel.disableAppPassword { success ->
                 if (success) {
                     context.showToast(R.string.auth_password_disabled)
@@ -83,17 +78,15 @@ internal fun handleAppPasswordEntryClick(
     onAlreadyEnabled: () -> Unit,
     onVerified: () -> Unit
 ) {
-    if (isAppPasswordEnabled) {
-        onAlreadyEnabled()
-        return
-    }
-    if (settingsViewModel.authenticationManager.state.value is AuthenticationState.Authenticated) {
-        onVerified()
-        return
-    }
     settingsViewModel.authenticationManager.authenticate(
         AuthenticationRequest(AuthenticationPurpose.REAUTHENTICATE)
     ) { result ->
-        if (result is AuthenticationResult.Success) onVerified()
+        if (result is AuthenticationResult.Success) {
+            if (isAppPasswordEnabled) {
+                onAlreadyEnabled()
+            } else {
+                onVerified()
+            }
+        }
     }
 }

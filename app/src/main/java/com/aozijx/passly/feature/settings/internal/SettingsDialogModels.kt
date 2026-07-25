@@ -8,7 +8,6 @@ internal sealed interface AppPasswordDialogState {
     data object Action : AppPasswordDialogState
     data object Set : AppPasswordDialogState
     data object Change : AppPasswordDialogState
-    data object Disable : AppPasswordDialogState
 }
 
 internal data class SettingsDialogsState(
@@ -28,16 +27,14 @@ internal data class SettingsDialogsState(
 internal sealed interface AppPasswordDialogEvent {
     data object DismissAction : AppPasswordDialogEvent
     data object ShowChange : AppPasswordDialogEvent
-    data object ShowDisable : AppPasswordDialogEvent
     data object DismissSet : AppPasswordDialogEvent
     data object DismissChange : AppPasswordDialogEvent
-    data object DismissDisable : AppPasswordDialogEvent
     data class CurrentChanged(val value: String) : AppPasswordDialogEvent
     data class NewChanged(val value: String) : AppPasswordDialogEvent
     data class ConfirmChanged(val value: String) : AppPasswordDialogEvent
     data object ConfirmSet : AppPasswordDialogEvent
     data object ConfirmChange : AppPasswordDialogEvent
-    data object ConfirmDisable : AppPasswordDialogEvent
+    data object ShowDisable : AppPasswordDialogEvent
 }
 
 internal sealed interface SettingsDialogEvent {

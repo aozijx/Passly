@@ -39,23 +39,12 @@ fun AppPasswordChangeDialog(
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = newPassword,
-                    onValueChange = onNewPasswordChange,
-                    label = { Text(stringResource(R.string.auth_new_password)) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = onConfirmPasswordChange,
-                    label = { Text(stringResource(R.string.auth_new_password_confirm)) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
+                Spacer(modifier = Modifier.height(16.dp))
+                PasswordFields(
+                    newPassword = newPassword,
+                    confirmPassword = confirmPassword,
+                    onNewPasswordChange = onNewPasswordChange,
+                    onConfirmPasswordChange = onConfirmPasswordChange
                 )
             }
         },

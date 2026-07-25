@@ -6,14 +6,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.core.permission.compose.PermissionServices
 import com.aozijx.passly.core.permission.compose.ProvidePermissionServices
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
+import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
@@ -73,6 +76,7 @@ class MainActivity : AppCompatActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         setContent {
+            val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
             ProvidePermissionServices(
                 PermissionServices(
                     statusReader = permissionStatusReader,
@@ -81,12 +85,18 @@ class MainActivity : AppCompatActivity() {
                 )
             ) {
                 ProvideAppNoticePublisher(noticePublisher) {
-                    AuthenticationHost(this, authenticationHostRegistry) {
-                        MainScreen(
-                            activity = this,
-                            viewModel = viewModel,
-                            sensorController = sensorController
-                        )
+                    AppTheme(
+                        darkTheme = mainUiState.isDarkMode,
+                        dynamicColor = mainUiState.isDynamicColor,
+                        themeColor = mainUiState.themeColor
+                    ) {
+                        AuthenticationHost(this, authenticationHostRegistry) {
+                            MainScreen(
+                                activity = this,
+                                viewModel = viewModel,
+                                sensorController = sensorController
+                            )
+                        }
                     }
                 }
             }

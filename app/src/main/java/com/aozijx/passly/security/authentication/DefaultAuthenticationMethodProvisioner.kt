@@ -83,16 +83,6 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     }
 
     override suspend fun changeAppPassword(newPassword: CharArray): AuthenticationResult {
-        val authentication = authenticationManager.authenticate(
-            AuthenticationRequest(
-                purpose = AuthenticationPurpose.MANAGE_APP_PASSWORD,
-                allowedMethods = setOf(AuthenticationMethod.APP_PASSWORD)
-            )
-        )
-        if (authentication !is AuthenticationResult.Success) {
-            newPassword.fill('\u0000')
-            return authentication
-        }
         return setAppPassword(newPassword)
     }
 

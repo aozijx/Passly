@@ -66,21 +66,12 @@ internal class SettingsScreenLocalState {
         activeAppPasswordDialog = AppPasswordDialogState.Change
     }
 
-    fun openDisableAppPasswordDialog() {
-        activeAppPasswordDialog = AppPasswordDialogState.Disable
-    }
-
     fun dismissSetAppPasswordDialog() {
         activeAppPasswordDialog = AppPasswordDialogState.None
         clearAppPasswordInputs()
     }
 
     fun dismissChangeAppPasswordDialog() {
-        activeAppPasswordDialog = AppPasswordDialogState.None
-        clearAppPasswordInputs()
-    }
-
-    fun dismissDisableAppPasswordDialog() {
         activeAppPasswordDialog = AppPasswordDialogState.None
         clearAppPasswordInputs()
     }
@@ -94,7 +85,7 @@ internal class SettingsScreenLocalState {
     fun onAppPasswordSuccess(action: AppPasswordAction) {
         when (action) {
             AppPasswordAction.SET,
-            AppPasswordAction.CHANGE,
+            AppPasswordAction.CHANGE -> activeAppPasswordDialog = AppPasswordDialogState.None
             AppPasswordAction.DISABLE -> activeAppPasswordDialog = AppPasswordDialogState.None
         }
         clearAppPasswordInputs()

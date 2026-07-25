@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.core.net.toUri
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordActionDialog
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordChangeDialog
-import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordDisableDialog
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
 import com.aozijx.passly.feature.settings.interaction.SwipeActionSelectDialog
 import com.aozijx.passly.feature.settings.internal.AppPasswordDialogEvent
@@ -159,27 +158,6 @@ internal fun SettingsScreenDialogsHost(
                 onDismiss = {
                     actions.onDialogEvent(
                         SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissChange)
-                    )
-                }
-            )
-        }
-
-        AppPasswordDialogState.Disable -> {
-            AppPasswordDisableDialog(
-                currentPassword = state.appPasswordCurrent,
-                onCurrentPasswordChange = {
-                    actions.onDialogEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.CurrentChanged(it))
-                    )
-                },
-                onConfirm = {
-                    actions.onDialogEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.ConfirmDisable)
-                    )
-                },
-                onDismiss = {
-                    actions.onDialogEvent(
-                        SettingsDialogEvent.AppPassword(AppPasswordDialogEvent.DismissDisable)
                     )
                 }
             )
