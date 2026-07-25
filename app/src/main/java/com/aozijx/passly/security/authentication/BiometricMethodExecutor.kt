@@ -28,7 +28,9 @@ class BiometricMethodExecutor @Inject constructor(
         request: AuthenticationRequest,
         host: AuthUiHost
     ): MethodExecutionResult {
-        if (request.purpose != AuthenticationPurpose.UNLOCK_VAULT) {
+        val requiresDek = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
+            request.purpose == AuthenticationPurpose.RECOVER_DATABASE
+        if (!requiresDek) {
             return hostResult(request, host)
         }
         val envelope = bootstrapStore.load(EnvelopeType.BIOMETRIC)
@@ -49,7 +51,9 @@ class BiometricMethodExecutor @Inject constructor(
         return when (hostResult) {
             is BiometricHostResult.Success -> when (val unlock = dekManager.unlock(EnvelopeType.BIOMETRIC, cipher)) {
                 UnlockResult.Success -> {
-                    if (session.markAuthenticated()) {
+                    if (request.purpose == AuthenticationPurpose.RECOVER_DATABASE) {
+                        MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
+                    } else if (session.markAuthenticated()) {
                         MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
                     } else {
                         failure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, request)

@@ -57,15 +57,27 @@ class CredentialMethodExecutor @Inject constructor(
                             rawKey.fill(0)
                         }
                     }
-                    if (request.purpose == AuthenticationPurpose.UNLOCK_VAULT) {
-                        if (session.commitUnlock(type, ownedDek, request.correlationId)) {
-                            MethodExecutionResult.Success(method)
-                        } else {
-                            failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
+                    when (request.purpose) {
+                        AuthenticationPurpose.UNLOCK_VAULT -> {
+                            if (session.commitUnlock(type, ownedDek, request.correlationId)) {
+                                MethodExecutionResult.Success(method)
+                            } else {
+                                failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
+                            }
                         }
-                    } else {
-                        ownedDek.discard()
-                        MethodExecutionResult.Success(method)
+
+                        AuthenticationPurpose.RECOVER_DATABASE -> {
+                            if (session.stageDatabaseRecovery(type, ownedDek)) {
+                                MethodExecutionResult.Success(method)
+                            } else {
+                                failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
+                            }
+                        }
+
+                        else -> {
+                            ownedDek.discard()
+                            MethodExecutionResult.Success(method)
+                        }
                     }
                 } catch (_: AEADBadTagException) {
                     failure(AuthenticationFailureCode.CREDENTIAL_INCORRECT, request)

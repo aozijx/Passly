@@ -2,22 +2,94 @@ package com.aozijx.passly.feature.settings.datamanagement
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.settingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 internal fun DataManagementDetail(
     state: DataUiState,
-    onAutoDownloadIconsChange: (Boolean) -> Unit
+    isClearingDatabase: Boolean,
+    onAutoDownloadIconsChange: (Boolean) -> Unit,
+    onClearDatabase: () -> Unit
 ) {
+    var showClearConfirmation by remember { mutableStateOf(false) }
+
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
 
         DataSettingsSection(
             isAutoDownloadIcons = state.isAutoDownloadIcons,
             onAutoDownloadIconsChange = onAutoDownloadIconsChange
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+        SettingsSectionTitle(text = "危险操作")
+        RoundedGroup(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            items = listOf(
+                settingsGroupItem(
+                    key = "data.clear_database",
+                    icon = Icons.Default.DeleteForever,
+                    title = stringResource(R.string.database_recovery_clear_action),
+                    subtitle = "删除全部条目、附件和自定义图片；设置与认证方式保留",
+                    onClick = { showClearConfirmation = true }
+                )
+            )
+        )
+    }
+
+    if (showClearConfirmation) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isClearingDatabase) showClearConfirmation = false
+            },
+            title = { Text(stringResource(R.string.database_recovery_clear_confirm_title)) },
+            text = {
+                Text(stringResource(R.string.database_recovery_clear_confirm_message))
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isClearingDatabase,
+                    onClick = {
+                        showClearConfirmation = false
+                        onClearDatabase()
+                    }
+                ) {
+                    Text(
+                        text = if (isClearingDatabase) {
+                            "正在清除…"
+                        } else {
+                            stringResource(R.string.database_recovery_clear_confirm)
+                        },
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isClearingDatabase,
+                    onClick = { showClearConfirmation = false }
+                ) {
+                    Text("取消")
+                }
+            }
         )
     }
 }

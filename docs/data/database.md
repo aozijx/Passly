@@ -54,6 +54,22 @@ stateDiagram-v2
 - 导入的覆盖/合并操作必须在事务中完成，失败整体回滚。
 - 数据库关闭超时不能制造“已关闭”的假象；详见[代码审查](../reviews/2026-07-code-review.md)。
 
+## 初始化失败恢复
+
+数据库初始化失败时提供两条严格分离的路径：
+
+1. **保留故障库并创建新库**只出现在故障弹窗。完成新鲜认证后，先封存数据库租约，
+   再将 SQLCipher 主文件、WAL/SHM/journal、附件和自定义图片复制到
+   `noBackupFilesDir/database_recovery/<recoveryId>`。只有恢复包完整落盘后才清理活动位置，
+   随后使用 Bootstrap Store 中原有 DEK 创建新的 `passly.db`。
+2. **永久清除保险库数据库**只出现在“设置 → 数据管理 → 危险操作”。它必须经过
+   明确确认和新鲜认证，会删除数据库、附件和自定义图片，不创建恢复包。
+
+恢复包包含 `manifest.properties`，当前格式版本为 `1`。它是应用私有的灾难恢复材料，
+不是用户备份格式，不进入 Android Auto Backup，也不能替代 v1 加密备份。`vaultId`
+是行级归属字段，不是数据库文件路由键；后续恢复器打开旧 SQLCipher 文件后，可用它做
+分组和一致性校验。当前实现负责可靠保留恢复包，旧库选择、预览与合并导入界面仍待实现。
+
 ## 相关实现
 
 - `data/local/database/AppDatabase.kt`
@@ -61,4 +77,3 @@ stateDiagram-v2
 - `data/local/database/DatabaseSession.kt`
 - `data/model/entity/`
 - [ADR-0018](../decisions/ADR-0018-lookup-metadata-strategy.md)
-

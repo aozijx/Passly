@@ -5,7 +5,9 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.database.DatabaseSchema
+import com.aozijx.passly.data.local.database.maintenance.DatabaseRecoveryStore
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
+import com.aozijx.passly.domain.diagnostics.repository.DatabaseQuarantineResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
@@ -22,7 +24,8 @@ import javax.inject.Singleton
 @Singleton
 internal class DatabaseControllerImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sessionManager: UnifiedSessionManager
+    private val sessionManager: UnifiedSessionManager,
+    private val recoveryStore: DatabaseRecoveryStore
 ) : DatabaseController {
 
     private companion object {
@@ -55,6 +58,16 @@ internal class DatabaseControllerImpl @Inject constructor(
         sessionManager.seal()
         sessionManager.unlock()
     }
+
+    override suspend fun quarantineAndReinitialize(): DatabaseQuarantineResult =
+        withContext(Dispatchers.IO) {
+            sessionManager.seal()
+            val recoveryId = recoveryStore.preserveAndClearActiveVault()
+            DatabaseQuarantineResult(
+                recoveryId = recoveryId,
+                error = sessionManager.unlock()
+            )
+        }
 
     override suspend fun clearAndReinitialize(): Throwable? = withContext(Dispatchers.IO) {
         var recoveryError: Throwable? = null

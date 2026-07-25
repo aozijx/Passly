@@ -46,6 +46,7 @@ class MainViewModel @Inject constructor(
     init {
         observeSettings()
         observeAuthStates()
+        observeDatabaseFailures()
     }
 
     fun handleIntent(intent: MainIntent) {
@@ -58,7 +59,7 @@ class MainViewModel @Inject constructor(
 
             MainIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
-            MainIntent.ClearDatabase -> clearDatabase()
+            MainIntent.RecoverDatabase -> recoverDatabase()
         }
     }
 
@@ -149,6 +150,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
             val outcome = databaseLifecycleUseCases.retryAndReport()
+            if (outcome.success) authenticationManager.clearDatabaseFailure()
             _uiState.update {
                 it.copy(
                     isDatabaseInitializing = false, databaseError = outcome.error
@@ -162,30 +164,56 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun clearDatabase() {
+    private fun observeDatabaseFailures() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isDatabaseInitializing = true) }
-            when (
-                authenticationManager.authenticate(
-                    AuthenticationRequest(AuthenticationPurpose.CLEAR_DATABASE)
-                )
-            ) {
-                is AuthenticationResult.Success -> {
-                    val outcome = databaseLifecycleUseCases.clearAndReinitialize()
+            authenticationManager.databaseFailure.collect { error ->
+                if (error != null) {
                     _uiState.update {
                         it.copy(
                             isDatabaseInitializing = false,
-                            databaseError = outcome.error
+                            databaseError = error,
+                            isAuthorized = false
                         )
                     }
-                    if (outcome.success) {
-                        emitEffect(MainEffect.ShowToast("保险库数据库已清除"))
+                }
+            }
+        }
+    }
+
+    private fun recoverDatabase() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDatabaseInitializing = true) }
+            val request = AuthenticationRequest(AuthenticationPurpose.RECOVER_DATABASE)
+            when (
+                authenticationManager.authenticate(request)
+            ) {
+                is AuthenticationResult.Success -> {
+                    val outcome = databaseLifecycleUseCases.quarantineAndReinitialize()
+                    val sessionRecovered = outcome.success &&
+                        authenticationManager.completeDatabaseRecovery()
+                    val recoveryError = outcome.error ?: if (!sessionRecovered) {
+                        IllegalStateException("Recovered database session could not be activated")
+                    } else {
+                        null
+                    }
+                    _uiState.update {
+                        it.copy(
+                            isDatabaseInitializing = false,
+                            databaseError = recoveryError
+                        )
+                    }
+                    if (sessionRecovered) {
+                        val recoveryMessage = outcome.recoveryId?.let {
+                            "故障库已保留（恢复编号：$it），已创建新数据库"
+                        } ?: "已创建新数据库"
+                        emitEffect(MainEffect.ShowToast(recoveryMessage))
                         rebuildSearchIndex()
                     } else {
+                        authenticationManager.lock(LockReason.INTEGRITY_FAILURE)
                         emitEffect(
                             MainEffect.ShowError(
-                                outcome.error?.toUiMessage("清除数据库失败")
-                                    ?: "清除数据库失败"
+                                outcome.error?.toUiMessage("创建新数据库失败")
+                                    ?: "创建新数据库失败"
                             )
                         )
                     }
@@ -195,7 +223,7 @@ class MainViewModel @Inject constructor(
                     _uiState.update { it.copy(isDatabaseInitializing = false) }
                 is AuthenticationResult.Failure -> {
                     _uiState.update { it.copy(isDatabaseInitializing = false) }
-                    emitEffect(MainEffect.ShowError("身份验证失败，数据库未清除"))
+                    emitEffect(MainEffect.ShowError("身份验证失败，未创建新数据库"))
                 }
             }
         }

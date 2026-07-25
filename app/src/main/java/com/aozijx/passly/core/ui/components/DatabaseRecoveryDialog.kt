@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -14,10 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -28,40 +24,10 @@ fun DatabaseRecoveryDialog(
     modifier: Modifier = Modifier,
     isBusy: Boolean,
     onRetry: () -> Unit,
-    onClearDatabase: () -> Unit,
+    onRecoverDatabase: () -> Unit,
     onCloseApp: () -> Unit,
     onDismissRequest: () -> Unit = {}
 ) {
-    var showClearConfirmation by remember { mutableStateOf(false) }
-
-    if (showClearConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showClearConfirmation = false },
-            title = { Text(stringResource(R.string.database_recovery_clear_confirm_title)) },
-            text = { Text(stringResource(R.string.database_recovery_clear_confirm_message)) },
-            confirmButton = {
-                TextButton(
-                    enabled = !isBusy,
-                    onClick = {
-                        showClearConfirmation = false
-                        onClearDatabase()
-                    }
-                ) {
-                    Text(
-                        text = stringResource(R.string.database_recovery_clear_confirm),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearConfirmation = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-        return
-    }
-
     AlertDialog(
         onDismissRequest = onDismissRequest,
         modifier = modifier.padding(24.dp),
@@ -85,19 +51,18 @@ fun DatabaseRecoveryDialog(
                 }
                 HorizontalDivider()
                 TextButton(
-                    onClick = { showClearConfirmation = true },
+                    onClick = onRecoverDatabase,
                     enabled = !isBusy,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
-                        Icons.Default.DeleteForever,
+                        Icons.Default.AddCircleOutline,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = stringResource(R.string.database_recovery_clear_action),
-                        modifier = Modifier.padding(start = 8.dp),
-                        color = MaterialTheme.colorScheme.error
+                        text = stringResource(R.string.database_recovery_create_new_action),
+                        modifier = Modifier.padding(start = 8.dp)
                     )
                 }
             }

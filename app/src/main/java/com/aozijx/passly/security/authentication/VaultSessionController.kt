@@ -3,6 +3,7 @@ package com.aozijx.passly.security.authentication
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.core.session.LockState
 import com.aozijx.passly.domain.auth.model.VaultLockState
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthenticationState
@@ -34,6 +35,7 @@ class VaultSessionController @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
     private val _state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
+    private val _databaseFailure = MutableStateFlow<Throwable?>(null)
     private var idleJob: Job? = null
     private var timeoutMs = 30_000L
 
@@ -42,6 +44,7 @@ class VaultSessionController @Inject constructor(
     private var lockLevel: VaultLockState = VaultLockState.SEALED
 
     override val authenticationState: StateFlow<AuthenticationState> = _state.asStateFlow()
+    val databaseFailure: StateFlow<Throwable?> = _databaseFailure.asStateFlow()
 
     override fun isUnlocked(): Boolean = lockLevel == VaultLockState.UNLOCKED
     override fun isLocked(): Boolean = lockLevel != VaultLockState.UNLOCKED
@@ -69,9 +72,11 @@ class VaultSessionController @Inject constructor(
                 UnlockResult.Success -> {
                     val err = sessionManager.unlock()
                     if (err != null) {
+                        _databaseFailure.value = err
                         transition(AuthenticationState.Locked)
                         return@withLock false
                     }
+                    _databaseFailure.value = null
                     lockLevel = VaultLockState.UNLOCKED
                     markAuthenticatedInternal()
                     true
@@ -99,9 +104,11 @@ class VaultSessionController @Inject constructor(
         if (lockLevel != VaultLockState.SOFT_LOCKED) return@withLock false
         val err = sessionManager.unlock()
         if (err != null) {
+            _databaseFailure.value = err
             transition(AuthenticationState.Locked)
             return@withLock false
         }
+        _databaseFailure.value = null
         lockLevel = VaultLockState.UNLOCKED
         markAuthenticatedInternal()
         true
@@ -123,19 +130,50 @@ class VaultSessionController @Inject constructor(
         if (lockLevel == VaultLockState.SOFT_LOCKED) {
             val err = sessionManager.unlock()
             if (err != null) {
+                _databaseFailure.value = err
                 _state.value = AuthenticationState.Locked
                 return@withLock false
             }
+            _databaseFailure.value = null
             lockLevel = VaultLockState.UNLOCKED
         }
         if (lockLevel == VaultLockState.SEALED) {
             val err = sessionManager.unlock()
             if (err != null) {
+                _databaseFailure.value = err
                 _state.value = AuthenticationState.Locked
                 return@withLock false
             }
+            _databaseFailure.value = null
             lockLevel = VaultLockState.UNLOCKED
         }
+        markAuthenticatedInternal()
+        true
+    }
+
+    /**
+     * 为数据库灾难恢复暂存 DEK，但不尝试打开已知损坏的数据库。
+     */
+    suspend fun stageDatabaseRecovery(
+        type: EnvelopeType,
+        ownedDek: OwnedBytes
+    ): Boolean = mutex.withLock {
+        val dek = ownedDek.consume()
+        return try {
+            dekManager.setDek(type, dek) is UnlockResult.Success
+        } finally {
+            dek.fill(0)
+            ownedDek.discard()
+        }
+    }
+
+    /**
+     * 新数据库已经由恢复流程成功打开后，才发布 UNLOCKED / Authenticated。
+     */
+    suspend fun completeDatabaseRecovery(): Boolean = mutex.withLock {
+        if (sessionManager.lockState != LockState.UNLOCKED) return@withLock false
+        _databaseFailure.value = null
+        lockLevel = VaultLockState.UNLOCKED
         markAuthenticatedInternal()
         true
     }
@@ -147,6 +185,10 @@ class VaultSessionController @Inject constructor(
 
     suspend fun transition(state: AuthenticationState) = withContext(Dispatchers.Main.immediate) {
         _state.value = state
+    }
+
+    fun clearDatabaseFailure() {
+        _databaseFailure.value = null
     }
 
     // ============================== 锁定 ==============================
@@ -164,7 +206,13 @@ class VaultSessionController @Inject constructor(
         mutex.withLock {
             val targetLevel = reason.toLockLevel()
             if (!lockLevel.shouldEscalateTo(targetLevel)) {
-                // 当前强度已 ≥ 目标强度，跳过
+                // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
+                // lockLevel 尚未解锁，但认证执行器可能已暂存 DEK。
+                if (targetLevel == VaultLockState.SEALED) {
+                    runCatching { sessionManager.seal() }
+                    dekManager.lock()
+                    transition(AuthenticationState.Locked)
+                }
                 return@withLock
             }
             transition(AuthenticationState.Locking(reason))

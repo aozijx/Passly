@@ -339,30 +339,68 @@ class MigrationBoundaryTest {
         val mainViewModel = File(
             "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"
         ).readText()
+        val settingsViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/SettingsViewModel.kt"
+        ).readText()
+        val recoveryDialog = File(
+            "src/main/java/com/aozijx/passly/core/ui/components/DatabaseRecoveryDialog.kt"
+        ).readText()
         val controller = File(
             "src/main/java/com/aozijx/passly/data/repository/database/DatabaseControllerImpl.kt"
+        ).readText()
+        val recoveryStore = File(
+            "src/main/java/com/aozijx/passly/data/local/database/maintenance/" +
+                "DatabaseRecoveryStore.kt"
         ).readText()
         val authenticationManager = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
         ).readText()
+        val credentialExecutor = File(
+            "src/main/java/com/aozijx/passly/security/authentication/CredentialMethodExecutor.kt"
+        ).readText()
+        val sessionController = File(
+            "src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt"
+        ).readText()
+        val recoveryCompletion =
+            sessionController.substringAfter("suspend fun completeDatabaseRecovery")
 
         assertTrue(
-            "Database recovery must request its dedicated authentication purpose",
-            "AuthenticationPurpose.CLEAR_DATABASE" in mainViewModel
+            "Crash recovery must request its non-destructive authentication purpose",
+            "AuthenticationPurpose.RECOVER_DATABASE" in mainViewModel
         )
         assertTrue(
-            "Database recovery must seal leases before deleting storage",
+            "Permanent deletion must live behind authenticated settings",
+            "AuthenticationPurpose.CLEAR_DATABASE" in settingsViewModel
+        )
+        assertTrue(
+            "Crash dialog must not expose permanent database deletion",
+            "onClearDatabase" !in recoveryDialog &&
+                "database_recovery_clear_action" !in recoveryDialog
+        )
+        assertTrue(
+            "Database recovery must preserve storage after sealing leases",
             controller.indexOf("sessionManager.seal()") <
-                controller.indexOf("deleteDatabaseFiles()")
+                controller.indexOf("recoveryStore.preserveAndClearActiveVault()")
         )
         assertTrue(
-            "Database recovery must recreate the encrypted database after deletion",
-            "val reopenError = sessionManager.unlock()" in controller
+            "Recovery storage must copy before clearing the active database",
+            recoveryStore.indexOf("source.copyTo") <
+                recoveryStore.indexOf("clearActiveDatabase(databaseFile)")
         )
         assertTrue(
             "Recovery code must remain available when Room cannot open",
-            "AuthenticationPurpose.CLEAR_DATABASE -> AuthenticationMethod.entries.toSet()" in
+            "AuthenticationPurpose.RECOVER_DATABASE" in authenticationManager &&
+                "AuthenticationPurpose.CLEAR_DATABASE -> AuthenticationMethod.entries.toSet()" in
                 authenticationManager
+        )
+        assertTrue(
+            "Cold-start recovery must stage the DEK without opening the broken database",
+            "session.stageDatabaseRecovery(type, ownedDek)" in credentialExecutor
+        )
+        assertTrue(
+            "A recovered database must open before authentication state is published",
+            recoveryCompletion.indexOf("sessionManager.lockState != LockState.UNLOCKED") <
+                recoveryCompletion.indexOf("markAuthenticatedInternal()")
         )
     }
 

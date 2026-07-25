@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.diagnostics.usecase.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
@@ -30,7 +33,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     val authenticationManager: AuthenticationManager,
     private val authenticationMethodProvisioner: AuthenticationMethodProvisioner,
-    private val settingsRepository: AppSettingsRepository
+    private val settingsRepository: AppSettingsRepository,
+    private val databaseLifecycleUseCases: DatabaseLifecycleUseCases
 ) : ViewModel() {
 
     val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
@@ -52,6 +56,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsIntent.SetSwipeLeftAction -> setSwipeLeftAction(intent.action)
             is SettingsIntent.SetSwipeRightAction -> setSwipeRightAction(intent.action)
             is SettingsIntent.LoadSettings -> loadSettings()
+            SettingsIntent.ClearDatabase -> clearDatabase()
         }
     }
 
@@ -95,6 +100,39 @@ class SettingsViewModel @Inject constructor(
                 _effects.tryEmit(SettingsEffect.SettingsSaved)
             }.onFailure { error ->
                 _effects.tryEmit(SettingsEffect.ShowError(error.message ?: "保存失败"))
+            }
+        }
+    }
+
+    private fun clearDatabase() {
+        if (_uiState.value.isClearingDatabase) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isClearingDatabase = true) }
+            when (
+                authenticationManager.authenticate(
+                    AuthenticationRequest(AuthenticationPurpose.CLEAR_DATABASE)
+                )
+            ) {
+                is AuthenticationResult.Success -> {
+                    val outcome = databaseLifecycleUseCases.clearAndReinitialize()
+                    _uiState.update { it.copy(isClearingDatabase = false) }
+                    if (outcome.success) {
+                        _effects.emit(SettingsEffect.DatabaseCleared)
+                    } else {
+                        _effects.emit(
+                            SettingsEffect.ShowError(
+                                outcome.error?.message ?: "清除数据库失败"
+                            )
+                        )
+                    }
+                }
+
+                is AuthenticationResult.Cancelled ->
+                    _uiState.update { it.copy(isClearingDatabase = false) }
+                is AuthenticationResult.Failure -> {
+                    _uiState.update { it.copy(isClearingDatabase = false) }
+                    _effects.emit(SettingsEffect.ShowError("身份验证失败，数据库未清除"))
+                }
             }
         }
     }

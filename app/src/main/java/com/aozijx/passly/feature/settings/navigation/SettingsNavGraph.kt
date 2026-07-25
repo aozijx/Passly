@@ -44,6 +44,7 @@ fun SettingsNavGraph(
     val dataViewModel: DataViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
     val backupViewModel: BackupViewModel = hiltViewModel()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     val authDecryptTitle = stringResource(R.string.vault_auth_decrypt_title)
     val setAppPasswordSubtitle =
@@ -66,6 +67,7 @@ fun SettingsNavGraph(
             val message = when (effect) {
                 is SettingsEffect.ShowError -> effect.message
                 is SettingsEffect.SettingsSaved -> "设置已保存"
+                is SettingsEffect.DatabaseCleared -> "保险库数据库已永久清除"
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
@@ -115,7 +117,9 @@ fun SettingsNavGraph(
             localState = localState,
             interactionViewModel = interactionViewModel,
             dataViewModel = dataViewModel,
-            backupViewModel = backupViewModel
+            backupViewModel = backupViewModel,
+            settingsViewModel = settingsViewModel,
+            settingsState = settingsState
         )
     }
 

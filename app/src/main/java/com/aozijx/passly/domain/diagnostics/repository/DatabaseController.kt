@@ -1,5 +1,10 @@
 package com.aozijx.passly.domain.diagnostics.repository
 
+data class DatabaseQuarantineResult(
+    val recoveryId: String? = null,
+    val error: Throwable? = null
+)
+
 /**
  * 数据库生命周期控制器接口。
  * 负责预热探测、重试与关闭，不持有业务数据，也不执行破坏性恢复。
@@ -17,6 +22,13 @@ interface DatabaseController {
      * @return 重建后是否仍存在错误。
      */
     suspend fun retry(): Throwable?
+
+    /**
+     * 保留当前数据库及关联文件的私有恢复副本，然后创建空数据库。
+     *
+     * @return 恢复包编号；没有可保留文件时为 null。失败时抛出异常。
+     */
+    suspend fun quarantineAndReinitialize(): DatabaseQuarantineResult
 
     /**
      * 删除无法打开的数据库及其关联 Vault 文件，并创建空数据库。

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.map
 interface AuthenticationManager {
     val state: StateFlow<AuthenticationState>
     val methods: StateFlow<AuthMethodAvailability>
+    val databaseFailure: StateFlow<Throwable?>
 
     suspend fun authenticate(
         request: AuthenticationRequest,
@@ -19,6 +20,12 @@ interface AuthenticationManager {
     ): AuthenticationRequestHandle
 
     suspend fun lock(reason: LockReason)
+    /**
+     * 在 [AuthenticationPurpose.RECOVER_DATABASE] 已暂存 DEK 且新数据库已打开后，
+     * 发布解锁会话。其他调用顺序必须失败。
+     */
+    suspend fun completeDatabaseRecovery(): Boolean
+    fun clearDatabaseFailure()
     suspend fun refreshAvailability()
     fun snapshot(): AuthenticationSnapshot
     fun onUserInteraction()

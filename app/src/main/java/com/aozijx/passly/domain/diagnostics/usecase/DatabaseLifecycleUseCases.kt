@@ -7,7 +7,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 data class DatabaseInitOutcome(
-    val error: Throwable? = null
+    val error: Throwable? = null,
+    val recoveryId: String? = null
 ) {
     val success: Boolean get() = error == null
 }
@@ -31,6 +32,15 @@ class DatabaseLifecycleUseCases @Inject constructor(
     suspend fun preWarm(): Throwable? = repository.preWarm()
 
     suspend fun retry(): Throwable? = repository.retry()
+
+    suspend fun quarantineAndReinitialize(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
+        runCatching { repository.quarantineAndReinitialize() }.fold(
+            onSuccess = { result ->
+                DatabaseInitOutcome(error = result.error, recoveryId = result.recoveryId)
+            },
+            onFailure = { error -> DatabaseInitOutcome(error = error) }
+        )
+    }
 
     suspend fun clearAndReinitialize(): DatabaseInitOutcome = withContext(Dispatchers.IO) {
         DatabaseInitOutcome(error = repository.clearAndReinitialize())

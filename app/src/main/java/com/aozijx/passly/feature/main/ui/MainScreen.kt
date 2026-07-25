@@ -98,8 +98,8 @@ internal fun MainScreen(
                         onRetry = {
                             viewModel.handleIntent(MainIntent.RetryDatabaseInitialization)
                         },
-                        onClearDatabase = {
-                            viewModel.handleIntent(MainIntent.ClearDatabase)
+                        onRecoverDatabase = {
+                            viewModel.handleIntent(MainIntent.RecoverDatabase)
                         },
                         onCloseApp = {
                             noticePublisher.publish(
