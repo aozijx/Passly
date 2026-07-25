@@ -121,7 +121,6 @@
     <string name="vault_detail_associated_package">Associated Package</string>
 
     <string name="vault_totp_label">Two-Factor Code</string>
-    <string name="vault_totp_copied">Code copied to clipboard</string>
     <string name="vault_edit_totp_title">Edit 2FA Config</string>
     <string name="vault_auth_reveal_subtitle">Verify identity to edit 2FA secret</string>
     <string name="vault_auth_qr_subtitle">Verify identity to show export QR code</string>
@@ -151,7 +150,6 @@
     <string name="vault_detail_domain_label">Website Domain or Icon URL</string>
     <string name="vault_detail_domain_placeholder">e.g. google.com or https://example.com/icon.png</string>
     <string name="vault_detail_domain_and_icon">Domain &amp; Icon</string>
-    <string name="vault_detail_copied">Copied</string>
     <string name="vault_detail_download_icon">Download Icon</string>
     <string name="vault_detail_icon_download_success">Icon downloaded successfully!</string>
     <string name="vault_detail_icon_download_failed">Icon download failed</string>

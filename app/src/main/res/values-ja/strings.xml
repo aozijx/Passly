@@ -120,7 +120,6 @@
     <string name="vault_detail_associated_package">関連パッケージ名</string>
 
     <string name="vault_totp_label">動的認証コード</string>
-    <string name="vault_totp_copied">認証コードをコピーしました</string>
     <string name="vault_edit_totp_title">2FA設定を編集</string>
     <string name="vault_auth_reveal_subtitle">本人確認して2FA秘密鍵を編集</string>
     <string name="vault_auth_qr_subtitle">本人確認してエクスポート用QRコードを表示</string>
@@ -150,7 +149,6 @@
     <string name="vault_detail_domain_label">ウェブサイトドメインまたはアイコンURL</string>
     <string name="vault_detail_domain_placeholder">例：google.com または https://example.com/icon.png</string>
     <string name="vault_detail_domain_and_icon">ドメインとアイコン</string>
-    <string name="vault_detail_copied">コピーしました</string>
     <string name="vault_detail_download_icon">アイコンをダウンロード</string>
     <string name="vault_detail_icon_download_success">アイコンのダウンロードに成功しました！</string>
     <string name="vault_detail_icon_download_failed">アイコンのダウンロードに失敗しました</string>

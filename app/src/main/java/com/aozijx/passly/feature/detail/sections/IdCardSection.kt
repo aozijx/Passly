@@ -30,7 +30,9 @@ fun IdCardSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val copied = stringResource(R.string.vault_detail_copied)
+    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val idNumberLabel = stringResource(R.string.id_number)
+    val usernameLabel = stringResource(R.string.vault_detail_username)
     val notSet = stringResource(R.string.not_set)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
@@ -39,7 +41,7 @@ fun IdCardSection(
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
-            label = stringResource(R.string.id_number),
+            label = idNumberLabel,
             value = when {
                 entry.secret.identity?.idNumber.isNullOrBlank() -> notSet
                 revealedIdNumber != null -> revealedIdNumber
@@ -56,7 +58,13 @@ fun IdCardSection(
                     authTitle = "解密身份证号",
                     authSubtitle = "验证身份以复制信息",
                     onReveal = onIdNumberRevealed,
-                    afterCopy = { Toast.makeText(context, copied, Toast.LENGTH_SHORT).show() }
+                    afterCopy = {
+                        Toast.makeText(
+                            context,
+                            msgCopySuccess.format(idNumberLabel),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 )
             },
             onEdit = {
@@ -74,12 +82,16 @@ fun IdCardSection(
 
         if (entry.username.isNotBlank()) {
             DetailItem(
-                label = stringResource(R.string.vault_detail_username),
+                label = usernameLabel,
                 value = entry.username,
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(context, entry.username)
-                    Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        msgCopySuccess.format(usernameLabel),
+                        Toast.LENGTH_SHORT
+                    ).show()
                     actionHandler.record(
                         "username",
                         ActivityType.COPY_PASSWORD

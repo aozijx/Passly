@@ -31,7 +31,9 @@ fun PasskeySection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val copied = stringResource(R.string.vault_detail_copied)
+    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val passkeyDataLabel = stringResource(R.string.passkey_data)
+    val hardwareKeyInfoLabel = stringResource(R.string.hardware_key_info)
     val notSet = stringResource(R.string.not_set)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
@@ -40,7 +42,7 @@ fun PasskeySection(
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
-            label = stringResource(R.string.passkey_data),
+            label = passkeyDataLabel,
             value = when {
                 entry.secret.passkey?.privateKeyReference.isNullOrBlank() -> notSet
                 revealedPasskeyData != null -> revealedPasskeyData
@@ -57,7 +59,13 @@ fun PasskeySection(
                     authTitle = "解密 Passkey 数据",
                     authSubtitle = "验证身份以复制数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) },
-                    afterCopy = { Toast.makeText(context, copied, Toast.LENGTH_SHORT).show() }
+                    afterCopy = {
+                        Toast.makeText(
+                            context,
+                            msgCopySuccess.format(passkeyDataLabel),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 )
             },
             onEdit = {
@@ -75,15 +83,19 @@ fun PasskeySection(
 
         if (!entry.secret.passkey?.hardwareKeyInfo.isNullOrBlank()) {
             DetailItem(
-                label = stringResource(R.string.hardware_key_info),
-                value = entry.secret.passkey.hardwareKeyInfo.orEmpty(),
+                label = hardwareKeyInfoLabel,
+                value = entry.secret.passkey.hardwareKeyInfo,
                 isRevealed = true,
                 onCopy = {
                     ClipboardUtils.copy(
                         context,
                         entry.secret.passkey.hardwareKeyInfo
                     )
-                    Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        msgCopySuccess.format(hardwareKeyInfoLabel),
+                        Toast.LENGTH_SHORT
+                    ).show()
                     actionHandler.record(
                         "hardware key info",
                         ActivityType.COPY_PASSWORD

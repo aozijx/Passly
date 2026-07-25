@@ -33,7 +33,7 @@ fun TotpSection(
     onGenerateHotpCode: ((entryId: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val totpCopiedMsg = stringResource(R.string.vault_totp_copied)
+    val msgCopySuccess = stringResource(R.string.msg_copy_success)
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -51,7 +51,11 @@ fun TotpSection(
                     val code = state.code
                     if (!code.isNullOrEmpty() && !code.contains("-")) {
                         ClipboardUtils.copy(context, code)
-                        Toast.makeText(context, totpCopiedMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            msgCopySuccess.format(totpLabel),
+                            Toast.LENGTH_SHORT
+                        ).show()
                         onEvent(DetailIntent.RecordAction("totp", ActivityType.COPY_PASSWORD))
                     }
                 }

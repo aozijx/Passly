@@ -57,7 +57,8 @@ fun BankCardSection(
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
-    val cardCopiedMsg = stringResource(R.string.card_copied)
+    val label = stringResource(R.string.vault_fab_bank_card)
+    val cardCopiedMsg = stringResource(R.string.msg_copy_success, label)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent

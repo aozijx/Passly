@@ -8,7 +8,7 @@
     <string name="autofill_locked">Passly is locked</string>
     <string name="autofill_save_failed_repository">Couldn\'t save</string>
     <string name="vault_menu_sort">Sort by</string>
-    <string name="vault_field_copied_format">%1$s copied</string>
+    <string name="msg_copy_success">%1$s copied</string>
     <string name="vault_fab_bank_card">Bank card</string>
     <string name="vault_fab_wifi">WiFi</string>
     <string name="vault_fab_ssh_key">SSH key</string>
@@ -22,10 +22,6 @@
     <string name="backup_use_recovery_code">Encrypt with recovery code</string>
     <string name="backup_recovery_code_label">Recovery code</string>
     <string name="vault_decrypt_failed">Decryption failed. Authenticate again.</string>
-    <string name="vault_reveal_password_subtitle">Authenticate to show password</string>
-    <string name="vault_reveal_username_subtitle">Authenticate to show username</string>
-    <string name="vault_encrypt_failed">Encryption failed. Save cancelled.</string>
-    <string name="vault_detail_icon_download_network_error">Network unavailable</string>
     <string name="vault_detail_icon_download_decode_error">Unsupported icon format</string>
     <string name="vault_detail_icon_download_save_error">Couldn\'t save icon</string>
     <string name="vault_detail_history_label">Activity log</string>
@@ -66,7 +62,6 @@
     <string name="settings_recovery_code_verify_valid">Recovery code is valid</string>
     <string name="settings_recovery_code_verify_invalid">Invalid recovery code</string>
     <string name="settings_recovery_code_dismiss">I saved it</string>
-    <string name="settings_recovery_code_copied">Recovery code copied</string>
     <string name="settings_recovery_code_create">Create recovery code</string>
     <string name="settings_recovery_code_saved">Saved on this device</string>
     <string name="settings_recovery_code_regenerate">Regenerate recovery code</string>
@@ -79,12 +74,10 @@
     <string name="wifi_encryption">Security</string>
     <string name="wifi_hidden">Hidden network</string>
     <string name="wifi_settings">WiFi settings</string>
-    <string name="wifi_copied">WiFi details copied</string>
     <string name="cardholder">Cardholder</string>
     <string name="card_number">Card number</string>
     <string name="card_cvv">Security code</string>
     <string name="card_expiration">Expiry date</string>
-    <string name="card_copied">Card details copied</string>
     <string name="payment_pin">Payment PIN</string>
     <string name="payment_platform">Payment provider</string>
     <string name="security_question">Security question</string>
@@ -92,16 +85,13 @@
     <string name="seed_phrase">Seed phrase</string>
     <string name="seed_phrase_title">Crypto seed phrase</string>
     <string name="seed_phrase_revealed">Seed phrase revealed</string>
-    <string name="seed_phrase_copied">Seed phrase copied</string>
     <string name="word_index_hint">Tap anywhere to copy</string>
     <string name="ssh_private_key">Private key</string>
     <string name="ssh_private_key_full">Full private key</string>
     <string name="ssh_fingerprint">Key fingerprint</string>
-    <string name="ssh_key_copied">SSH key copied</string>
     <string name="passphrase">Passphrase</string>
     <string name="ssh_key_pin">Key PIN</string>
     <string name="id_number">ID number</string>
-    <string name="id_copied">ID details copied</string>
     <string name="passkey_data">Passkey data</string>
     <string name="passkey_recovery_codes">Recovery codes</string>
     <string name="hardware_key_info">Hardware key details</string>

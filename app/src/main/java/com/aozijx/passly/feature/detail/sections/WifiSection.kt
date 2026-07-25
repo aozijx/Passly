@@ -26,8 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -50,11 +50,11 @@ fun WifiSection(
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
+    val msgCopySuccess = stringResource(R.string.msg_copy_success)
     val wifiSsidLabel = stringResource(R.string.wifi_ssid)
     val wifiPasswordLabel = stringResource(R.string.wifi_password)
     val wifiEncryptionLabel = stringResource(R.string.wifi_encryption)
     val wifiHiddenLabel = stringResource(R.string.wifi_hidden)
-    val wifiCopiedMsg = stringResource(R.string.wifi_copied)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
@@ -115,7 +115,11 @@ fun WifiSection(
                         authSubtitle = "验证身份以复制密码",
                         onReveal = onPasswordRevealed,
                         afterCopy = {
-                            Toast.makeText(context, wifiCopiedMsg, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                msgCopySuccess.format(wifiPasswordLabel),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     )
                 },

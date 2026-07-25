@@ -26,8 +26,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -51,9 +51,9 @@ fun SshKeySection(
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
+    val msgCopySuccess = stringResource(R.string.msg_copy_success)
     val sshPrivateKeyLabel = stringResource(R.string.ssh_private_key)
     val passphraseLabel = stringResource(R.string.passphrase)
-    val sshKeyCopiedMsg = stringResource(R.string.ssh_key_copied)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
@@ -108,7 +108,11 @@ fun SshKeySection(
                         authSubtitle = "验证身份以复制信息",
                         onReveal = onPasswordRevealed,
                         afterCopy = {
-                            Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                msgCopySuccess.format(sshPrivateKeyLabel),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     )
                 },
@@ -131,7 +135,11 @@ fun SshKeySection(
                     authSubtitle = "验证身份以复制信息",
                     onReveal = onSshPrivateKeyRevealed,
                     afterCopy = {
-                        Toast.makeText(context, sshKeyCopiedMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            msgCopySuccess.format(sshPrivateKeyLabel),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             },
@@ -165,7 +173,11 @@ fun SshKeySection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                        alpha = 0.3f
+                    )
+                ),
                 shape = MaterialTheme.shapes.large
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {

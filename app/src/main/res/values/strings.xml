@@ -80,7 +80,7 @@
     <string name="vault_enable_autofill">开启自动填充</string>
     <string name="vault_toast_enable_autofill_manual">在系统设置中开启自动填充</string>
     <string name="vault_toast_save_icon_failed">图片保存失败</string>
-    <string name="vault_field_copied_format">%1$s已复制</string>
+    <string name="msg_copy_success">%1$s已复制</string>
     <string name="vault_export">导出备份</string>
     <string name="vault_import">导入恢复</string>
     <string name="tab_all">全部</string>
@@ -148,9 +148,6 @@
     <string name="vault_add_password_title">添加密码项</string>
     <string name="vault_reveal_info">验证并显示详情</string>
     <string name="vault_decrypt_failed">解密失败，请重新验证</string>
-    <string name="vault_reveal_password_subtitle">验证以显示密码</string>
-    <string name="vault_reveal_username_subtitle">验证以显示账号</string>
-    <string name="vault_encrypt_failed">加密失败，保存已取消</string>
     <string name="vault_edit_modify_category">修改分类</string>
     <string name="vault_edit_save_category">保存分类</string>
     <string name="vault_edit_modified_hint">已修改，别忘了保存</string>
@@ -159,7 +156,6 @@
 
     <!-- 详情页补充 -->
     <string name="vault_totp_label">动态验证码</string>
-    <string name="vault_totp_copied">验证码已复制</string>
     <string name="vault_edit_totp_title">编辑 2FA 配置</string>
     <string name="vault_auth_reveal_subtitle">验证以编辑 2FA 密钥</string>
     <string name="vault_auth_qr_subtitle">验证以导出二维码</string>
@@ -191,11 +187,9 @@
     <string name="vault_detail_domain_label">域名或图标链接</string>
     <string name="vault_detail_domain_placeholder">如 google.com 或图标链接</string>
     <string name="vault_detail_domain_and_icon">域名与图标</string>
-    <string name="vault_detail_copied">已复制</string>
     <string name="vault_detail_download_icon">下载图标</string>
     <string name="vault_detail_icon_download_success">图标下载成功！</string>
     <string name="vault_detail_icon_download_failed">图标下载失败</string>
-    <string name="vault_detail_icon_download_network_error">网络连接失败</string>
     <string name="vault_detail_icon_download_decode_error">图标格式不支持</string>
     <string name="vault_detail_icon_download_save_error">图标保存失败</string>
     <string name="vault_detail_login_credentials">登录凭据</string>
@@ -329,7 +323,6 @@
     <string name="settings_recovery_code_verify_valid">恢复码有效</string>
     <string name="settings_recovery_code_verify_invalid">恢复码无效</string>
     <string name="settings_recovery_code_dismiss">我已记下</string>
-    <string name="settings_recovery_code_copied">恢复码已复制到剪贴板</string>
     <string name="settings_recovery_code_create">创建恢复码</string>
     <string name="settings_recovery_code_saved">已保存到设备</string>
     <string name="settings_recovery_code_regenerate">重新生成恢复码</string>
@@ -361,14 +354,12 @@
     <string name="wifi_encryption">加密方式</string>
     <string name="wifi_hidden">隐藏网络</string>
     <string name="wifi_settings">WiFi 设置</string>
-    <string name="wifi_copied">WiFi信息已复制</string>
 
     <!-- 银行卡相关 -->
     <string name="cardholder">持卡人</string>
     <string name="card_number">卡号</string>
     <string name="card_cvv">安全码</string>
     <string name="card_expiration">有效期</string>
-    <string name="card_copied">银行卡信息已复制</string>
     <string name="payment_pin">支付密码</string>
     <string name="payment_platform">支付渠道</string>
     <string name="security_question">密保问题</string>
@@ -378,20 +369,17 @@
     <string name="seed_phrase">助记词</string>
     <string name="seed_phrase_title">加密货币助记词</string>
     <string name="seed_phrase_revealed">已显示助记词</string>
-    <string name="seed_phrase_copied">助记词已复制</string>
     <string name="word_index_hint">点击任意位置复制</string>
 
     <!-- SSH密钥相关 -->
-    <string name="ssh_private_key">私钥内容</string>
+    <string name="ssh_private_key">私钥</string>
     <string name="ssh_private_key_full">完整私钥</string>
     <string name="ssh_fingerprint">密钥指纹</string>
-    <string name="ssh_key_copied">SSH密钥已复制</string>
     <string name="passphrase">密钥口令</string>
     <string name="ssh_key_pin">密钥PIN</string>
 
     <!-- 证件相关 -->
     <string name="id_number">证件号码</string>
-    <string name="id_copied">证件信息已复制</string>
 
     <!-- Passkey相关 -->
     <string name="passkey_data">Passkey数据</string>

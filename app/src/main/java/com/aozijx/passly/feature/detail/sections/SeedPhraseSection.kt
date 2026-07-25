@@ -28,8 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -48,7 +48,8 @@ fun SeedPhraseSection(
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current
-    val seedPhraseCopiedMsg = stringResource(R.string.seed_phrase_copied)
+    val msgCopySuccess = stringResource(R.string.msg_copy_success)
+    val seedPhraseLabel = stringResource(R.string.seed_phrase)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
@@ -81,7 +82,11 @@ fun SeedPhraseSection(
                     authSubtitle = "验证身份以复制助记词",
                     onReveal = onSeedPhraseRevealed,
                     afterCopy = {
-                        Toast.makeText(context, seedPhraseCopiedMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            msgCopySuccess.format(seedPhraseLabel),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             },

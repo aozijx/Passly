@@ -37,7 +37,8 @@ fun RecoveryCodeSheet(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val copiedMessage = stringResource(R.string.settings_recovery_code_copied)
+    val recoveryCodeLabel = stringResource(R.string.vault_fab_recovery_code)
+    val msgCopySuccess = stringResource(R.string.msg_copy_success)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -88,7 +89,11 @@ fun RecoveryCodeSheet(
             Button(
                 onClick = {
                     ClipboardUtils.copy(context, recoveryCode)
-                    Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        msgCopySuccess.format(recoveryCodeLabel),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)

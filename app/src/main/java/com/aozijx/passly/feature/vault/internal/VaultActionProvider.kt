@@ -38,15 +38,15 @@ fun rememberVaultActionProvider(
     val context = LocalContext.current
     val decryptAuthTitle = stringResource(R.string.auth_title)
     val decryptAuthSubtitle = stringResource(R.string.vault_auth_decrypt_subtitle_generic)
-    val totpCopiedText = stringResource(R.string.vault_totp_copied)
-    val fieldCopiedFormat = stringResource(R.string.vault_field_copied_format)
+    val totpLabel = stringResource(R.string.vault_detail_totp_label)
+    val fieldCopiedFormat = stringResource(R.string.msg_copy_success)
     val authTitle = stringResource(R.string.auth_title)
 
     val latestTotpStates by rememberUpdatedState(totpStates)
 
     val performCopy = remember(
         context, vaultViewModel, mainViewModel,
-        decryptAuthTitle, decryptAuthSubtitle, totpCopiedText, fieldCopiedFormat
+        decryptAuthTitle, decryptAuthSubtitle, totpLabel, fieldCopiedFormat
     ) {
         { fieldKey: FieldKey, item: EntryListItem ->
             val label = EntryTypeDisplayProvider.getCopyLabel(fieldKey)
@@ -56,7 +56,9 @@ fun rememberVaultActionProvider(
                     val code = state.code
                     if (!code.isNullOrEmpty() && !code.contains("-")) {
                         ClipboardUtils.copy(context, code)
-                        Toast.makeText(context, totpCopiedText, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context, fieldCopiedFormat.format(totpLabel), Toast.LENGTH_SHORT
+                        ).show()
                     }
                 } ?: Unit
             } else {
