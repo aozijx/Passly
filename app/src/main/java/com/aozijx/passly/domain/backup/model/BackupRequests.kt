@@ -1,5 +1,20 @@
 package com.aozijx.passly.domain.backup.model
 
+import com.aozijx.passly.domain.entry.model.EntryType
+
+data class BackupExportOptions(
+    val includeIcons: Boolean = true,
+    val includeAttachments: Boolean = true,
+    val includeDeleted: Boolean = true,
+    val includedEntryTypes: Set<EntryType> = EntryType.entries.toSet()
+) {
+    init {
+        require(includedEntryTypes.isNotEmpty()) {
+            "At least one entry type must be selected"
+        }
+    }
+}
+
 /**
  * UI-independent export request.
  *
@@ -10,7 +25,7 @@ class BackupExportRequest(
     val targetUri: String,
     val format: BackupFormatId,
     val password: CharArray? = null,
-    val includeIcons: Boolean = false
+    val options: BackupExportOptions = BackupExportOptions()
 )
 
 /**

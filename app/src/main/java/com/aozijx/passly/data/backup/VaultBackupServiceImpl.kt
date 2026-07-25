@@ -38,8 +38,11 @@ internal class VaultBackupServiceImpl @Inject constructor(
             val adapter = formatRegistry.exporter(request.format)
             validatePassword(adapter.requiresPassword, request.password)
             val bundle = backupReader.readBundle(
-                includeIcons = request.includeIcons && adapter.supportsIcons,
-                includeAttachments = adapter.includesAttachments
+                includeIcons = request.options.includeIcons && adapter.supportsIcons,
+                includeAttachments =
+                    request.options.includeAttachments && adapter.includesAttachments,
+                includeDeleted = request.options.includeDeleted,
+                includedEntryTypes = request.options.includedEntryTypes
             )
             try {
                 val encoded = adapter.encode(bundle, request.password)

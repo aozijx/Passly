@@ -27,14 +27,19 @@ class BackupExportStorageSupport @Inject constructor(
         val directoryTreeUri: Uri
     )
 
-    fun buildBackupFileName(timestamp: Long = System.currentTimeMillis()): String {
+    fun buildBackupFileName(
+        extension: String = "passly",
+        timestamp: Long = System.currentTimeMillis()
+    ): String {
+        require(extension.matches(Regex("[a-z0-9]{2,12}")))
         val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-        return "backup_${formatter.format(Date(timestamp))}.passly"
+        return "backup_${formatter.format(Date(timestamp))}.$extension"
     }
 
     fun createNamedExportTarget(
         directoryTreeUri: String,
-        fileName: String
+        fileName: String,
+        mimeType: String = BACKUP_FILE_MIME
     ): Result<ExportTarget> = runCatching {
         val treeUri = directoryTreeUri.toUri()
         val resolver = context.contentResolver
@@ -47,7 +52,7 @@ class BackupExportStorageSupport @Inject constructor(
             DocumentsContract.createDocument(
                 resolver,
                 parentDocUri,
-                BACKUP_FILE_MIME,
+                mimeType,
                 fileName
             ) ?: error("无法创建备份文件")
         } catch (error: SecurityException) {

@@ -13,6 +13,7 @@ import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -44,10 +45,19 @@ class VaultBackupReader @Inject constructor(
 
     suspend fun readBundle(
         includeIcons: Boolean = false,
-        includeAttachments: Boolean = true
+        includeAttachments: Boolean = true,
+        includeDeleted: Boolean = true,
+        includedEntryTypes: Set<EntryType> = EntryType.entries.toSet()
     ): BackupBundle {
+        require(includedEntryTypes.isNotEmpty()) {
+            "At least one entry type must be selected"
+        }
         return sessionManager.query {
             val metadataEntities = entryQueryDao().getAll()
+                .asSequence()
+                .filter { includeDeleted || it.deletedAt == null }
+                .filter { it.entryType in includedEntryTypes }
+                .toList()
             val entryIds = metadataEntities.map { it.entryId }
             val credentialEntities = entrySecretQueryDao().getByEntryIds(entryIds)
             val credentialMap = credentialEntities.associateBy { it.entryId }
