@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -121,7 +122,7 @@ private fun LogViewerSheet(content: String, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(),
         dragHandle = { BottomSheetDefaults.DragHandle() },
-        sheetMaxWidth = androidx.compose.ui.unit.Dp.Unspecified,
+        sheetMaxWidth = Dp.Unspecified,
         modifier = Modifier.fillMaxSize()
     ) {
         Column(

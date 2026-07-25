@@ -10,8 +10,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -20,14 +20,17 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.PathUtils
 import com.aozijx.passly.core.error.ui.toUiMessage
+import com.aozijx.passly.core.util.PathUtils
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
+import com.aozijx.passly.feature.settings.SettingsViewModel
+import com.aozijx.passly.feature.settings.contract.SettingsIntent
+import com.aozijx.passly.feature.settings.contract.SettingsUiState
 import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreDetail
 import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreSheetHost
 import com.aozijx.passly.feature.settings.datamanagement.BackupSheet
@@ -35,9 +38,6 @@ import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
 import com.aozijx.passly.feature.settings.datamanagement.DataUiAction
 import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
 import com.aozijx.passly.feature.settings.datamanagement.handleBackupPathPicked
-import com.aozijx.passly.feature.settings.SettingsViewModel
-import com.aozijx.passly.feature.settings.contract.SettingsIntent
-import com.aozijx.passly.feature.settings.contract.SettingsUiState
 import com.aozijx.passly.feature.settings.general.GeneralDetail
 import com.aozijx.passly.feature.settings.general.NotificationDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionDetail
@@ -112,7 +112,6 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
         val pathLabel = remember(state.directoryUri) {
             PathUtils.formatPath(state.directoryUri) ?: notSetText
         }
-        val lastExportLabel = notSetText
         var activeSheet by remember { mutableStateOf<BackupSheet?>(null) }
 
         fun startManualExport(uri: Uri?) {
@@ -188,7 +187,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
             item {
                 BackupRestoreDetail(
                     backupPathLabel = pathLabel,
-                    lastExportFileLabel = lastExportLabel,
+                    lastExportFileLabel = notSetText,
                     onExport = { activeSheet = BackupSheet.FORMAT_PICKER },
                     onImport = {
                         importPicker.launch(
@@ -282,7 +281,8 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
         val verifyResult by viewModel.verifyResult.collectAsStateWithLifecycle()
 
         LaunchedEffect(recoveryCode) {
-            if (recoveryCode != null) localState.showRecoveryCodeSheet = true
+            if (recoveryCode != null) localState.showRecoveryCodeSheet =
+                !localState.showRecoveryCodeSheet
         }
         recoveryCode?.let { code ->
             if (localState.showRecoveryCodeSheet) {
@@ -290,11 +290,11 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                     recoveryCode = code,
                     sheetState = localState.recoveryCodeSheetState,
                     onConfirm = {
-                        localState.showRecoveryCodeSheet = false
+                        localState.showRecoveryCodeSheet = !localState.showRecoveryCodeSheet
                         draftViewModel.confirmAndEnable()
                     },
                     onDismiss = {
-                        localState.showRecoveryCodeSheet = false
+                        localState.showRecoveryCodeSheet = !localState.showRecoveryCodeSheet
                         draftViewModel.dismiss()
                     }
                 )
