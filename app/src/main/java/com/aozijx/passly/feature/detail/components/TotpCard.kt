@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.detail.components
 
 import android.graphics.Bitmap
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCode
@@ -106,31 +106,50 @@ fun TotpCard(
             shape = RoundedCornerShape(12.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
         ) {
+            // 逻辑预处理
+            val code = currentState?.code
+            val progress = currentState?.progress ?: 0f
+
+            val displayText = remember(code) {
+                code?.chunked(3)?.joinToString(" ") ?: "------"
+            }
+
+            // 状态平滑动画 (可选优化)
+            val animatedProgress by animateFloatAsState(
+                targetValue = progress,
+                label = "otp_progress"
+            )
+
+            // 样式解耦
+            val codeStyle = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 3.sp,
+                fontFamily = FontFamily.Monospace
+            )
+
+            val indicatorColor = if (progress < 0.2f) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
+
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val displayText = (currentState?.code?.chunked(3)?.joinToString(" ") ?: "------")
                 Text(
                     text = displayText,
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 3.sp,
-                        fontFamily = FontFamily.Monospace
-                    ),
+                    style = codeStyle,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
                 if (showProgress) {
-                    Spacer(modifier = Modifier.width(24.dp))
                     CircularProgressIndicator(
-                        progress = { currentState?.progress ?: 0f },
+                        progress = { animatedProgress },
                         modifier = Modifier.size(28.dp),
                         strokeWidth = 4.dp,
-                        color = if ((currentState?.progress
-                                ?: 1f) < 0.2f
-                        ) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        color = indicatorColor,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     )
                 }
