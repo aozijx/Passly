@@ -1,15 +1,15 @@
 package com.aozijx.passly.feature.settings.appearance
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetState
@@ -45,6 +46,7 @@ import com.aozijx.passly.core.ui.theme.themePresetByColor
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -137,9 +139,14 @@ internal fun AppearanceDetail(
         LanguageSheet(
             current = state.language,
             onSelect = { lang ->
-                onLanguageChange(lang)
-                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                scope.launch {
+                    // 1. 先触发 Sheet 的退出动画
+                    sheetState.hide()
                     showLanguageSheet = false
+                    // 2. 增加延迟（300ms），确保动画彻底完成，且主线程空闲
+                    delay(300)
+                    // 3. 此时再触发会导致 Activity 重启的语言变更
+                    onLanguageChange(lang)
                 }
             },
             sheetState = sheetState,
@@ -186,19 +193,27 @@ private fun LanguageSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
-        modifier = Modifier.fillMaxSize()
+        dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
-        Column(modifier = Modifier.padding(bottom = 32.dp)) {
-            Text(
-                text = stringResource(R.string.settings_language_choose),
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-            )
-            AppLanguage.entries.forEach { lang ->
+        // 使用 LazyColumn 替代 Column + verticalScroll 获得更稳定的滑动性能
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+            contentPadding = PaddingValues(top = 8.dp),
+            verticalArrangement = Arrangement.Top
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.settings_language_choose),
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            items(AppLanguage.entries) { lang ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
                         .clickable { onSelect(lang) }
                         .padding(horizontal = 24.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically

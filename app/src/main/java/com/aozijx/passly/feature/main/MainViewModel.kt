@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -128,21 +128,20 @@ class MainViewModel @Inject constructor(
 
     private fun observeSettings() {
         viewModelScope.launch {
-            combine(
-                settingsRepository.settings.map { it.appearance.themeMode },
-                settingsRepository.settings.map { it.appearance.isDynamicColor },
-                settingsRepository.settings.map { it.appearance.customSeedArgb },
-                settingsRepository.settings.map { it.appearance.fontFamily }
-            ) { themeMode, isDynamicColor, customSeedArgb, fontFamily ->
-                _uiState.update {
-                    it.copy(
-                        themeMode = themeMode,
-                        isDynamicColor = isDynamicColor,
-                        customSeedArgb = customSeedArgb,
-                        fontFamily = fontFamily
-                    )
+            settingsRepository.settings
+                .map { it.appearance }
+                .distinctUntilChanged()
+                .collect { appearance ->
+                    _uiState.update {
+                        it.copy(
+                            themeMode = appearance.themeMode,
+                            isDynamicColor = appearance.isDynamicColor,
+                            customSeedArgb = appearance.customSeedArgb,
+                            fontFamily = appearance.fontFamily,
+                            language = appearance.language
+                        )
+                    }
                 }
-            }.collect { }
         }
     }
 

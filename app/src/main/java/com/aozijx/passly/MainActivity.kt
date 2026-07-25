@@ -6,7 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +23,7 @@ import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
+import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
@@ -77,6 +81,21 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+            // 响应语言切换
+            LaunchedEffect(mainUiState.language) {
+                val tag = when (mainUiState.language) {
+                    AppLanguage.SYSTEM -> ""
+                    AppLanguage.ZH -> "zh-CN"
+                    AppLanguage.EN -> "en"
+                    AppLanguage.JA -> "ja"
+                }
+                val currentTags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                if (currentTags != tag) {
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+                }
+            }
+
             ProvidePermissionServices(
                 PermissionServices(
                     statusReader = permissionStatusReader,
