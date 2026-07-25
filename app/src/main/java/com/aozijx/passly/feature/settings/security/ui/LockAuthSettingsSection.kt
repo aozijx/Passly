@@ -60,7 +60,7 @@ fun LockAuthSettingsSection(
                 key = "security.lock_on_background",
                 icon = Icons.Default.Lock,
                 title = "立即锁定",
-                subtitle = "退出 app 后将在设定的锁定时间后锁定",
+                subtitle = "退出 app 后锁定",
                 checked = isLockOnBackground,
                 onCheckedChange = onLockOnBackgroundChange
             ),

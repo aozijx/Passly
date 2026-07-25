@@ -2,13 +2,15 @@ package com.aozijx.passly.app
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
-import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.LockReason
+import com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,7 +18,7 @@ import javax.inject.Singleton
 /**
  * 监听 ProcessLifecycleOwner 的前后台切换，管理会话生命周期。
  *
- * - onStop：应用进入后台 → 封存会话（排干租约、关闭数据库、擦除 DEK）
+ * - onStop：应用进入后台 → 根据 [isLockOnBackground] 设置决定是否锁定
  * - onDestroy：应用销毁 → 封存会话
  *
  * 前台到后台的切换将触发完整的 [LockReason.BACKGROUND] 锁流程，
@@ -25,12 +27,13 @@ import javax.inject.Singleton
  */
 @Singleton
 class AppLifecycleObserver @Inject constructor(
-    private val sessionManager: UnifiedSessionManager,
     private val authenticationManager: AuthenticationManager,
-    private val diagnosticsRuntime: DiagnosticsRuntimeController
+    private val diagnosticsRuntime: DiagnosticsRuntimeController,
+    private val idleTimeoutSettings: IdleTimeoutSettings
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val tag = "AppLifecycleObserver"
 
     override fun onStart(owner: LifecycleOwner) {
         // 前台无需额外操作，Auth page 会在认证状态为 Locked 时自动展示
@@ -38,6 +41,11 @@ class AppLifecycleObserver @Inject constructor(
 
     override fun onStop(owner: LifecycleOwner) {
         scope.launch {
+            val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
+            if (!lockOnBackground) {
+                AppTelemetry.i(tag, "Lock on background disabled by settings, skipping")
+                return@launch
+            }
             // 封存会话：排干租约 → 关闭数据库 → 同步认证状态
             authenticationManager.lock(LockReason.BACKGROUND)
         }
