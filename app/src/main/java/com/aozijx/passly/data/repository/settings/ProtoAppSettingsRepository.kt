@@ -53,7 +53,7 @@ class ProtoAppSettingsRepository @Inject constructor(
             NoticeTopic.DATABASE -> NoticeTopicProto.NOTICE_TOPIC_DATABASE
         }
 
-        fun NoticeTopicProto.toDomain(): NoticeTopic? = when (this) {
+        fun NoticeTopicProto.toDomain(): NoticeTopic = when (this) {
             NoticeTopicProto.NOTICE_TOPIC_CLIPBOARD -> NoticeTopic.CLIPBOARD
             NoticeTopicProto.NOTICE_TOPIC_APP_LIFECYCLE -> NoticeTopic.APP_LIFECYCLE
             NoticeTopicProto.NOTICE_TOPIC_ICON_DOWNLOAD -> NoticeTopic.ICON_DOWNLOAD
@@ -80,14 +80,12 @@ class ProtoAppSettingsRepository @Inject constructor(
 
         fun decodeMessageSettings(proto: MessagePreferences?): AppMessageSettings {
             if (proto == null) return AppMessageSettings()
-            val configured = proto.topicsList.mapNotNull { item ->
-                item.topic.toDomain()?.let { topic ->
-                    topic to TopicMessageSettings(
-                        enabled = item.enabled,
-                        minimumLevel = item.minimumLevel.toDomain()
-                    )
-                }
-            }.toMap()
+            val configured = proto.topicsList.associate { item ->
+                item.topic.toDomain() to TopicMessageSettings(
+                    enabled = item.enabled,
+                    minimumLevel = item.minimumLevel.toDomain()
+                )
+            }
             return AppMessageSettings(
                 optionalMessagesEnabled = proto.optionalMessagesEnabled,
                 systemNotificationsEnabled = proto.systemNotificationsEnabled,

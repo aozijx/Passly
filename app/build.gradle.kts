@@ -223,6 +223,10 @@ protobuf {
             builtins {
                 create("java") {
                     option("lite")
+                    // AGP 9 registers outputBaseDir as the generated Java source root.
+                    // Avoid an extra /java layer that Gradle can compile but the IDE
+                    // indexes as a mismatched package hierarchy.
+                    outputSubDir = ""
                 }
             }
         }
