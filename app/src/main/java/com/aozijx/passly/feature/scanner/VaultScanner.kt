@@ -217,7 +217,7 @@ fun VaultScanner(
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.filledTonalButtonColors()
                             ) {
-                                Text(stringResource(R.string.vault_scanner_action_rescan))
+                                Text(stringResource(R.string.vault_scan))
                             }
 
                             Button(

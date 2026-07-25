@@ -36,7 +36,7 @@ fun rememberVaultActionProvider(
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
     val context = LocalContext.current
-    val decryptAuthTitle = stringResource(R.string.vault_auth_decrypt_title)
+    val decryptAuthTitle = stringResource(R.string.auth_title)
     val decryptAuthSubtitle = stringResource(R.string.vault_auth_decrypt_subtitle_generic)
     val totpCopiedText = stringResource(R.string.vault_totp_copied)
     val fieldCopiedFormat = stringResource(R.string.vault_field_copied_format)

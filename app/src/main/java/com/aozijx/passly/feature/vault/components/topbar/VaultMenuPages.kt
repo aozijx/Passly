@@ -166,7 +166,7 @@ internal fun FilterSubMenu(
     }
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     CategoryMenuItem(
-        text = stringResource(R.string.vault_menu_all_categories),
+        text = stringResource(R.string.tab_all),
         selected = selectedCategory == null,
         onClick = { onCategorySelected(null) }
     )

@@ -82,7 +82,7 @@ fun AddGenericEntryDialog(
         AppTextField(
             value = state.title,
             onValueChange = { state.title = it; onUpdateInteraction() },
-            label = stringResource(R.string.title_hint),
+            label = stringResource(R.string.title),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
 

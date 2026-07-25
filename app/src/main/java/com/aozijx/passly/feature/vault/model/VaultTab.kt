@@ -25,7 +25,7 @@ enum class VaultTab(
 ) {
     ALL(
         settingsKey = "all",
-        titleRes = R.string.vault_tab_all,
+        titleRes = R.string.tab_all,
         icon = Icons.Default.Apps,
         isToggleable = true,
         isUiVisible = true,
@@ -41,7 +41,7 @@ enum class VaultTab(
     ),
     TOTP(
         settingsKey = "totp",
-        titleRes = R.string.vault_tab_totp,
+        titleRes = R.string.otp,
         icon = Icons.Default.Pin,
         isToggleable = true,
         isUiVisible = true,

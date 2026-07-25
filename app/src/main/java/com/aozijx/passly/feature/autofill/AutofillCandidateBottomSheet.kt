@@ -62,13 +62,13 @@ fun AutofillCandidateBottomSheet(
             ) {
                 Column(modifier = Modifier.padding(bottom = 20.dp)) {
                     Text(
-                        text = stringResource(id = R.string.autofill_candidate_sheet_title),
+                        text = stringResource(id = R.string.autofill_entry_compact_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(id = R.string.autofill_candidate_sheet_subtitle),
+                        text = stringResource(id = R.string.autofill_entry_compact_title),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -25,7 +25,6 @@
     <string name="edit_field">%sを編集</string>
     <string name="show_password">パスワード表示</string>
     <string name="hide_password">パスワード非表示</string>
-    <string name="title_hint">タイトル（例：Google、GitHub）</string>
     <string name="username_hint">ユーザー名／メールアドレス</string>
 
     <!-- アプリ情報 -->
@@ -35,8 +34,6 @@
     <string name="autofill_auth_title">本人確認</string>
     <string name="autofill_auth_subtitle">認証して認証情報を自動入力</string>
     <string name="autofill_entry_compact_title">アカウントを選択</string>
-    <string name="autofill_candidate_sheet_title">入力するアカウントを選択</string>
-    <string name="autofill_candidate_sheet_subtitle">下の一覧から1件選んで続行してください</string>
     <string name="autofill_save_prompt_title">%s を保存しますか？</string>
     <string name="autofill_save_prompt_description">%s のユーザー名とパスワードをPasslyに保存しますか？</string>
     <string name="autofill_save_icon_description">アプリアイコン</string>
@@ -52,7 +49,6 @@
     </plurals>
 
     <!-- 自動入力タイトル生成 -->
-    <string name="autofill_title_app_fallback">アプリ</string>
 
     <!-- 金庫関連 -->
     <string name="vault_auth_subtitle">本人確認して金庫にアクセス</string>
@@ -60,7 +56,6 @@
     <string name="vault_auth_failed">認証に失敗しました</string>
     <string name="main_notification_permission_denied">通知権限が無効のため、バックグラウンド同期の進捗は表示されません。</string>
     <string name="vault_locked_title">金庫がロックされています</string>
-    <string name="vault_auth_decrypt_title">本人確認</string>
     <string name="vault_auth_decrypt_subtitle_generic">操作を続けるため確認</string>
 
     <!-- 金庫 - その他 -->
@@ -71,23 +66,20 @@
     <string name="vault_menu_filter">分類フィルター</string>
     <string name="vault_menu_hide_totp">コードを隠す</string>
     <string name="vault_menu_show_totp">コードを表示</string>
-    <string name="vault_menu_enable_autofill">自動入力を有効化</string>
+    <string name="vault_enable_autofill">自動入力を有効化</string>
     <string name="vault_toast_enable_autofill_manual">システム設定で自動入力を有効にしてください</string>
     <string name="vault_toast_save_icon_failed">アイコンの保存に失敗しました</string>
-    <string name="vault_menu_export">バックアップ出力</string>
-    <string name="vault_menu_import">バックアップ復元</string>
-    <string name="vault_menu_all_categories">全分類</string>
-    <string name="vault_tab_all">すべて</string>
-    <string name="vault_tab_totp">2段階認証</string>
+    <string name="vault_export">バックアップ出力</string>
+    <string name="vault_import">バックアップ復元</string>
+    <string name="tab_all">すべて</string>
+    <string name="otp">otp</string>
 
-    <string name="vault_fab_scan">スキャン</string>
-    <string name="vault_fab_2fa">2FA</string>
+    <string name="vault_scan">スキャン</string>
     <string name="vault_empty_placeholder">金庫は空です</string>
-    <string name="vault_scanner_error_not_otp">スキャン成功しましたが、有効な2FA QRコードではありません</string>
+    <string name="vault_scanner_error_not_otp">スキャン成功しましたが、有効な QRコードではありません</string>
     <string name="vault_scanner_action_album">アルバムから選択</string>
-    <string name="vault_scanner_result_title">2FA秘密鍵を検出</string>
+    <string name="vault_scanner_result_title">秘密鍵を検出</string>
     <string name="vault_scanner_result_account">アカウント：%s</string>
-    <string name="vault_scanner_action_rescan">再スキャン</string>
     <string name="vault_scanner_success_save">金庫に保存しました</string>
 
     <string name="vault_delete_title">削除確認</string>
@@ -96,12 +88,8 @@
     <string name="vault_backup_title_import">バックアップ用パスワード入力</string>
     <string name="vault_backup_message_export">バックアップファイルを暗号化するパスワードを設定してください。復元時に必要です。</string>
     <string name="vault_backup_message_import">バックアップファイルを復号化するパスワードを入力してください。緊急バックアップ（.json）をインポートする場合は、パスワードを空欄のまま続行できます。</string>
-    <string name="vault_backup_success">バックアップ/復元成功</string>
-    <string name="vault_backup_failed">バックアップ/復元失敗：%s</string>
-    <string name="vault_backup_auth_title">バックアップ本人確認</string>
     <string name="vault_backup_auth_subtitle_export">認証して暗号化バックアップをエクスポート</string>
     <string name="vault_backup_auth_subtitle_plain_export">認証して平文 JSON バックアップをエクスポート</string>
-    <string name="vault_backup_auth_subtitle_import">認証してデータをインポート・復号化</string>
     <string name="loading_export">バックアップを出力中…</string>
     <string name="loading_import">バックアップを復元中…</string>
     <string name="backup_export_success">エクスポートに成功しました</string>
@@ -109,11 +97,8 @@
     <string name="backup_error_with_reason">操作に失敗しました：%s</string>
     <string name="backup_error_unknown">操作に失敗しました：不明なエラー</string>
     <string name="backup_error_password_incorrect">バックアップパスワードが正しくありません。再度お試しください。</string>
-    <string name="backup_error_invalid_file">このファイルは有効な Passly バックアップではありません</string>
-    <string name="backup_error_incompatible_version">バックアップのバージョンに互換性がありません。現在の形式のみ対応しています。</string>
     <string name="backup_error_corrupted">バックアップファイルが破損しているか、形式が正しくありません</string>
     <string name="backup_error_create_file_failed">バックアップファイルを作成できませんでした</string>
-    <string name="backup_export_failed_cleanup_done">エクスポートに失敗したため、無効なファイルを自動削除しました</string>
     <string name="backup_directory_set_first">先にバックアップ保存先を設定してください</string>
     <string name="backup_directory_permission_ok">保存先ディレクトリへの書き込み権限は正常です</string>
     <string name="backup_directory_permission_failed">保存先ディレクトリの書き込みテストに失敗しました。再選択してください。</string>
@@ -127,7 +112,6 @@
 
     <!-- 詳細と編集 -->
     <string name="vault_add_password_title">パスワードを追加</string>
-    <string name="vault_upgrade_security">本人確認してセキュリティを向上</string>
     <string name="vault_reveal_info">本人確認して詳細を表示</string>
     <string name="vault_edit_modify_category">分類を変更</string>
     <string name="vault_edit_save_category">分類を保存</string>
@@ -139,7 +123,6 @@
     <string name="vault_totp_copied">認証コードをコピーしました</string>
     <string name="vault_edit_totp_title">2FA設定を編集</string>
     <string name="vault_auth_reveal_subtitle">本人確認して2FA秘密鍵を編集</string>
-    <string name="vault_auth_qr_title">本人確認</string>
     <string name="vault_auth_qr_subtitle">本人確認してエクスポート用QRコードを表示</string>
     <string name="vault_export_qr_title">2FA秘密鍵をエクスポート</string>
     <string name="vault_export_qr_message">他のデバイスの認証アプリでこのQRコードをスキャンしてください</string>
@@ -148,9 +131,6 @@
     <string name="vault_add_2fa_title">2FAを追加</string>
     <string name="vault_2fa_uri_parsed">2FA URIを解析しました</string>
     <string name="vault_2fa_uri_parse_failed">2FA URIの解析に失敗しました</string>
-
-    <string name="vault_scanner_auth_save_title">暗号化の確認</string>
-    <string name="vault_scanner_auth_save_subtitle">%sを暗号化して保存するために確認してください</string>
 
     <!-- アイコン選択 -->
     <string name="icon_picker_title">アイコンを選択</string>
@@ -162,7 +142,7 @@
     <string name="totp_period">更新周期 (秒)</string>
     <string name="totp_digits">桁数</string>
     <string name="totp_algorithm">暗号化アルゴリズム</string>
-    <string name="twofa_uri_hint">2FA URI (otpauth://…)</string>
+    <string name="twofa_uri_hint">URI</string>
 
 
     <!-- 詳細ページの新しい文字列 -->
@@ -271,7 +251,6 @@
     <string name="shortcut_vault_short">金庫を開く</string>
     <string name="shortcut_vault_long">金庫を開いて本人確認</string>
     <string name="shortcut_scanner_short">スキャン</string>
-    <string name="shortcut_scanner_long">TOTPをスキャンして追加</string>
 
     <!-- 変更履歴 -->
     <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>

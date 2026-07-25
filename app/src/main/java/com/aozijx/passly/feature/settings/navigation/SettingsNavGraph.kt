@@ -46,7 +46,7 @@ fun SettingsNavGraph(
     val backupViewModel: BackupViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
-    val authDecryptTitle = stringResource(R.string.vault_auth_decrypt_title)
+    val authDecryptTitle = stringResource(R.string.auth_title)
     val setAppPasswordSubtitle =
         stringResource(R.string.settings_auth_before_set_app_password)
 

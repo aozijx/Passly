@@ -27,7 +27,6 @@
     <string name="edit_field">编辑%s</string>
     <string name="show_password">显示密码</string>
     <string name="hide_password">隐藏密码</string>
-    <string name="title_hint">标题 (如: Google, GitHub)</string>
     <string name="username_hint">账号/邮箱</string>
     <string name="sort_default">默认排序</string>
     <string name="sort_name">名称</string>
@@ -41,11 +40,8 @@
     <!-- Autofill 服务相关 -->
     <string name="autofill_service_name">Passly 自动填充</string>
     <string name="AutoFill_icon" translatable="false">icon</string>
-    <string name="autofill_auth_title">安全验证</string>
     <string name="autofill_auth_subtitle">验证以自动填充</string>
     <string name="autofill_entry_compact_title">选择账号</string>
-    <string name="autofill_candidate_sheet_title">选择账号</string>
-    <string name="autofill_candidate_sheet_subtitle">选择一个账号</string>
     <string name="autofill_save_prompt_title">保存 %s ？</string>
     <string name="autofill_save_prompt_description">保存 %s 到 Passly？</string>
     <string name="autofill_save_icon_description">应用图标</string>
@@ -63,7 +59,6 @@
     </plurals>
 
     <!-- 自动填充标题生成相关 -->
-    <string name="autofill_title_app_fallback">应用</string>
 
     <!-- Vault 相关 -->
     <string name="vault_auth_subtitle">验证以访问保险箱</string>
@@ -71,7 +66,6 @@
     <string name="vault_auth_failed">验证未通过</string>
     <string name="main_notification_permission_denied">通知权限未开启，同步进度不可见</string>
     <string name="vault_locked_title">保险箱已锁定</string>
-    <string name="vault_auth_decrypt_title">验证身份</string>
     <string name="vault_auth_decrypt_subtitle_generic">验证以继续操作</string>
 
     <!-- 其余 vault 相关 -->
@@ -83,33 +77,30 @@
     <string name="vault_menu_sort">排序方式</string>
     <string name="vault_menu_hide_totp">隐藏验证码</string>
     <string name="vault_menu_show_totp">显示验证码</string>
-    <string name="vault_menu_enable_autofill">开启自动填充</string>
+    <string name="vault_enable_autofill">开启自动填充</string>
     <string name="vault_toast_enable_autofill_manual">在系统设置中开启自动填充</string>
     <string name="vault_toast_save_icon_failed">图片保存失败</string>
     <string name="vault_field_copied_format">%1$s已复制</string>
-    <string name="vault_menu_export">导出备份</string>
-    <string name="vault_menu_import">导入恢复</string>
-    <string name="vault_menu_all_categories">全部分类</string>
-    <string name="vault_tab_all">全部</string>
-    <string name="vault_tab_totp">2FA</string>
+    <string name="vault_export">导出备份</string>
+    <string name="vault_import">导入恢复</string>
+    <string name="tab_all">全部</string>
+    <string name="otp">otp</string>
 
-    <string name="vault_fab_scan">扫码</string>
-    <string name="vault_fab_2fa">2FA</string>
+    <string name="vault_scan">扫码</string>
     <string name="vault_fab_bank_card">银行卡</string>
-    <string name="vault_fab_wifi">WiFi</string>
+    <string name="vault_fab_wifi" translatable="false">WiFi</string>
     <string name="vault_fab_ssh_key">SSH密钥</string>
     <string name="vault_fab_id_card">证件</string>
     <string name="vault_fab_seed_phrase">助记词</string>
-    <string name="vault_fab_passkey">Passkey</string>
+    <string name="vault_fab_passkey" translatable="false">Passkey</string>
     <string name="vault_fab_recovery_code">恢复码</string>
     <string name="vault_fab_add_title">添加条目</string>
     <string name="vault_add_generic_title">添加 %s</string>
     <string name="vault_empty_placeholder">你的保险箱空空如也</string>
-    <string name="vault_scanner_error_not_otp">非有效 2FA 二维码</string>
+    <string name="vault_scanner_error_not_otp">非有效二维码</string>
     <string name="vault_scanner_action_album">相册导入</string>
-    <string name="vault_scanner_result_title">发现 2FA 密钥</string>
+    <string name="vault_scanner_result_title">发现密钥</string>
     <string name="vault_scanner_result_account">账户: %s</string>
-    <string name="vault_scanner_action_rescan">重扫</string>
     <string name="vault_scanner_success_save">已成功保存到保险库</string>
 
     <string name="vault_delete_title">确认删除</string>
@@ -118,13 +109,9 @@
     <string name="vault_backup_title_import">输入备份密码</string>
     <string name="vault_backup_message_export">设置备份加密密码，恢复时需验证</string>
     <string name="vault_backup_message_import">输入备份密码解密。JSON 格式可留空。</string>
-    <string name="vault_backup_success">备份/恢复成功</string>
-    <string name="vault_backup_failed">备份/恢复失败: %s</string>
-    <string name="vault_backup_auth_title">备份安全验证</string>
     <string name="vault_backup_auth_subtitle_export">验证以导出加密备份</string>
     <string name="vault_backup_auth_subtitle_plain_export">验证以导出明文备份</string>
     <string name="backup_plain_export_auth_required">完成安全验证后执行明文导出</string>
-    <string name="vault_backup_auth_subtitle_import">验证以导入数据</string>
     <string name="loading_export">正在导出备份…</string>
     <string name="loading_import">正在导入备份…</string>
     <string name="backup_export_success">导出成功</string>
@@ -133,11 +120,8 @@
     <string name="backup_error_with_reason">操作失败：%s</string>
     <string name="backup_error_unknown">操作失败：未知错误</string>
     <string name="backup_error_password_incorrect">备份密码错误，请核对后重试</string>
-    <string name="backup_error_invalid_file">该文件不是有效的 Passly 备份文件</string>
-    <string name="backup_error_incompatible_version">备份版本不兼容，仅支持当前格式</string>
     <string name="backup_error_corrupted">备份文件损坏</string>
     <string name="backup_error_create_file_failed">无法创建备份文件</string>
-    <string name="backup_export_failed_cleanup_done">导出失败，已自动移除无效文件</string>
     <string name="backup_directory_set_first">先设置备份目录</string>
     <string name="backup_directory_permission_ok">目录写入权限正常</string>
     <string name="backup_directory_permission_failed">目录写入失败，请重新选择</string>
@@ -162,7 +146,6 @@
 
     <!-- 详情与编辑 -->
     <string name="vault_add_password_title">添加密码项</string>
-    <string name="vault_upgrade_security">验证并升级安全性</string>
     <string name="vault_reveal_info">验证并显示详情</string>
     <string name="vault_decrypt_failed">解密失败，请重新验证</string>
     <string name="vault_reveal_password_subtitle">验证以显示密码</string>
@@ -179,7 +162,6 @@
     <string name="vault_totp_copied">验证码已复制</string>
     <string name="vault_edit_totp_title">编辑 2FA 配置</string>
     <string name="vault_auth_reveal_subtitle">验证以编辑 2FA 密钥</string>
-    <string name="vault_auth_qr_title">身份验证</string>
     <string name="vault_auth_qr_subtitle">验证以导出二维码</string>
     <string name="vault_export_qr_title">导出 2FA 密钥</string>
     <string name="vault_export_qr_message">用其他设备扫描此二维码</string>
@@ -188,9 +170,6 @@
     <string name="vault_add_2fa_title">添加 2FA</string>
     <string name="vault_2fa_uri_parsed">2FA URI 解析成功</string>
     <string name="vault_2fa_uri_parse_failed">2FA URI 解析失败</string>
-
-    <string name="vault_scanner_auth_save_title">验证加密</string>
-    <string name="vault_scanner_auth_save_subtitle">验证以加密并保存 %s</string>
 
     <!-- 图标选择器 -->
     <string name="icon_picker_title">选择图标</string>
@@ -205,7 +184,7 @@
     <string name="totp_period">更新周期 (秒)</string>
     <string name="totp_digits">验证码位数</string>
     <string name="totp_algorithm">加密算法</string>
-    <string name="twofa_uri_hint">2FA URI (otpauth://…)</string>
+    <string name="twofa_uri_hint" translatable="false">URI</string>
 
     <!-- 详情页新字符串 -->
     <string name="vault_detail_totp_label">两步验证码</string>
@@ -423,7 +402,6 @@
     <string name="shortcut_vault_short">打开保险库</string>
     <string name="shortcut_vault_long">验证并打开保险库</string>
     <string name="shortcut_scanner_short">扫一扫</string>
-    <string name="shortcut_scanner_long">扫一扫添加 TOTP</string>
     <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
 
     <!-- 分类匹配关键词数组 -->

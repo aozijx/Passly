@@ -24,8 +24,8 @@ enum class AddType(
     val icon: ImageVector
 ) {
     PASSWORD(R.string.password, Icons.Default.Key),
-    TOTP(R.string.vault_fab_2fa, Icons.Default.Pin),
-    SCAN(R.string.vault_fab_scan, Icons.Default.QrCodeScanner),
+    TOTP(R.string.otp, Icons.Default.Pin),
+    SCAN(R.string.vault_scan, Icons.Default.QrCodeScanner),
     BANK_CARD(R.string.vault_fab_bank_card, Icons.Default.CreditCard),
     WIFI(R.string.vault_fab_wifi, Icons.Default.Wifi),
     SSH_KEY(R.string.vault_fab_ssh_key, Icons.Default.VpnKey),

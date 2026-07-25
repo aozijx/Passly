@@ -19,7 +19,7 @@ internal fun AutofillSettingsSection(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "interaction.autofill_settings",
-                title = stringResource(R.string.vault_menu_enable_autofill),
+                title = stringResource(R.string.vault_enable_autofill),
                 subtitle = stringResource(R.string.vault_toast_enable_autofill_manual),
                 onClick = onOpenAutofillSettings
             ),
