@@ -8,7 +8,7 @@ magic，因此不兼容开发期间产生的任何 `PASSLYBK`、旧 Snapshot 或
 
 ## 1. 范围
 
-完整 Passly 备份包含：
+默认的完整 Passly 备份包含：
 
 - 所有 Vault 条目，包括回收站条目；
 - Entry Summary 和 Entry Secret 的业务字段；
@@ -262,8 +262,9 @@ resources/<resource-id>
 
 ## 7. 导出流程
 
-1. `VaultBackupReader` 在已解锁会话中读取所有 Entry 和 Secret；
-2. 始终读取所有已提交附件；图标由 `includeIcons` 控制；
+1. `VaultBackupReader` 在已解锁会话中读取所选 Entry 和 Secret；
+2. `BackupExportOptions` 独立控制自定义图标、已提交附件、回收站条目和
+   `EntryType` 集合；至少必须选择一种条目类型；
 3. 图标 canonical path 必须位于 `filesDir/vault_images`，拒绝路径和符号链接逃逸；
 4. 将 Domain 映射到独立 v1 wire model；
 5. 校验 ID、引用、时间、OTP、资源大小和 SHA-256；
@@ -272,7 +273,21 @@ resources/<resource-id>
 8. `BackupFileStore` 写入目标 URI；
 9. 清理资源、归档和编码缓冲。
 
-“包含图标”不能控制附件。关闭图标仍会得到完整附件备份。
+“包含图标”和“包含附件”互不影响。格式 Adapter 的能力是最终上限：TXT 即使收到
+资源选项也不会携带资源；加密和 JSON 可以分别选择图标与附件。筛选只影响本次导出的
+内容，不修改 Vault 数据。
+
+### 7.1 设置页交互
+
+备份入口只位于“设置 → 备份与恢复”，Vault TopBar 不承担文件导入导出职责：
+
+1. 点击导出后先显示格式 BottomSheet，以三个 outlined 选项选择加密、JSON 或 TXT；
+2. 再显示格式专属的导出控制 BottomSheet；
+3. 加密格式必须输入备份密码；JSON/TXT 必须显示明文风险；
+4. 加密和 JSON 可选择图标、附件/图片、回收站条目和条目类型；
+5. TXT 只保留可读字段，不显示资源开关；
+6. 配置默认目录时直接创建带正确扩展名的新文件，否则交给系统文件选择器；
+7. 导出和导入在真正访问 Vault 前都必须通过对应的身份验证用途。
 
 ## 8. 导入与恢复
 

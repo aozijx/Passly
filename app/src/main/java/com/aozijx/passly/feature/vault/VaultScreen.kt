@@ -25,8 +25,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.vault.components.VaultContentTopBar
 import com.aozijx.passly.feature.vault.components.VaultDialogs
@@ -40,28 +38,14 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun VaultContent(
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    backupViewModel: BackupViewModel,
-    backupDirectoryUri: String?,
     onSettingsClick: () -> Unit = {},
-    onPlainExportClick: () -> Unit = {},
     onShowDetail: (EntryListItem) -> Unit = {},
     isDatabaseInitializing: Boolean = false
 ) {
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
-    val backupUiState by backupViewModel.uiState.collectAsStateWithLifecycle()
     val totpStates by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
-    // 备份导入成功后刷新列表
-    LaunchedEffect(backupUiState.status) {
-        val status = backupUiState.status
-        if (status is BackupOperationStatus.Success &&
-            status.type == BackupOperationStatus.OperationType.IMPORT
-        ) {
-            vaultViewModel.refreshItems()
-        }
-    }
 
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayConfig by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
@@ -74,8 +58,6 @@ fun VaultContent(
     val actionProvider = rememberVaultActionProvider(
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        backupViewModel = backupViewModel,
-        backupDirectoryUri = backupDirectoryUri,
         totpStates = totpStates,
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
@@ -145,9 +127,6 @@ fun VaultContent(
             VaultContentTopBar(
                 uiState = uiState,
                 scrollBehavior = scrollBehavior,
-                onExportClick = actionProvider.onExportClick,
-                onPlainJsonExportClick = onPlainExportClick,
-                onImportClick = actionProvider.onImportClick,
                 onSettingsClick = onSettingsClick,
                 isStatusBarAutoHide = vaultDisplayConfig.layout.isStatusBarAutoHide,
                 isTopBarCollapsible = vaultDisplayConfig.layout.isTopBarCollapsible,
@@ -190,7 +169,6 @@ fun VaultContent(
     VaultDialogs(
         mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        backupViewModel = backupViewModel,
         onUpdateInteraction = actionProvider.onUpdateInteraction
     )
 }

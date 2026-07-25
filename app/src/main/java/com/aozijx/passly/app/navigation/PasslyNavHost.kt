@@ -18,7 +18,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.page.DetailScreen
@@ -26,7 +25,6 @@ import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
-import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
 import com.aozijx.passly.feature.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -39,12 +37,8 @@ fun PasslyNavHost(
     navController: NavHostController,
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    backupViewModel: BackupViewModel,
-    onPlainExportClick: () -> Unit,
     isDatabaseInitializing: Boolean = false
 ) {
-    val dataViewModel: DataViewModel = hiltViewModel()
-    val dataState by dataViewModel.config.collectAsStateWithLifecycle()
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -62,12 +56,9 @@ fun PasslyNavHost(
             VaultContent(
                 mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
-                backupViewModel = backupViewModel,
-                backupDirectoryUri = dataState.directoryUri,
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)
                 },
-                onPlainExportClick = onPlainExportClick,
                 onShowDetail = { entry ->
                     navController.navigate(AppRoute.Detail.createRoute(entry.id))
                 },

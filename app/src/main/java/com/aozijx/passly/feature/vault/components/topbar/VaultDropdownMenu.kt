@@ -32,9 +32,6 @@ fun VaultDropdownMenu(
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onSettingsClick: () -> Unit,
-    onExportClick: () -> Unit,
-    onOpenPlainExport: () -> Unit,
-    onImportClick: () -> Unit,
     availableCategories: List<String>,
     selectedCategory: String?,
     onCategorySelected: (String?) -> Unit,
@@ -93,10 +90,7 @@ fun VaultDropdownMenu(
                         showTOTPCode = showTOTPCode,
                         onToggleTotpVisibility = onToggleTotpVisibility,
                         onDismissRequest = onDismissRequest,
-                        onSettingsClick = onSettingsClick,
-                        onExportClick = onExportClick,
-                        onOpenPlainExport = onOpenPlainExport,
-                        onImportClick = onImportClick
+                        onSettingsClick = onSettingsClick
                     )
                     MenuPage.SORT -> SortSubMenu(
                         selectedSort = selectedSort,

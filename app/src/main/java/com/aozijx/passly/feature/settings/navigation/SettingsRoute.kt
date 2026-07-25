@@ -34,6 +34,14 @@ sealed class SettingsRoute(val route: String) : Serializable {
         private fun readResolve(): Any = DataManagement
     }
 
+    data object BackupRestore : SettingsRoute("settings/backup_restore") {
+        private fun readResolve(): Any = BackupRestore
+    }
+
+    data object Notifications : SettingsRoute("settings/notifications") {
+        private fun readResolve(): Any = Notifications
+    }
+
     data object RecoveryCode : SettingsRoute("settings/recovery_code") {
         private fun readResolve(): Any = RecoveryCode
     }

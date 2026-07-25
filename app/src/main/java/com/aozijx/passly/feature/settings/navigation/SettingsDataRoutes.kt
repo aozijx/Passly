@@ -1,6 +1,8 @@
 package com.aozijx.passly.feature.settings.navigation
 
 import android.content.Context
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -9,6 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -17,14 +21,22 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
 import com.aozijx.passly.core.util.PathUtils
+import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.feature.backup.BackupViewModel
+import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
+import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
+import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
+import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreDetail
+import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreSheetHost
+import com.aozijx.passly.feature.settings.datamanagement.BackupSheet
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
 import com.aozijx.passly.feature.settings.datamanagement.DataUiAction
 import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
 import com.aozijx.passly.feature.settings.datamanagement.handleBackupPathPicked
 import com.aozijx.passly.feature.settings.general.GeneralDetail
+import com.aozijx.passly.feature.settings.general.NotificationDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionUiAction
 import com.aozijx.passly.feature.settings.interaction.InteractionViewModel
@@ -71,28 +83,115 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
 
     composable(SettingsRoute.DataManagement.route) {
         val state by dataViewModel.config.collectAsStateWithLifecycle()
-        val notSetText = stringResource(R.string.not_set)
-        val backupPathLabel = remember(state.directoryUri) {
-            PathUtils.formatPath(state.directoryUri) ?: notSetText
-        }
-        val lastExportFileLabel = remember(state.lastExportFileName) {
-            PathUtils.formatPath(state.lastExportFileName) ?: notSetText
-        }
-        val backupPathPicker =
-            rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-                handleBackupPathPicked(context, uri) { resolvedUri ->
-                    dataViewModel.onAction(DataUiAction.SetBackupDirectoryUri(resolvedUri))
-                }
-            }
-
         SettingsSecondaryPage(title = "数据管理", onBack = { navController.popBackStack() }) {
             item {
                 DataManagementDetail(
                     state = state,
-                    backupPathLabel = backupPathLabel,
-                    lastExportFileLabel = lastExportFileLabel,
                     onAutoDownloadIconsChange = {
                         dataViewModel.onAction(DataUiAction.SetAutoDownloadIcons(it))
+                    }
+                )
+            }
+        }
+    }
+
+    composable(SettingsRoute.BackupRestore.route) {
+        val state by dataViewModel.config.collectAsStateWithLifecycle()
+        val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
+        val notSetText = stringResource(R.string.not_set)
+        val unknownError = stringResource(R.string.backup_error_unknown)
+        val pathLabel = remember(state.directoryUri) {
+            PathUtils.formatPath(state.directoryUri) ?: notSetText
+        }
+        val lastExportLabel = remember(state.lastExportFileName) {
+            PathUtils.formatPath(state.lastExportFileName) ?: notSetText
+        }
+        var activeSheet by remember { mutableStateOf<BackupSheet?>(null) }
+
+        fun startManualExport(uri: Uri?) {
+            if (uri == null) {
+                backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
+                return
+            }
+            backupViewModel.onIntent(
+                BackupIntent.StartExport(
+                    uri = uri,
+                    fileNameHint = backupViewModel.buildExportFileName()
+                )
+            )
+            backupViewModel.onIntent(BackupIntent.ProcessBackupAction)
+        }
+
+        val encryptedExportPicker = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/octet-stream"),
+            ::startManualExport
+        )
+        val jsonExportPicker = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/json"),
+            ::startManualExport
+        )
+        val textExportPicker = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("text/plain"),
+            ::startManualExport
+        )
+        val importPicker = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) {
+                backupViewModel.onIntent(BackupIntent.StartImport(uri))
+                activeSheet = BackupSheet.IMPORT_OPTIONS
+            }
+        }
+        val backupPathPicker = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+        ) { uri ->
+            handleBackupPathPicked(context, uri) { resolvedUri ->
+                dataViewModel.onAction(DataUiAction.SetBackupDirectoryUri(resolvedUri))
+            }
+        }
+
+        LaunchedEffect(backupViewModel) {
+            backupViewModel.effect.collect { effect ->
+                when (effect) {
+                    is BackupEffect.ShowError -> Toast.makeText(
+                        context,
+                        effect.error.toUiMessage(unknownError),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+        LaunchedEffect(backupState.status) {
+            val status = backupState.status
+            if (status is BackupOperationStatus.Success) {
+                val message = when (status.type) {
+                    BackupOperationStatus.OperationType.EXPORT ->
+                        context.getString(R.string.backup_export_success)
+                    BackupOperationStatus.OperationType.IMPORT ->
+                        context.getString(R.string.backup_import_success)
+                    BackupOperationStatus.OperationType.PERMISSION_CHECK ->
+                        context.getString(R.string.backup_directory_permission_ok)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                backupViewModel.onIntent(BackupIntent.ResetBackupStatus)
+            }
+        }
+
+        SettingsSecondaryPage(title = "备份与恢复", onBack = { navController.popBackStack() }) {
+            item {
+                BackupRestoreDetail(
+                    backupPathLabel = pathLabel,
+                    lastExportFileLabel = lastExportLabel,
+                    onExport = { activeSheet = BackupSheet.FORMAT_PICKER },
+                    onImport = {
+                        importPicker.launch(
+                            arrayOf(
+                                "application/octet-stream",
+                                "application/json",
+                                "text/json",
+                                "*/*"
+                            )
+                        )
                     },
                     onPickBackupPath = {
                         backupPathPicker.launch(
@@ -100,13 +199,67 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                         )
                     },
                     onTestBackupWrite = {
-                        backupViewModel.onIntent(BackupIntent.CheckDirectoryPermission(state.directoryUri))
+                        backupViewModel.onIntent(
+                            BackupIntent.CheckDirectoryPermission(state.directoryUri)
+                        )
                     },
                     onClearBackupPath = if (state.directoryUri.isNullOrBlank()) null
                     else localState::openClearBackupDirConfirmDialog
                 )
             }
         }
+
+        BackupRestoreSheetHost(
+            sheet = activeSheet,
+            state = backupState,
+            configuredDirectoryLabel = pathLabel.takeIf { !state.directoryUri.isNullOrBlank() },
+            onDismiss = {
+                activeSheet = null
+                backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
+            },
+            onFormatSelected = { format ->
+                backupViewModel.onIntent(BackupIntent.PrepareExport(format))
+                activeSheet = BackupSheet.EXPORT_OPTIONS
+            },
+            onPasswordChange = {
+                backupViewModel.onIntent(BackupIntent.UpdatePassword(it))
+            },
+            onIncludeIconsChange = {
+                backupViewModel.onIntent(BackupIntent.UpdateIncludeIcons(it))
+            },
+            onIncludeAttachmentsChange = {
+                backupViewModel.onIntent(BackupIntent.UpdateIncludeAttachments(it))
+            },
+            onIncludeDeletedChange = {
+                backupViewModel.onIntent(BackupIntent.UpdateIncludeDeleted(it))
+            },
+            onIncludedEntryTypesChange = {
+                backupViewModel.onIntent(BackupIntent.UpdateIncludedEntryTypes(it))
+            },
+            onImportModeChange = {
+                backupViewModel.onIntent(BackupIntent.UpdateImportMode(it))
+            },
+            onExport = {
+                activeSheet = null
+                val directoryUri = state.directoryUri
+                if (!directoryUri.isNullOrBlank()) {
+                    backupViewModel.onIntent(
+                        BackupIntent.StartExportInConfiguredDirectory(directoryUri)
+                    )
+                } else {
+                    val fileName = backupViewModel.buildExportFileName()
+                    when (backupState.selectedExportFormat) {
+                        BackupExportUiFormat.ENCRYPTED -> encryptedExportPicker.launch(fileName)
+                        BackupExportUiFormat.JSON -> jsonExportPicker.launch(fileName)
+                        BackupExportUiFormat.TEXT -> textExportPicker.launch(fileName)
+                    }
+                }
+            },
+            onImport = {
+                activeSheet = null
+                backupViewModel.onIntent(BackupIntent.ProcessBackupAction)
+            }
+        )
     }
 
     composable(SettingsRoute.RecoveryCode.route) {
@@ -177,6 +330,12 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     composable(SettingsRoute.General.route) {
         SettingsSecondaryPage(title = "通用", onBack = { navController.popBackStack() }) {
             item { GeneralDetail() }
+        }
+    }
+
+    composable(SettingsRoute.Notifications.route) {
+        SettingsSecondaryPage(title = "消息与通知", onBack = { navController.popBackStack() }) {
+            item { NotificationDetail() }
         }
     }
 }

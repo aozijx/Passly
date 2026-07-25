@@ -198,8 +198,8 @@ class MigrationBoundaryTest {
     @Test
     fun notificationPermissionIsRequestedOnlyFromItsSetting() {
         val mainActivity = File("src/main/java/com/aozijx/passly/MainActivity.kt").readText()
-        val generalSettings = File(
-            "src/main/java/com/aozijx/passly/feature/settings/general/GeneralDetail.kt"
+        val notificationSettings = File(
+            "src/main/java/com/aozijx/passly/feature/settings/general/NotificationDetail.kt"
         ).readText()
 
         assertTrue(
@@ -208,7 +208,50 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "Message setting must own notification permission requests",
-            "permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)" in generalSettings
+            "permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)" in notificationSettings
+        )
+    }
+
+    @Test
+    fun backupUiLivesInSettingsAndUsesBottomSheets() {
+        val vaultRoot = File("src/main/java/com/aozijx/passly/feature/vault")
+        val vaultOffenders = vaultRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filter {
+                val text = it.readText()
+                "BackupViewModel" in text ||
+                    "BackupIntent" in text ||
+                    "BackupPasswordDialog" in text ||
+                    "CustomExportMenuItem" in text
+            }
+            .map { it.relativeTo(vaultRoot).path }
+            .toList()
+        val sheetSource = File(
+            "src/main/java/com/aozijx/passly/feature/settings/datamanagement/BackupRestoreSheets.kt"
+        ).readText()
+
+        assertTrue("Vault must not own backup actions: $vaultOffenders", vaultOffenders.isEmpty())
+        assertTrue("Backup UI must use Material bottom sheets", "ModalBottomSheet(" in sheetSource)
+        assertTrue(
+            "Format picker must expose all first-party exports",
+            listOf("ENCRYPTED", "JSON", "TEXT").all { it in sheetSource }
+        )
+    }
+
+    @Test
+    fun legacyBackupUiCannotReturn() {
+        val removedFiles = listOf(
+            File("src/main/java/com/aozijx/passly/core/ui/components/BackupPasswordDialog.kt"),
+            File("src/main/java/com/aozijx/passly/core/ui/components/PlainExportDialog.kt"),
+            File("src/main/java/com/aozijx/passly/core/util/PlainExportTokenManager.kt"),
+            File(
+                "src/main/java/com/aozijx/passly/feature/vault/components/topbar/CustomExportMenuItem.kt"
+            )
+        )
+
+        assertTrue(
+            "Legacy backup UI files must stay deleted",
+            removedFiles.none(File::exists)
         )
     }
 

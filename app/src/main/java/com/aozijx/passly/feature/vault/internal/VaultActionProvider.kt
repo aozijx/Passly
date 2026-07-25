@@ -1,15 +1,10 @@
 package com.aozijx.passly.feature.vault.internal
 
-import android.net.Uri
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -20,8 +15,6 @@ import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.vault.VaultViewModel
@@ -31,17 +24,13 @@ import com.aozijx.passly.feature.vault.strategy.EntryTypeDisplayProvider
 class VaultActionProvider(
     val onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
     val onUpdateInteraction: () -> Unit,
-    val fabScrollConnection: NestedScrollConnection,
-    val onExportClick: () -> Unit,
-    val onImportClick: () -> Unit
+    val fabScrollConnection: NestedScrollConnection
 )
 
 @Composable
 fun rememberVaultActionProvider(
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    backupViewModel: BackupViewModel,
-    backupDirectoryUri: String?,
     totpStates: Map<String, OtpUiState>,
     onShowDetail: (EntryListItem) -> Unit,
     isFabVisible: (Boolean) -> Unit
@@ -112,46 +101,6 @@ fun rememberVaultActionProvider(
         }
     }
 
-    var pendingManualExportFileName by remember { mutableStateOf<String?>(null) }
-
-    val exportLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.CreateDocument("application/octet-stream")) { uri: Uri? ->
-            uri?.let { selectedUri ->
-                backupViewModel.onIntent(
-                    BackupIntent.StartExport(
-                        uri = selectedUri,
-                        fileNameHint = pendingManualExportFileName
-                    )
-                )
-            }
-            pendingManualExportFileName = null
-        }
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { backupViewModel.onIntent(BackupIntent.StartImport(it)) }
-    }
-
-    val onExportClick = remember(backupViewModel, exportLauncher, backupDirectoryUri) {
-        {
-            if (backupDirectoryUri.isNullOrBlank()) {
-                val manualFileName = backupViewModel.buildBackupFileName()
-                pendingManualExportFileName = manualFileName
-                exportLauncher.launch(manualFileName)
-            } else {
-                backupViewModel.onIntent(
-                    BackupIntent.TryStartExportInConfiguredDirectory(
-                        backupDirectoryUri
-                    )
-                )
-            }
-        }
-    }
-
-    val onImportClick = remember(importLauncher) {
-        {
-            importLauncher.launch(arrayOf("application/octet-stream", "*/*"))
-        }
-    }
-
     val onUpdateInteraction = remember(mainViewModel) {
         { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
     }
@@ -169,8 +118,6 @@ fun rememberVaultActionProvider(
     return VaultActionProvider(
         onSwipeTriggered = onSwipeTriggered,
         onUpdateInteraction = onUpdateInteraction,
-        fabScrollConnection = fabScrollConnection,
-        onExportClick = onExportClick,
-        onImportClick = onImportClick
+        fabScrollConnection = fabScrollConnection
     )
 }

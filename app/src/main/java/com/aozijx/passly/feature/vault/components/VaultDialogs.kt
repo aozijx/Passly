@@ -3,10 +3,6 @@ package com.aozijx.passly.feature.vault.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.core.ui.components.BackupPasswordDialog
-import com.aozijx.passly.core.ui.components.BackupPasswordDialogState
-import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.detail.DetailCardDialog
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.scanner.VaultScanner
@@ -115,36 +111,11 @@ fun DeleteDialogHost(
     }
 }
 
-// --- 备份密码对话框宿主 ---
-@Composable
-fun BackupDialogHost(
-    backupViewModel: BackupViewModel
-) {
-    val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
-
-    if (backupState.showPasswordDialog) {
-        BackupPasswordDialog(
-            state = BackupPasswordDialogState(
-                isExporting = backupState.isExporting,
-                importMode = backupState.importMode,
-                includeIcons = backupState.includeIcons,
-                backupPassword = backupState.backupPassword
-            ),
-            onDismiss = { backupViewModel.onIntent(BackupIntent.DismissPasswordDialog) },
-            onConfirm = { backupViewModel.onIntent(BackupIntent.ProcessBackupAction) },
-            onImportModeChange = { backupViewModel.onIntent(BackupIntent.UpdateImportMode(it)) },
-            onIncludeIconsChange = { backupViewModel.onIntent(BackupIntent.UpdateIncludeIcons(it)) },
-            onPasswordChange = { backupViewModel.onIntent(BackupIntent.UpdatePassword(it)) }
-        )
-    }
-}
-
 // --- 统一入口：保持向后兼容 ---
 @Composable
 fun VaultDialogs(
     mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
-    backupViewModel: BackupViewModel,
     onUpdateInteraction: () -> Unit
 ) {
     val totpStates by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
@@ -167,7 +138,4 @@ fun VaultDialogs(
         mainViewModel = mainViewModel
     )
 
-    BackupDialogHost(
-        backupViewModel = backupViewModel
-    )
 }

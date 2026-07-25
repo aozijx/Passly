@@ -9,8 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -42,10 +40,7 @@ internal fun MainMenuContent(
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onDismissRequest: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onExportClick: () -> Unit,
-    onOpenPlainExport: () -> Unit,
-    onImportClick: () -> Unit
+    onSettingsClick: () -> Unit
 ) {
     DropdownMenuItem(
         text = { Text(stringResource(R.string.vault_menu_sort)) },
@@ -85,26 +80,6 @@ internal fun MainMenuContent(
             onSettingsClick()
         },
         leadingIcon = { Icon(Icons.Default.Settings, null) }
-    )
-    CustomExportMenuItem(
-        text = stringResource(R.string.vault_menu_export),
-        leadingIcon = { Icon(Icons.Default.FileUpload, null) },
-        onClick = {
-            onDismissRequest()
-            onExportClick()
-        },
-        onLongClick = {
-            onDismissRequest()
-            onOpenPlainExport()
-        }
-    )
-    DropdownMenuItem(
-        text = { Text(stringResource(R.string.vault_menu_import)) },
-        onClick = {
-            onDismissRequest()
-            onImportClick()
-        },
-        leadingIcon = { Icon(Icons.Default.FileDownload, null) }
     )
 }
 

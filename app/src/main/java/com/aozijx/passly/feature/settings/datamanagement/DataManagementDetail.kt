@@ -10,12 +10,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 @Composable
 internal fun DataManagementDetail(
     state: DataUiState,
-    backupPathLabel: String,
-    lastExportFileLabel: String,
-    onAutoDownloadIconsChange: (Boolean) -> Unit,
-    onPickBackupPath: () -> Unit,
-    onTestBackupWrite: () -> Unit,
-    onClearBackupPath: (() -> Unit)?
+    onAutoDownloadIconsChange: (Boolean) -> Unit
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -23,16 +18,6 @@ internal fun DataManagementDetail(
         DataSettingsSection(
             isAutoDownloadIcons = state.isAutoDownloadIcons,
             onAutoDownloadIconsChange = onAutoDownloadIconsChange
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        BackupRestoreSettingsSection(
-            pathLabel = backupPathLabel,
-            recentExportFileName = lastExportFileLabel,
-            onPickPath = onPickBackupPath,
-            onTestWrite = onTestBackupWrite,
-            onClearPath = onClearBackupPath
         )
     }
 }

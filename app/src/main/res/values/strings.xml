@@ -169,9 +169,6 @@
     <string name="vault_plain_export_db_error_message">数据库密钥或结构不匹配。应用不会自动删除保险库，也不会从未解锁的数据库导出不完整数据。请先重试；如果仍然失败，请保留应用数据并检查日志。</string>
     <string name="vault_database_retry">重试打开数据库</string>
     <string name="vault_plain_export_db_error_dismiss">关闭应用</string>
-    <string name="vault_plain_export_title">导出明文备份</string>
-    <string name="vault_plain_export_message">即将将所有条目以明文 JSON 格式导出。\n\n⚠️ 风险提示：\n• 文件中的所有密码均为未加密明文\n• 任何获得该文件的人都能直接读取您的全部密码\n• 导出后请立即转移至安全位置并从本机删除\n• 请勿上传至云盘或通过不安全渠道传输\n• 仅在需要数据迁移或自行加密备份时使用</string>
-    <string name="vault_plain_export_confirm">我已了解风险，继续导出</string>
 
     <!-- 详情与编辑 -->
     <string name="vault_add_password_title">添加密码项</string>
@@ -326,12 +323,16 @@
     <string name="settings_page_privacy_summary">防截屏、翻转锁定</string>
     <string name="settings_page_interaction">操作与填充</string>
     <string name="settings_page_interaction_summary">滑动操作、自动填充</string>
-    <string name="settings_page_data">备份与下载</string>
-    <string name="settings_page_data_summary">图标下载、备份目录</string>
+    <string name="settings_page_data">数据与下载</string>
+    <string name="settings_page_data_summary">图标下载与本地数据</string>
+    <string name="settings_page_backup_restore">备份与恢复</string>
+    <string name="settings_page_backup_restore_summary">加密、JSON、TXT 导出与导入</string>
     <string name="settings_page_recovery_code">恢复码</string>
     <string name="settings_page_recovery_code_summary">紧急解锁保险库</string>
     <string name="settings_page_general">通用</string>
-    <string name="settings_page_general_summary">消息、缓存、关于</string>
+    <string name="settings_page_general_summary">缓存、日志、关于</string>
+    <string name="settings_page_notifications">消息与通知</string>
+    <string name="settings_page_notifications_summary">系统通知、应用消息与分类</string>
     <string name="settings_status_bar_notifications">状态栏通知</string>
     <string name="settings_status_bar_notifications_summary">在系统状态栏显示应用信息</string>
     <string name="settings_icon_download_notifications">图标下载通知</string>

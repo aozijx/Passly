@@ -5,7 +5,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
@@ -63,12 +65,26 @@ internal enum class SettingsGroup(
         subtitleRes = R.string.settings_page_data_summary,
         route = SettingsRoute.DataManagement
     ),
+    BACKUP_RESTORE(
+        sectionTitleRes = R.string.settings_section_data,
+        icon = Icons.Default.Restore,
+        titleRes = R.string.settings_page_backup_restore,
+        subtitleRes = R.string.settings_page_backup_restore_summary,
+        route = SettingsRoute.BackupRestore
+    ),
     RECOVERY_CODE(
         sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Key,
         titleRes = R.string.settings_page_recovery_code,
         subtitleRes = R.string.settings_page_recovery_code_summary,
         route = SettingsRoute.RecoveryCode
+    ),
+    NOTIFICATIONS(
+        sectionTitleRes = R.string.settings_section_other,
+        icon = Icons.Default.Notifications,
+        titleRes = R.string.settings_page_notifications,
+        subtitleRes = R.string.settings_page_notifications_summary,
+        route = SettingsRoute.Notifications
     ),
     GENERAL(
         sectionTitleRes = R.string.settings_section_other,

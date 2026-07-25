@@ -18,9 +18,6 @@ import com.aozijx.passly.feature.vault.model.VaultTab
 fun VaultContentTopBar(
     uiState: VaultUiState,
     scrollBehavior: TopAppBarScrollBehavior,
-    onExportClick: () -> Unit,
-    onPlainJsonExportClick: () -> Unit,
-    onImportClick: () -> Unit,
     onSettingsClick: () -> Unit,
     isStatusBarAutoHide: Boolean,
     isTopBarCollapsible: Boolean,
@@ -39,9 +36,6 @@ fun VaultContentTopBar(
         VaultTopBar(
             uiState = uiState,
             scrollBehavior = scrollBehavior,
-            onExportClick = onExportClick,
-            onPlainJsonExportClick = onPlainJsonExportClick,
-            onImportClick = onImportClick,
             onSettingsClick = onSettingsClick,
             isStatusBarAutoHide = isStatusBarAutoHide,
             isTopBarCollapsible = isTopBarCollapsible,

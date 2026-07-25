@@ -2,8 +2,6 @@ package com.aozijx.passly.feature.main.ui
 
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
@@ -18,19 +16,13 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
-import com.aozijx.passly.core.ui.components.PlainExportDialog
-import com.aozijx.passly.core.ui.components.PlainExportDialogType
+import com.aozijx.passly.core.ui.components.DatabaseRecoveryDialog
 import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
-import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.contract.BackupEffect
-import com.aozijx.passly.feature.backup.contract.BackupIntent
-import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.main.MainConfigViewModel
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
@@ -59,9 +51,6 @@ internal fun MainScreen(
     val mainConfigViewModel: MainConfigViewModel = hiltViewModel()
     val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
 
-    val backupViewModel: BackupViewModel = hiltViewModel()
-    val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
-
     val authenticationViewModel: AuthenticationViewModel = hiltViewModel()
     val messageHostViewModel: AppNoticeHostViewModel = hiltViewModel()
 
@@ -75,60 +64,6 @@ internal fun MainScreen(
         }
     }
 
-    val exportSuccessMsg = stringResource(R.string.backup_export_success)
-    val importSuccessMsg = stringResource(R.string.backup_import_success)
-    val permOkMsg = stringResource(R.string.backup_directory_permission_ok)
-    val plainExportSuccessMsg = stringResource(R.string.backup_plain_export_success)
-    val unknownErrorMsg = stringResource(R.string.backup_error_unknown)
-
-    val plainExportPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri?.let { backupViewModel.onIntent(BackupIntent.ExportPlainBackupToUri(it)) }
-    }
-
-    // --- 收集 BackupEffect ---
-    LaunchedEffect(backupViewModel) {
-        backupViewModel.effect.collect { effect ->
-            when (effect) {
-                is BackupEffect.ShowError -> {
-                    val msg = effect.error.toUiMessage(unknownErrorMsg)
-                    showLocalMessage(msg, longDuration = true)
-                }
-
-                is BackupEffect.ShowPlainExportPicker -> plainExportPickerLauncher.launch(effect.fileName)
-                BackupEffect.RequestAuth -> {
-                    viewModel.requestAuth(
-                        onSuccess = { backupViewModel.onIntent(BackupIntent.ExecuteBackup) }
-                    )
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(backupState.status) {
-        when (val status = backupState.status) {
-            is BackupOperationStatus.Success -> {
-                val msg = when (status.type) {
-                    BackupOperationStatus.OperationType.EXPORT -> exportSuccessMsg
-                    BackupOperationStatus.OperationType.IMPORT -> importSuccessMsg
-                    BackupOperationStatus.OperationType.PLAIN_EXPORT -> plainExportSuccessMsg
-                    BackupOperationStatus.OperationType.PERMISSION_CHECK -> permOkMsg
-                }
-                showLocalMessage(msg, longDuration = true)
-                backupViewModel.onIntent(BackupIntent.ResetBackupStatus)
-            }
-
-            is BackupOperationStatus.Failure -> {
-                val errorMsg = backupState.error?.toUiMessage(unknownErrorMsg) ?: unknownErrorMsg
-                showLocalMessage(errorMsg, longDuration = true)
-                backupViewModel.onIntent(BackupIntent.ResetBackupStatus)
-            }
-
-            else -> Unit
-        }
-    }
-
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -136,10 +71,6 @@ internal fun MainScreen(
 
                 is MainEffect.ShowError ->
                     showLocalMessage(effect.error, longDuration = true)
-
-                is MainEffect.ShowPlainExportPicker -> plainExportPickerLauncher.launch(
-                    effect.fileName
-                )
 
                 MainEffect.LockedByTimeout, MainEffect.NavigateToVault -> Unit
             }
@@ -162,12 +93,11 @@ internal fun MainScreen(
         ) { state ->
             when (state) {
                 "error" -> {
-                    PlainExportDialog(
-                        type = PlainExportDialogType.DatabaseError,
-                        onExportBackup = {
+                    DatabaseRecoveryDialog(
+                        onRetry = {
                             viewModel.handleIntent(MainIntent.RetryDatabaseInitialization)
                         },
-                        onResetOrCancel = {
+                        onCloseApp = {
                             noticePublisher.publish(
                                 newAppNotice(NoticeCode.APP_CLOSE_REMINDER)
                             )
@@ -181,8 +111,7 @@ internal fun MainScreen(
 
                 "main" -> {
                     AppMainContent(
-                        mainViewModel = viewModel,
-                        backupViewModel = backupViewModel
+                        mainViewModel = viewModel
                     )
                 }
 
