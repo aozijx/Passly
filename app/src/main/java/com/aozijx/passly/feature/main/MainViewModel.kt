@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
@@ -173,9 +173,9 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             val result = searchIndexMaintenance.rebuildIndex()
             result.onSuccess { count ->
-                AppLog.i("MainViewModel", "Blind index rebuild complete: $count entries")
+                AppTelemetry.i("MainViewModel", "Blind index rebuild complete: $count entries")
             }.onFailure { error ->
-                AppLog.w("MainViewModel", "Blind index rebuild skipped: ${error.message}")
+                AppTelemetry.w("MainViewModel", "Blind index rebuild skipped: ${error.message}")
             }
         }
     }

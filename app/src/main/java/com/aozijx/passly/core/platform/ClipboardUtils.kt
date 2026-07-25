@@ -7,7 +7,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
@@ -56,7 +56,7 @@ object ClipboardUtils {
                     clear(appContext, noticePublisher)
                 }
             } catch (e: Exception) {
-                AppLog.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
+                AppTelemetry.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
             }
         }
 
@@ -78,7 +78,7 @@ object ClipboardUtils {
                 noticePublisher?.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEARED))
             }
         } catch (e: Exception) {
-            AppLog.e("ClipboardUtils", "Clear clipboard failed", e)
+            AppTelemetry.e("ClipboardUtils", "Clear clipboard failed", e)
             noticePublisher?.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEAR_FAILED))
         }
     }

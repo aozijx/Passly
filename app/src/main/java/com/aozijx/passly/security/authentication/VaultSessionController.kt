@@ -1,7 +1,7 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.diagnostics.LogCategory
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.domain.auth.model.VaultLockState
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
@@ -165,7 +165,7 @@ class VaultSessionController @Inject constructor(
                 VaultLockState.SOFT_LOCKED -> {
                     runCatching { sessionManager.softLock() }
                         .onFailure { e ->
-                            AppLog.e(LogCategory.DATABASE, "soft_lock_failed", throwable = e)
+                            AppTelemetry.e(EventCategory.DATABASE, "soft_lock_failed", throwable = e)
                         }
                     lockLevel = VaultLockState.SOFT_LOCKED
                 }
@@ -173,7 +173,7 @@ class VaultSessionController @Inject constructor(
                 VaultLockState.SEALED -> {
                     runCatching { sessionManager.seal() }
                         .onFailure { e ->
-                            AppLog.e(LogCategory.DATABASE, "seal_failed", throwable = e)
+                            AppTelemetry.e(EventCategory.DATABASE, "seal_failed", throwable = e)
                         }
                     dekManager.lock()
                     lockLevel = VaultLockState.SEALED

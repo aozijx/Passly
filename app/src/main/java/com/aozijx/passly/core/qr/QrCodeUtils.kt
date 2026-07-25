@@ -6,7 +6,7 @@ import android.graphics.Color
 import android.net.Uri
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.google.zxing.BarcodeFormat
@@ -34,7 +34,7 @@ object QrCodeUtils {
             }
             bitmap
         } catch (e: Exception) {
-            AppLog.e("QrCodeUtils", "Generate QR code failed", e)
+            AppTelemetry.e("QrCodeUtils", "Generate QR code failed", e)
             null
         }
     }
@@ -67,7 +67,7 @@ object QrCodeUtils {
                     scanner.close()
                 }
         } catch (e: Exception) {
-            AppLog.e("QrCodeUtils", "Error decoding image", e)
+            AppTelemetry.e("QrCodeUtils", "Error decoding image", e)
             onFailure("解析图片出错")
         }
     }

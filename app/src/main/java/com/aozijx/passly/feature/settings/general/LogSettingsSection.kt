@@ -25,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -41,7 +40,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsStateWithLifecycle()
     var showViewerDialog by remember { mutableStateOf(false) }
@@ -83,7 +81,7 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
                 icon = Icons.Default.SaveAlt,
                 title = "导出日志",
                 subtitle = "验证身份后生成临时明文文件",
-                onClick = { viewModel.authenticateAndExport(context) }
+                onClick = viewModel::authenticateAndExport
             ),
             navigationSettingsGroupItem(
                 key = "logs.clear",

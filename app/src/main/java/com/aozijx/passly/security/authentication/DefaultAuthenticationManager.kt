@@ -2,8 +2,8 @@ package com.aozijx.passly.security.authentication
 
 import android.content.Context
 import androidx.biometric.BiometricManager
-import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.diagnostics.LogCategory
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthMethodAvailability
 import com.aozijx.passly.domain.authentication.AuthenticationCallback
@@ -280,8 +280,8 @@ class DefaultAuthenticationManager @Inject constructor(
         result: AuthenticationResult
     ): AuthenticationResult {
         if (result is AuthenticationResult.Failure) {
-            AppLog.w(
-                LogCategory.AUTHENTICATION,
+            AppTelemetry.w(
+                EventCategory.AUTHENTICATION,
                 "authentication_failed",
                 fields = mapOf(
                     "code" to result.failure.code,

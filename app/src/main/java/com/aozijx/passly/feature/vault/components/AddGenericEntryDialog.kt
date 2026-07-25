@@ -10,7 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.ui.components.AppDialog
 import com.aozijx.passly.core.ui.components.AppTextField
 import com.aozijx.passly.core.ui.components.PasswordInput
@@ -75,7 +75,7 @@ fun AddGenericEntryDialog(
                 viewModel.addItem(entry)
                 viewModel.setAddType(null)
             } catch (e: Exception) {
-                AppLog.e("AddGenericEntry", "Failed to save", e)
+                AppTelemetry.e("AddGenericEntry", "Failed to save", e)
                 Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
             }
         }) {

@@ -4,7 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.security.crypto.CryptoConfig
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -27,10 +27,10 @@ internal object AndroidKeyStoreProvider {
             val secretKey = (ks.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
             val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-            AppLog.i(TAG, "Cipher initialized in ENCRYPT mode")
+            AppTelemetry.i(TAG, "Cipher initialized in ENCRYPT mode")
             cipher
         } catch (e: Exception) {
-            AppLog.logCryptoException(TAG, "Get encrypt cipher", e)
+            AppTelemetry.logCryptoException(TAG, "Get encrypt cipher", e)
             null
         }
     }
@@ -45,17 +45,17 @@ internal object AndroidKeyStoreProvider {
             val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
             val spec = GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, iv)
             cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-            AppLog.i(TAG, "Cipher initialized in DECRYPT mode")
+            AppTelemetry.i(TAG, "Cipher initialized in DECRYPT mode")
             cipher
         } catch (e: KeyPermanentlyInvalidatedException) {
-            AppLog.logCryptoException(TAG, "Key invalidated", e)
+            AppTelemetry.logCryptoException(TAG, "Key invalidated", e)
             synchronized(keyGenLock) {
                 val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
                 ks.deleteEntry(alias)
             }
             null
         } catch (e: Exception) {
-            AppLog.logCryptoException(TAG, "Get decrypt cipher", e)
+            AppTelemetry.logCryptoException(TAG, "Get decrypt cipher", e)
             null
         }
     }
@@ -65,7 +65,7 @@ internal object AndroidKeyStoreProvider {
         synchronized(keyGenLock) {
             val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
             if (!ks.containsAlias(alias)) {
-                AppLog.i(TAG, "Generating new AndroidKeyStore key: $alias")
+                AppTelemetry.i(TAG, "Generating new AndroidKeyStore key: $alias")
                 generateMasterKey(alias, invalidateOnBiometricChange)
             }
         }
@@ -90,6 +90,6 @@ internal object AndroidKeyStoreProvider {
             .build()
         keyGenerator.init(spec)
         keyGenerator.generateKey()
-        AppLog.i(TAG, "Master key generated: $alias")
+        AppTelemetry.i(TAG, "Master key generated: $alias")
     }
 }

@@ -109,10 +109,7 @@ class BiometricRotationCoordinator @Inject constructor(
         AuthenticationResult.Failure(
             AuthenticationFailure(
                 code,
-                correlationId,
-                safeFields = mapOf(
-                    "method" to com.aozijx.passly.domain.authentication.AuthenticationMethod.BIOMETRIC.name
-                )
+                correlationId
             )
         )
 }

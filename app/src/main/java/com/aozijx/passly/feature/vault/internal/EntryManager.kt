@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.internal
 
 import android.content.Context
 import android.net.Uri
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.AppError
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.entry.model.EntryChanges
@@ -31,7 +31,7 @@ internal class EntryManager(
     private val onRefreshItems: () -> Unit = {}
 ) {
     private val handler = CoroutineExceptionHandler { _, throwable ->
-        AppLog.e("EntryManager", "Operation failed", throwable)
+        AppTelemetry.e("EntryManager", "Operation failed", throwable)
         onError("操作失败: ${throwable.message ?: "未知错误"}")
     }
     private val deletingIds = mutableSetOf<String>()

@@ -305,11 +305,24 @@ class MigrationBoundaryTest {
 
     @Test
     fun legacyLoggingStackCannotReturn() {
-        val legacyRoot = File("src/main/java/com/aozijx/passly/core/log")
+        val legacyRoots = listOf(
+            File("src/main/java/com/aozijx/passly/core/log"),
+            File("src/main/java/com/aozijx/passly/core/diagnostics")
+        )
+        val forbiddenSymbols = listOf(
+            "core.log.Logcat",
+            "core.log.LogExporter",
+            "LogFilter",
+            "AppLog",
+            "core.diagnostics.DiagnosticsRuntime",
+            "core.diagnostics.DiagnosticsPolicy",
+            "PerFileEncryptedLogSink",
+            "LogSanitizer"
+        )
         val legacyReferences = productionKotlinFiles
             .filter { source ->
                 val text = source.readText()
-                "core.log.Logcat" in text || "core.log.LogExporter" in text || "LogFilter" in text
+                forbiddenSymbols.any(text::contains)
             }
             .map { it.relativeTo(File("src/main/java")).path }
             .toList()
@@ -317,16 +330,20 @@ class MigrationBoundaryTest {
         assertTrue("Legacy logging references: $legacyReferences", legacyReferences.isEmpty())
         assertTrue(
             "Legacy logging source directory must be removed",
-            !legacyRoot.exists() || legacyRoot.walkTopDown().none { it.extension == "kt" }
+            legacyRoots.all { root ->
+                !root.exists() || root.walkTopDown().none { it.extension == "kt" }
+            }
         )
     }
 
     @Test
     fun encryptedDiagnosticsUseBoundedQueueAndPreparedCrashKey() {
         val source = File(
-            "src/main/java/com/aozijx/passly/core/diagnostics/PerFileEncryptedLogSink.kt"
+            "src/main/java/com/aozijx/passly/data/diagnostics/EncryptedLogStore.kt"
         ).readText()
-        val emergencyBlock = source.substringAfter("fun emergencyWrite").substringBefore("fun readAll")
+        val emergencyBlock = source
+            .substringAfter("fun crashEmergencyWrite")
+            .substringBefore("private fun fallbackEmergencyWrite")
 
         assertTrue("Log writer queue must remain bounded", "ArrayBlockingQueue" in source)
         assertTrue("Every diagnostics file needs an encrypted header", "writeHeader(file" in source)
@@ -338,5 +355,7 @@ class MigrationBoundaryTest {
             "Crash writer must not wait for the normal writer lock",
             "lockWrites = false" in emergencyBlock
         )
+        assertTrue("Every record must authenticate sequence and level", "buildRecordAad" in source)
+        assertTrue("Record nonce must have an exact length", "checkedExact(NONCE_BYTES)" in source)
     }
 }

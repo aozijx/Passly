@@ -8,6 +8,8 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import java.nio.ByteBuffer
+import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 
 /**
@@ -170,6 +172,7 @@ object TelemetryRecordCodec {
                 }
                 val frames = List(framesCount) { readString(input, MAX_FRAME_BYTES) }
                 val correlationId = readString(input, MAX_CORRELATION_BYTES)
+                require(bis.available() == 0) { "Trailing bytes after telemetry record" }
                 TelemetryEvent(
                     level = level,
                     category = category,
@@ -206,19 +209,19 @@ object TelemetryRecordCodec {
 
             is SafeLogValue.EnumName -> {
                 out.writeByte(5)
-                val raw = value.name.toByteArray(StandardCharsets.UTF_8)
+                val raw = checkedUtf8(value.name, MAX_ENUM_NAME_BYTES, "EnumName")
                 out.writeShort(raw.size); out.write(raw)
             }
 
             is SafeLogValue.ErrorCodeValue -> {
                 out.writeByte(6)
-                val raw = value.code.value.toByteArray(StandardCharsets.UTF_8)
+                val raw = checkedUtf8(value.code.value, MAX_CODE_BYTES, "ErrorCode")
                 out.writeShort(raw.size); out.write(raw)
             }
 
             is SafeLogValue.OperationCodeValue -> {
                 out.writeByte(7)
-                val raw = value.code.value.toByteArray(StandardCharsets.UTF_8)
+                val raw = checkedUtf8(value.code.value, MAX_CODE_BYTES, "OperationCode")
                 out.writeShort(raw.size); out.write(raw)
             }
         }
@@ -254,7 +257,7 @@ object TelemetryRecordCodec {
         }
         return if (len > 0) {
             val bytes = ByteArray(len); input.readFully(bytes)
-            String(bytes, StandardCharsets.UTF_8)
+            decodeUtf8Strict(bytes)
         } else ""
     }
 
@@ -268,7 +271,21 @@ object TelemetryRecordCodec {
         }
         return if (len > 0) {
             val bytes = ByteArray(len); input.readFully(bytes)
-            String(bytes, StandardCharsets.UTF_8)
+            decodeUtf8Strict(bytes)
         } else null
     }
+
+    private fun checkedUtf8(value: String, maxBytes: Int, label: String): ByteArray =
+        value.toByteArray(StandardCharsets.UTF_8).also { bytes ->
+            require(bytes.size <= maxBytes) {
+                "$label exceeds $maxBytes bytes: ${bytes.size}"
+            }
+        }
+
+    private fun decodeUtf8Strict(bytes: ByteArray): String =
+        StandardCharsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .decode(ByteBuffer.wrap(bytes))
+            .toString()
 }

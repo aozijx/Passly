@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.AppDialog
 import com.aozijx.passly.core.ui.components.AppTextField
@@ -71,7 +71,7 @@ fun AddTwoFADialog(
             Toast.makeText(context, uriParsedMsg, Toast.LENGTH_SHORT).show()
             ClipboardUtils.clear(context)
         } catch (e: Exception) {
-            AppLog.e("AddTwoFA", uriParseFailedMsg, e)
+            AppTelemetry.e("AddTwoFA", uriParseFailedMsg, e)
         }
     }
 
@@ -122,7 +122,7 @@ fun AddTwoFADialog(
                 viewModel.addItem(entry, state.domain)
                 viewModel.setAddType(null)
             } catch (e: Exception) {
-                AppLog.e("AddTwoFA", "Failed to encrypt/save", e)
+                AppTelemetry.e("AddTwoFA", "Failed to encrypt/save", e)
                 Toast.makeText(context, "加密保存失败", Toast.LENGTH_SHORT).show()
             }
         }) {

@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.session
 
 import androidx.room.withTransaction
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseProvider
 import com.aozijx.passly.domain.authentication.SessionLockedException
@@ -150,7 +150,7 @@ class DatabaseLeaseGate @Inject constructor(
     suspend fun unlock(dek: ByteArray): Throwable? {
         if (database != null) {
             _lockState.value = LockState.UNLOCKED
-            AppLog.i(TAG, "Resumed from SOFT_LOCKED to UNLOCKED")
+            AppTelemetry.i(TAG, "Resumed from SOFT_LOCKED to UNLOCKED")
             return null
         }
         return openDatabase(dek)
@@ -162,7 +162,7 @@ class DatabaseLeaseGate @Inject constructor(
      */
     suspend fun softLock() {
         _lockState.value = LockState.SOFT_LOCKED
-        AppLog.i(TAG, "Soft locked, database kept open")
+        AppTelemetry.i(TAG, "Soft locked, database kept open")
     }
 
     /**
@@ -181,7 +181,7 @@ class DatabaseLeaseGate @Inject constructor(
         }
 
         if (drained == null) {
-            AppLog.w(TAG, "Seal drain timeout, cancelling flow observations")
+            AppTelemetry.w(TAG, "Seal drain timeout, cancelling flow observations")
             flowScope.coroutineContext[Job]?.let { job ->
                 job.children.forEach { it.cancel() }
             }
@@ -189,12 +189,12 @@ class DatabaseLeaseGate @Inject constructor(
             delay(POST_CANCEL_DELAY_MS)
             val remaining = activeLeases.get()
             if (remaining > 0) {
-                AppLog.e(TAG, "Force proceed with seal: $remaining leases may leak")
+                AppTelemetry.e(TAG, "Force proceed with seal: $remaining leases may leak")
             }
         }
 
         closeDatabaseInternal()
-        AppLog.i(TAG, "Database sealed and closed")
+        AppTelemetry.i(TAG, "Database sealed and closed")
     }
 
     /**
@@ -242,10 +242,10 @@ class DatabaseLeaseGate @Inject constructor(
             val db = databaseProvider.open(dek)
             dbMutex.withLock { database = db }
             _lockState.value = LockState.UNLOCKED
-            AppLog.i(TAG, "Database opened, state UNLOCKED")
+            AppTelemetry.i(TAG, "Database opened, state UNLOCKED")
             null
         } catch (e: Exception) {
-            AppLog.e(TAG, "Failed to open database", e)
+            AppTelemetry.e(TAG, "Failed to open database", e)
             dbMutex.withLock { database = null }
             _lockState.value = LockState.SEALED
             e
@@ -256,9 +256,9 @@ class DatabaseLeaseGate @Inject constructor(
         dbMutex.withLock {
             database?.let { db ->
                 runCatching { db.close() }
-                    .onFailure { e -> AppLog.e(TAG, "Database close error", e) }
+                    .onFailure { e -> AppTelemetry.e(TAG, "Database close error", e) }
                 database = null
-                AppLog.i(TAG, "Database connection closed")
+                AppTelemetry.i(TAG, "Database connection closed")
             }
         }
     }

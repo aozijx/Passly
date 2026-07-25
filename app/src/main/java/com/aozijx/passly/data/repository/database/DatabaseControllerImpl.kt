@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.database
 
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
@@ -30,12 +30,12 @@ internal class DatabaseControllerImpl @Inject constructor(
         for (i in 1..MAX_RETRIES) {
             lastError = probe()
             if (lastError == null) {
-                if (i > 1) AppLog.i(TAG, "Database preWarm succeeded after $i attempts")
+                if (i > 1) AppTelemetry.i(TAG, "Database preWarm succeeded after $i attempts")
                 return@withContext null
             }
 
             if (i < MAX_RETRIES) {
-                AppLog.w(
+                AppTelemetry.w(
                     TAG,
                     "Database probe failed (attempt $i/$MAX_RETRIES), retrying... ${lastError.message}"
                 )

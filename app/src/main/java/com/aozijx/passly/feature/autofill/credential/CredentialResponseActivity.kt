@@ -7,7 +7,7 @@ import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -59,7 +59,7 @@ class CredentialResponseActivity : AppCompatActivity() {
                 val credentialData =
                     intent.getBundleExtra(ModernCredentialService.EXTRA_CREDENTIAL_DATA)
                 if (credentialData == null) {
-                    AppLog.e(TAG, "Missing credential data in intent")
+                    AppTelemetry.e(TAG, "Missing credential data in intent")
                     finishWithError()
                     return
                 }
@@ -71,7 +71,7 @@ class CredentialResponseActivity : AppCompatActivity() {
             }
 
             else -> {
-                AppLog.w(TAG, "Unknown action: $action")
+                AppTelemetry.w(TAG, "Unknown action: $action")
                 finishWithError()
             }
         }

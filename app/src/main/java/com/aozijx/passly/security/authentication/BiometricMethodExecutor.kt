@@ -89,8 +89,7 @@ class BiometricMethodExecutor @Inject constructor(
         MethodExecutionResult.Failure(
             AuthenticationFailure(
                 code,
-                request.correlationId,
-                safeFields = mapOf("method" to AuthenticationMethod.BIOMETRIC.name)
+                request.correlationId
             )
         )
 }

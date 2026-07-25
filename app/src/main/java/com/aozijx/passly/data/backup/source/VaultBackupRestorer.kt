@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.backup.source
 
 import android.content.Context
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
@@ -181,7 +181,7 @@ class VaultBackupRestorer @Inject constructor(
                         retainedCanonicalPaths = restoredFiles
                     )
                 }.onFailure {
-                    AppLog.w("VaultBackupRestorer", "恢复成功，但旧资源清理未完全完成")
+                    AppTelemetry.w("VaultBackupRestorer", "恢复成功，但旧资源清理未完全完成")
                 }
             }
         } catch (error: Throwable) {
@@ -199,7 +199,7 @@ class VaultBackupRestorer @Inject constructor(
                 if (candidate == root) return@candidateLoop
                 if (candidate.isFile && candidate.canonicalPath !in retainedCanonicalPaths) {
                     if (!candidate.delete()) {
-                        AppLog.w("VaultBackupRestorer", "无法删除未引用恢复文件: ${candidate.name}")
+                        AppTelemetry.w("VaultBackupRestorer", "无法删除未引用恢复文件: ${candidate.name}")
                     }
                 } else if (candidate.isDirectory) {
                     candidate.delete()

@@ -44,7 +44,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.permission.compose.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionStatus
@@ -101,7 +101,7 @@ fun ScannerView(
             try {
                 ProcessCameraProvider.getInstance(context).get().unbindAll()
             } catch (e: Exception) {
-                AppLog.e("ScannerView", "Failed to unbind camera on dispose", e)
+                AppTelemetry.e("ScannerView", "Failed to unbind camera on dispose", e)
             }
             cameraExecutor.shutdown()
             barcodeScanner.close()
@@ -130,7 +130,7 @@ fun ScannerView(
                                 barcodeScanner.process(image)
                                     .addOnSuccessListener { barcodes ->
                                         barcodes.firstOrNull()?.rawValue?.let {
-                                            AppLog.d("ScannerView", "Detected barcode: $it")
+                                            AppTelemetry.d("ScannerView", "Detected barcode: $it")
                                             onBarcodeDetected(it)
                                         }
                                     }
@@ -144,7 +144,7 @@ fun ScannerView(
                 provider.unbindAll()
                 provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis)
             } catch (e: Exception) {
-                AppLog.e("ScannerView", "Camera binding failed", e)
+                AppTelemetry.e("ScannerView", "Camera binding failed", e)
             }
         }, ContextCompat.getMainExecutor(context))
     }
