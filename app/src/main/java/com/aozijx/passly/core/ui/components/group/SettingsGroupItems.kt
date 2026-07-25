@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -54,6 +55,7 @@ fun settingsGroupItem(
     iconPlaceholder: Boolean = false,
     title: String,
     subtitle: String? = null,
+    isLoading: Boolean = false,
     onClick: (() -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {}
 ): RoundedGroupItem = customSettingsItem(
@@ -75,7 +77,17 @@ fun settingsGroupItem(
             )
         }
     },
-    trailing = trailing
+    trailing = {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            trailing()
+        }
+    }
 )
 
 fun switchSettingsGroupItem(
@@ -108,6 +120,7 @@ fun navigationSettingsGroupItem(
     title: String,
     subtitle: String? = null,
     value: String? = null,
+    isLoading: Boolean = false,
     onClick: () -> Unit
 ): RoundedGroupItem = settingsGroupItem(
     key = key,
@@ -116,6 +129,7 @@ fun navigationSettingsGroupItem(
     iconPlaceholder = iconPlaceholder,
     title = title,
     subtitle = subtitle,
+    isLoading = isLoading,
     onClick = onClick,
     trailing = {
         value?.takeIf(String::isNotBlank)?.let {

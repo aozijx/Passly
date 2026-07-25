@@ -5,6 +5,7 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,18 +25,28 @@ import kotlinx.coroutines.withContext
 internal fun GeneralDetail() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var cacheSize by remember { mutableStateOf(CacheUtils.calculateTotalCacheSize(context)) }
+    var cacheSize by remember { mutableStateOf<String?>(null) }
+    var isCalculating by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        cacheSize = withContext(Dispatchers.IO) {
+            CacheUtils.calculateTotalCacheSize(context)
+        }
+        isCalculating = false
+    }
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
 
         CacheSettingsSection(
             cacheSize = cacheSize,
+            isLoading = isCalculating,
             onClearCache = {
                 scope.launch {
-                    withContext(Dispatchers.IO) {
+                    isCalculating = true
+                    cacheSize = withContext(Dispatchers.IO) {
                         CacheUtils.clearAllCache(context)
+                        CacheUtils.calculateTotalCacheSize(context)
                     }
-                    cacheSize = CacheUtils.calculateTotalCacheSize(context)
+                    isCalculating = false
                 }
             }
         )

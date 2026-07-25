@@ -10,7 +10,8 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 fun CacheSettingsSection(
-    cacheSize: String,
+    cacheSize: String?,
+    isLoading: Boolean,
     onClearCache: () -> Unit
 ) {
     SettingsSectionTitle(text = "缓存")
@@ -21,6 +22,7 @@ fun CacheSettingsSection(
                 icon = Icons.Default.DeleteSweep,
                 title = "清除缓存",
                 value = cacheSize,
+                isLoading = isLoading,
                 onClick = onClearCache
             )
         )

@@ -13,7 +13,10 @@ object CacheUtils {
     }
 
     fun calculateTotalCacheSize(context: Context): String {
-        val cacheBytes = context.cacheDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+        val cacheDir = context.cacheDir
+        val cacheBytes = if (cacheDir.exists()) {
+            cacheDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+        } else 0L
         val vaultImagesDir = File(context.filesDir, "vault_images")
         val vaultBytes = if (vaultImagesDir.exists()) {
             vaultImagesDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
