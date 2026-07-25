@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
 import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -55,7 +56,8 @@ class VaultViewModel @Inject constructor(
     private val entryCommandRepository: EntryCommandRepository,
     private val activityRecorder: ActivityRecorder,
     private val faviconRepository: FaviconRepository,
-    val entryFieldReader: EntryFieldReader
+    val entryFieldReader: EntryFieldReader,
+    private val vaultDataRefreshNotifier: VaultDataRefreshNotifier
 ) : AndroidViewModel(application) {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
@@ -253,6 +255,12 @@ class VaultViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.settings.map { it.vault.vaultSortOption }.first().let {
                 searchFilter.updateSelectedSort(it)
+            }
+        }
+
+        viewModelScope.launch {
+            vaultDataRefreshNotifier.events.collect {
+                refreshItems()
             }
         }
     }

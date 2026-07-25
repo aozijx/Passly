@@ -3,17 +3,18 @@ package com.aozijx.passly.data.repository.database
 import android.content.Context
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.data.local.database.maintenance.DatabaseRecoveryStore
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseController
 import com.aozijx.passly.domain.diagnostics.repository.DatabaseQuarantineResult
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +26,8 @@ import javax.inject.Singleton
 internal class DatabaseControllerImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
-    private val recoveryStore: DatabaseRecoveryStore
+    private val recoveryStore: DatabaseRecoveryStore,
+    private val vaultDataRefreshNotifier: VaultDataRefreshNotifier
 ) : DatabaseController {
 
     private companion object {
@@ -82,6 +84,9 @@ internal class DatabaseControllerImpl @Inject constructor(
         }
 
         val reopenError = sessionManager.unlock()
+        if (reopenError == null) {
+            vaultDataRefreshNotifier.notifyRefresh()
+        }
         recoveryError ?: reopenError
     }
 
