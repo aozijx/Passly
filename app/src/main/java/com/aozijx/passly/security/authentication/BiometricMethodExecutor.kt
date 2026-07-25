@@ -49,17 +49,26 @@ class BiometricMethodExecutor @Inject constructor(
             androidx.biometric.BiometricPrompt.CryptoObject(cipher)
         )
         return when (hostResult) {
-            is BiometricHostResult.Success -> when (val unlock = dekManager.unlock(EnvelopeType.BIOMETRIC, cipher)) {
-                UnlockResult.Success -> {
-                    if (request.purpose == AuthenticationPurpose.RECOVER_DATABASE) {
-                        MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
-                    } else if (session.markAuthenticated()) {
-                        MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
-                    } else {
-                        failure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, request)
-                    }
+            is BiometricHostResult.Success -> {
+                val unlockResult = if (dekManager.isUnlocked.value) {
+                    // SOFT_LOCKED: DEK 已在内存中，无需重新解密
+                    UnlockResult.Success
+                } else {
+                    dekManager.unlock(EnvelopeType.BIOMETRIC, cipher)
                 }
-                is UnlockResult.Failed -> failure(unlock.reason.failureCode(), request)
+                when (unlockResult) {
+                    UnlockResult.Success -> {
+                        if (request.purpose == AuthenticationPurpose.RECOVER_DATABASE) {
+                            MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
+                        } else if (session.markAuthenticated()) {
+                            MethodExecutionResult.Success(AuthenticationMethod.BIOMETRIC)
+                        } else {
+                            failure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, request)
+                        }
+                    }
+
+                    is UnlockResult.Failed -> failure(unlockResult.reason.failureCode(), request)
+                }
             }
             is BiometricHostResult.Cancelled -> MethodExecutionResult.Cancelled(hostResult.byUser)
             is BiometricHostResult.Failure -> failure(hostResult.reason.failureCode(), request)
