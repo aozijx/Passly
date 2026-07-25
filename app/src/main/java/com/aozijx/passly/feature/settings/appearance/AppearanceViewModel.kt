@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.appearance
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
@@ -8,16 +9,18 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 data class AppearanceUiState(
-    val isDarkMode: Boolean? = null,
-    val isDynamicColor: Boolean = true,
-    val themeColor: Long = 0,
-    val useSystemFont: Boolean = true
+    val isDarkMode: Boolean?,
+    val isDynamicColor: Boolean,
+    val themeColor: Long,
+    val useSystemFont: Boolean
 )
 
 sealed interface AppearanceUiAction {
@@ -31,6 +34,19 @@ sealed interface AppearanceUiAction {
 class AppearanceViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
+
+    @VisibleForTesting
+    internal val initial: AppearanceUiState = runCatching {
+        val snapshot = runBlocking {
+            settingsRepository.settings.first()
+        }
+        AppearanceUiState(
+            isDarkMode = snapshot.appearance.isDarkMode,
+            isDynamicColor = snapshot.appearance.isDynamicColor,
+            themeColor = snapshot.appearance.themeColor.toLongOrNull() ?: 0L,
+            useSystemFont = snapshot.appearance.useSystemFont
+        )
+    }.getOrDefault(AppearanceUiState(null, true, 0L, true))
 
     val config: StateFlow<AppearanceUiState> = combine(
         settingsRepository.settings.map { it.appearance.isDarkMode },
@@ -48,7 +64,7 @@ class AppearanceViewModel @Inject constructor(
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
-        AppearanceUiState()
+        initial
     )
 
     fun onAction(action: AppearanceUiAction) {

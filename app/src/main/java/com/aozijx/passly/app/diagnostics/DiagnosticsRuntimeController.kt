@@ -11,17 +11,17 @@ import com.aozijx.passly.core.telemetry.TelemetryEvent
 import com.aozijx.passly.core.telemetry.TelemetryPolicyController
 import com.aozijx.passly.data.diagnostics.EncryptedLogStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @Singleton
 class DiagnosticsRuntimeController @Inject constructor(
-    @param:ApplicationContext context: Context,
+    @ApplicationContext context: Context,
     private val policyController: TelemetryPolicyController
 ) {
     private val androidEnabled = AtomicBoolean(true)

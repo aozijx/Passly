@@ -131,18 +131,19 @@ class MainViewModel @Inject constructor(
             combine(
                 settingsRepository.settings.map { it.appearance.isDarkMode },
                 settingsRepository.settings.map { it.appearance.isDynamicColor },
-                settingsRepository.settings.map { it.appearance.themeColor }
-            ) { isDarkMode, isDynamicColor, themeColorStr ->
-                Triple(isDarkMode, isDynamicColor, themeColorStr)
-            }.collect { (isDarkMode, isDynamicColor, themeColorStr) ->
+                settingsRepository.settings.map { it.appearance.themeColor },
+                settingsRepository.settings.map { it.appearance.useSystemFont }
+            ) { isDarkMode, isDynamicColor, themeColorStr, useSystemFont ->
                 val themeColorLong = themeColorStr.toLongOrNull() ?: 0L
                 _uiState.update {
                     it.copy(
-                        isDarkMode = isDarkMode, isDynamicColor = isDynamicColor,
-                        themeColor = themeColorLong
+                        isDarkMode = isDarkMode,
+                        isDynamicColor = isDynamicColor,
+                        themeColor = themeColorLong,
+                        useSystemFont = useSystemFont
                     )
                 }
-            }
+            }.collect { }
         }
     }
 

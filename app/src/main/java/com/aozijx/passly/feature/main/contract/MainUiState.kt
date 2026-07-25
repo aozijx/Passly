@@ -5,6 +5,7 @@ data class MainUiState(
     val isDarkMode: Boolean? = null,
     val isDynamicColor: Boolean = true,
     val themeColor: Long = 0,
+    val useSystemFont: Boolean = true,
     val isDatabaseInitializing: Boolean = false,
     val databaseError: Throwable? = null
 )

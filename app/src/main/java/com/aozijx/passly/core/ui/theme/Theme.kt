@@ -56,6 +56,7 @@ fun AppTheme(
     darkTheme: Boolean? = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     themeColor: Long = 0,
+    useSystemFont: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val isDark = darkTheme ?: isSystemInDarkTheme()
@@ -76,9 +77,11 @@ fun AppTheme(
         else -> AppColor.lightScheme()
     }
 
+    val typography = if (useSystemFont) SystemTypography else themeTypography()
+
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = typography,
         shapes = PasslyShapes,
         content = content
     )

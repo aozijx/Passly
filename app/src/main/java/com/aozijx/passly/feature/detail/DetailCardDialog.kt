@@ -204,7 +204,7 @@ fun DetailCardDialog(
     }
 
     if (showQrDialog && hasTotp) {
-        val otpConfig = entry.secret.otp?.config ?: return
+        val otpConfig = entry.secret.otp.config
         val qrContent = TotpUtils.constructOtpAuthUri(otpConfig, entry.title)
         val qrBitmap = remember(qrContent) { QrCodeUtils.generateQrCode(qrContent) }
         QrExportDialog(bitmap = qrBitmap, onDismiss = { showQrDialog = false })

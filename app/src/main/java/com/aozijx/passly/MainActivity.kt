@@ -88,7 +88,8 @@ class MainActivity : AppCompatActivity() {
                     AppTheme(
                         darkTheme = mainUiState.isDarkMode,
                         dynamicColor = mainUiState.isDynamicColor,
-                        themeColor = mainUiState.themeColor
+                        themeColor = mainUiState.themeColor,
+                        useSystemFont = mainUiState.useSystemFont
                     ) {
                         AuthenticationHost(this, authenticationHostRegistry) {
                             MainScreen(
