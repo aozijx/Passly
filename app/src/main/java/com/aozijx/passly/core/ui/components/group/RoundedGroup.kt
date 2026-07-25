@@ -61,7 +61,7 @@ fun RoundedGroup(
     innerRadius: Dp = 2.dp,
     itemSpacing: Dp = 2.dp,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
     shapeFactory: ((RoundedGroupItemPosition) -> Shape)? = null
 ) {
     val keys = HashSet<String>(items.size)

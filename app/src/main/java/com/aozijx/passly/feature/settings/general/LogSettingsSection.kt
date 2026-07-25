@@ -70,6 +70,7 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
             ),
             navigationSettingsGroupItem(
                 key = "logs.view",
+                iconPlaceholder = true,
                 title = "查看日志",
                 onClick = {
                     refreshLogInfo()

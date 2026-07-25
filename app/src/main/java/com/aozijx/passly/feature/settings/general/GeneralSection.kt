@@ -30,6 +30,7 @@ fun CacheSettingsSection(
 @Composable
 fun AboutSettingsSection(
     appVersion: String,
+    onAppDetailsClick: () -> Unit,
     onAboutClick: () -> Unit
 ) {
     SettingsSectionTitle(text = "关于")
@@ -40,7 +41,7 @@ fun AboutSettingsSection(
                 icon = Icons.Default.Info,
                 title = "关于 Passly",
                 value = appVersion,
-                onClick = onAboutClick
+                onClick = onAppDetailsClick
             ),
             navigationSettingsGroupItem(
                 key = "general.terms",

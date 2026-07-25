@@ -1,9 +1,13 @@
 package com.aozijx.passly.feature.settings.datamanagement
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
@@ -37,6 +41,8 @@ internal fun BackupRestoreSettingsSection(
             )
         )
     )
+
+    Spacer(Modifier.height(24.dp))
 
     SettingsSectionTitle(text = "存储位置")
     RoundedGroup(

@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.settings.general
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -10,7 +12,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.core.platform.CacheUtils
@@ -39,14 +40,20 @@ internal fun GeneralDetail() {
             }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
 
         LogSettingsSection()
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
 
         AboutSettingsSection(
             appVersion = BuildConfig.VERSION_NAME,
+            onAppDetailsClick = {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = android.net.Uri.fromParts("package", context.packageName, null)
+                }
+                context.startActivity(intent)
+            },
             onAboutClick = {}
         )
     }
