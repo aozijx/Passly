@@ -1,0 +1,44 @@
+package com.aozijx.passly.data.repository.entry.executor
+
+import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.NotFound
+import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
+import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.data.mapper.search.toLookupFields
+import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
+import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
+import com.aozijx.passly.data.util.Clock
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import javax.inject.Inject
+
+/**
+ * 恢复回收站条目事务执行器。
+ *
+ * 使用乐观锁版本校验，原子写入：恢复 + 版本自增 + 盲索引重建 + 活动记录。
+ */
+class RestoreEntryExecutor @Inject constructor(
+    private val transactionRunner: VaultTransactionRunner,
+    private val summaryCodec: EntrySummaryCodec,
+    private val blindIndexHelper: EntryBlindIndexHelper,
+    private val activityHelper: EntryActivityHelper,
+    private val clock: Clock
+) {
+    suspend fun execute(id: String, expectedVersion: Int): AppResult<Unit> =
+        transactionRunner.write("entry.restore") {
+            val now = clock.now()
+            val affected = entryCommandDao().restoreOptimistic(id, expectedVersion, now)
+            transactionRunner.checkAffectedRows(id, expectedVersion, affected)
+
+            // 重建盲索引
+            val metaEntity = entryQueryDao().getById(id)
+                ?: throw NotFound("entry:$id not found")
+            val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
+            val vaultEntry = EntryAggregateAssembler.assembleFromDatabase(
+                metaEntity, summary, null
+            )
+            blindIndexHelper.rebuildForEntry(this, id, vaultEntry.toLookupFields())
+
+            activityHelper.recordActivity(this, id, ActivityType.RESTORE, now)
+        }
+}

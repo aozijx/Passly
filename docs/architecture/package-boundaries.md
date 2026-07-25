@@ -1,0 +1,47 @@
+# 包边界
+
+## 职责表
+
+| 包          | 可以包含                                      | 不应包含                                  |
+|------------|-------------------------------------------|---------------------------------------|
+| `core`     | 日志、错误、平台适配、权限、消息、媒体等通用能力                  | DAO、Repository 实现、业务页面                |
+| `domain`   | 领域模型、Repository 契约、用例、策略、验证               | `android.*`、资源 ID、Entity、Feature 类型   |
+| `data`     | Room、Proto DataStore、Mapper、Repository 实现 | Compose 页面、跨层 UI 状态                   |
+| `security` | 密码学原语、DEK/会话、信封接口、Keystore                | Room Entity、DataStore 具体实现、Feature 类型 |
+| `feature`  | 导航、ViewModel、UI state/effect、Compose UI   | DAO、Entity、具体 Repository 实现           |
+| `service`  | Android Service 入口与系统生命周期桥接               | 独立业务真相源                               |
+
+## 强制规则
+
+```text
+domain -X-> data | feature | android.*
+core   -X-> data repository implementation
+feature-X-> entity | dao
+security-X-> data implementation
+```
+
+分页应通过纯 Kotlin 契约传递；Android Paging 可留在 Data/UI 适配边界。Feature 需要凭据候选时依赖
+`CredentialServiceRepository` 等 Domain 接口，不直接构造 Entity 或具体 Repository。
+
+## 模型归属
+
+- Entity：数据库结构，只在 Data 层。
+- Domain model：业务语义与跨层契约。
+- UI model/state：展示派生状态，只在 Feature presentation/UI。
+- 外部格式 model：备份、Proto 或系统 API 的序列化/适配结构，放在对应基础设施边界。
+
+Mapper 应显式处理缺失字段、版本和错误，不用强制类型转换掩盖边界问题。
+
+## 自动检查建议
+
+架构门禁应扫描 import，并至少禁止：
+
+```text
+domain -> com.aozijx.passly.data
+domain -> com.aozijx.passly.feature
+feature -> *.data.model.entity / *.data.local.dao
+security -> *.data.repository / *.data.local
+```
+
+允许清单必须精确到文件或接口并附理由，不能通过全局排除关闭检查。
+

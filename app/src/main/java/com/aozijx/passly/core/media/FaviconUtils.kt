@@ -7,12 +7,12 @@ import coil.ImageLoader
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.util.UUID
 
 object FaviconUtils {
 
@@ -39,9 +39,12 @@ object FaviconUtils {
     /**
      * 从 HTML 中解析 link 标签获取图标 URL
      */
-    suspend fun fetchFaviconUrlFromHtml(domain: String): String? = withContext(Dispatchers.IO) {
+    suspend fun fetchFaviconUrlFromHtml(
+        domain: String,
+        whitelist: Set<String> = emptySet()
+    ): String? = withContext(Dispatchers.IO) {
         if (!BuildConfig.DEBUG) {
-            Logcat.w(
+            AppTelemetry.w(
                 TAG,
                 "Favicon HTML fetch is disabled in release build; release uses pinned favicon providers only"
             )
@@ -52,7 +55,7 @@ object FaviconUtils {
             val clean = cleanDomain(domain)
             if (clean.isBlank()) return@withContext null
             if (isRestrictedHost(clean)) {
-                Logcat.w(TAG, "Reject favicon fetch for restricted host: $clean")
+                AppTelemetry.w(TAG, "Reject favicon fetch for restricted host: $clean")
                 return@withContext null
             }
 
@@ -98,11 +101,16 @@ object FaviconUtils {
                 val match = regex.find(html)
                 if (match != null) {
                     val href = match.groupValues[1]
-                    return@withContext resolveUrl(url, href)?.takeIf(::isAllowedRemoteUrl)
+                    return@withContext resolveUrl(url, href)?.takeIf {
+                        isAllowedRemoteUrl(
+                            it,
+                            whitelist
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {
-            Logcat.e(TAG, "Failed to parse HTML for favicon: $domain", e)
+            AppTelemetry.e(TAG, "Failed to parse HTML for favicon: $domain", e)
         }
         null
     }
@@ -128,14 +136,23 @@ object FaviconUtils {
         return base + href
     }
 
-    private fun isAllowedRemoteUrl(url: String): Boolean {
+    private fun isAllowedRemoteUrl(url: String, whitelist: Set<String> = emptySet()): Boolean {
         return try {
             val parsed = java.net.URI(url)
             val scheme = parsed.scheme?.lowercase()
             val host = parsed.host?.lowercase()
             if (scheme != "http" && scheme != "https") return false
             if (host.isNullOrBlank() || isRestrictedHost(host)) return false
-            BuildConfig.DEBUG || host in PINNED_FAVICON_HOSTS
+            if (whitelist.isNotEmpty()) {
+                whitelist.any {
+                    host.equals(it, ignoreCase = true) || host.endsWith(
+                        ".$it",
+                        ignoreCase = true
+                    )
+                }
+            } else {
+                BuildConfig.DEBUG || host in PINNED_FAVICON_HOSTS
+            }
         } catch (_: Exception) {
             false
         }
@@ -172,17 +189,20 @@ object FaviconUtils {
         return false
     }
 
-    suspend fun downloadAndSaveFavicon(input: String, context: Context): DownloadOutcome = withContext(Dispatchers.IO) {
+    suspend fun downloadAndSaveFavicon(
+        input: String,
+        context: Context,
+        whitelist: Set<String> = emptySet()
+    ): DownloadOutcome = withContext(Dispatchers.IO) {
         if (input.isBlank()) return@withContext DownloadOutcome(DownloadResult.EMPTY_INPUT)
 
-        Logcat.d(TAG, "Trying to download favicon from: $input")
+        AppTelemetry.d(TAG, "Trying to download favicon from: $input")
 
         val isDirectUrl = input.startsWith("http://") || input.startsWith("https://")
 
-        // 如果是直接 URL，直接下载
         if (isDirectUrl) {
-            if (!isAllowedRemoteUrl(input)) {
-                Logcat.w(TAG, "Reject favicon download for restricted url")
+            if (!isAllowedRemoteUrl(input, whitelist)) {
+                AppTelemetry.w(TAG, "Reject favicon download for restricted url")
                 return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
             }
             val bitmap = downloadFaviconWithCoil(input, context)
@@ -199,33 +219,32 @@ object FaviconUtils {
 
         val clean = cleanDomain(input)
         if (clean.isBlank() || isRestrictedHost(clean)) {
-            Logcat.w(TAG, "Reject favicon download for restricted domain")
+            AppTelemetry.w(TAG, "Reject favicon download for restricted domain")
             return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
         }
 
         if (!BuildConfig.DEBUG) {
             for (url in buildPinnedProviderUrls(clean)) {
                 try {
-                    Logcat.d(TAG, "Trying pinned provider: $url")
+                    AppTelemetry.d(TAG, "Trying pinned provider: $url")
                     val bitmap = downloadFaviconWithCoil(url, context)
                     if (bitmap != null) {
                         val savedPath = saveBitmapToInternalStorage(context, bitmap)
                         if (savedPath != null) {
-                            Logcat.d(TAG, "Successfully downloaded favicon from pinned provider")
+                            AppTelemetry.d(TAG, "Successfully downloaded favicon from pinned provider")
                             return@withContext DownloadOutcome(DownloadResult.SUCCESS, savedPath)
                         }
                     }
                 } catch (e: Exception) {
-                    Logcat.e(TAG, "Pinned provider favicon download failed: $url", e)
+                    AppTelemetry.e(TAG, "Pinned provider favicon download failed: $url", e)
                 }
             }
 
-            Logcat.w(TAG, "Failed to download favicon from pinned providers for: $input")
+            AppTelemetry.w(TAG, "Failed to download favicon from pinned providers for: $input")
             return@withContext DownloadOutcome(DownloadResult.NETWORK_ERROR)
         }
 
-        // 1. 尝试从 HTML 解析
-        val htmlIconUrl = fetchFaviconUrlFromHtml(clean)
+        val htmlIconUrl = fetchFaviconUrlFromHtml(clean, whitelist)
         if (htmlIconUrl != null) {
             val bitmap = downloadFaviconWithCoil(htmlIconUrl, context)
             if (bitmap != null) {
@@ -234,7 +253,6 @@ object FaviconUtils {
             }
         }
 
-        // 2. 尝试默认路径
         val faviconUrls = listOf(
             "https://$clean/favicon.ico",
             "https://$clean/favicon.png",
@@ -243,21 +261,25 @@ object FaviconUtils {
 
         for (url in faviconUrls) {
             try {
-                Logcat.d(TAG, "Trying: $url")
+                if (!isAllowedRemoteUrl(url, whitelist)) {
+                    AppTelemetry.w(TAG, "Reject favicon download for restricted url: $url")
+                    continue
+                }
+                AppTelemetry.d(TAG, "Trying: $url")
                 val bitmap = downloadFaviconWithCoil(url, context)
                 if (bitmap != null) {
                     val savedPath = saveBitmapToInternalStorage(context, bitmap)
                     if (savedPath != null) {
-                        Logcat.d(TAG, "Successfully downloaded favicon from: $url")
+                        AppTelemetry.d(TAG, "Successfully downloaded favicon from: $url")
                         return@withContext DownloadOutcome(DownloadResult.SUCCESS, savedPath)
                     }
                 }
             } catch (e: Exception) {
-                Logcat.e(TAG, "Failed to download from $url", e)
+                AppTelemetry.e(TAG, "Failed to download from $url", e)
             }
         }
 
-        Logcat.w(TAG, "Failed to download favicon from: $input")
+        AppTelemetry.w(TAG, "Failed to download favicon from: $input")
         DownloadOutcome(DownloadResult.NETWORK_ERROR)
     }
 
@@ -288,7 +310,7 @@ object FaviconUtils {
             val drawable = result.drawable
             drawable?.toBitmap()
         } catch (e: Exception) {
-            Logcat.e(TAG, "Error downloading favicon with Coil from $urlString", e)
+            AppTelemetry.e(TAG, "Error downloading favicon with Coil from $urlString", e)
             null
         }
     }
@@ -299,7 +321,7 @@ object FaviconUtils {
                 if (!exists()) mkdirs()
             }
 
-            val fileName = "favicon_${UUID.randomUUID()}.png"
+            val fileName = "favicon_${UuidCreator.getTimeOrderedEpoch()}.png"
             val destFile = File(directory, fileName)
 
             FileOutputStream(destFile).use { outputStream ->
@@ -307,10 +329,10 @@ object FaviconUtils {
                 outputStream.flush()
             }
 
-            Logcat.d(TAG, "Favicon saved to: ${destFile.absolutePath}")
+            AppTelemetry.d(TAG, "Favicon saved to: ${destFile.absolutePath}")
             destFile.absolutePath
         } catch (e: Exception) {
-            Logcat.e(TAG, "Error saving favicon to storage", e)
+            AppTelemetry.e(TAG, "Error saving favicon to storage", e)
             null
         }
     }

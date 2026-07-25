@@ -1,0 +1,162 @@
+syntax = "proto2";
+
+option java_package = "com.aozijx.passly.data.local.datastore.settings";
+option java_multiple_files = true;
+
+// ============================================================
+// 顶层消息
+// ============================================================
+
+message AppSettings {
+  optional int32 version = 1 [default = 1];
+
+    optional AppearancePreferences appearance = 2;
+    optional InterfacePreferences interface_prefs = 3;
+    optional SecurityPreferences security = 4;
+    optional InteractionPreferences interaction = 5;
+    optional VaultViewPreferences vault_view = 6;
+    optional MessagePreferences message = 7;
+    optional BackupPreferences backup = 8;
+}
+
+// 外观
+
+message AppearancePreferences {
+    optional ThemeMode theme_mode = 1 [default = THEME_MODE_SYSTEM];
+    optional bool dynamic_color_enabled = 2 [default = true];
+    optional FallbackPalette fallback_palette = 3 [default = FALLBACK_PALETTE_BLUE];
+    optional fixed64 custom_seed_argb = 4;
+    // BCP-47 语言标签: "system", "zh-CN", "en", "ja"
+    optional string language = 5 [default = "system"];
+    // 字体标识: "app.default", "system"
+    optional string font_family = 6 [default = "app.default"];
+}
+
+enum ThemeMode {
+    THEME_MODE_SYSTEM = 0;
+    THEME_MODE_LIGHT = 1;
+    THEME_MODE_DARK = 2;
+}
+
+enum FallbackPalette {
+    FALLBACK_PALETTE_BLUE = 0;
+    FALLBACK_PALETTE_GREEN = 1;
+    FALLBACK_PALETTE_RED = 2;
+    FALLBACK_PALETTE_PURPLE = 3;
+    FALLBACK_PALETTE_ORANGE = 4;
+    FALLBACK_PALETTE_TEAL = 5;
+    FALLBACK_PALETTE_PINK = 6;
+}
+
+// 界面交互行为
+
+message InterfacePreferences {
+    optional bool hide_system_bars = 1 [default = false];
+    optional bool collapse_top_bar_on_scroll = 2 [default = false];
+    optional bool collapse_tab_bar_on_scroll = 3 [default = false];
+}
+
+// 安全
+
+message SecurityPreferences {
+    optional bool secure_content_enabled = 1 [default = true];
+    optional bool flip_to_lock_enabled = 2 [default = true];
+    optional bool flip_exit_and_clear_stack = 3 [default = false];
+    optional bool lock_on_background = 4 [default = false];
+    optional int64 lock_timeout_ms = 5 [default = 60000];
+    optional bool invalidate_biometric_key_on_change = 6 [default = true];
+}
+
+// 交互
+
+message InteractionPreferences {
+    optional bool swipe_actions_enabled = 1 [default = false];
+    // 快捷操作标识: "none", "copy_username", "copy_password", "copy_totp",
+    // "open_details", "open_in_browser", "call", "send_sms", "launch_app"
+    optional string swipe_left_action = 2 [default = "copy_password"];
+    optional string swipe_right_action = 3 [default = "open_details"];
+    // 自动填充弹出模式: "system_inline", "fullscreen", "dialog"
+    optional string autofill_ui_mode = 4 [default = "system_inline"];
+    optional bool auto_download_icons = 5 [default = true];
+    repeated string favicon_allowed_domains = 6;
+}
+
+// 保险库视图 / 条目卡片
+
+message VaultViewPreferences {
+    optional int32 max_tabs_without_scroll = 1 [default = 4];
+    optional VisibleTabs visible_tabs = 2;
+    optional VaultSortPreference sort = 3;
+    repeated EntryCardPresentation entry_card_presentations = 4;
+}
+
+message VisibleTabs {
+    repeated string tab_keys = 1;
+    optional bool configured = 2 [default = false];
+}
+
+message VaultSortPreference {
+    optional string field = 1 [default = "LAST_USED_AT"];
+    optional bool descending = 2 [default = true];
+    optional bool pin_favorites = 3 [default = true];
+    optional string tie_breaker_field = 4 [default = "ID"];
+}
+
+message EntryCardPresentation {
+    // 条目类型标识: "login", "totp", "card", "ssh_key", "note", "identity"
+    optional string entry_type_key = 1;
+    // 卡片变体标识: "login.standard", "login.compact", "totp.live"
+    optional string variant_key = 2;
+    optional CardDensity density = 3 [default = CARD_DENSITY_STANDARD];
+    optional bool show_icon = 4 [default = true];
+    optional bool show_favorite = 5 [default = true];
+    optional bool show_secondary_text = 6 [default = true];
+    optional bool show_quick_action = 7 [default = true];
+}
+
+enum CardDensity {
+    CARD_DENSITY_UNSPECIFIED = 0;
+    CARD_DENSITY_COMPACT = 1;
+    CARD_DENSITY_STANDARD = 2;
+    CARD_DENSITY_COMFORTABLE = 3;
+}
+
+// 消息
+
+message MessagePreferences {
+  optional bool optional_messages_enabled = 1 [default = true];
+  optional bool system_notifications_enabled = 2 [default = true];
+  repeated TopicMessagePreference topics = 3;
+    optional int64 default_dedup_ttl_ms = 4 [default = 15000];
+}
+
+message TopicMessagePreference {
+    // 消息分类标识: "clipboard", "app_lifecycle", "icon_download",
+    // "backup", "security", "database"
+    optional string topic_key = 1 [default = "clipboard"];
+  optional bool enabled = 2 [default = true];
+  optional NoticeLevelProto minimum_level = 3 [default = NOTICE_LEVEL_INFO];
+}
+
+enum NoticeLevelProto {
+  NOTICE_LEVEL_INFO = 0;
+  NOTICE_LEVEL_SUCCESS = 1;
+  NOTICE_LEVEL_WARNING = 2;
+  NOTICE_LEVEL_ERROR = 3;
+  NOTICE_LEVEL_CRITICAL = 4;
+}
+
+// 备份
+
+message BackupPreferences {
+    optional string directory_tree_uri = 1 [default = ""];
+    // 导出格式标识: "passly.encrypted", "csv", "json"
+    optional string default_export_format = 2 [default = "passly.encrypted"];
+    optional bool include_icons = 3 [default = true];
+    optional bool include_attachments = 4 [default = true];
+    optional bool include_deleted_entries = 5 [default = true];
+    // 条目类型标识列表, 空=全部
+    repeated string included_entry_types = 6;
+    // 导入模式标识: "append", "replace", "merge"
+    optional string default_import_mode = 7 [default = "append"];
+}

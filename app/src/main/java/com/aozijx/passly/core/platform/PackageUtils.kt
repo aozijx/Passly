@@ -6,19 +6,13 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.LruCache
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.scale
-import com.aozijx.passly.core.logging.Logcat
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
-import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
@@ -26,7 +20,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PackageUtils @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private val packageManager: PackageManager = context.packageManager
 
@@ -57,7 +51,7 @@ class PackageUtils @Inject constructor(
             metadataCache.put(packageName, metadata)
             metadata
         } catch (e: PackageManager.NameNotFoundException) {
-            Logcat.w(TAG, "App not found for package: $packageName", e)
+            AppTelemetry.w(TAG, "App not found for package: $packageName", e)
             null
         }
     }
@@ -78,7 +72,7 @@ class PackageUtils @Inject constructor(
                 null
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            Logcat.w(TAG, "Icon not found for package: $packageName", e)
+            AppTelemetry.w(TAG, "Icon not found for package: $packageName", e)
             null
         }
     }
@@ -102,7 +96,7 @@ class PackageUtils @Inject constructor(
                 try {
                     drawable.toBitmap(targetSize, targetSize)
                 } catch (e: Exception) {
-                    Logcat.e(TAG, "Failed to convert drawable to bitmap", e)
+                    AppTelemetry.e(TAG, "Failed to convert drawable to bitmap", e)
                     null
                 }
             }
@@ -114,18 +108,4 @@ class PackageUtils @Inject constructor(
 @InstallIn(SingletonComponent::class)
 interface PackageUtilsProvider {
     fun getPackageUtils(): PackageUtils
-}
-
-@Composable
-fun rememberAppIcon(packageName: String?): Painter? {
-    val context = LocalContext.current
-    val packageUtils = remember {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            PackageUtilsProvider::class.java
-        ).getPackageUtils()
-    }
-    return remember(packageName) {
-        packageName?.let { packageUtils.loadIcon(it)?.let { BitmapPainter(it) } }
-    }
 }

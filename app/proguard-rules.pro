@@ -1,40 +1,31 @@
-# Room 基础规则
--keepclassmembers class * extends androidx.room.RoomDatabase {
-    public <init>(...);
+# ========== 基础属性（保留，用于崩溃日志和注解） ==========
+-keepattributes Signature, *Annotation*, EnclosingMethod, InnerClasses, SourceFile, LineNumberTable
+
+# ========== Hilt（只保留模块方法，组件由插件自带） ==========
+-keep @dagger.Module class *
+-keepclassmembers @dagger.Module class * {
+    @dagger.Provides <methods>;
+    @dagger.Binds <methods>;
 }
+
+# ========== Room（必须） ==========
 -keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *
+-keep @androidx.room.Dao interface *
+-keepclassmembers class * { @androidx.room.* <fields>; }
 
-# SQLCipher / SQLite 相关规则
--keep class net.zetetic.database.sqlcipher.** { *; }
--keep class androidx.sqlite.db.SupportSQLite* { *; }
-
-# --- ML Kit / Firebase 依赖注入系统修复 ---
-
-# 1. 核心修复：保留所有组件注册器。
-# ML Kit 使用 Firebase 组件系统，注册器通过反射加载。保留实现该接口的类及其构造函数。
--keep class * implements com.google.firebase.components.ComponentRegistrar {
-    <init>();
+# ========== Kotlinx Serialization（必须） ==========
+-keep,includedescriptorclasses class com.aozijx.passly.**$$serializer { *; }
+-keepclassmembers class com.aozijx.passly.** { *** Companion; }
+-keepclasseswithmembers class com.aozijx.passly.** {
+    kotlinx.serialization.KSerializer serializer(...);
 }
 
-# 2. 保留 ML Kit 初始化的核心入口点
--keep class com.google.mlkit.common.internal.MlKitInitProvider
--keep class com.google.mlkit.common.sdkinternal.MlKitContext { *; }
+# ========== Protobuf Lite（必须，防止字段名混淆） ==========
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite { <fields>; }
 
-# 丢弃第三方库可能使用的标准 Log 调用
--assumenosideeffects class android.util.Log {
-    public static int v(...);
-    public static int d(...);
-}
+# ========== Firebase/ML Kit（必须） ==========
+-keep class * implements com.google.firebase.components.ComponentRegistrar { <init>(); }
 
-# 丢弃 System.out.println
--assumenosideeffects class java.io.PrintStream {
-    public void println(java.lang.String);
-    public void print(java.lang.String);
-}
-
-# 保留混淆后的堆栈信息以便 Retrace
--keepattributes Signature
--keepattributes *Annotation*
--keepattributes EnclosingMethod
--keepattributes InnerClasses
--keepattributes SourceFile,LineNumberTable
+# ========== 日志优化（可选，建议保留） ==========
+-assumenosideeffects class android.util.Log { public static int v(...); public static int d(...); }

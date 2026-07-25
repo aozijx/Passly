@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option java_package = "com.aozijx.passly.data.crypto.proto";
+option java_multiple_files = true;
+
+message BootstrapData {
+  int32 version = 1;
+  repeated EnvelopeEntry envelopes = 2;
+  bytes verification_tag = 3;
+  BiometricBinding biometric_binding = 4;
+  BiometricRotationJournal biometric_rotation = 5;
+  repeated string biometric_cleanup_aliases = 6;
+}
+
+message EnvelopeEntry {
+  string type = 1;
+  bytes ciphertext = 2;
+  bytes iv = 3;
+  bytes salt = 4;
+  string algorithm = 5;
+  int32 version = 6;
+}
+
+message BiometricBinding {
+  string active_alias = 1;
+  bool invalidate_on_enrollment = 2;
+}
+
+message BiometricRotationJournal {
+  enum Phase {
+    NONE = 0;
+    PREPARED = 1;
+    COMMITTED = 2;
+  }
+  Phase phase = 1;
+  string old_alias = 2;
+  string candidate_alias = 3;
+}

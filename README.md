@@ -1,51 +1,40 @@
 # Passly
 
-Passly 是一款基于 **Jetpack Compose** 构建的离线优先隐私保险库 Android 应用。
+Passly 是一款离线优先的 Android 隐私保险库，使用 Jetpack Compose 构建。敏感数据由 SQLCipher 与字段级
+AES-256-GCM 共同保护，认证凭据通过信封解密同一份 Vault DEK。
 
-## 核心特性
+## 能力概览
 
-- 生物识别解锁（系统 KeyStore + BiometricPrompt）
-- AES-256 GCM 本地强加密存储
-- 加密备份与恢复
-- 多条目类型策略引擎（密码、TOTP、Passkey、银行卡等）
-- Autofill 自动填充支持
-- Material 3 UI（动态色 / 深色模式）
-- 应用密码（App Password）独立于系统锁屏
+- 生物识别、应用密码和一次性恢复码解锁
+- 密码、TOTP、银行卡等保险库条目
+- Android Autofill 与 Credential Manager 集成
+- 带附件的版本化加密备份
+- 自动锁定、剪贴板清理与集中消息通知
 
-## 技术栈
+## 技术基线
 
-- Jetpack Compose + Material 3
-- Room + SQLCipher
-- Kotlin Coroutines + Flow
-- Koin（依赖注入）
-- CameraX + ML Kit（二维码扫描）
+- Android API 31–36、JDK 21
+- Kotlin、Coroutines、Flow、Hilt
+- Jetpack Compose、Material 3、Navigation
+- Room、SQLCipher、Proto DataStore
+- AES-256-GCM、Android Keystore、Argon2id
 
-## 快速开始
-
-### 环境要求
-
-- Android Studio Otter (2024.2.2)+
-- JDK 21
-- Gradle 8.13+
-- Android 12+ (API 31+)
-
-### 构建命令
+## 本地构建
 
 ```powershell
-# 编译
-.\gradlew.bat :app:compileVaultDebugKotlin --no-daemon
-
-# 打包
-.\gradlew.bat :app:assembleDebug --no-daemon
+.\gradlew.bat :app:compileDebugKotlin
+.\gradlew.bat :app:testDebugUnitTest
+.\gradlew.bat :app:lintDebug
+.\gradlew.bat :app:assembleDebug
 ```
 
-## 项目原则
+Release 构建必须提供完整签名配置；缺少凭据时不会回退到 Debug
+签名。详细环境、验收命令和已知问题见[开发指南](docs/getting-started/development.md)。
 
-- 安全优先
-- 离线优先
-- 分层清晰（Clean Architecture + Package by Feature）
-- 可维护性优先（策略、配置、样式 token 集中管理）
+## 文档
 
-## 开源协议
+从[文档中心](docs/README.md)开始。架构约束、安全模型、数据格式、功能设计和 ADR 均以该目录为索引。
 
-本项目采用 [Apache-2.0](LICENSE) 协议开源。
+## 许可证
+
+本项目采用 [Apache-2.0](LICENSE) 许可证。
