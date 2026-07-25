@@ -52,7 +52,7 @@ fun DetailCardDialog(
     initialEntry: VaultEntry,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     mainViewModel: MainViewModel,
-    totpState: OtpUiState? = null,
+    otpState: OtpUiState? = null,
     onDismiss: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onShowIconPicker: () -> Unit,
@@ -75,7 +75,6 @@ fun DetailCardDialog(
     val vaultType = entry.entryType
     val editState = remember(entry) { EntryEditState(entry) }
 
-    val currentState = totpState
     val isSteam = remember(entry.secret.otp?.config?.type) {
         entry.secret.otp?.config?.type == OtpType.STEAM
     }
@@ -167,7 +166,7 @@ fun DetailCardDialog(
                         vaultType = vaultType,
                         hasTotp = hasTotp,
                         isHotp = isHotp,
-                        currentState = currentState,
+                        currentState = otpState,
                         isSteam = isSteam,
                         totpEditState = totpEditState,
                         editState = editState,
@@ -194,7 +193,6 @@ fun DetailCardDialog(
                             showQrDialog = true
                         },
                         mainViewModel = mainViewModel,
-                        onUpdateVaultEntry = onUpdateVaultEntry,
                         onEvent = detailViewModel::handleIntent,
                         onGenerateHotpCode = onGenerateHotpCode
                     )
@@ -226,7 +224,6 @@ private fun LazyListScope.typeSpecificCardContent(
     onPasswordRevealed: (String?) -> Unit,
     onShowQrDialog: () -> Unit,
     mainViewModel: MainViewModel,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onEvent: (DetailIntent) -> Unit,
     onGenerateHotpCode: ((entryId: String) -> Unit)? = null
 ) {
