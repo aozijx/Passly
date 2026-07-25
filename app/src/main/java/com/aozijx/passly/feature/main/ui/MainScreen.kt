@@ -19,11 +19,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.error.ui.toUiMessage
-import com.aozijx.passly.core.message.AppMessageCategory
-import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.core.ui.components.PlainExportDialog
 import com.aozijx.passly.core.ui.components.PlainExportDialogType
 import com.aozijx.passly.core.ui.theme.AppTheme
+import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
 import com.aozijx.passly.feature.backup.BackupViewModel
@@ -35,7 +36,7 @@ import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
-import com.aozijx.passly.feature.message.AppMessageHostViewModel
+import com.aozijx.passly.feature.message.AppNoticeHostViewModel
 
 @Composable
 internal fun MainScreen(
@@ -45,6 +46,15 @@ internal fun MainScreen(
 ) {
     val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val noticePublisher = LocalAppNoticePublisher.current
+
+    fun showLocalMessage(text: String, longDuration: Boolean = false) {
+        Toast.makeText(
+            context,
+            text,
+            if (longDuration) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
+        ).show()
+    }
 
     val mainConfigViewModel: MainConfigViewModel = hiltViewModel()
     val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
@@ -53,7 +63,7 @@ internal fun MainScreen(
     val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
 
     val authenticationViewModel: AuthenticationViewModel = hiltViewModel()
-    val messageHostViewModel: AppMessageHostViewModel = hiltViewModel()
+    val messageHostViewModel: AppNoticeHostViewModel = hiltViewModel()
 
     LaunchedEffect(messageHostViewModel) {
         messageHostViewModel.toastMessages.collect { message ->
@@ -83,7 +93,7 @@ internal fun MainScreen(
             when (effect) {
                 is BackupEffect.ShowError -> {
                     val msg = effect.error.toUiMessage(unknownErrorMsg)
-                    AppMessageCenter.publish(msg, longDuration = true)
+                    showLocalMessage(msg, longDuration = true)
                 }
 
                 is BackupEffect.ShowPlainExportPicker -> plainExportPickerLauncher.launch(effect.fileName)
@@ -105,13 +115,13 @@ internal fun MainScreen(
                     BackupOperationStatus.OperationType.PLAIN_EXPORT -> plainExportSuccessMsg
                     BackupOperationStatus.OperationType.PERMISSION_CHECK -> permOkMsg
                 }
-                AppMessageCenter.publish(msg, longDuration = true)
+                showLocalMessage(msg, longDuration = true)
                 backupViewModel.onIntent(BackupIntent.ResetBackupStatus)
             }
 
             is BackupOperationStatus.Failure -> {
                 val errorMsg = backupState.error?.toUiMessage(unknownErrorMsg) ?: unknownErrorMsg
-                AppMessageCenter.publish(errorMsg, longDuration = true)
+                showLocalMessage(errorMsg, longDuration = true)
                 backupViewModel.onIntent(BackupIntent.ResetBackupStatus)
             }
 
@@ -122,12 +132,10 @@ internal fun MainScreen(
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is MainEffect.ShowToast -> AppMessageCenter.publish(effect.message)
+                is MainEffect.ShowToast -> showLocalMessage(effect.message)
 
-                is MainEffect.ShowError -> AppMessageCenter.publish(
-                    effect.error,
-                    longDuration = true
-                )
+                is MainEffect.ShowError ->
+                    showLocalMessage(effect.error, longDuration = true)
 
                 is MainEffect.ShowPlainExportPicker -> plainExportPickerLauncher.launch(
                     effect.fileName
@@ -160,9 +168,8 @@ internal fun MainScreen(
                             viewModel.handleIntent(MainIntent.RetryDatabaseInitialization)
                         },
                         onResetOrCancel = {
-                            AppMessageCenter.publish(
-                                text = "应用即将关闭",
-                                category = AppMessageCategory.APP_CLOSE
+                            noticePublisher.publish(
+                                newAppNotice(NoticeCode.APP_CLOSE_REMINDER)
                             )
                             activity.window.decorView.postDelayed(
                                 { activity.finishAffinity() },

@@ -94,12 +94,6 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     },
                     onLockOnBackgroundChange = {
                         viewModel.onAction(SecurityUiAction.ToggleLockOnBackground(it))
-                    },
-                    onClipboardClearToastsChange = {
-                        viewModel.onAction(SecurityUiAction.ToggleClipboardClearToasts(it))
-                    },
-                    onAppCloseToastsChange = {
-                        viewModel.onAction(SecurityUiAction.ToggleAppCloseToasts(it))
                     }
                 )
             }

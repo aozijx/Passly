@@ -8,8 +8,15 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.aozijx.passly.core.message.AppMessageCategory
-import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.core.message.compose.ProvideAppNoticePublisher
+import com.aozijx.passly.core.permission.compose.PermissionServices
+import com.aozijx.passly.core.permission.compose.ProvidePermissionServices
+import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
+import com.aozijx.passly.core.permission.contract.PermissionStatusReader
+import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
+import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.model.newAppNotice
+import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
@@ -27,15 +34,24 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
+    @Inject
+    lateinit var noticePublisher: AppNoticePublisher
+
+    @Inject
+    lateinit var permissionStatusReader: PermissionStatusReader
+
+    @Inject
+    lateinit var permissionRequestArbiter: PermissionRequestArbiter
+
+    @Inject
+    lateinit var permissionRequestHistory: PermissionRequestHistory
+
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
             if (viewModel.isAuthorizedNow()) {
                 viewModel.handleIntent(MainIntent.Lock)
                 if (sensorController.isFlipExitAndClearStackEnabled) {
-                    AppMessageCenter.publish(
-                        text = "应用即将关闭",
-                        category = AppMessageCategory.APP_CLOSE
-                    )
+                    noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
                     window.decorView.postDelayed({
                         finishAndRemoveTask()
                         exitProcess(0)
@@ -57,12 +73,22 @@ class MainActivity : AppCompatActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         setContent {
-            AuthenticationHost(this, authenticationHostRegistry) {
-                MainScreen(
-                    activity = this,
-                    viewModel = viewModel,
-                    sensorController = sensorController
+            ProvidePermissionServices(
+                PermissionServices(
+                    statusReader = permissionStatusReader,
+                    requestArbiter = permissionRequestArbiter,
+                    requestHistory = permissionRequestHistory
                 )
+            ) {
+                ProvideAppNoticePublisher(noticePublisher) {
+                    AuthenticationHost(this, authenticationHostRegistry) {
+                        MainScreen(
+                            activity = this,
+                            viewModel = viewModel,
+                            sensorController = sensorController
+                        )
+                    }
+                }
             }
         }
     }

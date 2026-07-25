@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.settings.general
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,11 +16,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.R
-import com.aozijx.passly.core.message.AppMessageCenter
-import com.aozijx.passly.core.permission.AppPermission
-import com.aozijx.passly.core.permission.rememberAppPermissionRequester
+import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
+import com.aozijx.passly.core.permission.compose.rememberPermissionRequestHost
+import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
+import com.aozijx.passly.core.permission.model.PermissionStatus
+import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.platform.CacheUtils
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
+import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.model.newAppNotice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,19 +36,13 @@ internal fun GeneralDetail() {
     var cacheSize by remember { mutableStateOf(CacheUtils.calculateTotalCacheSize(context)) }
     val notificationViewModel: NotificationSettingsViewModel = hiltViewModel()
     val notificationState by notificationViewModel.uiState.collectAsStateWithLifecycle()
-    val permissionDeniedMessage = stringResource(R.string.main_notification_permission_denied)
-    val permissionRequester = rememberAppPermissionRequester { result ->
-        val granted = result[AppPermission.Notifications]?.isSatisfied == true
-        notificationViewModel.setStatusBarEnabled(granted)
-        if (!granted) AppMessageCenter.publish(permissionDeniedMessage)
-    }
-
-    LaunchedEffect(notificationState.statusBarEnabled, permissionRequester) {
+    val noticePublisher = LocalAppNoticePublisher.current
+    val permissionHost = rememberPermissionRequestHost("settings.notifications") { permission, result ->
         if (
-            notificationState.statusBarEnabled &&
-            !permissionRequester.snapshot(AppPermission.Notifications).isSatisfied
+            permission == RuntimePermission.POST_NOTIFICATIONS &&
+            result is PermissionRequestOutcome.Denied
         ) {
-            notificationViewModel.setStatusBarEnabled(false)
+            noticePublisher.publish(newAppNotice(NoticeCode.NOTIFICATION_PERMISSION_DENIED))
         }
     }
 
@@ -54,16 +51,15 @@ internal fun GeneralDetail() {
 
         NotificationSettingsSection(
             state = notificationState,
-            onStatusBarEnabledChange = { enabled ->
+            onSystemNotificationsEnabledChange = { enabled ->
+                notificationViewModel.setSystemNotificationsEnabled(enabled)
                 when {
-                    !enabled -> notificationViewModel.setStatusBarEnabled(false)
-                    permissionRequester.snapshot(AppPermission.Notifications).isSatisfied ->
-                        notificationViewModel.setStatusBarEnabled(true)
-
-                    else -> permissionRequester.request(AppPermission.Notifications)
+                    !enabled -> Unit
+                    permissionHost.status(RuntimePermission.POST_NOTIFICATIONS) ==
+                        PermissionStatus.GRANTED -> Unit
+                    else -> permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)
                 }
             },
-            onIconDownloadsEnabledChange = notificationViewModel::setIconDownloadsEnabled,
             onOptionalMessagesEnabledChange = notificationViewModel::setOptionalMessagesEnabled,
             onTopicEnabledChange = notificationViewModel::setMessageTopicEnabled
         )

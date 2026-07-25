@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.settings.apppassword
 
 import android.content.Context
+import android.widget.Toast
 import com.aozijx.passly.R
-import com.aozijx.passly.core.message.AppMessageCenter
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
@@ -27,12 +27,12 @@ internal fun handleAppPasswordAction(
     when (action) {
         AppPasswordAction.SET -> {
             if (newPassword != confirmPassword) {
-                AppMessageCenter.publish(context.getString(R.string.auth_password_mismatch))
+                context.showToast(R.string.auth_password_mismatch)
                 return
             }
             settingsViewModel.setAppPassword(newPassword.toCharArray()) { success ->
                 if (success) {
-                    AppMessageCenter.publish(context.getString(R.string.auth_password_set_success))
+                    context.showToast(R.string.auth_password_set_success)
                     onSuccess(action)
                 }
             }
@@ -40,16 +40,16 @@ internal fun handleAppPasswordAction(
 
         AppPasswordAction.CHANGE -> {
             if (currentPassword.isEmpty() || newPassword.isEmpty()) {
-                AppMessageCenter.publish(context.getString(R.string.auth_password_fields_required))
+                context.showToast(R.string.auth_password_fields_required)
                 return
             }
             if (newPassword != confirmPassword) {
-                AppMessageCenter.publish(context.getString(R.string.auth_password_mismatch))
+                context.showToast(R.string.auth_password_mismatch)
                 return
             }
             settingsViewModel.changeAppPassword(newPassword.toCharArray()) { success ->
                 if (success) {
-                    AppMessageCenter.publish(context.getString(R.string.auth_password_change_success))
+                    context.showToast(R.string.auth_password_change_success)
                     onSuccess(action)
                 }
             }
@@ -57,17 +57,21 @@ internal fun handleAppPasswordAction(
 
         AppPasswordAction.DISABLE -> {
             if (currentPassword.isEmpty()) {
-                AppMessageCenter.publish(context.getString(R.string.auth_current_password_required))
+                context.showToast(R.string.auth_current_password_required)
                 return
             }
             settingsViewModel.disableAppPassword { success ->
                 if (success) {
-                    AppMessageCenter.publish(context.getString(R.string.auth_password_disabled))
+                    context.showToast(R.string.auth_password_disabled)
                     onSuccess(action)
                 }
             }
         }
     }
+}
+
+private fun Context.showToast(messageResource: Int) {
+    Toast.makeText(this, messageResource, Toast.LENGTH_SHORT).show()
 }
 
 internal fun handleAppPasswordEntryClick(

@@ -1,12 +1,25 @@
 package com.aozijx.passly.domain.notice.model
 
+import java.util.UUID
+
 data class AppNotice(
     val eventId: String,
     val code: NoticeCode,
-    val topic: NoticeTopic,
-    val level: NoticeLevel,
-    val arguments: Map<ArgumentKey, ArgumentValue>,
-    val deliveryPolicy: DeliveryPolicy
+    val arguments: Map<ArgumentKey, ArgumentValue> = emptyMap()
+) {
+    init {
+        require(eventId.isNotBlank()) { "eventId must not be blank" }
+    }
+}
+
+fun newAppNotice(
+    code: NoticeCode,
+    arguments: Map<ArgumentKey, ArgumentValue> = emptyMap(),
+    eventId: String = UUID.randomUUID().toString()
+): AppNotice = AppNotice(
+    eventId = eventId,
+    code = code,
+    arguments = arguments
 )
 
 enum class NoticeCode {
@@ -25,7 +38,8 @@ enum class NoticeCode {
     SECURITY_ACTION_FAILED,
     DATABASE_INDEX_REBUILD_COMPLETED,
     DATABASE_INDEX_REBUILD_FAILED,
-    DATABASE_OPERATION_FAILED
+    DATABASE_OPERATION_FAILED,
+    NOTIFICATION_PERMISSION_DENIED
 }
 
 enum class NoticeTopic {
@@ -45,11 +59,10 @@ enum class NoticeLevel {
     CRITICAL
 }
 
-data class DeliveryPolicy(
-    /** 是否要求系统通知（状态栏） */
-    val systemNotificationRequired: Boolean = false,
-    /** 语义去重窗口，0 = 不做语义合并 */
-    val suppressWithinMs: Long = 0,
-    /** 同类聚合窗口，0 = 不聚合（与 suppressWithinMs 互斥） */
-    val aggregateWithinMs: Long = 0
-)
+enum class DeliveryPolicy {
+    IN_APP_ONLY,
+    SYSTEM_ONLY,
+    PREFER_IN_APP,
+    PREFER_SYSTEM,
+    BOTH
+}

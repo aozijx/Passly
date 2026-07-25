@@ -21,16 +21,12 @@ import javax.inject.Inject
 data class SecurityUiState(
     val lockTimeout: Long = 60_000L,
     val isInvalidateKeyOnBioChange: Boolean = true,
-    val isLockOnBackground: Boolean = false,
-    val clipboardClearToastsEnabled: Boolean = true,
-    val appCloseToastsEnabled: Boolean = true
+    val isLockOnBackground: Boolean = false
 )
 
 sealed interface SecurityUiAction {
     data class SetLockTimeout(val timeoutMs: Long) : SecurityUiAction
     data class ToggleLockOnBackground(val enabled: Boolean) : SecurityUiAction
-    data class ToggleClipboardClearToasts(val enabled: Boolean) : SecurityUiAction
-    data class ToggleAppCloseToasts(val enabled: Boolean) : SecurityUiAction
     data class VerifyRecoveryCode(val code: String) : SecurityUiAction
     data object ClearVerifyResult : SecurityUiAction
 }
@@ -45,16 +41,12 @@ class SecurityViewModel @Inject constructor(
     val config: StateFlow<SecurityUiState> = combine(
         settingsRepository.lockTimeout,
         settingsRepository.settings.map { it.security.isInvalidateKeyOnBioChange },
-        settingsRepository.isLockOnBackground,
-        settingsRepository.settings.map { it.notifications.clipboardClearToastsEnabled },
-        settingsRepository.settings.map { it.notifications.appCloseToastsEnabled }
-    ) { lt, ibc, lob, clipboardToasts, closeToasts ->
+        settingsRepository.isLockOnBackground
+    ) { lt, ibc, lob ->
         SecurityUiState(
             lockTimeout = lt,
             isInvalidateKeyOnBioChange = ibc,
-            isLockOnBackground = lob,
-            clipboardClearToastsEnabled = clipboardToasts,
-            appCloseToastsEnabled = closeToasts
+            isLockOnBackground = lob
         )
     }.stateIn(
         viewModelScope,
@@ -84,14 +76,6 @@ class SecurityViewModel @Inject constructor(
 
             is SecurityUiAction.ToggleLockOnBackground -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetLockOnBackground(action.enabled))
-            }
-
-            is SecurityUiAction.ToggleClipboardClearToasts -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetClipboardClearToastsEnabled(action.enabled))
-            }
-
-            is SecurityUiAction.ToggleAppCloseToasts -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetAppCloseToastsEnabled(action.enabled))
             }
 
             is SecurityUiAction.VerifyRecoveryCode -> viewModelScope.launch {

@@ -49,14 +49,43 @@ message AppSettings {
   map<string, string> runtime_extra = 39;
   optional bool visible_vault_tabs_configured = 40 [default = false];
 
-  // Message presentation preferences
-  optional bool status_bar_notifications_enabled = 41 [default = true];
-  optional bool icon_download_notifications_enabled = 42 [default = true];
-  optional bool clipboard_clear_toasts_enabled = 43 [default = true];
-  optional bool app_close_toasts_enabled = 44 [default = true];
+  reserved 41 to 47;
+  reserved "status_bar_notifications_enabled",
+      "icon_download_notifications_enabled",
+      "clipboard_clear_toasts_enabled",
+      "app_close_toasts_enabled",
+      "optional_messages_enabled",
+      "system_notifications_enabled",
+      "topic_message_settings";
 
-  // Structured notice settings (new)
-  optional bool optional_messages_enabled = 45 [default = true];
-  optional bool system_notifications_enabled = 46 [default = true];
-  map<string, string> topic_message_settings = 47;
+  optional MessagePreferences message_preferences = 48;
+}
+
+message MessagePreferences {
+  optional bool optional_messages_enabled = 1 [default = true];
+  optional bool system_notifications_enabled = 2 [default = true];
+  repeated TopicMessagePreference topics = 3;
+}
+
+message TopicMessagePreference {
+  required NoticeTopicProto topic = 1;
+  optional bool enabled = 2 [default = true];
+  optional NoticeLevelProto minimum_level = 3 [default = NOTICE_LEVEL_INFO];
+}
+
+enum NoticeTopicProto {
+  NOTICE_TOPIC_CLIPBOARD = 0;
+  NOTICE_TOPIC_APP_LIFECYCLE = 1;
+  NOTICE_TOPIC_ICON_DOWNLOAD = 2;
+  NOTICE_TOPIC_BACKUP = 3;
+  NOTICE_TOPIC_SECURITY = 4;
+  NOTICE_TOPIC_DATABASE = 5;
+}
+
+enum NoticeLevelProto {
+  NOTICE_LEVEL_INFO = 0;
+  NOTICE_LEVEL_SUCCESS = 1;
+  NOTICE_LEVEL_WARNING = 2;
+  NOTICE_LEVEL_ERROR = 3;
+  NOTICE_LEVEL_CRITICAL = 4;
 }

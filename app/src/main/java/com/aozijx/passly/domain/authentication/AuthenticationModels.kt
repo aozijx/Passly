@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.authentication
 
-import com.aozijx.passly.core.diagnostics.AppFailure
-import com.aozijx.passly.core.diagnostics.FailureOrigin
-import com.aozijx.passly.core.diagnostics.FailureSeverity
-import com.aozijx.passly.core.diagnostics.RecoveryAction
+import com.aozijx.passly.domain.failure.AppFailure
+import com.aozijx.passly.domain.failure.FailureOrigin
+import com.aozijx.passly.domain.failure.FailureSeverity
+import com.aozijx.passly.domain.failure.RecoveryAction
 import com.github.f4b6a3.uuid.UuidCreator
 
 enum class AuthenticationMethod { BIOMETRIC, APP_PASSWORD, RECOVERY_CODE }
@@ -92,8 +92,7 @@ data class AuthenticationFailure(
     override val correlationId: String,
     override val origin: FailureOrigin = FailureOrigin.SECURITY,
     override val severity: FailureSeverity = FailureSeverity.ERROR,
-    override val recoveryAction: RecoveryAction = RecoveryAction.RETRY,
-    override val safeFields: Map<String, String> = emptyMap()
+    override val recoveryAction: RecoveryAction = RecoveryAction.RETRY
 ) : AppFailure {
     override val code: String = "AUTH_${authCode.name}"
 }

@@ -2,7 +2,7 @@ package com.aozijx.passly.data.local.database
 
 import android.content.Context
 import androidx.room.Room
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,12 +41,12 @@ class DatabaseProvider @Inject constructor(
 
         runCatching { db.openHelper.writableDatabase }
             .onFailure { error ->
-                AppLog.e(TAG, "Database probe failed", error)
+                AppTelemetry.e(TAG, "Database probe failed", error)
                 db.close()
                 throw error
             }
 
-        AppLog.i(TAG, "Database opened successfully")
+        AppTelemetry.i(TAG, "Database opened successfully")
         db
     }
 }

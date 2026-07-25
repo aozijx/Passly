@@ -12,12 +12,16 @@ enum class RouteReason {
     SUPPRESSED_BY_DEDUP,
     SYSTEM_PERMISSION_MISSING,
     SYSTEM_DISABLED,
-    FALLBACK_AFTER_SYSTEM_FAILED
+    SYSTEM_CHANNEL_DISABLED,
+    APP_NOT_VISIBLE,
+    FALLBACK_TO_IN_APP,
+    NO_AVAILABLE_TARGET
 }
 
 data class NoticeRoutePlan(
     val targets: Set<NoticeTarget>,
-    val reason: RouteReason
+    val reason: RouteReason,
+    val fallbackTarget: NoticeTarget? = null
 ) {
     companion object {
         fun suppressed(reason: RouteReason) = NoticeRoutePlan(

@@ -13,11 +13,12 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.diagnostics.DiagnosticsPolicyController
-import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
-import com.aozijx.passly.core.diagnostics.LogCategory
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -45,7 +46,10 @@ class PasslyApplication : Application() {
     lateinit var authenticationManager: AuthenticationManager
 
     @Inject
-    lateinit var diagnosticsPolicyController: DiagnosticsPolicyController
+    lateinit var diagnosticsRuntimeController: DiagnosticsRuntimeController
+
+    @Inject
+    lateinit var appNoticePublisher: AppNoticePublisher
 
     @Inject
     lateinit var biometricRotationReconciler: BiometricRotationReconciler
@@ -66,18 +70,15 @@ class PasslyApplication : Application() {
         super.onCreate()
         instance = this
 
-        DiagnosticsRuntime.start(
-            applicationContext,
-            diagnosticsScope,
-            diagnosticsPolicyController.policies
-        )
+        diagnosticsRuntimeController.start(diagnosticsScope)
+        ClipboardUtils.installNoticePublisher(appNoticePublisher)
         diagnosticsScope.launch { biometricRotationReconciler.reconcile() }
 
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            AppLog.e(
-                LogCategory.DATABASE,
+            AppTelemetry.e(
+                EventCategory.DATABASE,
                 "sqlcipher.load_failed",
                 throwable = e
             )
@@ -122,7 +123,7 @@ class PasslyApplication : Application() {
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                     PackageManager.DONT_KILL_APP
                 )
-                AppLog.i(LogCategory.AUTOFILL, "autofill.modern_enabled")
+                AppTelemetry.i(EventCategory.AUTOFILL, "autofill.modern_enabled")
             } else {
                 // API < 34：启用 Legacy，同时【必须】禁用 Modern
                 pm.setComponentEnabledSetting(
@@ -136,10 +137,10 @@ class PasslyApplication : Application() {
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                     PackageManager.DONT_KILL_APP
                 )
-                AppLog.i(LogCategory.AUTOFILL, "autofill.legacy_enabled")
+                AppTelemetry.i(EventCategory.AUTOFILL, "autofill.legacy_enabled")
             }
         } catch (e: Exception) {
-            AppLog.e(LogCategory.AUTOFILL, "autofill.configure_failed", throwable = e)
+            AppTelemetry.e(EventCategory.AUTOFILL, "autofill.configure_failed", throwable = e)
         }
     }
 

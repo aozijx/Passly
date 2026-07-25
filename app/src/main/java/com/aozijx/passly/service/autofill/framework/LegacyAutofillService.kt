@@ -8,7 +8,7 @@ import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.app.di.Heuristic
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
 import com.aozijx.passly.domain.settings.model.AutofillUiMode
@@ -43,7 +43,7 @@ class LegacyAutofillService : AutofillService() {
 
     override fun onCreate() {
         super.onCreate()
-        AppLog.i("LegacyAutofill", "Service created (API < 34 fallback)")
+        AppTelemetry.i("LegacyAutofill", "Service created (API < 34 fallback)")
     }
 
     override fun onFillRequest(
@@ -82,12 +82,12 @@ class LegacyAutofillService : AutofillService() {
             )
             when (result) {
                 is AppResult.Success -> {
-                    AppLog.i("LegacyAutofill", "Credential saved successfully")
+                    AppTelemetry.i("LegacyAutofill", "Credential saved successfully")
                     callback.onSuccess()
                 }
 
                 is AppResult.Failure -> {
-                    AppLog.e("LegacyAutofill", "Save failed: ${result.error.message}")
+                    AppTelemetry.e("LegacyAutofill", "Save failed: ${result.error.message}")
                     callback.onFailure(result.error.message)
                 }
             }

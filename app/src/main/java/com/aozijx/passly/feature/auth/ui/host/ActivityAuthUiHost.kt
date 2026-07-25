@@ -4,8 +4,8 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
-import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.diagnostics.LogCategory
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.security.authentication.SecretChars
@@ -87,8 +87,8 @@ class ActivityAuthUiHost(
         val promptInfo = try {
             BiometricPromptSpecFactory.create(spec, cryptoBound = cryptoObject != null)
         } catch (failure: IllegalArgumentException) {
-            AppLog.e(
-                LogCategory.AUTHENTICATION,
+            AppTelemetry.e(
+                EventCategory.AUTHENTICATION,
                 "biometric.prompt_configuration_invalid",
                 throwable = failure
             )
@@ -126,8 +126,8 @@ class ActivityAuthUiHost(
             val prompt = try {
                 BiometricPrompt(activity, activity.mainExecutor, callback)
             } catch (failure: IllegalStateException) {
-                AppLog.w(
-                    LogCategory.AUTHENTICATION,
+                AppTelemetry.w(
+                    EventCategory.AUTHENTICATION,
                     "biometric.prompt_host_invalid",
                     throwable = failure
                 )
@@ -148,8 +148,8 @@ class ActivityAuthUiHost(
                 else prompt.authenticate(promptInfo, cryptoObject)
             } catch (failure: IllegalArgumentException) {
                 activePrompt.set(null)
-                AppLog.e(
-                    LogCategory.AUTHENTICATION,
+                AppTelemetry.e(
+                    EventCategory.AUTHENTICATION,
                     "biometric.crypto_or_prompt_invalid",
                     throwable = failure
                 )
@@ -160,16 +160,16 @@ class ActivityAuthUiHost(
                 }
             } catch (failure: IllegalStateException) {
                 activePrompt.set(null)
-                AppLog.w(
-                    LogCategory.AUTHENTICATION,
+                AppTelemetry.w(
+                    EventCategory.AUTHENTICATION,
                     "biometric.prompt_show_host_invalid",
                     throwable = failure
                 )
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
             } catch (failure: SecurityException) {
                 activePrompt.set(null)
-                AppLog.e(
-                    LogCategory.AUTHENTICATION,
+                AppTelemetry.e(
+                    EventCategory.AUTHENTICATION,
                     "biometric.prompt_permission_denied",
                     throwable = failure
                 )
@@ -180,8 +180,8 @@ class ActivityAuthUiHost(
                 }
             } catch (failure: Exception) {
                 activePrompt.set(null)
-                AppLog.e(
-                    LogCategory.AUTHENTICATION,
+                AppTelemetry.e(
+                    EventCategory.AUTHENTICATION,
                     "biometric.prompt_unexpected_failure",
                     throwable = failure
                 )

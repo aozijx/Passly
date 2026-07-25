@@ -8,7 +8,7 @@ import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.autofill.usecase.CredentialResponseUseCases
 import com.aozijx.passly.domain.autofill.usecase.PasswordCredentialResult
 import com.aozijx.passly.service.autofill.credential.CredentialResponseFactory
@@ -41,7 +41,7 @@ class CredentialResponseViewModel @Inject constructor(
                 credentialData.getString(ModernCredentialService.EXTRA_PACKAGE_NAME) ?: ""
             val webDomain = credentialData.getString(ModernCredentialService.EXTRA_WEB_DOMAIN)
 
-            AppLog.i(TAG, "Phase 2: password for pkg=$packageName")
+            AppTelemetry.i(TAG, "Phase 2: password for pkg=$packageName")
 
             try {
                 when (val result = useCase.resolvePasswordCredential(packageName, webDomain)) {
@@ -50,16 +50,16 @@ class CredentialResponseViewModel @Inject constructor(
                             result.username, result.password
                         )
                         _state.value = UiState.Success(intent)
-                        AppLog.i(TAG, "Password credential returned for ${result.username}")
+                        AppTelemetry.i(TAG, "Password credential returned for ${result.username}")
                     }
 
                     is PasswordCredentialResult.NotFound -> {
-                        AppLog.w(TAG, "No credential resolved for $packageName")
+                        AppTelemetry.w(TAG, "No credential resolved for $packageName")
                         _state.value = UiState.Error
                     }
                 }
             } catch (e: Exception) {
-                AppLog.e(TAG, "Password credential resolution failed", e)
+                AppTelemetry.e(TAG, "Password credential resolution failed", e)
                 _state.value = UiState.Error
             }
         }
@@ -67,7 +67,7 @@ class CredentialResponseViewModel @Inject constructor(
 
     fun handlePasskeyGet(intent: Intent) {
         viewModelScope.launch {
-            AppLog.i(TAG, "Phase 2: passkey request")
+            AppTelemetry.i(TAG, "Phase 2: passkey request")
 
             try {
                 val getRequest = PendingIntentHandler.retrieveProviderGetCredentialRequest(intent)
@@ -75,17 +75,17 @@ class CredentialResponseViewModel @Inject constructor(
                     ?.firstOrNull() as? GetPublicKeyCredentialOption
 
                 if (publicKeyOption == null) {
-                    AppLog.e(TAG, "No public key credential option in request")
+                    AppTelemetry.e(TAG, "No public key credential option in request")
                     _state.value = UiState.Error
                     return@launch
                 }
 
-                AppLog.w(TAG, "Passkey full signing not yet implemented")
+                AppTelemetry.w(TAG, "Passkey full signing not yet implemented")
 
                 val result = CredentialResponseFactory.buildPasskeyResponse()
                 _state.value = UiState.Success(result)
             } catch (e: Exception) {
-                AppLog.e(TAG, "Passkey resolution failed", e)
+                AppTelemetry.e(TAG, "Passkey resolution failed", e)
                 _state.value = UiState.Error
             }
         }

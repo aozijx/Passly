@@ -6,7 +6,7 @@ import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResponseContext
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.authentication.VaultAccessState
 
 /**
@@ -42,19 +42,19 @@ class FillRequestDispatcher(
      */
     fun dispatch(request: InternalFillRequest): InternalFillResponse {
         if (sessionState.isLocked()) {
-            AppLog.i(TAG, "Vault locked, skip fill for ${request.parentPackage}")
+            AppTelemetry.i(TAG, "Vault locked, skip fill for ${request.parentPackage}")
             return InternalFillResponse()
         }
 
         val candidates = candidateResolver.resolve(request)
         if (candidates.isEmpty()) {
-            AppLog.i(TAG, "No candidates for ${request.parentPackage}")
+            AppTelemetry.i(TAG, "No candidates for ${request.parentPackage}")
             return InternalFillResponse()
         }
 
         val matchResult = fieldMatchStrategy.match(request)
         if (!matchResult.hasCredentials) {
-            AppLog.i(TAG, "No credential fields matched for ${request.parentPackage}")
+            AppTelemetry.i(TAG, "No credential fields matched for ${request.parentPackage}")
             return InternalFillResponse()
         }
 
@@ -65,7 +65,7 @@ class FillRequestDispatcher(
                 parentPackage = request.parentPackage,
             ),
         )
-        AppLog.i(
+        AppTelemetry.i(
             TAG,
             "Dispatched ${response.candidates.size} candidates for ${request.parentPackage}"
         )

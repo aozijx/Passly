@@ -1,6 +1,6 @@
 package com.aozijx.passly.core.session
 
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.DatabaseInitFailed
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.domain.authentication.SessionStateProvider
@@ -95,13 +95,13 @@ class UnifiedSessionManager @Inject constructor(
             val dek = try {
                 dekManager.withDek { it.clone() }
             } catch (e: IllegalStateException) {
-                AppLog.e(TAG, "DEK not available for unlock", e)
+                AppTelemetry.e(TAG, "DEK not available for unlock", e)
                 return@withContext DatabaseInitFailed("DEK not available, re-authentication required")
             }
             try {
                 val err = leaseGate.unlock(dek)
                 if (err != null) {
-                    AppLog.e(TAG, "Failed to open database on unlock", err)
+                    AppTelemetry.e(TAG, "Failed to open database on unlock", err)
                 }
                 err
             } finally {
@@ -115,7 +115,7 @@ class UnifiedSessionManager @Inject constructor(
      * 适用于 UI 手动锁定或空闲超时。
      */
     suspend fun softLock() {
-        AppLog.i(TAG, "Soft locking session")
+        AppTelemetry.i(TAG, "Soft locking session")
         leaseGate.softLock()
     }
 
@@ -125,7 +125,7 @@ class UnifiedSessionManager @Inject constructor(
      * 调用方应在此后擦除 DEK。
      */
     suspend fun seal(timeout: Duration = 5.seconds) {
-        AppLog.i(TAG, "Sealing session")
+        AppTelemetry.i(TAG, "Sealing session")
         leaseGate.seal(timeout)
     }
 

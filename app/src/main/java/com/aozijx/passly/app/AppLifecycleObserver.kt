@@ -2,7 +2,7 @@ package com.aozijx.passly.app
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.aozijx.passly.core.diagnostics.DiagnosticsRuntime
+import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.LockReason
@@ -26,7 +26,8 @@ import javax.inject.Singleton
 @Singleton
 class AppLifecycleObserver @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val authenticationManager: AuthenticationManager
+    private val authenticationManager: AuthenticationManager,
+    private val diagnosticsRuntime: DiagnosticsRuntimeController
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -41,13 +42,13 @@ class AppLifecycleObserver @Inject constructor(
             authenticationManager.lock(LockReason.BACKGROUND)
         }
         // 确保应用进入后台时，所有待写入的日志落盘
-        DiagnosticsRuntime.flush()
+        diagnosticsRuntime.flush()
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
         scope.launch {
             authenticationManager.lock(LockReason.APP_EXIT)
         }
-        DiagnosticsRuntime.shutdown()
+        diagnosticsRuntime.shutdown()
     }
 }

@@ -30,8 +30,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val bootstrapStore: BootstrapStore,
     private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
     private val biometricRotationCoordinator: BiometricRotationCoordinator,
-    private val cryptoFactory: BiometricCryptoFactory,
-    private val feedback: AuthFeedbackPresenter
+    private val cryptoFactory: BiometricCryptoFactory
 ) : AuthenticationMethodProvisioner {
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
@@ -112,7 +111,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         if (!alternatives) {
             return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
-            ).also { feedback.present(it, correlationId) }
+            )
         }
         bootstrapStore.delete(EnvelopeType.APP_PASSWORD)
         authenticationManager.refreshAvailability()
@@ -136,7 +135,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         val activeAlias = bootstrapStore.loadBiometricState().binding?.activeAlias
             ?: return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.KEY_MISSING, correlationId)
-            ).also { feedback.present(it, correlationId) }
+            )
         bootstrapStore.disableBiometric(activeAlias)
         if (cryptoFactory.deleteAlias(activeAlias)) {
             bootstrapStore.clearBiometricCleanupAlias(activeAlias)
@@ -156,14 +155,13 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         val host = hostRegistry.awaitLease()?.hostOrNull()
             ?: return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
-            ).also { feedback.present(it, correlationId) }
+            )
         val result = biometricRotationCoordinator.rotate(
             host = host,
             invalidateOnEnrollment = invalidateOnEnrollment,
             correlationId = correlationId
         )
         if (result is AuthenticationResult.Success) authenticationManager.refreshAvailability()
-        feedback.present(result, correlationId)
         return result
     }
 

@@ -6,7 +6,8 @@ sealed interface SinkResult {
     data object Delivered : SinkResult
     data object PermissionMissing : SinkResult
     data object Disabled : SinkResult
-    data class Failed(val error: Throwable?) : SinkResult
+    data object AppNotVisible : SinkResult
+    data class Failed(val errorCode: String) : SinkResult
 }
 
 /**

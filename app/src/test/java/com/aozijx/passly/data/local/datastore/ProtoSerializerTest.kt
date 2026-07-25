@@ -2,10 +2,15 @@ package com.aozijx.passly.data.local.datastore
 
 import androidx.datastore.core.CorruptionException
 import com.aozijx.passly.data.local.datastore.settings.AppSettings
+import com.aozijx.passly.data.local.datastore.settings.MessagePreferences
+import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
+import com.aozijx.passly.data.local.datastore.settings.NoticeTopicProto
+import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -23,8 +28,7 @@ class ProtoSerializerTest {
         assertEquals("COPY_PASSWORD", defaults.swipeLeftAction)
         assertEquals("DETAIL", defaults.swipeRightAction)
         assertEquals(4, defaults.tabBarMaxTabsWithoutScroll)
-        assertEquals(true, defaults.statusBarNotificationsEnabled)
-        assertFalse(defaults.hasStatusBarNotificationsEnabled())
+        assertFalse(defaults.hasMessagePreferences())
     }
 
     @Test
@@ -36,10 +40,17 @@ class ProtoSerializerTest {
             .addVisibleVaultTab("login")
             .setVisibleVaultTabsConfigured(true)
             .putRuntimeExtra("show_access_history", "false")
-            .setStatusBarNotificationsEnabled(false)
-            .setIconDownloadNotificationsEnabled(false)
-            .setClipboardClearToastsEnabled(false)
-            .setAppCloseToastsEnabled(false)
+            .setMessagePreferences(
+                MessagePreferences.newBuilder()
+                    .setOptionalMessagesEnabled(false)
+                    .setSystemNotificationsEnabled(false)
+                    .addTopics(
+                        TopicMessagePreference.newBuilder()
+                            .setTopic(NoticeTopicProto.NOTICE_TOPIC_BACKUP)
+                            .setEnabled(false)
+                            .setMinimumLevel(NoticeLevelProto.NOTICE_LEVEL_ERROR)
+                    )
+            )
             .build()
         val output = ByteArrayOutputStream()
 
@@ -49,11 +60,14 @@ class ProtoSerializerTest {
         assertEquals(settings, decoded)
         assertEquals(false, decoded.dynamicColor)
         assertEquals(true, decoded.hasDynamicColor())
-        assertFalse(decoded.statusBarNotificationsEnabled)
-        assertEquals(true, decoded.hasStatusBarNotificationsEnabled())
-        assertEquals(true, decoded.hasIconDownloadNotificationsEnabled())
-        assertEquals(true, decoded.hasClipboardClearToastsEnabled())
-        assertEquals(true, decoded.hasAppCloseToastsEnabled())
+        assertTrue(decoded.hasMessagePreferences())
+        assertFalse(decoded.messagePreferences.optionalMessagesEnabled)
+        assertFalse(decoded.messagePreferences.systemNotificationsEnabled)
+        assertEquals(1, decoded.messagePreferences.topicsCount)
+        assertEquals(
+            NoticeTopicProto.NOTICE_TOPIC_BACKUP,
+            decoded.messagePreferences.getTopics(0).topic
+        )
     }
 
     @Test

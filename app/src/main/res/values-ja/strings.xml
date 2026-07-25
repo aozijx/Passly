@@ -391,4 +391,32 @@
     <string name="settings_card_style_totp_name">TOTPカード</string>
     <string name="settings_card_style_totp_desc">動的コードと進捗リングを強調</string>
 
+    <string name="settings_system_notifications">システム通知</string>
+    <string name="settings_system_notifications_summary">システムのステータスバーに通知を表示します</string>
+    <string name="settings_app_notices">アプリ内メッセージ</string>
+    <string name="settings_optional_notices">すべてのアプリメッセージ</string>
+    <string name="settings_optional_notices_summary">オフにすると、必須のセキュリティとデータ通知のみ表示します</string>
+    <string name="settings_topic_clipboard">クリップボード</string>
+    <string name="settings_topic_clipboard_summary">機密データの消去時に通知します</string>
+    <string name="settings_topic_app_lifecycle">アプリのライフサイクル</string>
+    <string name="settings_topic_app_lifecycle_summary">アプリを終了する前に通知します</string>
+    <string name="settings_topic_icon_download">アイコンのダウンロード</string>
+    <string name="settings_topic_icon_download_summary">アイコンのダウンロード結果を通知します</string>
+    <string name="settings_topic_backup">バックアップ</string>
+    <string name="settings_topic_backup_summary">バックアップのインポートとエクスポート結果を通知します</string>
+    <string name="settings_topic_security">セキュリティ</string>
+    <string name="settings_topic_security_summary">認証と復旧方法の変更を通知します</string>
+    <string name="settings_topic_database">データ</string>
+    <string name="settings_topic_database_summary">データベース障害と復旧結果を通知します</string>
+
+    <string name="notice_clipboard_cleared">クリップボードの機密データを消去しました</string>
+    <string name="notice_clipboard_clear_failed">クリップボードの機密データを消去できませんでした</string>
+    <string name="notice_app_locked">保管庫をロックしました</string>
+    <string name="notice_app_close_reminder">アプリを終了します</string>
+    <string name="notice_security_key_invalidated">セキュリティキーが無効です。認証を再設定してください。</string>
+    <string name="notice_security_recovery_required">復旧方法を使って本人確認を行ってください。</string>
+    <string name="notice_security_action_failed">セキュリティ操作に失敗しました</string>
+    <string name="notice_database_index_rebuild_completed">検索インデックスを再構築しました</string>
+    <string name="notice_database_index_rebuild_failed">検索インデックスの再構築に失敗しました</string>
+    <string name="notice_database_operation_failed">データベース操作に失敗しました</string>
 </resources>

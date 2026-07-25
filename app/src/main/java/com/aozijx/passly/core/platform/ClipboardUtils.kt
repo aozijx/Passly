@@ -7,9 +7,10 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
-import com.aozijx.passly.core.diagnostics.AppLog
-import com.aozijx.passly.core.message.AppMessageCategory
-import com.aozijx.passly.core.message.AppMessageCenter
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.model.newAppNotice
+import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 
 /**
  * 剪贴板工具类，提供安全复制、自动清除以及内容获取功能
@@ -24,10 +25,21 @@ object ClipboardUtils {
     @Volatile
     private var lastClearRunnable: Runnable? = null
 
+    @Volatile
+    private var noticePublisher: AppNoticePublisher? = null
+
+    fun installNoticePublisher(publisher: AppNoticePublisher) {
+        noticePublisher = publisher
+    }
+
     /**
      * 安全复制到剪贴板
      */
-    fun copy(context: Context, text: String, isSensitive: Boolean = true) {
+    fun copy(
+        context: Context,
+        text: String,
+        isSensitive: Boolean = true
+    ) {
         val appContext = context.applicationContext
         val clipboard = appContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         
@@ -50,7 +62,7 @@ object ClipboardUtils {
                     clear(appContext)
                 }
             } catch (e: Exception) {
-                AppLog.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
+                AppTelemetry.e("ClipboardUtils", "Failed to auto-clear clipboard", e)
             }
         }
 
@@ -69,13 +81,11 @@ object ClipboardUtils {
                 .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             if (clipboard.hasPrimaryClip()) {
                 clipboard.clearPrimaryClip()
-                AppMessageCenter.publish(
-                    text = "剪贴板中的敏感内容已清除",
-                    category = AppMessageCategory.CLIPBOARD_CLEAR
-                )
+                noticePublisher?.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEARED))
             }
         } catch (e: Exception) {
-            AppLog.e("ClipboardUtils", "Clear clipboard failed", e)
+            AppTelemetry.e("ClipboardUtils", "Clear clipboard failed", e)
+            noticePublisher?.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEAR_FAILED))
         }
     }
 

@@ -12,15 +12,21 @@ import com.aozijx.passly.domain.notice.model.NoticeCode
  * 两阶段（claim → complete）保证在分发完成前阻止重入。
  */
 interface NoticeDeduplicator {
-    /** 预占 eventId。返回 true 表示已被认领（应跳过）。 */
-    fun claim(eventId: String): Boolean
+    fun begin(eventId: String, ttlMs: Long): DeduplicationClaim
 
-    /** 分发完成后的善后。 */
-    fun complete(eventId: String)
+    fun complete(claim: DeduplicationClaim.Acquired)
 
-    /** 语义去重。返回 true 表示窗口内已存在同类消息（应跳过）。 */
-    fun claimSemantic(code: NoticeCode): Boolean
+    fun release(claim: DeduplicationClaim.Acquired)
 
-    /** 清理过期条目。 */
-    fun evict()
+    fun claimSemantic(code: NoticeCode, windowMs: Long): Boolean
+}
+
+sealed interface DeduplicationClaim {
+    class Acquired internal constructor(
+        val eventId: String,
+        internal val token: Long,
+        internal val ttlMs: Long
+    ) : DeduplicationClaim
+
+    data object Duplicate : DeduplicationClaim
 }

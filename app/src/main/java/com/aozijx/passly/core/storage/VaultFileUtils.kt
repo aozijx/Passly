@@ -2,6 +2,8 @@ package com.aozijx.passly.core.storage
 
 import android.content.Context
 import android.net.Uri
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,7 +31,11 @@ object VaultFileUtils {
 
                 destFile.absolutePath
             } catch (e: Exception) {
-                e.printStackTrace()
+                AppTelemetry.e(
+                    EventCategory.FILE_IO,
+                    "vault_image.save_failed",
+                    throwable = e
+                )
                 null
             }
         }

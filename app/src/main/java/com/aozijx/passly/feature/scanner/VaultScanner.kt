@@ -49,7 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aozijx.passly.R
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.util.TotpUtils
@@ -259,7 +259,7 @@ fun VaultScanner(
                                             .show()
                                         onDismiss()
                                     } catch (e: Exception) {
-                                        AppLog.e("VaultScanner", "Failed to encrypt/save TOTP", e)
+                                        AppTelemetry.e("VaultScanner", "Failed to encrypt/save TOTP", e)
                                         Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT)
                                             .show()
                                     }

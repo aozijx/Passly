@@ -2,7 +2,7 @@ package com.aozijx.passly.core.autofill.pipeline
 
 import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
@@ -31,7 +31,7 @@ class CandidateResolver @Inject constructor(
         return try {
             repository.search(packageName, webDomain).map { it.toResolved() }
         } catch (e: Exception) {
-            AppLog.e(TAG, "Candidate lookup failed for $packageName", e)
+            AppTelemetry.e(TAG, "Candidate lookup failed for $packageName", e)
             emptyList()
         }
     }
@@ -42,7 +42,7 @@ class CandidateResolver @Inject constructor(
                 entry.toResolvedCandidate()
             }
         } catch (e: Exception) {
-            AppLog.e(TAG, "resolveByIds failed", e)
+            AppTelemetry.e(TAG, "resolveByIds failed", e)
             emptyList()
         }
     }

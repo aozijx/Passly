@@ -11,6 +11,7 @@ import java.io.EOFException
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.RandomAccessFile
 import java.security.KeyStore
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
@@ -247,99 +248,113 @@ class EncryptedLogStore(
      * @param limit 最多返回多少条
      */
     fun readPage(cursor: LogCursor?, limit: Int): DiagnosticsPage {
+        require(limit in 1..MAX_PAGE_RECORDS) {
+            "Page limit must be between 1 and $MAX_PAGE_RECORDS"
+        }
         val sortedFiles = directory.listFiles()
             ?.filter { it.extension == LOG_EXTENSION && it.isFile }
-            ?.sortedBy(File::lastModified) // 最旧优先
+            ?.sortedWith(compareBy(File::lastModified, File::getName))
             .orEmpty()
 
         val startIndex = cursor?.fileIndex ?: 0
-        var total = 0
+        if (startIndex !in 0..sortedFiles.size) {
+            return DiagnosticsPage(emptyList(), totalRecordCount(sortedFiles), null)
+        }
+        val total = totalRecordCount(sortedFiles)
         val result = mutableListOf<TelemetryEvent>()
+        var nextCursor: LogCursor? = null
 
-        for (fileIndex in startIndex until sortedFiles.size) {
+        files@ for (fileIndex in startIndex until sortedFiles.size) {
             val file = sortedFiles[fileIndex]
-            if (result.size >= limit) break
-
-            val ctx = runCatching { readHeader(file) }.getOrNull() ?: continue
-            try {
-                val ctxFileIdHex = bytesToHex(ctx.fileId)
-                val startOffset: Long
-                var seq: Long
-
-                if (cursor != null && cursor.fileIndex == fileIndex) {
-                    // 同一文件内继续
-                    if (cursor.fileId != ctxFileIdHex) break // 文件已轮换，游标失效
-                    startOffset = cursor.nextRecordOffset
-                    seq = cursor.nextSequence
-                } else {
-                    startOffset = 0L
-                    seq = 1L
+            val opened = runCatching {
+                val raf = RandomAccessFile(file, "r")
+                val ctx = try {
+                    readHeader(raf)
+                } catch (error: Throwable) {
+                    raf.close()
+                    throw error
                 }
+                raf to ctx
+            }.getOrNull() ?: continue
+            val (input, ctx) = opened
+            input.use {
+                try {
+                    val headerEnd = input.filePointer
+                    val ctxFileIdHex = bytesToHex(ctx.fileId)
+                    val startOffset = if (cursor != null && cursor.fileIndex == fileIndex) {
+                        if (cursor.fileId != ctxFileIdHex ||
+                            cursor.nextRecordOffset !in 0..(input.length() - headerEnd)
+                        ) {
+                            return DiagnosticsPage(emptyList(), total, null)
+                        }
+                        cursor.nextRecordOffset
+                    } else {
+                        0L
+                    }
+                    var expectedSequence = if (cursor != null && cursor.fileIndex == fileIndex) {
+                        cursor.nextSequence
+                    } else {
+                        1L
+                    }
+                    input.seek(headerEnd + startOffset)
 
-                val recordsInFile = DataInputStream(FileInputStream(file).buffered()).use { input ->
-                    // 跳过文件头
-                    skipHeader(input)
-                    // 跳到 startOffset
-                    if (startOffset > 0) input.skip(startOffset)
+                    while (input.filePointer < input.length() && result.size < limit) {
+                        val nonceLen = input.readInt().checkedExact(NONCE_BYTES)
+                        val nonce = ByteArray(nonceLen).also(input::readFully)
+                        val recordSequence = input.readLong()
+                        require(recordSequence == expectedSequence) {
+                            "Unexpected diagnostics sequence $recordSequence, expected $expectedSequence"
+                        }
+                        val level = input.readUnsignedByte()
+                        require(level in EventLevel.entries.indices) {
+                            "Invalid diagnostics level $level"
+                        }
+                        val cipherLen = input.readInt().checkedMax(MAX_RECORD_BYTES)
+                        require(cipherLen >= GCM_TAG_BYTES) { "Ciphertext is shorter than GCM tag" }
+                        val ciphertext = ByteArray(cipherLen).also(input::readFully)
 
-                    val fileRecords = mutableListOf<TelemetryEvent>()
-                    while (result.size + fileRecords.size < limit) {
-                        try {
-                            val nonceLen = input.readInt()
-                            if (nonceLen != NONCE_BYTES) break
-                            val nonce = ByteArray(nonceLen).also(input::readFully)
-                            val recordSeq = input.readLong()
-                            val level = input.readByte().toInt()
-                            val cipherLen = input.readInt().checkedMax(MAX_RECORD_BYTES)
-                            val ciphertext = ByteArray(cipherLen).also(input::readFully)
+                        val aad = buildRecordAad(ctx.fileId, recordSequence, level)
+                        val cipher = Cipher.getInstance(TRANSFORMATION)
+                        cipher.init(
+                            Cipher.DECRYPT_MODE,
+                            SecretKeySpec(ctx.dataKey, "AES"),
+                            GCMParameterSpec(TAG_BITS, nonce)
+                        )
+                        cipher.updateAAD(aad)
+                        val plain = try {
+                            cipher.doFinal(ciphertext)
+                        } finally {
+                            ciphertext.fill(0)
+                        }
+                        val event = try {
+                            RecordCodec.decode(plain)
+                        } finally {
+                            plain.fill(0)
+                        }
+                        require(event.level.ordinal == level) {
+                            "Authenticated record level does not match payload"
+                        }
+                        result += event
+                        expectedSequence = recordSequence + 1
 
-                            val aad = buildRecordAad(ctx.fileId, recordSeq, level)
-                            val cipher = Cipher.getInstance(TRANSFORMATION)
-                            cipher.init(
-                                Cipher.DECRYPT_MODE,
-                                SecretKeySpec(ctx.dataKey, "AES"),
-                                GCMParameterSpec(TAG_BITS, nonce)
-                            )
-                            cipher.updateAAD(aad)
-                            val plain = try {
-                                cipher.doFinal(ciphertext)
-                            } finally {
-                                ciphertext.fill(0)
+                        if (result.size == limit) {
+                            nextCursor = if (input.filePointer < input.length()) {
+                                LogCursor(
+                                    fileIndex = fileIndex,
+                                    fileId = ctxFileIdHex,
+                                    nextRecordOffset = input.filePointer - headerEnd,
+                                    nextSequence = expectedSequence
+                                )
+                            } else {
+                                cursorForNextReadableFile(sortedFiles, fileIndex + 1)
                             }
-                            val event = try {
-                                RecordCodec.decode(plain)
-                            } finally {
-                                plain.fill(0)
-                            }
-                            fileRecords.add(event)
-                            seq = recordSeq + 1
-                        } catch (_: EOFException) {
-                            break
+                            break@files
                         }
                     }
-                    fileRecords
+                } finally {
+                    ctx.destroy()
                 }
-                result.addAll(recordsInFile)
-                total += (runCatching {
-                    countRecordsInFile(file, ctx)
-                }.getOrDefault(0))
-            } finally {
-                ctx.destroy()
             }
-        }
-
-        val nextCursor = if (result.isEmpty() || total <= (cursor?.let { c ->
-                c.nextSequence.toInt() + result.size
-            } ?: result.size)) {
-            null // 未改变或所有记录已读完
-        } else {
-            val lastIdx = sortedFiles.indexOfFirst { f ->
-                runCatching { readHeader(f) }.getOrNull()?.let { ctx ->
-                    bytesToHex(ctx.fileId) == cursor?.fileId
-                } ?: false
-            }
-            // 简化：返回前进过的位置
-            null // 暂不实现精确游标，返回 null 表示从头重读
         }
 
         return DiagnosticsPage(events = result, totalRecords = total, nextCursor = nextCursor)
@@ -413,7 +428,7 @@ class EncryptedLogStore(
             )
             ctx.destroy()
             // 读取已有记录数
-            fileSequence = countRecordsInFile(reusable, ctx).toLong()
+            fileSequence = countRecordsInFile(reusable).toLong()
             activeFileEntry = entry
             return entry
         }
@@ -565,6 +580,29 @@ class EncryptedLogStore(
         cipher.updateAAD(headerAad)
 
         val dataKey = cipher.doFinal(wrappedKey)
+        require(dataKey.size == DATA_KEY_BYTES) { "Invalid diagnostics data key length" }
+        return LogFileContext(fileId, createdAtMs, version, dataKey)
+    }
+
+    private fun readHeader(input: RandomAccessFile): LogFileContext {
+        require(input.readInt() == FILE_MAGIC) { "Unknown diagnostics file" }
+        val version = input.readInt()
+        require(version == FILE_VERSION) { "Unsupported diagnostics version $version" }
+        val fileId = ByteArray(LogFileContext.FILE_ID_BYTES).also(input::readFully)
+        val createdAtMs = input.readLong()
+        val wrapNonce =
+            ByteArray(input.readInt().checkedExact(NONCE_BYTES)).also(input::readFully)
+        val wrappedKey =
+            ByteArray(input.readInt().checkedMax(MAX_WRAPPED_KEY_BYTES)).also(input::readFully)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(
+            Cipher.DECRYPT_MODE,
+            getOrCreateWrappingKey(),
+            GCMParameterSpec(TAG_BITS, wrapNonce)
+        )
+        cipher.updateAAD(buildHeaderAad(fileId, createdAtMs))
+        val dataKey = cipher.doFinal(wrappedKey)
+        require(dataKey.size == DATA_KEY_BYTES) { "Invalid diagnostics data key length" }
         return LogFileContext(fileId, createdAtMs, version, dataKey)
     }
 
@@ -578,25 +616,27 @@ class EncryptedLogStore(
         // skip createdAtMs (8)
         input.readLong()
         // skip wrapNonce
-        val wrapNonceLen = input.readInt()
-        input.skip(wrapNonceLen.toLong())
+        val wrapNonceLen = input.readInt().checkedExact(NONCE_BYTES)
+        input.readFully(ByteArray(wrapNonceLen))
         // skip wrappedKey
-        val wrappedLen = input.readInt()
-        input.skip(wrappedLen.toLong())
+        val wrappedLen = input.readInt().checkedMax(MAX_WRAPPED_KEY_BYTES)
+        input.readFully(ByteArray(wrappedLen))
     }
 
-    private fun countRecordsInFile(file: File, ctx: LogFileContext): Int {
+    private fun countRecordsInFile(file: File): Int {
         return runCatching {
             DataInputStream(FileInputStream(file).buffered()).use { input ->
                 skipHeader(input)
                 var count = 0
                 while (true) {
                     try {
-                        val nonceLen = input.readInt()
-                        if (nonceLen != NONCE_BYTES) break
-                        input.skip(nonceLen.toLong() + 8 + 1) // nonce + seq + level
-                        val cipherLen = input.readInt()
-                        input.skip(cipherLen.toLong())
+                        val nonceLen = input.readInt().checkedExact(NONCE_BYTES)
+                        input.readFully(ByteArray(nonceLen))
+                        input.readLong()
+                        input.readUnsignedByte()
+                        val cipherLen = input.readInt().checkedMax(MAX_RECORD_BYTES)
+                        require(cipherLen >= GCM_TAG_BYTES)
+                        input.readFully(ByteArray(cipherLen))
                         count++
                     } catch (_: EOFException) {
                         break
@@ -605,6 +645,29 @@ class EncryptedLogStore(
                 count
             }
         }.getOrDefault(0)
+    }
+
+    private fun totalRecordCount(files: List<File>): Int =
+        files.sumOf(::countRecordsInFile)
+
+    private fun cursorForNextReadableFile(
+        files: List<File>,
+        startIndex: Int
+    ): LogCursor? {
+        for (fileIndex in startIndex until files.size) {
+            val context = runCatching { readHeader(files[fileIndex]) }.getOrNull() ?: continue
+            return try {
+                LogCursor(
+                    fileIndex = fileIndex,
+                    fileId = bytesToHex(context.fileId),
+                    nextRecordOffset = 0,
+                    nextSequence = 1
+                )
+            } finally {
+                context.destroy()
+            }
+        }
+        return null
     }
 
     // ============================== 工具方法 ==============================
@@ -715,10 +778,12 @@ class EncryptedLogStore(
         const val FILE_VERSION = 1
         const val NONCE_BYTES = 12
         const val TAG_BITS = 128
+        const val GCM_TAG_BYTES = TAG_BITS / 8
         const val DATA_KEY_BYTES = 32
         const val MAX_WRAPPED_KEY_BYTES = 128
         const val MAX_RECORD_BYTES = 64 * 1024
         const val MAX_QUEUED_RECORDS = 256
+        const val MAX_PAGE_RECORDS = 500
         const val EMERGENCY_QUEUE_FALLBACK_MS = 50L
         const val MAX_FILE_BYTES = 1024 * 1024L
         const val MAX_TOTAL_BYTES = 3 * 1024 * 1024L

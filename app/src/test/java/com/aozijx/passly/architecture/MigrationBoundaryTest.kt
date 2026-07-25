@@ -126,7 +126,7 @@ class MigrationBoundaryTest {
     @Test
     fun roundedGroupUsesCommonUiWithMandatoryStableKeys() {
         val commonGroupRoot = File(
-            "src/main/java/com/aozijx/passly/ui/components/group"
+            "src/main/java/com/aozijx/passly/core/ui/components/group"
         )
         val roundedGroupSource = File(commonGroupRoot, "RoundedGroup.kt").readText()
         val legacyGroupRoot = File(
@@ -159,7 +159,7 @@ class MigrationBoundaryTest {
     @Test
     fun settingsSectionIsCustomizableAndLivesInCommonUi() {
         val sectionSource = File(
-            "src/main/java/com/aozijx/passly/ui/components/settings/SettingsSection.kt"
+            "src/main/java/com/aozijx/passly/core/ui/components/settings/SettingsSection.kt"
         ).readText()
         val legacyParts = File(
             "src/main/java/com/aozijx/passly/feature/settings/shell/SettingsUiParts.kt"
@@ -204,35 +204,65 @@ class MigrationBoundaryTest {
 
         assertTrue(
             "Startup must not request notification permission",
-            "AppPermission.Notifications" !in mainActivity
+            "request(RuntimePermission.POST_NOTIFICATIONS)" !in mainActivity
         )
         assertTrue(
-            "Status-bar setting must own notification permission requests",
-            "permissionRequester.request(AppPermission.Notifications)" in generalSettings
+            "Message setting must own notification permission requests",
+            "permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)" in generalSettings
         )
     }
 
     @Test
-    fun securitySettingsOwnToastPreferences() {
-        val securityToasts = File(
+    fun messageSettingsOwnTopicPreferences() {
+        val removedSecurityToasts = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/ui/SecurityToastSettingsSection.kt"
-        ).readText()
+        )
         val generalNotifications = File(
             "src/main/java/com/aozijx/passly/feature/settings/general/NotificationSettingsSection.kt"
         ).readText()
 
         assertTrue(
-            "Clipboard Toast setting must live under security",
-            "clipboard_clear" in securityToasts
+            "Legacy security Toast settings must be removed",
+            !removedSecurityToasts.exists()
         )
         assertTrue(
-            "App-close Toast setting must live under security",
-            "app_close" in securityToasts
+            "General message settings must expose topic controls",
+            "NoticeTopic.entries" in generalNotifications
         )
-        assertTrue(
-            "General notification settings must not contain Toast controls",
-            "toasts." !in generalNotifications
+    }
+
+    @Test
+    fun legacyMessageAndPermissionStacksCannotReturn() {
+        val forbiddenSymbols = listOf(
+            "AppMessageCenter",
+            "AppMessagePublisher",
+            "AppStatusBarNotifier",
+            "AppMessagePreferences",
+            "AppPermission",
+            "AppPermissionManager",
+            "ActivityPermissionRequester",
+            "PermissionManagerEntryPoint",
+            "rememberAppPermissionRequester"
         )
+        val offenders = productionKotlinFiles
+            .filter { source -> forbiddenSymbols.any { it in source.readText() } }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Legacy message/permission references: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun domainDoesNotEmitTelemetryOrUserMessages() {
+        val forbidden = listOf("TelemetryEmitter", "AppNoticePublisher", "AppLog")
+        val offenders = productionKotlinFiles
+            .filter { "/domain/" in it.invariantSeparatorsPath }
+            .filter { "/domain/notice/port/" !in it.invariantSeparatorsPath }
+            .filter { source -> forbidden.any { it in source.readText() } }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Domain side effects: $offenders", offenders.isEmpty())
     }
 
     @Test
@@ -276,11 +306,24 @@ class MigrationBoundaryTest {
 
     @Test
     fun legacyLoggingStackCannotReturn() {
-        val legacyRoot = File("src/main/java/com/aozijx/passly/core/log")
+        val legacyRoots = listOf(
+            File("src/main/java/com/aozijx/passly/core/log"),
+            File("src/main/java/com/aozijx/passly/core/diagnostics")
+        )
+        val forbiddenSymbols = listOf(
+            "core.log.Logcat",
+            "core.log.LogExporter",
+            "LogFilter",
+            "AppLog",
+            "core.diagnostics.DiagnosticsRuntime",
+            "core.diagnostics.DiagnosticsPolicy",
+            "PerFileEncryptedLogSink",
+            "LogSanitizer"
+        )
         val legacyReferences = productionKotlinFiles
             .filter { source ->
                 val text = source.readText()
-                "core.log.Logcat" in text || "core.log.LogExporter" in text || "LogFilter" in text
+                forbiddenSymbols.any(text::contains)
             }
             .map { it.relativeTo(File("src/main/java")).path }
             .toList()
@@ -288,16 +331,20 @@ class MigrationBoundaryTest {
         assertTrue("Legacy logging references: $legacyReferences", legacyReferences.isEmpty())
         assertTrue(
             "Legacy logging source directory must be removed",
-            !legacyRoot.exists() || legacyRoot.walkTopDown().none { it.extension == "kt" }
+            legacyRoots.all { root ->
+                !root.exists() || root.walkTopDown().none { it.extension == "kt" }
+            }
         )
     }
 
     @Test
     fun encryptedDiagnosticsUseBoundedQueueAndPreparedCrashKey() {
         val source = File(
-            "src/main/java/com/aozijx/passly/core/diagnostics/PerFileEncryptedLogSink.kt"
+            "src/main/java/com/aozijx/passly/data/diagnostics/EncryptedLogStore.kt"
         ).readText()
-        val emergencyBlock = source.substringAfter("fun emergencyWrite").substringBefore("fun readAll")
+        val emergencyBlock = source
+            .substringAfter("fun crashEmergencyWrite")
+            .substringBefore("private fun fallbackEmergencyWrite")
 
         assertTrue("Log writer queue must remain bounded", "ArrayBlockingQueue" in source)
         assertTrue("Every diagnostics file needs an encrypted header", "writeHeader(file" in source)
@@ -309,5 +356,80 @@ class MigrationBoundaryTest {
             "Crash writer must not wait for the normal writer lock",
             "lockWrites = false" in emergencyBlock
         )
+        assertTrue("Every record must authenticate sequence and level", "buildRecordAad" in source)
+        assertTrue("Record nonce must have an exact length", "checkedExact(NONCE_BYTES)" in source)
+    }
+
+    @Test
+    fun platformEffectsStayBehindTheirSingleGateway() {
+        val directLogOffenders = productionKotlinFiles
+            .filter {
+                it.invariantSeparatorsPath
+                    .endsWith("/core/telemetry/AndroidLogSink.kt")
+                    .not()
+            }
+            .filter { "android.util.Log" in it.readText() || "printStackTrace(" in it.readText() }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+        val directNotificationOffenders = productionKotlinFiles
+            .filter {
+                it.invariantSeparatorsPath
+                    .endsWith("/app/message/system/AndroidSystemNotificationGateway.kt")
+                    .not()
+            }
+            .filter {
+                val text = it.readText()
+                "NotificationManagerCompat" in text || "NotificationCompat." in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+        val directPermissionOffenders = productionKotlinFiles
+            .filter {
+                val path = it.invariantSeparatorsPath
+                !path.endsWith("/core/permission/catalog/RuntimePermissionCatalog.kt") &&
+                    !path.endsWith("/core/permission/compose/PermissionRequestHost.kt")
+            }
+            .filter {
+                val text = it.readText()
+                "Manifest.permission." in text ||
+                    "ActivityResultContracts.RequestPermission" in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Direct logging bypasses AndroidLogSink: $directLogOffenders", directLogOffenders.isEmpty())
+        assertTrue(
+            "Direct notification bypasses AndroidSystemNotificationGateway: $directNotificationOffenders",
+            directNotificationOffenders.isEmpty()
+        )
+        assertTrue(
+            "Direct runtime permission bypasses the permission center: $directPermissionOffenders",
+            directPermissionOffenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun newCentersContainNoStubOrTodoImplementation() {
+        val scopedRoots = listOf(
+            File("src/main/java/com/aozijx/passly/app/message"),
+            File("src/main/java/com/aozijx/passly/app/permission"),
+            File("src/main/java/com/aozijx/passly/app/diagnostics"),
+            File("src/main/java/com/aozijx/passly/core/permission"),
+            File("src/main/java/com/aozijx/passly/data/notice"),
+            File("src/main/java/com/aozijx/passly/data/diagnostics"),
+            File("src/main/java/com/aozijx/passly/domain/notice")
+        )
+        val offenders = scopedRoots.asSequence()
+            .filter(File::exists)
+            .flatMap { it.walkTopDown() }
+            .filter { it.isFile && it.extension == "kt" }
+            .filter {
+                val text = it.readText()
+                "TODO" in text || "FIXME" in text || "StubSystemNotificationGateway" in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue("Incomplete center implementations: $offenders", offenders.isEmpty())
     }
 }

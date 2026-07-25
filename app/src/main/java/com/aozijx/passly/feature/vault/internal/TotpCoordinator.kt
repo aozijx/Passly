@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.internal
 
-import com.aozijx.passly.core.diagnostics.AppLog
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpError
 import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
@@ -132,7 +132,7 @@ internal class TotpCoordinator(
     suspend fun activate(entryId: String) {
         val config = loadOtpConfig(entryId)
         if (config == null || config.secret.isBlank()) {
-            AppLog.w("TotpCoordinator", "OTP activation failed: missing config for $entryId")
+            AppTelemetry.w("TotpCoordinator", "OTP activation failed: missing config for $entryId")
             _states.update { it + (entryId to OtpUiState(error = OtpError.InvalidSecret)) }
             return
         }

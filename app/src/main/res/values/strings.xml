@@ -555,4 +555,14 @@
     <string name="settings_topic_database_summary">数据库异常、恢复结果提醒</string>
     <string name="empty"></string>
 
+    <string name="notice_clipboard_cleared">剪贴板中的敏感内容已清除</string>
+    <string name="notice_clipboard_clear_failed">无法清除剪贴板中的敏感内容</string>
+    <string name="notice_app_locked">保险库已锁定</string>
+    <string name="notice_app_close_reminder">应用即将关闭</string>
+    <string name="notice_security_key_invalidated">安全密钥已失效，请重新配置认证</string>
+    <string name="notice_security_recovery_required">需要使用恢复方式重新验证身份</string>
+    <string name="notice_security_action_failed">安全操作失败</string>
+    <string name="notice_database_index_rebuild_completed">搜索索引重建完成</string>
+    <string name="notice_database_index_rebuild_failed">搜索索引重建失败</string>
+    <string name="notice_database_operation_failed">数据库操作失败</string>
 </resources>
