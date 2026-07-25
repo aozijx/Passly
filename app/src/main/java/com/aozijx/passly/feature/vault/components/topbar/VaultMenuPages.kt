@@ -101,7 +101,7 @@ internal fun SortSubMenu(
         DropdownMenuItem(
             text = {
                 Text(
-                    text = stringResource(selectedSort.labelResId()) + direction,
+                    text = stringResource(preset.labelResId()) + direction,
                     color = if (selected) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal

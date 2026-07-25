@@ -94,10 +94,7 @@ fun VaultDropdownMenu(
                     )
                     MenuPage.SORT -> SortSubMenu(
                         selectedSort = selectedSort,
-                        onSortSelected = {
-                            onSortSelected(it)
-                            onDismissRequest()
-                        },
+                        onSortSelected = onSortSelected,
                         onBack = { currentPage = MenuPage.MAIN }
                     )
                     MenuPage.FILTER -> FilterSubMenu(
