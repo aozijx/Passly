@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.settings.appearance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
+import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FallbackPalette
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
@@ -21,6 +22,7 @@ data class AppearanceUiState(
     val isDynamicColor: Boolean = true,
     val fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
     val customSeedArgb: Long? = null,
+    val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
 )
 
@@ -29,6 +31,7 @@ sealed interface AppearanceUiAction {
     data class SetDynamicColor(val enabled: Boolean) : AppearanceUiAction
     data class SetFallbackPalette(val palette: FallbackPalette) : AppearanceUiAction
     data class SetCustomSeedArgb(val argb: Long?) : AppearanceUiAction
+    data class SetLanguage(val language: AppLanguage) : AppearanceUiAction
     data class SetFontFamily(val mode: FontFamilyMode) : AppearanceUiAction
 }
 
@@ -63,6 +66,10 @@ class AppearanceViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetCustomSeedArgb(action.argb))
             }
 
+            is AppearanceUiAction.SetLanguage -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetLanguage(action.language))
+            }
+
             is AppearanceUiAction.SetFontFamily -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetFontFamily(action.mode))
             }
@@ -75,5 +82,6 @@ private fun AppearanceSettings.toUiState(): AppearanceUiState = AppearanceUiStat
     isDynamicColor = isDynamicColor,
     fallbackPalette = fallbackPalette,
     customSeedArgb = customSeedArgb,
+    language = language,
     fontFamily = fontFamily
 )

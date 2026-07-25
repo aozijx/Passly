@@ -3,27 +3,15 @@ package com.aozijx.passly.data.repository.settings
 import android.content.Context
 import com.aozijx.passly.data.local.datastore.appSettingsDataStore
 import com.aozijx.passly.data.local.datastore.settings.AppearancePreferences
-import com.aozijx.passly.data.local.datastore.settings.AutofillUiModeProto
 import com.aozijx.passly.data.local.datastore.settings.BackupPreferences
-import com.aozijx.passly.data.local.datastore.settings.InterfacePreferences
 import com.aozijx.passly.data.local.datastore.settings.InteractionPreferences
+import com.aozijx.passly.data.local.datastore.settings.InterfacePreferences
 import com.aozijx.passly.data.local.datastore.settings.MessagePreferences
 import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
-import com.aozijx.passly.data.local.datastore.settings.NoticeTopicProto
 import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
-import com.aozijx.passly.data.local.datastore.settings.SwipeActionProto
-import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
+import com.aozijx.passly.data.local.datastore.settings.VaultSortPreference
 import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
 import com.aozijx.passly.data.local.datastore.settings.VisibleTabs
-import com.aozijx.passly.data.local.datastore.settings.VaultSortPreference
-import com.aozijx.passly.data.local.datastore.settings.ThemeMode as ProtoThemeMode
-import com.aozijx.passly.data.local.datastore.settings.FallbackPalette as ProtoFallbackPalette
-import com.aozijx.passly.data.local.datastore.settings.AppLanguage as ProtoAppLanguage
-import com.aozijx.passly.data.local.datastore.settings.FontFamilyMode as ProtoFontFamilyMode
-import com.aozijx.passly.data.local.datastore.settings.CardDensity as ProtoCardDensity
-import com.aozijx.passly.data.local.datastore.settings.ExportFormat as ProtoExportFormat
-import com.aozijx.passly.data.local.datastore.settings.ImportMode as ProtoImportMode
-import com.aozijx.passly.data.local.datastore.settings.EntryCardPresentation as ProtoEntryCardPresentation
 import com.aozijx.passly.domain.notice.model.AppMessageSettings
 import com.aozijx.passly.domain.notice.model.NoticeLevel
 import com.aozijx.passly.domain.notice.model.NoticeTopic
@@ -43,9 +31,9 @@ import com.aozijx.passly.domain.settings.model.ImportMode
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.domain.settings.model.SortDirection
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.domain.settings.model.SortDirection
 import com.aozijx.passly.domain.settings.model.VaultSortField
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.domain.settings.model.VaultViewSettings
@@ -56,6 +44,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.aozijx.passly.data.local.datastore.settings.CardDensity as ProtoCardDensity
+import com.aozijx.passly.data.local.datastore.settings.EntryCardPresentation as ProtoEntryCardPresentation
+import com.aozijx.passly.data.local.datastore.settings.FallbackPalette as ProtoFallbackPalette
+import com.aozijx.passly.data.local.datastore.settings.ThemeMode as ProtoThemeMode
 
 @Singleton
 class ProtoAppSettingsRepository @Inject constructor(
@@ -67,7 +59,7 @@ class ProtoAppSettingsRepository @Inject constructor(
     private companion object {
 
         // ============================================================
-        // Proto ↔ Domain enum mappings
+        // Proto ↔ Domain enum mappings (closed sets — Proto enum kept)
         // ============================================================
 
         // -- ThemeMode --
@@ -104,67 +96,12 @@ class ProtoAppSettingsRepository @Inject constructor(
             FallbackPalette.PINK -> ProtoFallbackPalette.FALLBACK_PALETTE_PINK
         }
 
-        // -- AppLanguage --
-        fun ProtoAppLanguage.toDomain(): AppLanguage = when (this) {
-            ProtoAppLanguage.APP_LANGUAGE_SYSTEM -> AppLanguage.SYSTEM
-            ProtoAppLanguage.APP_LANGUAGE_ZH -> AppLanguage.ZH
-            ProtoAppLanguage.APP_LANGUAGE_EN -> AppLanguage.EN
-        }
-
-        fun AppLanguage.toProto(): ProtoAppLanguage = when (this) {
-            AppLanguage.SYSTEM -> ProtoAppLanguage.APP_LANGUAGE_SYSTEM
-            AppLanguage.ZH -> ProtoAppLanguage.APP_LANGUAGE_ZH
-            AppLanguage.EN -> ProtoAppLanguage.APP_LANGUAGE_EN
-        }
-
-        // -- FontFamilyMode --
-        fun ProtoFontFamilyMode.toDomain(): FontFamilyMode = when (this) {
-            ProtoFontFamilyMode.FONT_FAMILY_SYSTEM -> FontFamilyMode.SYSTEM
-            ProtoFontFamilyMode.FONT_FAMILY_APP_BUNDLED -> FontFamilyMode.APP_BUNDLED
-        }
-
-        fun FontFamilyMode.toProto(): ProtoFontFamilyMode = when (this) {
-            FontFamilyMode.SYSTEM -> ProtoFontFamilyMode.FONT_FAMILY_SYSTEM
-            FontFamilyMode.APP_BUNDLED -> ProtoFontFamilyMode.FONT_FAMILY_APP_BUNDLED
-        }
-
-        // -- SwipeActionProto → SwipeActionType --
-        fun SwipeActionProto.toDomain(): SwipeActionType = when (this) {
-            SwipeActionProto.SWIPE_ACTION_NONE -> SwipeActionType.COPY_PASSWORD
-            SwipeActionProto.SWIPE_ACTION_COPY_USERNAME -> SwipeActionType.COPY_USERNAME
-            SwipeActionProto.SWIPE_ACTION_COPY_PASSWORD -> SwipeActionType.COPY_PASSWORD
-            SwipeActionProto.SWIPE_ACTION_COPY_TOTP -> SwipeActionType.COPY_PASSWORD
-            SwipeActionProto.SWIPE_ACTION_OPEN_DETAILS -> SwipeActionType.DETAIL
-            SwipeActionProto.SWIPE_ACTION_OPEN_IN_BROWSER -> SwipeActionType.DETAIL
-            SwipeActionProto.SWIPE_ACTION_CALL -> SwipeActionType.DETAIL
-            SwipeActionProto.SWIPE_ACTION_SEND_SMS -> SwipeActionType.DETAIL
-            SwipeActionProto.SWIPE_ACTION_LAUNCH_APP -> SwipeActionType.DETAIL
-        }
-
-        fun SwipeActionType.toProto(): SwipeActionProto = when (this) {
-            SwipeActionType.DELETE -> SwipeActionProto.SWIPE_ACTION_NONE
-            SwipeActionType.DETAIL -> SwipeActionProto.SWIPE_ACTION_OPEN_DETAILS
-            SwipeActionType.COPY_PASSWORD -> SwipeActionProto.SWIPE_ACTION_COPY_PASSWORD
-            SwipeActionType.COPY_USERNAME -> SwipeActionProto.SWIPE_ACTION_COPY_USERNAME
-        }
-
-        // -- AutofillUiModeProto → AutofillUiMode --
-        fun AutofillUiModeProto.toDomain(): AutofillUiMode = when (this) {
-            AutofillUiModeProto.AUTOFILL_UI_SYSTEM_INLINE -> AutofillUiMode.SYSTEM_INLINE
-            AutofillUiModeProto.AUTOFILL_UI_FULLSCREEN -> AutofillUiMode.BOTTOM_SHEET
-            AutofillUiModeProto.AUTOFILL_UI_DIALOG -> AutofillUiMode.BOTTOM_SHEET
-        }
-
-        fun AutofillUiMode.toProto(): AutofillUiModeProto = when (this) {
-            AutofillUiMode.SYSTEM_INLINE -> AutofillUiModeProto.AUTOFILL_UI_SYSTEM_INLINE
-            AutofillUiMode.BOTTOM_SHEET -> AutofillUiModeProto.AUTOFILL_UI_DIALOG
-        }
-
-        // -- CardDensity --
+        // -- CardDensity (Proto now has UNSPECIFIED=0, COMPACT=1, STANDARD=2, COMFORTABLE=3) --
         fun ProtoCardDensity.toDomain(): CardDensity = when (this) {
             ProtoCardDensity.CARD_DENSITY_COMPACT -> CardDensity.COMPACT
             ProtoCardDensity.CARD_DENSITY_STANDARD -> CardDensity.STANDARD
             ProtoCardDensity.CARD_DENSITY_COMFORTABLE -> CardDensity.COMFORTABLE
+            ProtoCardDensity.CARD_DENSITY_UNSPECIFIED -> CardDensity.STANDARD
         }
 
         fun CardDensity.toProto(): ProtoCardDensity = when (this) {
@@ -173,30 +110,135 @@ class ProtoAppSettingsRepository @Inject constructor(
             CardDensity.COMFORTABLE -> ProtoCardDensity.CARD_DENSITY_COMFORTABLE
         }
 
-        // -- ExportFormat --
-        fun ProtoExportFormat.toDomain(): ExportFormat = when (this) {
-            ProtoExportFormat.EXPORT_FORMAT_ENCRYPTED -> ExportFormat.ENCRYPTED
-            ProtoExportFormat.EXPORT_FORMAT_CSV -> ExportFormat.CSV
-            ProtoExportFormat.EXPORT_FORMAT_JSON -> ExportFormat.JSON
+        // ============================================================
+        // String ↔ Domain mappings (open sets — Proto stores string ID)
+        // ============================================================
+
+        // -- AppLanguage --
+        private fun String.toAppLanguageDomain(): AppLanguage = when (this) {
+            "system" -> AppLanguage.SYSTEM
+            "zh-CN" -> AppLanguage.ZH
+            "en" -> AppLanguage.EN
+            "ja" -> AppLanguage.JA
+            else -> AppLanguage.SYSTEM
         }
 
-        fun ExportFormat.toProto(): ProtoExportFormat = when (this) {
-            ExportFormat.ENCRYPTED -> ProtoExportFormat.EXPORT_FORMAT_ENCRYPTED
-            ExportFormat.CSV -> ProtoExportFormat.EXPORT_FORMAT_CSV
-            ExportFormat.JSON -> ProtoExportFormat.EXPORT_FORMAT_JSON
+        private fun AppLanguage.toAppLanguageString(): String = when (this) {
+            AppLanguage.SYSTEM -> "system"
+            AppLanguage.ZH -> "zh-CN"
+            AppLanguage.EN -> "en"
+            AppLanguage.JA -> "ja"
+        }
+
+        // -- FontFamilyMode --
+        private fun String.toFontFamilyDomain(): FontFamilyMode = when (this) {
+            "system" -> FontFamilyMode.SYSTEM
+            "app.default" -> FontFamilyMode.APP_BUNDLED
+            else -> FontFamilyMode.APP_BUNDLED
+        }
+
+        private fun FontFamilyMode.toFontFamilyString(): String = when (this) {
+            FontFamilyMode.SYSTEM -> "system"
+            FontFamilyMode.APP_BUNDLED -> "app.default"
+        }
+
+        // -- SwipeActionType --
+        private fun String.toSwipeActionDomain(): SwipeActionType = when (this) {
+            "none" -> SwipeActionType.COPY_PASSWORD
+            "copy_username" -> SwipeActionType.COPY_USERNAME
+            "copy_password" -> SwipeActionType.COPY_PASSWORD
+            "copy_totp" -> SwipeActionType.COPY_PASSWORD
+            "open_details" -> SwipeActionType.DETAIL
+            "open_in_browser" -> SwipeActionType.DETAIL
+            "call" -> SwipeActionType.DETAIL
+            "send_sms" -> SwipeActionType.DETAIL
+            "launch_app" -> SwipeActionType.DETAIL
+            else -> SwipeActionType.COPY_PASSWORD
+        }
+
+        private fun SwipeActionType.toSwipeActionString(): String = when (this) {
+            SwipeActionType.DELETE -> "none"
+            SwipeActionType.DETAIL -> "open_details"
+            SwipeActionType.COPY_PASSWORD -> "copy_password"
+            SwipeActionType.COPY_USERNAME -> "copy_username"
+        }
+
+        // -- AutofillUiMode --
+        private fun String.toAutofillUiModeDomain(): AutofillUiMode = when (this) {
+            "system_inline" -> AutofillUiMode.SYSTEM_INLINE
+            "fullscreen" -> AutofillUiMode.BOTTOM_SHEET
+            "dialog" -> AutofillUiMode.BOTTOM_SHEET
+            else -> AutofillUiMode.SYSTEM_INLINE
+        }
+
+        private fun AutofillUiMode.toAutofillUiModeString(): String = when (this) {
+            AutofillUiMode.SYSTEM_INLINE -> "system_inline"
+            AutofillUiMode.BOTTOM_SHEET -> "dialog"
+        }
+
+        // -- ExportFormat --
+        private fun String.toExportFormatDomain(): ExportFormat = when (this) {
+            "passly.encrypted" -> ExportFormat.ENCRYPTED
+            "csv" -> ExportFormat.CSV
+            "json" -> ExportFormat.JSON
+            else -> ExportFormat.ENCRYPTED
+        }
+
+        private fun ExportFormat.toExportFormatString(): String = when (this) {
+            ExportFormat.ENCRYPTED -> "passly.encrypted"
+            ExportFormat.CSV -> "csv"
+            ExportFormat.JSON -> "json"
         }
 
         // -- ImportMode --
-        fun ProtoImportMode.toDomain(): ImportMode = when (this) {
-            ProtoImportMode.IMPORT_MODE_APPEND -> ImportMode.APPEND
-            ProtoImportMode.IMPORT_MODE_REPLACE -> ImportMode.REPLACE
-            ProtoImportMode.IMPORT_MODE_MERGE -> ImportMode.MERGE
+        private fun String.toImportModeDomain(): ImportMode = when (this) {
+            "append" -> ImportMode.APPEND
+            "replace" -> ImportMode.REPLACE
+            "merge" -> ImportMode.MERGE
+            else -> ImportMode.APPEND
         }
 
-        fun ImportMode.toProto(): ProtoImportMode = when (this) {
-            ImportMode.APPEND -> ProtoImportMode.IMPORT_MODE_APPEND
-            ImportMode.REPLACE -> ProtoImportMode.IMPORT_MODE_REPLACE
-            ImportMode.MERGE -> ProtoImportMode.IMPORT_MODE_MERGE
+        private fun ImportMode.toImportModeString(): String = when (this) {
+            ImportMode.APPEND -> "append"
+            ImportMode.REPLACE -> "replace"
+            ImportMode.MERGE -> "merge"
+        }
+
+        // -- NoticeTopic --
+        private fun String.toNoticeTopicDomain(): NoticeTopic = when (this) {
+            "clipboard" -> NoticeTopic.CLIPBOARD
+            "app_lifecycle" -> NoticeTopic.APP_LIFECYCLE
+            "icon_download" -> NoticeTopic.ICON_DOWNLOAD
+            "backup" -> NoticeTopic.BACKUP
+            "security" -> NoticeTopic.SECURITY
+            "database" -> NoticeTopic.DATABASE
+            else -> NoticeTopic.CLIPBOARD
+        }
+
+        private fun NoticeTopic.toNoticeTopicString(): String = when (this) {
+            NoticeTopic.CLIPBOARD -> "clipboard"
+            NoticeTopic.APP_LIFECYCLE -> "app_lifecycle"
+            NoticeTopic.ICON_DOWNLOAD -> "icon_download"
+            NoticeTopic.BACKUP -> "backup"
+            NoticeTopic.SECURITY -> "security"
+            NoticeTopic.DATABASE -> "database"
+        }
+
+        // -- NoticeLevel --
+        fun NoticeLevel.toProto(): NoticeLevelProto = when (this) {
+            NoticeLevel.INFO -> NoticeLevelProto.NOTICE_LEVEL_INFO
+            NoticeLevel.SUCCESS -> NoticeLevelProto.NOTICE_LEVEL_SUCCESS
+            NoticeLevel.WARNING -> NoticeLevelProto.NOTICE_LEVEL_WARNING
+            NoticeLevel.ERROR -> NoticeLevelProto.NOTICE_LEVEL_ERROR
+            NoticeLevel.CRITICAL -> NoticeLevelProto.NOTICE_LEVEL_CRITICAL
+        }
+
+        fun NoticeLevelProto.toDomain(): NoticeLevel = when (this) {
+            NoticeLevelProto.NOTICE_LEVEL_INFO -> NoticeLevel.INFO
+            NoticeLevelProto.NOTICE_LEVEL_SUCCESS -> NoticeLevel.SUCCESS
+            NoticeLevelProto.NOTICE_LEVEL_WARNING -> NoticeLevel.WARNING
+            NoticeLevelProto.NOTICE_LEVEL_ERROR -> NoticeLevel.ERROR
+            NoticeLevelProto.NOTICE_LEVEL_CRITICAL -> NoticeLevel.CRITICAL
         }
 
         // ============================================================
@@ -226,7 +268,7 @@ class ProtoAppSettingsRepository @Inject constructor(
 
         fun ProtoEntryCardPresentation.toDomain(): EntryCardPresentation =
             EntryCardPresentation(
-                entryTypeValue = entryTypeValue,
+                entryTypeKey = entryTypeKey,
                 variantKey = variantKey,
                 density = density.toDomain(),
                 showIcon = showIcon,
@@ -237,7 +279,7 @@ class ProtoAppSettingsRepository @Inject constructor(
 
         fun EntryCardPresentation.toProto(): ProtoEntryCardPresentation =
             ProtoEntryCardPresentation.newBuilder()
-                .setEntryTypeValue(entryTypeValue)
+                .setEntryTypeKey(entryTypeKey)
                 .setVariantKey(variantKey)
                 .setDensity(density.toProto())
                 .setShowIcon(showIcon)
@@ -247,51 +289,13 @@ class ProtoAppSettingsRepository @Inject constructor(
                 .build()
 
         // ============================================================
-        // NoticeTopic / NoticeLevel (unchanged from old)
-        // ============================================================
-
-        fun NoticeTopic.toProto(): NoticeTopicProto = when (this) {
-            NoticeTopic.CLIPBOARD -> NoticeTopicProto.NOTICE_TOPIC_CLIPBOARD
-            NoticeTopic.APP_LIFECYCLE -> NoticeTopicProto.NOTICE_TOPIC_APP_LIFECYCLE
-            NoticeTopic.ICON_DOWNLOAD -> NoticeTopicProto.NOTICE_TOPIC_ICON_DOWNLOAD
-            NoticeTopic.BACKUP -> NoticeTopicProto.NOTICE_TOPIC_BACKUP
-            NoticeTopic.SECURITY -> NoticeTopicProto.NOTICE_TOPIC_SECURITY
-            NoticeTopic.DATABASE -> NoticeTopicProto.NOTICE_TOPIC_DATABASE
-        }
-
-        fun NoticeTopicProto.toDomain(): NoticeTopic = when (this) {
-            NoticeTopicProto.NOTICE_TOPIC_CLIPBOARD -> NoticeTopic.CLIPBOARD
-            NoticeTopicProto.NOTICE_TOPIC_APP_LIFECYCLE -> NoticeTopic.APP_LIFECYCLE
-            NoticeTopicProto.NOTICE_TOPIC_ICON_DOWNLOAD -> NoticeTopic.ICON_DOWNLOAD
-            NoticeTopicProto.NOTICE_TOPIC_BACKUP -> NoticeTopic.BACKUP
-            NoticeTopicProto.NOTICE_TOPIC_SECURITY -> NoticeTopic.SECURITY
-            NoticeTopicProto.NOTICE_TOPIC_DATABASE -> NoticeTopic.DATABASE
-        }
-
-        fun NoticeLevel.toProto(): NoticeLevelProto = when (this) {
-            NoticeLevel.INFO -> NoticeLevelProto.NOTICE_LEVEL_INFO
-            NoticeLevel.SUCCESS -> NoticeLevelProto.NOTICE_LEVEL_SUCCESS
-            NoticeLevel.WARNING -> NoticeLevelProto.NOTICE_LEVEL_WARNING
-            NoticeLevel.ERROR -> NoticeLevelProto.NOTICE_LEVEL_ERROR
-            NoticeLevel.CRITICAL -> NoticeLevelProto.NOTICE_LEVEL_CRITICAL
-        }
-
-        fun NoticeLevelProto.toDomain(): NoticeLevel = when (this) {
-            NoticeLevelProto.NOTICE_LEVEL_INFO -> NoticeLevel.INFO
-            NoticeLevelProto.NOTICE_LEVEL_SUCCESS -> NoticeLevel.SUCCESS
-            NoticeLevelProto.NOTICE_LEVEL_WARNING -> NoticeLevel.WARNING
-            NoticeLevelProto.NOTICE_LEVEL_ERROR -> NoticeLevel.ERROR
-            NoticeLevelProto.NOTICE_LEVEL_CRITICAL -> NoticeLevel.CRITICAL
-        }
-
-        // ============================================================
         // MessagePreferences encode / decode
         // ============================================================
 
         fun decodeMessageSettings(proto: MessagePreferences?): AppMessageSettings {
             if (proto == null) return AppMessageSettings()
             val configured = proto.topicsList.associate { item ->
-                item.topic.toDomain() to TopicMessageSettings(
+                item.topicKey.toNoticeTopicDomain() to TopicMessageSettings(
                     enabled = item.enabled,
                     minimumLevel = item.minimumLevel.toDomain()
                 )
@@ -311,8 +315,8 @@ class ProtoAppSettingsRepository @Inject constructor(
                 .addAllTopics(
                     NoticeTopic.entries.map { topic ->
                         val value = settings.topic(topic)
-                        TopicMessagePreference.newBuilder()
-                            .setTopic(topic.toProto())
+                        com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference.newBuilder()
+                            .setTopicKey(topic.toNoticeTopicString())
                             .setEnabled(value.enabled)
                             .setMinimumLevel(value.minimumLevel.toProto())
                             .build()
@@ -346,8 +350,8 @@ class ProtoAppSettingsRepository @Inject constructor(
             isDynamicColor = p.dynamicColorEnabled,
             fallbackPalette = p.fallbackPalette.toDomain(),
             customSeedArgb = if (p.hasCustomSeedArgb()) p.customSeedArgb else null,
-            language = p.language.toDomain(),
-            fontFamily = p.fontFamily.toDomain()
+            language = p.language.toAppLanguageDomain(),
+            fontFamily = p.fontFamily.toFontFamilyDomain()
         )
 
     private fun readInterface(p: InterfacePreferences): InterfaceSettings =
@@ -370,9 +374,9 @@ class ProtoAppSettingsRepository @Inject constructor(
     private fun readInteraction(p: InteractionPreferences): InteractionSettings =
         InteractionSettings(
             isSwipeEnabled = p.swipeActionsEnabled,
-            swipeLeftAction = p.swipeLeftAction.toDomain(),
-            swipeRightAction = p.swipeRightAction.toDomain(),
-            autofillUiMode = p.autofillUiMode.toDomain(),
+            swipeLeftAction = p.swipeLeftAction.toSwipeActionDomain(),
+            swipeRightAction = p.swipeRightAction.toSwipeActionDomain(),
+            autofillUiMode = p.autofillUiMode.toAutofillUiModeDomain(),
             isAutoDownloadIcons = p.autoDownloadIcons,
             faviconDownloadWhitelist = p.faviconAllowedDomainsList.toSet()
         )
@@ -394,12 +398,12 @@ class ProtoAppSettingsRepository @Inject constructor(
     private fun readBackup(p: BackupPreferences): BackupSettings =
         BackupSettings(
             directoryTreeUri = p.directoryTreeUri.ifEmpty { null },
-            defaultExportFormat = p.defaultExportFormat.toDomain(),
+            defaultExportFormat = p.defaultExportFormat.toExportFormatDomain(),
             includeIcons = p.includeIcons,
             includeAttachments = p.includeAttachments,
             includeDeletedEntries = p.includeDeletedEntries,
-            includedEntryTypes = p.includedEntryTypesList.map { it.number }.toSet(),
-            defaultImportMode = p.defaultImportMode.toDomain()
+            includedEntryTypes = p.includedEntryTypesList.toSet(),
+            defaultImportMode = p.defaultImportMode.toImportModeDomain()
         )
 
     // ================================================================
@@ -454,13 +458,13 @@ class ProtoAppSettingsRepository @Inject constructor(
 
                 is SettingsCommand.SetLanguage -> {
                     val ab = proto.appearance.toBuilder()
-                    ab.language = command.language.toProto()
+                    ab.language = command.language.toAppLanguageString()
                     b.setAppearance(ab)
                 }
 
                 is SettingsCommand.SetFontFamily -> {
                     val ab = proto.appearance.toBuilder()
-                    ab.fontFamily = command.mode.toProto()
+                    ab.fontFamily = command.mode.toFontFamilyString()
                     b.setAppearance(ab)
                 }
 
@@ -529,19 +533,19 @@ class ProtoAppSettingsRepository @Inject constructor(
 
                 is SettingsCommand.SetSwipeLeftAction -> {
                     val ib = proto.interaction.toBuilder()
-                    ib.swipeLeftAction = command.action.toProto()
+                    ib.swipeLeftAction = command.action.toSwipeActionString()
                     b.setInteraction(ib)
                 }
 
                 is SettingsCommand.SetSwipeRightAction -> {
                     val ib = proto.interaction.toBuilder()
-                    ib.swipeRightAction = command.action.toProto()
+                    ib.swipeRightAction = command.action.toSwipeActionString()
                     b.setInteraction(ib)
                 }
 
                 is SettingsCommand.SetAutofillUiMode -> {
                     val ib = proto.interaction.toBuilder()
-                    ib.autofillUiMode = command.mode.toProto()
+                    ib.autofillUiMode = command.mode.toAutofillUiModeString()
                     b.setInteraction(ib)
                 }
 
@@ -590,7 +594,7 @@ class ProtoAppSettingsRepository @Inject constructor(
                     val vb = proto.vaultView.toBuilder()
                     val existing = vb.entryCardPresentationsList.toMutableList()
                     val idx = existing.indexOfFirst {
-                        it.entryTypeValue == command.presentation.entryTypeValue
+                        it.entryTypeKey == command.presentation.entryTypeKey
                     }
                     val protoPresentation = command.presentation.toProto()
                     if (idx >= 0) existing[idx] = protoPresentation
@@ -603,7 +607,7 @@ class ProtoAppSettingsRepository @Inject constructor(
                 is SettingsCommand.RemoveEntryCardPresentation -> {
                     val vb = proto.vaultView.toBuilder()
                     val existing = vb.entryCardPresentationsList.toMutableList()
-                    existing.removeAll { it.entryTypeValue == command.entryTypeValue }
+                    existing.removeAll { it.entryTypeKey == command.entryTypeKey }
                     vb.clearEntryCardPresentations()
                     vb.addAllEntryCardPresentations(existing)
                     b.setVaultView(vb)
@@ -671,7 +675,7 @@ class ProtoAppSettingsRepository @Inject constructor(
 
                 is SettingsCommand.SetDefaultExportFormat -> {
                     val bb = proto.backup.toBuilder()
-                    bb.defaultExportFormat = command.format.toProto()
+                    bb.defaultExportFormat = command.format.toExportFormatString()
                     b.setBackup(bb)
                 }
 
@@ -695,7 +699,7 @@ class ProtoAppSettingsRepository @Inject constructor(
 
                 is SettingsCommand.SetDefaultImportMode -> {
                     val bb = proto.backup.toBuilder()
-                    bb.defaultImportMode = command.mode.toProto()
+                    bb.defaultImportMode = command.mode.toImportModeString()
                     b.setBackup(bb)
                 }
             }

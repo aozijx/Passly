@@ -49,7 +49,7 @@ sealed interface SettingsCommand {
     data object ClearVisibleVaultTabs : SettingsCommand
     data class SetVaultSortOption(val sort: VaultSortSpec) : SettingsCommand
     data class SetEntryCardPresentation(val presentation: EntryCardPresentation) : SettingsCommand
-    data class RemoveEntryCardPresentation(val entryTypeValue: Int) : SettingsCommand
+    data class RemoveEntryCardPresentation(val entryTypeKey: String) : SettingsCommand
 
     // Messages
     data class SetOptionalMessagesEnabled(val enabled: Boolean) : SettingsCommand

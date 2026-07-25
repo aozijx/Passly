@@ -5,9 +5,7 @@ import com.aozijx.passly.data.local.datastore.settings.AppSettings
 import com.aozijx.passly.data.local.datastore.settings.AppearancePreferences
 import com.aozijx.passly.data.local.datastore.settings.MessagePreferences
 import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
-import com.aozijx.passly.data.local.datastore.settings.NoticeTopicProto
 import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
-import com.aozijx.passly.data.local.datastore.settings.SwipeActionProto
 import com.aozijx.passly.data.local.datastore.settings.TopicMessagePreference
 import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
 import com.aozijx.passly.data.local.datastore.settings.VisibleTabs
@@ -30,14 +28,8 @@ class ProtoSerializerTest {
         assertEquals(true, defaults.appearance.dynamicColorEnabled)
         assertEquals(true, defaults.security.secureContentEnabled)
         assertEquals(false, defaults.interaction.swipeActionsEnabled)
-        assertEquals(
-            SwipeActionProto.SWIPE_ACTION_COPY_PASSWORD,
-            defaults.interaction.swipeLeftAction
-        )
-        assertEquals(
-            SwipeActionProto.SWIPE_ACTION_OPEN_DETAILS,
-            defaults.interaction.swipeRightAction
-        )
+        assertEquals("copy_password", defaults.interaction.swipeLeftAction)
+        assertEquals("open_details", defaults.interaction.swipeRightAction)
         assertEquals(4, defaults.vaultView.maxTabsWithoutScroll)
         assertFalse(defaults.hasMessage())
     }
@@ -71,7 +63,7 @@ class ProtoSerializerTest {
                     .setSystemNotificationsEnabled(false)
                     .addTopics(
                         TopicMessagePreference.newBuilder()
-                            .setTopic(NoticeTopicProto.NOTICE_TOPIC_BACKUP)
+                            .setTopicKey("backup")
                             .setEnabled(false)
                             .setMinimumLevel(NoticeLevelProto.NOTICE_LEVEL_ERROR)
                             .build()
@@ -92,10 +84,7 @@ class ProtoSerializerTest {
         assertFalse(decoded.message.optionalMessagesEnabled)
         assertFalse(decoded.message.systemNotificationsEnabled)
         assertEquals(1, decoded.message.topicsCount)
-        assertEquals(
-            NoticeTopicProto.NOTICE_TOPIC_BACKUP,
-            decoded.message.getTopics(0).topic
-        )
+        assertEquals("backup", decoded.message.getTopics(0).topicKey)
     }
 
     @Test

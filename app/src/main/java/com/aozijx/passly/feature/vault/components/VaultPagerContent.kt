@@ -95,7 +95,7 @@ private fun EntryListItemRow(
 ) {
     val cardStyle = remember(item.entryType, entryCardPresentations) {
         val presentation = entryCardPresentations.find {
-            it.entryTypeValue == item.entryType.ordinal
+            it.entryTypeKey == item.entryType.name.lowercase()
         }
         when (presentation?.variantKey) {
             "password" -> VaultCardStyle.PASSWORD

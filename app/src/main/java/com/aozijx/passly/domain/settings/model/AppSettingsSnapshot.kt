@@ -27,7 +27,7 @@ data class AppearanceSettings(
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 enum class FallbackPalette { BLUE, GREEN, RED, PURPLE, ORANGE, TEAL, PINK }
-enum class AppLanguage { SYSTEM, ZH, EN }
+enum class AppLanguage { SYSTEM, ZH, EN, JA }
 enum class FontFamilyMode { SYSTEM, APP_BUNDLED }
 
 // ============================================================
@@ -83,7 +83,7 @@ data class VisibleTabsConfig(
 )
 
 data class EntryCardPresentation(
-    val entryTypeValue: Int,
+    val entryTypeKey: String,
     val variantKey: String = "",
     val density: CardDensity = CardDensity.STANDARD,
     val showIcon: Boolean = true,
@@ -104,7 +104,7 @@ data class BackupSettings(
     val includeIcons: Boolean = true,
     val includeAttachments: Boolean = true,
     val includeDeletedEntries: Boolean = true,
-    val includedEntryTypes: Set<Int> = emptySet(),
+    val includedEntryTypes: Set<String> = emptySet(),
     val defaultImportMode: ImportMode = ImportMode.APPEND
 )
 

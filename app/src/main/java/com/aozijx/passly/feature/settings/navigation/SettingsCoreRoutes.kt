@@ -134,6 +134,9 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     onCustomSeedArgbChange = {
                         viewModel.onAction(AppearanceUiAction.SetCustomSeedArgb(it))
                     },
+                    onLanguageChange = {
+                        viewModel.onAction(AppearanceUiAction.SetLanguage(it))
+                    },
                     onFontFamilyChange = {
                         viewModel.onAction(AppearanceUiAction.SetFontFamily(it))
                     }

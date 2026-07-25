@@ -1,14 +1,28 @@
 package com.aozijx.passly.feature.settings.appearance
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -27,6 +42,7 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.theme.themePresetByColor
+import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import kotlinx.coroutines.launch
@@ -38,10 +54,12 @@ internal fun AppearanceDetail(
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onCustomSeedArgbChange: (Long?) -> Unit,
+    onLanguageChange: (AppLanguage) -> Unit,
     onFontFamilyChange: (FontFamilyMode) -> Unit
 ) {
     var showThemeColorSheet by remember { mutableStateOf(false) }
     var showThemeModeMenu by remember { mutableStateOf(false) }
+    var showLanguageSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
@@ -92,6 +110,13 @@ internal fun AppearanceDetail(
         SettingsSectionTitle(text = stringResource(R.string.settings_topic_language_font))
         RoundedGroup(
             items = listOf(
+                navigationSettingsGroupItem(
+                    key = "appearance.language",
+                    icon = Icons.Default.Translate,
+                    title = stringResource(R.string.settings_language),
+                    value = stringResource(state.language.labelRes()),
+                    onClick = { showLanguageSheet = true }
+                ),
                 switchSettingsGroupItem(
                     key = "appearance.font",
                     icon = Icons.Default.TextFields,
@@ -105,6 +130,20 @@ internal fun AppearanceDetail(
                     }
                 )
             )
+        )
+    }
+
+    if (showLanguageSheet) {
+        LanguageSheet(
+            current = state.language,
+            onSelect = { lang ->
+                onLanguageChange(lang)
+                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                    showLanguageSheet = false
+                }
+            },
+            sheetState = sheetState,
+            onDismiss = { showLanguageSheet = false }
         )
     }
 
@@ -127,4 +166,51 @@ private fun ThemeMode.labelRes(): Int = when (this) {
     ThemeMode.SYSTEM -> R.string.follow_system
     ThemeMode.LIGHT -> R.string.settings_theme_mode_light
     ThemeMode.DARK -> R.string.settings_theme_mode_dark
+}
+
+private fun AppLanguage.labelRes(): Int = when (this) {
+    AppLanguage.SYSTEM -> R.string.follow_system
+    AppLanguage.ZH -> R.string.settings_language_chinese
+    AppLanguage.EN -> R.string.settings_language_english
+    AppLanguage.JA -> R.string.settings_language_japanese
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageSheet(
+    current: AppLanguage,
+    onSelect: (AppLanguage) -> Unit,
+    sheetState: SheetState,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(modifier = Modifier.padding(bottom = 32.dp)) {
+            Text(
+                text = stringResource(R.string.settings_language_choose),
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+            )
+            AppLanguage.entries.forEach { lang ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .clickable { onSelect(lang) }
+                        .padding(horizontal = 24.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = lang == current,
+                        onClick = { onSelect(lang) }
+                    )
+                    Spacer(Modifier.padding(start = 12.dp))
+                    Text(text = stringResource(lang.labelRes()))
+                }
+            }
+        }
+    }
 }
