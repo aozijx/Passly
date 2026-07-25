@@ -1,58 +1,11 @@
 package com.aozijx.passly.feature.vault.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.feature.detail.DetailCardDialog
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.dialogs.DeleteConfirmDialog
-import com.aozijx.passly.feature.vault.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.feature.vault.model.OtpUiState
-
-// --- 详情对话框宿主 ---
-@Composable
-fun DetailDialogHost(
-    detailCoordinatorState: VaultDetailCoordinatorState,
-    totpStates: Map<String, OtpUiState>,
-    mainViewModel: MainViewModel,
-    vaultViewModel: VaultViewModel
-) {
-    detailCoordinatorState.request?.let { request ->
-        val item = request.entry
-        if (detailCoordinatorState.isIconPickerVisible) {
-            IconPickerDialog(
-                onDismiss = { vaultViewModel.hideDetailIconPicker() },
-                currentIconName = item.iconName,
-                currentCustomPath = item.iconCustomPath,
-                onIconSelected = { name ->
-                    vaultViewModel.updateVaultEntry(
-                        item.copy(
-                            summary = item.summary.copy(icon = name)
-                        )
-                    )
-                },
-                onCustomImageSelected = { uri ->
-                    vaultViewModel.saveCustomIcon(item, uri)
-                }
-            )
-        }
-
-        DetailCardDialog(
-            initialEntry = item,
-            launchMode = request.launchMode,
-            mainViewModel = mainViewModel,
-            otpState = totpStates[item.id],
-            onDismiss = { vaultViewModel.dismissDetail() },
-            onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
-            onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
-            onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
-            onGenerateHotpCode = { vaultViewModel.generateHotpCode(it) }
-        )
-    }
-}
 
 // --- 添加对话框宿主 ---
 @Composable
@@ -118,16 +71,6 @@ fun VaultDialogs(
     vaultViewModel: VaultViewModel,
     onUpdateInteraction: () -> Unit
 ) {
-    val totpStates by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
-    val detailState by vaultViewModel.detailStateFlow.collectAsStateWithLifecycle()
-
-    DetailDialogHost(
-        detailCoordinatorState = detailState,
-        totpStates = totpStates,
-        mainViewModel = mainViewModel,
-        vaultViewModel = vaultViewModel
-    )
-
     AddDialogHost(
         vaultViewModel = vaultViewModel,
         onUpdateInteraction = onUpdateInteraction
@@ -137,5 +80,4 @@ fun VaultDialogs(
         vaultViewModel = vaultViewModel,
         mainViewModel = mainViewModel
     )
-
 }

@@ -157,7 +157,7 @@ fun VaultContent(
             swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
             isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
             onSwipeTriggered = actionProvider.onSwipeTriggered,
-            onItemClick = { vaultViewModel.showDetail(it) },
+            onItemClick = { onShowDetail(it) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
