@@ -10,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -31,7 +32,6 @@ fun IdCardSection(
     val context = LocalContext.current
     val copied = stringResource(R.string.vault_detail_copied)
     val notSet = stringResource(R.string.not_set)
-    val hidden = stringResource(R.string.hidden_mask)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
@@ -43,7 +43,7 @@ fun IdCardSection(
             value = when {
                 entry.secret.identity?.idNumber.isNullOrBlank() -> notSet
                 revealedIdNumber != null -> revealedIdNumber
-                else -> hidden
+                else -> HiddenMask.DEFAULT
             },
             isRevealed = revealedIdNumber != null,
             onCopy = {

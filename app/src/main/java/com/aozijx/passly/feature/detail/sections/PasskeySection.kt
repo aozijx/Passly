@@ -10,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -32,7 +33,6 @@ fun PasskeySection(
     val context = LocalContext.current
     val copied = stringResource(R.string.vault_detail_copied)
     val notSet = stringResource(R.string.not_set)
-    val hidden = stringResource(R.string.hidden_mask)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
@@ -44,7 +44,7 @@ fun PasskeySection(
             value = when {
                 entry.secret.passkey?.privateKeyReference.isNullOrBlank() -> notSet
                 revealedPasskeyData != null -> revealedPasskeyData
-                else -> hidden
+                else -> HiddenMask.DEFAULT
             },
             isRevealed = revealedPasskeyData != null,
             onCopy = {

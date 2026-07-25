@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -153,7 +154,7 @@ fun BankCardSection(
         } else {
             BankCardNumberItem(
                 label = stringResource(R.string.card_number),
-                value = revealedCardNumber ?: stringResource(R.string.hidden_mask),
+                value = revealedCardNumber ?: HiddenMask.DEFAULT,
                 isRevealed = revealedCardNumber != null,
                 onCopy = {
                     copySensitiveField(
@@ -212,7 +213,7 @@ fun BankCardSection(
             } else {
                 DetailItem(
                     label = stringResource(R.string.card_cvv),
-                    value = revealedCvv ?: stringResource(R.string.hidden_mask),
+                    value = revealedCvv ?: HiddenMask.SHORT,
                     isRevealed = revealedCvv != null,
                     onCopy = {
                         copySensitiveField(
@@ -253,7 +254,7 @@ fun BankCardSection(
         entry.secret.card?.paymentPin?.let { pin ->
             DetailItem(
                 label = stringResource(R.string.payment_pin),
-                value = revealedPaymentPin ?: stringResource(R.string.hidden_mask),
+                value = revealedPaymentPin ?: HiddenMask.DEFAULT,
                 isRevealed = revealedPaymentPin != null,
                 onCopy = {
                     copySensitiveField(

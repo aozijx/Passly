@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -101,7 +102,7 @@ fun WifiSection(
         } else {
             DetailItem(
                 label = wifiPasswordLabel,
-                value = revealedPassword ?: stringResource(R.string.hidden_mask),
+                value = revealedPassword ?: HiddenMask.DEFAULT,
                 isRevealed = revealedPassword != null,
                 onCopy = {
                     copySensitiveField(

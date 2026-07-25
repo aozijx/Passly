@@ -23,7 +23,6 @@ object AutofillRemoteViewFactory {
     fun createUnlockTrigger(context: Context): RemoteViews {
         return RemoteViews(context.packageName, R.layout.autofill_dataset_item).apply {
             setTextViewText(R.id.item_title, context.getString(R.string.vault_locked_title))
-            setTextViewText(R.id.item_subtitle, context.getString(R.string.vault_locked_subtitle))
             setTextViewText(R.id.item_badge, context.getString(R.string.verify))
         }
     }

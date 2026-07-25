@@ -76,8 +76,8 @@ internal fun NotificationSettingsSection(
                 items = listOf(
                     switchSettingsGroupItem(
                         key = "notifications.topic.${topic.name}",
-                        title = stringResource(topicLabels[topic] ?: R.string.empty),
-                        subtitle = stringResource(topicSummaries[topic] ?: R.string.empty),
+                        title = stringResource(topicLabels.getValue(topic)),
+                        subtitle = stringResource(topicSummaries.getValue(topic)),
                         checked = setting.enabled,
                         onCheckedChange = { enabled -> onTopicEnabledChange(topic, enabled) }
                     )

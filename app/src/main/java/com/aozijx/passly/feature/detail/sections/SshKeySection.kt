@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -94,7 +95,7 @@ fun SshKeySection(
         } else {
             DetailItem(
                 label = passphraseLabel,
-                value = revealedPassword ?: stringResource(R.string.hidden_mask),
+                value = revealedPassword ?: HiddenMask.DEFAULT,
                 isRevealed = revealedPassword != null,
                 onCopy = {
                     copySensitiveField(
@@ -148,7 +149,7 @@ fun SshKeySection(
                     text = if (revealedSshPrivateKey != null) {
                         revealedSshPrivateKey.take(60) + "..."
                     } else {
-                        stringResource(R.string.hidden_mask)
+                        HiddenMask.DEFAULT
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontFamily = if (revealedSshPrivateKey != null) FontFamily.Monospace else FontFamily.Default,

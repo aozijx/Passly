@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -177,7 +178,7 @@ private fun CredentialRow(
     } else {
         DetailItem(
             label = label,
-            value = revealedValue ?: stringResource(R.string.hidden_mask),
+            value = revealedValue ?: HiddenMask.DEFAULT,
             isRevealed = revealedValue != null,
             onCopy = onCopy,
             onEdit = {

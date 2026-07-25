@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -63,9 +64,11 @@ fun SeedPhraseSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.seed_phrase_title),
-            value = if (revealedSeedPhrase != null) stringResource(R.string.seed_phrase_revealed) else stringResource(
-                R.string.hidden_mask
-            ),
+            value = if (revealedSeedPhrase != null) {
+                stringResource(R.string.seed_phrase_revealed)
+            } else {
+                HiddenMask.DEFAULT
+            },
             isRevealed = revealedSeedPhrase != null,
             onCopy = {
                 copySensitiveField(

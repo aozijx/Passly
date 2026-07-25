@@ -23,18 +23,15 @@
     <string name="default_label">Default</string>
     <string name="category_optional">Category (optional)</string>
     <string name="edit_field">Edit %s</string>
-    <string name="hidden_mask">••••••••</string>
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
     <string name="title_hint">Title (e.g. Google, GitHub)</string>
     <string name="username_hint">Username / Email</string>
 
     <!-- App info -->
-    <string name="app_name">Passly</string>
 
     <!-- Autofill service -->
     <string name="autofill_service_name">Passly Autofill</string>
-    <string name="AutoFill_icon" translatable="false">icon</string>
     <string name="autofill_auth_title">Security Verification</string>
     <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>
     <string name="autofill_entry_compact_title">Choose account</string>
@@ -70,13 +67,8 @@
     <string name="vault_auth_failed">Verification failed</string>
     <string name="main_notification_permission_denied">Notification permission is disabled, so background sync progress will be hidden.</string>
     <string name="vault_locked_title">Vault is locked</string>
-    <string name="vault_locked_subtitle">Tap the screen to unlock</string>
-    <string name="vault_auth_encrypt_title">Verify to encrypt</string>
-    <string name="vault_auth_encrypt_subtitle">Please verify to protect your data</string>
     <string name="vault_auth_decrypt_title">Verify identity</string>
-    <string name="vault_auth_decrypt_subtitle_reveal">Please verify to reveal sensitive information</string>
     <string name="vault_auth_decrypt_subtitle_generic">Please verify to continue</string>
-    <string name="vault_error_encrypt_failed">Encryption failed</string>
 
     <!-- Vault - other strings -->
     <string name="vault_search_placeholder">Search vault items…</string>
@@ -226,7 +218,6 @@
     <string name="password_strength_medium">Medium</string>
     <string name="password_strength_good">Good</string>
     <string name="password_strength_strong">Strong</string>
-    <string name="empty" translatable="false"></string>
     <string name="settings_auth_before_set_app_password">Verify to continue setting app password</string>
 
     <!-- Settings: Appearance -->

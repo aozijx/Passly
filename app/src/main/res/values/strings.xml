@@ -1,6 +1,6 @@
 <resources>
     <!-- 应用基本信息 -->
-    <string name="app_name">Passly</string>
+    <string name="app_name" translatable="false">Passly</string>
 
     <!-- 通用字符串 -->
     <string name="auth_title">身份认证</string>
@@ -25,7 +25,6 @@
     <string name="default_label">默认</string>
     <string name="category_optional">分类 (可选)</string>
     <string name="edit_field">编辑%s</string>
-    <string name="hidden_mask">••••••••</string>
     <string name="show_password">显示密码</string>
     <string name="hide_password">隐藏密码</string>
     <string name="title_hint">标题 (如: Google, GitHub)</string>
@@ -79,13 +78,8 @@
     <string name="vault_auth_failed">验证未通过</string>
     <string name="main_notification_permission_denied">通知权限未开启，同步进度不可见</string>
     <string name="vault_locked_title">保险箱已锁定</string>
-    <string name="vault_locked_subtitle">点击以解锁</string>
-    <string name="vault_auth_encrypt_title">验证加密</string>
-    <string name="vault_auth_encrypt_subtitle">验证以保护信息</string>
     <string name="vault_auth_decrypt_title">验证身份</string>
-    <string name="vault_auth_decrypt_subtitle_reveal">验证以显示敏感信息</string>
     <string name="vault_auth_decrypt_subtitle_generic">验证以继续操作</string>
-    <string name="vault_error_encrypt_failed">加密失败</string>
 
     <!-- 其余 vault 相关 -->
     <string name="vault_search_placeholder">搜索密码项…</string>
@@ -554,7 +548,6 @@
     <string name="settings_topic_security_summary">生物识别变化、恢复码变更等提醒</string>
     <string name="settings_topic_database">数据</string>
     <string name="settings_topic_database_summary">数据库异常、恢复结果提醒</string>
-    <string name="empty"></string>
 
     <string name="notice_clipboard_cleared">剪贴板中的敏感内容已清除</string>
     <string name="notice_clipboard_clear_failed">无法清除剪贴板中的敏感内容</string>
