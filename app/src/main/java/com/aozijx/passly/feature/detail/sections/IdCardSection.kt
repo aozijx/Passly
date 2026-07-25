@@ -55,8 +55,6 @@ fun IdCardSection(
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
                     sourceValue = entry.secret.identity?.idNumber,
-                    authTitle = "解密身份证号",
-                    authSubtitle = "验证身份以复制信息",
                     onReveal = onIdNumberRevealed,
                     afterCopy = {
                         Toast.makeText(
@@ -73,8 +71,6 @@ fun IdCardSection(
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
                     sourceValue = entry.secret.identity?.idNumber,
-                    authTitle = "解密身份证号",
-                    authSubtitle = "验证身份以查看信息",
                     onReveal = onIdNumberRevealed
                 )
             }

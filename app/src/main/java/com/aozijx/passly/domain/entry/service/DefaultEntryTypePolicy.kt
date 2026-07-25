@@ -28,9 +28,9 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
             sensitiveFields = setOf("password", "username", "totpSecret"),
             summaryExtractor = { entry -> entry.website?.matchDomains?.firstOrNull() ?: "无网址" }
         ),
-        EntryType.TOTP to PolicyConfig(
+        EntryType.OTP to PolicyConfig(
             suggestedCategory = "认证",
-            sensitiveFields = setOf("totpSecret"),
+            sensitiveFields = setOf("otpSecret"),
             summaryExtractor = { entry ->
                 val config = entry.secret.otp?.config
                 "${config?.digits ?: 6} 位 / ${config?.periodSeconds ?: 30}s"

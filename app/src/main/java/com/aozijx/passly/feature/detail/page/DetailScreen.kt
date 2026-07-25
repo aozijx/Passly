@@ -22,6 +22,7 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.TotpEditState
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 /**
  * 详情页 UI 组件 (Stateless)
@@ -33,6 +34,7 @@ import com.aozijx.passly.feature.detail.internal.TotpEditState
 fun DetailScreen(
     initialEntry: VaultEntry,
     uiState: DetailUiState,
+    otpUiState: OtpUiState?,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onBack: () -> Unit,
     onEvent: (DetailIntent) -> Unit,
@@ -111,6 +113,8 @@ fun DetailScreen(
             modifier = Modifier.padding(innerPadding),
             uiState = uiState,
             editState = editState,
+            otpUiState = otpUiState,
+            totpEditState = totpEditState,
             onEvent = onEvent,
             onInteraction = onUpdateInteraction,
             onUpdateVaultEntry = onUpdateVaultEntry,

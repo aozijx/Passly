@@ -111,8 +111,6 @@ fun WifiSection(
                         fieldName = "wifi password",
                         revealedValue = revealedPassword,
                         sourceValue = entry.secret.wifi?.password,
-                        authTitle = "解密 WiFi 密码",
-                        authSubtitle = "验证身份以复制密码",
                         onReveal = onPasswordRevealed,
                         afterCopy = {
                             Toast.makeText(
@@ -138,8 +136,6 @@ fun WifiSection(
                         fieldName = "wifi password",
                         revealedValue = revealedPassword,
                         sourceValue = entry.secret.wifi?.password,
-                        authTitle = "解密 WiFi 密码",
-                        authSubtitle = "验证身份以查看密码",
                         onReveal = onPasswordRevealed
                     )
                 },

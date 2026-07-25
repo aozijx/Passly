@@ -64,8 +64,6 @@ fun CredentialSection(
                     fieldName = "username",
                     revealedValue = revealedUsername,
                     sourceValue = item.username,
-                    authTitle = "解密信息",
-                    authSubtitle = "验证身份以复制账号",
                     onReveal = onUsernameRevealed
                 )
             },
@@ -94,8 +92,6 @@ fun CredentialSection(
                         fieldName = "password",
                         revealedValue = revealedPassword,
                         sourceValue = item.secret.login?.password,
-                        authTitle = "解密信息",
-                        authSubtitle = "验证身份以复制密码",
                         onReveal = onPasswordRevealed
                     )
                 },

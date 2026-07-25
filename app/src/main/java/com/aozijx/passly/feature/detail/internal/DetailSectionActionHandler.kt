@@ -21,8 +21,6 @@ internal inline fun copySensitiveField(
     fieldName: String,
     revealedValue: String?,
     sourceValue: String?,
-    authTitle: String,
-    authSubtitle: String,
     crossinline onReveal: (String) -> Unit = {},
     crossinline afterCopy: (String) -> Unit = {}
 ) {
@@ -47,8 +45,6 @@ internal inline fun toggleRevealSensitiveField(
     fieldName: String,
     revealedValue: String?,
     sourceValue: String?,
-    authTitle: String,
-    authSubtitle: String,
     crossinline onReveal: (String?) -> Unit
 ) {
     val source = sourceValue?.takeIf { it.isNotBlank() } ?: return

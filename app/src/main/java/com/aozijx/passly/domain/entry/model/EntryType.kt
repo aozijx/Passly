@@ -8,7 +8,7 @@ enum class EntryType(val displayName: String) {
     SSH_KEY("SSH密钥"),
     WIFI("Wi-Fi"),
     PASSKEY("Passkey"),
-    TOTP("TOTP"),
+    OTP("OTP"),
     PASSPORT("护照"),
     LICENSE("证件"),
     DATABASE("数据库"),

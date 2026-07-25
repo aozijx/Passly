@@ -49,7 +49,7 @@ abstract class EntryPolicyModule {
 
     @Binds
     @IntoMap
-    @EntryTypeKey(EntryType.TOTP)
+    @EntryTypeKey(EntryType.OTP)
     abstract fun bindTotpValidator(impl: TotpEntryValidator): EntryValidator
 
     @Binds

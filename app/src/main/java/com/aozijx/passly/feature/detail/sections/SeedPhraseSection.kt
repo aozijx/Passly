@@ -78,8 +78,6 @@ fun SeedPhraseSection(
                     fieldName = "seed phrase",
                     revealedValue = revealedSeedPhrase,
                     sourceValue = seedPhrase,
-                    authTitle = "解密助记词",
-                    authSubtitle = "验证身份以复制助记词",
                     onReveal = onSeedPhraseRevealed,
                     afterCopy = {
                         Toast.makeText(
@@ -96,8 +94,6 @@ fun SeedPhraseSection(
                     fieldName = "seed phrase",
                     revealedValue = revealedSeedPhrase,
                     sourceValue = seedPhrase,
-                    authTitle = "解密助记词",
-                    authSubtitle = "验证身份以查看助记词",
                     onReveal = onSeedPhraseRevealed
                 )
             }
@@ -136,8 +132,6 @@ fun SeedPhraseSection(
                         fieldName = "seed phrase",
                         revealedValue = revealedSeedPhrase,
                         sourceValue = seedPhrase,
-                        authTitle = "解密助记词",
-                        authSubtitle = "验证身份以显示助记词",
                         onReveal = onSeedPhraseRevealed
                     )
                 },

@@ -104,8 +104,6 @@ fun SshKeySection(
                         fieldName = "passphrase",
                         revealedValue = revealedPassword,
                         sourceValue = entry.secret.ssh?.passphrase,
-                        authTitle = "解密 SSH 密码",
-                        authSubtitle = "验证身份以复制信息",
                         onReveal = onPasswordRevealed,
                         afterCopy = {
                             Toast.makeText(
@@ -131,8 +129,6 @@ fun SshKeySection(
                     fieldName = "private key",
                     revealedValue = revealedSshPrivateKey,
                     sourceValue = entry.secret.ssh?.privateKey,
-                    authTitle = "解密 SSH 私钥",
-                    authSubtitle = "验证身份以复制信息",
                     onReveal = onSshPrivateKeyRevealed,
                     afterCopy = {
                         Toast.makeText(

@@ -103,8 +103,6 @@ fun BankCardSection(
                         fieldName = "cardholder",
                         revealedValue = revealedCardholder,
                         sourceValue = entry.username,
-                        authTitle = "解密持卡人",
-                        authSubtitle = "验证身份以复制信息",
                         onReveal = { onRevealField(RevealedFieldKey.CARDHOLDER, it) },
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
@@ -164,8 +162,6 @@ fun BankCardSection(
                         fieldName = "card number",
                         revealedValue = revealedCardNumber,
                         sourceValue = entry.secret.card?.cardNumber,
-                        authTitle = "解密卡号",
-                        authSubtitle = "验证身份以复制信息",
                         onReveal = { onRevealField(RevealedFieldKey.CARD_NUMBER, it) },
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
@@ -223,8 +219,6 @@ fun BankCardSection(
                             fieldName = "CVV",
                             revealedValue = revealedCvv,
                             sourceValue = cvv,
-                            authTitle = "解密 CVV",
-                            authSubtitle = "验证身份以复制信息",
                             onReveal = { onRevealField(RevealedFieldKey.CVV, it) },
                             afterCopy = {
                                 Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
@@ -264,8 +258,6 @@ fun BankCardSection(
                         fieldName = "payment PIN",
                         revealedValue = revealedPaymentPin,
                         sourceValue = pin,
-                        authTitle = "解密支付密码",
-                        authSubtitle = "验证身份以复制信息",
                         onReveal = { onRevealField(RevealedFieldKey.PAYMENT_PIN, it) },
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()

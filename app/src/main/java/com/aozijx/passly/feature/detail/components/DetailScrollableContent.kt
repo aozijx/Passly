@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.util.TotpUtils
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -19,6 +20,7 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.EntryEditState
+import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.detail.sections.ActivityTimelineSection
 import com.aozijx.passly.feature.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.feature.detail.sections.BankCardSection
@@ -27,13 +29,17 @@ import com.aozijx.passly.feature.detail.sections.CredentialSection
 import com.aozijx.passly.feature.detail.sections.IdCardSection
 import com.aozijx.passly.feature.detail.sections.NotesSection
 import com.aozijx.passly.feature.detail.sections.SshKeySection
+import com.aozijx.passly.feature.detail.sections.TotpSection
 import com.aozijx.passly.feature.detail.sections.WifiSection
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
 fun DetailScrollableContent(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
     editState: EntryEditState,
+    otpUiState: OtpUiState?,
+    totpEditState: TotpEditState,
     onEvent: (DetailIntent) -> Unit,
     onInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
@@ -58,101 +64,102 @@ fun DetailScrollableContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        when (vaultType) {
-            EntryType.LOGIN, EntryType.TOTP, EntryType.SEED_PHRASE, EntryType.RECOVERY_CODE, EntryType.PASSKEY -> {
-                item {
-                    CredentialSection(
-                        item = entry,
-                        onAuthenticate = onAuthenticate,
-                        editState = editState,
-                        revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME),
-                        revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
-                        onUsernameRevealed = { revealField(RevealedFieldKey.USERNAME, it) },
-                        onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                        onEvent = onEvent
-                    )
-                }
+        val isCredentialType = vaultType in listOf(
+            EntryType.LOGIN, EntryType.OTP, EntryType.SEED_PHRASE, EntryType.RECOVERY_CODE,
+            EntryType.PASSKEY, EntryType.NOTE, EntryType.DATABASE,
+            EntryType.SERVER, EntryType.API_KEY, EntryType.CRYPTO_WALLET
+        )
+        if (entry.secret.login != null || isCredentialType) {
+            item {
+                CredentialSection(
+                    item = entry,
+                    onAuthenticate = onAuthenticate,
+                    editState = editState,
+                    revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME),
+                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
+                    onUsernameRevealed = { revealField(RevealedFieldKey.USERNAME, it) },
+                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
+                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
+                    onEvent = onEvent
+                )
             }
+        }
 
-            EntryType.WIFI -> {
-                item {
-                    WifiSection(
-                        entry = entry,
-                        editState = editState,
-                        revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
-                        onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                        onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                        onEvent = onEvent
-                    )
-                }
+        if (entry.secret.otp != null || vaultType == EntryType.OTP) {
+            item {
+                val otpConfig = entry.secret.otp?.config
+                val totpUri =
+                    otpConfig?.let { TotpUtils.constructOtpAuthUri(it, entry.title) }
+                TotpSection(
+                    currentState = otpUiState,
+                    totpUri = totpUri,
+                    onEvent = onEvent
+                )
             }
+        }
 
-            EntryType.BANK_CARD, EntryType.CARD -> {
-                item {
-                    BankCardSection(
-                        entry = entry,
-                        editState = editState,
-                        revealedCardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER),
-                        revealedCardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER),
-                        revealedCvv = uiState.revealed(RevealedFieldKey.CVV),
-                        revealedPaymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN),
-                        onRevealField = revealField,
-                        onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                        onEvent = onEvent
-                    )
-                }
+        if (entry.secret.card != null || vaultType == EntryType.BANK_CARD || vaultType == EntryType.CARD) {
+            item {
+                BankCardSection(
+                    entry = entry,
+                    editState = editState,
+                    revealedCardholder = uiState.revealed(RevealedFieldKey.CARDHOLDER),
+                    revealedCardNumber = uiState.revealed(RevealedFieldKey.CARD_NUMBER),
+                    revealedCvv = uiState.revealed(RevealedFieldKey.CVV),
+                    revealedPaymentPin = uiState.revealed(RevealedFieldKey.PAYMENT_PIN),
+                    onRevealField = revealField,
+                    onAuthenticate = onAuthenticate,
+                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
+                    onEvent = onEvent
+                )
             }
+        }
 
-            EntryType.SSH_KEY -> {
-                item {
-                    SshKeySection(
-                        entry = entry,
-                        editState = editState,
-                        revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
-                        revealedSshPrivateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY),
-                        onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                        onSshPrivateKeyRevealed = {
-                            revealField(
-                                RevealedFieldKey.SSH_PRIVATE_KEY,
-                                it
-                            )
-                        },
-                        onAuthenticate = onAuthenticate,
-                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                        onEvent = onEvent
-                    )
-                }
+        if (entry.secret.identity != null || vaultType in listOf(
+                EntryType.ID_CARD,
+                EntryType.IDENTITY,
+                EntryType.PASSPORT,
+                EntryType.LICENSE
+            )
+        ) {
+            item {
+                IdCardSection(
+                    entry = entry,
+                    revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER),
+                    onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, it) },
+                    onAuthenticate = onAuthenticate,
+                    onEvent = onEvent
+                )
             }
+        }
 
-            EntryType.ID_CARD, EntryType.IDENTITY, EntryType.PASSPORT, EntryType.LICENSE -> {
-                item {
-                    IdCardSection(
-                        entry = entry,
-                        revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER),
-                        onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, it) },
-                        onAuthenticate = onAuthenticate,
-                        onEvent = onEvent
-                    )
-                }
+        if (entry.secret.wifi != null || vaultType == EntryType.WIFI) {
+            item {
+                WifiSection(
+                    entry = entry,
+                    editState = editState,
+                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
+                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
+                    onAuthenticate = onAuthenticate,
+                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
+                    onEvent = onEvent
+                )
             }
+        }
 
-            EntryType.NOTE, EntryType.DATABASE, EntryType.SERVER, EntryType.API_KEY, EntryType.CRYPTO_WALLET -> {
-                item {
-                    CredentialSection(
-                        item = entry,
-                        onAuthenticate = onAuthenticate,
-                        editState = editState,
-                        revealedUsername = uiState.revealed(RevealedFieldKey.USERNAME),
-                        revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
-                        onUsernameRevealed = { revealField(RevealedFieldKey.USERNAME, it) },
-                        onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                        onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
-                        onEvent = onEvent
-                    )
-                }
+        if (entry.secret.ssh != null || vaultType == EntryType.SSH_KEY) {
+            item {
+                SshKeySection(
+                    entry = entry,
+                    editState = editState,
+                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
+                    revealedSshPrivateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY),
+                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
+                    onSshPrivateKeyRevealed = { revealField(RevealedFieldKey.SSH_PRIVATE_KEY, it) },
+                    onAuthenticate = onAuthenticate,
+                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
+                    onEvent = onEvent
+                )
             }
         }
 

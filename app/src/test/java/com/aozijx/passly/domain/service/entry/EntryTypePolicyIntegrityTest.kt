@@ -70,7 +70,7 @@ class EntryTypePolicyIntegrityTest {
         val validatorProvider = EntryValidatorProvider(
             validators = mapOf(
                 EntryType.LOGIN to LoginEntryValidator(),
-                EntryType.TOTP to TotpEntryValidator(),
+                EntryType.OTP to TotpEntryValidator(),
                 EntryType.SEED_PHRASE to SeedPhraseEntryValidator(),
                 EntryType.RECOVERY_CODE to RecoveryCodeEntryValidator(),
                 EntryType.PASSKEY to PasskeyEntryValidator(),

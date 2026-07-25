@@ -56,8 +56,6 @@ fun PasskeySection(
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
                     sourceValue = entry.secret.passkey?.privateKeyReference,
-                    authTitle = "解密 Passkey 数据",
-                    authSubtitle = "验证身份以复制数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) },
                     afterCopy = {
                         Toast.makeText(
@@ -74,8 +72,6 @@ fun PasskeySection(
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
                     sourceValue = entry.secret.passkey?.privateKeyReference,
-                    authTitle = "解密 Passkey 数据",
-                    authSubtitle = "验证身份以查看数据",
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) }
                 )
             }
