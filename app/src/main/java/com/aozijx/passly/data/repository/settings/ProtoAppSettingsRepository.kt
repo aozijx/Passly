@@ -41,6 +41,14 @@ class ProtoAppSettingsRepository @Inject constructor(
         fun decodeCardStyles(encoded: Map<Int, String>): Map<Int, VaultCardStyle> =
             encoded.mapValues { (_, value) -> VaultCardStyle.fromKey(value) }
 
+        fun decodeCardStylesWithDefault(
+            encoded: Map<Int, String>,
+            legacyDefaultStyle: String
+        ): Map<Int, VaultCardStyle> = buildMap {
+            putAll(decodeCardStyles(encoded))
+            putIfAbsent(DEFAULT_STYLE_KEY, VaultCardStyle.fromKey(legacyDefaultStyle))
+        }
+
         fun encodeCardStyles(styles: Map<Int, VaultCardStyle>): Map<Int, String> =
             styles.mapValues { (_, value) -> value.key }
 
@@ -113,6 +121,10 @@ class ProtoAppSettingsRepository @Inject constructor(
 
     override val settings: Flow<AppSettingsSnapshot> =
         dataStore.data.map { proto ->
+            val cardStyles = decodeCardStylesWithDefault(
+                encoded = proto.cardStyleByEntryTypeMap,
+                legacyDefaultStyle = proto.cardStyle
+            )
             AppSettingsSnapshot(
                 appearance = AppearanceSettings(
                     isDarkMode = if (proto.hasDarkMode()) proto.darkMode else null,
@@ -149,15 +161,8 @@ class ProtoAppSettingsRepository @Inject constructor(
                     proto.messagePreferences.takeIf { proto.hasMessagePreferences() }
                 ),
                 vault = VaultViewSettings(
-                    cardStyle = decodeCardStyles(proto.cardStyleByEntryTypeMap)[DEFAULT_STYLE_KEY]
-                        ?: VaultCardStyle.fromKey(proto.cardStyle),
-                    cardStyleByEntryType = {
-                        val parsed = decodeCardStyles(proto.cardStyleByEntryTypeMap).toMutableMap()
-                        if (parsed[DEFAULT_STYLE_KEY] == null) {
-                            parsed[DEFAULT_STYLE_KEY] = VaultCardStyle.fromKey(proto.cardStyle)
-                        }
-                        parsed.toMap()
-                    }(),
+                    cardStyle = cardStyles.getValue(DEFAULT_STYLE_KEY),
+                    cardStyleByEntryType = cardStyles,
                     visibleVaultTabs = if (proto.visibleVaultTabsConfigured) proto.visibleVaultTabList.toSet() else null,
                     vaultSortOption = VaultSortSpecCodec.parse(proto.vaultSortOption)
                 ),
