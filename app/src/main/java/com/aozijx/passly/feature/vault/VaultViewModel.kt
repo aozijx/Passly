@@ -6,9 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
-import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
-import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -17,13 +15,11 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret
-import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
@@ -40,7 +36,6 @@ import com.aozijx.passly.feature.vault.internal.EntryIconHelper
 import com.aozijx.passly.feature.vault.internal.EntryManager
 import com.aozijx.passly.feature.vault.internal.SearchFilterState
 import com.aozijx.passly.feature.vault.internal.TotpCoordinator
-import com.aozijx.passly.feature.vault.internal.VaultDetailCoordinatorState
 import com.aozijx.passly.feature.vault.internal.VaultListCoordinator
 import com.aozijx.passly.feature.vault.internal.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
@@ -68,7 +63,6 @@ class VaultViewModel @Inject constructor(
     private val otpConfigRepository: OtpConfigRepository,
     private val settingsRepository: AppSettingsRepository,
     private val entryCommandRepository: EntryCommandRepository,
-    private val activityRecorder: ActivityRecorder,
     private val faviconRepository: FaviconRepository,
     val entryFieldReader: EntryFieldReader,
     private val vaultDataRefreshNotifier: VaultDataRefreshNotifier
@@ -161,7 +155,7 @@ class VaultViewModel @Inject constructor(
                 },
                 period = when (type) {
                     OtpType.STEAM -> "30"
-                    OtpType.TOTP -> if (current.period.isBlank()) "30" else current.period
+                    OtpType.TOTP -> current.period.ifBlank { "30" }
                     OtpType.HOTP -> current.period
                 },
                 algorithm = when (type) {
@@ -278,17 +272,6 @@ class VaultViewModel @Inject constructor(
     val totpStatesFlow: StateFlow<Map<String, OtpUiState>> = totp.states
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    /**
-     * 详情协调器状态。
-     * 独立 Flow 避免详情状态变化触发整个 UI 状态重组。
-     */
-    val detailStateFlow: StateFlow<VaultDetailCoordinatorState> = detail.coordinatorStateFlow
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            VaultDetailCoordinatorState()
-        )
-
     private val settingsState: StateFlow<Triple<List<VaultTab>, Boolean, Boolean>> =
         combine(visibleTabs, isAutoDownloadIcons, _showTOTPCode) { tabs, auto, show ->
             Triple(tabs, auto, show)
@@ -354,43 +337,6 @@ class VaultViewModel @Inject constructor(
 
     fun autoUnlockTotp(entryId: String) = totp.autoUnlock(entryId)
 
-    /**
-     * 生成 HOTP 验证码并持久化递增后的 counter。
-     *
-     * 流程：
-     * 1. [totp.generateHotpCode] 使用当前 counter 生成验证码
-     * 2. 成功后将 [OtpResult.Success.nextCounter] 持久化到数据库
-     *
-     * @param entryId 条目 ID
-     * @param onResult 回调：code 为生成的验证码（null 表示生成失败）
-     */
-    fun generateHotpCode(entryId: String, onResult: (code: String?) -> Unit = {}) {
-        viewModelScope.launch {
-            when (val result = totp.generateHotpCode(entryId)) {
-                is OtpResult.Success -> {
-                    val entry = entryQueryRepository.getById(entryId)
-                    if (entry != null && result.nextCounter != null) {
-                        val newSecret = entry.secret.otp?.let { otpData ->
-                            val updatedConfig =
-                                otpData.config?.copy(counter = result.nextCounter)
-                            entry.secret.copy(otp = otpData.copy(config = updatedConfig))
-                        } ?: entry.secret
-                        entryCommandRepository.updateEntry(
-                            entryId,
-                            entry.entryVersion,
-                            EntryChanges(secret = newSecret)
-                        )
-                    }
-                    onResult(result.code)
-                }
-
-                is OtpResult.Failure -> {
-                    onResult(null)
-                }
-            }
-        }
-    }
-
     init {
         totp.start()
 
@@ -405,23 +351,6 @@ class VaultViewModel @Inject constructor(
                 refreshItems()
             }
         }
-    }
-
-    // --- 业务协调 ---
-    fun showDetail(item: EntryListItem) {
-        viewModelScope.launch {
-            val entry = entryQueryRepository.getById(item.id) ?: return@launch
-            detail.showDetail(entry)
-            totp.autoUnlock(item.id)
-            activityRecorder.recordUsage(
-                item.id,
-                ActivityType.VIEW
-            )
-        }
-    }
-
-    fun dismissDetail() {
-        detail.dismissDetail()
     }
 
     fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) {
