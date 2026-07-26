@@ -156,16 +156,16 @@
 
     <!-- 详情页补充 -->
     <string name="vault_totp_label">动态验证码</string>
-    <string name="vault_edit_totp_title">编辑 2FA 配置</string>
-    <string name="vault_auth_reveal_subtitle">验证以编辑 2FA 密钥</string>
+    <string name="vault_edit_otp_title">编辑 otp 配置</string>
+    <string name="vault_auth_reveal_subtitle">验证以编辑 otp 密钥</string>
     <string name="vault_auth_qr_subtitle">验证以导出二维码</string>
-    <string name="vault_export_qr_title">导出 2FA 密钥</string>
+    <string name="vault_export_qr_title">导出 otp 密钥</string>
     <string name="vault_export_qr_message">用其他设备扫描此二维码</string>
     <string name="auth_to_show">点击以验证并显示</string>
 
-    <string name="vault_add_2fa_title">添加 2FA</string>
-    <string name="vault_2fa_uri_parsed">2FA URI 解析成功</string>
-    <string name="vault_2fa_uri_parse_failed">2FA URI 解析失败</string>
+    <string name="vault_add_otp_title">添加 otp</string>
+    <string name="vault_otp_uri_parsed">URI 解析成功</string>
+    <string name="vault_otp_uri_parse_failed">URI 解析失败</string>
 
     <!-- 图标选择器 -->
     <string name="icon_picker_title">选择图标</string>

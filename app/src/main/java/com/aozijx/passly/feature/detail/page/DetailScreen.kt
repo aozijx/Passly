@@ -21,7 +21,6 @@ import com.aozijx.passly.feature.detail.components.DetailTopBar
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
-import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.vault.model.OtpUiState
 
 /**
@@ -64,23 +63,14 @@ fun DetailScreen(
     val entry = uiState.entry ?: initialEntry
     val editState = remember(entry) { EntryEditState(entry) }
 
-    val otpConfig = entry.secret.otp?.config
-    val totpEditState = remember(entry, otpConfig?.secret) {
-        TotpEditState(entry, otpConfig?.secret ?: "")
-    }
-
     // 处理外部启动模式（如编辑 TOTP）
     LaunchedEffect(entry.id, launchMode) {
         if (launchMode == DetailLaunchMode.VIEW) return@LaunchedEffect
 
-        if (launchMode == DetailLaunchMode.EDIT_TOTP) {
-            totpEditState.isEditing = true
-        } else {
-            if (entry.username.isNotEmpty()) {
-                editState.isEditingUsername = true
-            } else if (entry.secret.login?.password?.isNotEmpty() == true) {
-                editState.isEditingPassword = true
-            }
+        if (entry.username.isNotEmpty()) {
+            editState.isEditingUsername = true
+        } else if (entry.secret.login?.password?.isNotEmpty() == true) {
+            editState.isEditingPassword = true
         }
     }
 
@@ -114,7 +104,6 @@ fun DetailScreen(
             uiState = uiState,
             editState = editState,
             otpUiState = otpUiState,
-            totpEditState = totpEditState,
             onEvent = onEvent,
             onInteraction = onUpdateInteraction,
             onUpdateVaultEntry = onUpdateVaultEntry,

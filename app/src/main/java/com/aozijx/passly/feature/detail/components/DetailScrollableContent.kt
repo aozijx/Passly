@@ -20,7 +20,6 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.EntryEditState
-import com.aozijx.passly.feature.detail.internal.TotpEditState
 import com.aozijx.passly.feature.detail.sections.ActivityTimelineSection
 import com.aozijx.passly.feature.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.feature.detail.sections.BankCardSection
@@ -39,7 +38,6 @@ fun DetailScrollableContent(
     uiState: DetailUiState,
     editState: EntryEditState,
     otpUiState: OtpUiState?,
-    totpEditState: TotpEditState,
     onEvent: (DetailIntent) -> Unit,
     onInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,

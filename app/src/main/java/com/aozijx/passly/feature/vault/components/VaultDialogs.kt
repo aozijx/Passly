@@ -19,7 +19,7 @@ fun AddDialogHost(
             onUpdateInteraction = onUpdateInteraction
         )
 
-        AddType.TOTP -> AddTwoFADialog(
+        AddType.TOTP -> AddOtpDialog(
             viewModel = vaultViewModel,
             onUpdateInteraction = onUpdateInteraction
         )

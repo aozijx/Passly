@@ -11,7 +11,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 
 /**
- * 条目详情页统一编辑状态（原 EntryEditState）
+ * 条目详情页统一编辑状态
  */
 class EntryEditState(initialEntry: VaultEntry) {
     var editedTitle by mutableStateOf(initialEntry.title)

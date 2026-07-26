@@ -119,16 +119,16 @@
     <string name="vault_detail_associated_package">関連パッケージ名</string>
 
     <string name="vault_totp_label">動的認証コード</string>
-    <string name="vault_edit_totp_title">2FA設定を編集</string>
-    <string name="vault_auth_reveal_subtitle">本人確認して2FA秘密鍵を編集</string>
+    <string name="vault_edit_otp_title">otp設定を編集</string>
+    <string name="vault_auth_reveal_subtitle">本人確認してotp秘密鍵を編集</string>
     <string name="vault_auth_qr_subtitle">本人確認してエクスポート用QRコードを表示</string>
-    <string name="vault_export_qr_title">2FA秘密鍵をエクスポート</string>
+    <string name="vault_export_qr_title">otp秘密鍵をエクスポート</string>
     <string name="vault_export_qr_message">他のデバイスの認証アプリでこのQRコードをスキャンしてください</string>
     <string name="auth_to_show">タップして本人確認し、表示する</string>
 
-    <string name="vault_add_2fa_title">2FAを追加</string>
-    <string name="vault_2fa_uri_parsed">2FA URIを解析しました</string>
-    <string name="vault_2fa_uri_parse_failed">2FA URIの解析に失敗しました</string>
+    <string name="vault_add_otp_title">otpを追加</string>
+    <string name="vault_otp_uri_parsed">URIを解析しました</string>
+    <string name="vault_otp_uri_parse_failed">URIの解析に失敗しました</string>
 
     <!-- アイコン選択 -->
     <string name="icon_picker_title">アイコンを選択</string>
