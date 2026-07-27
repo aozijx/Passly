@@ -3,11 +3,11 @@ package com.aozijx.passly.feature.settings.appearance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -17,6 +17,10 @@ data class InterfaceUiState(
     val hideSystemBars: Boolean = false,
     val collapseTopBarOnScroll: Boolean = false,
     val collapseTabBarOnScroll: Boolean = false,
+    val outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,
+    val innerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP,
+    val groupItemSpacingDp: Float = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP,
+    val groupContentPaddingDp: Float = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP,
     val visibleVaultTabs: Set<String>? = null,
     val tabBarMaxTabsWithoutScroll: Int = 4,
 )
@@ -25,6 +29,10 @@ sealed interface InterfaceUiAction {
     data class SetHideSystemBars(val enabled: Boolean) : InterfaceUiAction
     data class SetTopBarCollapsible(val enabled: Boolean) : InterfaceUiAction
     data class SetTabBarCollapsible(val enabled: Boolean) : InterfaceUiAction
+    data class SetOuterCornerRadius(val radiusDp: Float) : InterfaceUiAction
+    data class SetInnerCornerRadius(val radiusDp: Float) : InterfaceUiAction
+    data class SetGroupItemSpacing(val spacingDp: Float) : InterfaceUiAction
+    data class SetGroupContentPadding(val paddingDp: Float) : InterfaceUiAction
     data class SetVisibleVaultTabs(val tabs: Set<String>) : InterfaceUiAction
     data class SetMaxTabsWithoutScroll(val maxTabs: Int) : InterfaceUiAction
 }
@@ -34,27 +42,26 @@ class InterfaceViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
-    val config: StateFlow<InterfaceUiState> = combine(
-        settingsRepository.settings.map { it.interfacePrefs.hideSystemBars },
-        settingsRepository.settings.map { it.interfacePrefs.collapseTopBarOnScroll },
-        settingsRepository.settings.map { it.interfacePrefs.collapseTabBarOnScroll }
-    ) { hsb, ctp, ctb ->
-        Triple(hsb, ctp, ctb)
-    }.combine(settingsRepository.settings.map { it.vault.visibleTabs }) { (hsb, ctp, ctb), vt ->
-        InterfaceUiState(
-            hideSystemBars = hsb,
-            collapseTopBarOnScroll = ctp,
-            collapseTabBarOnScroll = ctb,
-            visibleVaultTabs = vt?.tabKeys,
+    val config: StateFlow<InterfaceUiState> = settingsRepository.settings
+        .map { settings ->
+            val prefs = settings.interfacePrefs
+            InterfaceUiState(
+                hideSystemBars = prefs.hideSystemBars,
+                collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
+                collapseTabBarOnScroll = prefs.collapseTabBarOnScroll,
+                outerCornerRadiusDp = prefs.outerCornerRadiusDp,
+                innerCornerRadiusDp = prefs.innerCornerRadiusDp,
+                groupItemSpacingDp = prefs.groupItemSpacingDp,
+                groupContentPaddingDp = prefs.groupContentPaddingDp,
+                visibleVaultTabs = settings.vault.visibleTabs?.tabKeys,
+                tabBarMaxTabsWithoutScroll = settings.vault.maxTabsWithoutScroll
+            )
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000L),
+            InterfaceUiState()
         )
-    }
-        .combine(settingsRepository.settings.map { it.vault.maxTabsWithoutScroll }) { st, tbm ->
-        st.copy(tabBarMaxTabsWithoutScroll = tbm)
-    }.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000L),
-        InterfaceUiState()
-    )
 
     fun onAction(action: InterfaceUiAction) {
         when (action) {
@@ -68,6 +75,22 @@ class InterfaceViewModel @Inject constructor(
 
             is InterfaceUiAction.SetTabBarCollapsible -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetTabBarCollapsible(action.enabled))
+            }
+
+            is InterfaceUiAction.SetOuterCornerRadius -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetOuterCornerRadius(action.radiusDp))
+            }
+
+            is InterfaceUiAction.SetInnerCornerRadius -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetInnerCornerRadius(action.radiusDp))
+            }
+
+            is InterfaceUiAction.SetGroupItemSpacing -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetGroupItemSpacing(action.spacingDp))
+            }
+
+            is InterfaceUiAction.SetGroupContentPadding -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetGroupContentPadding(action.paddingDp))
             }
 
             is InterfaceUiAction.SetVisibleVaultTabs -> viewModelScope.launch {

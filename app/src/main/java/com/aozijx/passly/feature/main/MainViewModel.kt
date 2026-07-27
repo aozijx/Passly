@@ -129,9 +129,9 @@ class MainViewModel @Inject constructor(
     private fun observeSettings() {
         viewModelScope.launch {
             settingsRepository.settings
-                .map { it.appearance }
+                .map { settings -> settings.appearance to settings.interfacePrefs }
                 .distinctUntilChanged()
-                .collect { appearance ->
+                .collect { (appearance, interfacePrefs) ->
                     _uiState.update {
                         it.copy(
                             themeMode = appearance.themeMode,
@@ -139,7 +139,11 @@ class MainViewModel @Inject constructor(
                             customSeedArgb = appearance.customSeedArgb,
                             fontFamily = appearance.fontFamily,
                             language = appearance.language,
-                            isExpressive = appearance.isExpressive
+                            isExpressive = appearance.isExpressive,
+                            outerCornerRadiusDp = interfacePrefs.outerCornerRadiusDp,
+                            innerCornerRadiusDp = interfacePrefs.innerCornerRadiusDp,
+                            groupItemSpacingDp = interfacePrefs.groupItemSpacingDp,
+                            groupContentPaddingDp = interfacePrefs.groupContentPaddingDp
                         )
                     }
                 }

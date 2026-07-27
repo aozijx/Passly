@@ -21,6 +21,7 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -111,6 +112,57 @@ fun switchSettingsGroupItem(
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 )
+
+fun sliderSettingsGroupItem(
+    key: String,
+    icon: ImageVector? = null,
+    title: String,
+    subtitle: String? = null,
+    value: Float,
+    valueLabel: String,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: () -> Unit
+): RoundedGroupItem = RoundedGroupItem(key = key) { itemScope ->
+    GroupCard(itemScope = itemScope) {
+        SettingsItemRow(
+            leading = icon.asLeadingContent(false),
+            content = {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                subtitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            trailing = {
+                Text(
+                    text = valueLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        )
+        Slider(
+            value = value.coerceIn(valueRange),
+            onValueChange = onValueChange,
+            onValueChangeFinished = onValueChangeFinished,
+            valueRange = valueRange,
+            steps = steps,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        )
+    }
+}
 
 fun navigationSettingsGroupItem(
     key: String,

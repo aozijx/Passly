@@ -22,8 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.ui.theme.LocalExpressiveThemeEnabled
+import com.aozijx.passly.core.ui.theme.PasslyTheme
+import com.aozijx.passly.core.ui.theme.RoundedGroupStyle
 
 enum class RoundedGroupItemPosition {
     Single,
@@ -53,22 +53,18 @@ class RoundedGroupItem(
  * 通用圆角分组。
  *
  * Item 由调用方以不可变列表提供，状态也由调用方持有。组本身只负责可见项位置、
- * 间距和外观计算，不缓存或收集 Composable。可通过 [shapeFactory] 完全替换圆角策略。
+ * 间距和外观计算，不缓存或收集 Composable。默认参数统一读取 [PasslyTheme]，
+ * 可通过 [style] 局部覆盖整组参数，或通过 [shapeFactory] 完全替换圆角策略。
  */
 @Composable
 fun RoundedGroup(
     items: List<RoundedGroupItem>,
     modifier: Modifier = Modifier,
-    outerRadius: Dp? = null,
-    innerRadius: Dp? = null,
-    itemSpacing: Dp = 2.dp,
+    style: RoundedGroupStyle? = null,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
     shapeFactory: ((RoundedGroupItemPosition) -> Shape)? = null
 ) {
-    val expressive = LocalExpressiveThemeEnabled.current
-    val resolvedOuterRadius = outerRadius ?: if (expressive) 28.dp else 18.dp
-    val resolvedInnerRadius = innerRadius ?: if (expressive) 8.dp else 2.dp
+    val resolvedStyle = style ?: PasslyTheme.roundedGroup
     val enterTransition =
         fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
                 expandVertically(
@@ -94,9 +90,12 @@ fun RoundedGroup(
             val scope = RoundedGroupItemScope(
                 position = position,
                 shape = shapeFactory?.invoke(position)
-                    ?: position.defaultShape(resolvedOuterRadius, resolvedInnerRadius),
+                    ?: position.defaultShape(
+                        resolvedStyle.outerRadius,
+                        resolvedStyle.innerRadius
+                    ),
                 containerColor = containerColor,
-                contentPadding = contentPadding
+                contentPadding = resolvedStyle.paddingValues
             )
 
             key(item.key) {
@@ -108,7 +107,7 @@ fun RoundedGroup(
                     Column {
                         item.content(scope)
                         if (visibleIndex >= 0 && visibleIndex < visibleCount - 1) {
-                            Spacer(modifier = Modifier.height(itemSpacing))
+                            Spacer(modifier = Modifier.height(resolvedStyle.itemSpacing))
                         }
                     }
                 }

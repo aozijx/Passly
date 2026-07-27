@@ -242,6 +242,16 @@
     <string name="settings_dynamic_color_desc">Use wallpaper colors as app theme</string>
     <string name="settings_expressive">Material 3 Expressive</string>
     <string name="settings_expressive_desc">Use bolder shapes, motion, and component feedback</string>
+    <string name="settings_interface_style_title">Corners &amp; spacing</string>
+    <string name="settings_interface_outer_corner_radius">Outer corners</string>
+    <string name="settings_interface_outer_corner_radius_desc">Top of the first item and bottom of the last; also sets the global component corner scale</string>
+    <string name="settings_interface_inner_corner_radius">Inner corners</string>
+    <string name="settings_interface_inner_corner_radius_desc">Controls corners at seams between grouped cards</string>
+    <string name="settings_interface_group_item_spacing">Card spacing</string>
+    <string name="settings_interface_group_item_spacing_desc">Controls the gap between cards in a group</string>
+    <string name="settings_interface_group_content_padding">Content padding</string>
+    <string name="settings_interface_group_content_padding_desc">Controls the distance between card content and its edges</string>
+    <string name="settings_value_dp">%1$d dp</string>
     <!-- Categories -->
     <string name="category_autofill">Autofill</string>
     <string name="category_unfiled">Uncategorized</string>

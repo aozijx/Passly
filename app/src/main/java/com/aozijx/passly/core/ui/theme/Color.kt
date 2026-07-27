@@ -4,7 +4,10 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.colorResource
 import com.aozijx.passly.R
 
@@ -81,3 +84,104 @@ object AppColor {
         outline = md_theme_dark_outline
     )
 }
+
+/**
+ * 一套品牌配色包含三个独立的强调色，而不是把一个颜色硬塞进所有角色。
+ * 每个强调色分别生成 primary、secondary、tertiary 角色族。
+ */
+@Immutable
+data class ThemePalette(
+    val primaryArgb: Long,
+    val secondaryArgb: Long,
+    val tertiaryArgb: Long
+) {
+    val primary: Color get() = Color(primaryArgb)
+    val secondary: Color get() = Color(secondaryArgb)
+    val tertiary: Color get() = Color(tertiaryArgb)
+    val previewColors: List<Color> get() = listOf(primary, secondary, tertiary)
+}
+
+internal fun ThemePalette.applyTo(
+    base: ColorScheme,
+    isDark: Boolean
+): ColorScheme {
+    val primaryRoles = primary.toRoleFamily(isDark)
+    val secondaryRoles = secondary.toRoleFamily(isDark)
+    val tertiaryRoles = tertiary.toRoleFamily(isDark)
+    val surfaceAccent = lerp(primary, tertiary, 0.28f)
+    val surfaceTintFraction = if (isDark) 0.08f else 0.055f
+
+    return base.copy(
+        primary = primaryRoles.accent,
+        onPrimary = primaryRoles.onAccent,
+        primaryContainer = primaryRoles.container,
+        onPrimaryContainer = primaryRoles.onContainer,
+        inversePrimary = primary.toRoleFamily(!isDark).accent,
+        secondary = secondaryRoles.accent,
+        onSecondary = secondaryRoles.onAccent,
+        secondaryContainer = secondaryRoles.container,
+        onSecondaryContainer = secondaryRoles.onContainer,
+        tertiary = tertiaryRoles.accent,
+        onTertiary = tertiaryRoles.onAccent,
+        tertiaryContainer = tertiaryRoles.container,
+        onTertiaryContainer = tertiaryRoles.onContainer,
+        background = lerp(base.background, surfaceAccent, surfaceTintFraction * 0.7f),
+        surface = lerp(base.surface, surfaceAccent, surfaceTintFraction),
+        surfaceTint = primaryRoles.accent,
+        surfaceVariant = lerp(base.surfaceVariant, secondary, surfaceTintFraction),
+        surfaceContainerLowest = lerp(
+            base.surfaceContainerLowest,
+            surfaceAccent,
+            surfaceTintFraction * 0.45f
+        ),
+        surfaceContainerLow = lerp(
+            base.surfaceContainerLow,
+            surfaceAccent,
+            surfaceTintFraction * 0.65f
+        ),
+        surfaceContainer = lerp(
+            base.surfaceContainer,
+            surfaceAccent,
+            surfaceTintFraction * 0.85f
+        ),
+        surfaceContainerHigh = lerp(
+            base.surfaceContainerHigh,
+            surfaceAccent,
+            surfaceTintFraction
+        ),
+        surfaceContainerHighest = lerp(
+            base.surfaceContainerHighest,
+            surfaceAccent,
+            surfaceTintFraction * 1.15f
+        )
+    )
+}
+
+private data class ColorRoleFamily(
+    val accent: Color,
+    val onAccent: Color,
+    val container: Color,
+    val onContainer: Color
+)
+
+private fun Color.toRoleFamily(isDark: Boolean): ColorRoleFamily {
+    val accent = if (isDark) {
+        lerp(this, Color.White, 0.42f)
+    } else {
+        lerp(this, Color.Black, 0.08f)
+    }
+    val container = if (isDark) {
+        lerp(this, Color.Black, 0.43f)
+    } else {
+        lerp(this, Color.White, 0.78f)
+    }
+    return ColorRoleFamily(
+        accent = accent,
+        onAccent = accent.readableContentColor(),
+        container = container,
+        onContainer = container.readableContentColor()
+    )
+}
+
+private fun Color.readableContentColor(): Color =
+    if (luminance() > 0.42f) Color.Black else Color.White

@@ -42,7 +42,7 @@
     <string name="vault_detail_activity_view">Viewed</string>
     <string name="vault_detail_activity_export">Exported</string>
     <string name="vault_detail_activity_import">Imported</string>
-    <string name="settings_theme_color">Theme color</string>
+    <string name="settings_theme_color">Theme palette</string>
     <string name="settings_theme_color_blue">Blue</string>
     <string name="settings_theme_color_green">Green</string>
     <string name="settings_theme_color_red">Red</string>
@@ -50,7 +50,7 @@
     <string name="settings_theme_color_orange">Orange</string>
     <string name="settings_theme_color_teal">Teal</string>
     <string name="settings_theme_color_pink">Pink</string>
-    <string name="settings_theme_color_select_title">Choose theme color</string>
+    <string name="settings_theme_color_select_title">Choose a theme palette</string>
     <string name="settings_recovery_code_title">Recovery code</string>
     <string name="settings_recovery_code_warning">A recovery code is shown only once. Copy it now and store it safely.</string>
     <string name="settings_recovery_code_save_hint">Passly does not keep the plain code. Store it somewhere safe.</string>

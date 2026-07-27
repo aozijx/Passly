@@ -103,7 +103,11 @@ class MainActivity : AppCompatActivity() {
                         dynamicColor = mainUiState.isDynamicColor,
                         customSeedArgb = mainUiState.customSeedArgb,
                         fontFamily = mainUiState.fontFamily,
-                        expressive = mainUiState.isExpressive
+                        expressive = mainUiState.isExpressive,
+                        outerCornerRadiusDp = mainUiState.outerCornerRadiusDp,
+                        innerCornerRadiusDp = mainUiState.innerCornerRadiusDp,
+                        groupItemSpacingDp = mainUiState.groupItemSpacingDp,
+                        groupContentPaddingDp = mainUiState.groupContentPaddingDp
                     ) {
                         AuthenticationHost(this, authenticationHostRegistry) {
                             MainScreen(

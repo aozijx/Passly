@@ -27,6 +27,10 @@ sealed interface SettingsCommand {
     data class SetHideSystemBars(val enabled: Boolean) : SettingsCommand
     data class SetTopBarCollapsible(val enabled: Boolean) : SettingsCommand
     data class SetTabBarCollapsible(val enabled: Boolean) : SettingsCommand
+    data class SetOuterCornerRadius(val radiusDp: Float) : SettingsCommand
+    data class SetInnerCornerRadius(val radiusDp: Float) : SettingsCommand
+    data class SetGroupItemSpacing(val spacingDp: Float) : SettingsCommand
+    data class SetGroupContentPadding(val paddingDp: Float) : SettingsCommand
 
     // Security
     data class SetSecureContentEnabled(val enabled: Boolean) : SettingsCommand

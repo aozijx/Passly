@@ -30,6 +30,7 @@ import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ImportMode
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.model.SortDirection
 import com.aozijx.passly.domain.settings.model.SwipeActionType
@@ -346,7 +347,23 @@ class ProtoAppSettingsRepository @Inject constructor(
         InterfaceSettings(
             hideSystemBars = p.hideSystemBars,
             collapseTopBarOnScroll = p.collapseTopBarOnScroll,
-            collapseTabBarOnScroll = p.collapseTabBarOnScroll
+            collapseTabBarOnScroll = p.collapseTabBarOnScroll,
+            outerCornerRadiusDp = p.outerCornerRadiusDp.coerceIn(
+                InterfaceStyleConstraints.MIN_OUTER_RADIUS_DP,
+                InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP
+            ),
+            innerCornerRadiusDp = p.innerCornerRadiusDp.coerceIn(
+                InterfaceStyleConstraints.MIN_INNER_RADIUS_DP,
+                InterfaceStyleConstraints.MAX_INNER_RADIUS_DP
+            ),
+            groupItemSpacingDp = p.groupItemSpacingDp.coerceIn(
+                InterfaceStyleConstraints.MIN_ITEM_SPACING_DP,
+                InterfaceStyleConstraints.MAX_ITEM_SPACING_DP
+            ),
+            groupContentPaddingDp = p.groupContentPaddingDp.coerceIn(
+                InterfaceStyleConstraints.MIN_CONTENT_PADDING_DP,
+                InterfaceStyleConstraints.MAX_CONTENT_PADDING_DP
+            )
         )
 
     private fun readSecurity(p: SecurityPreferences): SecuritySettings =
@@ -478,6 +495,42 @@ class ProtoAppSettingsRepository @Inject constructor(
                 is SettingsCommand.SetTabBarCollapsible -> {
                     val ib = proto.interfacePrefs.toBuilder()
                     ib.collapseTabBarOnScroll = command.enabled
+                    b.setInterfacePrefs(ib)
+                }
+
+                is SettingsCommand.SetOuterCornerRadius -> {
+                    val ib = proto.interfacePrefs.toBuilder()
+                    ib.outerCornerRadiusDp = command.radiusDp.coerceIn(
+                        InterfaceStyleConstraints.MIN_OUTER_RADIUS_DP,
+                        InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP
+                    )
+                    b.setInterfacePrefs(ib)
+                }
+
+                is SettingsCommand.SetInnerCornerRadius -> {
+                    val ib = proto.interfacePrefs.toBuilder()
+                    ib.innerCornerRadiusDp = command.radiusDp.coerceIn(
+                        InterfaceStyleConstraints.MIN_INNER_RADIUS_DP,
+                        InterfaceStyleConstraints.MAX_INNER_RADIUS_DP
+                    )
+                    b.setInterfacePrefs(ib)
+                }
+
+                is SettingsCommand.SetGroupItemSpacing -> {
+                    val ib = proto.interfacePrefs.toBuilder()
+                    ib.groupItemSpacingDp = command.spacingDp.coerceIn(
+                        InterfaceStyleConstraints.MIN_ITEM_SPACING_DP,
+                        InterfaceStyleConstraints.MAX_ITEM_SPACING_DP
+                    )
+                    b.setInterfacePrefs(ib)
+                }
+
+                is SettingsCommand.SetGroupContentPadding -> {
+                    val ib = proto.interfacePrefs.toBuilder()
+                    ib.groupContentPaddingDp = command.paddingDp.coerceIn(
+                        InterfaceStyleConstraints.MIN_CONTENT_PADDING_DP,
+                        InterfaceStyleConstraints.MAX_CONTENT_PADDING_DP
+                    )
                     b.setInterfacePrefs(ib)
                 }
 

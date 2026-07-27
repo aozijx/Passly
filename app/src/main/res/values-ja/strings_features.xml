@@ -42,7 +42,7 @@
     <string name="vault_detail_activity_view">表示</string>
     <string name="vault_detail_activity_export">エクスポート</string>
     <string name="vault_detail_activity_import">インポート</string>
-    <string name="settings_theme_color">テーマ色</string>
+    <string name="settings_theme_color">テーマ配色</string>
     <string name="settings_theme_color_blue">青</string>
     <string name="settings_theme_color_green">緑</string>
     <string name="settings_theme_color_red">赤</string>
@@ -50,7 +50,7 @@
     <string name="settings_theme_color_orange">オレンジ</string>
     <string name="settings_theme_color_teal">青緑</string>
     <string name="settings_theme_color_pink">ピンク</string>
-    <string name="settings_theme_color_select_title">テーマ色を選択</string>
+    <string name="settings_theme_color_select_title">テーマ配色を選択</string>
     <string name="settings_recovery_code_title">復旧コード</string>
     <string name="settings_recovery_code_warning">復旧コードは一度だけ表示されます。今すぐコピーして安全に保管してください。</string>
     <string name="settings_recovery_code_save_hint">Passly は平文コードを保存しません。安全な場所に記録してください。</string>

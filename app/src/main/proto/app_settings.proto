@@ -56,6 +56,12 @@ message InterfacePreferences {
     optional bool hide_system_bars = 1 [default = false];
     optional bool collapse_top_bar_on_scroll = 2 [default = false];
     optional bool collapse_tab_bar_on_scroll = 3 [default = false];
+    // 首项顶部、末项底部以及单项四角；同时作为 Material Shapes 的圆角基准
+    optional float outer_corner_radius_dp = 4 [default = 28];
+    // RoundedGroup 相邻项目接缝处的圆角
+    optional float inner_corner_radius_dp = 5 [default = 8];
+    optional float group_item_spacing_dp = 6 [default = 2];
+    optional float group_content_padding_dp = 7 [default = 16];
 }
 
 // 安全

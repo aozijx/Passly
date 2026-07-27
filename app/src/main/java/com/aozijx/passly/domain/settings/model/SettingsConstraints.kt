@@ -11,3 +11,21 @@ object TabLayoutConstraints {
     const val MIN_TABS_WITHOUT_SCROLL = 2
     const val MAX_TABS_WITHOUT_SCROLL = 8
 }
+
+object InterfaceStyleConstraints {
+    const val MIN_OUTER_RADIUS_DP = 0f
+    const val MAX_OUTER_RADIUS_DP = 48f
+    const val DEFAULT_OUTER_RADIUS_DP = 28f
+
+    const val MIN_INNER_RADIUS_DP = 0f
+    const val MAX_INNER_RADIUS_DP = 24f
+    const val DEFAULT_INNER_RADIUS_DP = 8f
+
+    const val MIN_ITEM_SPACING_DP = 0f
+    const val MAX_ITEM_SPACING_DP = 12f
+    const val DEFAULT_ITEM_SPACING_DP = 2f
+
+    const val MIN_CONTENT_PADDING_DP = 8f
+    const val MAX_CONTENT_PADDING_DP = 32f
+    const val DEFAULT_CONTENT_PADDING_DP = 16f
+}

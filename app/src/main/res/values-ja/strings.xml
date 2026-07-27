@@ -241,6 +241,16 @@
     <string name="settings_dynamic_color_desc">壁紙の色をアプリのテーマに適用</string>
     <string name="settings_expressive">Material 3 Expressive</string>
     <string name="settings_expressive_desc">より大胆な形状、モーション、操作フィードバックを使用</string>
+    <string name="settings_interface_style_title">角丸と間隔</string>
+    <string name="settings_interface_outer_corner_radius">外側の角丸</string>
+    <string name="settings_interface_outer_corner_radius_desc">先頭項目の上部と末尾項目の下部。全体のコンポーネント角丸の基準にもなります</string>
+    <string name="settings_interface_inner_corner_radius">内側の角丸</string>
+    <string name="settings_interface_inner_corner_radius_desc">グループ内カードの境界部分の角丸を調整します</string>
+    <string name="settings_interface_group_item_spacing">カード間隔</string>
+    <string name="settings_interface_group_item_spacing_desc">グループ内カード間の隙間を調整します</string>
+    <string name="settings_interface_group_content_padding">コンテンツ余白</string>
+    <string name="settings_interface_group_content_padding_desc">カード内容と端の距離を調整します</string>
+    <string name="settings_value_dp">%1$d dp</string>
     <!-- カテゴリ -->
     <string name="category_autofill">自動入力</string>
     <string name="category_unfiled">未分類</string>

@@ -176,6 +176,18 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     onTabBarCollapsibleChange = {
                         viewModel.onAction(InterfaceUiAction.SetTabBarCollapsible(it))
                     },
+                    onOuterCornerRadiusChange = {
+                        viewModel.onAction(InterfaceUiAction.SetOuterCornerRadius(it))
+                    },
+                    onInnerCornerRadiusChange = {
+                        viewModel.onAction(InterfaceUiAction.SetInnerCornerRadius(it))
+                    },
+                    onGroupItemSpacingChange = {
+                        viewModel.onAction(InterfaceUiAction.SetGroupItemSpacing(it))
+                    },
+                    onGroupContentPaddingChange = {
+                        viewModel.onAction(InterfaceUiAction.SetGroupContentPadding(it))
+                    },
                     onVisibleVaultTabsChange = {
                         viewModel.onAction(InterfaceUiAction.SetVisibleVaultTabs(it))
                     },

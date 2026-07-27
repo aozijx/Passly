@@ -43,7 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.theme.LocalExpressiveThemeEnabled
+import com.aozijx.passly.core.ui.theme.PasslyTheme
 import com.aozijx.passly.feature.vault.model.AddType
 import kotlinx.coroutines.delay
 
@@ -54,7 +54,7 @@ fun VaultFab(
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntrySheet by remember { mutableStateOf(false) }
-    val expressive = LocalExpressiveThemeEnabled.current
+    val expressive = PasslyTheme.isExpressive
     val motionScheme = MaterialTheme.motionScheme
 
     val rotation by animateFloatAsState(

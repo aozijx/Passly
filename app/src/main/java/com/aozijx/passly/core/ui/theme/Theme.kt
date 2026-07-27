@@ -1,72 +1,73 @@
 package com.aozijx.passly.core.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
-import androidx.compose.material3.Shapes
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.ThemeMode
 
-private val PasslyShapes = Shapes(
-    extraSmall = RoundedCornerShape(4.dp),
-    small = RoundedCornerShape(8.dp),
-    medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp),
-    extraLarge = RoundedCornerShape(24.dp)
-)
-
-private val PasslyExpressiveShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp),
-    largeIncreased = RoundedCornerShape(40.dp)
-)
-
-val LocalExpressiveThemeEnabled = staticCompositionLocalOf { true }
-
-/** 预设主题色。color 为 0 表示使用默认 AppColor。 */
+/**
+ * [color] 是兼容既有 DataStore 字段的选择键；真正应用的是包含三组强调色的 [palette]。
+ * color 为 0 表示使用默认 AppColor。
+ */
 data class ThemePreset(
     val color: Long,
-    val nameKey: Int
+    val nameKey: Int,
+    val palette: ThemePalette? = null
 )
 
 val themePresets = listOf(
     ThemePreset(0, R.string.default_label),
-    ThemePreset(0xFF4285F4, R.string.settings_theme_color_blue),
-    ThemePreset(0xFF34A853, R.string.settings_theme_color_green),
-    ThemePreset(0xFFEA4335, R.string.settings_theme_color_red),
-    ThemePreset(0xFF9C27B0, R.string.settings_theme_color_purple),
-    ThemePreset(0xFFFF9800, R.string.settings_theme_color_orange),
-    ThemePreset(0xFF009688, R.string.settings_theme_color_teal),
-    ThemePreset(0xFFE91E63, R.string.settings_theme_color_pink),
+    ThemePreset(
+        color = 0xFF4285F4,
+        nameKey = R.string.settings_theme_color_blue,
+        palette = ThemePalette(0xFF4285F4, 0xFF5B5F97, 0xFFA5417A)
+    ),
+    ThemePreset(
+        color = 0xFF34A853,
+        nameKey = R.string.settings_theme_color_green,
+        palette = ThemePalette(0xFF34A853, 0xFF00796B, 0xFFA06400)
+    ),
+    ThemePreset(
+        color = 0xFFEA4335,
+        nameKey = R.string.settings_theme_color_red,
+        palette = ThemePalette(0xFFEA4335, 0xFF8E4B61, 0xFF8A5A00)
+    ),
+    ThemePreset(
+        color = 0xFF9C27B0,
+        nameKey = R.string.settings_theme_color_purple,
+        palette = ThemePalette(0xFF9C27B0, 0xFF4658A9, 0xFFC23E70)
+    ),
+    ThemePreset(
+        color = 0xFFFF9800,
+        nameKey = R.string.settings_theme_color_orange,
+        palette = ThemePalette(0xFFFF9800, 0xFF795548, 0xFFC13E68)
+    ),
+    ThemePreset(
+        color = 0xFF009688,
+        nameKey = R.string.settings_theme_color_teal,
+        palette = ThemePalette(0xFF009688, 0xFF3974B8, 0xFF708B22)
+    ),
+    ThemePreset(
+        color = 0xFFE91E63,
+        nameKey = R.string.settings_theme_color_pink,
+        palette = ThemePalette(0xFFE91E63, 0xFF8246AF, 0xFFE7653B)
+    ),
 )
 
 fun themePresetByColor(color: Long): ThemePreset =
     themePresets.firstOrNull { it.color == color } ?: themePresets.first()
 
-/**
- * 将种子色微混入背景/表面色中。
- * Material3 的 seedColor 方案生成的 neutral 调色板不带主题色 tint，
- * 所以手动 blend 让背景和卡片也能体现所选主题。
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTheme(
@@ -75,6 +76,10 @@ fun AppTheme(
     customSeedArgb: Long? = null,
     fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
     expressive: Boolean = true,
+    outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,
+    innerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP,
+    groupItemSpacingDp: Float = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP,
+    groupContentPaddingDp: Float = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP,
     content: @Composable () -> Unit
 ) {
     val isDark = when (themeMode) {
@@ -83,91 +88,54 @@ fun AppTheme(
         ThemeMode.DARK -> true
     }
     val context = LocalContext.current
-    val seedColor = remember(customSeedArgb) {
-        if (customSeedArgb != null && customSeedArgb != 0L) Color(customSeedArgb) else null
+    val selectedPalette = remember(customSeedArgb) {
+        customSeedArgb
+            ?.takeIf { it != 0L }
+            ?.let { selected -> themePresets.firstOrNull { it.color == selected }?.palette }
     }
-
+    val appColorScheme = if (isDark) AppColor.darkScheme() else AppColor.lightScheme()
     val colorScheme = when {
-        seedColor != null -> {
-            val base = if (isDark) darkColorScheme(seedColor) else lightColorScheme(seedColor)
-            tintSurfaceColors(base, seedColor, isDark)
-        }
+        selectedPalette != null -> selectedPalette.applyTo(appColorScheme, isDark)
         dynamicColor -> {
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        isDark -> AppColor.darkScheme()
-        else -> AppColor.lightScheme()
+        else -> appColorScheme
+    }
+    val typography =
+        if (fontFamily == FontFamilyMode.SYSTEM) SystemTypography else themeTypography()
+    val themeDefinition = remember(
+        expressive,
+        outerCornerRadiusDp,
+        innerCornerRadiusDp,
+        groupItemSpacingDp,
+        groupContentPaddingDp
+    ) {
+        passlyThemeDefinition(
+            expressive = expressive,
+            outerCornerRadiusDp = outerCornerRadiusDp,
+            innerCornerRadiusDp = innerCornerRadiusDp,
+            groupItemSpacingDp = groupItemSpacingDp,
+            groupContentPaddingDp = groupContentPaddingDp
+        )
     }
 
-    val standardTypography =
-        if (fontFamily == FontFamilyMode.SYSTEM) SystemTypography else themeTypography()
-
-    CompositionLocalProvider(LocalExpressiveThemeEnabled provides expressive) {
+    CompositionLocalProvider(LocalPasslyThemeTokens provides themeDefinition.tokens) {
         if (expressive) {
             MaterialExpressiveTheme(
                 colorScheme = colorScheme,
                 motionScheme = MotionScheme.expressive(),
-                shapes = PasslyExpressiveShapes
-            ) {
-                val expressiveTypography =
-                    if (fontFamily == FontFamilyMode.SYSTEM) {
-                        MaterialTheme.typography
-                    } else {
-                        themeTypography(MaterialTheme.typography)
-                    }
-                MaterialTheme(
-                    colorScheme = MaterialTheme.colorScheme,
-                    motionScheme = MaterialTheme.motionScheme,
-                    typography = expressiveTypography,
-                    shapes = MaterialTheme.shapes,
-                    content = content
-                )
-            }
+                typography = typography,
+                shapes = themeDefinition.shapes,
+                content = content
+            )
         } else {
             MaterialTheme(
                 colorScheme = colorScheme,
                 motionScheme = MotionScheme.standard(),
-                typography = standardTypography,
-                shapes = PasslyShapes,
+                typography = typography,
+                shapes = themeDefinition.shapes,
                 content = content
             )
         }
-    }
-}
-
-/** 将种子色微量混入背景与表面色，使整体界面呈现主题色调。 */
-private fun tintSurfaceColors(
-    base: androidx.compose.material3.ColorScheme,
-    seed: Color,
-    isDark: Boolean
-): androidx.compose.material3.ColorScheme {
-    return if (isDark) {
-        base.copy(
-            primaryContainer = lerp(base.primaryContainer, base.primary, 0.15f),
-            secondaryContainer = lerp(base.secondaryContainer, base.secondary, 0.12f),
-            background = lerp(base.background, seed, 0.08f),
-            surface = lerp(base.surface, seed, 0.10f),
-            surfaceContainerLowest = lerp(base.surfaceContainerLowest, seed, 0.06f),
-            surfaceContainerLow = lerp(base.surfaceContainerLow, seed, 0.08f),
-            surfaceContainer = lerp(base.surfaceContainer, seed, 0.10f),
-            surfaceContainerHigh = lerp(base.surfaceContainerHigh, seed, 0.12f),
-            surfaceContainerHighest = lerp(base.surfaceContainerHighest, seed, 0.13f),
-            surfaceVariant = lerp(base.surfaceVariant, seed, 0.08f),
-            surfaceDim = lerp(base.surfaceDim, seed, 0.06f),
-            surfaceBright = lerp(base.surfaceBright, seed, 0.12f),
-        )
-    } else {
-        base.copy(
-            background = lerp(base.background, seed, 0.10f),
-            surface = lerp(base.surface, seed, 0.12f),
-            surfaceContainerLowest = lerp(base.surfaceContainerLowest, seed, 0.08f),
-            surfaceContainerLow = lerp(base.surfaceContainerLow, seed, 0.10f),
-            surfaceContainer = lerp(base.surfaceContainer, seed, 0.12f),
-            surfaceContainerHigh = lerp(base.surfaceContainerHigh, seed, 0.13f),
-            surfaceContainerHighest = lerp(base.surfaceContainerHighest, seed, 0.15f),
-            surfaceVariant = lerp(base.surfaceVariant, seed, 0.10f),
-            surfaceDim = lerp(base.surfaceDim, seed, 0.08f),
-            surfaceBright = lerp(base.surfaceBright, seed, 0.13f),
-        )
     }
 }

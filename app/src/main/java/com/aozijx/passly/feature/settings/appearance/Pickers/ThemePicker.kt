@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -62,7 +63,11 @@ fun ThemePicker(
 
             itemsIndexed(themePresets) { index, preset ->
                 val isSelected = selectedColor == preset.color
-                val colorValue = if (preset.color == 0L) null else Color(preset.color)
+                val previewColors = preset.palette?.previewColors ?: listOf(
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.secondary,
+                    MaterialTheme.colorScheme.tertiary
+                )
 
                 Row(
                     modifier = Modifier
@@ -72,7 +77,7 @@ fun ThemePicker(
                         .padding(vertical = 10.dp, horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    ThemeColorPreviewCard(colorValue = colorValue)
+                    ThemeColorPreviewCard(colors = previewColors)
 
                     Spacer(modifier = Modifier.width(16.dp))
 
@@ -105,10 +110,9 @@ fun ThemePicker(
 }
 
 @Composable
-private fun ThemeColorPreviewCard(colorValue: Color?) {
+private fun ThemeColorPreviewCard(colors: List<Color>) {
     val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
     val onSurfaceColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val primaryColor = colorValue ?: MaterialTheme.colorScheme.primary
 
     Box(
         modifier = Modifier
@@ -116,12 +120,20 @@ private fun ThemeColorPreviewCard(colorValue: Color?) {
             .clip(RoundedCornerShape(10.dp))
             .background(surfaceColor)
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)
-                .background(primaryColor)
-        )
+        ) {
+            colors.forEach { color ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .background(color)
+                )
+            }
+        }
 
         Row(
             modifier = Modifier
@@ -130,12 +142,16 @@ private fun ThemeColorPreviewCard(colorValue: Color?) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(primaryColor.copy(alpha = 0.3f))
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                colors.forEach { color ->
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(color.copy(alpha = 0.72f))
+                    )
+                }
+            }
 
             Column {
                 Box(

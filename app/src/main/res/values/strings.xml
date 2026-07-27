@@ -265,9 +265,19 @@
     <string name="settings_dynamic_color_desc">使用壁纸配色</string>
     <string name="settings_expressive">Material 3 Expressive</string>
     <string name="settings_expressive_desc">启用更鲜明的形状、动效与组件反馈</string>
+    <string name="settings_interface_style_title">圆角与间距</string>
+    <string name="settings_interface_outer_corner_radius">外圈圆角</string>
+    <string name="settings_interface_outer_corner_radius_desc">首项顶部、末项底部，并作为全局组件圆角基准</string>
+    <string name="settings_interface_inner_corner_radius">组内圆角</string>
+    <string name="settings_interface_inner_corner_radius_desc">控制分组内相邻卡片的接缝圆角</string>
+    <string name="settings_interface_group_item_spacing">卡片间距</string>
+    <string name="settings_interface_group_item_spacing_desc">控制分组内卡片之间的空隙</string>
+    <string name="settings_interface_group_content_padding">内容留白</string>
+    <string name="settings_interface_group_content_padding_desc">控制分组卡片内容与边缘的距离</string>
+    <string name="settings_value_dp">%1$d dp</string>
     <string name="metadata_created_at">创建于：%1$s</string>
     <string name="metadata_last_modified">最后修改：%1$s</string>
-    <string name="settings_theme_color">主题色</string>
+    <string name="settings_theme_color">主题配色</string>
     <string name="settings_theme_color_blue">蓝色</string>
     <string name="settings_theme_color_green">绿色</string>
     <string name="settings_theme_color_red">红色</string>
@@ -275,7 +285,7 @@
     <string name="settings_theme_color_orange">橙色</string>
     <string name="settings_theme_color_teal">青色</string>
     <string name="settings_theme_color_pink">粉色</string>
-    <string name="settings_theme_color_select_title">选择主题色</string>
+    <string name="settings_theme_color_select_title">选择主题配色</string>
 
     <!-- 设置首页 -->
     <string name="settings_section_appearance">外观</string>
