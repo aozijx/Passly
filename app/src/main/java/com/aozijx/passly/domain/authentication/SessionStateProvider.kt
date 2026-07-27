@@ -1,0 +1,22 @@
+package com.aozijx.passly.domain.authentication
+
+import com.aozijx.passly.core.session.LockState
+
+/**
+ * 会话状态提供者（Domain 层契约）。
+ *
+ * Repository 和 UseCase 依赖此接口而非 [com.aozijx.passly.core.session.UnifiedSessionManager]，
+ * 实现依赖倒置，便于单元测试时注入永远活跃的 Fake。
+ *
+ * 当前仅暴露锁状态供 Repository 判断是否可访问；
+ * 实际的数据库租约管理移至 [UnifiedSessionManager] 的 lease API。
+ */
+interface SessionStateProvider {
+
+    /** 当前数据库锁状态 */
+    val lockState: LockState
+
+    /** 会话是否已解锁且可写 */
+    val isWritable: Boolean
+        get() = lockState == LockState.UNLOCKED
+}

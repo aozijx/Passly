@@ -2,49 +2,69 @@ package com.aozijx.passly
 
 import android.os.Bundle
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.fragment.app.FragmentActivity
-import com.aozijx.passly.ui.features.backup.BackupCoordinator
-import com.aozijx.passly.ui.features.main.MainNotificationPermissionController
-import com.aozijx.passly.ui.features.main.MainSensorController
-import com.aozijx.passly.ui.features.main.MainViewModel
-import com.aozijx.passly.ui.features.main.contract.MainIntent
-import com.aozijx.passly.ui.features.main.ui.MainScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.core.message.compose.ProvideAppNoticePublisher
+import com.aozijx.passly.core.permission.compose.PermissionServices
+import com.aozijx.passly.core.permission.compose.ProvidePermissionServices
+import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
+import com.aozijx.passly.core.permission.contract.PermissionStatusReader
+import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
+import com.aozijx.passly.core.ui.theme.AppTheme
+import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.model.newAppNotice
+import com.aozijx.passly.domain.notice.port.AppNoticePublisher
+import com.aozijx.passly.domain.settings.model.AppLanguage
+import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
+import com.aozijx.passly.feature.main.MainSensorController
+import com.aozijx.passly.feature.main.MainViewModel
+import com.aozijx.passly.feature.main.contract.MainIntent
+import com.aozijx.passly.feature.main.ui.MainScreen
+import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.system.exitProcess
 
 @AndroidEntryPoint
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     @Inject
-    lateinit var backupCoordinator: BackupCoordinator
+    lateinit var authenticationHostRegistry: AuthenticationHostRegistry
+
+    @Inject
+    lateinit var noticePublisher: AppNoticePublisher
+
+    @Inject
+    lateinit var permissionStatusReader: PermissionStatusReader
+
+    @Inject
+    lateinit var permissionRequestArbiter: PermissionRequestArbiter
+
+    @Inject
+    lateinit var permissionRequestHistory: PermissionRequestHistory
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
             if (viewModel.isAuthorizedNow()) {
                 viewModel.handleIntent(MainIntent.Lock)
                 if (sensorController.isFlipExitAndClearStackEnabled) {
-                    finishAndRemoveTask()
-                    exitProcess(0)
+                    noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
+                    window.decorView.postDelayed({
+                        finishAndRemoveTask()
+                        exitProcess(0)
+                    }, APP_CLOSE_MESSAGE_DELAY_MS)
                 }
             }
-        }
-    }
-
-    private val notificationPermissionController: MainNotificationPermissionController by lazy {
-        MainNotificationPermissionController(this) {
-            Toast.makeText(
-                this,
-                getString(R.string.main_notification_permission_denied),
-                Toast.LENGTH_SHORT
-            ).show()
         }
     }
 
@@ -59,15 +79,47 @@ class MainActivity : FragmentActivity() {
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        notificationPermissionController.requestIfNeeded()
-
         setContent {
-            MainScreen(
-                activity = this,
-                viewModel = viewModel,
-                sensorController = sensorController,
-                backupCoordinator = backupCoordinator
-            )
+            val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+            // 响应语言切换
+            LaunchedEffect(mainUiState.language) {
+                val tag = when (mainUiState.language) {
+                    AppLanguage.SYSTEM -> ""
+                    AppLanguage.ZH -> "zh-CN"
+                    AppLanguage.EN -> "en"
+                    AppLanguage.JA -> "ja"
+                }
+                val currentTags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                if (currentTags != tag) {
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+                }
+            }
+
+            ProvidePermissionServices(
+                PermissionServices(
+                    statusReader = permissionStatusReader,
+                    requestArbiter = permissionRequestArbiter,
+                    requestHistory = permissionRequestHistory
+                )
+            ) {
+                ProvideAppNoticePublisher(noticePublisher) {
+                    AppTheme(
+                        themeMode = mainUiState.themeMode,
+                        dynamicColor = mainUiState.isDynamicColor,
+                        customSeedArgb = mainUiState.customSeedArgb,
+                        fontFamily = mainUiState.fontFamily
+                    ) {
+                        AuthenticationHost(this, authenticationHostRegistry) {
+                            MainScreen(
+                                activity = this,
+                                viewModel = viewModel,
+                                sensorController = sensorController
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -78,12 +130,15 @@ class MainActivity : FragmentActivity() {
 
     override fun onResume() {
         super.onResume()
-        viewModel.handleIntent(MainIntent.CheckAndLock)
         if (sensorController.isFlipLockEnabled) sensorController.register()
     }
 
     override fun onPause() {
         super.onPause()
         if (sensorController.isFlipLockEnabled) sensorController.unregister()
+    }
+
+    private companion object {
+        const val APP_CLOSE_MESSAGE_DELAY_MS = 1_000L
     }
 }

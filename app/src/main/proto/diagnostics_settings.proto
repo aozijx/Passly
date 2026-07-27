@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+option java_package = "com.aozijx.passly.data.local.datastore.diagnostics";
+option java_multiple_files = true;
+
+message DiagnosticsSettings {
+  optional int32 version = 1 [default = 1];
+  optional int64 file_logging_enabled_until_ms = 2 [default = 0];
+  optional bool android_sink_enabled = 3 [default = true];
+}

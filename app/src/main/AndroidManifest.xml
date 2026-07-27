@@ -9,15 +9,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- Android 14+ 前台服务数据同步类型权限 -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-    <uses-permission
-        android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
-
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -25,10 +18,11 @@
     </queries>
 
     <application
-        android:name=".AppContext"
+        android:name=".app.PasslyApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/launcher_logo"
+        android:roundIcon="@mipmap/launcher_logo_round"
         android:label="@string/app_name"
         android:localeConfig="@xml/local_config"
         android:networkSecurityConfig="@xml/network_security_config"
@@ -38,7 +32,9 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:configChanges="screenSize|orientation|keyboardHidden|screenLayout"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -46,15 +42,36 @@
         </activity>
 
         <activity
-            android:name=".service.autofill.AutofillAuthActivity"
+            android:name=".feature.autofill.framework.AutofillFillActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="standard"
             android:noHistory="true"
             android:theme="@style/Theme.Passly.TransparentAuth" />
 
+        <!-- Credential Provider 凭据选择响应 Activity -->
+        <activity
+            android:name=".feature.autofill.credential.CredentialResponseActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="standard"
+            android:noHistory="true"
+            android:theme="@style/Theme.Passly.TransparentAuth"
+            tools:targetApi="34">
+            <intent-filter>
+                <action android:name="com.aozijx.passly.ACTION_GET_PASSWORD" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.aozijx.passly.ACTION_GET_PASSKEY" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.aozijx.passly.ACTION_CREDENTIAL_UNLOCK" />
+            </intent-filter>
+        </activity>
+
         <service
-            android:name=".service.autofill.AutofillService"
+            android:name=".service.autofill.framework.LegacyAutofillService"
+            android:enabled="false"
             android:exported="true"
             android:label="@string/autofill_service_name"
             android:permission="android.permission.BIND_AUTOFILL_SERVICE">
@@ -66,12 +83,22 @@
                 android:resource="@xml/autofill_service_config" />
         </service>
 
-        <!-- 修复：声明前台服务类型为 dataSync -->
+        <!-- API 34+ CredentialProviderService，默认关闭，由 Application 动态启用 -->
         <service
-            android:name=".ui.features.backup.BackupImportIconSyncForegroundService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:name=".service.autofill.credential.ModernCredentialService"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
+            tools:targetApi="34">
+            <intent-filter>
+                <action android:name="android.service.credentials.CredentialProviderService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.credentials.provider"
+                android:resource="@xml/credential_service_config" />
+        </service>
 
+        <!-- 支持 Android 13（API 33）及以上系统的“按应用语言偏好”（Per-App Language）功能。-->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"

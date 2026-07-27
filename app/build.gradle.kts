@@ -4,9 +4,11 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.protobuf)
 }
 
 // Release 签名优先读取环境变量，其次读取本地未跟踪 keystore.properties
@@ -21,6 +23,17 @@ fun resolveSigningValue(envName: String, propertyName: String): String? {
     return System.getenv(envName)?.takeIf { it.isNotBlank() }
         ?: keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
 }
+
+val signingStoreFilePath = resolveSigningValue("SIGNING_STORE_FILE", "signing.store.file")
+val signingStorePassword = resolveSigningValue("SIGNING_STORE_PASSWORD", "signing.store.password")
+val signingKeyAlias = resolveSigningValue("SIGNING_KEY_ALIAS", "signing.key.alias")
+val signingKeyPassword = resolveSigningValue("SIGNING_KEY_PASSWORD", "signing.key.password")
+val hasReleaseSigningConfig = listOf(
+    signingStoreFilePath,
+    signingStorePassword,
+    signingKeyAlias,
+    signingKeyPassword
+).all { !it.isNullOrBlank() }
 
 // Android 配置
 android {
@@ -38,32 +51,13 @@ android {
 
     signingConfigs {
         create("release") {
-            val storeFilePath = resolveSigningValue("SIGNING_STORE_FILE", "signing.store.file")
-            val storePasswordValue =
-                resolveSigningValue("SIGNING_STORE_PASSWORD", "signing.store.password")
-            val keyAliasValue = resolveSigningValue("SIGNING_KEY_ALIAS", "signing.key.alias")
-            val keyPasswordValue =
-                resolveSigningValue("SIGNING_KEY_PASSWORD", "signing.key.password")
-
-            val hasCompleteSigningConfig = listOf(
-                storeFilePath,
-                storePasswordValue,
-                keyAliasValue,
-                keyPasswordValue
-            ).all { !it.isNullOrBlank() }
-
-            if (hasCompleteSigningConfig) {
-                storeFile = file(requireNotNull(storeFilePath))
-                storePassword = requireNotNull(storePasswordValue)
-                keyAlias = requireNotNull(keyAliasValue)
-                keyPassword = requireNotNull(keyPasswordValue)
-
-                // 显式启用签名方案 (v2 和 v3)
-                enableV2Signing = true   // 启用 APK 签名方案 v2 (默认 true，显式写出)
-                enableV3Signing = true    // 启用 APK 签名方案 v3
-            } else {
-                // 签名信息不完整时回退到 debug 签名，保证本地/CI 可构建 release 产物
-                initWith(getByName("debug"))
+            if (hasReleaseSigningConfig) {
+                storeFile = file(requireNotNull(signingStoreFilePath))
+                storePassword = requireNotNull(signingStorePassword)
+                keyAlias = requireNotNull(signingKeyAlias)
+                keyPassword = requireNotNull(signingKeyPassword)
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
@@ -75,7 +69,11 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseSigningConfig) {
+                signingConfigs.getByName("release")
+            } else {
+                null
+            }
             buildConfigField("boolean", "EXPORT_ROOM_SCHEMA", "true")
         }
 
@@ -97,7 +95,7 @@ android {
         abi {
             isEnable = true
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            include("arm64-v8a", "x86_64")
             isUniversalApk = true
         }
     }
@@ -105,6 +103,15 @@ android {
     // 让 androidTest 能读到 schemas/ 目录下的版本 JSON（用于 MigrationTestHelper）
     sourceSets.getByName("androidTest") {
         assets.directories.add("$projectDir/schemas")
+    }
+
+    lint {
+        disable += setOf(
+            "AndroidGradlePluginVersion",
+//            "GradleDependency",
+//            "NewerVersionAvailable",
+            "OldTargetApi"
+        )
     }
 }
 
@@ -122,7 +129,6 @@ dependencies {
     // Android Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.exifinterface)
 
     // Lifecycle & Navigation
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -147,6 +153,7 @@ dependencies {
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.palette)
     ksp(libs.androidx.room.compiler)
@@ -154,13 +161,24 @@ dependencies {
     // Security & Biometric
     implementation(libs.androidx.biometric)
 
+    // Security KDF
+    implementation(libs.argon2kt)
+
+    // Credentials & Autofill
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.androidx.autofill)
+
     // SQLCipher & SQLite
     implementation(libs.sqlcipher)
     implementation(libs.androidx.sqlite)
 
-    // Data Persistence & Widgets
-    implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.glance.appwidget)
+    // Data Persistence
+    implementation(libs.androidx.datastore)
+    implementation(libs.protobuf.javalite)
+    implementation(libs.androidx.paging.compose)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.uuid.creator)
 
     // CameraX
     implementation(libs.androidx.camera.core)
@@ -180,9 +198,6 @@ dependencies {
     // Markdown
     implementation(libs.markdown.renderer)
 
-    // Security KDF
-    implementation(libs.argon2kt)
-
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
@@ -197,4 +212,23 @@ dependencies {
     androidTestImplementation(libs.androidx.room.testing)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.33.0"
+    }
+    generateProtoTasks {
+        all().configureEach {
+            builtins {
+                create("java") {
+                    option("lite")
+                    // AGP 9 registers outputBaseDir as the generated Java source root.
+                    // Avoid an extra /java layer that Gradle can compile but the IDE
+                    // indexes as a mismatched package hierarchy.
+                    outputSubDir = ""
+                }
+            }
+        }
+    }
 }

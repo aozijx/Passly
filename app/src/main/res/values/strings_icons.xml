@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?><!-- 图标选择器的可访问名称；纯装饰图标不应引用这些资源。 -->
+<resources>
+    <string name="icon_bank">银行</string>
+    <string name="icon_card">信用卡</string>
+    <string name="icon_wallet">钱包</string>
+    <string name="icon_bill">账单</string>
+    <string name="icon_savings">储蓄</string>
+    <string name="icon_trending">理财</string>
+    <string name="icon_person">个人</string>
+    <string name="icon_privacy">隐私</string>
+    <string name="icon_social">社交</string>
+    <string name="icon_groups">群组</string>
+    <string name="icon_badge">证件</string>
+    <string name="icon_key">密钥</string>
+    <string name="icon_email">邮件</string>
+    <string name="icon_game">游戏</string>
+    <string name="icon_video">视频</string>
+    <string name="icon_movie">影视</string>
+    <string name="icon_shopping">购物</string>
+    <string name="icon_bag">购物袋</string>
+    <string name="icon_live">直播</string>
+    <string name="icon_camera">摄像</string>
+    <string name="icon_star">收藏</string>
+    <string name="icon_heart">心仪</string>
+    <string name="icon_medical">医疗</string>
+    <string name="icon_health">健康</string>
+    <string name="icon_cloud">云端</string>
+    <string name="icon_note">笔记</string>
+    <string name="icon_book">日记</string>
+    <string name="icon_train">高铁</string>
+    <string name="icon_flight">飞机</string>
+    <string name="icon_school">校园</string>
+    <string name="icon_work">工作</string>
+    <string name="icon_code">代码</string>
+    <string name="icon_web">网页</string>
+    <string name="icon_wifi">WiFi</string>
+    <string name="icon_lock">锁定</string>
+    <string name="icon_shield">防护</string>
+    <string name="icon_apps">应用</string>
+</resources>
