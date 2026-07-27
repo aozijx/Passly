@@ -239,6 +239,8 @@
     <string name="settings_download_icons_subtitle">サイトアイコンを保存</string>
     <string name="settings_dynamic_color">ダイナミックカラー</string>
     <string name="settings_dynamic_color_desc">壁紙の色をアプリのテーマに適用</string>
+    <string name="settings_expressive">Material 3 Expressive</string>
+    <string name="settings_expressive_desc">より大胆な形状、モーション、操作フィードバックを使用</string>
     <!-- カテゴリ -->
     <string name="category_autofill">自動入力</string>
     <string name="category_unfiled">未分類</string>
@@ -379,4 +381,27 @@
     <string name="notice_database_index_rebuild_completed">検索インデックスを再構築しました</string>
     <string name="notice_database_index_rebuild_failed">検索インデックスの再構築に失敗しました</string>
     <string name="notice_database_operation_failed">データベース操作に失敗しました</string>
+
+    <string name="sort_last_used">最近使用した順</string>
+    <string name="sort_entry_type">項目タイプ</string>
+    <string name="not_set">未設定</string>
+    <string name="backup_plain_export_success">平文バックアップをエクスポートしました</string>
+    <string name="vault_plain_export_db_error_title">データベースを開けません</string>
+    <string name="vault_plain_export_db_error_message">データベースキーまたは構造が一致しません。まず再試行してください。解決しない場合は、本人確認後に障害データベース、添付ファイル、画像を保持したまま、新しい空のデータベースを作成できます。既存データが自動的に上書きされることはありません。</string>
+    <string name="vault_database_retry">データベースを再度開く</string>
+    <string name="vault_plain_export_db_error_dismiss">アプリを閉じる</string>
+    <string name="database_recovery_clear_action">保管庫データベースを完全に消去</string>
+    <string name="database_recovery_clear_confirm_title">保管庫データを消去しますか？</string>
+    <string name="database_recovery_clear_confirm_message">データベース、添付ファイル、カスタム画像が完全に削除され、元に戻せません。アプリ設定と認証方法は保持されます。確定後にもう一度本人確認が必要です。</string>
+    <string name="database_recovery_clear_confirm">確認して消去</string>
+    <string name="database_recovery_create_new_action">障害データベースを保持して新規作成</string>
+    <string name="otp_type">OTPタイプ</string>
+    <string name="otp_secret_encoding">シークレットのエンコード</string>
+    <string name="otp_counter">カウンター</string>
+    <string name="password_strength_very_weak">非常に弱い</string>
+    <string name="settings_topic_language_font">言語とフォント</string>
+    <string name="settings_font">フォント</string>
+    <string name="settings_font_system">システムフォントを使用</string>
+    <string name="metadata_created_at">作成日時：%1$s</string>
+    <string name="metadata_last_modified">最終更新：%1$s</string>
 </resources>

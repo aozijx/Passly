@@ -30,9 +30,9 @@ val SystemTypography: Typography = Typography().withFontFamily(FontFamily.Defaul
 
 /** 使用主题字体（通过 theme_font.xml 间接引用）的 Typography。 */
 @Composable
-fun themeTypography(): Typography {
+fun themeTypography(base: Typography = Typography()): Typography {
     val fontFamily = FontFamily(
         Font(R.font.theme_font)
     )
-    return Typography().withFontFamily(fontFamily)
+    return base.withFontFamily(fontFamily)
 }

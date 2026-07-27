@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
@@ -24,7 +23,8 @@ data class AppearanceUiState(
     val fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
     val customSeedArgb: Long? = null,
     val language: AppLanguage = AppLanguage.SYSTEM,
-    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
+    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
+    val isExpressive: Boolean = true
 )
 
 sealed interface AppearanceUiAction {
@@ -34,6 +34,7 @@ sealed interface AppearanceUiAction {
     data class SetCustomSeedArgb(val argb: Long?) : AppearanceUiAction
     data class SetLanguage(val language: AppLanguage) : AppearanceUiAction
     data class SetFontFamily(val mode: FontFamilyMode) : AppearanceUiAction
+    data class SetExpressiveEnabled(val enabled: Boolean) : AppearanceUiAction
 }
 
 @HiltViewModel
@@ -74,6 +75,10 @@ class AppearanceViewModel @Inject constructor(
             is AppearanceUiAction.SetFontFamily -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetFontFamily(action.mode))
             }
+
+            is AppearanceUiAction.SetExpressiveEnabled -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetExpressiveEnabled(action.enabled))
+            }
         }
     }
 }
@@ -84,18 +89,6 @@ private fun AppearanceSettings.toUiState(): AppearanceUiState = AppearanceUiStat
     fallbackPalette = fallbackPalette,
     customSeedArgb = customSeedArgb,
     language = language,
-    fontFamily = fontFamily
+    fontFamily = fontFamily,
+    isExpressive = isExpressive
 )
-
-fun ThemeMode.labelRes(): Int = when (this) {
-    ThemeMode.SYSTEM -> R.string.follow_system
-    ThemeMode.LIGHT -> R.string.settings_theme_mode_light
-    ThemeMode.DARK -> R.string.settings_theme_mode_dark
-}
-
-fun AppLanguage.labelRes(): Int = when (this) {
-    AppLanguage.SYSTEM -> R.string.follow_system
-    AppLanguage.ZH -> R.string.settings_language_chinese
-    AppLanguage.EN -> R.string.settings_language_english
-    AppLanguage.JA -> R.string.settings_language_japanese
-}

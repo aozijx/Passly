@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.main.ui
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -80,7 +80,7 @@ internal fun MainScreen(
             mainUiState.isAuthorized -> "main"
             else -> "verification"
         },
-        animationSpec = tween(300),
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "auth_transition"
     ) { state ->
             when (state) {

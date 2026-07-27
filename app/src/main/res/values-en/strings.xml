@@ -240,6 +240,8 @@
     <string name="settings_download_icons_subtitle">Save website icons</string>
     <string name="settings_dynamic_color">Dynamic Color</string>
     <string name="settings_dynamic_color_desc">Use wallpaper colors as app theme</string>
+    <string name="settings_expressive">Material 3 Expressive</string>
+    <string name="settings_expressive_desc">Use bolder shapes, motion, and component feedback</string>
     <!-- Categories -->
     <string name="category_autofill">Autofill</string>
     <string name="category_unfiled">Uncategorized</string>
@@ -380,4 +382,27 @@
     <string name="notice_database_index_rebuild_completed">Search index rebuilt</string>
     <string name="notice_database_index_rebuild_failed">Search index rebuild failed</string>
     <string name="notice_database_operation_failed">Database operation failed</string>
+
+    <string name="sort_last_used">Last used</string>
+    <string name="sort_entry_type">Entry type</string>
+    <string name="not_set">Not set</string>
+    <string name="backup_plain_export_success">Plaintext backup exported</string>
+    <string name="vault_plain_export_db_error_title">Unable to open database</string>
+    <string name="vault_plain_export_db_error_message">The database key or schema does not match. Try again first. If the problem continues, you can verify your identity, preserve the failed database, attachments, and images, and then create a new empty database. Existing data will not be overwritten automatically.</string>
+    <string name="vault_database_retry">Retry opening database</string>
+    <string name="vault_plain_export_db_error_dismiss">Close app</string>
+    <string name="database_recovery_clear_action">Permanently clear vault database</string>
+    <string name="database_recovery_clear_confirm_title">Clear vault data?</string>
+    <string name="database_recovery_clear_confirm_message">This permanently deletes the database, attachments, and custom images and cannot be undone. App settings and authentication methods will be kept. You will need to verify your identity again after confirming.</string>
+    <string name="database_recovery_clear_confirm">Verify and clear</string>
+    <string name="database_recovery_create_new_action">Preserve failed database and create a new one</string>
+    <string name="otp_type">OTP type</string>
+    <string name="otp_secret_encoding">Secret encoding</string>
+    <string name="otp_counter">Counter</string>
+    <string name="password_strength_very_weak">Very weak</string>
+    <string name="settings_topic_language_font">Language &amp; font</string>
+    <string name="settings_font">Font</string>
+    <string name="settings_font_system">Use system font</string>
+    <string name="metadata_created_at">Created: %1$s</string>
+    <string name="metadata_last_modified">Last modified: %1$s</string>
 </resources>

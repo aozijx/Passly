@@ -138,7 +138,8 @@ class MainViewModel @Inject constructor(
                             isDynamicColor = appearance.isDynamicColor,
                             customSeedArgb = appearance.customSeedArgb,
                             fontFamily = appearance.fontFamily,
-                            language = appearance.language
+                            language = appearance.language,
+                            isExpressive = appearance.isExpressive
                         )
                     }
                 }

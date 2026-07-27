@@ -26,6 +26,7 @@ class ProtoSerializerTest {
 
         assertEquals(60_000L, defaults.security.lockTimeoutMs)
         assertEquals(true, defaults.appearance.dynamicColorEnabled)
+        assertEquals(true, defaults.appearance.expressiveEnabled)
         assertEquals(true, defaults.security.secureContentEnabled)
         assertEquals(false, defaults.interaction.swipeActionsEnabled)
         assertEquals("copy_password", defaults.interaction.swipeLeftAction)

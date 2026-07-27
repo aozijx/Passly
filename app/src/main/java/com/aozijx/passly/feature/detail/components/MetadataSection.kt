@@ -6,19 +6,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 @Composable
 fun MetadataSection(entry: VaultEntry) {
-    val df = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    val locale = LocalConfiguration.current.locales[0]
+    val dateFormat = remember(locale) { SimpleDateFormat("yyyy-MM-dd HH:mm", locale) }
     Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        MetadataText("创建于: ${df.format(Date(entry.createdAt))}")
-        MetadataText("最后修改: ${df.format(Date(entry.updatedAt))}")
+        MetadataText(
+            stringResource(R.string.metadata_created_at, dateFormat.format(Date(entry.createdAt)))
+        )
+        MetadataText(
+            stringResource(
+                R.string.metadata_last_modified,
+                dateFormat.format(Date(entry.updatedAt))
+            )
+        )
     }
 }
 

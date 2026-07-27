@@ -115,20 +115,7 @@ class ProtoAppSettingsRepository @Inject constructor(
         // ============================================================
 
         // -- AppLanguage --
-        private fun String.toAppLanguageDomain(): AppLanguage = when (this) {
-            "system" -> AppLanguage.SYSTEM
-            "zh-CN" -> AppLanguage.ZH
-            "en" -> AppLanguage.EN
-            "ja" -> AppLanguage.JA
-            else -> AppLanguage.SYSTEM
-        }
-
-        private fun AppLanguage.toAppLanguageString(): String = when (this) {
-            AppLanguage.SYSTEM -> "system"
-            AppLanguage.ZH -> "zh-CN"
-            AppLanguage.EN -> "en"
-            AppLanguage.JA -> "ja"
-        }
+        private fun String.toAppLanguageDomain(): AppLanguage = AppLanguage.fromLanguageTag(this)
 
         // -- FontFamilyMode --
         private fun String.toFontFamilyDomain(): FontFamilyMode = when (this) {
@@ -351,7 +338,8 @@ class ProtoAppSettingsRepository @Inject constructor(
             fallbackPalette = p.fallbackPalette.toDomain(),
             customSeedArgb = if (p.hasCustomSeedArgb()) p.customSeedArgb else null,
             language = p.language.toAppLanguageDomain(),
-            fontFamily = p.fontFamily.toFontFamilyDomain()
+            fontFamily = p.fontFamily.toFontFamilyDomain(),
+            isExpressive = p.expressiveEnabled
         )
 
     private fun readInterface(p: InterfacePreferences): InterfaceSettings =
@@ -458,13 +446,19 @@ class ProtoAppSettingsRepository @Inject constructor(
 
                 is SettingsCommand.SetLanguage -> {
                     val ab = proto.appearance.toBuilder()
-                    ab.language = command.language.toAppLanguageString()
+                    ab.language = command.language.storageTag
                     b.setAppearance(ab)
                 }
 
                 is SettingsCommand.SetFontFamily -> {
                     val ab = proto.appearance.toBuilder()
                     ab.fontFamily = command.mode.toFontFamilyString()
+                    b.setAppearance(ab)
+                }
+
+                is SettingsCommand.SetExpressiveEnabled -> {
+                    val ab = proto.appearance.toBuilder()
+                    ab.expressiveEnabled = command.enabled
                     b.setAppearance(ab)
                 }
 

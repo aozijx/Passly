@@ -21,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.theme.LocalExpressiveThemeEnabled
 
 enum class RoundedGroupItemPosition {
     Single,
@@ -57,13 +59,26 @@ class RoundedGroupItem(
 fun RoundedGroup(
     items: List<RoundedGroupItem>,
     modifier: Modifier = Modifier,
-    outerRadius: Dp = 18.dp,
-    innerRadius: Dp = 2.dp,
+    outerRadius: Dp? = null,
+    innerRadius: Dp? = null,
     itemSpacing: Dp = 2.dp,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
     shapeFactory: ((RoundedGroupItemPosition) -> Shape)? = null
 ) {
+    val expressive = LocalExpressiveThemeEnabled.current
+    val resolvedOuterRadius = outerRadius ?: if (expressive) 28.dp else 18.dp
+    val resolvedInnerRadius = innerRadius ?: if (expressive) 8.dp else 2.dp
+    val enterTransition =
+        fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                expandVertically(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
+                )
+    val exitTransition =
+        fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                shrinkVertically(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
+                )
     val keys = HashSet<String>(items.size)
     var visibleCount = 0
     items.forEach { item ->
@@ -79,7 +94,7 @@ fun RoundedGroup(
             val scope = RoundedGroupItemScope(
                 position = position,
                 shape = shapeFactory?.invoke(position)
-                    ?: position.defaultShape(outerRadius, innerRadius),
+                    ?: position.defaultShape(resolvedOuterRadius, resolvedInnerRadius),
                 containerColor = containerColor,
                 contentPadding = contentPadding
             )
@@ -87,8 +102,8 @@ fun RoundedGroup(
             key(item.key) {
                 AnimatedVisibility(
                     visible = item.visible,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
+                    enter = enterTransition,
+                    exit = exitTransition
                 ) {
                     Column {
                         item.content(scope)

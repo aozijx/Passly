@@ -30,6 +30,8 @@ message AppearancePreferences {
     optional string language = 5 [default = "system"];
     // 字体标识: "app.default", "system"
     optional string font_family = 6 [default = "app.default"];
+    // Material 3 Expressive 形状、排版与动效
+    optional bool expressive_enabled = 7 [default = true];
 }
 
 enum ThemeMode {

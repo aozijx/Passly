@@ -1,9 +1,7 @@
 package com.aozijx.passly.feature.vault.components.fab
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -21,7 +19,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
@@ -46,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.theme.LocalExpressiveThemeEnabled
 import com.aozijx.passly.feature.vault.model.AddType
 import kotlinx.coroutines.delay
 
@@ -56,14 +54,12 @@ fun VaultFab(
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntrySheet by remember { mutableStateOf(false) }
+    val expressive = LocalExpressiveThemeEnabled.current
+    val motionScheme = MaterialTheme.motionScheme
 
-    // 为 FAB 旋转添加阻尼动画 (Spring)
     val rotation by animateFloatAsState(
         targetValue = if (showFabMenu) 45f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = motionScheme.defaultSpatialSpec(),
         label = "fabRotation"
     )
 
@@ -90,8 +86,16 @@ fun VaultFab(
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn() + scaleIn(transformOrigin = TransformOrigin(1f, 1f)),
-        exit = fadeOut() + scaleOut(transformOrigin = TransformOrigin(1f, 1f))
+        enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
+                scaleIn(
+                    animationSpec = motionScheme.defaultSpatialSpec(),
+                    transformOrigin = TransformOrigin(1f, 1f)
+                ),
+        exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
+                scaleOut(
+                    animationSpec = motionScheme.defaultSpatialSpec(),
+                    transformOrigin = TransformOrigin(1f, 1f)
+                )
     ) {
         Column(
             horizontalAlignment = Alignment.End,
@@ -119,9 +123,9 @@ fun VaultFab(
 
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .shadow(4.dp, RoundedCornerShape(12.dp))
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(if (expressive) 64.dp else 56.dp)
+                    .shadow(4.dp, MaterialTheme.shapes.large)
+                    .clip(MaterialTheme.shapes.large)
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .pointerInput(Unit) {
                         detectTapGestures(
@@ -159,23 +163,22 @@ fun FabMenuItemWithSpring(
     icon: ImageVector,
     onClick: () -> Unit
 ) {
+    val motionScheme = MaterialTheme.motionScheme
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(animationSpec = spring(stiffness = Spring.StiffnessLow)) +
+        enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
                 slideInHorizontally(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
+                    animationSpec = motionScheme.defaultSpatialSpec()
                 ) { it / 2 } +
                 scaleIn(
                     initialScale = 0.8f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
+                    animationSpec = motionScheme.defaultSpatialSpec()
                 ),
-        exit = fadeOut() + scaleOut(targetScale = 0.8f)
+        exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
+                scaleOut(
+                    targetScale = 0.8f,
+                    animationSpec = motionScheme.defaultSpatialSpec()
+                )
     ) {
         FabMenuItem(label = label, icon = icon, onClick = onClick)
     }
@@ -187,7 +190,7 @@ fun FabMenuItem(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 6.dp,
         modifier = Modifier.height(48.dp)

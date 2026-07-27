@@ -217,11 +217,16 @@ private fun AnimatedSettingValue(
     value: String,
     modifier: Modifier = Modifier
 ) {
+    val motionScheme = MaterialTheme.motionScheme
     AnimatedContent(
         targetState = value,
         modifier = modifier,
         transitionSpec = {
-            slideInVertically { it } togetherWith slideOutVertically { -it }
+            slideInVertically(
+                animationSpec = motionScheme.defaultSpatialSpec()
+            ) { it } togetherWith slideOutVertically(
+                animationSpec = motionScheme.defaultSpatialSpec()
+            ) { -it }
         },
         label = "setting_value"
     ) { targetValue ->

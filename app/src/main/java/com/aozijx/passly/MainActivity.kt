@@ -23,7 +23,6 @@ import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
-import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
@@ -84,12 +83,7 @@ class MainActivity : AppCompatActivity() {
 
             // 响应语言切换
             LaunchedEffect(mainUiState.language) {
-                val tag = when (mainUiState.language) {
-                    AppLanguage.SYSTEM -> ""
-                    AppLanguage.ZH -> "zh-CN"
-                    AppLanguage.EN -> "en"
-                    AppLanguage.JA -> "ja"
-                }
+                val tag = mainUiState.language.applicationLocaleTags
                 val currentTags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
                 if (currentTags != tag) {
                     AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
@@ -108,7 +102,8 @@ class MainActivity : AppCompatActivity() {
                         themeMode = mainUiState.themeMode,
                         dynamicColor = mainUiState.isDynamicColor,
                         customSeedArgb = mainUiState.customSeedArgb,
-                        fontFamily = mainUiState.fontFamily
+                        fontFamily = mainUiState.fontFamily,
+                        expressive = mainUiState.isExpressive
                     ) {
                         AuthenticationHost(this, authenticationHostRegistry) {
                             MainScreen(

@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.core.ui.components.widgets.SwipeDirection
 import com.aozijx.passly.core.ui.components.widgets.SwipeToAction
 import com.aozijx.passly.core.ui.components.widgets.createSwipeAction
@@ -42,6 +45,8 @@ fun VaultPagerContent(
     onItemClick: (EntryListItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val adaptiveLayout = LocalPasslyAdaptiveLayout.current
+
     HorizontalPager(
         modifier = modifier,
         state = pagerState,
@@ -53,9 +58,16 @@ fun VaultPagerContent(
         if (displayItems.isEmpty()) {
             if (!uiState.isVaultItemsLoading) EmptyVaultPlaceholder()
         } else {
-            LazyColumn(
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(
+                    minSize = if (adaptiveLayout.isExpanded) 360.dp else 440.dp
+                ),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(
+                    horizontal = if (adaptiveLayout.isAtLeastMedium) 24.dp else 16.dp,
+                    vertical = 16.dp
+                ),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(items = displayItems, key = { it.id }) { item ->
@@ -72,9 +84,12 @@ fun VaultPagerContent(
                     )
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(60.dp))
-                    Spacer(modifier = Modifier.navigationBarsPadding())
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Spacer(
+                        modifier = Modifier
+                            .height(60.dp)
+                            .navigationBarsPadding()
+                    )
                 }
             }
         }

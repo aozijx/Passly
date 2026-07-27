@@ -6,6 +6,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.app.navigation.PasslyNavHost
+import com.aozijx.passly.core.ui.adaptive.ProvidePasslyAdaptiveLayout
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.vault.VaultViewModel
 
@@ -17,10 +18,12 @@ internal fun AppMainContent(
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
 
-    PasslyNavHost(
-        navController = navController,
-        mainViewModel = mainViewModel,
-        vaultViewModel = vaultViewModel,
-        isDatabaseInitializing = mainUiState.isDatabaseInitializing
-    )
+    ProvidePasslyAdaptiveLayout {
+        PasslyNavHost(
+            navController = navController,
+            mainViewModel = mainViewModel,
+            vaultViewModel = vaultViewModel,
+            isDatabaseInitializing = mainUiState.isDatabaseInitializing
+        )
+    }
 }

@@ -263,6 +263,10 @@
     <string name="settings_language_japanese">日本語</string>
     <string name="settings_dynamic_color">动态取色</string>
     <string name="settings_dynamic_color_desc">使用壁纸配色</string>
+    <string name="settings_expressive">Material 3 Expressive</string>
+    <string name="settings_expressive_desc">启用更鲜明的形状、动效与组件反馈</string>
+    <string name="metadata_created_at">创建于：%1$s</string>
+    <string name="metadata_last_modified">最后修改：%1$s</string>
     <string name="settings_theme_color">主题色</string>
     <string name="settings_theme_color_blue">蓝色</string>
     <string name="settings_theme_color_green">绿色</string>

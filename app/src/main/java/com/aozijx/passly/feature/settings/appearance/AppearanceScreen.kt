@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.settings.appearance
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
@@ -41,6 +42,7 @@ internal fun AppearanceDetail(
     state: AppearanceUiState,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
+    onExpressiveEnabledChange: (Boolean) -> Unit,
     onCustomSeedArgbChange: (Long?) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onFontFamilyChange: (FontFamilyMode) -> Unit
@@ -83,6 +85,14 @@ internal fun AppearanceDetail(
                     checked = state.isDynamicColor,
                     onCheckedChange = onDynamicColorChange
                 ),
+                switchSettingsGroupItem(
+                    key = "appearance.expressive",
+                    icon = Icons.Default.AutoAwesome,
+                    title = stringResource(R.string.settings_expressive),
+                    subtitle = stringResource(R.string.settings_expressive_desc),
+                    checked = state.isExpressive,
+                    onCheckedChange = onExpressiveEnabledChange
+                ),
                 navigationSettingsGroupItem(
                     key = "appearance.theme_color",
                     icon = Icons.Default.Palette,
@@ -102,7 +112,7 @@ internal fun AppearanceDetail(
                     key = "appearance.language",
                     icon = Icons.Default.Translate,
                     title = stringResource(R.string.settings_language),
-                    value = stringResource(state.language.labelRes()),
+                    value = state.language.localizedDisplayName(),
                     onClick = { showLanguageSheet = true }
                 ),
                 switchSettingsGroupItem(

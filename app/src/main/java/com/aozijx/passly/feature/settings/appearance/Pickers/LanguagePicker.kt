@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.feature.settings.appearance.labelRes
+import com.aozijx.passly.feature.settings.appearance.localizedDisplayName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +66,7 @@ fun LanguagePicker(
                         onClick = { onSelect(lang) }
                     )
                     Spacer(Modifier.padding(start = 12.dp))
-                    Text(text = stringResource(lang.labelRes()))
+                    Text(text = lang.localizedDisplayName())
                 }
             }
         }

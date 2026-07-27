@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.navigation
 
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
@@ -15,6 +16,7 @@ import com.aozijx.passly.feature.settings.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.appearance.InterfaceUiAction
 import com.aozijx.passly.feature.settings.appearance.InterfaceViewModel
 import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordEntryClick
+import com.aozijx.passly.feature.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.PrivacyUiAction
 import com.aozijx.passly.feature.settings.security.PrivacyViewModel
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
@@ -58,7 +60,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
         val biometricEnabled by viewModel.isBiometricEnabled.collectAsStateWithLifecycle()
 
         SettingsSecondaryPage(
-            title = "安全设置",
+            title = stringResource(SettingsGroup.SECURITY.titleRes),
             onBack = { navController.popBackStack() }
         ) {
             item {
@@ -100,7 +102,10 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     composable(SettingsRoute.Privacy.route) {
         val viewModel: PrivacyViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
-        SettingsSecondaryPage(title = "隐私设置", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.PRIVACY.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             item {
                 PrivacyDetail(
                     state = state,
@@ -121,7 +126,10 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     composable(SettingsRoute.Appearance.route) {
         val viewModel: AppearanceViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
-        SettingsSecondaryPage(title = "外观设置", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.APPEARANCE.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             item {
                 AppearanceDetail(
                     state = state,
@@ -130,6 +138,9 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     },
                     onDynamicColorChange = {
                         viewModel.onAction(AppearanceUiAction.SetDynamicColor(it))
+                    },
+                    onExpressiveEnabledChange = {
+                        viewModel.onAction(AppearanceUiAction.SetExpressiveEnabled(it))
                     },
                     onCustomSeedArgbChange = {
                         viewModel.onAction(AppearanceUiAction.SetCustomSeedArgb(it))
@@ -149,7 +160,10 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
         val viewModel: InterfaceViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
 
-        SettingsSecondaryPage(title = "界面设置", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.INTERFACE.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             item {
                 InterfaceDetail(
                     state = state,

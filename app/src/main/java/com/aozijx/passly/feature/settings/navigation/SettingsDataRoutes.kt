@@ -43,6 +43,7 @@ import com.aozijx.passly.feature.settings.general.NotificationDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionUiAction
 import com.aozijx.passly.feature.settings.interaction.InteractionViewModel
+import com.aozijx.passly.feature.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.RecoveryDraftState
 import com.aozijx.passly.feature.settings.security.RecoveryDraftViewModel
 import com.aozijx.passly.feature.settings.security.SecurityUiAction
@@ -66,7 +67,10 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
 ) {
     composable(SettingsRoute.Interaction.route) {
         val state by interactionViewModel.config.collectAsStateWithLifecycle()
-        SettingsSecondaryPage(title = "交互与操作", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.INTERACTION.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             item {
                 InteractionDetail(
                     state = state,
@@ -88,7 +92,10 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
 
     composable(SettingsRoute.DataManagement.route) {
         val state by dataViewModel.config.collectAsStateWithLifecycle()
-        SettingsSecondaryPage(title = "数据管理", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             item {
                 DataManagementDetail(
                     state = state,
@@ -183,7 +190,10 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
             }
         }
 
-        SettingsSecondaryPage(title = "备份与恢复", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.BACKUP_RESTORE.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             item {
                 BackupRestoreDetail(
                     backupPathLabel = pathLabel,
@@ -301,7 +311,10 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
             }
         }
 
-        SettingsSecondaryPage(title = "恢复码", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.RECOVERY_CODE.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             draftState.messageOrNull()?.let { message ->
                 item {
                     Text(
@@ -333,13 +346,19 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     }
 
     composable(SettingsRoute.General.route) {
-        SettingsSecondaryPage(title = "通用", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.GENERAL.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             item { GeneralDetail() }
         }
     }
 
     composable(SettingsRoute.Notifications.route) {
-        SettingsSecondaryPage(title = "消息与通知", onBack = { navController.popBackStack() }) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.NOTIFICATIONS.titleRes),
+            onBack = { navController.popBackStack() }
+        ) {
             item { NotificationDetail() }
         }
     }

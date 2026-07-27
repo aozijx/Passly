@@ -11,6 +11,7 @@ data class MainUiState(
     val customSeedArgb: Long? = null,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
+    val isExpressive: Boolean = true,
     val isDatabaseInitializing: Boolean = false,
     val databaseError: Throwable? = null
 )

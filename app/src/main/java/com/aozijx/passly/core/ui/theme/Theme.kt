@@ -3,14 +3,18 @@ package com.aozijx.passly.core.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +30,17 @@ private val PasslyShapes = Shapes(
     large = RoundedCornerShape(16.dp),
     extraLarge = RoundedCornerShape(24.dp)
 )
+
+private val PasslyExpressiveShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp),
+    largeIncreased = RoundedCornerShape(40.dp)
+)
+
+val LocalExpressiveThemeEnabled = staticCompositionLocalOf { true }
 
 /** 预设主题色。color 为 0 表示使用默认 AppColor。 */
 data class ThemePreset(
@@ -59,6 +74,7 @@ fun AppTheme(
     dynamicColor: Boolean = true,
     customSeedArgb: Long? = null,
     fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
+    expressive: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val isDark = when (themeMode) {
@@ -83,15 +99,40 @@ fun AppTheme(
         else -> AppColor.lightScheme()
     }
 
-    val typography =
+    val standardTypography =
         if (fontFamily == FontFamilyMode.SYSTEM) SystemTypography else themeTypography()
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = typography,
-        shapes = PasslyShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalExpressiveThemeEnabled provides expressive) {
+        if (expressive) {
+            MaterialExpressiveTheme(
+                colorScheme = colorScheme,
+                motionScheme = MotionScheme.expressive(),
+                shapes = PasslyExpressiveShapes
+            ) {
+                val expressiveTypography =
+                    if (fontFamily == FontFamilyMode.SYSTEM) {
+                        MaterialTheme.typography
+                    } else {
+                        themeTypography(MaterialTheme.typography)
+                    }
+                MaterialTheme(
+                    colorScheme = MaterialTheme.colorScheme,
+                    motionScheme = MaterialTheme.motionScheme,
+                    typography = expressiveTypography,
+                    shapes = MaterialTheme.shapes,
+                    content = content
+                )
+            }
+        } else {
+            MaterialTheme(
+                colorScheme = colorScheme,
+                motionScheme = MotionScheme.standard(),
+                typography = standardTypography,
+                shapes = PasslyShapes,
+                content = content
+            )
+        }
+    }
 }
 
 /** 将种子色微量混入背景与表面色，使整体界面呈现主题色调。 */

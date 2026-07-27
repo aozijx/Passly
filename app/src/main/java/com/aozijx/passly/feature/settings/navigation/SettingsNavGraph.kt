@@ -1,10 +1,10 @@
 package com.aozijx.passly.feature.settings.navigation
 
 import android.widget.Toast
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,6 +45,7 @@ fun SettingsNavGraph(
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
     val backupViewModel: BackupViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val motionScheme = MaterialTheme.motionScheme
 
     val authDecryptTitle = stringResource(R.string.auth_title)
     val setAppPasswordSubtitle =
@@ -79,25 +80,25 @@ fun SettingsNavGraph(
         enterTransition = {
             slideInHorizontally(
                 initialOffsetX = { it },
-                animationSpec = tween(350)
+                animationSpec = motionScheme.defaultSpatialSpec()
             )
         },
         exitTransition = {
             slideOutHorizontally(
                 targetOffsetX = { -it / 4 },
-                animationSpec = tween(350)
+                animationSpec = motionScheme.defaultSpatialSpec()
             )
         },
         popEnterTransition = {
             slideInHorizontally(
                 initialOffsetX = { -it / 4 },
-                animationSpec = tween(350)
+                animationSpec = motionScheme.defaultSpatialSpec()
             )
         },
         popExitTransition = {
             slideOutHorizontally(
                 targetOffsetX = { it },
-                animationSpec = tween(350)
+                animationSpec = motionScheme.defaultSpatialSpec()
             )
         }
     ) {
