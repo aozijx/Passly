@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.settings.appearance
+package com.aozijx.passly.feature.settings.appearance.Pickers
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,7 +37,7 @@ import com.aozijx.passly.core.ui.theme.themePresets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ThemeColorSheet(
+fun ThemePicker(
     selectedColor: Long,
     sheetState: SheetState,
     onSelect: (Long) -> Unit,
@@ -134,9 +134,7 @@ private fun ThemeColorPreviewCard(colorValue: Color?) {
                 modifier = Modifier
                     .size(16.dp)
                     .clip(CircleShape)
-                    .background(
-                        primaryColor.copy(alpha = 0.3f)
-                    )
+                    .background(primaryColor.copy(alpha = 0.3f))
             )
 
             Column {
@@ -153,9 +151,7 @@ private fun ThemeColorPreviewCard(colorValue: Color?) {
                         .width(24.dp)
                         .height(3.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(
-                            onSurfaceColor.copy(alpha = 0.15f)
-                        )
+                        .background(onSurfaceColor.copy(alpha = 0.15f))
                 )
             }
         }

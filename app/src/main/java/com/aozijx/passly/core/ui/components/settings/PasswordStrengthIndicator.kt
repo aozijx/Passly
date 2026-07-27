@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.ui.components
+package com.aozijx.passly.core.ui.components.settings
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState

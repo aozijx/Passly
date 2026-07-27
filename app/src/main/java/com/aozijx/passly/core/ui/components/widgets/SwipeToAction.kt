@@ -159,7 +159,8 @@ fun SwipeToAction(
                             val scale = 0.8f + (swipeFraction * 0.4f).coerceAtMost(0.4f)
                             scaleX = scale
                             scaleY = scale
-                        })
+                        }
+                )
             }
         }
 
@@ -186,7 +187,8 @@ fun SwipeToAction(
                                 offset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                             }
                         }
-                    }),
+                    }
+                ),
             shape = RoundedCornerShape(cornerRadius),
             tonalElevation = 2.dp,
             shadowElevation = 2.dp

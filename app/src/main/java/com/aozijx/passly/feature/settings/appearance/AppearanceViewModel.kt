@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
@@ -85,3 +86,16 @@ private fun AppearanceSettings.toUiState(): AppearanceUiState = AppearanceUiStat
     language = language,
     fontFamily = fontFamily
 )
+
+fun ThemeMode.labelRes(): Int = when (this) {
+    ThemeMode.SYSTEM -> R.string.follow_system
+    ThemeMode.LIGHT -> R.string.settings_theme_mode_light
+    ThemeMode.DARK -> R.string.settings_theme_mode_dark
+}
+
+fun AppLanguage.labelRes(): Int = when (this) {
+    AppLanguage.SYSTEM -> R.string.follow_system
+    AppLanguage.ZH -> R.string.settings_language_chinese
+    AppLanguage.EN -> R.string.settings_language_english
+    AppLanguage.JA -> R.string.settings_language_japanese
+}
