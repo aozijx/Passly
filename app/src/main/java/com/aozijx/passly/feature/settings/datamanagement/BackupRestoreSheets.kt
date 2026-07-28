@@ -108,31 +108,31 @@ private fun BackupFormatPicker(
 ) {
     SheetColumn {
         Text(
-            text = stringResource(R.string.backup_format_picker_title),
+            text = stringResource(R.string.settings_backup_format_picker_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = stringResource(R.string.backup_format_picker_description),
+            text = stringResource(R.string.settings_backup_format_picker_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         FormatCard(
             icon = Icons.Default.Lock,
-            title = stringResource(R.string.backup_format_encrypted),
-            subtitle = stringResource(R.string.backup_format_encrypted_description),
+            title = stringResource(R.string.settings_backup_format_encrypted),
+            subtitle = stringResource(R.string.settings_backup_format_encrypted_description),
             onClick = { onFormatSelected(BackupExportUiFormat.ENCRYPTED) }
         )
         FormatCard(
             icon = Icons.Default.Code,
-            title = stringResource(R.string.backup_format_json),
-            subtitle = stringResource(R.string.backup_format_json_description),
+            title = stringResource(R.string.settings_backup_format_json),
+            subtitle = stringResource(R.string.settings_backup_format_json_description),
             onClick = { onFormatSelected(BackupExportUiFormat.JSON) }
         )
         FormatCard(
             icon = Icons.Default.Description,
-            title = stringResource(R.string.backup_format_text),
-            subtitle = stringResource(R.string.backup_format_text_description),
+            title = stringResource(R.string.settings_backup_format_text),
+            subtitle = stringResource(R.string.settings_backup_format_text_description),
             onClick = { onFormatSelected(BackupExportUiFormat.TEXT) }
         )
     }
@@ -191,9 +191,9 @@ private fun BackupExportOptionsContent(
                 value = state.backupPassword,
                 onValueChange = onPasswordChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.backup_password_label)) },
+                label = { Text(stringResource(R.string.settings_backup_password_label)) },
                 supportingText = {
-                    Text(stringResource(R.string.backup_password_warning))
+                    Text(stringResource(R.string.settings_backup_password_warning))
                 },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
@@ -205,26 +205,26 @@ private fun BackupExportOptionsContent(
         }
 
         Text(
-            stringResource(R.string.backup_content_scope),
+            stringResource(R.string.settings_backup_content_scope),
             style = MaterialTheme.typography.titleMedium
         )
         if (state.selectedExportFormat.supportsResources) {
             BackupSwitchRow(
-                title = stringResource(R.string.backup_include_icons),
-                subtitle = stringResource(R.string.backup_include_icons_description),
+                title = stringResource(R.string.settings_backup_include_icons),
+                subtitle = stringResource(R.string.settings_backup_include_icons_description),
                 checked = state.includeIcons,
                 onCheckedChange = onIncludeIconsChange
             )
             BackupSwitchRow(
-                title = stringResource(R.string.backup_include_attachments),
-                subtitle = stringResource(R.string.backup_include_attachments_description),
+                title = stringResource(R.string.settings_backup_include_attachments),
+                subtitle = stringResource(R.string.settings_backup_include_attachments_description),
                 checked = state.includeAttachments,
                 onCheckedChange = onIncludeAttachmentsChange
             )
         }
         BackupSwitchRow(
-            title = stringResource(R.string.backup_include_deleted),
-            subtitle = stringResource(R.string.backup_include_deleted_description),
+            title = stringResource(R.string.settings_backup_include_deleted),
+            subtitle = stringResource(R.string.settings_backup_include_deleted_description),
             checked = state.includeDeleted,
             onCheckedChange = onIncludeDeletedChange
         )
@@ -236,7 +236,7 @@ private fun BackupExportOptionsContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                stringResource(R.string.backup_entry_types),
+                stringResource(R.string.settings_backup_entry_types),
                 style = MaterialTheme.typography.titleMedium
             )
             TextButton(
@@ -253,9 +253,9 @@ private fun BackupExportOptionsContent(
                 Text(
                     stringResource(
                         if (state.includedEntryTypes.size == EntryType.entries.size) {
-                            R.string.backup_clear_selection
+                            R.string.settings_backup_clear_selection
                         } else {
-                            R.string.backup_select_all
+                            R.string.settings_backup_select_all
                         }
                     )
                 )
@@ -280,7 +280,7 @@ private fun BackupExportOptionsContent(
         }
         if (state.includedEntryTypes.isEmpty()) {
             Text(
-                stringResource(R.string.backup_entry_type_required),
+                stringResource(R.string.settings_backup_entry_type_required),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -289,10 +289,10 @@ private fun BackupExportOptionsContent(
         HorizontalDivider()
         Text(
             text = if (configuredDirectoryLabel == null) {
-                stringResource(R.string.backup_choose_destination_after_confirm)
+                stringResource(R.string.settings_backup_choose_destination_after_confirm)
             } else {
                 stringResource(
-                    R.string.backup_save_to_configured_directory,
+                    R.string.settings_backup_save_to_configured_directory,
                     configuredDirectoryLabel
                 )
             },
@@ -304,7 +304,7 @@ private fun BackupExportOptionsContent(
             enabled = state.canSubmitExport,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(stringResource(R.string.backup_start_export))
+            Text(stringResource(R.string.settings_backup_start_export))
         }
     }
 }
@@ -313,11 +313,11 @@ private fun BackupExportOptionsContent(
 private fun ExportSecurityNotice(format: BackupExportUiFormat) {
     val text = when (format) {
         BackupExportUiFormat.ENCRYPTED ->
-            stringResource(R.string.backup_encrypted_security_notice)
+            stringResource(R.string.settings_backup_encrypted_security_notice)
         BackupExportUiFormat.JSON ->
-            stringResource(R.string.backup_json_security_notice)
+            stringResource(R.string.settings_backup_json_security_notice)
         BackupExportUiFormat.TEXT ->
-            stringResource(R.string.backup_text_security_notice)
+            stringResource(R.string.settings_backup_text_security_notice)
     }
     Text(
         text = text,
@@ -364,36 +364,39 @@ private fun BackupImportOptionsContent(
 ) {
     SheetColumn(scrollable = true) {
         Text(
-            text = stringResource(R.string.backup_import_options_title),
+            text = stringResource(R.string.settings_backup_import_options_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
-            stringResource(R.string.backup_import_format_description),
+            stringResource(
+                R.string.settings_backup_import_format_description,
+                stringResource(R.string.app_name)
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            stringResource(R.string.backup_import_mode),
+            stringResource(R.string.settings_backup_import_mode),
             style = MaterialTheme.typography.titleMedium
         )
         ImportModeCard(
             selected = state.importMode == ImportMode.APPEND,
-            title = stringResource(R.string.backup_import_append),
-            subtitle = stringResource(R.string.backup_import_append_description),
+            title = stringResource(R.string.settings_backup_import_append),
+            subtitle = stringResource(R.string.settings_backup_import_append_description),
             onClick = { onImportModeChange(ImportMode.APPEND) }
         )
         ImportModeCard(
             selected = state.importMode == ImportMode.OVERWRITE,
-            title = stringResource(R.string.backup_import_overwrite),
-            subtitle = stringResource(R.string.backup_import_overwrite_description),
+            title = stringResource(R.string.settings_backup_import_overwrite),
+            subtitle = stringResource(R.string.settings_backup_import_overwrite_description),
             onClick = { onImportModeChange(ImportMode.OVERWRITE) }
         )
         OutlinedTextField(
             value = state.backupPassword,
             onValueChange = onPasswordChange,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.backup_import_password_label)) },
+            label = { Text(stringResource(R.string.settings_backup_import_password_label)) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
@@ -402,7 +405,7 @@ private fun BackupImportOptionsContent(
             singleLine = true
         )
         Text(
-            stringResource(R.string.backup_import_atomicity_notice),
+            stringResource(R.string.settings_backup_import_atomicity_notice),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -410,9 +413,9 @@ private fun BackupImportOptionsContent(
             Text(
                 stringResource(
                     if (state.importMode == ImportMode.OVERWRITE) {
-                        R.string.backup_confirm_overwrite_import
+                        R.string.settings_backup_confirm_overwrite_import
                     } else {
-                        R.string.backup_start_import
+                        R.string.settings_backup_start_import
                     }
                 )
             )
@@ -476,7 +479,7 @@ private fun SheetColumn(
 
 @StringRes
 private fun exportTitleResource(format: BackupExportUiFormat): Int = when (format) {
-    BackupExportUiFormat.ENCRYPTED -> R.string.backup_encrypted_options_title
-    BackupExportUiFormat.JSON -> R.string.backup_json_options_title
-    BackupExportUiFormat.TEXT -> R.string.backup_text_options_title
+    BackupExportUiFormat.ENCRYPTED -> R.string.settings_backup_encrypted_options_title
+    BackupExportUiFormat.JSON -> R.string.settings_backup_json_options_title
+    BackupExportUiFormat.TEXT -> R.string.settings_backup_text_options_title
 }

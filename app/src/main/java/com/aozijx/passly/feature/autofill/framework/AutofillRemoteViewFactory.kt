@@ -37,7 +37,13 @@ object AutofillRemoteViewFactory {
             candidateCount
         )
         return RemoteViews(context.packageName, R.layout.autofill_dataset_item).apply {
-            setTextViewText(R.id.item_title, context.getString(R.string.autofill_prompt_title))
+            setTextViewText(
+                R.id.item_title,
+                context.getString(
+                    R.string.autofill_prompt_title,
+                    context.getString(R.string.app_name)
+                )
+            )
             setTextViewText(R.id.item_subtitle, subtitle)
             setTextViewText(R.id.item_badge, context.getString(R.string.select))
         }

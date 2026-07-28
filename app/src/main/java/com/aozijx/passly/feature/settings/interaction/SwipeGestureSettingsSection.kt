@@ -20,28 +20,28 @@ fun SwipeGestureSettingsSection(
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit
 ) {
-    SettingsSectionTitle(text = stringResource(R.string.swipe_gesture_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_swipe_gesture_section))
     RoundedGroup(
         items = listOf(
             switchSettingsGroupItem(
                 key = "interaction.swipe_enabled",
                 icon = Icons.Default.Swipe,
-                title = stringResource(R.string.swipe_gesture_enabled),
-                subtitle = stringResource(R.string.swipe_gesture_enabled_description),
+                title = stringResource(R.string.settings_swipe_gesture_enabled),
+                subtitle = stringResource(R.string.settings_swipe_gesture_enabled_description),
                 checked = isSwipeEnabled,
                 onCheckedChange = onSwipeEnabledChange
             ),
             navigationSettingsGroupItem(
                 key = "interaction.swipe_left",
                 visible = isSwipeEnabled,
-                title = stringResource(R.string.swipe_gesture_left_action),
+                title = stringResource(R.string.settings_swipe_gesture_left_action),
                 value = swipeLeftAction.localizedLabel(),
                 onClick = onLeftSwipeActionClick
             ),
             navigationSettingsGroupItem(
                 key = "interaction.swipe_right",
                 visible = isSwipeEnabled,
-                title = stringResource(R.string.swipe_gesture_right_action),
+                title = stringResource(R.string.settings_swipe_gesture_right_action),
                 value = swipeRightAction.localizedLabel(),
                 onClick = onRightSwipeActionClick
             )
@@ -52,9 +52,9 @@ fun SwipeGestureSettingsSection(
 @Composable
 internal fun SwipeActionType.localizedLabel(): String = stringResource(
     when (this) {
-        SwipeActionType.DELETE -> R.string.swipe_action_delete
-        SwipeActionType.DETAIL -> R.string.swipe_action_detail
-        SwipeActionType.COPY_PASSWORD -> R.string.swipe_action_copy_password
-        SwipeActionType.COPY_USERNAME -> R.string.swipe_action_copy_username
+        SwipeActionType.DELETE -> R.string.settings_swipe_action_delete
+        SwipeActionType.DETAIL -> R.string.settings_swipe_action_detail
+        SwipeActionType.COPY_PASSWORD -> R.string.settings_swipe_action_copy_password
+        SwipeActionType.COPY_USERNAME -> R.string.settings_swipe_action_copy_username
     }
 )

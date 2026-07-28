@@ -19,22 +19,22 @@ fun SecurityProtectionSettingsSection(
     onFlipToLockEnabledChange: (Boolean) -> Unit,
     onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit
 ) {
-    SettingsSectionTitle(text = stringResource(R.string.security_protection_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_security_protection_section))
     RoundedGroup(
         items = listOf(
             switchSettingsGroupItem(
                 key = "privacy.secure_content",
                 icon = Icons.Default.Security,
-                title = stringResource(R.string.security_secure_content),
-                subtitle = stringResource(R.string.security_secure_content_description),
+                title = stringResource(R.string.settings_security_secure_content),
+                subtitle = stringResource(R.string.settings_security_secure_content_description),
                 checked = isSecureContentEnabled,
                 onCheckedChange = onSecureContentEnabledChange
             ),
             switchSettingsGroupItem(
                 key = "privacy.flip_to_lock",
                 icon = Icons.Default.Flip,
-                title = stringResource(R.string.security_flip_to_lock),
-                subtitle = stringResource(R.string.security_flip_to_lock_description),
+                title = stringResource(R.string.settings_security_flip_to_lock),
+                subtitle = stringResource(R.string.settings_security_flip_to_lock_description),
                 checked = isFlipToLockEnabled,
                 onCheckedChange = onFlipToLockEnabledChange
             ),
@@ -42,8 +42,8 @@ fun SecurityProtectionSettingsSection(
                 key = "privacy.flip_exit",
                 visible = isFlipToLockEnabled,
                 iconPlaceholder = true,
-                title = stringResource(R.string.security_flip_exit),
-                subtitle = stringResource(R.string.security_flip_exit_description),
+                title = stringResource(R.string.settings_security_flip_exit),
+                subtitle = stringResource(R.string.settings_security_flip_exit_description),
                 checked = isFlipExitAndClearStackEnabled,
                 onCheckedChange = onFlipExitAndClearStackEnabledChange
             )

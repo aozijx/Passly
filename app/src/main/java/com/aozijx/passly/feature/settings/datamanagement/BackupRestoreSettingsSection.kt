@@ -24,21 +24,24 @@ internal fun BackupRestoreSettingsSection(
     onTestWrite: () -> Unit,
     onClearPath: (() -> Unit)?
 ) {
-    SettingsSectionTitle(text = stringResource(R.string.backup_restore_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_backup_restore_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "backup.export",
                 icon = Icons.Default.FileUpload,
-                title = stringResource(R.string.backup_export_action),
-                subtitle = stringResource(R.string.backup_export_action_description),
+                title = stringResource(R.string.settings_backup_export_action),
+                subtitle = stringResource(R.string.settings_backup_export_action_description),
                 onClick = onExport
             ),
             navigationSettingsGroupItem(
                 key = "backup.import",
                 icon = Icons.Default.FileDownload,
-                title = stringResource(R.string.backup_import_action),
-                subtitle = stringResource(R.string.backup_import_action_description),
+                title = stringResource(R.string.settings_backup_import_action),
+                subtitle = stringResource(
+                    R.string.settings_backup_import_action_description,
+                    stringResource(R.string.app_name)
+                ),
                 onClick = onImport
             )
         )
@@ -46,30 +49,30 @@ internal fun BackupRestoreSettingsSection(
 
     Spacer(Modifier.height(24.dp))
 
-    SettingsSectionTitle(text = stringResource(R.string.backup_storage_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_backup_storage_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "backup.directory",
-                title = stringResource(R.string.backup_default_directory),
+                title = stringResource(R.string.settings_backup_default_directory),
                 subtitle = pathLabel,
                 onClick = onPickPath
             ),
             navigationSettingsGroupItem(
                 key = "backup.test_write",
-                title = stringResource(R.string.backup_test_write),
+                title = stringResource(R.string.settings_backup_test_write),
                 onClick = onTestWrite
             ),
             navigationSettingsGroupItem(
                 key = "backup.last_export",
-                title = stringResource(R.string.backup_recent_export),
+                title = stringResource(R.string.settings_backup_recent_export),
                 subtitle = recentExportFileName,
                 onClick = {}
             ),
             navigationSettingsGroupItem(
                 key = "backup.clear_directory",
                 visible = onClearPath != null,
-                title = stringResource(R.string.backup_clear_default_directory),
+                title = stringResource(R.string.settings_backup_clear_default_directory),
                 onClick = onClearPath ?: {}
             )
         )

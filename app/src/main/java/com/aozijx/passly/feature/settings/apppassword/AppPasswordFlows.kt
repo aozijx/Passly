@@ -26,12 +26,12 @@ internal fun handleAppPasswordAction(
     when (action) {
         AppPasswordAction.SET -> {
             if (newPassword != confirmPassword) {
-                context.showToast(R.string.auth_password_mismatch)
+                context.showToast(R.string.settings_auth_password_mismatch)
                 return
             }
             settingsViewModel.setAppPassword(newPassword.toCharArray()) { success ->
                 if (success) {
-                    context.showToast(R.string.auth_password_set_success)
+                    context.showToast(R.string.settings_auth_password_set_success)
                     onSuccess(action)
                 }
             }
@@ -39,16 +39,16 @@ internal fun handleAppPasswordAction(
 
         AppPasswordAction.CHANGE -> {
             if (currentPassword.isEmpty() || newPassword.isEmpty()) {
-                context.showToast(R.string.auth_password_fields_required)
+                context.showToast(R.string.settings_auth_password_fields_required)
                 return
             }
             if (newPassword != confirmPassword) {
-                context.showToast(R.string.auth_password_mismatch)
+                context.showToast(R.string.settings_auth_password_mismatch)
                 return
             }
             settingsViewModel.changeAppPassword(newPassword.toCharArray()) { success ->
                 if (success) {
-                    context.showToast(R.string.auth_password_change_success)
+                    context.showToast(R.string.settings_auth_password_change_success)
                     onSuccess(action)
                 }
             }
@@ -57,7 +57,7 @@ internal fun handleAppPasswordAction(
         AppPasswordAction.DISABLE -> {
             settingsViewModel.disableAppPassword { success ->
                 if (success) {
-                    context.showToast(R.string.auth_password_disabled)
+                    context.showToast(R.string.settings_auth_password_disabled)
                     onSuccess(action)
                 }
             }

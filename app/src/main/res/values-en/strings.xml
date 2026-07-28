@@ -10,12 +10,8 @@
     <string name="back">Back</string>
     <string name="search">Search</string>
     <string name="more">More</string>
-    <string name="settings">Settings</string>
     <string name="add">Add</string>
-    <string name="confirm">Confirm</string>
     <string name="paste">Paste</string>
-    <string name="advanced_config">Advanced Config</string>
-    <string name="follow_system">Follow system</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="title">Title</string>
@@ -30,18 +26,9 @@
     <!-- App info -->
 
     <!-- Autofill service -->
-    <string name="autofill_service_name">Passly Autofill</string>
-    <string name="autofill_auth_subtitle">Verify your identity to autofill credentials</string>
     <string name="autofill_entry_compact_title">Choose account</string>
-    <string name="autofill_save_prompt_title">Save %s?</string>
-    <string name="autofill_save_prompt_description">Do you want to save the username and password for %s to Passly?</string>
-    <string name="autofill_save_icon_description">App icon</string>
-    <string name="autofill_no_suggestions">Passly has no matching suggestions</string>
     <string name="autofill_pending_verification">Pending verification for autofill</string>
-    <string name="autofill_match_app">App match</string>
-    <string name="autofill_match_domain">Domain match</string>
-    <string name="autofill_match_unknown">Candidate</string>
-    <string name="autofill_prompt_title">Use Passly to Autofill</string>
+    <string name="autofill_prompt_title">Autofill with %1$s</string>
     <string name="select">Select</string>
     <plurals name="autofill_trigger_count">
         <item quantity="one">%d matching account · Tap to select</item>
@@ -52,8 +39,6 @@
 
     <!-- Vault - adjusted for clearer distinction -->
     <string name="vault_auth_subtitle">Verify your identity to access the vault</string>
-    <string name="vault_auth_error">Verification failed: %s</string>
-    <string name="vault_auth_failed">Verification failed</string>
     <string name="main_notification_permission_denied">Notification permission is disabled, so background sync progress will be hidden.</string>
     <string name="vault_locked_title">Vault is locked</string>
     <string name="vault_auth_decrypt_subtitle_generic">Please verify to continue</string>
@@ -66,11 +51,6 @@
     <string name="vault_menu_filter">Filter by category</string>
     <string name="vault_menu_hide_totp">Hide codes</string>
     <string name="vault_menu_show_totp">Show codes</string>
-    <string name="vault_enable_autofill">Enable autofill</string>
-    <string name="vault_toast_enable_autofill_manual">Please enable autofill in system settings</string>
-    <string name="vault_toast_save_icon_failed">Failed to save icon</string>
-    <string name="vault_export">Export backup</string>
-    <string name="vault_import">Import backup</string>
     <string name="tab_all">All</string>
     <string name="otp">otp</string>
 
@@ -79,8 +59,6 @@
     <string name="vault_scanner_error_not_otp">Scanned successfully, but not a valid QR code</string>
     <string name="vault_scanner_action_album">Import from album</string>
     <string name="vault_scanner_result_title">Secret Found</string>
-    <string name="vault_scanner_result_account">Account: %s</string>
-    <string name="vault_scanner_success_save">Successfully saved to vault</string>
     <string name="scanner_waiting_for_permission">Waiting for camera permission…</string>
     <string name="scanner_open_link_failed">Unable to open link</string>
     <string name="scanner_copy_succeeded">Copied securely to clipboard</string>
@@ -89,48 +67,21 @@
 
     <string name="vault_delete_title">Confirm deletion</string>
     <string name="vault_delete_message">Are you sure you want to delete “%s”? This action cannot be undone.</string>
-    <string name="vault_backup_title_export">Set backup password</string>
-    <string name="vault_backup_title_import">Enter backup password</string>
-    <string name="vault_backup_message_export">Please set a password to encrypt the backup file. You will need this password to restore.</string>
-    <string name="vault_backup_message_import">Please enter the password to decrypt the backup file. For emergency backup (.json), you can leave the password empty and continue.</string>
-    <string name="vault_backup_auth_subtitle_export">Please verify identity to export encrypted backup</string>
-    <string name="vault_backup_auth_subtitle_plain_export">Please verify identity to export plain JSON backup</string>
-    <string name="loading_export">Exporting backup…</string>
-    <string name="loading_import">Importing backup…</string>
     <string name="backup_export_success">Export successful</string>
     <string name="backup_import_success">Import successful (icons will sync in background)</string>
-    <string name="backup_error_with_reason">Operation failed: %s</string>
     <string name="backup_error_unknown">Operation failed: Unknown error</string>
-    <string name="backup_error_password_incorrect">Incorrect backup password. Please try again.</string>
-    <string name="backup_error_corrupted">Backup file is corrupted or has an invalid format</string>
-    <string name="backup_error_create_file_failed">Unable to create backup file</string>
-    <string name="backup_directory_set_first">Please set a backup directory first</string>
     <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
     <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
-    <string name="backup_import_mode_title">Import mode</string>
-    <string name="backup_import_mode_overwrite_title">Overwrite existing data</string>
-    <string name="backup_import_mode_overwrite_desc">Delete all existing data, then import backup content</string>
-    <string name="backup_import_mode_append_title">Append new data</string>
-    <string name="backup_import_mode_append_desc">Keep existing data and append backup content into the database</string>
-    <string name="backup_include_media_title">Include media files</string>
-    <string name="backup_include_media_desc">Back up custom icons and attachment images</string>
 
     <!-- Detail additions -->
     <string name="vault_add_password_title">Add Password</string>
     <string name="vault_reveal_info">Verify and reveal details</string>
-    <string name="vault_edit_modify_category">Modify Category</string>
-    <string name="vault_edit_save_category">Save Category</string>
     <string name="vault_edit_modified_hint">Modified, don\'t forget to save</string>
     <string name="vault_detail_associated_domain">Associated Domain</string>
     <string name="vault_detail_associated_package">Associated Package</string>
 
-    <string name="vault_totp_label">Two-Factor Code</string>
-    <string name="vault_edit_otp_title">Edit otp Config</string>
-    <string name="vault_auth_reveal_subtitle">Verify identity to edit otp secret</string>
-    <string name="vault_auth_qr_subtitle">Verify identity to show export QR code</string>
     <string name="vault_export_qr_title">Export otp Secret</string>
     <string name="vault_export_qr_message">Scan this QR code with another authenticator app</string>
-    <string name="auth_to_show">Tap to verify and show</string>
 
     <string name="vault_add_otp_title">Add otp</string>
     <string name="vault_otp_uri_parsed">URI parsed successfully</string>
@@ -148,7 +99,6 @@
     <string name="totp_algorithm">Algorithm</string>
     <string name="twofa_uri_hint">URI</string>
 
-
     <!-- Detail page new strings -->
     <string name="vault_detail_totp_label">Two-Factor Code</string>
     <string name="vault_detail_domain_label">Website Domain or Icon URL</string>
@@ -157,118 +107,31 @@
     <string name="vault_detail_download_icon">Download Icon</string>
     <string name="vault_detail_icon_download_success">Icon downloaded successfully!</string>
     <string name="vault_detail_icon_download_failed">Icon download failed</string>
-    <string name="vault_detail_login_credentials">Login Credentials</string>
     <string name="vault_detail_username">Username</string>
-    <string name="vault_detail_password">Password</string>
     <string name="vault_detail_add_notes">Add notes…</string>
     <string name="vault_detail_no_notes">No notes</string>
 
     <!-- Verification strings -->
     <string name="auth_biometric_unlock">Biometric Unlock</string>
-    <string name="auth_verify_now">Verify Now</string>
     <string name="auth_password_verify">Verify Password</string>
     <string name="auth_password_unlock">Unlock with Password</string>
     <string name="auth_app_password_label">App Password</string>
-    <string name="auth_app_password_confirm_label">Confirm Password</string>
     <string name="auth_set_app_password">Set App Password</string>
-    <string name="auth_change_app_password">Change App Password</string>
-    <string name="auth_disable_app_password">Disable App Password</string>
-    <string name="auth_disable_app_password_desc">Only system authentication will be used after disabling</string>
-    <string name="auth_current_password">Current Password</string>
-    <string name="auth_new_password">New Password</string>
-    <string name="auth_new_password_confirm">Confirm New Password</string>
     <string name="auth_biometric_unavailable_password_required">No biometric available. Please set an app password first.</string>
-    <string name="auth_password_mismatch">Passwords do not match</string>
-    <string name="auth_password_empty">Please enter a password</string>
-    <string name="auth_password_hint">Use at least 6 characters with a mix of letters, numbers, or symbols.</string>
-    <string name="auth_password_set_success">App password set successfully</string>
-    <string name="auth_password_set_failed">Failed to set password</string>
-    <string name="auth_password_change_success">Password changed successfully</string>
-    <string name="auth_password_disabled">App password disabled</string>
-    <string name="auth_password_fields_required">Please fill in all password fields</string>
-    <string name="auth_current_password_required">Please enter current password</string>
-    <string name="auth_unavailable">Authentication unavailable</string>
     <string name="password_strength_weak">Weak</string>
     <string name="password_strength_medium">Medium</string>
     <string name="password_strength_good">Good</string>
     <string name="password_strength_strong">Strong</string>
-    <string name="settings_auth_before_set_app_password">Verify to continue setting app password</string>
 
     <!-- Settings: Appearance -->
-    <string name="settings_group_theme">Theme</string>
-    <string name="settings_theme_mode">Appearance</string>
-    <string name="settings_theme_mode_light">Light</string>
-    <string name="settings_theme_mode_dark">Dark</string>
-    <string name="settings_language">Language</string>
-    <string name="settings_language_choose">Choose language</string>
-    <string name="settings_language_chinese">简体中文</string>
-    <string name="settings_language_english">English</string>
-    <string name="settings_language_japanese">日本語</string>
-    <string name="settings_section_appearance">Appearance</string>
-    <string name="settings_section_security">Security</string>
-    <string name="settings_section_features">Features</string>
-    <string name="settings_section_data">Data</string>
-    <string name="settings_section_other">Other</string>
-    <string name="settings_page_appearance">Theme &amp; language</string>
-    <string name="settings_page_appearance_summary">Mode, language, colors</string>
-    <string name="settings_page_interface">Interface</string>
-    <string name="settings_page_interface_summary">Bars, scrolling, cards</string>
-    <string name="settings_page_security">Unlock &amp; lock</string>
-    <string name="settings_page_security_summary">Password, biometrics, auto-lock</string>
-    <string name="settings_page_privacy">Privacy</string>
-    <string name="settings_page_privacy_summary">Screen protection, flip lock</string>
-    <string name="settings_page_interaction">Actions &amp; autofill</string>
-    <string name="settings_page_interaction_summary">Swipe actions, autofill</string>
-    <string name="settings_page_data">Data &amp; downloads</string>
-    <string name="settings_page_data_summary">Icon downloads and local data</string>
-    <string name="settings_page_backup_restore">Backup &amp; restore</string>
-    <string name="settings_page_backup_restore_summary">Encrypted, JSON and TXT import or export</string>
-    <string name="settings_page_recovery_code">Recovery code</string>
-    <string name="settings_page_recovery_code_summary">Emergency vault unlock</string>
-    <string name="settings_page_general">General</string>
-    <string name="settings_page_general_summary">Cache, logs, about</string>
-    <string name="settings_page_notifications">Messages &amp; notifications</string>
-    <string name="settings_page_notifications_summary">System notifications, app messages and topics</string>
-    <string name="settings_status_bar_notifications">Status bar notifications</string>
-    <string name="settings_status_bar_notifications_summary">Show app information in the system status bar</string>
-    <string name="settings_icon_download_notifications">Icon download notifications</string>
-    <string name="settings_icon_download_notifications_summary">Show results; foreground sync progress remains visible</string>
-    <string name="settings_security_toast_messages">Toast alerts</string>
-    <string name="settings_clipboard_clear_toast">Clipboard clearing</string>
-    <string name="settings_clipboard_clear_toast_summary">Briefly alert after sensitive content is cleared</string>
-    <string name="settings_app_close_toast">App closing</string>
-    <string name="settings_app_close_toast_summary">Briefly alert before the app closes</string>
     <string name="notification_channel_app_messages">App information</string>
     <string name="notification_channel_app_messages_summary">Status bar information such as download results</string>
-    <string name="settings_data_download">Downloads</string>
-    <string name="settings_download_icons">Download icons automatically</string>
-    <string name="settings_download_icons_subtitle">Save website icons</string>
-    <string name="settings_dynamic_color">Dynamic Color</string>
-    <string name="settings_dynamic_color_desc">Use wallpaper colors as app theme</string>
-    <string name="settings_expressive">Material 3 Expressive</string>
-    <string name="settings_expressive_desc">Use bolder shapes, motion, and component feedback</string>
-    <string name="settings_interface_style_title">Corners &amp; spacing</string>
-    <string name="settings_interface_outer_corner_radius">Outer corners</string>
-    <string name="settings_interface_outer_corner_radius_desc">Top of the first item and bottom of the last; also sets the global component corner scale</string>
-    <string name="settings_interface_inner_corner_radius">Inner corners</string>
-    <string name="settings_interface_inner_corner_radius_desc">Controls corners at seams between grouped cards</string>
-    <string name="settings_interface_group_item_spacing">Card spacing</string>
-    <string name="settings_interface_group_item_spacing_desc">Controls the gap between cards in a group</string>
-    <string name="settings_interface_group_content_padding">Content padding</string>
-    <string name="settings_interface_group_content_padding_desc">Controls the distance between card content and its edges</string>
-    <string name="settings_value_dp">%1$d dp</string>
     <!-- Categories -->
     <string name="category_autofill">Autofill</string>
-    <string name="category_unfiled">Uncategorized</string>
-    <string name="category_otp">OTP</string>
 
     <!-- Widget & Shortcuts -->
-    <string name="shortcut_vault_short">Open Vault</string>
-    <string name="shortcut_vault_long">Open Vault and verify identity</string>
-    <string name="shortcut_scanner_short">Scan</string>
 
     <!-- Changelog (kept original URL) -->
-    <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
 
     <!-- Category keyword arrays (translated to English keywords for matching) -->
     <string-array name="category_keywords_personal">
@@ -358,34 +221,6 @@
     </string-array>
 
     <!-- Settings: Interface behavior -->
-    <string name="settings_interface_immersive_title">Immersive experience</string>
-    <string name="settings_interface_hide_status_bar">Hide status bar</string>
-    <string name="settings_interface_hide_status_bar_desc">Free up space at the top when scrolling</string>
-    <string name="settings_interface_top_bar_collapsible">Collapsible top bar</string>
-    <string name="settings_interface_top_bar_collapsible_desc">Shrink the top bar on scroll for more content</string>
-    <string name="settings_interface_tab_bar_collapsible">Collapsible tab bar</string>
-    <string name="settings_interface_tab_bar_collapsible_desc">Auto-hide tabs when scrolling</string>
-    <string name="settings_interface_vault_tabs_section">Vault tabs</string>
-    <string name="settings_interface_tab_threshold_label">Tab threshold</string>
-    <string name="settings_interface_tab_threshold_desc">When tab count is within threshold, tabs are evenly distributed; otherwise they scroll horizontally.</string>
-
-    <string name="settings_system_notifications">System notifications</string>
-    <string name="settings_system_notifications_summary">Show notifications in the system status bar</string>
-    <string name="settings_app_notices">In-app messages</string>
-    <string name="settings_optional_notices">All app messages</string>
-    <string name="settings_optional_notices_summary">When off, only required security and data alerts are shown</string>
-    <string name="settings_topic_clipboard">Clipboard</string>
-    <string name="settings_topic_clipboard_summary">Notify when sensitive content is cleared</string>
-    <string name="settings_topic_app_lifecycle">App lifecycle</string>
-    <string name="settings_topic_app_lifecycle_summary">Notify before the app closes</string>
-    <string name="settings_topic_icon_download">Icon downloads</string>
-    <string name="settings_topic_icon_download_summary">Notify about icon download results</string>
-    <string name="settings_topic_backup">Backup</string>
-    <string name="settings_topic_backup_summary">Notify about backup import and export results</string>
-    <string name="settings_topic_security">Security</string>
-    <string name="settings_topic_security_summary">Notify about authentication and recovery changes</string>
-    <string name="settings_topic_database">Data</string>
-    <string name="settings_topic_database_summary">Notify about database failures and recovery results</string>
 
     <string name="notice_clipboard_cleared">Sensitive clipboard content was cleared</string>
     <string name="notice_clipboard_clear_failed">Could not clear sensitive clipboard content</string>
@@ -401,79 +236,18 @@
     <string name="sort_last_used">Last used</string>
     <string name="sort_entry_type">Entry type</string>
     <string name="not_set">Not set</string>
-    <string name="backup_plain_export_success">Plaintext backup exported</string>
     <string name="vault_plain_export_db_error_title">Unable to open database</string>
     <string name="vault_plain_export_db_error_message">The database key or schema does not match. Try again first. If the problem continues, you can verify your identity, preserve the failed database, attachments, and images, and then create a new empty database. Existing data will not be overwritten automatically.</string>
     <string name="vault_database_retry">Retry opening database</string>
     <string name="vault_plain_export_db_error_dismiss">Close app</string>
-    <string name="database_recovery_clear_action">Permanently clear vault database</string>
-    <string name="database_recovery_clear_confirm_title">Clear vault data?</string>
-    <string name="database_recovery_clear_confirm_message">This permanently deletes the database, attachments, and custom images and cannot be undone. App settings and authentication methods will be kept. You will need to verify your identity again after confirming.</string>
-    <string name="database_recovery_clear_confirm">Verify and clear</string>
     <string name="database_recovery_create_new_action">Preserve failed database and create a new one</string>
     <string name="otp_type">OTP type</string>
     <string name="otp_secret_encoding">Secret encoding</string>
     <string name="otp_counter">Counter</string>
     <string name="password_strength_very_weak">Very weak</string>
-    <string name="settings_topic_language_font">Language &amp; font</string>
-    <string name="settings_font">Font</string>
-    <string name="settings_font_system">Use system font</string>
-    <string name="settings_font_app">Use bundled app font</string>
     <string name="metadata_created_at">Created: %1$s</string>
     <string name="metadata_last_modified">Last modified: %1$s</string>
-    <string name="log_encrypted_title">Encrypted diagnostic logs</string>
-    <string name="log_encrypted_subtitle">Keep diagnostic records for 24 hours</string>
-    <string name="log_view_title">View logs</string>
-    <string name="log_export_action">Export logs</string>
-    <string name="log_export_action_subtitle">Create a temporary plaintext file after authentication</string>
-    <string name="log_clear_action">Clear logs</string>
-    <string name="log_loading">Loading logs…</string>
-    <string name="log_empty">No logs</string>
-    <string name="log_clear_confirm_message">Clear all log files? This action cannot be undone.</string>
-    <string name="log_clear_confirm_action">Clear</string>
-    <string name="backup_format_picker_title">Choose export format</string>
-    <string name="backup_format_picker_description">Each format has separate export options. Encrypted backups are for restoration, JSON is for migration, and TXT is for reading.</string>
-    <string name="backup_format_encrypted">Encrypted backup</string>
-    <string name="backup_format_encrypted_description">Complete, self-describing, password-encrypted, and restorable</string>
-    <string name="backup_format_json">JSON backup</string>
-    <string name="backup_format_json_description">Structured plaintext data for migration and external processing</string>
-    <string name="backup_format_text">Readable TXT</string>
-    <string name="backup_format_text_description">One field per line, without images or attachments</string>
-    <string name="backup_password_label">Backup password</string>
-    <string name="backup_password_warning">The password is not saved. A lost password cannot be recovered.</string>
-    <string name="backup_content_scope">Content scope</string>
-    <string name="backup_include_icons">Custom icons</string>
-    <string name="backup_include_icons_description">Export entry icons stored by the app</string>
-    <string name="backup_include_attachments">Attachments and images</string>
-    <string name="backup_include_attachments_description">Export committed attachments; this can greatly increase file size</string>
-    <string name="backup_include_deleted">Trash entries</string>
-    <string name="backup_include_deleted_description">Include entries that have not been permanently deleted</string>
-    <string name="backup_entry_types">Entry types</string>
-    <string name="backup_clear_selection">Clear</string>
-    <string name="backup_select_all">Select all</string>
-    <string name="backup_entry_type_required">Select at least one entry type</string>
-    <string name="backup_choose_destination_after_confirm">Choose a save location after confirmation</string>
-    <string name="backup_save_to_configured_directory">Will be saved to the default folder: %1$s</string>
-    <string name="backup_start_export">Start export</string>
-    <string name="backup_encrypted_security_notice">Encrypted with an independent random salt and nonce; can contain complete restoration data.</string>
-    <string name="backup_json_security_notice">JSON is plaintext and may contain passwords, OTP secrets, and attachment data. Save it only to a trusted location.</string>
-    <string name="backup_text_security_notice">TXT is plaintext and cannot perform a complete restore. It contains only human-readable fields.</string>
-    <string name="backup_import_options_title">Import and restore</string>
-    <string name="backup_import_format_description">The format is detected from the content. Encrypted Passly backups require the correct password; JSON and third-party formats can leave it blank.</string>
-    <string name="backup_import_mode">Import mode</string>
-    <string name="backup_import_append">Merge</string>
-    <string name="backup_import_append_description">Keep current data and add entries from the backup</string>
-    <string name="backup_import_overwrite">Overwrite</string>
-    <string name="backup_import_overwrite_description">Clear the current vault before restoration; this is high risk</string>
-    <string name="backup_import_password_label">Backup password (if required)</string>
-    <string name="backup_import_atomicity_notice">The complete file is verified before import. A failure leaves no partial restoration data.</string>
-    <string name="backup_confirm_overwrite_import">Confirm overwrite and import</string>
-    <string name="backup_start_import">Start import</string>
-    <string name="backup_encrypted_options_title">Encrypted backup options</string>
-    <string name="backup_json_options_title">JSON export options</string>
-    <string name="backup_text_options_title">TXT export options</string>
     <string name="continue_action">Continue</string>
-    <string name="configured">Configured</string>
     <string name="auth_verify_identity">Verify identity</string>
     <string name="auth_method_biometric">Biometrics</string>
     <string name="auth_method_recovery_code">Use recovery code</string>
@@ -485,70 +259,4 @@
     <string name="auth_purpose_export_diagnostics">Verify to export diagnostics</string>
     <string name="auth_purpose_recover_database">Verify to preserve the failed database and create a new one</string>
     <string name="auth_purpose_clear_database">Verify to clear vault data</string>
-    <string name="security_auth_section">Authentication</string>
-    <string name="security_lock_on_background">Lock immediately</string>
-    <string name="security_lock_on_background_description">Lock after leaving the app</string>
-    <string name="security_auto_lock">Auto-lock</string>
-    <string name="security_auto_lock_delay">Auto-lock delay</string>
-    <string name="duration_seconds">%1$d seconds</string>
-    <string name="duration_minutes">%1$d minutes</string>
-    <string name="duration_minutes_seconds">%1$d min %2$d sec</string>
-    <string name="security_app_password">Set password</string>
-    <string name="security_app_password_description">Unlock the app with a password independent of the system screen lock</string>
-    <string name="security_biometric_unlock">Biometric unlock</string>
-    <string name="security_biometric_enabled_description">Use strong biometrics to unlock the vault</string>
-    <string name="security_biometric_disabled_description">Existing credentials must be verified first</string>
-    <string name="security_invalidate_biometric_key">Invalidate key when biometrics change</string>
-    <string name="security_invalidate_biometric_key_enabled">Re-enable after adding or removing biometrics</string>
-    <string name="security_invalidate_biometric_key_disabled">Keep the current key when system enrollment changes</string>
-    <string name="security_protection_section">Security protection</string>
-    <string name="security_secure_content">Secure content</string>
-    <string name="security_secure_content_description">Block screenshots and recordings, and hide the recent-apps preview</string>
-    <string name="security_flip_to_lock">Flip to lock</string>
-    <string name="security_flip_to_lock_description">Lock the vault immediately when the screen faces down</string>
-    <string name="security_flip_exit">Exit application</string>
-    <string name="security_flip_exit_description">Exit the app and clear it from recent tasks</string>
-    <string name="autofill_mode_section">Autofill mode</string>
-    <string name="autofill_mode_title">Fill method</string>
-    <string name="autofill_mode_inline">Keyboard suggestions</string>
-    <string name="autofill_mode_bottom_sheet">Bottom sheet</string>
-    <string name="swipe_gesture_section">Quick gestures</string>
-    <string name="swipe_gesture_enabled">List swipe gestures</string>
-    <string name="swipe_gesture_enabled_description">Swipe entries left or right to trigger quick actions</string>
-    <string name="swipe_gesture_left_action">Left-swipe action</string>
-    <string name="swipe_gesture_right_action">Right-swipe action</string>
-    <string name="swipe_action_delete">Delete</string>
-    <string name="swipe_action_detail">Details</string>
-    <string name="swipe_action_copy_password">Copy password</string>
-    <string name="swipe_action_copy_username">Copy username</string>
-    <string name="swipe_select_right_action">Choose right-swipe action</string>
-    <string name="swipe_select_left_action">Choose left-swipe action</string>
-    <string name="backup_clear_directory_title">Clear backup folder</string>
-    <string name="backup_clear_directory_message">Only the folder setting will be cleared. Exported backup files will not be deleted.</string>
-    <string name="general_cache_section">Cache</string>
-    <string name="general_clear_cache">Clear cache</string>
-    <string name="general_about_section">About</string>
-    <string name="general_about_passly">About Passly</string>
-    <string name="general_terms">Terms of service</string>
-    <string name="general_privacy_policy">Privacy policy</string>
-    <string name="general_open_source_licenses">Open-source licenses</string>
-    <string name="backup_restore_section">Backup and restore</string>
-    <string name="backup_export_action">Export</string>
-    <string name="backup_export_action_description">Encrypted backup, JSON, or readable text</string>
-    <string name="backup_import_action">Import</string>
-    <string name="backup_import_action_description">Automatically detect Passly and compatible formats</string>
-    <string name="backup_storage_section">Storage location</string>
-    <string name="backup_default_directory">Default backup folder</string>
-    <string name="backup_test_write">Test write access</string>
-    <string name="backup_recent_export">Most recent export</string>
-    <string name="backup_clear_default_directory">Clear default folder</string>
-    <string name="data_dangerous_actions">Dangerous actions</string>
-    <string name="data_clear_database_description">Delete all entries, attachments, and custom images; settings and authentication methods are kept</string>
-    <string name="data_clearing_database">Clearing…</string>
-    <string name="app_password_manage_title">Manage app unlock password</string>
-    <string name="app_password_manage_description">Change the password or disable this feature.</string>
-    <string name="app_password_change_action">Change password</string>
-    <string name="app_password_disable_action">Disable</string>
-    <string name="recovery_code_confirm_saved">I saved it securely; enable now</string>
-    <string name="recovery_code_discard_draft">Discard this draft</string>
 </resources>

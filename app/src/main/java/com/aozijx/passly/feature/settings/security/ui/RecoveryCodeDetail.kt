@@ -61,7 +61,10 @@ fun RecoveryCodeDetail(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = stringResource(R.string.settings_recovery_code_save_hint),
+            text = stringResource(
+                R.string.settings_recovery_code_save_hint,
+                stringResource(R.string.app_name)
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -161,7 +164,7 @@ fun RecoveryCodeDetail(
                     onRegenerate()
                 }) {
                     Text(
-                        stringResource(R.string.confirm),
+                        stringResource(R.string.settings_confirm),
                         color = MaterialTheme.colorScheme.error
                     )
                 }

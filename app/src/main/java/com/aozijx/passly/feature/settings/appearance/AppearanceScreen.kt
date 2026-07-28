@@ -71,7 +71,7 @@ internal fun AppearanceDetail(
                     selected = state.themeMode,
                     selectedLabel = stringResource(state.themeMode.labelRes()),
                     options = listOf(
-                        ThemeMode.SYSTEM to stringResource(R.string.follow_system),
+                        ThemeMode.SYSTEM to stringResource(R.string.settings_follow_system),
                         ThemeMode.LIGHT to stringResource(R.string.settings_theme_mode_light),
                         ThemeMode.DARK to stringResource(R.string.settings_theme_mode_dark)
                     ),
@@ -83,7 +83,7 @@ internal fun AppearanceDetail(
                     key = "appearance.dynamic_color",
                     icon = Icons.Default.Palette,
                     title = stringResource(R.string.settings_dynamic_color),
-                    subtitle = stringResource(R.string.settings_dynamic_color_desc),
+                    subtitle = stringResource(R.string.settings_dynamic_color_description),
                     checked = state.isDynamicColor,
                     onCheckedChange = onDynamicColorChange
                 ),
@@ -91,7 +91,7 @@ internal fun AppearanceDetail(
                     key = "appearance.expressive",
                     icon = Icons.Default.AutoAwesome,
                     title = stringResource(R.string.settings_expressive),
-                    subtitle = stringResource(R.string.settings_expressive_desc),
+                    subtitle = stringResource(R.string.settings_expressive_description),
                     checked = state.isExpressive,
                     onCheckedChange = onExpressiveEnabledChange
                 ),

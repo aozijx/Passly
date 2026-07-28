@@ -25,7 +25,7 @@ internal fun SettingsScreenDialogsHost(
 ) {
     if (state.showRightActionDialog) {
         SwipeActionSelectDialog(
-            stringResource(R.string.swipe_select_right_action),
+            stringResource(R.string.settings_swipe_select_right_action),
             state.swipeRightAction,
             {
                 actions.onDialogEvent(SettingsDialogEvent.SetSwipeRightAction(it))
@@ -37,7 +37,7 @@ internal fun SettingsScreenDialogsHost(
 
     if (state.showLeftActionDialog) {
         SwipeActionSelectDialog(
-            stringResource(R.string.swipe_select_left_action),
+            stringResource(R.string.settings_swipe_select_left_action),
             state.swipeLeftAction,
             {
                 actions.onDialogEvent(SettingsDialogEvent.SetSwipeLeftAction(it))
@@ -52,8 +52,8 @@ internal fun SettingsScreenDialogsHost(
             onDismissRequest = {
                 actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
             },
-            title = { Text(stringResource(R.string.backup_clear_directory_title)) },
-            text = { Text(stringResource(R.string.backup_clear_directory_message)) },
+            title = { Text(stringResource(R.string.settings_backup_clear_directory_title)) },
+            text = { Text(stringResource(R.string.settings_backup_clear_directory_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     if (!state.backupDirectoryUri.isNullOrBlank()) {
@@ -70,7 +70,7 @@ internal fun SettingsScreenDialogsHost(
                     actions.onDialogEvent(SettingsDialogEvent.ClearBackupDirectory)
                     actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
                 }) {
-                    Text(stringResource(R.string.backup_clear_selection))
+                    Text(stringResource(R.string.settings_backup_clear_selection))
                 }
             },
             dismissButton = {

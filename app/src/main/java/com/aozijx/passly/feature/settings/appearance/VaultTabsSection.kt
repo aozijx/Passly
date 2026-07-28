@@ -84,7 +84,7 @@ fun VaultTabsSettingsSection(
                 )
 
                 Text(
-                    text = stringResource(R.string.settings_interface_tab_threshold_desc),
+                    text = stringResource(R.string.settings_interface_tab_threshold_description),
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))

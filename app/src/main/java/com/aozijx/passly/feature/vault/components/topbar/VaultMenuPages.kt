@@ -74,7 +74,7 @@ internal fun MainMenuContent(
     )
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     DropdownMenuItem(
-        text = { Text(stringResource(R.string.settings)) },
+        text = { Text(stringResource(R.string.settings_title)) },
         onClick = {
             onDismissRequest()
             onSettingsClick()

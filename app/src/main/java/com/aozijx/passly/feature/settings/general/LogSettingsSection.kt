@@ -47,13 +47,13 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
     var logContent by remember { mutableStateOf<String?>(null) }
     var logSize by remember { mutableStateOf("0 B") }
 
-    val logManagementTitle = stringResource(R.string.log_management_title)
-    val encryptedLogTitle = stringResource(R.string.log_encrypted_title)
-    val encryptedLogSubtitle = stringResource(R.string.log_encrypted_subtitle)
-    val viewLogsTitle = stringResource(R.string.log_view_title)
-    val exportLogsTitle = stringResource(R.string.log_export_action)
-    val exportLogsSubtitle = stringResource(R.string.log_export_action_subtitle)
-    val clearLogsTitle = stringResource(R.string.log_clear_action)
+    val logManagementTitle = stringResource(R.string.settings_log_management_title)
+    val encryptedLogTitle = stringResource(R.string.settings_log_encrypted_title)
+    val encryptedLogSubtitle = stringResource(R.string.settings_log_encrypted_subtitle)
+    val viewLogsTitle = stringResource(R.string.settings_log_view_title)
+    val exportLogsTitle = stringResource(R.string.settings_log_export_action)
+    val exportLogsSubtitle = stringResource(R.string.settings_log_export_action_subtitle)
+    val clearLogsTitle = stringResource(R.string.settings_log_clear_action)
 
     LaunchedEffect(showViewerDialog) {
         if (showViewerDialog) {
@@ -133,8 +133,8 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
 @Composable
 private fun LogViewerSheet(content: String?, onDismiss: () -> Unit) {
     val displayText = when {
-        content == null -> stringResource(R.string.log_loading)
-        content.isBlank() -> stringResource(R.string.log_empty)
+        content == null -> stringResource(R.string.settings_log_loading)
+        content.isBlank() -> stringResource(R.string.settings_log_empty)
         else -> content
     }
     ModalBottomSheet(
@@ -166,11 +166,11 @@ private fun LogViewerSheet(content: String?, onDismiss: () -> Unit) {
 private fun ClearLogsConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.log_clear_action)) },
-        text = { Text(stringResource(R.string.log_clear_confirm_message)) },
+        title = { Text(stringResource(R.string.settings_log_clear_action)) },
+        text = { Text(stringResource(R.string.settings_log_clear_confirm_message)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.log_clear_confirm_action))
+                Text(stringResource(R.string.settings_log_clear_confirm_action))
             }
         },
         dismissButton = {

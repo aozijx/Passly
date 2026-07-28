@@ -40,15 +40,15 @@ internal fun DataManagementDetail(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
-        SettingsSectionTitle(text = stringResource(R.string.data_dangerous_actions))
+        SettingsSectionTitle(text = stringResource(R.string.settings_data_dangerous_actions))
         RoundedGroup(
             containerColor = MaterialTheme.colorScheme.errorContainer,
             items = listOf(
                 settingsGroupItem(
                     key = "data.clear_database",
                     icon = Icons.Default.DeleteForever,
-                    title = stringResource(R.string.database_recovery_clear_action),
-                    subtitle = stringResource(R.string.data_clear_database_description),
+                    title = stringResource(R.string.settings_database_recovery_clear_action),
+                    subtitle = stringResource(R.string.settings_data_clear_database_description),
                     onClick = { showClearConfirmation = true }
                 )
             )
@@ -60,9 +60,9 @@ internal fun DataManagementDetail(
             onDismissRequest = {
                 if (!isClearingDatabase) showClearConfirmation = false
             },
-            title = { Text(stringResource(R.string.database_recovery_clear_confirm_title)) },
+            title = { Text(stringResource(R.string.settings_database_recovery_clear_confirm_title)) },
             text = {
-                Text(stringResource(R.string.database_recovery_clear_confirm_message))
+                Text(stringResource(R.string.settings_database_recovery_clear_confirm_message))
             },
             confirmButton = {
                 TextButton(
@@ -74,9 +74,9 @@ internal fun DataManagementDetail(
                 ) {
                     Text(
                         text = if (isClearingDatabase) {
-                            stringResource(R.string.data_clearing_database)
+                            stringResource(R.string.settings_data_clearing_database)
                         } else {
-                            stringResource(R.string.database_recovery_clear_confirm)
+                            stringResource(R.string.settings_database_recovery_clear_confirm)
                         },
                         color = MaterialTheme.colorScheme.error
                     )

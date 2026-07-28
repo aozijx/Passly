@@ -14,22 +14,22 @@ internal fun AutofillSettingsSection(
     onOpenAutofillSettings: () -> Unit,
     onToggleAutofillUiMode: () -> Unit
 ) {
-    SettingsSectionTitle(text = stringResource(R.string.autofill_mode_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_autofill_mode_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "interaction.autofill_settings",
-                title = stringResource(R.string.vault_enable_autofill),
-                subtitle = stringResource(R.string.vault_toast_enable_autofill_manual),
+                title = stringResource(R.string.settings_vault_enable_autofill),
+                subtitle = stringResource(R.string.settings_vault_toast_enable_autofill_manual),
                 onClick = onOpenAutofillSettings
             ),
             navigationSettingsGroupItem(
                 key = "interaction.autofill_mode",
-                title = stringResource(R.string.autofill_mode_title),
+                title = stringResource(R.string.settings_autofill_mode_title),
                 value = stringResource(
                     when (autofillUiMode) {
-                        AutofillUiMode.SYSTEM_INLINE -> R.string.autofill_mode_inline
-                        AutofillUiMode.BOTTOM_SHEET -> R.string.autofill_mode_bottom_sheet
+                        AutofillUiMode.SYSTEM_INLINE -> R.string.settings_autofill_mode_inline
+                        AutofillUiMode.BOTTOM_SHEET -> R.string.settings_autofill_mode_bottom_sheet
                     }
                 ),
                 onClick = onToggleAutofillUiMode

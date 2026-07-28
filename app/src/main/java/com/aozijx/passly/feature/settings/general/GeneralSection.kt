@@ -16,13 +16,13 @@ fun CacheSettingsSection(
     isLoading: Boolean,
     onClearCache: () -> Unit
 ) {
-    SettingsSectionTitle(text = stringResource(R.string.general_cache_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_general_cache_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "general.clear_cache",
                 icon = Icons.Default.DeleteSweep,
-                title = stringResource(R.string.general_clear_cache),
+                title = stringResource(R.string.settings_general_clear_cache),
                 value = cacheSize,
                 isLoading = isLoading,
                 onClick = onClearCache
@@ -37,32 +37,35 @@ fun AboutSettingsSection(
     onAppDetailsClick: () -> Unit,
     onAboutClick: () -> Unit
 ) {
-    SettingsSectionTitle(text = stringResource(R.string.general_about_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_general_about_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "general.about",
                 icon = Icons.Default.Info,
-                title = stringResource(R.string.general_about_passly),
+                title = stringResource(
+                    R.string.settings_general_about_app,
+                    stringResource(R.string.app_name)
+                ),
                 value = appVersion,
                 onClick = onAppDetailsClick
             ),
             navigationSettingsGroupItem(
                 key = "general.terms",
                 iconPlaceholder = true,
-                title = stringResource(R.string.general_terms),
+                title = stringResource(R.string.settings_general_terms),
                 onClick = onAboutClick
             ),
             navigationSettingsGroupItem(
                 key = "general.privacy_policy",
                 iconPlaceholder = true,
-                title = stringResource(R.string.general_privacy_policy),
+                title = stringResource(R.string.settings_general_privacy_policy),
                 onClick = onAboutClick
             ),
             navigationSettingsGroupItem(
                 key = "general.open_source",
                 iconPlaceholder = true,
-                title = stringResource(R.string.general_open_source_licenses),
+                title = stringResource(R.string.settings_general_open_source_licenses),
                 onClick = onAboutClick
             )
         )

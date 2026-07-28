@@ -53,22 +53,22 @@ fun LockAuthSettingsSection(
         .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
     var sliderValue by remember(lockTimeout) { mutableFloatStateOf(currentSeconds) }
 
-    SettingsSectionTitle(text = stringResource(R.string.security_auth_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_security_auth_section))
     RoundedGroup(
         items = listOf(
 
             switchSettingsGroupItem(
                 key = "security.lock_on_background",
                 icon = Icons.Default.Lock,
-                title = stringResource(R.string.security_lock_on_background),
-                subtitle = stringResource(R.string.security_lock_on_background_description),
+                title = stringResource(R.string.settings_security_lock_on_background),
+                subtitle = stringResource(R.string.settings_security_lock_on_background_description),
                 checked = isLockOnBackground,
                 onCheckedChange = onLockOnBackgroundChange
             ),
             navigationSettingsGroupItem(
                 key = "security.lock_timeout",
                 icon = Icons.Default.Timer,
-                title = stringResource(R.string.security_auto_lock),
+                title = stringResource(R.string.settings_security_auto_lock),
                 value = formatLockTimeoutText(lockTimeout),
                 onClick = { expanded = !expanded }
             ),
@@ -83,7 +83,7 @@ fun LockAuthSettingsSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.security_auto_lock_delay),
+                            text = stringResource(R.string.settings_security_auto_lock_delay),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
@@ -111,7 +111,7 @@ fun LockAuthSettingsSection(
                     ) {
                         Text(
                             text = stringResource(
-                                R.string.duration_seconds,
+                                R.string.settings_duration_seconds,
                                 SLIDER_MIN_SECONDS.roundToInt()
                             ),
                             style = MaterialTheme.typography.labelSmall,
@@ -119,7 +119,7 @@ fun LockAuthSettingsSection(
                         )
                         Text(
                             text = stringResource(
-                                R.string.duration_minutes,
+                                R.string.settings_duration_minutes,
                                 (SLIDER_MAX_SECONDS / 60f).roundToInt()
                             ),
                             style = MaterialTheme.typography.labelSmall,
@@ -131,22 +131,22 @@ fun LockAuthSettingsSection(
             navigationSettingsGroupItem(
                 key = "security.app_password",
                 icon = Icons.Default.Lock,
-                title = stringResource(R.string.security_app_password),
-                subtitle = stringResource(R.string.security_app_password_description),
+                title = stringResource(R.string.settings_security_app_password),
+                subtitle = stringResource(R.string.settings_security_app_password_description),
                 value = stringResource(
-                    if (isAppPasswordEnabled) R.string.configured else R.string.not_set
+                    if (isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set
                 ),
                 onClick = onAppPasswordClick
             ),
             switchSettingsGroupItem(
                 key = "security.biometric_enabled",
                 icon = Icons.Default.Fingerprint,
-                title = stringResource(R.string.security_biometric_unlock),
+                title = stringResource(R.string.settings_security_biometric_unlock),
                 subtitle = stringResource(
                     if (isBiometricEnabled) {
-                        R.string.security_biometric_enabled_description
+                        R.string.settings_security_biometric_enabled_description
                     } else {
-                        R.string.security_biometric_disabled_description
+                        R.string.settings_security_biometric_disabled_description
                     }
                 ),
                 checked = isBiometricEnabled,
@@ -156,12 +156,12 @@ fun LockAuthSettingsSection(
                 key = "security.invalidate_biometric",
                 visible = isBiometricEnabled,
                 icon = Icons.Default.Fingerprint,
-                title = stringResource(R.string.security_invalidate_biometric_key),
+                title = stringResource(R.string.settings_security_invalidate_biometric_key),
                 subtitle = stringResource(
                     if (isInvalidateKeyOnBioChange) {
-                        R.string.security_invalidate_biometric_key_enabled
+                        R.string.settings_security_invalidate_biometric_key_enabled
                     } else {
-                        R.string.security_invalidate_biometric_key_disabled
+                        R.string.settings_security_invalidate_biometric_key_disabled
                     }
                 ),
                 checked = isInvalidateKeyOnBioChange,
@@ -175,12 +175,12 @@ fun LockAuthSettingsSection(
 private fun formatLockTimeoutText(timeoutMs: Long): String {
     val seconds = (timeoutMs / 1000L).coerceAtLeast(1L)
     return when {
-        seconds < 60L -> stringResource(R.string.duration_seconds, seconds)
+        seconds < 60L -> stringResource(R.string.settings_duration_seconds, seconds)
         seconds % 60L == 0L ->
-            stringResource(R.string.duration_minutes, seconds / 60L)
+            stringResource(R.string.settings_duration_minutes, seconds / 60L)
 
         else -> stringResource(
-            R.string.duration_minutes_seconds,
+            R.string.settings_duration_minutes_seconds,
             seconds / 60L,
             seconds % 60L
         )

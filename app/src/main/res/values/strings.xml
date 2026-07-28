@@ -12,12 +12,8 @@
     <string name="back">返回</string>
     <string name="search">搜索</string>
     <string name="more">更多</string>
-    <string name="settings">设置</string>
     <string name="add">添加</string>
-    <string name="confirm">确定</string>
     <string name="paste">粘贴</string>
-    <string name="advanced_config">高级配置</string>
-    <string name="follow_system">跟随系统</string>
     <string name="username">账号</string>
     <string name="password">密码</string>
     <string name="title">标题</string>
@@ -38,21 +34,9 @@
     <string name="not_set">未设置</string>
 
     <!-- Autofill 服务相关 -->
-    <string name="autofill_service_name">Passly 自动填充</string>
-    <string name="AutoFill_icon" translatable="false">icon</string>
-    <string name="autofill_auth_subtitle">验证以自动填充</string>
     <string name="autofill_entry_compact_title">选择账号</string>
-    <string name="autofill_save_prompt_title">保存 %s ？</string>
-    <string name="autofill_save_prompt_description">保存 %s 到 Passly？</string>
-    <string name="autofill_save_icon_description">应用图标</string>
-    <string name="autofill_no_suggestions">Passly 暂无匹配建议</string>
-    <string name="autofill_locked">Passly 已锁定</string>
-    <string name="autofill_save_failed_repository">保存失败</string>
     <string name="autofill_pending_verification">待验证项</string>
-    <string name="autofill_match_app">应用匹配</string>
-    <string name="autofill_match_domain">域名匹配</string>
-    <string name="autofill_match_unknown">候选</string>
-    <string name="autofill_prompt_title">使用 Passly 自动填充</string>
+    <string name="autofill_prompt_title">使用 %1$s 自动填充</string>
     <string name="select">选择</string>
     <plurals name="autofill_trigger_count">
         <item quantity="other">找到 %d 个匹配账号 · 点击选择</item>
@@ -62,8 +46,6 @@
 
     <!-- Vault 相关 -->
     <string name="vault_auth_subtitle">验证以访问保险箱</string>
-    <string name="vault_auth_error">安全验证失败: %s</string>
-    <string name="vault_auth_failed">验证未通过</string>
     <string name="main_notification_permission_denied">通知权限未开启，同步进度不可见</string>
     <string name="vault_locked_title">保险箱已锁定</string>
     <string name="vault_auth_decrypt_subtitle_generic">验证以继续操作</string>
@@ -77,12 +59,7 @@
     <string name="vault_menu_sort">排序方式</string>
     <string name="vault_menu_hide_totp">隐藏验证码</string>
     <string name="vault_menu_show_totp">显示验证码</string>
-    <string name="vault_enable_autofill">开启自动填充</string>
-    <string name="vault_toast_enable_autofill_manual">在系统设置中开启自动填充</string>
-    <string name="vault_toast_save_icon_failed">图片保存失败</string>
     <string name="msg_copy_success">%1$s已复制</string>
-    <string name="vault_export">导出备份</string>
-    <string name="vault_import">导入恢复</string>
     <string name="tab_all">全部</string>
     <string name="otp">otp</string>
 
@@ -100,8 +77,6 @@
     <string name="vault_scanner_error_not_otp">非有效二维码</string>
     <string name="vault_scanner_action_album">相册导入</string>
     <string name="vault_scanner_result_title">发现密钥</string>
-    <string name="vault_scanner_result_account">账户: %s</string>
-    <string name="vault_scanner_success_save">已成功保存到保险库</string>
     <string name="scanner_waiting_for_permission">等待相机权限…</string>
     <string name="scanner_open_link_failed">无法打开链接</string>
     <string name="scanner_copy_succeeded">已安全复制到剪贴板</string>
@@ -110,63 +85,27 @@
 
     <string name="vault_delete_title">确认删除</string>
     <string name="vault_delete_message">确定要删除 “%s” 吗？此操作不可撤销。</string>
-    <string name="vault_backup_title_export">设置备份密码</string>
-    <string name="vault_backup_title_import">输入备份密码</string>
-    <string name="vault_backup_message_export">设置备份加密密码，恢复时需验证</string>
-    <string name="vault_backup_message_import">输入备份密码解密。JSON 格式可留空。</string>
-    <string name="vault_backup_auth_subtitle_export">验证以导出加密备份</string>
-    <string name="vault_backup_auth_subtitle_plain_export">验证以导出明文备份</string>
-    <string name="backup_plain_export_auth_required">完成安全验证后执行明文导出</string>
-    <string name="loading_export">正在导出备份…</string>
-    <string name="loading_import">正在导入备份…</string>
     <string name="backup_export_success">导出成功</string>
     <string name="backup_import_success">导入成功，图标后台同步中</string>
-    <string name="backup_plain_export_success">明文备份已导出</string>
-    <string name="backup_error_with_reason">操作失败：%s</string>
     <string name="backup_error_unknown">操作失败：未知错误</string>
-    <string name="backup_error_password_incorrect">备份密码错误，请核对后重试</string>
-    <string name="backup_error_corrupted">备份文件损坏</string>
-    <string name="backup_error_create_file_failed">无法创建备份文件</string>
-    <string name="backup_directory_set_first">先设置备份目录</string>
     <string name="backup_directory_permission_ok">目录写入权限正常</string>
     <string name="backup_directory_permission_failed">目录写入失败，请重新选择</string>
-    <string name="backup_import_mode_title">导入模式</string>
-    <string name="backup_import_mode_overwrite_title">覆盖现有数据</string>
-    <string name="backup_import_mode_overwrite_desc">删除现有数据，导入备份</string>
-    <string name="backup_import_mode_append_title">追加新数据</string>
-    <string name="backup_import_mode_append_desc">保留现有数据，追加备份内容</string>
-    <string name="backup_use_recovery_code">使用恢复码加密</string>
-    <string name="backup_recovery_code_label">恢复码</string>
-    <string name="backup_include_media_title">包含媒体文件</string>
-    <string name="backup_include_media_desc">备份图标和附件</string>
     <string name="vault_plain_export_db_error_title">数据库无法打开</string>
     <string name="vault_plain_export_db_error_message">数据库密钥或结构不匹配。请先重试；如果仍然失败，可以在验证身份后保留故障数据库、附件和图片，再创建一个空的新数据库。旧数据不会被自动覆盖。</string>
     <string name="vault_database_retry">重试打开数据库</string>
     <string name="vault_plain_export_db_error_dismiss">关闭应用</string>
-    <string name="database_recovery_clear_action">永久清除保险库数据库</string>
-    <string name="database_recovery_clear_confirm_title">确定清除保险库数据？</string>
-    <string name="database_recovery_clear_confirm_message">此操作会永久删除数据库、附件和自定义图片，无法撤销。应用设置和认证方式会保留；确认后还需要重新验证身份。</string>
-    <string name="database_recovery_clear_confirm">验证并清除</string>
     <string name="database_recovery_create_new_action">保留故障库并创建新库</string>
 
     <!-- 详情与编辑 -->
     <string name="vault_add_password_title">添加密码项</string>
     <string name="vault_reveal_info">验证并显示详情</string>
-    <string name="vault_decrypt_failed">解密失败，请重新验证</string>
-    <string name="vault_edit_modify_category">修改分类</string>
-    <string name="vault_edit_save_category">保存分类</string>
     <string name="vault_edit_modified_hint">已修改，别忘了保存</string>
     <string name="vault_detail_associated_domain">关联域名</string>
     <string name="vault_detail_associated_package">关联包名</string>
 
     <!-- 详情页补充 -->
-    <string name="vault_totp_label">动态验证码</string>
-    <string name="vault_edit_otp_title">编辑 otp 配置</string>
-    <string name="vault_auth_reveal_subtitle">验证以编辑 otp 密钥</string>
-    <string name="vault_auth_qr_subtitle">验证以导出二维码</string>
     <string name="vault_export_qr_title">导出 otp 密钥</string>
     <string name="vault_export_qr_message">用其他设备扫描此二维码</string>
-    <string name="auth_to_show">点击以验证并显示</string>
 
     <string name="vault_add_otp_title">添加 otp</string>
     <string name="vault_otp_uri_parsed">URI 解析成功</string>
@@ -195,17 +134,12 @@
     <string name="vault_detail_download_icon">下载图标</string>
     <string name="vault_detail_icon_download_success">图标下载成功！</string>
     <string name="vault_detail_icon_download_failed">图标下载失败</string>
-    <string name="vault_detail_icon_download_decode_error">图标格式不支持</string>
-    <string name="vault_detail_icon_download_save_error">图标保存失败</string>
-    <string name="vault_detail_login_credentials">登录凭据</string>
     <string name="vault_detail_username">用户名</string>
-    <string name="vault_detail_password">密码</string>
     <string name="vault_detail_add_notes">添加备注…</string>
     <string name="vault_detail_no_notes">暂无备注</string>
     <string name="vault_detail_history_label">活动日志</string>
     <string name="vault_detail_history_all">全部</string>
     <string name="vault_detail_history_updates">变更</string>
-    <string name="vault_detail_history_actions">使用</string>
     <string name="vault_detail_history_empty_filtered">暂无记录</string>
     <string name="vault_detail_history_tab_version">版本</string>
     <string name="vault_detail_history_tab_activity">活动</string>
@@ -223,150 +157,34 @@
 
     <!-- 验证页面字符串 -->
     <string name="auth_biometric_unlock">生物识别解锁</string>
-    <string name="auth_verify_now">立即验证</string>
     <string name="auth_password_verify">验证密码</string>
     <string name="auth_password_unlock">使用密码解锁</string>
     <string name="auth_app_password_label">应用密码</string>
-    <string name="auth_app_password_confirm_label">确认密码</string>
     <string name="auth_set_app_password">设置应用密码</string>
-    <string name="auth_change_app_password">修改应用密码</string>
-    <string name="auth_disable_app_password">关闭应用密码</string>
-    <string name="auth_disable_app_password_desc">关闭后仅使用系统认证解锁</string>
-    <string name="auth_current_password">当前密码</string>
-    <string name="auth_new_password">新密码</string>
-    <string name="auth_new_password_confirm">确认新密码</string>
     <string name="auth_biometric_unavailable_password_required">无可用生物识别，请先设置应用密码</string>
-    <string name="auth_password_mismatch">密码不一致</string>
-    <string name="auth_password_empty">请输入密码</string>
-    <string name="auth_password_hint">至少6位，建议混合字母、数字或符号</string>
-    <string name="auth_password_set_success">应用密码已设置</string>
-    <string name="auth_password_set_failed">设置失败</string>
-    <string name="auth_password_change_success">密码修改成功</string>
-    <string name="auth_password_disabled">应用密码已关闭</string>
-    <string name="auth_password_fields_required">请填写所有密码字段</string>
-    <string name="auth_current_password_required">请输入当前密码</string>
-    <string name="auth_unavailable">无法进行身份验证</string>
     <string name="password_strength_very_weak">弱爆了</string>
     <string name="password_strength_weak">弱</string>
     <string name="password_strength_medium">一般</string>
     <string name="password_strength_good">较好</string>
     <string name="password_strength_strong">强</string>
-    <string name="settings_auth_before_set_app_password">验证后设置密码</string>
 
     <!-- 设置: 外观 -->
-    <string name="settings_group_theme">主题</string>
-    <string name="settings_theme_mode">外观</string>
-    <string name="settings_theme_mode_light">浅色</string>
-    <string name="settings_theme_mode_dark">深色</string>
-    <string name="settings_topic_language_font">语言与字体</string>
-    <string name="settings_language">语言</string>
-    <string name="settings_font">字体</string>
-    <string name="settings_font_system">使用系统字体</string>
-    <string name="settings_font_app">使用应用内置字体</string>
-    <string name="settings_language_choose">选择语言</string>
-    <string name="settings_language_chinese">简体中文</string>
-    <string name="settings_language_english">English</string>
-    <string name="settings_language_japanese">日本語</string>
-    <string name="settings_dynamic_color">动态取色</string>
-    <string name="settings_dynamic_color_desc">使用壁纸配色</string>
-    <string name="settings_expressive">Material 3 Expressive</string>
-    <string name="settings_expressive_desc">启用更鲜明的形状、动效与组件反馈</string>
-    <string name="settings_interface_style_title">圆角与间距</string>
-    <string name="settings_interface_outer_corner_radius">外圈圆角</string>
-    <string name="settings_interface_outer_corner_radius_desc">首项顶部、末项底部，并作为全局组件圆角基准</string>
-    <string name="settings_interface_inner_corner_radius">组内圆角</string>
-    <string name="settings_interface_inner_corner_radius_desc">控制分组内相邻卡片的接缝圆角</string>
-    <string name="settings_interface_group_item_spacing">卡片间距</string>
-    <string name="settings_interface_group_item_spacing_desc">控制分组内卡片之间的空隙</string>
-    <string name="settings_interface_group_content_padding">内容留白</string>
-    <string name="settings_interface_group_content_padding_desc">控制分组卡片内容与边缘的距离</string>
-    <string name="settings_value_dp">%1$d dp</string>
     <string name="metadata_created_at">创建于：%1$s</string>
     <string name="metadata_last_modified">最后修改：%1$s</string>
-    <string name="settings_theme_color">主题配色</string>
-    <string name="settings_theme_color_blue">蓝色</string>
-    <string name="settings_theme_color_green">绿色</string>
-    <string name="settings_theme_color_red">红色</string>
-    <string name="settings_theme_color_purple">紫色</string>
-    <string name="settings_theme_color_orange">橙色</string>
-    <string name="settings_theme_color_teal">青色</string>
-    <string name="settings_theme_color_pink">粉色</string>
-    <string name="settings_theme_color_select_title">选择主题配色</string>
 
     <!-- 设置首页 -->
-    <string name="settings_section_appearance">外观</string>
-    <string name="settings_section_security">安全</string>
-    <string name="settings_section_features">功能</string>
-    <string name="settings_section_data">数据</string>
-    <string name="settings_section_other">其他</string>
-    <string name="settings_page_appearance">主题与语言</string>
-    <string name="settings_page_appearance_summary">模式、语言、配色</string>
-    <string name="settings_page_interface">界面</string>
-    <string name="settings_page_interface_summary">状态栏、滚动、卡片</string>
-    <string name="settings_page_security">解锁与锁定</string>
-    <string name="settings_page_security_summary">密码、生物识别、自动锁定</string>
-    <string name="settings_page_privacy">隐私保护</string>
-    <string name="settings_page_privacy_summary">防截屏、翻转锁定</string>
-    <string name="settings_page_interaction">操作与填充</string>
-    <string name="settings_page_interaction_summary">滑动操作、自动填充</string>
-    <string name="settings_page_data">数据与下载</string>
-    <string name="settings_page_data_summary">图标下载与本地数据</string>
-    <string name="settings_page_backup_restore">备份与恢复</string>
-    <string name="settings_page_backup_restore_summary">加密、JSON、TXT 导出与导入</string>
-    <string name="settings_page_recovery_code">恢复码</string>
-    <string name="settings_page_recovery_code_summary">紧急解锁保险库</string>
-    <string name="settings_page_general">通用</string>
-    <string name="settings_page_general_summary">缓存、日志、关于</string>
-    <string name="settings_page_notifications">消息与通知</string>
-    <string name="settings_page_notifications_summary">系统通知、应用消息与分类</string>
-    <string name="settings_status_bar_notifications">状态栏通知</string>
-    <string name="settings_status_bar_notifications_summary">在系统状态栏显示应用信息</string>
-    <string name="settings_icon_download_notifications">图标下载通知</string>
-    <string name="settings_icon_download_notifications_summary">显示下载结果；前台同步进度始终可见</string>
-    <string name="settings_security_toast_messages">Toast 提醒</string>
-    <string name="settings_clipboard_clear_toast">剪贴板清除</string>
-    <string name="settings_clipboard_clear_toast_summary">清除敏感内容后简短提醒</string>
-    <string name="settings_app_close_toast">应用关闭</string>
-    <string name="settings_app_close_toast_summary">关闭应用前简短提醒</string>
     <string name="notification_channel_app_messages">应用信息</string>
     <string name="notification_channel_app_messages_summary">下载结果等状态栏信息</string>
 
     <!-- 恢复码 -->
-    <string name="settings_recovery_code_title">恢复码</string>
-    <string name="settings_recovery_code_warning">恢复码仅生成一次，请立即复制并妥善保存，丢失后将无法恢复账户。</string>
-    <string name="settings_recovery_code_save_hint">App 不会保存恢复码，请自行记录到安全的地方。</string>
-    <string name="settings_recovery_code_copy">复制恢复码</string>
-    <string name="settings_recovery_code_auth_title">身份验证</string>
-    <string name="settings_recovery_code_auth_subtitle">需要验证身份</string>
-    <string name="settings_recovery_code_verify_title">验证恢复码</string>
-    <string name="settings_recovery_code_verify_hint">粘贴恢复码进行验证</string>
-    <string name="settings_recovery_code_verify_valid">恢复码有效</string>
-    <string name="settings_recovery_code_verify_invalid">恢复码无效</string>
-    <string name="settings_recovery_code_dismiss">我已记下</string>
-    <string name="settings_recovery_code_create">创建恢复码</string>
-    <string name="settings_recovery_code_saved">已保存到设备</string>
-    <string name="settings_recovery_code_regenerate">重新生成恢复码</string>
-    <string name="settings_recovery_code_regenerate_confirm_message">旧的恢复码将立即失效，确定要重新生成吗？</string>
     <string name="auth_use_recovery_code">使用恢复码</string>
     <string name="auth_recovery_code_label">恢复码</string>
     <string name="auth_recovery_code_unlock">解锁保险库</string>
 
     <!-- 设置: 界面行为 -->
-    <string name="settings_interface_immersive_title">沉浸式体验</string>
-    <string name="settings_interface_hide_status_bar">隐藏状态栏</string>
-    <string name="settings_interface_hide_status_bar_desc">浏览列表时释放屏幕顶部空间</string>
-    <string name="settings_interface_top_bar_collapsible">标题栏滚动</string>
-    <string name="settings_interface_top_bar_collapsible_desc">上滑时收缩标题以获得更多视野</string>
-    <string name="settings_interface_tab_bar_collapsible">标签栏滚动</string>
-    <string name="settings_interface_tab_bar_collapsible_desc">分类标签随列表滑动自动隐藏</string>
-    <string name="settings_interface_vault_tabs_section">保险箱 Tab</string>
-    <string name="settings_interface_tab_threshold_label">Tab 均分阈值</string>
-    <string name="settings_interface_tab_threshold_desc">当 Tab 数量小于等于阈值时均分宽度，超过则横向滚动。</string>
 
     <!-- 类别 -->
     <string name="category_autofill">自动填充</string>
-    <string name="category_unfiled">未分类</string>
-    <string name="category_otp">OTP</string>
 
     <!-- WiFi 相关 -->
     <string name="wifi_ssid">WiFi名称</string>
@@ -381,9 +199,6 @@
     <string name="card_cvv">安全码</string>
     <string name="card_expiration">有效期</string>
     <string name="payment_pin">支付密码</string>
-    <string name="payment_platform">支付渠道</string>
-    <string name="security_question">密保问题</string>
-    <string name="security_answer">密保答案</string>
 
     <!-- 助记词相关 -->
     <string name="seed_phrase">助记词</string>
@@ -396,21 +211,15 @@
     <string name="ssh_private_key_full">完整私钥</string>
     <string name="ssh_fingerprint">密钥指纹</string>
     <string name="passphrase">密钥口令</string>
-    <string name="ssh_key_pin">密钥PIN</string>
 
     <!-- 证件相关 -->
     <string name="id_number">证件号码</string>
 
     <!-- Passkey相关 -->
     <string name="passkey_data">Passkey数据</string>
-    <string name="passkey_recovery_codes">恢复码</string>
     <string name="hardware_key_info">硬件密钥信息</string>
 
     <!-- shortcut / changelog -->
-    <string name="shortcut_vault_short">打开保险库</string>
-    <string name="shortcut_vault_long">验证并打开保险库</string>
-    <string name="shortcut_scanner_short">扫一扫</string>
-    <string name="changelog">https://raw.githubusercontent.com/aozijx/poop/refs/heads/main/CHANGELOG.md</string>
 
     <!-- 分类匹配关键词数组 -->
     <string-array name="category_keywords_personal">
@@ -500,46 +309,8 @@
     </string-array>
 
     <!-- 设置: 数据管理 -->
-    <string name="settings_data_download">下载</string>
-    <string name="settings_download_icons">自动下载图标</string>
-    <string name="settings_download_icons_subtitle">保存网站图标</string>
 
     <!-- 日志管理 -->
-    <string name="log_management_title">日志管理</string>
-    <string name="log_management_description">导出错误和崩溃日志以便排查问题</string>
-    <string name="log_export_button">导出错误日志</string>
-    <string name="log_share_button">分享日志</string>
-    <string name="log_clear_button">清理日志</string>
-    <string name="log_export_title">分享错误日志</string>
-    <string name="log_export_subject">Passly 错误日志</string>
-    <string name="log_export_message">Passly 错误日志导出文件</string>
-    <string name="log_encrypted_title">加密诊断日志</string>
-    <string name="log_encrypted_subtitle">开启后记录 24 小时</string>
-    <string name="log_view_title">查看日志</string>
-    <string name="log_export_action">导出日志</string>
-    <string name="log_export_action_subtitle">验证身份后生成临时明文文件</string>
-    <string name="log_clear_action">清除日志</string>
-    <string name="log_loading">正在加载日志…</string>
-    <string name="log_empty">暂无日志</string>
-    <string name="log_clear_confirm_message">确定要清除所有日志文件吗？此操作不可撤销。</string>
-    <string name="log_clear_confirm_action">清除</string>
-    <string name="settings_system_notifications">系统通知</string>
-    <string name="settings_system_notifications_summary">在系统状态栏显示通知</string>
-    <string name="settings_app_notices">应用内消息</string>
-    <string name="settings_optional_notices">所有应用消息</string>
-    <string name="settings_optional_notices_summary">关闭后仅保留必要的安全与数据提醒</string>
-    <string name="settings_topic_clipboard">剪贴板</string>
-    <string name="settings_topic_clipboard_summary">敏感内容清除时提醒</string>
-    <string name="settings_topic_app_lifecycle">应用生命周期</string>
-    <string name="settings_topic_app_lifecycle_summary">关闭应用时提醒</string>
-    <string name="settings_topic_icon_download">图标下载</string>
-    <string name="settings_topic_icon_download_summary">图标下载结果通知</string>
-    <string name="settings_topic_backup">备份</string>
-    <string name="settings_topic_backup_summary">备份导入导出结果提醒</string>
-    <string name="settings_topic_security">安全</string>
-    <string name="settings_topic_security_summary">生物识别变化、恢复码变更等提醒</string>
-    <string name="settings_topic_database">数据</string>
-    <string name="settings_topic_database_summary">数据库异常、恢复结果提醒</string>
 
     <string name="notice_clipboard_cleared">剪贴板中的敏感内容已清除</string>
     <string name="notice_clipboard_clear_failed">无法清除剪贴板中的敏感内容</string>
@@ -551,49 +322,7 @@
     <string name="notice_database_index_rebuild_completed">搜索索引重建完成</string>
     <string name="notice_database_index_rebuild_failed">搜索索引重建失败</string>
     <string name="notice_database_operation_failed">数据库操作失败</string>
-    <string name="backup_format_picker_title">选择导出格式</string>
-    <string name="backup_format_picker_description">每种格式使用独立的导出设置。加密备份适合恢复，JSON 适合迁移，TXT 仅供人工阅读。</string>
-    <string name="backup_format_encrypted">加密备份</string>
-    <string name="backup_format_encrypted_description">完整、自描述、密码加密，可用于恢复</string>
-    <string name="backup_format_json">JSON 备份</string>
-    <string name="backup_format_json_description">明文结构化数据，可用于迁移和外部处理</string>
-    <string name="backup_format_text">可读 TXT</string>
-    <string name="backup_format_text_description">每个字段单独成行，不包含图片和附件</string>
-    <string name="backup_password_label">备份密码</string>
-    <string name="backup_password_warning">密码不会保存，遗失后无法恢复备份</string>
-    <string name="backup_content_scope">内容范围</string>
-    <string name="backup_include_icons">自定义图标</string>
-    <string name="backup_include_icons_description">导出保存在应用中的条目图标</string>
-    <string name="backup_include_attachments">附件与图片</string>
-    <string name="backup_include_attachments_description">导出已提交的附件文件，可能显著增加文件大小</string>
-    <string name="backup_include_deleted">回收站条目</string>
-    <string name="backup_include_deleted_description">包含尚未永久删除的条目</string>
-    <string name="backup_entry_types">条目类型</string>
-    <string name="backup_clear_selection">清除</string>
-    <string name="backup_select_all">全选</string>
-    <string name="backup_entry_type_required">至少选择一种条目类型</string>
-    <string name="backup_choose_destination_after_confirm">确认后选择保存位置</string>
-    <string name="backup_save_to_configured_directory">将保存到默认目录：%1$s</string>
-    <string name="backup_start_export">开始导出</string>
-    <string name="backup_encrypted_security_notice">使用独立随机盐和 nonce 加密，可包含完整恢复数据。</string>
-    <string name="backup_json_security_notice">JSON 是明文文件，可能包含密码、OTP Secret 和附件内容。请仅保存到可信位置。</string>
-    <string name="backup_text_security_notice">TXT 是明文且不可用于完整恢复，仅包含便于人工阅读的字段。</string>
-    <string name="backup_import_options_title">导入与恢复</string>
-    <string name="backup_import_format_description">文件格式会根据内容自动识别。加密 Passly 备份需要输入正确密码；JSON 和第三方格式可留空。</string>
-    <string name="backup_import_mode">导入方式</string>
-    <string name="backup_import_append">合并</string>
-    <string name="backup_import_append_description">保留现有数据，并写入备份条目</string>
-    <string name="backup_import_overwrite">覆盖</string>
-    <string name="backup_import_overwrite_description">清空现有保险库后恢复备份，风险较高</string>
-    <string name="backup_import_password_label">备份密码（如需要）</string>
-    <string name="backup_import_atomicity_notice">导入前会验证完整文件；失败不会留下部分恢复数据。</string>
-    <string name="backup_confirm_overwrite_import">确认覆盖并导入</string>
-    <string name="backup_start_import">开始导入</string>
-    <string name="backup_encrypted_options_title">加密备份设置</string>
-    <string name="backup_json_options_title">JSON 导出设置</string>
-    <string name="backup_text_options_title">TXT 导出设置</string>
     <string name="continue_action">继续</string>
-    <string name="configured">已设置</string>
     <string name="auth_verify_identity">验证身份</string>
     <string name="auth_method_biometric">生物识别</string>
     <string name="auth_method_recovery_code">使用恢复码</string>
@@ -605,70 +334,4 @@
     <string name="auth_purpose_export_diagnostics">验证后导出诊断</string>
     <string name="auth_purpose_recover_database">验证后保留故障库并创建新库</string>
     <string name="auth_purpose_clear_database">验证后清除保险库数据</string>
-    <string name="security_auth_section">认证</string>
-    <string name="security_lock_on_background">立即锁定</string>
-    <string name="security_lock_on_background_description">退出应用后锁定</string>
-    <string name="security_auto_lock">自动锁定</string>
-    <string name="security_auto_lock_delay">自动锁定时间</string>
-    <string name="duration_seconds">%1$d 秒</string>
-    <string name="duration_minutes">%1$d 分钟</string>
-    <string name="duration_minutes_seconds">%1$d 分 %2$d 秒</string>
-    <string name="security_app_password">设置密码</string>
-    <string name="security_app_password_description">独立于系统锁屏，用密码直接解锁应用</string>
-    <string name="security_biometric_unlock">生物识别解锁</string>
-    <string name="security_biometric_enabled_description">使用强生物识别解锁保险库</string>
-    <string name="security_biometric_disabled_description">需要先验证现有凭据</string>
-    <string name="security_invalidate_biometric_key">生物识别变更时销毁密钥</string>
-    <string name="security_invalidate_biometric_key_enabled">新增或移除生物识别后，需要重新启用</string>
-    <string name="security_invalidate_biometric_key_disabled">系统录入变化后仍保留当前密钥</string>
-    <string name="security_protection_section">安全防护</string>
-    <string name="security_secure_content">安全防护</string>
-    <string name="security_secure_content_description">禁止截屏录屏，并隐藏多任务预览</string>
-    <string name="security_flip_to_lock">锁定应用</string>
-    <string name="security_flip_to_lock_description">屏幕朝下时立即关闭保险库</string>
-    <string name="security_flip_exit">退出应用</string>
-    <string name="security_flip_exit_description">退出应用并清除任务栈</string>
-    <string name="autofill_mode_section">自动填充模式</string>
-    <string name="autofill_mode_title">填充方式</string>
-    <string name="autofill_mode_inline">键盘候选</string>
-    <string name="autofill_mode_bottom_sheet">底部弹窗</string>
-    <string name="swipe_gesture_section">快捷手势</string>
-    <string name="swipe_gesture_enabled">列表快捷手势</string>
-    <string name="swipe_gesture_enabled_description">支持条目左右滑动触发快捷操作</string>
-    <string name="swipe_gesture_left_action">左滑快捷动作</string>
-    <string name="swipe_gesture_right_action">右滑快捷动作</string>
-    <string name="swipe_action_delete">删除</string>
-    <string name="swipe_action_detail">详情</string>
-    <string name="swipe_action_copy_password">复制密码</string>
-    <string name="swipe_action_copy_username">复制账号</string>
-    <string name="swipe_select_right_action">选择右滑动作</string>
-    <string name="swipe_select_left_action">选择左滑动作</string>
-    <string name="backup_clear_directory_title">清除备份目录</string>
-    <string name="backup_clear_directory_message">只会清除目录配置，不会删除已导出的备份文件。</string>
-    <string name="general_cache_section">缓存</string>
-    <string name="general_clear_cache">清除缓存</string>
-    <string name="general_about_section">关于</string>
-    <string name="general_about_passly">关于 Passly</string>
-    <string name="general_terms">用户协议</string>
-    <string name="general_privacy_policy">隐私政策</string>
-    <string name="general_open_source_licenses">开源许可</string>
-    <string name="backup_restore_section">备份与恢复</string>
-    <string name="backup_export_action">导出</string>
-    <string name="backup_export_action_description">加密备份、JSON 或可读文本</string>
-    <string name="backup_import_action">导入</string>
-    <string name="backup_import_action_description">自动识别 Passly 与兼容格式</string>
-    <string name="backup_storage_section">存储位置</string>
-    <string name="backup_default_directory">默认备份目录</string>
-    <string name="backup_test_write">测试写入权限</string>
-    <string name="backup_recent_export">最近导出文件</string>
-    <string name="backup_clear_default_directory">清除默认目录</string>
-    <string name="data_dangerous_actions">危险操作</string>
-    <string name="data_clear_database_description">删除全部条目、附件和自定义图片；设置与认证方式保留</string>
-    <string name="data_clearing_database">正在清除…</string>
-    <string name="app_password_manage_title">管理应用解锁密码</string>
-    <string name="app_password_manage_description">你可以修改密码，或关闭该功能。</string>
-    <string name="app_password_change_action">修改密码</string>
-    <string name="app_password_disable_action">关闭</string>
-    <string name="recovery_code_confirm_saved">我已安全保存并启用</string>
-    <string name="recovery_code_discard_draft">放弃本次草稿</string>
 </resources>

@@ -15,16 +15,16 @@ fun AppPasswordActionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.app_password_manage_title)) },
-        text = { Text(stringResource(R.string.app_password_manage_description)) },
+        title = { Text(stringResource(R.string.settings_app_password_manage_title)) },
+        text = { Text(stringResource(R.string.settings_app_password_manage_description)) },
         confirmButton = {
             TextButton(onClick = onChangePassword) {
-                Text(stringResource(R.string.app_password_change_action))
+                Text(stringResource(R.string.settings_app_password_change_action))
             }
         },
         dismissButton = {
             TextButton(onClick = onDisablePassword) {
-                Text(stringResource(R.string.app_password_disable_action))
+                Text(stringResource(R.string.settings_app_password_disable_action))
             }
         }
     )

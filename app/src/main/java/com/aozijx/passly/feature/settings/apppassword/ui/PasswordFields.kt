@@ -83,7 +83,7 @@ internal fun PasswordFields(
         value = confirmPassword,
         onValueChange = onConfirmPasswordChange,
         singleLine = true,
-        label = { Text(stringResource(R.string.auth_app_password_confirm_label)) },
+        label = { Text(stringResource(R.string.settings_auth_app_password_confirm_label)) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Outlined.Lock,
@@ -106,7 +106,7 @@ internal fun PasswordFields(
         else PasswordVisualTransformation(),
         isError = confirmPassword.isNotEmpty() && newPassword != confirmPassword,
         supportingText = if (confirmPassword.isNotEmpty() && newPassword != confirmPassword) {
-            { Text(stringResource(R.string.auth_password_mismatch)) }
+            { Text(stringResource(R.string.settings_auth_password_mismatch)) }
         } else null,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp)

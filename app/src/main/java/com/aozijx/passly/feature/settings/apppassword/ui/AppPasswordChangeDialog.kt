@@ -28,13 +28,13 @@ fun AppPasswordChangeDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.auth_change_app_password)) },
+        title = { Text(stringResource(R.string.settings_auth_change_app_password)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = currentPassword,
                     onValueChange = onCurrentPasswordChange,
-                    label = { Text(stringResource(R.string.auth_current_password)) },
+                    label = { Text(stringResource(R.string.settings_auth_current_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()

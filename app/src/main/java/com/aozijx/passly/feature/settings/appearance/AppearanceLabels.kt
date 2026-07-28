@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.settings.model.ThemeMode
 
 @StringRes
 fun ThemeMode.labelRes(): Int = when (this) {
-    ThemeMode.SYSTEM -> R.string.follow_system
+    ThemeMode.SYSTEM -> R.string.settings_follow_system
     ThemeMode.LIGHT -> R.string.settings_theme_mode_light
     ThemeMode.DARK -> R.string.settings_theme_mode_dark
 }
@@ -20,7 +20,7 @@ fun ThemeMode.labelRes(): Int = when (this) {
  */
 @Composable
 fun AppLanguage.localizedDisplayName(): String {
-    if (this == AppLanguage.SYSTEM) return stringResource(R.string.follow_system)
+    if (this == AppLanguage.SYSTEM) return stringResource(R.string.settings_follow_system)
 
     val displayLocale = LocalConfiguration.current.locales[0]
     val displayName = locale?.getDisplayName(displayLocale).orEmpty()

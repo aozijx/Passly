@@ -63,7 +63,7 @@ internal fun InterfaceDetail(
                     key = "interface.status_bar_auto_hide",
                     icon = Icons.Default.Fullscreen,
                     title = stringResource(R.string.settings_interface_hide_status_bar),
-                    subtitle = stringResource(R.string.settings_interface_hide_status_bar_desc),
+                    subtitle = stringResource(R.string.settings_interface_hide_status_bar_description),
                     checked = state.hideSystemBars,
                     onCheckedChange = onStatusBarAutoHideChange
                 ),
@@ -71,7 +71,7 @@ internal fun InterfaceDetail(
                     key = "interface.top_bar_collapsible",
                     icon = Icons.Default.ViewDay,
                     title = stringResource(R.string.settings_interface_top_bar_collapsible),
-                    subtitle = stringResource(R.string.settings_interface_top_bar_collapsible_desc),
+                    subtitle = stringResource(R.string.settings_interface_top_bar_collapsible_description),
                     checked = state.collapseTopBarOnScroll,
                     onCheckedChange = onTopBarCollapsibleChange
                 ),
@@ -79,7 +79,7 @@ internal fun InterfaceDetail(
                     key = "interface.tab_bar_collapsible",
                     icon = Icons.Default.SpaceDashboard,
                     title = stringResource(R.string.settings_interface_tab_bar_collapsible),
-                    subtitle = stringResource(R.string.settings_interface_tab_bar_collapsible_desc),
+                    subtitle = stringResource(R.string.settings_interface_tab_bar_collapsible_description),
                     checked = state.collapseTabBarOnScroll,
                     onCheckedChange = onTabBarCollapsibleChange
                 )
@@ -96,7 +96,7 @@ internal fun InterfaceDetail(
                     icon = Icons.Default.RoundedCorner,
                     title = stringResource(R.string.settings_interface_outer_corner_radius),
                     subtitle = stringResource(
-                        R.string.settings_interface_outer_corner_radius_desc
+                        R.string.settings_interface_outer_corner_radius_description
                     ),
                     value = outerRadius,
                     valueLabel = stringResource(
@@ -119,7 +119,7 @@ internal fun InterfaceDetail(
                     icon = Icons.Default.BorderInner,
                     title = stringResource(R.string.settings_interface_inner_corner_radius),
                     subtitle = stringResource(
-                        R.string.settings_interface_inner_corner_radius_desc
+                        R.string.settings_interface_inner_corner_radius_description
                     ),
                     value = innerRadius,
                     valueLabel = stringResource(
@@ -142,7 +142,7 @@ internal fun InterfaceDetail(
                     icon = Icons.Default.FormatLineSpacing,
                     title = stringResource(R.string.settings_interface_group_item_spacing),
                     subtitle = stringResource(
-                        R.string.settings_interface_group_item_spacing_desc
+                        R.string.settings_interface_group_item_spacing_description
                     ),
                     value = itemSpacing,
                     valueLabel = stringResource(
@@ -165,7 +165,7 @@ internal fun InterfaceDetail(
                     icon = Icons.Default.Padding,
                     title = stringResource(R.string.settings_interface_group_content_padding),
                     subtitle = stringResource(
-                        R.string.settings_interface_group_content_padding_desc
+                        R.string.settings_interface_group_content_padding_description
                     ),
                     value = contentPadding,
                     valueLabel = stringResource(

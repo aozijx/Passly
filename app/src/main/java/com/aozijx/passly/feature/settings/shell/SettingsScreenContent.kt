@@ -44,7 +44,7 @@ internal fun SettingsMainPage(
             TopAppBar(
                 title = {
                     Text(
-                        stringResource(com.aozijx.passly.R.string.settings),
+                        stringResource(com.aozijx.passly.R.string.settings_title),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.headlineSmall
                     )

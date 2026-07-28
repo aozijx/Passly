@@ -73,7 +73,7 @@
             android:name=".service.autofill.framework.LegacyAutofillService"
             android:enabled="false"
             android:exported="true"
-            android:label="@string/autofill_service_name"
+            android:label="@string/app_name"
             android:permission="android.permission.BIND_AUTOFILL_SERVICE">
             <intent-filter>
                 <action android:name="android.service.autofill.AutofillService" />
