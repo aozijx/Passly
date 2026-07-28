@@ -50,12 +50,17 @@ fun ActionButton(
         }
     ) {
         AnimatedContent(
-            targetState = progress to result,
+            targetState = ActionButtonVisualState(
+                progress = progress,
+                result = result,
+                icon = icon,
+                text = if (result == null) text else resultText
+            ),
             transitionSpec = { fadeIn() togetherWith fadeOut() },
             label = "ActionButtonContent"
-        ) { (loading, actionResult) ->
+        ) { state ->
             when {
-                loading -> {
+                state.progress -> {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
@@ -63,22 +68,22 @@ fun ActionButton(
                     )
                 }
 
-                content != null && actionResult == null -> {
+                content != null && state.result == null -> {
                     content()
                 }
 
                 else -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (icon != null) {
+                        if (state.icon != null) {
                             Icon(
-                                imageVector = icon,
+                                imageVector = state.icon,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.size(8.dp))
                         }
                         Text(
-                            text = if (actionResult != null) resultText else text,
+                            text = state.text,
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
@@ -87,3 +92,10 @@ fun ActionButton(
         }
     }
 }
+
+private data class ActionButtonVisualState(
+    val progress: Boolean,
+    val result: Boolean?,
+    val icon: ImageVector?,
+    val text: String
+)
