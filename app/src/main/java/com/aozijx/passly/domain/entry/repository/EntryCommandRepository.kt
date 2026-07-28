@@ -15,4 +15,6 @@ interface EntryCommandRepository {
 
     suspend fun moveToTrash(id: String, expectedVersion: Int): AppResult<Unit>
     suspend fun restoreEntry(id: String, expectedVersion: Int): AppResult<Unit>
+    suspend fun deletePermanently(id: String, expectedVersion: Int): AppResult<Unit>
+    suspend fun emptyTrash(): AppResult<Int>
 }

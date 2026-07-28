@@ -2,6 +2,8 @@ package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.data.repository.entry.executor.CreateEntryExecutor
+import com.aozijx.passly.data.repository.entry.executor.DeleteEntryPermanentlyExecutor
+import com.aozijx.passly.data.repository.entry.executor.EmptyTrashExecutor
 import com.aozijx.passly.data.repository.entry.executor.RestoreEntryExecutor
 import com.aozijx.passly.data.repository.entry.executor.TrashEntryExecutor
 import com.aozijx.passly.data.repository.entry.executor.UpdateEntryExecutor
@@ -20,6 +22,8 @@ import javax.inject.Singleton
  * - [UpdateEntryExecutor] — 更新
  * - [TrashEntryExecutor] — 移入回收站
  * - [RestoreEntryExecutor] — 恢复
+ * - [DeleteEntryPermanentlyExecutor] — 永久删除
+ * - [EmptyTrashExecutor] — 清空回收站
  *
  * 事务入口统一由 [VaultTransactionRunner] 管理，执行器不直接引用 DAO。
  */
@@ -28,7 +32,9 @@ class RoomEntryCommandRepository @Inject constructor(
     private val createEntryExecutor: CreateEntryExecutor,
     private val updateEntryExecutor: UpdateEntryExecutor,
     private val trashEntryExecutor: TrashEntryExecutor,
-    private val restoreEntryExecutor: RestoreEntryExecutor
+    private val restoreEntryExecutor: RestoreEntryExecutor,
+    private val deleteEntryPermanentlyExecutor: DeleteEntryPermanentlyExecutor,
+    private val emptyTrashExecutor: EmptyTrashExecutor
 ) : EntryCommandRepository {
 
     override suspend fun createEntry(entry: VaultEntry): AppResult<EntryId> =
@@ -49,4 +55,11 @@ class RoomEntryCommandRepository @Inject constructor(
         id: String,
         expectedVersion: Int
     ): AppResult<Unit> = restoreEntryExecutor.execute(id, expectedVersion)
+
+    override suspend fun deletePermanently(
+        id: String,
+        expectedVersion: Int
+    ): AppResult<Unit> = deleteEntryPermanentlyExecutor.execute(id, expectedVersion)
+
+    override suspend fun emptyTrash(): AppResult<Int> = emptyTrashExecutor.execute()
 }

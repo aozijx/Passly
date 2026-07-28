@@ -98,6 +98,22 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                     onAutoDownloadIconsChange = {
                         dataViewModel.onAction(DataUiAction.SetAutoDownloadIcons(it))
                     },
+                    onRestoreTrashEntry = { entryId, expectedVersion ->
+                        dataViewModel.onAction(
+                            DataUiAction.RestoreTrashEntry(entryId, expectedVersion)
+                        )
+                    },
+                    onDeleteTrashEntry = { entryId, expectedVersion ->
+                        dataViewModel.onAction(
+                            DataUiAction.DeleteTrashEntry(entryId, expectedVersion)
+                        )
+                    },
+                    onEmptyTrash = {
+                        dataViewModel.onAction(DataUiAction.EmptyTrash)
+                    },
+                    onClearTrashError = {
+                        dataViewModel.onAction(DataUiAction.ClearTrashError)
+                    },
                     onClearDatabase = {
                         settingsViewModel.handleIntent(SettingsIntent.ClearDatabase)
                     }

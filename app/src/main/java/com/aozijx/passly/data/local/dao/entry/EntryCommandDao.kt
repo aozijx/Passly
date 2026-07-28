@@ -46,6 +46,12 @@ interface EntryCommandDao {
     @Query("DELETE FROM vault_entries WHERE entryId = :entryId")
     suspend fun deleteById(entryId: String): Int
 
+    @Query("DELETE FROM vault_entries WHERE entryId = :entryId AND version = :expectedVersion AND deletedAt IS NOT NULL")
+    suspend fun deleteDeletedOptimistic(entryId: String, expectedVersion: Int): Int
+
+    @Query("DELETE FROM vault_entries WHERE deletedAt IS NOT NULL")
+    suspend fun deleteAllDeleted(): Int
+
     @Query("DELETE FROM vault_entries WHERE deletedAt IS NOT NULL AND deletedAt < :before")
     suspend fun purgeDeleted(before: Long): Int
 

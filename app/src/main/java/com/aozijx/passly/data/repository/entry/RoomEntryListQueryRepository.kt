@@ -34,6 +34,25 @@ class RoomEntryListQueryRepository @Inject constructor(
 ) : EntryListQueryRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    override val deletedEntries: Flow<List<EntryListItem>> = sessionState.isAuthorized
+        .flatMapLatest { authorized ->
+            if (!authorized) flowOf(emptyList())
+            else sessionManager.observeFlow {
+                entryQueryDao().observeDeleted()
+                    .map { entities ->
+                        entities.map { entity ->
+                            val summary = summaryCodec.decrypt(
+                                entity.summaryBlob,
+                                entity.entryId
+                            )
+                            EntryListItemMapper.assemble(entity, summary)
+                        }
+                    }
+                    .flowOn(Dispatchers.IO)
+            }
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     override val allCategories: Flow<List<String>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())

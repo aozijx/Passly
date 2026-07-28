@@ -27,6 +27,9 @@ interface EntryQueryDao {
     @Query("SELECT DISTINCT entryType FROM vault_entries WHERE deletedAt IS NULL ORDER BY entryType")
     fun observeDistinctActiveEntryTypes(): Flow<List<EntryType>>
 
+    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
+    fun observeDeleted(): Flow<List<EntryEntity>>
+
     // ---- paging (Paging 3) ----
 
     @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
