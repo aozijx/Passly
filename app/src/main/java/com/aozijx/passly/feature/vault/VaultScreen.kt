@@ -1,6 +1,8 @@
 package com.aozijx.passly.feature.vault
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -46,6 +48,9 @@ fun VaultContent(
     onUserInteraction: () -> Unit,
     scannerContent: @Composable ((OtpConfig) -> Unit, () -> Unit) -> Unit,
     onAddPassword: () -> Unit,
+    onAddOtp: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onSettingsClick: () -> Unit = {},
     onShowDetail: (EntryListItem) -> Unit = {},
     isDatabaseInitializing: Boolean = false
@@ -173,12 +178,14 @@ fun VaultContent(
         floatingActionButton = {
             VaultFab(
                 onAddTypeSelected = { type ->
-                    if (type == AddType.PASSWORD) {
-                        onAddPassword()
-                    } else {
-                        vaultViewModel.setAddType(type)
+                    when (type) {
+                        AddType.PASSWORD -> onAddPassword()
+                        AddType.TOTP -> onAddOtp()
+                        else -> vaultViewModel.setAddType(type)
                     }
                 },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 isVisible = isFabVisible
             )
         },

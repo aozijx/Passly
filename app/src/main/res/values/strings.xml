@@ -110,7 +110,8 @@
     <string name="vault_export_qr_title">导出 otp 密钥</string>
     <string name="vault_export_qr_message">用其他设备扫描此二维码</string>
 
-    <string name="vault_add_otp_title">添加 otp</string>
+    <string name="vault_add_otp_title">添加动态口令</string>
+    <string name="vault_add_otp_save_failed">保存动态口令失败</string>
     <string name="vault_otp_uri_parsed">URI 解析成功</string>
     <string name="vault_otp_uri_parse_failed">URI 解析失败</string>
 

@@ -1,6 +1,9 @@
 package com.aozijx.passly.feature.vault.components.fab
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -44,11 +47,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.theme.PasslyTheme
+import com.aozijx.passly.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.feature.vault.model.AddType
 
 @Composable
 fun VaultFab(
     onAddTypeSelected: (AddType) -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     isVisible: Boolean = true
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
@@ -64,6 +70,13 @@ fun VaultFab(
     )
 
     val fabMenuOptions = AddType.fabMenuOptions
+    val sharedFabModifier = with(sharedTransitionScope) {
+        Modifier.sharedBounds(
+            sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
+            animatedVisibilityScope = animatedVisibilityScope,
+            resizeMode = RemeasureToBounds
+        )
+    }
 
     LaunchedEffect(isVisible) {
         if (!isVisible) showFabMenu = false
@@ -115,7 +128,7 @@ fun VaultFab(
             }
 
             Box(
-                modifier = Modifier
+                modifier = sharedFabModifier
                     .size(if (expressive) 64.dp else 56.dp)
                     .shadow(4.dp, MaterialTheme.shapes.large)
                     .clip(MaterialTheme.shapes.large)

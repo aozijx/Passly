@@ -10,7 +10,7 @@ class PasswordEntryFactoryTest {
     @Test
     fun createMapsEveryPersistedFieldAndPreservesPasswordWhitespace() {
         val entry = PasswordEntryFactory.create(
-            state = AddPasswordUiState(
+            state = AddPasswordFormState(
                 title = "  Mail  ",
                 username = "  user@example.com  ",
                 password = " secret ",
@@ -33,7 +33,7 @@ class PasswordEntryFactoryTest {
     @Test
     fun createOmitsUndefinedOptionalFields() {
         val entry = PasswordEntryFactory.create(
-            state = AddPasswordUiState(
+            state = AddPasswordFormState(
                 title = "Account",
                 password = "secret",
                 website = "   ",

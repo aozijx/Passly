@@ -1,5 +1,6 @@
 package com.aozijx.passly.app.navigation
 
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,6 +31,8 @@ import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.feature.vault.editor.otp.AddOtpScreen
+import com.aozijx.passly.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.feature.vault.editor.password.AddPasswordScreen
 import com.aozijx.passly.feature.vault.editor.password.AddPasswordViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -48,16 +51,19 @@ fun PasslyNavHost(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        NavHost(
-            modifier = Modifier.fillMaxSize(),
-            navController = navController,
-            startDestination = AppRoute.Vault.route,
-            enterTransition = PasslyNavigationAnim.enterTransition,
-            exitTransition = PasslyNavigationAnim.exitTransition,
-            popEnterTransition = PasslyNavigationAnim.popEnterTransition,
-            popExitTransition = PasslyNavigationAnim.popExitTransition
-        ) {
+        SharedTransitionLayout {
+            val sharedTransitionScope = this
+            NavHost(
+                modifier = Modifier.fillMaxSize(),
+                navController = navController,
+                startDestination = AppRoute.Vault.route,
+                enterTransition = PasslyNavigationAnim.enterTransition,
+                exitTransition = PasslyNavigationAnim.exitTransition,
+                popEnterTransition = PasslyNavigationAnim.popEnterTransition,
+                popExitTransition = PasslyNavigationAnim.popExitTransition
+            ) {
         composable(AppRoute.Vault.route) {
+            val animatedVisibilityScope = this
             VaultContent(
                 vaultViewModel = vaultViewModel,
                 requestAuthentication = { onSuccess ->
@@ -80,6 +86,13 @@ fun PasslyNavHost(
                         launchSingleTop = true
                     }
                 },
+                onAddOtp = {
+                    navController.navigate(AppRoute.AddOtp.route) {
+                        launchSingleTop = true
+                    }
+                },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)
                 },
@@ -91,6 +104,7 @@ fun PasslyNavHost(
         }
 
             composable(AppRoute.AddPassword.route) {
+                val animatedVisibilityScope = this
                 val addPasswordViewModel: AddPasswordViewModel = hiltViewModel()
                 AddPasswordScreen(
                     viewModel = addPasswordViewModel,
@@ -98,7 +112,24 @@ fun PasslyNavHost(
                     onSaved = { navController.popBackStack() },
                     onUserInteraction = {
                         mainViewModel.handleIntent(MainIntent.UpdateInteraction)
-                    }
+                    },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
+            }
+
+                composable(AppRoute.AddOtp.route) {
+                    val animatedVisibilityScope = this
+                    val addOtpViewModel: AddOtpViewModel = hiltViewModel()
+                    AddOtpScreen(
+                        viewModel = addOtpViewModel,
+                        onBack = { navController.popBackStack() },
+                        onSaved = { navController.popBackStack() },
+                        onUserInteraction = {
+                            mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                 )
             }
 
@@ -159,6 +190,7 @@ fun PasslyNavHost(
                 onBack = { navController.popBackStack() },
                 settingsViewModel = settingsViewModel
             )
+        }
         }
         }
     }

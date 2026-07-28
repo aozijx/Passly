@@ -13,11 +13,8 @@ import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
@@ -35,7 +32,6 @@ import com.aozijx.passly.feature.vault.list.SearchFilterState
 import com.aozijx.passly.feature.vault.list.VaultListCoordinator
 import com.aozijx.passly.feature.vault.list.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.feature.vault.model.OtpFormState
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
@@ -45,7 +41,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -124,75 +119,6 @@ class VaultViewModel @Inject constructor(
 
     private val _showTOTPCode = MutableStateFlow(true)
 
-    // --- OTP 表单状态（添加/编辑） ---
-    private val _otpFormState = MutableStateFlow(OtpFormState())
-    val otpFormState: StateFlow<OtpFormState> = _otpFormState.asStateFlow()
-
-    fun setOtpFormState(state: OtpFormState) {
-        _otpFormState.value = state
-    }
-
-    fun initOtpFormForEdit(entry: VaultEntry) {
-        _otpFormState.value = OtpFormState.fromEntry(entry)
-    }
-
-    fun resetOtpForm() {
-        _otpFormState.value = OtpFormState()
-    }
-
-    fun updateOtpType(type: OtpType) {
-        _otpFormState.value = _otpFormState.value.let { current ->
-            current.copy(
-                type = type,
-                digits = when (type) {
-                    OtpType.STEAM -> "5"
-                    OtpType.TOTP -> if (current.digits == "5") "6" else current.digits
-                    OtpType.HOTP -> current.digits
-                },
-                period = when (type) {
-                    OtpType.STEAM -> "30"
-                    OtpType.TOTP -> current.period.ifBlank { "30" }
-                    OtpType.HOTP -> current.period
-                },
-                algorithm = when (type) {
-                    OtpType.STEAM -> "SHA1"
-                    OtpType.HOTP -> current.algorithm
-                    OtpType.TOTP -> current.algorithm
-                },
-                counter = when (type) {
-                    OtpType.HOTP -> if (current.counter.isBlank()) "0" else current.counter
-                    else -> current.counter
-                }
-            )
-        }
-    }
-
-    /**
-     * 保存 OTP 条目。
-     *
-     * @param originalEntry 编辑模式下需要传入原始条目以构造更新版本
-     */
-    fun saveOtpEntry(originalEntry: VaultEntry? = null) {
-        val state = _otpFormState.value
-        try {
-            when (state.mode) {
-                is OtpFormState.Mode.Add -> {
-                    val entry = buildOtpEntry(state)
-                    addItem(entry, state.domain)
-                }
-
-                is OtpFormState.Mode.Edit -> {
-                    val entry = originalEntry ?: return
-                    val updatedEntry = buildUpdatedEntry(entry, state)
-                    updateVaultEntry(updatedEntry)
-                }
-            }
-        } catch (e: Exception) {
-            AppTelemetry.e("SaveOtpEntry", "Failed to save OTP entry", e)
-            emitError("加密保存失败")
-        }
-    }
-
     fun addScannedOtp(config: OtpConfig) {
         try {
             val title = buildString {
@@ -224,61 +150,6 @@ class VaultViewModel @Inject constructor(
             emitError("加密保存失败")
         }
     }
-
-    private fun buildOtpEntry(state: OtpFormState): VaultEntry = VaultEntry(
-        header = EntryHeader(
-            id = EntryId(""),
-            entryType = EntryType.LOGIN,
-            version = EntryVersion.INITIAL,
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis()
-        ),
-        summary = EntrySummary(
-            title = state.title,
-            username = state.username,
-            icon = null,
-            website = state.domain.ifBlank { null }
-                ?.let { WebsiteInfo(primaryUrl = it) }
-        ),
-        secret = EntrySecret(
-            otp = OtpSecret(
-                config = buildOtpConfig(state)
-            )
-        )
-    )
-
-    private fun buildUpdatedEntry(entry: VaultEntry, state: OtpFormState): VaultEntry {
-        val newOtp = OtpSecret(
-            config = buildOtpConfig(state)
-        )
-        return entry.copy(
-            summary = entry.summary.copy(
-                title = state.title,
-                username = state.username.ifBlank { entry.summary.username }
-            ),
-            secret = entry.secret.copy(otp = newOtp)
-        )
-    }
-
-    private fun buildOtpConfig(state: OtpFormState): OtpConfig = OtpConfig(
-        type = state.type,
-        secret = state.secret.trim(),
-        digits = if (state.type == OtpType.STEAM) 5
-        else (state.digits.toIntOrNull() ?: 6),
-        periodSeconds = if (state.type == OtpType.HOTP) null
-        else (state.period.toIntOrNull() ?: 30),
-        counter = if (state.type == OtpType.HOTP) {
-            state.counter.toLongOrNull() ?: 0L
-        } else null,
-        algorithm = when (state.algorithm.uppercase()) {
-            "SHA256" -> OtpHashAlgorithm.SHA256
-            "SHA512" -> OtpHashAlgorithm.SHA512
-            else -> OtpHashAlgorithm.SHA1
-        },
-        encoding = state.encoding,
-        issuer = state.issuer.ifBlank { null },
-        accountName = state.username.ifBlank { null }
-    )
 
     private val visibleTabs: StateFlow<List<VaultTab>> =
         settingsRepository.settings.map { it.vault.visibleTabs }
@@ -390,8 +261,6 @@ class VaultViewModel @Inject constructor(
     fun addItem(entry: VaultEntry) =
         entryManager.addItem(entry, onComplete = { setAddType(null) })
 
-    fun addItem(entry: VaultEntry, domain: String) =
-        entryManager.addItem(entry, domain, onComplete = { setAddType(null) })
     fun updateVaultEntry(entry: VaultEntry) = entryManager.updateEntry(entry)
     fun quickDelete(item: EntryListItem) = entryManager.deleteEntryById(item.id)
     fun confirmDelete() {

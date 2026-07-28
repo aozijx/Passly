@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.entry.model.secret.LoginSecret
 internal object PasswordEntryFactory {
 
     fun create(
-        state: AddPasswordUiState,
+        state: AddPasswordFormState,
         now: Long = System.currentTimeMillis()
     ): VaultEntry = VaultEntry(
         header = EntryHeader(

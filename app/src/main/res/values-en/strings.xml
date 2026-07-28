@@ -86,7 +86,8 @@
     <string name="vault_export_qr_title">Export otp Secret</string>
     <string name="vault_export_qr_message">Scan this QR code with another authenticator app</string>
 
-    <string name="vault_add_otp_title">Add otp</string>
+    <string name="vault_add_otp_title">Add OTP</string>
+    <string name="vault_add_otp_save_failed">Couldn\'t save OTP</string>
     <string name="vault_otp_uri_parsed">URI parsed successfully</string>
     <string name="vault_otp_uri_parse_failed">Failed to parse URI</string>
 

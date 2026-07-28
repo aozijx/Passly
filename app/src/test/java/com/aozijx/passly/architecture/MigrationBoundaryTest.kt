@@ -102,7 +102,7 @@ class MigrationBoundaryTest {
     }
 
     @Test
-    fun vaultMenuStateIsTransientAndPasswordCreationUsesItsOwnRoute() {
+    fun vaultMenuStateIsTransientAndEntryCreationUsesDedicatedRoutes() {
         val vaultUiState = File(
             "src/main/java/com/aozijx/passly/feature/vault/contract/VaultUiState.kt"
         ).readText()
@@ -119,9 +119,21 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/vault/editor/password/" +
                     "AddPasswordScreen.kt"
         )
+        val otpScreen = File(
+            "src/main/java/com/aozijx/passly/feature/vault/editor/otp/" +
+                    "AddOtpScreen.kt"
+        )
+        val commonScaffold = File(
+            "src/main/java/com/aozijx/passly/feature/vault/editor/common/" +
+                    "AddEntryScaffold.kt"
+        ).readText()
         val oldPasswordDialog = File(
             "src/main/java/com/aozijx/passly/feature/vault/components/editor/" +
                     "AddPasswordDialog.kt"
+        )
+        val oldOtpDialog = File(
+            "src/main/java/com/aozijx/passly/feature/vault/components/editor/" +
+                    "AddOtpDialog.kt"
         )
 
         assertTrue(
@@ -134,12 +146,21 @@ class MigrationBoundaryTest {
             "var isMoreMenuExpanded by remember" in topBar
         )
         assertTrue(
-            "Password creation must have a dedicated navigation route",
-            "data object AddPassword" in routeSource && passwordScreen.isFile
+            "Password and OTP creation must have dedicated navigation routes",
+            "data object AddPassword" in routeSource &&
+                    "data object AddOtp" in routeSource &&
+                    passwordScreen.isFile &&
+                    otpScreen.isFile
         )
         assertTrue(
-            "Password dialog must not return",
-            !oldPasswordDialog.exists()
+            "Password and OTP creation dialogs must not return",
+            !oldPasswordDialog.exists() && !oldOtpDialog.exists()
+        )
+        assertTrue(
+            "Entry creation pages must share the page shell and FAB transition",
+            "fun AddEntryScaffold" in commonScaffold &&
+                    "sharedBounds" in commonScaffold &&
+                    "ADD_ENTRY_FAB_SHARED_KEY" in commonScaffold
         )
     }
 

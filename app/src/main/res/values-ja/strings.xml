@@ -85,7 +85,8 @@
     <string name="vault_export_qr_title">otp秘密鍵をエクスポート</string>
     <string name="vault_export_qr_message">他のデバイスの認証アプリでこのQRコードをスキャンしてください</string>
 
-    <string name="vault_add_otp_title">otpを追加</string>
+    <string name="vault_add_otp_title">OTPを追加</string>
+    <string name="vault_add_otp_save_failed">OTPを保存できませんでした</string>
     <string name="vault_otp_uri_parsed">URIを解析しました</string>
     <string name="vault_otp_uri_parse_failed">URIの解析に失敗しました</string>
 
