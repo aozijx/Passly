@@ -25,6 +25,7 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.page.DetailScreen
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
+import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.vault.VaultContent
@@ -56,8 +57,22 @@ fun PasslyNavHost(
         ) {
         composable(AppRoute.Vault.route) {
             VaultContent(
-                mainViewModel = mainViewModel,
                 vaultViewModel = vaultViewModel,
+                requestAuthentication = { onSuccess ->
+                    mainViewModel.requestAuth(onSuccess = onSuccess)
+                },
+                requestReauthentication = { onSuccess ->
+                    mainViewModel.requestReauth(onSuccess = onSuccess)
+                },
+                onUserInteraction = {
+                    mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+                },
+                scannerContent = { onSaveOtp, onDismiss ->
+                    VaultScanner(
+                        onSaveOtp = onSaveOtp,
+                        onDismiss = onDismiss
+                    )
+                },
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)
                 },
@@ -88,7 +103,6 @@ fun PasslyNavHost(
                 detailViewModel.effects.collectLatest { effect ->
                     when (effect) {
                         is DetailEffect.EntryUpdated -> vaultViewModel.updateVaultEntry(effect.entry)
-                        DetailEffect.IconPickerRequested -> vaultViewModel.showDetailIconPicker()
                     }
                 }
             }
@@ -112,7 +126,6 @@ fun PasslyNavHost(
                     onEvent = detailViewModel::handleIntent,
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
                     onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
-                    onShowIconPicker = { vaultViewModel.showDetailIconPicker() },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
                     onAuthenticate = { success ->
                         mainViewModel.requestAuth(onSuccess = success)

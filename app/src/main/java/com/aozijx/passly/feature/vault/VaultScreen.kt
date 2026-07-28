@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -24,27 +25,31 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.feature.main.MainViewModel
-import com.aozijx.passly.feature.vault.components.VaultContentTopBar
-import com.aozijx.passly.feature.vault.components.VaultDialogs
-import com.aozijx.passly.feature.vault.components.VaultPagerContent
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.feature.vault.action.rememberVaultActionProvider
+import com.aozijx.passly.feature.vault.components.dialog.VaultDialogs
 import com.aozijx.passly.feature.vault.components.fab.VaultFab
-import com.aozijx.passly.feature.vault.internal.rememberVaultActionProvider
+import com.aozijx.passly.feature.vault.components.list.VaultPagerContent
+import com.aozijx.passly.feature.vault.components.topbar.VaultContentTopBar
+import com.aozijx.passly.feature.vault.contract.VaultEffect
+import com.aozijx.passly.feature.vault.display.VaultDisplayViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultContent(
-    mainViewModel: MainViewModel,
     vaultViewModel: VaultViewModel,
+    requestAuthentication: (onSuccess: () -> Unit) -> Unit,
+    requestReauthentication: (onSuccess: () -> Unit) -> Unit,
+    onUserInteraction: () -> Unit,
+    scannerContent: @Composable ((OtpConfig) -> Unit, () -> Unit) -> Unit,
     onSettingsClick: () -> Unit = {},
     onShowDetail: (EntryListItem) -> Unit = {},
     isDatabaseInitializing: Boolean = false
 ) {
     val context = LocalContext.current
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
-    val totpStates by vaultViewModel.totpStatesFlow.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
@@ -54,16 +59,19 @@ fun VaultContent(
     var isFabVisible by remember { mutableStateOf(true) }
 
     val actionProvider = rememberVaultActionProvider(
-        mainViewModel = mainViewModel,
         vaultViewModel = vaultViewModel,
-        totpStates = totpStates,
+        totpStates = vaultViewModel.totpStatesFlow,
+        requestAuthentication = requestAuthentication,
+        requestReauthentication = requestReauthentication,
+        onUserInteraction = onUserInteraction,
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }
     )
 
     val initialTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab).coerceAtLeast(0)
-    val pagerState =
-        rememberPagerState(initialPage = initialTabIndex) { uiState.visibleTabs.size.coerceAtLeast(1) }
+    val pagerState = rememberPagerState(initialPage = initialTabIndex) {
+        uiState.visibleTabs.size.coerceAtLeast(1)
+    }
 
     LaunchedEffect(uiState.visibleTabs, uiState.selectedTab) {
         if (uiState.visibleTabs.isEmpty()) return@LaunchedEffect
@@ -77,12 +85,10 @@ fun VaultContent(
         }
     }
 
-    LaunchedEffect(pagerState, uiState.visibleTabs, uiState.selectedTab) {
+    LaunchedEffect(pagerState, uiState.visibleTabs) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
             val newTab = uiState.visibleTabs.getOrNull(page) ?: return@collect
-            if (newTab != uiState.selectedTab) {
-                vaultViewModel.selectTab(newTab)
-            }
+            vaultViewModel.selectTab(newTab)
         }
     }
 
@@ -111,6 +117,16 @@ fun VaultContent(
         }
     }
 
+    LaunchedEffect(vaultViewModel, context) {
+        vaultViewModel.effects.collect { effect ->
+            val message = when (effect) {
+                is VaultEffect.ShowError -> effect.message
+                is VaultEffect.ShowToast -> effect.message
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     DisposableEffect(activity) {
         onDispose {
             activity?.let {
@@ -135,6 +151,8 @@ fun VaultContent(
         topBar = {
             VaultContentTopBar(
                 uiState = uiState,
+                selectedTabIndex = pagerState.currentPage,
+                maxTabsWithoutScroll = vaultDisplayConfig.layout.tabBarMaxTabsWithoutScroll,
                 scrollBehavior = scrollBehavior,
                 onSettingsClick = onSettingsClick,
                 isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
@@ -163,7 +181,7 @@ fun VaultContent(
             pagerState = pagerState,
             uiState = uiState,
             entryCardPresentations = entryCardPresentations,
-            totpStates = totpStates,
+            totpStates = vaultViewModel.totpStatesFlow,
             swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
             swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
             isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
@@ -176,8 +194,10 @@ fun VaultContent(
     }
 
     VaultDialogs(
-        mainViewModel = mainViewModel,
+        uiState = uiState,
         vaultViewModel = vaultViewModel,
-        onUpdateInteraction = actionProvider.onUpdateInteraction
+        requestAuthentication = requestAuthentication,
+        onUpdateInteraction = actionProvider.onUpdateInteraction,
+        scannerContent = scannerContent
     )
 }

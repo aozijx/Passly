@@ -1,8 +1,6 @@
 package com.aozijx.passly.feature.vault
 
-import android.app.Application
-import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
@@ -32,23 +30,22 @@ import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultUiState
-import com.aozijx.passly.feature.vault.internal.DetailCoordinator
-import com.aozijx.passly.feature.vault.internal.EntryIconHelper
-import com.aozijx.passly.feature.vault.internal.EntryManager
-import com.aozijx.passly.feature.vault.internal.SearchFilterState
-import com.aozijx.passly.feature.vault.internal.TotpCoordinator
-import com.aozijx.passly.feature.vault.internal.VaultListCoordinator
-import com.aozijx.passly.feature.vault.internal.VaultQueryCoordinator
+import com.aozijx.passly.feature.vault.entry.EntryManager
+import com.aozijx.passly.feature.vault.list.SearchFilterState
+import com.aozijx.passly.feature.vault.list.VaultListCoordinator
+import com.aozijx.passly.feature.vault.list.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpFormState
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.otp.TotpCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -58,7 +55,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class VaultViewModel @Inject constructor(
-    application: Application,
     private val entryQueryRepository: EntryQueryRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
     private val otpConfigRepository: OtpConfigRepository,
@@ -68,9 +64,10 @@ class VaultViewModel @Inject constructor(
     val entryFieldReader: EntryFieldReader,
     private val vaultDataRefreshNotifier: VaultDataRefreshNotifier,
     private val sessionStateProvider: SessionStateProvider
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
+    val effects = _effects.asSharedFlow()
 
     private fun emitError(message: String) {
         _effects.tryEmit(VaultEffect.ShowError(message))
@@ -79,14 +76,10 @@ class VaultViewModel @Inject constructor(
     private val _refreshTrigger = MutableStateFlow(0L)
 
     /**
-     * 强制重新读取数据库，刷新整个列表。
-     * 保存密码或导入备份后调用此方法确保 UI 反映最新数据。
-     *
-     * 使用递增计数器作为触发值，确保每次调用都产生不同的 [refreshTrigger] 发射，
-     * 从而绕过后继 [distinctUntilChanged]，并使 [flatMapLatest] 自动取消
-     * 前一次未完成的数据库订阅，防止竞态条件。
+     * 外部替换数据库内容后重建 Room 订阅。
+     * 普通增删改依靠 Room 的失效通知，不应手动触发重复查询。
      */
-    fun refreshItems() {
+    private fun requestFullReload() {
         _refreshTrigger.value++
     }
 
@@ -96,17 +89,23 @@ class VaultViewModel @Inject constructor(
         loadOtpConfig = { otpConfigRepository.getConfig(it) },
         initiallyUnlocked = sessionStateProvider.isWritable
     )
-    private val detail = DetailCoordinator()
+    private val _dialogState = MutableStateFlow(VaultDialogState())
     private val entryManager = EntryManager(
         scope = viewModelScope,
         entryCommandRepository = entryCommandRepository,
         entryQueryRepository = entryQueryRepository,
         faviconRepository = faviconRepository,
-        iconHelper = EntryIconHelper(),
-        detail = detail,
         totp = totp,
         onError = { emitError(it) },
-        onRefreshItems = { refreshItems() }
+        onEntryDeleted = { deletedId ->
+            _dialogState.value = _dialogState.value.let { state ->
+                if (state.pendingDelete?.id == deletedId) {
+                    state.copy(pendingDelete = null)
+                } else {
+                    state
+                }
+            }
+        }
     )
 
     private val queryCoordinator = VaultQueryCoordinator(entryListQueryRepository)
@@ -115,17 +114,11 @@ class VaultViewModel @Inject constructor(
         initialSort = VaultSortSpec.DEFAULT
     )
 
-    private val isAutoDownloadIcons: StateFlow<Boolean> =
-        settingsRepository.settings.map { it.interaction.isAutoDownloadIcons }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
     private val listCoordinator = VaultListCoordinator(
         scope = viewModelScope,
         queryCoordinator = queryCoordinator,
         searchFilter = searchFilter,
         entryListQueryRepository = entryListQueryRepository,
-        entryManager = entryManager,
-        isAutoDownloadIcons = isAutoDownloadIcons,
         refreshTrigger = _refreshTrigger
     )
 
@@ -186,7 +179,6 @@ class VaultViewModel @Inject constructor(
                 is OtpFormState.Mode.Add -> {
                     val entry = buildOtpEntry(state)
                     addItem(entry, state.domain)
-                    setAddType(null)
                 }
 
                 is OtpFormState.Mode.Edit -> {
@@ -307,25 +299,22 @@ class VaultViewModel @Inject constructor(
     val totpStatesFlow: StateFlow<Map<String, OtpUiState>> = totp.states
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    private val settingsState: StateFlow<Triple<List<VaultTab>, Boolean, Boolean>> =
-        combine(visibleTabs, isAutoDownloadIcons, _showTOTPCode) { tabs, auto, show ->
-            Triple(tabs, auto, show)
+    private val settingsState: StateFlow<Pair<List<VaultTab>, Boolean>> =
+        combine(visibleTabs, _showTOTPCode) { tabs, show ->
+            tabs to show
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5000),
-            Triple(
-                VaultTab.resolveVisible(VaultTab.defaultVisibleKeys),
-                true,
-                true
-            )
+            VaultTab.resolveVisible(VaultTab.defaultVisibleKeys) to true
         )
 
     val uiState: StateFlow<VaultUiState> = combine(
         searchFilter.uiStateFlow,
         settingsState,
-        listCoordinator.state
-    ) { search, settings, list ->
-        val (tabs, autoIcons, showCode) = settings
+        listCoordinator.state,
+        _dialogState
+    ) { search, settings, list, dialogs ->
+        val (tabs, showCode) = settings
         VaultUiState(
             searchQuery = search.searchQuery,
             selectedCategory = search.selectedCategory,
@@ -336,10 +325,10 @@ class VaultViewModel @Inject constructor(
             isVaultItemsLoading = list.isLoading,
             availableCategories = list.categories,
             visibleTabs = tabs,
-            isAutoDownloadIcons = autoIcons,
-            vaultItems = list.items,
             vaultItemsByTab = list.itemsByTab,
-            showTOTPCode = showCode
+            showTOTPCode = showCode,
+            addType = dialogs.addType,
+            pendingDelete = dialogs.pendingDelete
         )
     }.stateIn(
         viewModelScope,
@@ -362,13 +351,13 @@ class VaultViewModel @Inject constructor(
         _showTOTPCode.value = !_showTOTPCode.value
     }
 
-    val addType: AddType? get() = detail.addType
-    fun setAddType(type: AddType?) = detail.setAddType(type)
-    val itemToDelete: EntryListItem? get() = detail.itemToDelete
-    fun setItemToDelete(item: EntryListItem?) = detail.setItemToDelete(item)
+    fun setAddType(type: AddType?) {
+        _dialogState.value = _dialogState.value.copy(addType = type)
+    }
 
-    fun showDetailIconPicker() = detail.showIconPicker()
-    fun hideDetailIconPicker() = detail.hideIconPicker()
+    fun setItemToDelete(item: EntryListItem?) {
+        _dialogState.value = _dialogState.value.copy(pendingDelete = item)
+    }
 
     fun autoUnlockTotp(entryId: String) = totp.autoUnlock(entryId)
 
@@ -391,7 +380,7 @@ class VaultViewModel @Inject constructor(
 
         viewModelScope.launch {
             vaultDataRefreshNotifier.events.collect {
-                refreshItems()
+                requestFullReload()
             }
         }
     }
@@ -399,42 +388,20 @@ class VaultViewModel @Inject constructor(
     fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) =
         viewModelScope.launch { entryQueryRepository.getById(entryId)?.let(onLoaded) }
 
-    fun decryptSingle(
-        encryptedData: String,
-        authenticate: (onSuccess: () -> Unit) -> Unit,
-        onResult: (String?) -> Unit
-    ) {
-        if (encryptedData.isEmpty()) {
-            onResult("")
-            return
-        }
-        authenticate {
-            onResult(encryptedData)
-        }
-    }
-
     // --- 条目操作委托 ---
-    fun addItem(entry: VaultEntry) = entryManager.addItem(entry)
-    fun addItem(entry: VaultEntry, domain: String) = entryManager.addItem(entry, domain)
+    fun addItem(entry: VaultEntry) =
+        entryManager.addItem(entry, onComplete = { setAddType(null) })
+
+    fun addItem(entry: VaultEntry, domain: String) =
+        entryManager.addItem(entry, domain, onComplete = { setAddType(null) })
     fun updateVaultEntry(entry: VaultEntry) = entryManager.updateEntry(entry)
     fun quickDelete(item: EntryListItem) = entryManager.deleteEntryById(item.id)
     fun confirmDelete() {
-        val item = itemToDelete ?: return
+        val item = _dialogState.value.pendingDelete ?: return
         viewModelScope.launch {
             val entry = entryQueryRepository.getById(item.id) ?: return@launch
             entryManager.deleteEntry(entry)
         }
-    }
-
-    fun saveCustomIcon(entry: VaultEntry, uri: Uri) {
-        entryManager.saveCustomIcon(
-            context = getApplication(),
-            item = entry,
-            uri = uri,
-            onFailed = {
-                _effects.tryEmit(VaultEffect.ShowToast("图标保存失败"))
-            }
-        )
     }
 
     override fun onCleared() {
@@ -442,3 +409,8 @@ class VaultViewModel @Inject constructor(
         totp.clearAllSensitiveState()
     }
 }
+
+private data class VaultDialogState(
+    val addType: AddType? = null,
+    val pendingDelete: EntryListItem? = null
+)

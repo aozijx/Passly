@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.model
 
+import androidx.compose.runtime.Immutable
 import com.aozijx.passly.core.otp.OtpError
 
 /**
@@ -10,6 +11,7 @@ import com.aozijx.passly.core.otp.OtpError
  *   Compose 层应使用 animateFloatAsState 独立实现平滑动画
  * - [error] 非 null 表示生成失败时的类型化错误
  */
+@Immutable
 data class OtpUiState(
     val code: String? = null,
     val progress: Float = 0f,

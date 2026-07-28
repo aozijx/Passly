@@ -71,6 +71,37 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun vaultFeatureDoesNotDependOnSiblingFeaturesOrInternalBucket() {
+        val vaultRoot = File("src/main/java/com/aozijx/passly/feature/vault")
+        val siblingFeatureImport = Regex(
+            """import com\.aozijx\.passly\.feature\.(?!vault(?:\.|$))"""
+        )
+        val siblingFeatureOffenders = vaultRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filter { siblingFeatureImport.containsMatchIn(it.readText()) }
+            .map { it.relativeTo(vaultRoot).path }
+            .toList()
+        val internalBucket = File(vaultRoot, "internal")
+        val internalFiles = if (internalBucket.exists()) {
+            internalBucket.walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .map { it.relativeTo(vaultRoot).path }
+                .toList()
+        } else {
+            emptyList()
+        }
+
+        assertTrue(
+            "Vault imports sibling features: $siblingFeatureOffenders",
+            siblingFeatureOffenders.isEmpty()
+        )
+        assertTrue(
+            "Vault internal bucket must stay split by responsibility: $internalFiles",
+            internalFiles.isEmpty()
+        )
+    }
+
+    @Test
     fun packageNamesMatchSourceDirectories() {
         val sourceRoot = File("src/main/java")
         val offenders = productionKotlinFiles.mapNotNull { source ->

@@ -39,7 +39,6 @@ fun AssociatedInfoSection(
     entry: VaultEntry,
     editState: EntryEditState,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onShowIconPicker: () -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     if (entry.entryType == EntryType.LOGIN) {

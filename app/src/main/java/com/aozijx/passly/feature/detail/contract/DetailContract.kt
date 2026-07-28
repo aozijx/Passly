@@ -38,7 +38,6 @@ sealed interface DetailIntent {
     data class Initialize(val initialEntry: VaultEntry) : DetailIntent
     data class SyncEntry(val entry: VaultEntry) : DetailIntent
     data class CommitEntryUpdate(val entry: VaultEntry) : DetailIntent
-    object ShowIconPicker : DetailIntent
 
     object StartTitleEdit : DetailIntent
     object CancelTitleEdit : DetailIntent
@@ -56,5 +55,4 @@ sealed interface DetailIntent {
 
 sealed interface DetailEffect {
     data class EntryUpdated(val entry: VaultEntry) : DetailEffect
-    data object IconPickerRequested : DetailEffect
 }

@@ -37,7 +37,6 @@ fun DetailScreen(
     onEvent: (DetailIntent) -> Unit,
     onUpdateInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onShowIconPicker: () -> Unit,
     onAutoUnlockTotp: (VaultEntry) -> Unit,
     onAuthenticate: DetailAuthenticate
 ) {
@@ -100,7 +99,6 @@ fun DetailScreen(
             onEvent = onEvent,
             onInteraction = onUpdateInteraction,
             onUpdateVaultEntry = onUpdateVaultEntry,
-            onShowIconPicker = onShowIconPicker,
             onAuthenticate = onAuthenticate
         )
     }

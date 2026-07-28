@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.theme.PasslyTheme
 import com.aozijx.passly.feature.vault.model.AddType
-import kotlinx.coroutines.delay
 
 @Composable
 fun VaultFab(
@@ -63,25 +62,10 @@ fun VaultFab(
         label = "fabRotation"
     )
 
-    // 用于实现依次弹出的状态控制
     val fabMenuOptions = AddType.fabMenuOptions
-    var visibleStates by remember { mutableStateOf(List(fabMenuOptions.size) { false }) }
 
-    // 监听 showFabMenu 变化，手动控制延迟实现交错效果
-    LaunchedEffect(showFabMenu) {
-        if (showFabMenu) {
-            val lastIndex = fabMenuOptions.lastIndex
-            for (i in lastIndex downTo 0) {
-                visibleStates = visibleStates.toMutableList().apply { this[i] = true }
-                if (i > 0) delay(60)
-            }
-        } else {
-            visibleStates = visibleStates.toMutableList().apply { replaceAll { false } }
-        }
-    }
-
-    if (!isVisible) {
-        showFabMenu = false
+    LaunchedEffect(isVisible) {
+        if (!isVisible) showFabMenu = false
     }
 
     AnimatedVisibility(
@@ -108,9 +92,9 @@ fun VaultFab(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                fabMenuOptions.forEachIndexed { index, type ->
+                fabMenuOptions.forEach { type ->
                     FabMenuItemWithSpring(
-                        visible = visibleStates[index],
+                        visible = showFabMenu,
                         label = stringResource(type.labelRes),
                         icon = type.icon,
                         onClick = {

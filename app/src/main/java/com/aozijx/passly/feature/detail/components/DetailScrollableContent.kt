@@ -41,7 +41,6 @@ fun DetailScrollableContent(
     onEvent: (DetailIntent) -> Unit,
     onInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onShowIconPicker: () -> Unit,
     onAuthenticate: DetailAuthenticate
 ) {
     val entry = uiState.entry ?: return
@@ -177,7 +176,6 @@ fun DetailScrollableContent(
                 entry = entry,
                 editState = editState,
                 onUpdateVaultEntry = onUpdateVaultEntry,
-                onShowIconPicker = onShowIconPicker,
                 onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
             )
         }

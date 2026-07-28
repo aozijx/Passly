@@ -110,7 +110,7 @@ internal fun SortSubMenu(
             onClick = {
                 onSortSelected(if (selected && !isDefault) selectedSort.toggled() else preset)
             },
-            modifier = selectedMenuModifier(selected)
+            modifier = Modifier.selectedMenuModifier(selected)
         )
     }
 }
@@ -201,13 +201,13 @@ private fun CategoryMenuItem(text: String, selected: Boolean, onClick: () -> Uni
             )
         },
         onClick = onClick,
-        modifier = selectedMenuModifier(selected)
+        modifier = Modifier.selectedMenuModifier(selected)
     )
 }
 
 @Composable
-private fun selectedMenuModifier(selected: Boolean): Modifier =
-    Modifier
+private fun Modifier.selectedMenuModifier(selected: Boolean): Modifier =
+    this
         .padding(horizontal = 8.dp, vertical = 2.dp)
         .clip(MaterialTheme.shapes.small)
         .background(

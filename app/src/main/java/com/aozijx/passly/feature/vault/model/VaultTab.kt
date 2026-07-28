@@ -27,7 +27,7 @@ enum class VaultTab(
         settingsKey = "all",
         titleRes = R.string.tab_all,
         icon = Icons.Default.Apps,
-        isToggleable = true,
+        isToggleable = false,
         isUiVisible = true,
         entryFilter = EntryFilter.ALL
     ),
@@ -51,7 +51,7 @@ enum class VaultTab(
     companion object {
         /** 默认启用的 Tab 集合（仅包含仍需展示的 UI 选项 + 必选项）。 */
         val defaultVisibleKeys: Set<String> =
-            entries.filter { !it.isToggleable }
+            entries.filter { it.isUiVisible }
                 .map { it.settingsKey }
                 .toSet()
 

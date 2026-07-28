@@ -42,6 +42,8 @@ import com.aozijx.passly.feature.vault.model.VaultTab
 @Composable
 fun VaultTopBar(
     uiState: VaultUiState,
+    selectedTabIndex: Int,
+    maxTabsWithoutScroll: Int,
     scrollBehavior: TopAppBarScrollBehavior,
     onSettingsClick: () -> Unit = {},
     isStatusBarAutoHide: Boolean = false,
@@ -150,8 +152,8 @@ fun VaultTopBar(
         ) {
             VaultTabRow(
                 tabs = uiState.visibleTabs,
-                selectedTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab)
-                    .coerceAtLeast(0),
+                selectedTabIndex = selectedTabIndex,
+                maxTabsWithoutScroll = maxTabsWithoutScroll,
                 onTabSelected = { index ->
                     uiState.visibleTabs.getOrNull(index)?.let { onSelectTab(it) }
                 }

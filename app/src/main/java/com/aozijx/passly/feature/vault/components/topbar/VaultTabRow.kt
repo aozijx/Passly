@@ -17,9 +17,9 @@ import com.aozijx.passly.feature.vault.model.VaultTab
 fun VaultTabRow(
     modifier: Modifier = Modifier,
     tabs: List<VaultTab>,
-    selectedTabIndex: Int, // 核心：改为接收 Pager 的实时索引
+    selectedTabIndex: Int,
     maxTabsWithoutScroll: Int = 4,
-    onTabSelected: (Int) -> Unit // 返回索引
+    onTabSelected: (Int) -> Unit
 ) {
     if (tabs.size <= 1) return
     val safeIndex = selectedTabIndex.coerceIn(0, tabs.lastIndex)

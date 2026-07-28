@@ -81,13 +81,12 @@ object CardStyleRegistry {
     fun RenderVaultItem(
         style: VaultCardStyle,
         entry: EntryListItem,
-        totpStates: Map<String, OtpUiState>,
+        totpState: OtpUiState?,
         showTotpCode: Boolean,
         onClick: () -> Unit
     ) {
         val isTotp = entry.hasOtp
         val isAutofill = entry.category == stringResource(R.string.category_autofill)
-        val totpState = totpStates[entry.id]
 
         when (style) {
             VaultCardStyle.DEFAULT -> {

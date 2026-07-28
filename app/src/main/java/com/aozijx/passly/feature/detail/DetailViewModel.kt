@@ -99,10 +99,6 @@ class DetailViewModel @Inject constructor(
                 emitEntryUpdated(event.entry)
             }
 
-            DetailIntent.ShowIconPicker -> {
-                _effects.tryEmit(DetailEffect.IconPickerRequested)
-            }
-
             DetailIntent.StartTitleEdit -> {
                 _uiState.update {
                     val currentTitle = it.entry?.title.orEmpty()
