@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
+import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -65,7 +66,8 @@ class VaultViewModel @Inject constructor(
     private val entryCommandRepository: EntryCommandRepository,
     private val faviconRepository: FaviconRepository,
     val entryFieldReader: EntryFieldReader,
-    private val vaultDataRefreshNotifier: VaultDataRefreshNotifier
+    private val vaultDataRefreshNotifier: VaultDataRefreshNotifier,
+    private val sessionStateProvider: SessionStateProvider
 ) : AndroidViewModel(application) {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
@@ -91,7 +93,8 @@ class VaultViewModel @Inject constructor(
     private val totp = TotpCoordinator(
         scope = viewModelScope,
         codeGenerator = { config -> OtpGenerator.generate(config) },
-        loadOtpConfig = { otpConfigRepository.getConfig(it) }
+        loadOtpConfig = { otpConfigRepository.getConfig(it) },
+        initiallyUnlocked = sessionStateProvider.isWritable
     )
     private val detail = DetailCoordinator()
     private val entryManager = EntryManager(
@@ -371,6 +374,14 @@ class VaultViewModel @Inject constructor(
 
     init {
         totp.start()
+
+        viewModelScope.launch {
+            sessionStateProvider.lockStateFlow.collect { lockState ->
+                totp.onSessionStateChanged(
+                    unlocked = lockState == com.aozijx.passly.core.session.LockState.UNLOCKED
+                )
+            }
+        }
 
         viewModelScope.launch {
             settingsRepository.settings.map { it.vault.sort }.first().let {

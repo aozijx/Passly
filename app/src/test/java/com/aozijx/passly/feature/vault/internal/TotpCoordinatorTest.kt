@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.internal
 
 import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.domain.authentication.SessionLockedException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -48,6 +49,54 @@ class TotpCoordinatorTest {
         assertEquals(OtpSecretEncoding.BASE32, generatedConfig?.encoding)
         assertEquals("JBSWY3DPEHPK3PXP", generatedConfig?.secret)
         assertEquals("38CTQ", coordinator.states.value["steam-entry"]?.code)
+        scope.cancel()
+    }
+
+    @Test
+    fun `session lock during activation clears state without throwing`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val coordinator = TotpCoordinator(
+            scope = scope,
+            loadOtpConfig = {
+                throw SessionLockedException("Session is SOFT_LOCKED")
+            },
+            codeGenerator = { OtpResult.Success("123456") }
+        )
+
+        coordinator.activate("locked-entry")
+
+        assertEquals(emptyMap<String, Any>(), coordinator.states.value)
+        scope.cancel()
+    }
+
+    @Test
+    fun `unlock reactivates entry tracked while session was locked`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        var loadCount = 0
+        val config = OtpConfig(
+            type = OtpType.TOTP,
+            secret = "JBSWY3DPEHPK3PXP",
+            digits = 6,
+            periodSeconds = 30,
+            encoding = OtpSecretEncoding.BASE32
+        )
+        val coordinator = TotpCoordinator(
+            scope = scope,
+            initiallyUnlocked = false,
+            loadOtpConfig = {
+                loadCount++
+                config
+            },
+            codeGenerator = { OtpResult.Success("123456") }
+        )
+
+        coordinator.autoUnlock("pending-entry")
+        assertEquals(0, loadCount)
+
+        coordinator.onSessionStateChanged(unlocked = true)
+
+        assertEquals(1, loadCount)
+        assertEquals("123456", coordinator.states.value["pending-entry"]?.code)
         scope.cancel()
     }
 }

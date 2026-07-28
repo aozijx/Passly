@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.internal
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpError
 import com.aozijx.passly.core.otp.OtpResult
+import com.aozijx.passly.domain.authentication.SessionLockedException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.model.OtpUiState
@@ -31,7 +32,8 @@ import kotlinx.coroutines.launch
 internal class TotpCoordinator(
     private val scope: CoroutineScope,
     private val codeGenerator: suspend (OtpConfig) -> OtpResult,
-    private val loadOtpConfig: suspend (String) -> OtpConfig?
+    private val loadOtpConfig: suspend (String) -> OtpConfig?,
+    initiallyUnlocked: Boolean = true
 ) {
     private val _states = MutableStateFlow<Map<String, OtpUiState>>(emptyMap())
     val states: StateFlow<Map<String, OtpUiState>> = _states
@@ -44,13 +46,20 @@ internal class TotpCoordinator(
     )
 
     private val schedules = mutableMapOf<String, OtpSchedule>()
+    private val activeEntryIds = mutableSetOf<String>()
+
+    @Volatile
+    private var sessionUnlocked = initiallyUnlocked
 
     fun start() {
         scope.launch {
             val now = System.currentTimeMillis()
             delay(1000 - (now % 1000))
             while (currentCoroutineContext().isActive) {
-                refreshStates(System.currentTimeMillis() / 1000)
+                if (sessionUnlocked) {
+                    reactivatePendingEntries()
+                    refreshStates(System.currentTimeMillis() / 1000)
+                }
                 delay(1000)
             }
         }
@@ -63,7 +72,12 @@ internal class TotpCoordinator(
 
             val movingFactor = nowSeconds / schedule.periodSeconds
             if (movingFactor != schedule.movingFactor) {
-                val config = loadOtpConfig(entryId)
+                val config = try {
+                    loadOtpConfig(entryId)
+                } catch (_: SessionLockedException) {
+                    handleSessionLocked()
+                    return
+                }
                 if (config == null || config.secret.isBlank()) {
                     refreshed[entryId] = OtpUiState(error = OtpError.InvalidSecret)
                     continue
@@ -102,8 +116,13 @@ internal class TotpCoordinator(
      * 生成 HOTP 验证码（用户主动触发）。
      */
     suspend fun generateHotpCode(entryId: String): OtpResult {
-        val config = loadOtpConfig(entryId)
-            ?: return OtpResult.Failure(OtpError.InvalidSecret)
+        if (!sessionUnlocked) return OtpResult.Failure(OtpError.InvalidSecret)
+        val config = try {
+            loadOtpConfig(entryId)
+        } catch (_: SessionLockedException) {
+            handleSessionLocked()
+            return OtpResult.Failure(OtpError.InvalidSecret)
+        } ?: return OtpResult.Failure(OtpError.InvalidSecret)
         if (config.type != OtpType.HOTP) {
             return OtpResult.Failure(OtpError.InvalidSecret)
         }
@@ -130,7 +149,18 @@ internal class TotpCoordinator(
      * 列表摘要、issuer 和 UI 缓存均不参与生成决策。
      */
     suspend fun activate(entryId: String) {
-        val config = loadOtpConfig(entryId)
+        activeEntryIds += entryId
+        if (!sessionUnlocked) return
+        activateTrackedEntry(entryId)
+    }
+
+    private suspend fun activateTrackedEntry(entryId: String) {
+        val config = try {
+            loadOtpConfig(entryId)
+        } catch (_: SessionLockedException) {
+            handleSessionLocked()
+            return
+        }
         if (config == null || config.secret.isBlank()) {
             AppTelemetry.w("TotpCoordinator", "OTP activation failed: missing config for $entryId")
             _states.update { it + (entryId to OtpUiState(error = OtpError.InvalidSecret)) }
@@ -168,20 +198,56 @@ internal class TotpCoordinator(
     }
 
     fun autoUnlock(entryId: String) {
-        if (schedules.containsKey(entryId)) return
+        if (!activeEntryIds.add(entryId) || !sessionUnlocked) return
         scope.launch {
-            activate(entryId)
+            activateTrackedEntry(entryId)
         }
     }
 
+    /**
+     * 锁定时立即清除验证码和调度状态，但保留待恢复的条目 ID。
+     * 解锁后重新从数据库加载配置，不缓存 Secret。
+     */
+    fun onSessionStateChanged(unlocked: Boolean) {
+        if (sessionUnlocked == unlocked) return
+        sessionUnlocked = unlocked
+        if (!unlocked) {
+            clearGeneratedState()
+        } else {
+            scope.launch { reactivatePendingEntries() }
+        }
+    }
+
+    private suspend fun reactivatePendingEntries() {
+        if (!sessionUnlocked) return
+        activeEntryIds
+            .filterNot(schedules::containsKey)
+            .toList()
+            .forEach { entryId ->
+                if (!sessionUnlocked) return
+                activateTrackedEntry(entryId)
+            }
+    }
+
+    private fun handleSessionLocked() {
+        sessionUnlocked = false
+        clearGeneratedState()
+    }
+
+    private fun clearGeneratedState() {
+        schedules.clear()
+        _states.value = emptyMap()
+    }
+
     fun clearSensitiveState(entryId: String) {
+        activeEntryIds.remove(entryId)
         schedules.remove(entryId)
         _states.update { it - entryId }
     }
 
     fun clearAllSensitiveState() {
-        schedules.clear()
-        _states.value = emptyMap()
+        activeEntryIds.clear()
+        clearGeneratedState()
     }
 
     fun onEntryUpdated(entryId: String) {

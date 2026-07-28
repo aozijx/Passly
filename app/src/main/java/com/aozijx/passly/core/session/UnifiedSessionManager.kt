@@ -45,6 +45,8 @@ class UnifiedSessionManager @Inject constructor(
     override val lockState: LockState
         get() = leaseGate.lockState.value
 
+    override val lockStateFlow = leaseGate.lockState
+
     // ============================== 公共 API ==============================
 
     /**

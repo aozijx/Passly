@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.authentication
 
 import com.aozijx.passly.core.session.LockState
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * 会话状态提供者（Domain 层契约）。
@@ -15,6 +16,9 @@ interface SessionStateProvider {
 
     /** 当前数据库锁状态 */
     val lockState: LockState
+
+    /** 可观察的数据库锁状态，供长生命周期任务及时停止敏感访问。 */
+    val lockStateFlow: StateFlow<LockState>
 
     /** 会话是否已解锁且可写 */
     val isWritable: Boolean

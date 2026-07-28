@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.settings.datamanagement
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -147,9 +146,8 @@ private fun FormatCard(
     onClick: () -> Unit
 ) {
     OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
