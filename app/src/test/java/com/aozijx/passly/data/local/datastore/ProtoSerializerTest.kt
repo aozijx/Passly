@@ -3,6 +3,7 @@ package com.aozijx.passly.data.local.datastore
 import androidx.datastore.core.CorruptionException
 import com.aozijx.passly.data.local.datastore.settings.AppSettings
 import com.aozijx.passly.data.local.datastore.settings.AppearancePreferences
+import com.aozijx.passly.data.local.datastore.settings.InteractionPreferences
 import com.aozijx.passly.data.local.datastore.settings.MessagePreferences
 import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
 import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
@@ -21,16 +22,38 @@ import java.io.ByteArrayOutputStream
 class ProtoSerializerTest {
 
     @Test
+    fun interactionSettings_fieldsAreFreshAndSequential() {
+        assertEquals(
+            (1..6).toList(),
+            listOf(
+                InteractionPreferences.SWIPE_ACTIONS_ENABLED_FIELD_NUMBER,
+                InteractionPreferences.SWIPE_LEFT_ACTION_FIELD_NUMBER,
+                InteractionPreferences.SWIPE_RIGHT_ACTION_FIELD_NUMBER,
+                InteractionPreferences.AUTOFILL_FIELD_NUMBER,
+                InteractionPreferences.AUTO_DOWNLOAD_ICONS_FIELD_NUMBER,
+                InteractionPreferences.FAVICON_ALLOWED_DOMAINS_FIELD_NUMBER,
+            ),
+        )
+    }
+
+    @Test
     fun appSettings_schemaOwnsNonZeroDefaults() {
         val defaults = AppSettingsSerializer.defaultValue
 
+        assertEquals(2, defaults.version)
         assertEquals(60_000L, defaults.security.lockTimeoutMs)
         assertEquals(true, defaults.appearance.dynamicColorEnabled)
         assertEquals(true, defaults.appearance.expressiveEnabled)
         assertEquals(true, defaults.security.secureContentEnabled)
         assertEquals(false, defaults.interaction.swipeActionsEnabled)
         assertEquals("copy_password", defaults.interaction.swipeLeftAction)
-        assertEquals("open_details", defaults.interaction.swipeRightAction)
+        assertEquals("detail", defaults.interaction.swipeRightAction)
+        assertTrue(defaults.interaction.autofill.enabled)
+        assertEquals("system_inline", defaults.interaction.autofill.presentation)
+        assertTrue(defaults.interaction.autofill.credentialManagerEnabled)
+        assertTrue(defaults.interaction.autofill.requireAuthentication)
+        assertFalse(defaults.interaction.autofill.allowUnmatchedSuggestions)
+        assertEquals(5, defaults.interaction.autofill.maxSuggestions)
         assertEquals(4, defaults.vaultView.maxTabsWithoutScroll)
         assertFalse(defaults.hasMessage())
     }

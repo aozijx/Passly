@@ -3,6 +3,7 @@ package com.aozijx.passly.data.repository.settings
 import android.content.Context
 import com.aozijx.passly.data.local.datastore.appSettingsDataStore
 import com.aozijx.passly.data.local.datastore.settings.AppearancePreferences
+import com.aozijx.passly.data.local.datastore.settings.AutofillPreferences
 import com.aozijx.passly.data.local.datastore.settings.BackupPreferences
 import com.aozijx.passly.data.local.datastore.settings.InteractionPreferences
 import com.aozijx.passly.data.local.datastore.settings.InterfacePreferences
@@ -20,7 +21,8 @@ import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppSettingsSnapshot
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.AutofillUiMode
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.BackupSettings
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
@@ -132,36 +134,29 @@ class ProtoAppSettingsRepository @Inject constructor(
 
         // -- SwipeActionType --
         private fun String.toSwipeActionDomain(): SwipeActionType = when (this) {
-            "none" -> SwipeActionType.COPY_PASSWORD
+            "delete" -> SwipeActionType.DELETE
+            "detail" -> SwipeActionType.DETAIL
             "copy_username" -> SwipeActionType.COPY_USERNAME
             "copy_password" -> SwipeActionType.COPY_PASSWORD
-            "copy_totp" -> SwipeActionType.COPY_PASSWORD
-            "open_details" -> SwipeActionType.DETAIL
-            "open_in_browser" -> SwipeActionType.DETAIL
-            "call" -> SwipeActionType.DETAIL
-            "send_sms" -> SwipeActionType.DETAIL
-            "launch_app" -> SwipeActionType.DETAIL
             else -> SwipeActionType.COPY_PASSWORD
         }
 
         private fun SwipeActionType.toSwipeActionString(): String = when (this) {
-            SwipeActionType.DELETE -> "none"
-            SwipeActionType.DETAIL -> "open_details"
+            SwipeActionType.DELETE -> "delete"
+            SwipeActionType.DETAIL -> "detail"
             SwipeActionType.COPY_PASSWORD -> "copy_password"
             SwipeActionType.COPY_USERNAME -> "copy_username"
         }
 
-        // -- AutofillUiMode --
-        private fun String.toAutofillUiModeDomain(): AutofillUiMode = when (this) {
-            "system_inline" -> AutofillUiMode.SYSTEM_INLINE
-            "fullscreen" -> AutofillUiMode.BOTTOM_SHEET
-            "dialog" -> AutofillUiMode.BOTTOM_SHEET
-            else -> AutofillUiMode.SYSTEM_INLINE
+        // -- Autofill presentation --
+        private fun String.toAutofillPresentationDomain(): AutofillPresentation = when (this) {
+            "bottom_sheet" -> AutofillPresentation.BOTTOM_SHEET
+            else -> AutofillPresentation.SYSTEM_INLINE
         }
 
-        private fun AutofillUiMode.toAutofillUiModeString(): String = when (this) {
-            AutofillUiMode.SYSTEM_INLINE -> "system_inline"
-            AutofillUiMode.BOTTOM_SHEET -> "dialog"
+        private fun AutofillPresentation.toStorageKey(): String = when (this) {
+            AutofillPresentation.SYSTEM_INLINE -> "system_inline"
+            AutofillPresentation.BOTTOM_SHEET -> "bottom_sheet"
         }
 
         // -- ExportFormat --
@@ -381,9 +376,24 @@ class ProtoAppSettingsRepository @Inject constructor(
             isSwipeEnabled = p.swipeActionsEnabled,
             swipeLeftAction = p.swipeLeftAction.toSwipeActionDomain(),
             swipeRightAction = p.swipeRightAction.toSwipeActionDomain(),
-            autofillUiMode = p.autofillUiMode.toAutofillUiModeDomain(),
+            autofill = readAutofill(p.autofill),
             isAutoDownloadIcons = p.autoDownloadIcons,
             faviconDownloadWhitelist = p.faviconAllowedDomainsList.toSet()
+        )
+
+    private fun readAutofill(p: AutofillPreferences): AutofillSettings =
+        AutofillSettings(
+            enabled = p.enabled,
+            presentation = p.presentation.toAutofillPresentationDomain(),
+            credentialManagerEnabled = p.credentialManagerEnabled,
+            requireAuthentication = p.requireAuthentication,
+            includeOtp = p.includeOtp,
+            savePromptsEnabled = p.savePromptsEnabled,
+            allowUnmatchedSuggestions = p.allowUnmatchedSuggestions,
+            maxSuggestions = p.maxSuggestions.coerceIn(
+                AutofillSettings.MIN_SUGGESTIONS,
+                AutofillSettings.MAX_SUGGESTIONS
+            )
         )
 
     private fun readVault(p: VaultViewPreferences): VaultViewSettings {
@@ -591,9 +601,70 @@ class ProtoAppSettingsRepository @Inject constructor(
                     b.setInteraction(ib)
                 }
 
-                is SettingsCommand.SetAutofillUiMode -> {
+                is SettingsCommand.SetAutofillEnabled -> {
                     val ib = proto.interaction.toBuilder()
-                    ib.autofillUiMode = command.mode.toAutofillUiModeString()
+                    val ab = proto.interaction.autofill.toBuilder()
+                    ab.enabled = command.enabled
+                    ib.setAutofill(ab)
+                    b.setInteraction(ib)
+                }
+
+                is SettingsCommand.SetAutofillPresentation -> {
+                    val ib = proto.interaction.toBuilder()
+                    val ab = proto.interaction.autofill.toBuilder()
+                    ab.presentation = command.presentation.toStorageKey()
+                    ib.setAutofill(ab)
+                    b.setInteraction(ib)
+                }
+
+                is SettingsCommand.SetCredentialManagerEnabled -> {
+                    val ib = proto.interaction.toBuilder()
+                    val ab = proto.interaction.autofill.toBuilder()
+                    ab.credentialManagerEnabled = command.enabled
+                    ib.setAutofill(ab)
+                    b.setInteraction(ib)
+                }
+
+                is SettingsCommand.SetAutofillAuthenticationRequired -> {
+                    val ib = proto.interaction.toBuilder()
+                    val ab = proto.interaction.autofill.toBuilder()
+                    ab.requireAuthentication = command.required
+                    ib.setAutofill(ab)
+                    b.setInteraction(ib)
+                }
+
+                is SettingsCommand.SetAutofillOtpEnabled -> {
+                    val ib = proto.interaction.toBuilder()
+                    val ab = proto.interaction.autofill.toBuilder()
+                    ab.includeOtp = command.enabled
+                    ib.setAutofill(ab)
+                    b.setInteraction(ib)
+                }
+
+                is SettingsCommand.SetAutofillSavePromptsEnabled -> {
+                    val ib = proto.interaction.toBuilder()
+                    val ab = proto.interaction.autofill.toBuilder()
+                    ab.savePromptsEnabled = command.enabled
+                    ib.setAutofill(ab)
+                    b.setInteraction(ib)
+                }
+
+                is SettingsCommand.SetUnmatchedAutofillSuggestionsEnabled -> {
+                    val ib = proto.interaction.toBuilder()
+                    val ab = proto.interaction.autofill.toBuilder()
+                    ab.allowUnmatchedSuggestions = command.enabled
+                    ib.setAutofill(ab)
+                    b.setInteraction(ib)
+                }
+
+                is SettingsCommand.SetAutofillMaxSuggestions -> {
+                    val ib = proto.interaction.toBuilder()
+                    val ab = proto.interaction.autofill.toBuilder()
+                    ab.maxSuggestions = command.count.coerceIn(
+                        AutofillSettings.MIN_SUGGESTIONS,
+                        AutofillSettings.MAX_SUGGESTIONS
+                    )
+                    ib.setAutofill(ab)
                     b.setInteraction(ib)
                 }
 

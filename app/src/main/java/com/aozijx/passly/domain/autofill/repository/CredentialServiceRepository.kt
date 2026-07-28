@@ -4,11 +4,16 @@ import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 
 interface CredentialServiceRepository {
-    fun search(packageName: String?, webDomain: String?): List<CredentialCandidate>
-    fun getById(entryId: Int): VaultEntry?
-    fun getByIds(entryIds: List<Int>): List<VaultEntry>
-    fun updateLastUsed(entryId: Int)
-    fun save(
+    suspend fun search(
+        packageName: String?,
+        webDomain: String?,
+        allowUnmatched: Boolean,
+        limit: Int,
+    ): List<CredentialCandidate>
+
+    suspend fun getById(entryId: String): VaultEntry?
+    suspend fun getByIds(entryIds: List<String>): List<VaultEntry>
+    suspend fun save(
         packageName: String?,
         webDomain: String?,
         pageTitle: String?,

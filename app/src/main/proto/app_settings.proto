@@ -8,7 +8,7 @@ option java_multiple_files = true;
 // ============================================================
 
 message AppSettings {
-  optional int32 version = 1 [default = 1];
+    optional int32 version = 1 [default = 2];
 
     optional AppearancePreferences appearance = 2;
     optional InterfacePreferences interface_prefs = 3;
@@ -79,14 +79,24 @@ message SecurityPreferences {
 
 message InteractionPreferences {
     optional bool swipe_actions_enabled = 1 [default = false];
-    // 快捷操作标识: "none", "copy_username", "copy_password", "copy_totp",
-    // "open_details", "open_in_browser", "call", "send_sms", "launch_app"
+    // 快捷操作标识: "delete", "detail", "copy_password", "copy_username"
     optional string swipe_left_action = 2 [default = "copy_password"];
-    optional string swipe_right_action = 3 [default = "open_details"];
-    // 自动填充弹出模式: "system_inline", "fullscreen", "dialog"
-    optional string autofill_ui_mode = 4 [default = "system_inline"];
+    optional string swipe_right_action = 3 [default = "detail"];
+    optional AutofillPreferences autofill = 4;
     optional bool auto_download_icons = 5 [default = true];
     repeated string favicon_allowed_domains = 6;
+}
+
+message AutofillPreferences {
+    optional bool enabled = 1 [default = true];
+    // 稳定键: "system_inline", "bottom_sheet"
+    optional string presentation = 2 [default = "system_inline"];
+    optional bool credential_manager_enabled = 3 [default = true];
+    optional bool require_authentication = 4 [default = true];
+    optional bool include_otp = 5 [default = true];
+    optional bool save_prompts_enabled = 6 [default = true];
+    optional bool allow_unmatched_suggestions = 7 [default = false];
+    optional int32 max_suggestions = 8 [default = 5];
 }
 
 // 保险库视图 / 条目卡片

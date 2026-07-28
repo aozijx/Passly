@@ -3,7 +3,7 @@ package com.aozijx.passly.domain.settings.command
 import com.aozijx.passly.domain.notice.model.NoticeLevel
 import com.aozijx.passly.domain.notice.model.NoticeTopic
 import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.domain.settings.model.AutofillUiMode
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.ExportFormat
 import com.aozijx.passly.domain.settings.model.FallbackPalette
@@ -49,7 +49,14 @@ sealed interface SettingsCommand {
     data class SetSwipeEnabled(val enabled: Boolean) : SettingsCommand
     data class SetSwipeLeftAction(val action: SwipeActionType) : SettingsCommand
     data class SetSwipeRightAction(val action: SwipeActionType) : SettingsCommand
-    data class SetAutofillUiMode(val mode: AutofillUiMode) : SettingsCommand
+    data class SetAutofillEnabled(val enabled: Boolean) : SettingsCommand
+    data class SetAutofillPresentation(val presentation: AutofillPresentation) : SettingsCommand
+    data class SetCredentialManagerEnabled(val enabled: Boolean) : SettingsCommand
+    data class SetAutofillAuthenticationRequired(val required: Boolean) : SettingsCommand
+    data class SetAutofillOtpEnabled(val enabled: Boolean) : SettingsCommand
+    data class SetAutofillSavePromptsEnabled(val enabled: Boolean) : SettingsCommand
+    data class SetUnmatchedAutofillSuggestionsEnabled(val enabled: Boolean) : SettingsCommand
+    data class SetAutofillMaxSuggestions(val count: Int) : SettingsCommand
     data class SetAutoDownloadIcons(val enabled: Boolean) : SettingsCommand
     data class SetFaviconDownloadWhitelist(val whitelist: Set<String>) : SettingsCommand
 

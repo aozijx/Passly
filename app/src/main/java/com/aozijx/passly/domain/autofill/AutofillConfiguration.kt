@@ -10,8 +10,8 @@ import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
  */
 object AutofillConfiguration {
 
-    /** 最大候选条目数 */
-    const val MAX_CANDIDATES = 5
+    /** Hard safety cap. The user preference may select any value up to this cap. */
+    const val MAX_CANDIDATES = 10
 
     /** 支持的自动填充入口类型 */
     val SUPPORTED_ENTRY_TYPES = setOf(
@@ -19,7 +19,7 @@ object AutofillConfiguration {
     )
 
     /**
-     * 排序权重：score（降序） > 收藏 > 使用次数 > 更新时间
+     * 排序权重：score（降序） > 收藏 > 更新时间
      *
      * Repository 负责匹配并计算 score，Dispatcher 通过此比较器排序即可。
      * 新增匹配策略只需在 [com.aozijx.passly.domain.entry.model.lookup.MatchType] 中添加枚举值。

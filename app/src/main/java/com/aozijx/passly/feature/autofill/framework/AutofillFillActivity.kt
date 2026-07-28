@@ -12,7 +12,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.ui.theme.AppTheme
-import com.aozijx.passly.domain.settings.model.AutofillUiMode
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
 import com.aozijx.passly.feature.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -71,11 +71,9 @@ class AutofillFillActivity : FragmentActivity() {
 
     private fun parseIntent(intent: Intent?): AutofillFillViewModel.FillRequest {
         val raw = intent?.getStringExtra("autofill_ui_mode")
-        val uiMode = when (raw) {
-            "inline" -> AutofillUiMode.SYSTEM_INLINE
-            "bottom_sheet" -> AutofillUiMode.BOTTOM_SHEET
-            else -> AutofillUiMode.SYSTEM_INLINE
-        }
+        val uiMode = AutofillPresentation.entries
+            .firstOrNull { it.name == raw }
+            ?: AutofillPresentation.SYSTEM_INLINE
 
         val isUnlockOnly = intent?.getBooleanExtra("unlock_only", false) ?: false
         val usernameId = intent?.let {
@@ -96,8 +94,8 @@ class AutofillFillActivity : FragmentActivity() {
             intent?.let { IntentCompat.getParcelableExtra(it, "otp_id", AutofillId::class.java) }
         val packageName = intent?.getStringExtra("package_name")
         val webDomain = intent?.getStringExtra("web_domain")
-        val directEntryId = intent?.getIntExtra("vault_item_id", -1)?.takeIf { it > 0 }
-        val candidateEntryIds = intent?.getIntArrayExtra("vault_item_ids")?.toList().orEmpty()
+        val directEntryId = intent?.getStringExtra("vault_item_id")
+        val candidateEntryIds = intent?.getStringArrayExtra("vault_item_ids")?.toList().orEmpty()
 
         return AutofillFillViewModel.FillRequest(
             uiMode = uiMode,

@@ -5,9 +5,7 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.credentials.provider.BeginGetPasswordOption
-import androidx.credentials.provider.BeginGetPublicKeyCredentialOption
 import androidx.credentials.provider.PasswordCredentialEntry
-import androidx.credentials.provider.PublicKeyCredentialEntry
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 
 /**
@@ -31,10 +29,7 @@ internal object CredentialEntryFactory {
             context = context,
             action = ModernCredentialService.ACTION_GET_PASSWORD,
             entryId = candidate.candidateId,
-            entryTitle = candidate.displayName,
-            username = candidate.username,
             callingPackage = packageName,
-            associatedDomain = candidate.associatedDomain,
         ),
         beginGetPasswordOption = option,
     )
@@ -45,29 +40,4 @@ internal object CredentialEntryFactory {
         .setDefaultIconPreferredAsSingleProvider(false)
         .build()
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    fun buildPasskeyEntry(
-        context: Context,
-        candidate: ResolvedCandidate,
-        packageName: String,
-        option: BeginGetPublicKeyCredentialOption,
-    ): PublicKeyCredentialEntry = PublicKeyCredentialEntry.Builder(
-        context = context,
-        username = candidate.username,
-        pendingIntent = CredentialPendingIntentFactory.createPendingIntent(
-            context = context,
-            action = ModernCredentialService.ACTION_GET_PASSKEY,
-            entryId = candidate.candidateId,
-            entryTitle = candidate.displayName,
-            username = candidate.username,
-            callingPackage = packageName,
-            associatedDomain = candidate.associatedDomain,
-        ),
-        beginGetPublicKeyCredentialOption = option,
-    )
-        .setDisplayName(candidate.displayName)
-        .setIcon(Icon.createWithResource(context, android.R.drawable.ic_lock_lock))
-        .setLastUsedTime(null)
-        .setAutoSelectAllowed(false)
-        .build()
 }

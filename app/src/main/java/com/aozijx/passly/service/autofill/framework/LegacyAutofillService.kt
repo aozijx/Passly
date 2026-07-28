@@ -7,17 +7,18 @@ import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.app.di.Heuristic
-import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
-import com.aozijx.passly.domain.settings.model.AutofillUiMode
 import com.aozijx.passly.service.autofill.framework.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.service.autofill.framework.parser.AutofillStructureParser
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -39,7 +40,7 @@ class LegacyAutofillService : AutofillService() {
     @Inject
     lateinit var useCases: AutofillUseCases
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
@@ -54,16 +55,24 @@ class LegacyAutofillService : AutofillService() {
         val parsed = AutofillStructureParser.parse(request.fillContexts)
         val internalRequest = adapter.buildRequest(parsed)
 
-        serviceScope.launch {
-            val response = dispatcher.dispatch(internalRequest)
-            val fillResponse = adapter.buildResponse(
-                response = response,
-                parsed = parsed,
-                uiMode = AutofillUiMode.SYSTEM_INLINE,
-                context = this@LegacyAutofillService,
-            )
-            callback.onSuccess(fillResponse)
+        val job = serviceScope.launch {
+            try {
+                val response = dispatcher.dispatch(internalRequest)
+                val fillResponse = adapter.buildResponse(
+                    response = response,
+                    parsed = parsed,
+                    uiMode = response.presentation,
+                    context = this@LegacyAutofillService,
+                )
+                callback.onSuccess(fillResponse)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppTelemetry.e("LegacyAutofill", "Fill request failed", e)
+                callback.onFailure(e.message)
+            }
         }
+        cancellationSignal.setOnCancelListener { job.cancel() }
     }
 
     override fun onSaveRequest(
@@ -92,5 +101,10 @@ class LegacyAutofillService : AutofillService() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        serviceScope.cancel()
+        super.onDestroy()
     }
 }

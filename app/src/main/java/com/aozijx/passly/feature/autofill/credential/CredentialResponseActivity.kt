@@ -66,9 +66,7 @@ class CredentialResponseActivity : AppCompatActivity() {
                 viewModel.handlePasswordGet(credentialData)
             }
 
-            ModernCredentialService.ACTION_GET_PASSKEY -> {
-                viewModel.handlePasskeyGet(intent)
-            }
+            ModernCredentialService.ACTION_UNLOCK -> viewModel.handleUnlock(intent)
 
             else -> {
                 AppTelemetry.w(TAG, "Unknown action: $action")

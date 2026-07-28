@@ -1,7 +1,5 @@
 package com.aozijx.passly.domain.settings.model
 
-enum class AutofillUiMode { SYSTEM_INLINE, BOTTOM_SHEET }
-
 enum class SwipeActionType { DELETE, DETAIL, COPY_PASSWORD, COPY_USERNAME }
 
 const val DEFAULT_STYLE_KEY = -1

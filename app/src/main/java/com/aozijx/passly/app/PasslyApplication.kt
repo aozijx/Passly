@@ -15,8 +15,8 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
-import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
@@ -91,10 +91,10 @@ class PasslyApplication : Application() {
     }
 
     /**
-     * 双轨切换：根据 API 级别动态启用/禁用填充服务。
+     * 配置两条独立的系统入口。
      *
-     * - API >= 34：禁用 LegacyAutofillService，启用 ModernCredentialService
-     * - API <  34：启用 LegacyAutofillService（ModernCredentialService 默认 disabled，无需处理）
+     * - Legacy AutofillService 在所有支持版本启用。
+     * - CredentialProviderService 仅在 API 34+ 启用。
      *
      * 使用 PackageManager.setComponentEnabledSetting 而非硬编码 enabled="true"，
      * 避免在低版本设备上触发 NoClassDefFoundError。
@@ -112,7 +112,7 @@ class PasslyApplication : Application() {
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // API 34+：启用 Modern，禁用 Legacy
+                // Android 14+ 同时支持传统表单填充和 Credential Manager。
                 pm.setComponentEnabledSetting(
                     modernComponent,
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
@@ -120,10 +120,10 @@ class PasslyApplication : Application() {
                 )
                 pm.setComponentEnabledSetting(
                     legacyComponent,
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                     PackageManager.DONT_KILL_APP
                 )
-                AppTelemetry.i(EventCategory.AUTOFILL, "autofill.modern_enabled")
+                AppTelemetry.i(EventCategory.AUTOFILL, "autofill.services_enabled")
             } else {
                 // API < 34：启用 Legacy，同时【必须】禁用 Modern
                 pm.setComponentEnabledSetting(

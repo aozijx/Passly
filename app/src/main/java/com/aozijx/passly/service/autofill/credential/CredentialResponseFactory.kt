@@ -3,7 +3,6 @@ package com.aozijx.passly.service.autofill.credential
 import android.content.Intent
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.PasswordCredential
-import androidx.credentials.PublicKeyCredential
 import androidx.credentials.provider.PendingIntentHandler
 
 /**
@@ -16,15 +15,6 @@ internal object CredentialResponseFactory {
         PendingIntentHandler.setGetCredentialResponse(
             result,
             GetCredentialResponse(PasswordCredential(username, password)),
-        )
-        return result
-    }
-
-    fun buildPasskeyResponse(): Intent {
-        val result = Intent()
-        PendingIntentHandler.setGetCredentialResponse(
-            result,
-            GetCredentialResponse(PublicKeyCredential("{\"type\":\"public-key\",\"id\":\"\"}")),
         )
         return result
     }

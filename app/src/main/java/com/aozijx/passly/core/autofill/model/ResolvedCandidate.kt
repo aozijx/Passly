@@ -16,7 +16,7 @@ import com.aozijx.passly.domain.entry.model.lookup.MatchType
  */
 data class ResolvedCandidate(
     /** 数据库条目 ID */
-    val candidateId: Int,
+    val candidateId: String,
     /** 用户可见标题 */
     val displayName: String,
     /** 解密后的用户名 */

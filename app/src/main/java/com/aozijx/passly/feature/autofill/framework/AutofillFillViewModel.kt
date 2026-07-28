@@ -5,15 +5,18 @@ import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
-import com.aozijx.passly.domain.settings.model.AutofillUiMode
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.service.autofill.framework.builder.LegacyDatasetFactory
 import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +24,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -30,6 +34,8 @@ class AutofillFillViewModel @Inject constructor(
     private val autofillUseCases: AutofillUseCases,
     private val candidateResolver: CandidateResolver,
     private val authenticationManager: AuthenticationManager,
+    private val vaultAccessState: VaultAccessState,
+    private val settingsRepository: AppSettingsRepository,
     @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -45,17 +51,18 @@ class AutofillFillViewModel @Inject constructor(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private var currentRequest: FillRequest? = null
+    private var authenticatedForCurrentRequest = false
 
     data class FillRequest(
-        val uiMode: AutofillUiMode,
+        val uiMode: AutofillPresentation,
         val isUnlockOnly: Boolean,
         val usernameId: AutofillId?,
         val passwordId: AutofillId?,
         val otpId: AutofillId?,
         val packageName: String?,
         val webDomain: String?,
-        val directEntryId: Int?,
-        val candidateEntryIds: List<Int>,
+        val directEntryId: String?,
+        val candidateEntryIds: List<String>,
     )
 
     fun initialize(request: FillRequest) {
@@ -63,10 +70,28 @@ class AutofillFillViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
             try {
+                val settings = settingsRepository.settings.first().interaction.autofill
                 if (request.isUnlockOnly) {
-                    handleUnlockOnly(request)
-                } else if (request.uiMode == AutofillUiMode.BOTTOM_SHEET && request.candidateEntryIds.isNotEmpty() && request.directEntryId == null) {
-                    val candidates = candidateResolver.resolveByIds(request.candidateEntryIds)
+                    handleUnlockOnly(request, settings)
+                    return@launch
+                }
+                if (vaultAccessState.isLocked()) {
+                    val authentication = authenticateForAutofill()
+                    if (authentication !is AuthenticationResult.Success) {
+                        _uiState.update { UiState.Result(null) }
+                        return@launch
+                    }
+                    authenticatedForCurrentRequest = true
+                }
+                if (
+                    request.uiMode == AutofillPresentation.BOTTOM_SHEET &&
+                    request.candidateEntryIds.isNotEmpty() &&
+                    request.directEntryId == null
+                ) {
+                    val candidates = candidateResolver.resolveByIds(
+                        request.candidateEntryIds,
+                        settings,
+                    )
                     if (candidates.isEmpty()) {
                         _uiState.update { UiState.Error("No matching entries") }
                     } else {
@@ -74,11 +99,18 @@ class AutofillFillViewModel @Inject constructor(
                     }
                 } else {
                     val candidate = request.directEntryId
-                        ?.let { candidateResolver.resolveByIds(listOf(it)).firstOrNull() }
+                        ?.let {
+                            candidateResolver.resolveSelected(
+                                entryId = it,
+                                packageName = request.packageName,
+                                webDomain = request.webDomain,
+                                settings = settings,
+                            )
+                        }
                     if (candidate == null) {
                         _uiState.update { UiState.Error("Entry not found") }
                     } else {
-                        handleSingleEntry(candidate, request)
+                        handleSingleEntry(candidate, request, settings)
                     }
                 }
             } catch (e: Exception) {
@@ -88,13 +120,21 @@ class AutofillFillViewModel @Inject constructor(
         }
     }
 
-    private suspend fun handleUnlockOnly(request: FillRequest) {
+    private suspend fun handleUnlockOnly(
+        request: FillRequest,
+        settings: AutofillSettings,
+    ) {
         val authResult = authenticateForAutofill()
         if (authResult !is AuthenticationResult.Success) {
             _uiState.update { UiState.Result(null) }
             return
         }
-        val candidates = candidateResolver.resolveByPackage(request.packageName, request.webDomain)
+        authenticatedForCurrentRequest = true
+        val candidates = candidateResolver.resolveByPackage(
+            request.packageName,
+            request.webDomain,
+            settings,
+        )
         if (candidates.isEmpty()) {
             _uiState.update { UiState.Result(null) }
             return
@@ -111,12 +151,18 @@ class AutofillFillViewModel @Inject constructor(
 
     private suspend fun handleSingleEntry(
         candidate: ResolvedCandidate,
-        request: FillRequest
+        request: FillRequest,
+        settings: AutofillSettings,
     ) {
-        val authResult = authenticateForAutofill()
-        if (authResult !is AuthenticationResult.Success) {
-            _uiState.update { UiState.Result(null) }
-            return
+        val needsAuthentication = vaultAccessState.isLocked() ||
+                (settings.requireAuthentication && !authenticatedForCurrentRequest)
+        if (needsAuthentication) {
+            val authResult = authenticateForAutofill()
+            if (authResult !is AuthenticationResult.Success) {
+                _uiState.update { UiState.Result(null) }
+                return
+            }
+            authenticatedForCurrentRequest = true
         }
 
         val basicCred = LegacyResponseFactory.getBasicCredentials(candidate)
@@ -145,7 +191,8 @@ class AutofillFillViewModel @Inject constructor(
         val request = currentRequest ?: return
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
-            handleSingleEntry(candidate, request)
+            val settings = settingsRepository.settings.first().interaction.autofill
+            handleSingleEntry(candidate, request, settings)
         }
     }
 

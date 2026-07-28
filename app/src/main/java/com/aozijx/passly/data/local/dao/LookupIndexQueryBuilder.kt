@@ -34,3 +34,37 @@ fun buildEntryIdIntersectionQuery(
 
     return SimpleSQLiteQuery(sql, bindArgs.toTypedArray())
 }
+
+/**
+ * Autofill lookup variant: orders matched active entries by recency and caps
+ * the ID set before any encrypted blobs are loaded or decrypted.
+ */
+fun buildRecentEntryIdIntersectionQuery(
+    tokens: List<SearchToken>,
+    fields: List<LookupField>,
+    limit: Int,
+): SimpleSQLiteQuery {
+    val table = DatabaseSchema.TABLE_SEARCH_TOKENS
+    val fieldPlaceholders = fields.joinToString(", ") { "?" }
+    val intersection = tokens.joinToString("\nINTERSECT\n") {
+        "SELECT entryId FROM $table WHERE keywordHash = ? AND gramLength = ? " +
+                "AND field IN ($fieldPlaceholders)"
+    }
+    val sql = """
+        SELECT matched.entryId
+        FROM ($intersection) AS matched
+        INNER JOIN ${DatabaseSchema.TABLE_ENTRIES} AS entry
+            ON entry.entryId = matched.entryId
+        WHERE entry.deletedAt IS NULL
+        ORDER BY entry.updatedAt DESC
+        LIMIT ?
+    """.trimIndent()
+    val args = mutableListOf<Any>()
+    for (token in tokens) {
+        args.add(token.hash)
+        args.add(token.length)
+        args.addAll(fields.map { it.name })
+    }
+    args.add(limit)
+    return SimpleSQLiteQuery(sql, args.toTypedArray())
+}

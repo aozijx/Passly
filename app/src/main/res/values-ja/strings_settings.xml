@@ -131,8 +131,26 @@
     <!-- Interaction and autofill -->
     <string name="settings_autofill_mode_bottom_sheet">ボトムシート</string>
     <string name="settings_autofill_mode_inline">キーボード候補</string>
-    <string name="settings_autofill_mode_section">自動入力モード</string>
-    <string name="settings_autofill_mode_title">入力方法</string>
+    <string name="settings_autofill_section">自動入力</string>
+    <string name="settings_autofill_enabled">Passly の自動入力を使用</string>
+    <string name="settings_autofill_enabled_summary">自動入力サービスと認証情報マネージャーの候補を一括管理します</string>
+    <string name="settings_autofill_system_service">システムの自動入力サービス</string>
+    <string name="settings_autofill_system_service_summary">Passly をシステムの自動入力サービスに選択します</string>
+    <string name="settings_autofill_system_enabled">有効</string>
+    <string name="settings_autofill_system_disabled">未設定</string>
+    <string name="settings_autofill_presentation">候補の表示</string>
+    <string name="settings_autofill_credential_manager">認証情報マネージャー</string>
+    <string name="settings_autofill_credential_manager_summary">Android 14 以降でログイン情報を提供します</string>
+    <string name="settings_autofill_require_authentication">入力前に認証</string>
+    <string name="settings_autofill_require_authentication_summary">認証情報の選択後に本人確認します（推奨）</string>
+    <string name="settings_autofill_include_otp">確認コードを入力</string>
+    <string name="settings_autofill_include_otp_summary">コード欄がある場合に現在の OTP を提供します</string>
+    <string name="settings_autofill_save_prompts">ログイン情報を保存</string>
+    <string name="settings_autofill_save_prompts_summary">新しいユーザー名やパスワードの送信後に保存を確認します</string>
+    <string name="settings_autofill_unmatched">未関連の項目を表示</string>
+    <string name="settings_autofill_unmatched_summary">一致がない場合に最近の項目を表示します。項目名が見える可能性があります</string>
+    <string name="settings_autofill_candidate_limit">候補数</string>
+    <string name="settings_autofill_candidate_limit_summary">1 回の要求で復号して表示する一致項目の上限です</string>
     <string name="settings_swipe_action_copy_password">パスワードをコピー</string>
     <string name="settings_swipe_action_copy_username">ユーザー名をコピー</string>
     <string name="settings_swipe_action_delete">削除</string>
@@ -144,8 +162,6 @@
     <string name="settings_swipe_gesture_section">クイックジェスチャー</string>
     <string name="settings_swipe_select_left_action">左スワイプ操作を選択</string>
     <string name="settings_swipe_select_right_action">右スワイプ操作を選択</string>
-    <string name="settings_vault_enable_autofill">自動入力を有効化</string>
-    <string name="settings_vault_toast_enable_autofill_manual">システム設定で自動入力を有効にしてください</string>
 
     <!-- Data management -->
     <string name="settings_data_clear_database_description">すべてのエントリ、添付、画像を削除し、設定と認証は保持します</string>

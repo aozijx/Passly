@@ -131,8 +131,26 @@
     <!-- Interaction and autofill -->
     <string name="settings_autofill_mode_bottom_sheet">底部弹窗</string>
     <string name="settings_autofill_mode_inline">键盘候选</string>
-    <string name="settings_autofill_mode_section">自动填充模式</string>
-    <string name="settings_autofill_mode_title">填充方式</string>
+    <string name="settings_autofill_section">自动填充</string>
+    <string name="settings_autofill_enabled">使用 Passly 自动填充</string>
+    <string name="settings_autofill_enabled_summary">统一控制自动填充服务和凭据管理器的建议</string>
+    <string name="settings_autofill_system_service">系统自动填充服务</string>
+    <string name="settings_autofill_system_service_summary">选择 Passly 作为系统自动填充服务</string>
+    <string name="settings_autofill_system_enabled">已启用</string>
+    <string name="settings_autofill_system_disabled">未启用</string>
+    <string name="settings_autofill_presentation">候选展示</string>
+    <string name="settings_autofill_credential_manager">凭据管理器</string>
+    <string name="settings_autofill_credential_manager_summary">在 Android 14 及更高版本提供登录凭据</string>
+    <string name="settings_autofill_require_authentication">填充前验证</string>
+    <string name="settings_autofill_require_authentication_summary">选择凭据后验证身份，建议保持开启</string>
+    <string name="settings_autofill_include_otp">填充验证码</string>
+    <string name="settings_autofill_include_otp_summary">目标页面包含验证码输入框时提供当前 OTP</string>
+    <string name="settings_autofill_save_prompts">保存登录信息</string>
+    <string name="settings_autofill_save_prompts_summary">提交新账号或密码后显示保存提示</string>
+    <string name="settings_autofill_unmatched">显示未关联条目</string>
+    <string name="settings_autofill_unmatched_summary">没有包名或域名匹配时显示最近条目，可能暴露条目名称</string>
+    <string name="settings_autofill_candidate_limit">候选数量</string>
+    <string name="settings_autofill_candidate_limit_summary">每次最多解密并显示的匹配条目</string>
     <string name="settings_swipe_action_copy_password">复制密码</string>
     <string name="settings_swipe_action_copy_username">复制账号</string>
     <string name="settings_swipe_action_delete">删除</string>
@@ -144,8 +162,6 @@
     <string name="settings_swipe_gesture_section">快捷手势</string>
     <string name="settings_swipe_select_left_action">选择左滑动作</string>
     <string name="settings_swipe_select_right_action">选择右滑动作</string>
-    <string name="settings_vault_enable_autofill">开启自动填充</string>
-    <string name="settings_vault_toast_enable_autofill_manual">在系统设置中开启自动填充</string>
 
     <!-- Data management -->
     <string name="settings_data_clear_database_description">删除所有条目、附件和自定义图片；保留设置与认证方式</string>

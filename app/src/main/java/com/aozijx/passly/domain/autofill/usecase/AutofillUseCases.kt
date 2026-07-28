@@ -5,7 +5,9 @@ import com.aozijx.passly.domain.autofill.repository.AutofillStatusRepository
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -41,13 +43,14 @@ class OpenAutofillSettingsUseCase @Inject constructor(
 class RecordAutofillUsageUseCase @Inject constructor(
     private val activityRecorder: ActivityRecorder
 ) {
-    suspend operator fun invoke(candidateId: Int): AppResult<Unit> =
-        activityRecorder.recordUsage(candidateId.toString(), ActivityType.AUTOFILL)
+    suspend operator fun invoke(candidateId: String): AppResult<Unit> =
+        activityRecorder.recordUsage(candidateId, ActivityType.AUTOFILL)
 }
 
 @Singleton
 class SaveAutofillCredentialUseCase @Inject constructor(
-    private val repository: CredentialServiceRepository
+    private val repository: CredentialServiceRepository,
+    private val settingsRepository: AppSettingsRepository,
 ) {
     suspend operator fun invoke(
         packageName: String?,
@@ -57,6 +60,10 @@ class SaveAutofillCredentialUseCase @Inject constructor(
         passwordValue: String
     ): AppResult<Unit> {
         return AppResult.runSuspendCatching("save_autofill_credential") {
+            val policy = settingsRepository.settings.first().interaction.autofill
+            if (!policy.enabled || !policy.savePromptsEnabled) {
+                throw IllegalStateException("Autofill save prompts are disabled")
+            }
             val success = repository.save(
                 packageName = packageName,
                 webDomain = webDomain,

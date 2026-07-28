@@ -7,6 +7,7 @@ import com.aozijx.passly.core.autofill.matcher.StrictMatchStrategy
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
 import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -54,11 +55,13 @@ abstract class ServiceModule {
             candidateResolver: CandidateResolver,
             @Heuristic fieldMatchStrategy: FieldMatchStrategy,
             responseFactory: ResponseFactory,
+            settingsRepository: AppSettingsRepository,
         ): FillRequestDispatcher = FillRequestDispatcher(
             sessionState,
             candidateResolver,
             fieldMatchStrategy,
             responseFactory,
+            settingsRepository,
         )
 
         @Provides
@@ -69,11 +72,13 @@ abstract class ServiceModule {
             candidateResolver: CandidateResolver,
             @Strict fieldMatchStrategy: FieldMatchStrategy,
             responseFactory: ResponseFactory,
+            settingsRepository: AppSettingsRepository,
         ): FillRequestDispatcher = FillRequestDispatcher(
             sessionState,
             candidateResolver,
             fieldMatchStrategy,
             responseFactory,
+            settingsRepository,
         )
     }
 }
