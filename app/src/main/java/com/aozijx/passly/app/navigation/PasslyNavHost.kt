@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +21,7 @@ import androidx.navigation.navArgument
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
+import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.page.DetailScreen
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent
@@ -92,8 +94,13 @@ fun PasslyNavHost(
             }
 
             var initialEntry by remember { mutableStateOf<VaultEntry?>(null) }
-            LaunchedEffect(entryId) {
-                vaultViewModel.loadEntryById(entryId) { initialEntry = it }
+            DisposableEffect(entryId, detailViewModel, vaultViewModel) {
+                val loadJob = vaultViewModel.loadEntryById(entryId) { initialEntry = it }
+                onDispose {
+                    loadJob.cancel()
+                    initialEntry = null
+                    detailViewModel.handleIntent(DetailIntent.ClearSensitiveState)
+                }
             }
 
             initialEntry?.let { entry ->
@@ -116,12 +123,9 @@ fun PasslyNavHost(
 
         composable(AppRoute.Settings.route) {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
-            val onUpdateInteraction: () -> Unit =
-                { mainViewModel.handleIntent(MainIntent.UpdateInteraction) }
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                settingsViewModel = settingsViewModel,
-                onUpdateInteraction = onUpdateInteraction
+                settingsViewModel = settingsViewModel
             )
         }
         }

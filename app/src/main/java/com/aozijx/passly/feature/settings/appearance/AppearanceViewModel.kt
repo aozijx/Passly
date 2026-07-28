@@ -31,7 +31,7 @@ sealed interface AppearanceUiAction {
     data class SetThemeMode(val mode: ThemeMode) : AppearanceUiAction
     data class SetDynamicColor(val enabled: Boolean) : AppearanceUiAction
     data class SetFallbackPalette(val palette: FallbackPalette) : AppearanceUiAction
-    data class SetCustomSeedArgb(val argb: Long?) : AppearanceUiAction
+    data class SelectManualThemeColor(val argb: Long?) : AppearanceUiAction
     data class SetLanguage(val language: AppLanguage) : AppearanceUiAction
     data class SetFontFamily(val mode: FontFamilyMode) : AppearanceUiAction
     data class SetExpressiveEnabled(val enabled: Boolean) : AppearanceUiAction
@@ -64,8 +64,8 @@ class AppearanceViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetFallbackPalette(action.palette))
             }
 
-            is AppearanceUiAction.SetCustomSeedArgb -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetCustomSeedArgb(action.argb))
+            is AppearanceUiAction.SelectManualThemeColor -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SelectManualThemeColor(action.argb))
             }
 
             is AppearanceUiAction.SetLanguage -> viewModelScope.launch {

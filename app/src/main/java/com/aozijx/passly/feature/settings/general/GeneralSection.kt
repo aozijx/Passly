@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
@@ -14,13 +16,13 @@ fun CacheSettingsSection(
     isLoading: Boolean,
     onClearCache: () -> Unit
 ) {
-    SettingsSectionTitle(text = "缓存")
+    SettingsSectionTitle(text = stringResource(R.string.general_cache_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "general.clear_cache",
                 icon = Icons.Default.DeleteSweep,
-                title = "清除缓存",
+                title = stringResource(R.string.general_clear_cache),
                 value = cacheSize,
                 isLoading = isLoading,
                 onClick = onClearCache
@@ -35,32 +37,32 @@ fun AboutSettingsSection(
     onAppDetailsClick: () -> Unit,
     onAboutClick: () -> Unit
 ) {
-    SettingsSectionTitle(text = "关于")
+    SettingsSectionTitle(text = stringResource(R.string.general_about_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "general.about",
                 icon = Icons.Default.Info,
-                title = "关于 Passly",
+                title = stringResource(R.string.general_about_passly),
                 value = appVersion,
                 onClick = onAppDetailsClick
             ),
             navigationSettingsGroupItem(
                 key = "general.terms",
                 iconPlaceholder = true,
-                title = "用户协议",
+                title = stringResource(R.string.general_terms),
                 onClick = onAboutClick
             ),
             navigationSettingsGroupItem(
                 key = "general.privacy_policy",
                 iconPlaceholder = true,
-                title = "隐私政策",
+                title = stringResource(R.string.general_privacy_policy),
                 onClick = onAboutClick
             ),
             navigationSettingsGroupItem(
                 key = "general.open_source",
                 iconPlaceholder = true,
-                title = "开源许可",
+                title = stringResource(R.string.general_open_source_licenses),
                 onClick = onAboutClick
             )
         )

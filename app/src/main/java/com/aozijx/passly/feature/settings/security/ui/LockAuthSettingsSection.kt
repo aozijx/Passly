@@ -19,7 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.GroupCard
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
@@ -27,7 +29,6 @@ import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
-import com.aozijx.passly.feature.settings.security.formatLockTimeoutText
 import kotlin.math.roundToInt
 
 private const val SLIDER_MIN_SECONDS = (LockTimeoutConstraints.SLIDER_MIN_MS / 1000L).toFloat()
@@ -52,22 +53,22 @@ fun LockAuthSettingsSection(
         .coerceIn(SLIDER_MIN_SECONDS, SLIDER_MAX_SECONDS)
     var sliderValue by remember(lockTimeout) { mutableFloatStateOf(currentSeconds) }
 
-    SettingsSectionTitle(text = "认证")
+    SettingsSectionTitle(text = stringResource(R.string.security_auth_section))
     RoundedGroup(
         items = listOf(
 
             switchSettingsGroupItem(
                 key = "security.lock_on_background",
                 icon = Icons.Default.Lock,
-                title = "立即锁定",
-                subtitle = "退出 app 后锁定",
+                title = stringResource(R.string.security_lock_on_background),
+                subtitle = stringResource(R.string.security_lock_on_background_description),
                 checked = isLockOnBackground,
                 onCheckedChange = onLockOnBackgroundChange
             ),
             navigationSettingsGroupItem(
                 key = "security.lock_timeout",
                 icon = Icons.Default.Timer,
-                title = "自动锁定",
+                title = stringResource(R.string.security_auto_lock),
                 value = formatLockTimeoutText(lockTimeout),
                 onClick = { expanded = !expanded }
             ),
@@ -82,7 +83,7 @@ fun LockAuthSettingsSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "自动锁定时间",
+                            text = stringResource(R.string.security_auto_lock_delay),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
@@ -109,12 +110,18 @@ fun LockAuthSettingsSection(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "${SLIDER_MIN_SECONDS.roundToInt()} 秒",
+                            text = stringResource(
+                                R.string.duration_seconds,
+                                SLIDER_MIN_SECONDS.roundToInt()
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
                         Text(
-                            text = "${(SLIDER_MAX_SECONDS / 60f).roundToInt()} 分钟",
+                            text = stringResource(
+                                R.string.duration_minutes,
+                                (SLIDER_MAX_SECONDS / 60f).roundToInt()
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -124,16 +131,24 @@ fun LockAuthSettingsSection(
             navigationSettingsGroupItem(
                 key = "security.app_password",
                 icon = Icons.Default.Lock,
-                title = "设置密码",
-                subtitle = "独立于系统锁屏，用密码直接解锁应用",
-                value = if (isAppPasswordEnabled) "已设置" else "未设置",
+                title = stringResource(R.string.security_app_password),
+                subtitle = stringResource(R.string.security_app_password_description),
+                value = stringResource(
+                    if (isAppPasswordEnabled) R.string.configured else R.string.not_set
+                ),
                 onClick = onAppPasswordClick
             ),
             switchSettingsGroupItem(
                 key = "security.biometric_enabled",
                 icon = Icons.Default.Fingerprint,
-                title = "生物识别解锁",
-                subtitle = if (isBiometricEnabled) "使用强生物识别解锁保险库" else "需要先验证现有凭据",
+                title = stringResource(R.string.security_biometric_unlock),
+                subtitle = stringResource(
+                    if (isBiometricEnabled) {
+                        R.string.security_biometric_enabled_description
+                    } else {
+                        R.string.security_biometric_disabled_description
+                    }
+                ),
                 checked = isBiometricEnabled,
                 onCheckedChange = onBiometricEnabledChange
             ),
@@ -141,14 +156,33 @@ fun LockAuthSettingsSection(
                 key = "security.invalidate_biometric",
                 visible = isBiometricEnabled,
                 icon = Icons.Default.Fingerprint,
-                title = "生物识别变更时销毁密钥",
-                subtitle = if (isInvalidateKeyOnBioChange)
-                    "新增或移除生物识别后，需要重新启用"
-                else
-                    "系统录入变化后仍保留当前密钥",
+                title = stringResource(R.string.security_invalidate_biometric_key),
+                subtitle = stringResource(
+                    if (isInvalidateKeyOnBioChange) {
+                        R.string.security_invalidate_biometric_key_enabled
+                    } else {
+                        R.string.security_invalidate_biometric_key_disabled
+                    }
+                ),
                 checked = isInvalidateKeyOnBioChange,
                 onCheckedChange = onInvalidateKeyOnBioChangeToggle
             )
         )
     )
+}
+
+@Composable
+private fun formatLockTimeoutText(timeoutMs: Long): String {
+    val seconds = (timeoutMs / 1000L).coerceAtLeast(1L)
+    return when {
+        seconds < 60L -> stringResource(R.string.duration_seconds, seconds)
+        seconds % 60L == 0L ->
+            stringResource(R.string.duration_minutes, seconds / 60L)
+
+        else -> stringResource(
+            R.string.duration_minutes_seconds,
+            seconds / 60L,
+            seconds % 60L
+        )
+    }
 }

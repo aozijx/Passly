@@ -25,7 +25,7 @@ fun AddDialogHost(
         )
 
         AddType.SCAN -> VaultScanner(
-            onSaveEntry = { vaultViewModel.addItem(it) },
+            onSaveOtp = vaultViewModel::addScannedOtp,
             onDismiss = { vaultViewModel.setAddType(null) }
         )
 

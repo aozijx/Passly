@@ -1,7 +1,5 @@
 package com.aozijx.passly.feature.detail.page
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -77,17 +75,12 @@ fun DetailScreen(
     DisposableEffect(Unit) {
         onDispose {
             ClipboardUtils.clear(context)
+            onEvent(DetailIntent.ClearSensitiveState)
         }
     }
 
     Scaffold(
-        modifier = Modifier
-            .nestedScroll(scrollBehavior.nestedScrollConnection)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onUpdateInteraction
-            ),
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             DetailTopBar(
                 entry = entry,

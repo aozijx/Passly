@@ -34,7 +34,6 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     context: Context,
     localState: SettingsScreenLocalState,
     settingsViewModel: SettingsViewModel,
-    onUpdateInteraction: () -> Unit,
     onOuterBack: () -> Unit,
     authDecryptTitle: String,
     setAppPasswordSubtitle: String
@@ -48,7 +47,6 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     ) {
         SettingsMainPage(
             onBack = onOuterBack,
-            onUpdateInteraction = onUpdateInteraction,
             onGroupClick = { navController.navigate(it.route) }
         )
     }
@@ -142,8 +140,8 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     onExpressiveEnabledChange = {
                         viewModel.onAction(AppearanceUiAction.SetExpressiveEnabled(it))
                     },
-                    onCustomSeedArgbChange = {
-                        viewModel.onAction(AppearanceUiAction.SetCustomSeedArgb(it))
+                    onManualThemeColorSelect = {
+                        viewModel.onAction(AppearanceUiAction.SelectManualThemeColor(it))
                     },
                     onLanguageChange = {
                         viewModel.onAction(AppearanceUiAction.SetLanguage(it))

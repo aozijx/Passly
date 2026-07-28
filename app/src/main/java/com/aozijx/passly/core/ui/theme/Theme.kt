@@ -12,6 +12,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.settings.model.FallbackPalette
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.ThemeMode
@@ -68,11 +69,25 @@ val themePresets = listOf(
 fun themePresetByColor(color: Long): ThemePreset =
     themePresets.firstOrNull { it.color == color } ?: themePresets.first()
 
+fun themePresetByFallbackPalette(palette: FallbackPalette): ThemePreset {
+    val color = when (palette) {
+        FallbackPalette.BLUE -> 0xFF4285F4
+        FallbackPalette.GREEN -> 0xFF34A853
+        FallbackPalette.RED -> 0xFFEA4335
+        FallbackPalette.PURPLE -> 0xFF9C27B0
+        FallbackPalette.ORANGE -> 0xFFFF9800
+        FallbackPalette.TEAL -> 0xFF009688
+        FallbackPalette.PINK -> 0xFFE91E63
+    }
+    return themePresetByColor(color)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = true,
+    fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
     customSeedArgb: Long? = null,
     fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
     expressive: Boolean = true,
@@ -93,12 +108,16 @@ fun AppTheme(
             ?.takeIf { it != 0L }
             ?.let { selected -> themePresets.firstOrNull { it.color == selected }?.palette }
     }
+    val fallbackThemePalette = remember(fallbackPalette) {
+        themePresetByFallbackPalette(fallbackPalette).palette
+    }
     val appColorScheme = if (isDark) AppColor.darkScheme() else AppColor.lightScheme()
     val colorScheme = when {
-        selectedPalette != null -> selectedPalette.applyTo(appColorScheme, isDark)
         dynamicColor -> {
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+        selectedPalette != null -> selectedPalette.applyTo(appColorScheme, isDark)
+        fallbackThemePalette != null -> fallbackThemePalette.applyTo(appColorScheme, isDark)
         else -> appColorScheme
     }
     val typography =

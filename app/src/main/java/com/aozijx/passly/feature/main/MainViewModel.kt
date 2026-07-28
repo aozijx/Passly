@@ -136,6 +136,7 @@ class MainViewModel @Inject constructor(
                         it.copy(
                             themeMode = appearance.themeMode,
                             isDynamicColor = appearance.isDynamicColor,
+                            fallbackPalette = appearance.fallbackPalette,
                             customSeedArgb = appearance.customSeedArgb,
                             fontFamily = appearance.fontFamily,
                             language = appearance.language,

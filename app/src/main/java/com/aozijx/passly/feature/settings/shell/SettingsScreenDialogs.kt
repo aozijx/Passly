@@ -5,7 +5,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
+import com.aozijx.passly.R
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordActionDialog
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordChangeDialog
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
@@ -23,7 +25,7 @@ internal fun SettingsScreenDialogsHost(
 ) {
     if (state.showRightActionDialog) {
         SwipeActionSelectDialog(
-            "选择右滑动作",
+            stringResource(R.string.swipe_select_right_action),
             state.swipeRightAction,
             {
                 actions.onDialogEvent(SettingsDialogEvent.SetSwipeRightAction(it))
@@ -35,7 +37,7 @@ internal fun SettingsScreenDialogsHost(
 
     if (state.showLeftActionDialog) {
         SwipeActionSelectDialog(
-            "选择左滑动作",
+            stringResource(R.string.swipe_select_left_action),
             state.swipeLeftAction,
             {
                 actions.onDialogEvent(SettingsDialogEvent.SetSwipeLeftAction(it))
@@ -50,8 +52,8 @@ internal fun SettingsScreenDialogsHost(
             onDismissRequest = {
                 actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
             },
-            title = { Text("清除备份目录") },
-            text = { Text("只会清除目录配置，不会删除已导出的备份文件。") },
+            title = { Text(stringResource(R.string.backup_clear_directory_title)) },
+            text = { Text(stringResource(R.string.backup_clear_directory_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     if (!state.backupDirectoryUri.isNullOrBlank()) {
@@ -68,14 +70,14 @@ internal fun SettingsScreenDialogsHost(
                     actions.onDialogEvent(SettingsDialogEvent.ClearBackupDirectory)
                     actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
                 }) {
-                    Text("清除")
+                    Text(stringResource(R.string.backup_clear_selection))
                 }
             },
             dismissButton = {
                 TextButton(onClick = {
                     actions.onDialogEvent(SettingsDialogEvent.DismissClearBackupDirConfirmDialog)
                 }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

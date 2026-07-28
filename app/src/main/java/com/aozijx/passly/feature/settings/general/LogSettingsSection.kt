@@ -19,10 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -37,24 +38,35 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import kotlinx.coroutines.launch
 
 @Composable
 fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
-    val scope = rememberCoroutineScope()
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsStateWithLifecycle()
     var showViewerDialog by remember { mutableStateOf(false) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
-    var logContent by remember { mutableStateOf("") }
-    var logSize by remember { mutableStateOf("") }
+    var logContent by remember { mutableStateOf<String?>(null) }
+    var logSize by remember { mutableStateOf("0 B") }
 
     val logManagementTitle = stringResource(R.string.log_management_title)
+    val encryptedLogTitle = stringResource(R.string.log_encrypted_title)
+    val encryptedLogSubtitle = stringResource(R.string.log_encrypted_subtitle)
+    val viewLogsTitle = stringResource(R.string.log_view_title)
+    val exportLogsTitle = stringResource(R.string.log_export_action)
+    val exportLogsSubtitle = stringResource(R.string.log_export_action_subtitle)
+    val clearLogsTitle = stringResource(R.string.log_clear_action)
 
-    fun refreshLogInfo() {
-        scope.launch {
+    LaunchedEffect(showViewerDialog) {
+        if (showViewerDialog) {
+            logContent = null
             val content = viewModel.readPage()
             logContent = content
-            logSize = if (content.isEmpty()) "0 B" else "%d KB".format(content.length / 1024)
+            logSize = formatLogSize(content.toByteArray(Charsets.UTF_8).size)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            logContent = null
         }
     }
 
@@ -64,31 +76,30 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
             switchSettingsGroupItem(
                 key = "logs.diagnostics",
                 icon = Icons.Default.BugReport,
-                title = "加密诊断日志",
-                subtitle = "开启后记录 24 小时",
+                title = encryptedLogTitle,
+                subtitle = encryptedLogSubtitle,
                 checked = fileLoggingEnabled,
                 onCheckedChange = viewModel::setFileLoggingEnabled
             ),
             navigationSettingsGroupItem(
                 key = "logs.view",
                 iconPlaceholder = true,
-                title = "查看日志",
+                title = viewLogsTitle,
                 onClick = {
-                    refreshLogInfo()
                     showViewerDialog = true
                 }
             ),
             navigationSettingsGroupItem(
                 key = "logs.export",
                 icon = Icons.Default.SaveAlt,
-                title = "导出日志",
-                subtitle = "验证身份后生成临时明文文件",
+                title = exportLogsTitle,
+                subtitle = exportLogsSubtitle,
                 onClick = viewModel::authenticateAndExport
             ),
             navigationSettingsGroupItem(
                 key = "logs.clear",
                 icon = Icons.Default.DeleteSweep,
-                title = "清除日志",
+                title = clearLogsTitle,
                 value = logSize,
                 onClick = { showClearConfirmDialog = true }
             )
@@ -98,7 +109,10 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
     if (showViewerDialog) {
         LogViewerSheet(
             content = logContent,
-            onDismiss = { showViewerDialog = false }
+            onDismiss = {
+                showViewerDialog = false
+                logContent = null
+            }
         )
     }
 
@@ -106,7 +120,7 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
         ClearLogsConfirmDialog(
             onConfirm = {
                 viewModel.clear()
-                logContent = ""
+                logContent = null
                 logSize = "0 B"
                 showClearConfirmDialog = false
             },
@@ -117,7 +131,12 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LogViewerSheet(content: String, onDismiss: () -> Unit) {
+private fun LogViewerSheet(content: String?, onDismiss: () -> Unit) {
+    val displayText = when {
+        content == null -> stringResource(R.string.log_loading)
+        content.isBlank() -> stringResource(R.string.log_empty)
+        else -> content
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(),
@@ -131,7 +150,7 @@ private fun LogViewerSheet(content: String, onDismiss: () -> Unit) {
                 .padding(horizontal = 16.dp)
         ) {
             Text(
-                text = content.ifBlank { "暂无日志" },
+                text = displayText,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -147,17 +166,20 @@ private fun LogViewerSheet(content: String, onDismiss: () -> Unit) {
 private fun ClearLogsConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("清除日志") },
-        text = { Text("确定要清除所有日志文件吗？此操作不可撤销。") },
+        title = { Text(stringResource(R.string.log_clear_action)) },
+        text = { Text(stringResource(R.string.log_clear_confirm_message)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("清除")
+                Text(stringResource(R.string.log_clear_confirm_action))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
 }
+
+private fun formatLogSize(byteCount: Int): String =
+    if (byteCount < 1024) "$byteCount B" else "${byteCount / 1024} KB"

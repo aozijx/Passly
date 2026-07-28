@@ -9,15 +9,13 @@ import com.aozijx.passly.feature.settings.navigation.SettingsNavGraph
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    settingsViewModel: SettingsViewModel,
-    onUpdateInteraction: () -> Unit = {}
+    settingsViewModel: SettingsViewModel
 ) {
     val navController = rememberNavController()
 
     SettingsNavGraph(
         navController = navController,
         settingsViewModel = settingsViewModel,
-        onUpdateInteraction = onUpdateInteraction,
         onOuterBack = onBack
     )
 }

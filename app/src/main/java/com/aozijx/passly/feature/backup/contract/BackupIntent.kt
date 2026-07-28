@@ -27,6 +27,5 @@ sealed interface BackupIntent {
     data class UpdateIncludedEntryTypes(val types: Set<EntryType>) : BackupIntent
 
     data object CancelPendingOperation : BackupIntent
-    data object ResetBackupStatus : BackupIntent
     data object ProcessBackupAction : BackupIntent
 }

@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
@@ -119,12 +120,7 @@ internal fun MainScreen(
 
     val window = activity.window
 
-    LaunchedEffect(
-        mainConfig.isSecureContentEnabled,
-        mainConfig.isFlipToLockEnabled,
-        mainConfig.isFlipExitAndClearStackEnabled,
-        mainConfig.isStatusBarAutoHide
-    ) {
+    SideEffect {
         if (mainConfig.isSecureContentEnabled) {
             window.setFlags(
                 WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE
@@ -132,12 +128,21 @@ internal fun MainScreen(
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
+    }
 
+    DisposableEffect(sensorController, mainConfig.isFlipToLockEnabled) {
         sensorController.isFlipLockEnabled = mainConfig.isFlipToLockEnabled
         if (mainConfig.isFlipToLockEnabled) sensorController.register() else sensorController.unregister()
+        onDispose {
+            sensorController.unregister()
+        }
+    }
 
+    SideEffect {
         sensorController.isFlipExitAndClearStackEnabled = mainConfig.isFlipExitAndClearStackEnabled
+    }
 
+    SideEffect {
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
         insetsController.systemBarsBehavior = if (mainConfig.isStatusBarAutoHide) {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -145,5 +150,4 @@ internal fun MainScreen(
             WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
         }
     }
-    DisposableEffect(Unit) { onDispose { sensorController.unregister() } }
 }

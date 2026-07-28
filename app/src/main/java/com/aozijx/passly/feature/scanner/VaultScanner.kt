@@ -34,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,20 +49,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
-import com.aozijx.passly.core.util.TotpUtils
-import com.aozijx.passly.domain.entry.model.EntryHeader
-import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntrySummary
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 import com.aozijx.passly.feature.scanner.components.ScannerView
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent
@@ -71,27 +63,27 @@ import com.aozijx.passly.feature.scanner.contract.ScannerIntent
  */
 @Composable
 fun VaultScanner(
-    onSaveEntry: (VaultEntry) -> Unit,
+    onSaveOtp: (OtpConfig) -> Unit,
     scannerViewModel: ScannerViewModel = hiltViewModel(),
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val scannerUiState by scannerViewModel.uiState.collectAsStateWithLifecycle()
     // 适配系统返回手势：优先关闭扫码层，而不是直接退出上层页面。
     BackHandler(onBack = onDismiss)
 
     val errorNotOtp = stringResource(R.string.vault_scanner_error_not_otp)
-    val successSaveMsg = stringResource(R.string.vault_scanner_success_save)
-
     // 使用 Effect 接收一次性扫描结果
     var scanResult by remember { mutableStateOf("") }
     var scannedTotp by remember { mutableStateOf<OtpConfig?>(null) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(scannerViewModel) {
+        scannerViewModel.handleIntent(ScannerIntent.StartScanning)
         scannerViewModel.effects.collect { effect ->
             when (effect) {
                 is ScannerEffect.ScanSuccess -> {
                     scanResult = effect.result
-                    scannedTotp = TotpUtils.parseOtpAuthUri(effect.result)
+                    scannedTotp = effect.otpConfig
                     if (scannedTotp == null && !effect.result.startsWith("otpauth://")) {
                         Toast.makeText(context, errorNotOtp, Toast.LENGTH_SHORT).show()
                     }
@@ -108,6 +100,12 @@ fun VaultScanner(
         scannerViewModel.handleIntent(ScannerIntent.DecodeImage(uri))
     }
 
+    DisposableEffect(scannerViewModel) {
+        onDispose {
+            scannerViewModel.handleIntent(ScannerIntent.StopScanning)
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -115,6 +113,7 @@ fun VaultScanner(
     ) {
         ScannerView(
             scanResult = scanResult,
+            isScanning = scannerUiState.isScanning,
             showResultCard = scannedTotp == null,
             onBarcodeDetected = { barcode ->
                 if (scannedTotp != null) return@ScannerView
@@ -223,46 +222,8 @@ fun VaultScanner(
                             Button(
                                 onClick = {
                                     val parsedConfig = scannedTotp ?: return@Button
-                                    val title = buildString {
-                                        if (!parsedConfig.issuer.isNullOrBlank()) append(
-                                            parsedConfig.issuer
-                                        )
-                                        if (!parsedConfig.accountName.isNullOrBlank()) {
-                                            if (isNotEmpty()) append(": ")
-                                            append(parsedConfig.accountName)
-                                        }
-                                        if (isEmpty()) append("TOTP")
-                                    }
-
-                                    try {
-                                        val entry = VaultEntry(
-                                            EntryHeader(
-                                                id = EntryId(""),
-                                                entryType = EntryType.LOGIN,
-                                                version = EntryVersion.INITIAL,
-                                                createdAt = System.currentTimeMillis(),
-                                                updatedAt = System.currentTimeMillis()
-                                            ),
-                                            EntrySummary(
-                                                title = title,
-                                                username = parsedConfig.accountName ?: title,
-                                                icon = null
-                                            ),
-                                            EntrySecret(
-                                                otp = OtpSecret(
-                                                    config = parsedConfig
-                                                )
-                                            )
-                                        )
-                                        onSaveEntry(entry)
-                                        Toast.makeText(context, successSaveMsg, Toast.LENGTH_SHORT)
-                                            .show()
-                                        onDismiss()
-                                    } catch (e: Exception) {
-                                        AppTelemetry.e("VaultScanner", "Failed to encrypt/save TOTP", e)
-                                        Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT)
-                                            .show()
-                                    }
+                                    onSaveOtp(parsedConfig)
+                                    onDismiss()
                                 }, modifier = Modifier.weight(2f), shape = RoundedCornerShape(8.dp)
                             ) {
                                 Icon(

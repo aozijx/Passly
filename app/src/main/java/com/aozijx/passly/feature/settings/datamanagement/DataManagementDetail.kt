@@ -40,7 +40,7 @@ internal fun DataManagementDetail(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
-        SettingsSectionTitle(text = "危险操作")
+        SettingsSectionTitle(text = stringResource(R.string.data_dangerous_actions))
         RoundedGroup(
             containerColor = MaterialTheme.colorScheme.errorContainer,
             items = listOf(
@@ -48,7 +48,7 @@ internal fun DataManagementDetail(
                     key = "data.clear_database",
                     icon = Icons.Default.DeleteForever,
                     title = stringResource(R.string.database_recovery_clear_action),
-                    subtitle = "删除全部条目、附件和自定义图片；设置与认证方式保留",
+                    subtitle = stringResource(R.string.data_clear_database_description),
                     onClick = { showClearConfirmation = true }
                 )
             )
@@ -74,7 +74,7 @@ internal fun DataManagementDetail(
                 ) {
                     Text(
                         text = if (isClearingDatabase) {
-                            "正在清除…"
+                            stringResource(R.string.data_clearing_database)
                         } else {
                             stringResource(R.string.database_recovery_clear_confirm)
                         },
@@ -87,7 +87,7 @@ internal fun DataManagementDetail(
                     enabled = !isClearingDatabase,
                     onClick = { showClearConfirmation = false }
                 ) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

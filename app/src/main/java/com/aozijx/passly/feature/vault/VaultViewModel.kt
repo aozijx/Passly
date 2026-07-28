@@ -198,6 +198,38 @@ class VaultViewModel @Inject constructor(
         }
     }
 
+    fun addScannedOtp(config: OtpConfig) {
+        try {
+            val title = buildString {
+                if (!config.issuer.isNullOrBlank()) append(config.issuer)
+                if (!config.accountName.isNullOrBlank()) {
+                    if (isNotEmpty()) append(": ")
+                    append(config.accountName)
+                }
+                if (isEmpty()) append("TOTP")
+            }
+            val entry = VaultEntry(
+                header = EntryHeader(
+                    id = EntryId(""),
+                    entryType = EntryType.LOGIN,
+                    version = EntryVersion.INITIAL,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
+                ),
+                summary = EntrySummary(
+                    title = title,
+                    username = config.accountName ?: title,
+                    icon = null
+                ),
+                secret = EntrySecret(otp = OtpSecret(config = config))
+            )
+            entryManager.addItem(entry)
+        } catch (error: Exception) {
+            AppTelemetry.e("SaveScannedOtp", "Failed to save scanned OTP entry", error)
+            emitError("加密保存失败")
+        }
+    }
+
     private fun buildOtpEntry(state: OtpFormState): VaultEntry = VaultEntry(
         header = EntryHeader(
             id = EntryId(""),
@@ -353,9 +385,8 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) {
-        viewModelScope.launch { entryQueryRepository.getById(entryId)?.let { onLoaded(it) } }
-    }
+    fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) =
+        viewModelScope.launch { entryQueryRepository.getById(entryId)?.let(onLoaded) }
 
     fun decryptSingle(
         encryptedData: String,

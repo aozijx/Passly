@@ -4,6 +4,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.aozijx.passly.R
 
 @Composable
 fun AppPasswordActionDialog(
@@ -13,13 +15,17 @@ fun AppPasswordActionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("管理应用解锁密码") },
-        text = { Text("你可以修改密码，或关闭该功能。") },
+        title = { Text(stringResource(R.string.app_password_manage_title)) },
+        text = { Text(stringResource(R.string.app_password_manage_description)) },
         confirmButton = {
-            TextButton(onClick = onChangePassword) { Text("修改密码") }
+            TextButton(onClick = onChangePassword) {
+                Text(stringResource(R.string.app_password_change_action))
+            }
         },
         dismissButton = {
-            TextButton(onClick = onDisablePassword) { Text("关闭") }
+            TextButton(onClick = onDisablePassword) {
+                Text(stringResource(R.string.app_password_disable_action))
+            }
         }
     )
 }

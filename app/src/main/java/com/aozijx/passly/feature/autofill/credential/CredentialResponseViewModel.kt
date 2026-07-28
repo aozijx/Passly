@@ -41,7 +41,7 @@ class CredentialResponseViewModel @Inject constructor(
                 credentialData.getString(ModernCredentialService.EXTRA_PACKAGE_NAME) ?: ""
             val webDomain = credentialData.getString(ModernCredentialService.EXTRA_WEB_DOMAIN)
 
-            AppTelemetry.i(TAG, "Phase 2: password for pkg=$packageName")
+            AppTelemetry.i(TAG, "Password credential request received")
 
             try {
                 when (val result = useCase.resolvePasswordCredential(packageName, webDomain)) {
@@ -50,11 +50,11 @@ class CredentialResponseViewModel @Inject constructor(
                             result.username, result.password
                         )
                         _state.value = UiState.Success(intent)
-                        AppTelemetry.i(TAG, "Password credential returned for ${result.username}")
+                        AppTelemetry.i(TAG, "Password credential resolved")
                     }
 
                     is PasswordCredentialResult.NotFound -> {
-                        AppTelemetry.w(TAG, "No credential resolved for $packageName")
+                        AppTelemetry.w(TAG, "Password credential not found")
                         _state.value = UiState.Error
                     }
                 }

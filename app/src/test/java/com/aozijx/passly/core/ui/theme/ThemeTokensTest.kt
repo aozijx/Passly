@@ -1,6 +1,7 @@
 package com.aozijx.passly.core.ui.theme
 
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.domain.settings.model.FallbackPalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -54,5 +55,14 @@ class ThemeTokensTest {
         assertEquals(0.dp, style.innerRadius)
         assertEquals(12.dp, style.itemSpacing)
         assertEquals(8.dp, style.contentPadding)
+    }
+
+    @Test
+    fun fallbackPalettes_resolveToDistinctNonDefaultPresets() {
+        val presets = FallbackPalette.entries.map(::themePresetByFallbackPalette)
+
+        assertEquals(FallbackPalette.entries.size, presets.map { it.color }.distinct().size)
+        assertTrue(presets.all { it.color != 0L })
+        assertTrue(presets.all { it.palette != null })
     }
 }

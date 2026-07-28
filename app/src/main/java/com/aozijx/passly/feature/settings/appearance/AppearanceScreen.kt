@@ -29,6 +29,7 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.theme.themePresetByColor
+import com.aozijx.passly.core.ui.theme.themePresetByFallbackPalette
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
@@ -43,14 +44,15 @@ internal fun AppearanceDetail(
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onExpressiveEnabledChange: (Boolean) -> Unit,
-    onCustomSeedArgbChange: (Long?) -> Unit,
+    onManualThemeColorSelect: (Long?) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onFontFamilyChange: (FontFamilyMode) -> Unit
 ) {
     var showThemeColorSheet by remember { mutableStateOf(false) }
     var showThemeModeMenu by remember { mutableStateOf(false) }
     var showLanguageSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    val languageSheetState = rememberModalBottomSheetState()
+    val themeColorSheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
     SettingsSection {
@@ -97,7 +99,16 @@ internal fun AppearanceDetail(
                     key = "appearance.theme_color",
                     icon = Icons.Default.Palette,
                     title = stringResource(R.string.settings_theme_color),
-                    value = stringResource(themePresetByColor(state.customSeedArgb ?: 0L).nameKey),
+                    value = if (state.isDynamicColor) {
+                        stringResource(R.string.settings_dynamic_color)
+                    } else {
+                        stringResource(
+                            state.customSeedArgb
+                                ?.let(::themePresetByColor)
+                                ?.nameKey
+                                ?: themePresetByFallbackPalette(state.fallbackPalette).nameKey
+                        )
+                    },
                     onClick = { showThemeColorSheet = !showThemeColorSheet }
                 )
             )
@@ -119,7 +130,13 @@ internal fun AppearanceDetail(
                     key = "appearance.font",
                     icon = Icons.Default.TextFields,
                     title = stringResource(R.string.settings_font),
-                    subtitle = stringResource(R.string.settings_font_system),
+                    subtitle = stringResource(
+                        if (state.fontFamily == FontFamilyMode.SYSTEM) {
+                            R.string.settings_font_system
+                        } else {
+                            R.string.settings_font_app
+                        }
+                    ),
                     checked = state.fontFamily == FontFamilyMode.SYSTEM,
                     onCheckedChange = { useSystem ->
                         onFontFamilyChange(
@@ -135,24 +152,25 @@ internal fun AppearanceDetail(
         LanguagePicker(
             current = state.language,
             onSelect = { lang ->
-                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                scope.launch { languageSheetState.hide() }.invokeOnCompletion {
                     showLanguageSheet = false
                     // 此时触发导致 Activity 重启的语言变更
                     onLanguageChange(lang)
                 }
             },
-            sheetState = sheetState,
+            sheetState = languageSheetState,
             onDismiss = { showLanguageSheet = false }
         )
     }
 
     if (showThemeColorSheet) {
         ThemePicker(
-            selectedColor = state.customSeedArgb ?: 0L,
-            sheetState = sheetState,
+            selectedColor = state.customSeedArgb
+                ?: themePresetByFallbackPalette(state.fallbackPalette).color,
+            sheetState = themeColorSheetState,
             onSelect = { color ->
-                onCustomSeedArgbChange(if (color == 0L) null else color)
-                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                onManualThemeColorSelect(if (color == 0L) null else color)
+                scope.launch { themeColorSheetState.hide() }.invokeOnCompletion {
                     showThemeColorSheet = false
                 }
             },

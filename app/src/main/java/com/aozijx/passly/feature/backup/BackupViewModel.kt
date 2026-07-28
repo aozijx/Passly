@@ -17,20 +17,20 @@ import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
 import com.aozijx.passly.domain.backup.service.VaultBackupService
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.notice.model.NoticeCode
+import com.aozijx.passly.domain.notice.model.newAppNotice
+import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
-import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.backup.contract.BackupUiState
 import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -40,14 +40,12 @@ class BackupViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val backupService: VaultBackupService,
     private val storageSupport: BackupExportStorageSupport,
-    private val authenticationManager: AuthenticationManager
+    private val authenticationManager: AuthenticationManager,
+    private val noticePublisher: AppNoticePublisher
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BackupUiState())
     val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
-
-    private val _effect = Channel<BackupEffect>(Channel.BUFFERED)
-    val effect = _effect.receiveAsFlow()
 
     fun onIntent(intent: BackupIntent) {
         when (intent) {
@@ -68,29 +66,29 @@ class BackupViewModel @Inject constructor(
             is BackupIntent.UpdateIncludedEntryTypes ->
                 updateIncludedEntryTypes(intent.types)
             BackupIntent.CancelPendingOperation -> clearPendingOperation()
-            BackupIntent.ResetBackupStatus ->
-                _uiState.update { it.copy(status = BackupOperationStatus.Idle, error = null) }
             BackupIntent.ProcessBackupAction -> processBackupAction()
         }
     }
 
     private fun checkDirectoryPermission(uri: String?) {
         if (uri.isNullOrBlank()) {
-            fail(BackupFailed("尚未配置备份目录"))
+            fail(BackupFailed("尚未配置备份目录"), BackupOperation.DIRECTORY_CHECK)
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(status = BackupOperationStatus.Loading) }
             when (val result = backupService.checkDirectoryWritable(uri)) {
-                is AppResult.Success -> _uiState.update {
-                    it.copy(
-                        status = BackupOperationStatus.Success(
-                            BackupOperationStatus.OperationType.PERMISSION_CHECK
-                        ),
-                        error = null
+                is AppResult.Success -> {
+                    noticePublisher.publish(
+                        newAppNotice(NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED)
                     )
+                    _uiState.update {
+                        it.copy(status = BackupOperationStatus.Idle, error = null)
+                    }
                 }
-                is AppResult.Failure -> fail(result.error)
+
+                is AppResult.Failure ->
+                    fail(result.error, BackupOperation.DIRECTORY_CHECK)
             }
         }
     }
@@ -134,11 +132,19 @@ class BackupViewModel @Inject constructor(
         val snapshot = _uiState.value
         if (!snapshot.isExporting || !snapshot.canSubmitExport) return
         viewModelScope.launch {
-            if (!authenticate(AuthenticationPurpose.BACKUP_EXPORT)) return@launch
+            if (!authenticate(
+                    AuthenticationPurpose.BACKUP_EXPORT,
+                    BackupOperation.EXPORT
+                )
+            ) {
+                clearPendingOperation()
+                return@launch
+            }
             _uiState.update { it.copy(status = BackupOperationStatus.Loading, error = null) }
             val directoryUri = settingsRepository.settings.first().backup.directoryTreeUri
             if (directoryUri.isNullOrBlank()) {
-                fail(BackupFailed("尚未配置备份目录"))
+                fail(BackupFailed("尚未配置备份目录"), BackupOperation.EXPORT)
+                clearPendingFields()
                 return@launch
             }
             val fileName = snapshot.pendingExportFileName
@@ -148,7 +154,11 @@ class BackupViewModel @Inject constructor(
                 fileName = fileName,
                 mimeType = snapshot.selectedExportFormat.mimeType
             ).getOrElse { error ->
-                fail(AppError.fromThrowable(error, ErrorLayer.UI))
+                fail(
+                    AppError.fromThrowable(error, ErrorLayer.UI),
+                    BackupOperation.EXPORT
+                )
+                clearPendingFields()
                 return@launch
             }
             performOperation(
@@ -211,12 +221,23 @@ class BackupViewModel @Inject constructor(
             } else {
                 AuthenticationPurpose.BACKUP_IMPORT
             }
-            if (!authenticate(purpose)) return@launch
+            val operation = if (snapshot.isExporting) {
+                BackupOperation.EXPORT
+            } else {
+                BackupOperation.IMPORT
+            }
+            if (!authenticate(purpose, operation)) {
+                clearPendingOperation()
+                return@launch
+            }
             performOperation(snapshot, targetUri)
         }
     }
 
-    private suspend fun authenticate(purpose: AuthenticationPurpose): Boolean =
+    private suspend fun authenticate(
+        purpose: AuthenticationPurpose,
+        operation: BackupOperation
+    ): Boolean =
         when (
             authenticationManager.authenticate(
                 AuthenticationRequest(purpose = purpose)
@@ -225,7 +246,7 @@ class BackupViewModel @Inject constructor(
             is AuthenticationResult.Success -> true
             is AuthenticationResult.Cancelled -> false
             is AuthenticationResult.Failure -> {
-                fail(BackupFailed("身份验证失败"))
+                fail(BackupFailed("身份验证失败"), operation)
                 false
             }
         }
@@ -269,14 +290,17 @@ class BackupViewModel @Inject constructor(
                     if (state.isExporting && state.deleteTargetOnFailure) {
                         storageSupport.deleteDocument(targetUri)
                     }
-                    fail(result.error)
+                    fail(result.error, state.toOperation())
                 }
             }
         } catch (error: Exception) {
             if (state.isExporting && state.deleteTargetOnFailure) {
                 storageSupport.deleteDocument(targetUri)
             }
-            fail(AppError.fromThrowable(error, ErrorLayer.UI))
+            fail(
+                AppError.fromThrowable(error, ErrorLayer.UI),
+                state.toOperation()
+            )
         } finally {
             password?.fill('\u0000')
             clearPendingFields()
@@ -284,25 +308,27 @@ class BackupViewModel @Inject constructor(
     }
 
     private suspend fun handleSuccess(state: BackupUiState) {
+        val code = if (state.isExporting) {
+            NoticeCode.BACKUP_EXPORT_COMPLETED
+        } else {
+            NoticeCode.BACKUP_IMPORT_COMPLETED
+        }
+        noticePublisher.publish(newAppNotice(code))
         _uiState.update {
-            it.copy(
-                status = BackupOperationStatus.Success(
-                    if (state.isExporting) {
-                        BackupOperationStatus.OperationType.EXPORT
-                    } else {
-                        BackupOperationStatus.OperationType.IMPORT
-                    }
-                ),
-                error = null
-            )
+            it.copy(status = BackupOperationStatus.Idle, error = null)
         }
     }
 
-    private fun fail(error: AppError) {
+    private fun fail(error: AppError, operation: BackupOperation) {
         _uiState.update {
             it.copy(status = BackupOperationStatus.Failure, error = error)
         }
-        _effect.trySend(BackupEffect.ShowError(error))
+        val code = when (operation) {
+            BackupOperation.EXPORT -> NoticeCode.BACKUP_EXPORT_FAILED
+            BackupOperation.IMPORT -> NoticeCode.BACKUP_IMPORT_FAILED
+            BackupOperation.DIRECTORY_CHECK -> NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED
+        }
+        noticePublisher.publish(newAppNotice(code))
     }
 
     private fun clearPendingOperation() {
@@ -324,4 +350,13 @@ class BackupViewModel @Inject constructor(
     fun buildExportFileName(
         format: BackupExportUiFormat = _uiState.value.selectedExportFormat
     ): String = storageSupport.buildBackupFileName(format.extension)
+
+    private fun BackupUiState.toOperation(): BackupOperation =
+        if (isExporting) BackupOperation.EXPORT else BackupOperation.IMPORT
+
+    private enum class BackupOperation {
+        EXPORT,
+        IMPORT,
+        DIRECTORY_CHECK
+    }
 }

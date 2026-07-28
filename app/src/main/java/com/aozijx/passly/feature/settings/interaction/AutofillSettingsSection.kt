@@ -14,7 +14,7 @@ internal fun AutofillSettingsSection(
     onOpenAutofillSettings: () -> Unit,
     onToggleAutofillUiMode: () -> Unit
 ) {
-    SettingsSectionTitle(text = "自动填充模式")
+    SettingsSectionTitle(text = stringResource(R.string.autofill_mode_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
@@ -25,11 +25,13 @@ internal fun AutofillSettingsSection(
             ),
             navigationSettingsGroupItem(
                 key = "interaction.autofill_mode",
-                title = "填充方式",
-                value = when (autofillUiMode) {
-                    AutofillUiMode.SYSTEM_INLINE -> "键盘候选"
-                    AutofillUiMode.BOTTOM_SHEET -> "底部弹窗"
-                },
+                title = stringResource(R.string.autofill_mode_title),
+                value = stringResource(
+                    when (autofillUiMode) {
+                        AutofillUiMode.SYSTEM_INLINE -> R.string.autofill_mode_inline
+                        AutofillUiMode.BOTTOM_SHEET -> R.string.autofill_mode_bottom_sheet
+                    }
+                ),
                 onClick = onToggleAutofillUiMode
             )
         )

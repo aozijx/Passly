@@ -1,9 +1,11 @@
 package com.aozijx.passly.feature.auth.ui.host
 
+import android.content.Context
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
+import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
@@ -85,7 +87,11 @@ class ActivityAuthUiHost(
     ): BiometricHostResult {
         if (!snapshot().usable) return BiometricHostResult.HostUnavailable
         val promptInfo = try {
-            BiometricPromptSpecFactory.create(spec, cryptoBound = cryptoObject != null)
+            BiometricPromptSpecFactory.create(
+                context = activity,
+                spec = spec,
+                cryptoBound = cryptoObject != null
+            )
         } catch (failure: IllegalArgumentException) {
             AppTelemetry.e(
                 EventCategory.AUTHENTICATION,
@@ -222,6 +228,7 @@ class ActivityAuthUiHost(
 
 internal object BiometricPromptSpecFactory {
     fun create(
+        context: Context,
         spec: BiometricPromptSpec,
         cryptoBound: Boolean
     ): BiometricPrompt.PromptInfo {
@@ -235,24 +242,28 @@ internal object BiometricPromptSpecFactory {
             BiometricManager.Authenticators.BIOMETRIC_STRONG
         }
         return BiometricPrompt.PromptInfo.Builder()
-            .setTitle(titleFor(spec.purpose))
-            .setSubtitle("请验证身份以继续")
+            .setTitle(context.getString(titleResource(spec.purpose)))
+            .setSubtitle(context.getString(R.string.auth_biometric_subtitle))
             .setAllowedAuthenticators(authenticators)
             .apply {
-                if (!spec.allowDeviceCredential) setNegativeButtonText("取消")
+                if (!spec.allowDeviceCredential) {
+                    setNegativeButtonText(context.getString(R.string.cancel))
+                }
             }
             .build()
     }
 
-    private fun titleFor(purpose: AuthenticationPurpose): String = when (purpose) {
-        AuthenticationPurpose.UNLOCK_VAULT -> "解锁保险库"
-        AuthenticationPurpose.AUTOFILL -> "验证后自动填充"
-        AuthenticationPurpose.BACKUP_EXPORT -> "验证后导出备份"
-        AuthenticationPurpose.BACKUP_IMPORT -> "验证后导入备份"
-        AuthenticationPurpose.EXPORT_DIAGNOSTICS -> "验证后导出诊断"
-        AuthenticationPurpose.RECOVER_DATABASE -> "验证后保留故障库并创建新库"
-        AuthenticationPurpose.CLEAR_DATABASE -> "验证后清除保险库数据"
-        else -> "验证身份"
+    private fun titleResource(purpose: AuthenticationPurpose): Int = when (purpose) {
+        AuthenticationPurpose.UNLOCK_VAULT -> R.string.auth_purpose_unlock_vault
+        AuthenticationPurpose.AUTOFILL -> R.string.auth_purpose_autofill
+        AuthenticationPurpose.BACKUP_EXPORT -> R.string.auth_purpose_backup_export
+        AuthenticationPurpose.BACKUP_IMPORT -> R.string.auth_purpose_backup_import
+        AuthenticationPurpose.EXPORT_DIAGNOSTICS ->
+            R.string.auth_purpose_export_diagnostics
+
+        AuthenticationPurpose.RECOVER_DATABASE -> R.string.auth_purpose_recover_database
+        AuthenticationPurpose.CLEAR_DATABASE -> R.string.auth_purpose_clear_database
+        else -> R.string.auth_verify_identity
     }
 }
 

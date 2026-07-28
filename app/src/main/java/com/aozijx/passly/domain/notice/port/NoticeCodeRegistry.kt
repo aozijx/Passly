@@ -93,6 +93,20 @@ fun defaultNoticeCodePolicy(code: NoticeCode): NoticeCodePolicy = when (code) {
         suppressWithinMs = 30_000
     )
 
+    NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED -> NoticeCodePolicy(
+        NoticeTopic.BACKUP,
+        NoticeLevel.SUCCESS,
+        DeliveryPolicy.IN_APP_ONLY,
+        suppressWithinMs = 10_000
+    )
+
+    NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED -> NoticeCodePolicy(
+        NoticeTopic.BACKUP,
+        NoticeLevel.ERROR,
+        DeliveryPolicy.IN_APP_ONLY,
+        suppressWithinMs = 10_000
+    )
+
     NoticeCode.SECURITY_KEY_INVALIDATED -> NoticeCodePolicy(
         NoticeTopic.SECURITY,
         NoticeLevel.CRITICAL,

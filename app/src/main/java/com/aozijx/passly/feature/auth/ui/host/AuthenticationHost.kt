@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
@@ -16,6 +17,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
@@ -23,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 
@@ -90,7 +95,7 @@ private fun MethodDialog(
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("验证身份") },
+        title = { Text(stringResource(R.string.auth_verify_identity)) },
         text = {
             Column {
                 methods.forEach { method ->
@@ -102,7 +107,9 @@ private fun MethodDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onCancel) { Text("取消") } }
+        dismissButton = {
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
+        }
     )
 }
 
@@ -120,8 +127,22 @@ private fun SecretDialog(
             OutlinedTextField(
                 value = secret,
                 onValueChange = { secret = it },
-                label = { Text(if (method == AuthenticationMethod.RECOVERY_CODE) "恢复码" else "应用密码") },
+                label = {
+                    Text(
+                        stringResource(
+                            if (method == AuthenticationMethod.RECOVERY_CODE) {
+                                R.string.auth_recovery_code_label
+                            } else {
+                                R.string.auth_app_password_label
+                            }
+                        )
+                    )
+                },
                 visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -136,14 +157,19 @@ private fun SecretDialog(
                     secret = ""
                     onSubmit(chars)
                 }
-            ) { Text("继续") }
+            ) { Text(stringResource(R.string.continue_action)) }
         },
-        dismissButton = { TextButton(onClick = onCancel) { Text("取消") } }
+        dismissButton = {
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
+        }
     )
 }
 
-private fun AuthenticationMethod.label(): String = when (this) {
-    AuthenticationMethod.BIOMETRIC -> "生物识别"
-    AuthenticationMethod.APP_PASSWORD -> "应用密码"
-    AuthenticationMethod.RECOVERY_CODE -> "使用恢复码"
-}
+@Composable
+private fun AuthenticationMethod.label(): String = stringResource(
+    when (this) {
+        AuthenticationMethod.BIOMETRIC -> R.string.auth_method_biometric
+        AuthenticationMethod.APP_PASSWORD -> R.string.auth_app_password_label
+        AuthenticationMethod.RECOVERY_CODE -> R.string.auth_method_recovery_code
+    }
+)

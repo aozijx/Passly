@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
@@ -17,22 +19,22 @@ fun SecurityProtectionSettingsSection(
     onFlipToLockEnabledChange: (Boolean) -> Unit,
     onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit
 ) {
-    SettingsSectionTitle(text = "安全防护")
+    SettingsSectionTitle(text = stringResource(R.string.security_protection_section))
     RoundedGroup(
         items = listOf(
             switchSettingsGroupItem(
                 key = "privacy.secure_content",
                 icon = Icons.Default.Security,
-                title = "安全防护",
-                subtitle = "禁止截屏录屏，并隐藏多任务预览",
+                title = stringResource(R.string.security_secure_content),
+                subtitle = stringResource(R.string.security_secure_content_description),
                 checked = isSecureContentEnabled,
                 onCheckedChange = onSecureContentEnabledChange
             ),
             switchSettingsGroupItem(
                 key = "privacy.flip_to_lock",
                 icon = Icons.Default.Flip,
-                title = "锁定应用",
-                subtitle = "屏幕朝下时立即关闭保险箱",
+                title = stringResource(R.string.security_flip_to_lock),
+                subtitle = stringResource(R.string.security_flip_to_lock_description),
                 checked = isFlipToLockEnabled,
                 onCheckedChange = onFlipToLockEnabledChange
             ),
@@ -40,8 +42,8 @@ fun SecurityProtectionSettingsSection(
                 key = "privacy.flip_exit",
                 visible = isFlipToLockEnabled,
                 iconPlaceholder = true,
-                title = "退出应用",
-                subtitle = "退出应用并清除任务栈",
+                title = stringResource(R.string.security_flip_exit),
+                subtitle = stringResource(R.string.security_flip_exit_description),
                 checked = isFlipExitAndClearStackEnabled,
                 onCheckedChange = onFlipExitAndClearStackEnabledChange
             )

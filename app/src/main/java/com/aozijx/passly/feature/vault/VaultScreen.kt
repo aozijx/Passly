@@ -1,7 +1,5 @@
 package com.aozijx.passly.feature.vault
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,6 +8,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,6 +31,7 @@ import com.aozijx.passly.feature.vault.components.VaultPagerContent
 import com.aozijx.passly.feature.vault.components.fab.VaultFab
 import com.aozijx.passly.feature.vault.internal.rememberVaultActionProvider
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +77,7 @@ fun VaultContent(
         }
     }
 
-    LaunchedEffect(pagerState, uiState.visibleTabs) {
+    LaunchedEffect(pagerState, uiState.visibleTabs, uiState.selectedTab) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
             val newTab = uiState.visibleTabs.getOrNull(page) ?: return@collect
             if (newTab != uiState.selectedTab) {
@@ -86,32 +86,43 @@ fun VaultContent(
         }
     }
 
-    LaunchedEffect(
-        scrollBehavior.state.collapsedFraction,
-        vaultDisplayConfig.layout.hideSystemBars
-    ) {
-        val activity = context as? FragmentActivity ?: return@LaunchedEffect
+    val activity = context as? FragmentActivity
+    LaunchedEffect(scrollBehavior, vaultDisplayConfig.layout.hideSystemBars, activity) {
+        activity ?: return@LaunchedEffect
         val window = activity.window
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
         if (!vaultDisplayConfig.layout.hideSystemBars) {
             insetsController.show(WindowInsetsCompat.Type.statusBars())
             return@LaunchedEffect
         }
-        if (scrollBehavior.state.collapsedFraction > 0.6f) {
-            insetsController.hide(WindowInsetsCompat.Type.statusBars())
-        } else if (scrollBehavior.state.collapsedFraction < 0.4f) {
-            insetsController.show(WindowInsetsCompat.Type.statusBars())
+
+        snapshotFlow {
+            when {
+                scrollBehavior.state.collapsedFraction > 0.6f -> true
+                scrollBehavior.state.collapsedFraction < 0.4f -> false
+                else -> null
+            }
+        }.filterNotNull().distinctUntilChanged().collect { shouldHide ->
+            if (shouldHide) {
+                insetsController.hide(WindowInsetsCompat.Type.statusBars())
+            } else {
+                insetsController.show(WindowInsetsCompat.Type.statusBars())
+            }
+        }
+    }
+
+    DisposableEffect(activity) {
+        onDispose {
+            activity?.let {
+                WindowCompat.getInsetsController(it.window, it.window.decorView)
+                    .show(WindowInsetsCompat.Type.statusBars())
+            }
         }
     }
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = actionProvider.onUpdateInteraction
-            )
             .then(
                 if (vaultDisplayConfig.layout.collapseTopBarOnScroll
                     || vaultDisplayConfig.layout.collapseTabBarOnScroll

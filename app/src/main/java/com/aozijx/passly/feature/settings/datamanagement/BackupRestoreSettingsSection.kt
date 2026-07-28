@@ -7,7 +7,9 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
@@ -22,21 +24,21 @@ internal fun BackupRestoreSettingsSection(
     onTestWrite: () -> Unit,
     onClearPath: (() -> Unit)?
 ) {
-    SettingsSectionTitle(text = "备份与恢复")
+    SettingsSectionTitle(text = stringResource(R.string.backup_restore_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "backup.export",
                 icon = Icons.Default.FileUpload,
-                title = "导出",
-                subtitle = "加密备份、JSON 或可读文本",
+                title = stringResource(R.string.backup_export_action),
+                subtitle = stringResource(R.string.backup_export_action_description),
                 onClick = onExport
             ),
             navigationSettingsGroupItem(
                 key = "backup.import",
                 icon = Icons.Default.FileDownload,
-                title = "导入",
-                subtitle = "自动识别 Passly 与兼容格式",
+                title = stringResource(R.string.backup_import_action),
+                subtitle = stringResource(R.string.backup_import_action_description),
                 onClick = onImport
             )
         )
@@ -44,30 +46,30 @@ internal fun BackupRestoreSettingsSection(
 
     Spacer(Modifier.height(24.dp))
 
-    SettingsSectionTitle(text = "存储位置")
+    SettingsSectionTitle(text = stringResource(R.string.backup_storage_section))
     RoundedGroup(
         items = listOf(
             navigationSettingsGroupItem(
                 key = "backup.directory",
-                title = "默认备份目录",
+                title = stringResource(R.string.backup_default_directory),
                 subtitle = pathLabel,
                 onClick = onPickPath
             ),
             navigationSettingsGroupItem(
                 key = "backup.test_write",
-                title = "测试写入权限",
+                title = stringResource(R.string.backup_test_write),
                 onClick = onTestWrite
             ),
             navigationSettingsGroupItem(
                 key = "backup.last_export",
-                title = "最近导出文件",
+                title = stringResource(R.string.backup_recent_export),
                 subtitle = recentExportFileName,
                 onClick = {}
             ),
             navigationSettingsGroupItem(
                 key = "backup.clear_directory",
                 visible = onClearPath != null,
-                title = "清除默认目录",
+                title = stringResource(R.string.backup_clear_default_directory),
                 onClick = onClearPath ?: {}
             )
         )

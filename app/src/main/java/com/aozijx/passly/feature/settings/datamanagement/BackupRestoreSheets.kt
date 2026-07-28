@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.datamanagement
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
@@ -36,10 +38,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.contract.BackupUiState
@@ -103,31 +109,31 @@ private fun BackupFormatPicker(
 ) {
     SheetColumn {
         Text(
-            text = "选择导出格式",
+            text = stringResource(R.string.backup_format_picker_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "每种格式使用独立的导出设置。加密备份适合恢复，JSON 适合迁移，TXT 仅供人工阅读。",
+            text = stringResource(R.string.backup_format_picker_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         FormatCard(
             icon = Icons.Default.Lock,
-            title = "加密备份",
-            subtitle = "完整、自描述、密码加密，可用于恢复",
+            title = stringResource(R.string.backup_format_encrypted),
+            subtitle = stringResource(R.string.backup_format_encrypted_description),
             onClick = { onFormatSelected(BackupExportUiFormat.ENCRYPTED) }
         )
         FormatCard(
             icon = Icons.Default.Code,
-            title = "JSON 备份",
-            subtitle = "明文结构化数据，可用于迁移和外部处理",
+            title = stringResource(R.string.backup_format_json),
+            subtitle = stringResource(R.string.backup_format_json_description),
             onClick = { onFormatSelected(BackupExportUiFormat.JSON) }
         )
         FormatCard(
             icon = Icons.Default.Description,
-            title = "可读 TXT",
-            subtitle = "每个字段单独成行，不包含图片和附件",
+            title = stringResource(R.string.backup_format_text),
+            subtitle = stringResource(R.string.backup_format_text_description),
             onClick = { onFormatSelected(BackupExportUiFormat.TEXT) }
         )
     }
@@ -176,7 +182,7 @@ private fun BackupExportOptionsContent(
 ) {
     SheetColumn(scrollable = true) {
         Text(
-            text = exportTitle(state.selectedExportFormat),
+            text = stringResource(exportTitleResource(state.selectedExportFormat)),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -187,31 +193,40 @@ private fun BackupExportOptionsContent(
                 value = state.backupPassword,
                 onValueChange = onPasswordChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("备份密码") },
-                supportingText = { Text("密码不会保存，遗失后无法恢复备份") },
+                label = { Text(stringResource(R.string.backup_password_label)) },
+                supportingText = {
+                    Text(stringResource(R.string.backup_password_warning))
+                },
                 visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
                 singleLine = true
             )
         }
 
-        Text("内容范围", style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.backup_content_scope),
+            style = MaterialTheme.typography.titleMedium
+        )
         if (state.selectedExportFormat.supportsResources) {
             BackupSwitchRow(
-                title = "自定义图标",
-                subtitle = "导出保存在应用中的条目图标",
+                title = stringResource(R.string.backup_include_icons),
+                subtitle = stringResource(R.string.backup_include_icons_description),
                 checked = state.includeIcons,
                 onCheckedChange = onIncludeIconsChange
             )
             BackupSwitchRow(
-                title = "附件与图片",
-                subtitle = "导出已提交的附件文件，可能显著增加文件大小",
+                title = stringResource(R.string.backup_include_attachments),
+                subtitle = stringResource(R.string.backup_include_attachments_description),
                 checked = state.includeAttachments,
                 onCheckedChange = onIncludeAttachmentsChange
             )
         }
         BackupSwitchRow(
-            title = "回收站条目",
-            subtitle = "包含尚未永久删除的条目",
+            title = stringResource(R.string.backup_include_deleted),
+            subtitle = stringResource(R.string.backup_include_deleted_description),
             checked = state.includeDeleted,
             onCheckedChange = onIncludeDeletedChange
         )
@@ -222,7 +237,10 @@ private fun BackupExportOptionsContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("条目类型", style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.backup_entry_types),
+                style = MaterialTheme.typography.titleMedium
+            )
             TextButton(
                 onClick = {
                     onIncludedEntryTypesChange(
@@ -235,8 +253,13 @@ private fun BackupExportOptionsContent(
                 }
             ) {
                 Text(
-                    if (state.includedEntryTypes.size == EntryType.entries.size) "清除"
-                    else "全选"
+                    stringResource(
+                        if (state.includedEntryTypes.size == EntryType.entries.size) {
+                            R.string.backup_clear_selection
+                        } else {
+                            R.string.backup_select_all
+                        }
+                    )
                 )
             }
         }
@@ -259,7 +282,7 @@ private fun BackupExportOptionsContent(
         }
         if (state.includedEntryTypes.isEmpty()) {
             Text(
-                "至少选择一种条目类型",
+                stringResource(R.string.backup_entry_type_required),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -268,9 +291,12 @@ private fun BackupExportOptionsContent(
         HorizontalDivider()
         Text(
             text = if (configuredDirectoryLabel == null) {
-                "确认后选择保存位置"
+                stringResource(R.string.backup_choose_destination_after_confirm)
             } else {
-                "将保存到默认目录：$configuredDirectoryLabel"
+                stringResource(
+                    R.string.backup_save_to_configured_directory,
+                    configuredDirectoryLabel
+                )
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -280,7 +306,7 @@ private fun BackupExportOptionsContent(
             enabled = state.canSubmitExport,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("开始导出")
+            Text(stringResource(R.string.backup_start_export))
         }
     }
 }
@@ -289,11 +315,11 @@ private fun BackupExportOptionsContent(
 private fun ExportSecurityNotice(format: BackupExportUiFormat) {
     val text = when (format) {
         BackupExportUiFormat.ENCRYPTED ->
-            "使用独立随机盐和 nonce 加密，可包含完整恢复数据。"
+            stringResource(R.string.backup_encrypted_security_notice)
         BackupExportUiFormat.JSON ->
-            "JSON 是明文文件，可能包含密码、OTP Secret 和附件内容。请仅保存到可信位置。"
+            stringResource(R.string.backup_json_security_notice)
         BackupExportUiFormat.TEXT ->
-            "TXT 是明文且不可用于完整恢复，仅包含便于人工阅读的字段。"
+            stringResource(R.string.backup_text_security_notice)
     }
     Text(
         text = text,
@@ -340,43 +366,58 @@ private fun BackupImportOptionsContent(
 ) {
     SheetColumn(scrollable = true) {
         Text(
-            text = "导入与恢复",
+            text = stringResource(R.string.backup_import_options_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
-            "文件格式会根据内容自动识别。加密 Passly 备份需要输入正确密码；JSON 和第三方格式可留空。",
+            stringResource(R.string.backup_import_format_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Text("导入方式", style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.backup_import_mode),
+            style = MaterialTheme.typography.titleMedium
+        )
         ImportModeCard(
             selected = state.importMode == ImportMode.APPEND,
-            title = "合并",
-            subtitle = "保留现有数据，并写入备份条目",
+            title = stringResource(R.string.backup_import_append),
+            subtitle = stringResource(R.string.backup_import_append_description),
             onClick = { onImportModeChange(ImportMode.APPEND) }
         )
         ImportModeCard(
             selected = state.importMode == ImportMode.OVERWRITE,
-            title = "覆盖",
-            subtitle = "清空现有保险库后恢复备份，风险较高",
+            title = stringResource(R.string.backup_import_overwrite),
+            subtitle = stringResource(R.string.backup_import_overwrite_description),
             onClick = { onImportModeChange(ImportMode.OVERWRITE) }
         )
         OutlinedTextField(
             value = state.backupPassword,
             onValueChange = onPasswordChange,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("备份密码（如需要）") },
+            label = { Text(stringResource(R.string.backup_import_password_label)) },
             visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
+            ),
             singleLine = true
         )
         Text(
-            "导入前会验证完整文件；失败不会留下部分恢复数据。",
+            stringResource(R.string.backup_import_atomicity_notice),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Button(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
-            Text(if (state.importMode == ImportMode.OVERWRITE) "确认覆盖并导入" else "开始导入")
+            Text(
+                stringResource(
+                    if (state.importMode == ImportMode.OVERWRITE) {
+                        R.string.backup_confirm_overwrite_import
+                    } else {
+                        R.string.backup_start_import
+                    }
+                )
+            )
         }
     }
 }
@@ -435,8 +476,9 @@ private fun SheetColumn(
     )
 }
 
-private fun exportTitle(format: BackupExportUiFormat): String = when (format) {
-    BackupExportUiFormat.ENCRYPTED -> "加密备份设置"
-    BackupExportUiFormat.JSON -> "JSON 导出设置"
-    BackupExportUiFormat.TEXT -> "TXT 导出设置"
+@StringRes
+private fun exportTitleResource(format: BackupExportUiFormat): Int = when (format) {
+    BackupExportUiFormat.ENCRYPTED -> R.string.backup_encrypted_options_title
+    BackupExportUiFormat.JSON -> R.string.backup_json_options_title
+    BackupExportUiFormat.TEXT -> R.string.backup_text_options_title
 }

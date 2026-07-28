@@ -18,7 +18,12 @@ sealed interface SettingsCommand {
     data class SetThemeMode(val mode: ThemeMode) : SettingsCommand
     data class SetDynamicColor(val enabled: Boolean) : SettingsCommand
     data class SetFallbackPalette(val palette: FallbackPalette) : SettingsCommand
-    data class SetCustomSeedArgb(val argb: Long?) : SettingsCommand
+
+    /**
+     * Selects a manual palette and disables dynamic color in the same settings transaction.
+     * A null value selects the app/fallback palette.
+     */
+    data class SelectManualThemeColor(val argb: Long?) : SettingsCommand
     data class SetLanguage(val language: AppLanguage) : SettingsCommand
     data class SetFontFamily(val mode: FontFamilyMode) : SettingsCommand
     data class SetExpressiveEnabled(val enabled: Boolean) : SettingsCommand

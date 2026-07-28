@@ -108,7 +108,7 @@ fun RecoveryCodeSheet(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("我已安全保存并启用")
+                Text(stringResource(R.string.recovery_code_confirm_saved))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -118,7 +118,7 @@ fun RecoveryCodeSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    "放弃本次草稿",
+                    stringResource(R.string.recovery_code_discard_draft),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

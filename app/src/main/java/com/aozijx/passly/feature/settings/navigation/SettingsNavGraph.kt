@@ -34,7 +34,6 @@ import com.aozijx.passly.feature.settings.shell.rememberSettingsScreenLocalState
 fun SettingsNavGraph(
     navController: NavHostController,
     settingsViewModel: SettingsViewModel,
-    onUpdateInteraction: () -> Unit,
     onOuterBack: () -> Unit
 ) {
     val localState = rememberSettingsScreenLocalState()
@@ -107,7 +106,6 @@ fun SettingsNavGraph(
             context = context,
             localState = localState,
             settingsViewModel = settingsViewModel,
-            onUpdateInteraction = onUpdateInteraction,
             onOuterBack = onOuterBack,
             authDecryptTitle = authDecryptTitle,
             setAppPasswordSubtitle = setAppPasswordSubtitle

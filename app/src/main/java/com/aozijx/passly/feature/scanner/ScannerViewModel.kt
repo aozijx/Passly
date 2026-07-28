@@ -6,6 +6,7 @@ import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
 import com.aozijx.passly.core.qr.QrCodeUtils
+import com.aozijx.passly.core.util.TotpUtils
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent
 import com.aozijx.passly.feature.scanner.contract.ScannerUiState
@@ -47,7 +48,12 @@ class ScannerViewModel @Inject constructor(
         if (barcode.isBlank() || barcode == lastScannedBarcode) return
         lastScannedBarcode = barcode
         vibrate()
-        _effects.tryEmit(ScannerEffect.ScanSuccess(barcode))
+        _effects.tryEmit(
+            ScannerEffect.ScanSuccess(
+                result = barcode,
+                otpConfig = TotpUtils.parseOtpAuthUri(barcode)
+            )
+        )
         _uiState.update { it.copy(isScanning = false) }
     }
 

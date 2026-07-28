@@ -2,12 +2,12 @@ package com.aozijx.passly.feature.settings.navigation
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,12 +20,9 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
-import com.aozijx.passly.core.error.ui.toUiMessage
 import com.aozijx.passly.core.util.PathUtils
 import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.contract.BackupEffect
 import com.aozijx.passly.feature.backup.contract.BackupIntent
-import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
 import com.aozijx.passly.feature.settings.SettingsViewModel
@@ -115,7 +112,6 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
         val state by dataViewModel.config.collectAsStateWithLifecycle()
         val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
         val notSetText = stringResource(R.string.not_set)
-        val unknownError = stringResource(R.string.backup_error_unknown)
         val pathLabel = remember(state.directoryUri) {
             PathUtils.formatPath(state.directoryUri) ?: notSetText
         }
@@ -163,30 +159,9 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
             }
         }
 
-        LaunchedEffect(backupViewModel) {
-            backupViewModel.effect.collect { effect ->
-                when (effect) {
-                    is BackupEffect.ShowError -> Toast.makeText(
-                        context,
-                        effect.error.toUiMessage(unknownError),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-        LaunchedEffect(backupState.status) {
-            val status = backupState.status
-            if (status is BackupOperationStatus.Success) {
-                val message = when (status.type) {
-                    BackupOperationStatus.OperationType.EXPORT ->
-                        context.getString(R.string.backup_export_success)
-                    BackupOperationStatus.OperationType.IMPORT ->
-                        context.getString(R.string.backup_import_success)
-                    BackupOperationStatus.OperationType.PERMISSION_CHECK ->
-                        context.getString(R.string.backup_directory_permission_ok)
-                }
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                backupViewModel.onIntent(BackupIntent.ResetBackupStatus)
+        DisposableEffect(backupViewModel) {
+            onDispose {
+                backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
             }
         }
 

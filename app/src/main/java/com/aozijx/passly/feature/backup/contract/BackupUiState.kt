@@ -9,14 +9,7 @@ import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
 sealed interface BackupOperationStatus {
     data object Idle : BackupOperationStatus
     data object Loading : BackupOperationStatus
-    data class Success(val type: OperationType) : BackupOperationStatus
     data object Failure : BackupOperationStatus
-
-    enum class OperationType {
-        EXPORT,
-        IMPORT,
-        PERMISSION_CHECK
-    }
 }
 
 data class BackupUiState(

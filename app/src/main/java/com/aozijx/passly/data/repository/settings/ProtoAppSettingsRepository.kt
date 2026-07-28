@@ -454,10 +454,11 @@ class ProtoAppSettingsRepository @Inject constructor(
                     b.setAppearance(ab)
                 }
 
-                is SettingsCommand.SetCustomSeedArgb -> {
+                is SettingsCommand.SelectManualThemeColor -> {
                     val ab = proto.appearance.toBuilder()
                     if (command.argb != null) ab.customSeedArgb = command.argb
                     else ab.clearCustomSeedArgb()
+                    ab.dynamicColorEnabled = false
                     b.setAppearance(ab)
                 }
 
