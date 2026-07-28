@@ -52,11 +52,12 @@ class CredentialPlatformAdapter @Inject constructor() {
     fun buildPasswordEntries(
         response: InternalFillResponse,
         context: Context,
-        packageName: String,
         option: BeginGetPasswordOption,
     ): List<PasswordCredentialEntry> {
         val candidates = response.candidates.filter {
-            it.username.isNotBlank() && it.password.isNotBlank()
+            it.username.isNotBlank() &&
+                    it.password.isNotBlank() &&
+                    (option.allowedUserIds.isEmpty() || it.username in option.allowedUserIds)
         }
         if (candidates.isEmpty()) {
             AppTelemetry.d(TAG, "No candidates for password entries")
@@ -67,7 +68,6 @@ class CredentialPlatformAdapter @Inject constructor() {
             CredentialEntryFactory.buildPasswordEntry(
                 context = context,
                 candidate = candidate,
-                packageName = packageName,
                 option = option,
             )
         }

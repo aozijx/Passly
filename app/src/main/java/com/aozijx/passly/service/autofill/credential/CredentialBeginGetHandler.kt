@@ -34,33 +34,36 @@ class CredentialBeginGetHandler @Inject constructor(
         context: Context,
         includeUnlockAction: Boolean = true,
     ): BeginGetCredentialResponse {
-        val packageName = request.callingAppInfo?.packageName.orEmpty()
-        val entries = mutableListOf<CredentialEntry>()
-
         val passwordOptions = request.beginGetCredentialOptions
             .filterIsInstance<BeginGetPasswordOption>()
-        for (option in passwordOptions) {
-            val internalRequest = adapter.buildRequest(packageName)
-            val response = dispatcher.dispatch(internalRequest)
-            if (response.availability == FillAvailability.LOCKED) {
-                return if (includeUnlockAction) {
-                    BeginGetCredentialResponse(
-                        authenticationActions = listOf(
-                            AuthenticationAction(
-                                context.getString(R.string.vault_locked_title),
-                                CredentialPendingIntentFactory.createUnlockPendingIntent(context),
-                            )
+        if (passwordOptions.isEmpty()) {
+            return BeginGetCredentialResponse()
+        }
+
+        val packageName =
+            CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
+                ?: return BeginGetCredentialResponse()
+        val response = dispatcher.dispatch(adapter.buildRequest(packageName))
+        if (response.availability == FillAvailability.LOCKED) {
+            return if (includeUnlockAction) {
+                BeginGetCredentialResponse(
+                    authenticationActions = listOf(
+                        AuthenticationAction(
+                            context.getString(R.string.vault_locked_title),
+                            CredentialPendingIntentFactory.createUnlockPendingIntent(context),
                         )
                     )
-                } else {
-                    BeginGetCredentialResponse()
-                }
+                )
+            } else {
+                BeginGetCredentialResponse()
             }
+        }
 
+        val entries = mutableListOf<CredentialEntry>()
+        for (option in passwordOptions) {
             entries += adapter.buildPasswordEntries(
                 response,
                 context,
-                packageName,
                 option,
             )
         }

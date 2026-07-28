@@ -18,7 +18,17 @@ sealed interface PasswordCredentialResult {
     ) : PasswordCredentialResult
 
     data object NotFound : PasswordCredentialResult
-    data object NotAuthorized : PasswordCredentialResult
+    data class NotAuthorized(
+        val authentication: AuthenticationResult,
+    ) : PasswordCredentialResult
+}
+
+sealed interface CreatePasswordCredentialResult {
+    data object Success : CreatePasswordCredentialResult
+    data object NotSaved : CreatePasswordCredentialResult
+    data class NotAuthorized(
+        val authentication: AuthenticationResult,
+    ) : CreatePasswordCredentialResult
 }
 
 /**
@@ -38,6 +48,7 @@ class CredentialResponseUseCases @Inject constructor(
         entryId: String,
         packageName: String,
         webDomain: String?,
+        allowedUserIds: Set<String> = emptySet(),
     ): PasswordCredentialResult {
         val policy = settingsRepository.settings.first().interaction.autofill
         if (!policy.enabled || !policy.credentialManagerEnabled) {
@@ -49,7 +60,7 @@ class CredentialResponseUseCases @Inject constructor(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )
             if (authentication !is AuthenticationResult.Success) {
-                return PasswordCredentialResult.NotAuthorized
+                return PasswordCredentialResult.NotAuthorized(authentication)
             }
         }
 
@@ -63,10 +74,53 @@ class CredentialResponseUseCases @Inject constructor(
         }
 
         val password = selected.secret.login?.password.orEmpty()
-        if (selected.username.isBlank() || password.isBlank()) {
+        if (
+            selected.username.isBlank() ||
+            password.isBlank() ||
+            (allowedUserIds.isNotEmpty() && selected.username !in allowedUserIds)
+        ) {
             return PasswordCredentialResult.NotFound
         }
         autofillUseCases.recordUsage(selected.id)
         return PasswordCredentialResult.Success(selected.username, password)
+    }
+
+    suspend fun createPasswordCredential(
+        packageName: String,
+        username: String,
+        password: String,
+    ): CreatePasswordCredentialResult {
+        val policy = settingsRepository.settings.first().interaction.autofill
+        if (
+            !policy.enabled ||
+            !policy.credentialManagerEnabled ||
+            packageName.isBlank() ||
+            username.isBlank() ||
+            password.isBlank()
+        ) {
+            return CreatePasswordCredentialResult.NotSaved
+        }
+
+        if (policy.requireAuthentication || vaultAccessState.isLocked()) {
+            val authentication = authenticationManager.authenticate(
+                AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
+            )
+            if (authentication !is AuthenticationResult.Success) {
+                return CreatePasswordCredentialResult.NotAuthorized(authentication)
+            }
+        }
+
+        val saved = credentialRepository.save(
+            packageName = packageName,
+            webDomain = null,
+            pageTitle = null,
+            usernameValue = username,
+            passwordValue = password,
+        )
+        return if (saved) {
+            CreatePasswordCredentialResult.Success
+        } else {
+            CreatePasswordCredentialResult.NotSaved
+        }
     }
 }

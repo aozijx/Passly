@@ -1,8 +1,11 @@
 package com.aozijx.passly.service.autofill.credential
 
 import android.content.Intent
+import androidx.credentials.CreatePasswordResponse
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.PasswordCredential
+import androidx.credentials.exceptions.CreateCredentialException
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.provider.PendingIntentHandler
 
 /**
@@ -17,5 +20,23 @@ internal object CredentialResponseFactory {
             GetCredentialResponse(PasswordCredential(username, password)),
         )
         return result
+    }
+
+    fun buildGetException(exception: GetCredentialException): Intent {
+        return Intent().also {
+            PendingIntentHandler.setGetCredentialException(it, exception)
+        }
+    }
+
+    fun buildPasswordCreateResponse(): Intent {
+        return Intent().also {
+            PendingIntentHandler.setCreateCredentialResponse(it, CreatePasswordResponse())
+        }
+    }
+
+    fun buildCreateException(exception: CreateCredentialException): Intent {
+        return Intent().also {
+            PendingIntentHandler.setCreateCredentialException(it, exception)
+        }
     }
 }

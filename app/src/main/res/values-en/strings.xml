@@ -41,6 +41,7 @@
     <string name="vault_auth_subtitle">Verify your identity to access the vault</string>
     <string name="main_notification_permission_denied">Notification permission is disabled, so background sync progress will be hidden.</string>
     <string name="vault_locked_title">Vault is locked</string>
+    <string name="credential_create_password_description">Save the password securely in Passly</string>
     <string name="vault_auth_decrypt_subtitle_generic">Please verify to continue</string>
 
     <!-- Vault - other strings -->

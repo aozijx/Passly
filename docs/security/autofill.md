@@ -25,7 +25,9 @@ flowchart LR
 
 自动填充跨越目标应用、Android 系统、Passly Service、认证 Activity 和 Vault。系统提供的
 `AssistStructure`、`AutofillId` 与调用包信息只描述当前填充上下文；Intent 中由 Passly 写入的 entry ID、
-包名和域名也只是查询线索，不能单独作为授权依据。
+包名和域名也只是查询线索，不能单独作为授权依据。Credential Manager 的调用方身份必须来自系统注入的
+`ProviderGetCredentialRequest` 或 `ProviderCreateCredentialRequest`，不得由 Passly 自己写入
+PendingIntent。
 
 在任何返回凭据的路径上都必须满足：
 
@@ -146,10 +148,19 @@ entry ID、
 
 Android 14+ Credential Manager 不使用 `AutofillManager.EXTRA_AUTHENTICATION_RESULT`。查询阶段只返回候选元数据和
 PendingIntent；用户点选后，完成阶段通过 `PendingIntentHandler` 返回 Credential Manager 自己的响应类型。
+完整的源码契约、两阶段流程、代码边界与实现进度见
+[Credential Manager Provider 实现](../features/credential-manager.md)。
 
-完成阶段必须按选中的字符串 entry ID 重新查询，并重新验证发起包名/域名。Legacy `FillResponse`、
-`Dataset`、
-`AutofillId` 和 Credential Manager 响应不得跨适配器复用。
+Passly 按项目锁定的 `androidx.credentials:credentials:1.6.0` 源码实现两阶段协议。完成阶段必须从
+`ProviderGetCredentialRequest` 或 `ProviderCreateCredentialRequest` 获取系统确认的调用方，按 entry ID
+重新查询，
+并再次检查设置、作用域、`allowedUserIds` 与认证结果。查询 Intent 不得携带密码或自声明调用包。
+
+有效 Credential 响应和有效 Credential 异常都必须以 `RESULT_OK` 返回；`RESULT_CANCELED` 只用于连标准异常都无法
+构造的情况。浏览器 delegated origin 在没有受信签名 allowlist 前保持关闭。Passkey 在实际私钥、WebAuthn
+attestation/assertion、RP/origin 校验和真机验证完成前不注册 capability，也不返回模拟条目。
+
+Legacy `FillResponse`、`Dataset`、`AutofillId` 和 Credential Manager 响应不得跨适配器复用。
 
 ## 生命周期与故障诊断
 
@@ -189,6 +200,16 @@ PendingIntent；用户点选后，完成阶段通过 `PendingIntentHandler` 返�
   ：响应级认证用于解锁整个候选响应。
 - [AutofillManager](https://developer.android.com/reference/android/view/autofill/AutofillManager)
   ：认证结果、AssistStructure、client state、inline request 和临时 Dataset extras 的权威定义。
+- [Integrate Credential Manager with a credential provider](https://developer.android.com/identity/sign-in/credential-provider)
+  ：Provider 注册、两阶段 get/create、可变 PendingIntent、Passkey 和 clear-state 的官方流程。
+- [CredentialProviderService](https://developer.android.com/reference/androidx/credentials/provider/CredentialProviderService)
+  ：查询阶段与完成阶段的职责及系统最终请求注入契约。
+- [PendingIntentHandler](https://developer.android.com/reference/androidx/credentials/provider/PendingIntentHandler)
+  ：最终请求提取、响应/异常写入以及 Activity result code 规则。
+- [CallingAppInfo](https://developer.android.com/reference/androidx/credentials/provider/CallingAppInfo)
+  ：系统调用包、签名信息、特权 origin 和 allowlist 校验。
+- [Web Authentication Level 3](https://www.w3.org/TR/webauthn-3/)
+  ：creation options、request options、authenticator data、attestation 与 assertion 的规范。
 
 ## 相关实现
 
@@ -197,5 +218,9 @@ PendingIntent；用户点选后，完成阶段通过 `PendingIntentHandler` 返�
 - [AutofillFillViewModel](../../app/src/main/java/com/aozijx/passly/feature/autofill/framework/AutofillFillViewModel.kt)
 - [LegacyResponseFactory](../../app/src/main/java/com/aozijx/passly/service/autofill/framework/builder/LegacyResponseFactory.kt)
 - [LegacyDatasetFactory](../../app/src/main/java/com/aozijx/passly/service/autofill/framework/builder/LegacyDatasetFactory.kt)
+- [ModernCredentialService](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/ModernCredentialService.kt)
+- [CredentialBeginGetHandler](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialBeginGetHandler.kt)
+- [CredentialBeginCreateHandler](../../app/src/main/java/com/aozijx/passly/service/autofill/credential/CredentialBeginCreateHandler.kt)
+- [CredentialResponseViewModel](../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialResponseViewModel.kt)
 - [CredentialResponseUseCases](../../app/src/main/java/com/aozijx/passly/domain/autofill/usecase/CredentialResponseUseCases.kt)
-
+- [Credential Manager Provider 实现](../features/credential-manager.md)

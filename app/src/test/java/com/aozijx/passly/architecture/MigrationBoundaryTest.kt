@@ -543,6 +543,67 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun credentialProviderUsesSystemFinalRequestsAndKeepsPasskeysDisabled() {
+        val responseViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/credential/" +
+                    "CredentialResponseViewModel.kt"
+        ).readText()
+        val responseActivity = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/credential/" +
+                    "CredentialResponseActivity.kt"
+        ).readText()
+        val pendingIntentFactory = File(
+            "src/main/java/com/aozijx/passly/service/autofill/credential/" +
+                    "CredentialPendingIntentFactory.kt"
+        ).readText()
+        val createHandler = File(
+            "src/main/java/com/aozijx/passly/service/autofill/credential/" +
+                    "CredentialBeginCreateHandler.kt"
+        ).readText()
+        val adapter = File(
+            "src/main/java/com/aozijx/passly/service/autofill/credential/" +
+                    "CredentialPlatformAdapter.kt"
+        ).readText()
+        val responseUseCases = File(
+            "src/main/java/com/aozijx/passly/domain/autofill/usecase/" +
+                    "CredentialResponseUseCases.kt"
+        ).readText()
+        val providerConfig = File("src/main/res/xml/credential_service_config.xml").readText()
+
+        assertTrue(
+            "Final get/create phases must trust the system-injected provider request",
+            "retrieveProviderGetCredentialRequest(sourceIntent)" in responseViewModel &&
+                    "retrieveProviderCreateCredentialRequest(sourceIntent)" in responseViewModel &&
+                    "EXTRA_PACKAGE_NAME" !in pendingIntentFactory
+        )
+        assertTrue(
+            "Credential Manager valid exceptions must be returned with RESULT_OK",
+            "UiState.Complete" in responseActivity &&
+                    "setResult(RESULT_OK, state.resultIntent)" in responseActivity
+        )
+        assertTrue(
+            "Password creation must complete the provider two-phase contract",
+            "BeginCreatePasswordCredentialRequest" in createHandler &&
+                    "createPasswordCreatePendingIntent" in createHandler &&
+                    "CreatePasswordResponse" in File(
+                "src/main/java/com/aozijx/passly/service/autofill/credential/" +
+                        "CredentialResponseFactory.kt"
+            ).readText()
+        )
+        assertTrue(
+            "Allowed user ids must be checked before display and again before secret release",
+            "option.allowedUserIds" in adapter &&
+                    "allowedUserIds.isNotEmpty() && selected.username !in allowedUserIds" in
+                    responseUseCases
+        )
+        assertTrue(
+            "Passkey capability must stay unpublished until WebAuthn signing is implemented",
+            "android.credentials.TYPE_PASSWORD_CREDENTIAL" in providerConfig &&
+                    "TYPE_PUBLIC_KEY_CREDENTIAL" !in providerConfig
+        )
+    }
+
+    @Test
     fun destructiveDatabaseRecoveryRequiresFreshAuthentication() {
         val mainViewModel = File(
             "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"

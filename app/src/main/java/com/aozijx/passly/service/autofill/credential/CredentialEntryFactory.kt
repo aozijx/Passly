@@ -20,16 +20,13 @@ internal object CredentialEntryFactory {
     fun buildPasswordEntry(
         context: Context,
         candidate: ResolvedCandidate,
-        packageName: String,
         option: BeginGetPasswordOption,
     ): PasswordCredentialEntry = PasswordCredentialEntry.Builder(
         context = context,
         username = candidate.username,
-        pendingIntent = CredentialPendingIntentFactory.createPendingIntent(
+        pendingIntent = CredentialPendingIntentFactory.createPasswordGetPendingIntent(
             context = context,
-            action = ModernCredentialService.ACTION_GET_PASSWORD,
             entryId = candidate.candidateId,
-            callingPackage = packageName,
         ),
         beginGetPasswordOption = option,
     )

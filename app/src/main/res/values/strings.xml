@@ -48,6 +48,7 @@
     <string name="vault_auth_subtitle">验证以访问保险箱</string>
     <string name="main_notification_permission_denied">通知权限未开启，同步进度不可见</string>
     <string name="vault_locked_title">保险箱已锁定</string>
+    <string name="credential_create_password_description">将密码安全地保存到 Passly</string>
     <string name="vault_auth_decrypt_subtitle_generic">验证以继续操作</string>
 
     <!-- 其余 vault 相关 -->

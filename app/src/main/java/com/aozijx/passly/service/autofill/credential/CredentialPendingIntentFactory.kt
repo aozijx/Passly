@@ -5,31 +5,39 @@ package com.aozijx.passly.service.autofill.credential
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import com.aozijx.passly.feature.autofill.credential.CredentialResponseActivity
 
 internal object CredentialPendingIntentFactory {
 
-    fun createPendingIntent(
+    fun createPasswordGetPendingIntent(
         context: Context,
-        action: String,
         entryId: String,
-        callingPackage: String,
     ): PendingIntent {
-        val data = Bundle().apply {
-            putString(ModernCredentialService.EXTRA_ENTRY_ID, entryId)
-            putString(ModernCredentialService.EXTRA_PACKAGE_NAME, callingPackage)
-        }
-
         val intent = Intent(context, CredentialResponseActivity::class.java)
-            .setAction(action)
-            .putExtra(ModernCredentialService.EXTRA_CREDENTIAL_DATA, data)
+            .setAction(ModernCredentialService.ACTION_GET_PASSWORD)
+            // PendingIntent identity ignores extras. Identifier keeps two UUIDs
+            // distinct even in the unlikely event of an Int hash collision.
+            .setIdentifier("password-get:$entryId")
+            // The entry id is only an opaque candidate pointer. Calling-app
+            // identity always comes from the system-injected final request.
+            .putExtra(ModernCredentialService.EXTRA_ENTRY_ID, entryId)
 
         return PendingIntent.getActivity(
             context,
             entryId.hashCode(),
             intent,
             PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+    }
+
+    fun createPasswordCreatePendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, CredentialResponseActivity::class.java)
+            .setAction(ModernCredentialService.ACTION_CREATE_PASSWORD)
+        return PendingIntent.getActivity(
+            context,
+            0x30000,
+            intent,
+            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
     }
 

@@ -42,12 +42,14 @@ class CredentialResponseActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.state.collectLatest { state ->
                 when (state) {
-                    is CredentialResponseViewModel.UiState.Success -> {
+                    is CredentialResponseViewModel.UiState.Complete -> {
+                        // PendingIntentHandler requires RESULT_OK for both valid
+                        // responses and valid Credential Manager exceptions.
                         setResult(RESULT_OK, state.resultIntent)
                         finish()
                     }
 
-                    is CredentialResponseViewModel.UiState.Error -> finishWithError()
+                    is CredentialResponseViewModel.UiState.Unrecoverable -> finishWithError()
                     is CredentialResponseViewModel.UiState.Loading -> { /* 等待结果 */
                     }
                 }
@@ -55,22 +57,16 @@ class CredentialResponseActivity : AppCompatActivity() {
         }
 
         when (val action = intent.action) {
-            ModernCredentialService.ACTION_GET_PASSWORD -> {
-                val credentialData =
-                    intent.getBundleExtra(ModernCredentialService.EXTRA_CREDENTIAL_DATA)
-                if (credentialData == null) {
-                    AppTelemetry.e(TAG, "Missing credential data in intent")
-                    finishWithError()
-                    return
-                }
-                viewModel.handlePasswordGet(credentialData)
-            }
+            ModernCredentialService.ACTION_GET_PASSWORD -> viewModel.handlePasswordGet(intent)
 
             ModernCredentialService.ACTION_UNLOCK -> viewModel.handleUnlock(intent)
 
+            ModernCredentialService.ACTION_CREATE_PASSWORD ->
+                viewModel.handlePasswordCreate(intent)
+
             else -> {
                 AppTelemetry.w(TAG, "Unknown action: $action")
-                finishWithError()
+                viewModel.rejectUnknownAction()
             }
         }
     }

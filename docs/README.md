@@ -33,6 +33,7 @@
 ## 功能
 
 - [权限与消息](features/permissions-and-messages.md)
+- [Credential Manager Provider](features/credential-manager.md)
 
 ## 决策与审查
 

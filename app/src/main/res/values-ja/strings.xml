@@ -40,6 +40,7 @@
     <string name="vault_auth_subtitle">本人確認して金庫にアクセス</string>
     <string name="main_notification_permission_denied">通知権限が無効のため、バックグラウンド同期の進捗は表示されません。</string>
     <string name="vault_locked_title">金庫がロックされています</string>
+    <string name="credential_create_password_description">パスワードを Passly に安全に保存します</string>
     <string name="vault_auth_decrypt_subtitle_generic">操作を続けるため確認</string>
 
     <!-- 金庫 - その他 -->
