@@ -74,6 +74,8 @@
 
     <!-- 詳細と編集 -->
     <string name="vault_add_password_title">パスワードを追加</string>
+    <string name="vault_add_password_website">ウェブサイトまたはアプリのアドレス</string>
+    <string name="vault_add_password_save_failed">パスワードを保存できませんでした</string>
     <string name="vault_reveal_info">本人確認して詳細を表示</string>
     <string name="vault_edit_modified_hint">変更されました。保存をお忘れなく</string>
     <string name="vault_detail_associated_domain">関連ドメイン</string>
@@ -102,7 +104,7 @@
     <string name="vault_detail_totp_label">二要素認証コード</string>
     <string name="vault_detail_domain_label">ウェブサイトドメインまたはアイコンURL</string>
     <string name="vault_detail_domain_placeholder">例：google.com または https://example.com/icon.png</string>
-    <string name="vault_detail_domain_and_icon">ドメインとアイコン</string>
+    <string name="vault_detail_domain_and_icon">ドメイン、アプリ、アイコン</string>
     <string name="vault_detail_download_icon">アイコンをダウンロード</string>
     <string name="vault_detail_icon_download_success">アイコンのダウンロードに成功しました！</string>
     <string name="vault_detail_icon_download_failed">アイコンのダウンロードに失敗しました</string>
@@ -117,6 +119,10 @@
     <string name="auth_app_password_label">アプリパスワード</string>
     <string name="auth_set_app_password">アプリパスワードを設定</string>
     <string name="auth_biometric_unavailable_password_required">生体認証が利用できません。先にアプリパスワードを設定してください。</string>
+    <string name="auth_error_method_incorrect">%1$sが正しくありません</string>
+    <string name="auth_error_failed">認証に失敗しました。もう一度お試しください。</string>
+    <string name="auth_error_app_password_setup_failed">アプリパスワードを設定できませんでした。もう一度お試しください。</string>
+    <string name="auth_error_password_too_short">6文字以上で入力してください</string>
     <string name="password_strength_weak">弱</string>
     <string name="password_strength_medium">中</string>
     <string name="password_strength_good">良</string>

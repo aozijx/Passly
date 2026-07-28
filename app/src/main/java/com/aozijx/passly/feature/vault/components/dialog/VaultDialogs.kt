@@ -5,7 +5,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.components.editor.AddGenericEntryDialog
 import com.aozijx.passly.feature.vault.components.editor.AddOtpDialog
-import com.aozijx.passly.feature.vault.components.editor.AddPasswordDialog
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -18,11 +17,6 @@ fun AddDialogHost(
     scannerContent: @Composable ((OtpConfig) -> Unit, () -> Unit) -> Unit
 ) {
     when (uiState.addType) {
-        AddType.PASSWORD -> AddPasswordDialog(
-            viewModel = vaultViewModel,
-            onUpdateInteraction = onUpdateInteraction
-        )
-
         AddType.TOTP -> AddOtpDialog(
             viewModel = vaultViewModel,
             onUpdateInteraction = onUpdateInteraction
@@ -48,7 +42,8 @@ fun AddDialogHost(
             )
         }
 
-        else -> {}
+        AddType.PASSWORD,
+        null -> Unit
     }
 }
 

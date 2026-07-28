@@ -31,18 +31,4 @@ object PackageNormalizer {
             else -> segments.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: fallback
         }
     }
-
-    /**
-     * 清理应用名称中的常见后缀
-     * @param appName 原始应用名称
-     * @return 清理后的名称
-     */
-    fun cleanAppName(appName: String): String {
-        val commonSuffixes = listOf("App", "Application", "Android", "Mobile", " - ", " – ", " | ")
-        var cleaned = appName
-        for (suffix in commonSuffixes) {
-            cleaned = cleaned.replace(suffix, " ", ignoreCase = true)
-        }
-        return cleaned.trim()
-    }
 }

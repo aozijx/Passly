@@ -16,11 +16,7 @@ object AppTitlePolicy {
      */
     fun generate(appLabel: String?, packageName: String?, fallback: String): String {
         if (appLabel != null && appLabel.isNotBlank()) {
-            return when {
-                appLabel.length > 20 -> appLabel.take(18) + "..."
-                appLabel.contains(Regex("[\\u4e00-\\u9fa5]")) -> appLabel
-                else -> PackageNormalizer.cleanAppName(appLabel)
-            }
+            return appLabel.trim()
         }
 
         return PackageNormalizer.extractReadableName(packageName, fallback)

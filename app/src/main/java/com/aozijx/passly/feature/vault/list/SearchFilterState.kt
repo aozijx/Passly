@@ -19,8 +19,7 @@ internal data class SearchFilterUiState(
     val selectedCategory: String? = null,
     val selectedTab: VaultTab = VaultTab.ALL,
     val selectedSort: VaultSortSpec = VaultSortSpec.DEFAULT,
-    val isSearchActive: Boolean = false,
-    val isMoreMenuExpanded: Boolean = false
+    val isSearchActive: Boolean = false
 )
 
 internal class SearchFilterState(
@@ -39,9 +38,6 @@ internal class SearchFilterState(
     private val _isSearchActive = MutableStateFlow(false)
     val isSearchActive: StateFlow<Boolean> = _isSearchActive
 
-    private val _isMoreMenuExpanded = MutableStateFlow(false)
-    val isMoreMenuExpanded: StateFlow<Boolean> = _isMoreMenuExpanded
-
     private val _selectedSort = MutableStateFlow(initialSort)
     val selectedSort: StateFlow<VaultSortSpec> = _selectedSort
 
@@ -50,10 +46,9 @@ internal class SearchFilterState(
             _searchQuery,
             _selectedCategory,
             _selectedTab,
-            _isSearchActive,
-            _isMoreMenuExpanded
-        ) { query, category, tab, active, expanded ->
-            PartialState(query, category, tab, active, expanded)
+            _isSearchActive
+        ) { query, category, tab, active ->
+            PartialState(query, category, tab, active)
         },
         _selectedSort
     ) { partial, sort ->
@@ -62,8 +57,7 @@ internal class SearchFilterState(
             selectedCategory = partial.category,
             selectedTab = partial.tab,
             selectedSort = sort,
-            isSearchActive = partial.active,
-            isMoreMenuExpanded = partial.expanded
+            isSearchActive = partial.active
         )
     }.stateIn(scope, SharingStarted.Eagerly, SearchFilterUiState())
 
@@ -71,8 +65,7 @@ internal class SearchFilterState(
         val query: String,
         val category: String?,
         val tab: VaultTab,
-        val active: Boolean,
-        val expanded: Boolean
+        val active: Boolean
     )
 
     @OptIn(FlowPreview::class)
@@ -93,9 +86,5 @@ internal class SearchFilterState(
     fun toggleSearch(active: Boolean) {
         _isSearchActive.value = active
         if (!active) _searchQuery.value = ""
-    }
-
-    fun expandMoreMenu(expanded: Boolean) {
-        _isMoreMenuExpanded.value = expanded
     }
 }

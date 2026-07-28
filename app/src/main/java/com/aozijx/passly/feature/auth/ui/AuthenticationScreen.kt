@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,6 +30,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.common.ActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButton
+import com.aozijx.passly.domain.authentication.AuthenticationFailure
+import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
@@ -41,10 +44,23 @@ fun AuthenticationScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val subtitle = stringResource(R.string.vault_auth_subtitle)
     val activeMethod = uiState.activeMethod
+    val appPasswordLabel = stringResource(R.string.auth_app_password_label)
+    val recoveryCodeLabel = stringResource(R.string.auth_recovery_code_label)
+    val verificationFailure = uiState.verificationFailure
+    val appPasswordFailure = verificationFailure?.takeIf {
+        it.method == AuthenticationMethod.APP_PASSWORD
+    }?.failure
+    val recoveryCodeFailure = verificationFailure?.takeIf {
+        it.method == AuthenticationMethod.RECOVERY_CODE
+    }?.failure
+    val biometricFailure = verificationFailure?.takeIf {
+        it.method == AuthenticationMethod.BIOMETRIC
+    }?.failure
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .background(MaterialTheme.colorScheme.surface)
     ) {
         Column(
@@ -82,6 +98,14 @@ fun AuthenticationScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (biometricFailure != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = biometricFailure.message(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
 
             if (methods.biometric) {
@@ -102,13 +126,17 @@ fun AuthenticationScreen(
                     progress = activeMethod == AuthenticationMethod.APP_PASSWORD,
                     collapsedText = stringResource(R.string.auth_password_unlock),
                     expandedText = stringResource(R.string.auth_password_verify),
-                    inputLabel = stringResource(R.string.auth_app_password_label),
+                    inputLabel = appPasswordLabel,
+                    result = appPasswordFailure?.let { false },
+                    errorText = appPasswordFailure?.message(appPasswordLabel)
+                        ?: stringResource(R.string.auth_error_failed),
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD,
                     onValueChange = viewModel::onAppPasswordChange,
                     onExpandedChange = {
                         viewModel.onInputExpanded(AuthenticationMethod.APP_PASSWORD, it)
                     },
-                    onAction = viewModel::verifyWithAppPassword
+                    onAction = viewModel::verifyWithAppPassword,
+                    onResultConsumed = viewModel::clearVerificationFailure
                 )
             }
 
@@ -137,13 +165,17 @@ fun AuthenticationScreen(
                     icon = Icons.Default.Restore,
                     collapsedText = stringResource(R.string.auth_use_recovery_code),
                     expandedText = stringResource(R.string.auth_recovery_code_unlock),
-                    inputLabel = stringResource(R.string.auth_recovery_code_label),
+                    inputLabel = recoveryCodeLabel,
+                    result = recoveryCodeFailure?.let { false },
+                    errorText = recoveryCodeFailure?.message(recoveryCodeLabel)
+                        ?: stringResource(R.string.auth_error_failed),
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.RECOVERY_CODE,
                     onValueChange = viewModel::onRecoveryCodeChange,
                     onExpandedChange = {
                         viewModel.onInputExpanded(AuthenticationMethod.RECOVERY_CODE, it)
                     },
-                    onAction = viewModel::unlockWithRecoveryCode
+                    onAction = viewModel::unlockWithRecoveryCode,
+                    onResultConsumed = viewModel::clearVerificationFailure
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -157,7 +189,31 @@ fun AuthenticationScreen(
             onNewPasswordChange = viewModel::onNewAppPasswordChange,
             onConfirmPasswordChange = viewModel::onConfirmAppPasswordChange,
             onConfirm = viewModel::bootstrapAppPassword,
-            onDismiss = viewModel::onDismissSetPasswordDialog
+            onDismiss = viewModel::onDismissSetPasswordDialog,
+            isBusy = uiState.isSettingAppPassword,
+            errorMessage = uiState.setupFailure?.message(forSetup = true)
         )
     }
+}
+
+@Composable
+private fun AuthenticationFailure.message(
+    methodLabel: String? = null,
+    forSetup: Boolean = false
+): String {
+    if (
+        authCode == AuthenticationFailureCode.CREDENTIAL_INCORRECT &&
+        methodLabel != null
+    ) {
+        return stringResource(R.string.auth_error_method_incorrect, methodLabel)
+    }
+
+    val message = when {
+        forSetup && authCode == AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION ->
+            R.string.auth_error_password_too_short
+
+        forSetup -> R.string.auth_error_app_password_setup_failed
+        else -> R.string.auth_error_failed
+    }
+    return stringResource(message)
 }

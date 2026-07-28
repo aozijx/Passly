@@ -102,6 +102,149 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun vaultMenuStateIsTransientAndPasswordCreationUsesItsOwnRoute() {
+        val vaultUiState = File(
+            "src/main/java/com/aozijx/passly/feature/vault/contract/VaultUiState.kt"
+        ).readText()
+        val searchFilterState = File(
+            "src/main/java/com/aozijx/passly/feature/vault/list/SearchFilterState.kt"
+        ).readText()
+        val topBar = File(
+            "src/main/java/com/aozijx/passly/feature/vault/components/topbar/VaultTopBar.kt"
+        ).readText()
+        val routeSource = File(
+            "src/main/java/com/aozijx/passly/app/navigation/AppRoute.kt"
+        ).readText()
+        val passwordScreen = File(
+            "src/main/java/com/aozijx/passly/feature/vault/editor/password/" +
+                    "AddPasswordScreen.kt"
+        )
+        val oldPasswordDialog = File(
+            "src/main/java/com/aozijx/passly/feature/vault/components/editor/" +
+                    "AddPasswordDialog.kt"
+        )
+
+        assertTrue(
+            "Popup visibility must not survive in VaultViewModel state",
+            "isMoreMenuExpanded" !in vaultUiState &&
+                    "isMoreMenuExpanded" !in searchFilterState
+        )
+        assertTrue(
+            "Top bar must own popup visibility locally",
+            "var isMoreMenuExpanded by remember" in topBar
+        )
+        assertTrue(
+            "Password creation must have a dedicated navigation route",
+            "data object AddPassword" in routeSource && passwordScreen.isFile
+        )
+        assertTrue(
+            "Password dialog must not return",
+            !oldPasswordDialog.exists()
+        )
+    }
+
+    @Test
+    fun associatedPackagesStayEncryptedAndVisibleInEntryDetails() {
+        val entryEntity = File(
+            "src/main/java/com/aozijx/passly/data/model/entity/EntryEntity.kt"
+        ).readText()
+        val summaryPayload = File(
+            "src/main/java/com/aozijx/passly/data/model/payload/summary/SummaryPayload.kt"
+        ).readText()
+        val loginAssociationCard = File(
+            "src/main/java/com/aozijx/passly/feature/detail/sections/" +
+                    "LoginDomainIconCard.kt"
+        ).readText()
+
+        assertTrue(
+            "Associated packages must remain inside encrypted summary payloads",
+            "packageNames: Set<String>" in summaryPayload &&
+                    "val packageName" !in entryEntity
+        )
+        assertTrue(
+            "Login details must expose associated package names",
+            "entry.website?.packageNames" in loginAssociationCard &&
+                    "AssociatedPackageRow" in loginAssociationCard
+        )
+    }
+
+    @Test
+    fun appPasswordFeedbackAndEntryAuthenticationStaySeparated() {
+        val passwordFields = File(
+            "src/main/java/com/aozijx/passly/feature/settings/apppassword/ui/" +
+                    "PasswordFields.kt"
+        ).readText()
+        val authenticationHost = File(
+            "src/main/java/com/aozijx/passly/feature/auth/ui/host/AuthenticationHost.kt"
+        ).readText()
+        val authenticationScreen = File(
+            "src/main/java/com/aozijx/passly/feature/auth/ui/AuthenticationScreen.kt"
+        ).readText()
+        val addPasswordScreen = File(
+            "src/main/java/com/aozijx/passly/feature/vault/editor/password/" +
+                    "AddPasswordScreen.kt"
+        ).readText()
+        val provisioner = File(
+            "src/main/java/com/aozijx/passly/security/authentication/" +
+                    "DefaultAuthenticationMethodProvisioner.kt"
+        ).readText()
+        val authenticationModels = File(
+            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
+        ).readText()
+        val mainScreen = File(
+            "src/main/java/com/aozijx/passly/feature/main/ui/MainScreen.kt"
+        ).readText()
+        val inputActionButton = File(
+            "src/main/java/com/aozijx/passly/core/ui/components/common/" +
+                    "InputActionButton.kt"
+        ).readText()
+        val authenticationViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/auth/presentation/" +
+                    "AuthenticationViewModel.kt"
+        ).readText()
+        val authenticationUiState = File(
+            "src/main/java/com/aozijx/passly/feature/auth/presentation/" +
+                    "AuthenticationUiState.kt"
+        ).readText()
+
+        assertTrue(
+            "Password inputs must use the platform password input contract",
+            "keyboardType = KeyboardType.Password" in passwordFields &&
+                    "keyboardType = KeyboardType.Password" in authenticationHost
+        )
+        assertTrue(
+            "Authentication failures must stay authoritative from AuthenticationManager",
+            "result = state.result" in inputActionButton &&
+                    "RESULT_DISPLAY_DURATION_MS" in inputActionButton &&
+                    "val failure: AuthenticationFailure" in authenticationUiState &&
+                    "AuthenticationUiError" !in authenticationUiState &&
+                    "toUiError" !in authenticationViewModel
+        )
+        assertTrue(
+            "Expanded authentication inputs must remain visible above the IME",
+            "imePadding()" in authenticationScreen &&
+                    "bringIntoViewRequester.bringIntoView()" in inputActionButton &&
+                    "keyboardController?.hide()" in inputActionButton &&
+                    "focusManager.clearFocus()" in inputActionButton
+        )
+        assertTrue(
+            "Changing an app password must verify the current password",
+            "currentPassword: CharArray" in provisioner &&
+                    "AuthenticationPurpose.MANAGE_APP_PASSWORD" in provisioner
+        )
+        assertTrue(
+            "Creating a vault entry must not introduce a second authentication gate",
+            "AuthenticationPurpose" !in addPasswordScreen &&
+                    "CREATE_ENTRY" !in authenticationModels
+        )
+        assertTrue(
+            "FLAG_SECURE must remain controlled only by the global setting",
+            "if (mainConfig.isSecureContentEnabled)" in mainScreen &&
+                    "SensitiveContent" !in mainScreen
+        )
+    }
+
+    @Test
     fun packageNamesMatchSourceDirectories() {
         val sourceRoot = File("src/main/java")
         val offenders = productionKotlinFiles.mapNotNull { source ->

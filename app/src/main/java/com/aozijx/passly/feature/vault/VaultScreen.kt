@@ -33,6 +33,7 @@ import com.aozijx.passly.feature.vault.components.list.VaultPagerContent
 import com.aozijx.passly.feature.vault.components.topbar.VaultContentTopBar
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.display.VaultDisplayViewModel
+import com.aozijx.passly.feature.vault.model.AddType
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 
@@ -44,6 +45,7 @@ fun VaultContent(
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
     onUserInteraction: () -> Unit,
     scannerContent: @Composable ((OtpConfig) -> Unit, () -> Unit) -> Unit,
+    onAddPassword: () -> Unit,
     onSettingsClick: () -> Unit = {},
     onShowDetail: (EntryListItem) -> Unit = {},
     isDatabaseInitializing: Boolean = false
@@ -162,7 +164,6 @@ fun VaultContent(
                 onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
                 onToggleSearch = { vaultViewModel.toggleSearch(it) },
                 onClearCategory = { vaultViewModel.clearSelectedCategory() },
-                onExpandMoreMenu = { vaultViewModel.expandMoreMenu(it) },
                 onToggleTotpVisibility = { vaultViewModel.toggleShowTOTPCode() },
                 onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
                 onSortSelected = { vaultViewModel.selectSortOption(it) },
@@ -171,7 +172,13 @@ fun VaultContent(
         },
         floatingActionButton = {
             VaultFab(
-                onAddTypeSelected = { vaultViewModel.setAddType(it) },
+                onAddTypeSelected = { type ->
+                    if (type == AddType.PASSWORD) {
+                        onAddPassword()
+                    } else {
+                        vaultViewModel.setAddType(type)
+                    }
+                },
                 isVisible = isFabVisible
             )
         },

@@ -84,38 +84,38 @@ internal fun MainScreen(
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "auth_transition"
     ) { state ->
-            when (state) {
-                "error" -> {
-                    DatabaseRecoveryDialog(
-                        isBusy = mainUiState.isDatabaseInitializing,
-                        onRetry = {
-                            viewModel.handleIntent(MainIntent.RetryDatabaseInitialization)
-                        },
-                        onRecoverDatabase = {
-                            viewModel.handleIntent(MainIntent.RecoverDatabase)
-                        },
-                        onCloseApp = {
-                            noticePublisher.publish(
-                                newAppNotice(NoticeCode.APP_CLOSE_REMINDER)
-                            )
-                            activity.window.decorView.postDelayed(
-                                { activity.finishAffinity() },
-                                1_000L
-                            )
-                        }
-                    )
-                }
-
-                "main" -> {
-                    AppMainContent(
-                        mainViewModel = viewModel
-                    )
-                }
-
-                else -> {
-                    AuthenticationScreen(viewModel = authenticationViewModel)
-                }
+        when (state) {
+            "error" -> {
+                DatabaseRecoveryDialog(
+                    isBusy = mainUiState.isDatabaseInitializing,
+                    onRetry = {
+                        viewModel.handleIntent(MainIntent.RetryDatabaseInitialization)
+                    },
+                    onRecoverDatabase = {
+                        viewModel.handleIntent(MainIntent.RecoverDatabase)
+                    },
+                    onCloseApp = {
+                        noticePublisher.publish(
+                            newAppNotice(NoticeCode.APP_CLOSE_REMINDER)
+                        )
+                        activity.window.decorView.postDelayed(
+                            { activity.finishAffinity() },
+                            1_000L
+                        )
+                    }
+                )
             }
+
+            "main" -> {
+                AppMainContent(
+                    mainViewModel = viewModel
+                )
+            }
+
+            else -> {
+                AuthenticationScreen(viewModel = authenticationViewModel)
+            }
+        }
     }
 
     val window = activity.window

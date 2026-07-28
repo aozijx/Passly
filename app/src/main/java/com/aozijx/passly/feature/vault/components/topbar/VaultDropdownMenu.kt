@@ -27,7 +27,6 @@ private enum class MenuPage { MAIN, SORT, FILTER }
 
 @Composable
 fun VaultDropdownMenu(
-    expanded: Boolean,
     onDismissRequest: () -> Unit,
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
@@ -43,13 +42,6 @@ fun VaultDropdownMenu(
     var categorySearchVisible by remember { mutableStateOf(false) }
     val categoryFocusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(expanded) {
-        if (!expanded) {
-            currentPage = MenuPage.MAIN
-            categorySearchQuery = ""
-            categorySearchVisible = false
-        }
-    }
     LaunchedEffect(categorySearchVisible) {
         if (categorySearchVisible) categoryFocusRequester.requestFocus()
     }
@@ -62,7 +54,7 @@ fun VaultDropdownMenu(
     }
 
     DropdownMenu(
-        expanded = expanded,
+        expanded = true,
         onDismissRequest = onDismissRequest,
         modifier = Modifier
             .widthIn(min = 150.dp)

@@ -24,7 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -52,21 +55,30 @@ fun VaultTopBar(
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: (Boolean) -> Unit,
     onClearCategory: () -> Unit,
-    onExpandMoreMenu: (Boolean) -> Unit,
     onToggleTotpVisibility: () -> Unit,
     onCategorySelected: (String?) -> Unit,
     onSortSelected: (VaultSortSpec) -> Unit,
     onSelectTab: (VaultTab) -> Unit
 ) {
     val density = LocalDensity.current
+    var isMoreMenuExpanded by remember { mutableStateOf(false) }
+    var navigateToSettingsAfterDismiss by remember { mutableStateOf(false) }
 
     LifecycleResumeEffect(Unit) {
         onPauseOrDispose {
-            onExpandMoreMenu(false)
+            isMoreMenuExpanded = false
+            navigateToSettingsAfterDismiss = false
         }
     }
 
     val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(navigateToSettingsAfterDismiss, isMoreMenuExpanded) {
+        if (navigateToSettingsAfterDismiss && !isMoreMenuExpanded) {
+            navigateToSettingsAfterDismiss = false
+            onSettingsClick()
+        }
+    }
 
     LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible, isStatusBarAutoHide) {
         if (!isTopBarCollapsible && (isTabBarCollapsible || isStatusBarAutoHide)) {
@@ -123,24 +135,27 @@ fun VaultTopBar(
             actions = {
                 if (!uiState.isSearchActive) {
                     Box {
-                        IconButton(onClick = { onExpandMoreMenu(true) }) {
+                        IconButton(onClick = { isMoreMenuExpanded = true }) {
                             Icon(
                                 Icons.Default.MoreVert,
                                 contentDescription = stringResource(R.string.more)
                             )
                         }
-                        VaultDropdownMenu(
-                            expanded = uiState.isMoreMenuExpanded,
-                            onDismissRequest = { onExpandMoreMenu(false) },
-                            showTOTPCode = uiState.showTOTPCode,
-                            onToggleTotpVisibility = onToggleTotpVisibility,
-                            onSettingsClick = onSettingsClick,
-                            availableCategories = uiState.availableCategories,
-                            selectedCategory = uiState.selectedCategory,
-                            onCategorySelected = onCategorySelected,
-                            selectedSort = uiState.selectedSort,
-                            onSortSelected = onSortSelected
-                        )
+                        if (isMoreMenuExpanded) {
+                            VaultDropdownMenu(
+                                onDismissRequest = { isMoreMenuExpanded = false },
+                                showTOTPCode = uiState.showTOTPCode,
+                                onToggleTotpVisibility = onToggleTotpVisibility,
+                                onSettingsClick = {
+                                    navigateToSettingsAfterDismiss = true
+                                },
+                                availableCategories = uiState.availableCategories,
+                                selectedCategory = uiState.selectedCategory,
+                                onCategorySelected = onCategorySelected,
+                                selectedSort = uiState.selectedSort,
+                                onSortSelected = onSortSelected
+                            )
+                        }
                     }
                 }
             })

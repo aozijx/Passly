@@ -90,6 +90,10 @@
     <string name="settings_auth_password_hint">6文字以上で、英字・数字・記号を組み合わせてください。</string>
     <string name="settings_auth_password_mismatch">パスワードが一致しません</string>
     <string name="settings_auth_password_set_success">アプリパスワードを設定しました</string>
+    <string name="settings_auth_current_password_incorrect">現在のアプリパスワードが正しくありません</string>
+    <string name="settings_auth_password_too_short">6文字以上で入力してください</string>
+    <string name="settings_auth_last_method_required">ロック解除方法を1つ以上残してください</string>
+    <string name="settings_auth_operation_failed">パスワード操作に失敗しました。もう一度お試しください。</string>
     <string name="settings_duration_minutes">%1$d 分</string>
     <string name="settings_duration_minutes_seconds">%1$d 分 %2$d 秒</string>
     <string name="settings_duration_seconds">%1$d 秒</string>

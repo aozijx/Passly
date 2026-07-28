@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -120,6 +121,13 @@ private fun SecretDialog(
     onCancel: () -> Unit
 ) {
     var secret by remember(method) { mutableStateOf("") }
+    val submit = {
+        if (secret.isNotEmpty()) {
+            val chars = secret.toCharArray()
+            secret = ""
+            onSubmit(chars)
+        }
+    }
     AlertDialog(
         onDismissRequest = onCancel,
         title = { Text(method.label()) },
@@ -143,6 +151,7 @@ private fun SecretDialog(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
+                keyboardActions = KeyboardActions(onDone = { submit() }),
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,11 +161,7 @@ private fun SecretDialog(
         confirmButton = {
             Button(
                 enabled = secret.isNotEmpty(),
-                onClick = {
-                    val chars = secret.toCharArray()
-                    secret = ""
-                    onSubmit(chars)
-                }
+                onClick = submit
             ) { Text(stringResource(R.string.continue_action)) }
         },
         dismissButton = {

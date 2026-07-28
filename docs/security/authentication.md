@@ -20,8 +20,9 @@ stateDiagram-v2
 ```
 
 同一时间只允许一个活跃请求。普通解锁可以复用有效会话；复验、安全设置、备份和诊断导出必须重新认证。用户主动取消
-返回 `Cancelled(byUser = true)` 且不显示 Toast；Host 丢失、系统取消和真实失败由 `AuthFeedbackPresenter` 按
-correlation ID 最多发布一次。
+返回 `Cancelled(byUser = true)` 且不显示错误；其他情况由认证中心返回结构化 `AuthenticationFailure`
+。调用方只能
+转发失败，不能重新判断认证结果；页面按失败码和发起认证的方式生成本地化反馈。
 
 ## Host 与生物识别
 

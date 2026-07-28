@@ -3,6 +3,7 @@ package com.aozijx.passly.security.authentication
 import com.aozijx.passly.core.security.KeyDerivation
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.auth.model.envelope.KdfAlgorithm
+import com.aozijx.passly.domain.authentication.AppPasswordPolicy
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationManager
@@ -34,10 +35,13 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
 ) : AuthenticationMethodProvisioner {
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
-        if (password.isEmpty()) {
+        if (!AppPasswordPolicy.acceptsLength(password.size)) {
             password.fill('\u0000')
             return AuthenticationResult.Failure(
-                AuthenticationFailure(AuthenticationFailureCode.CREDENTIAL_INCORRECT, correlationId)
+                AuthenticationFailure(
+                    AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION,
+                    correlationId
+                )
             )
         }
         val secret = SecretChars.take(password)
@@ -82,7 +86,30 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         }
     }
 
-    override suspend fun changeAppPassword(newPassword: CharArray): AuthenticationResult {
+    override suspend fun changeAppPassword(
+        currentPassword: CharArray,
+        newPassword: CharArray
+    ): AuthenticationResult {
+        val authentication = try {
+            try {
+                authenticationManager.authenticate(
+                    AuthenticationRequest(
+                        purpose = AuthenticationPurpose.MANAGE_APP_PASSWORD,
+                        allowedMethods = setOf(AuthenticationMethod.APP_PASSWORD)
+                    ),
+                    currentPassword
+                )
+            } catch (error: Throwable) {
+                newPassword.fill('\u0000')
+                throw error
+            }
+        } finally {
+            currentPassword.fill('\u0000')
+        }
+        if (authentication !is AuthenticationResult.Success) {
+            newPassword.fill('\u0000')
+            return authentication
+        }
         return setAppPassword(newPassword)
     }
 

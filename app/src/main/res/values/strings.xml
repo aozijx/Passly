@@ -98,6 +98,8 @@
 
     <!-- 详情与编辑 -->
     <string name="vault_add_password_title">添加密码项</string>
+    <string name="vault_add_password_website">网站或应用地址</string>
+    <string name="vault_add_password_save_failed">保存密码项失败</string>
     <string name="vault_reveal_info">验证并显示详情</string>
     <string name="vault_edit_modified_hint">已修改，别忘了保存</string>
     <string name="vault_detail_associated_domain">关联域名</string>
@@ -130,7 +132,7 @@
     <string name="vault_detail_totp_label">两步验证码</string>
     <string name="vault_detail_domain_label">域名或图标链接</string>
     <string name="vault_detail_domain_placeholder">如 google.com 或图标链接</string>
-    <string name="vault_detail_domain_and_icon">域名与图标</string>
+    <string name="vault_detail_domain_and_icon">域名、应用与图标</string>
     <string name="vault_detail_download_icon">下载图标</string>
     <string name="vault_detail_icon_download_success">图标下载成功！</string>
     <string name="vault_detail_icon_download_failed">图标下载失败</string>
@@ -162,6 +164,10 @@
     <string name="auth_app_password_label">应用密码</string>
     <string name="auth_set_app_password">设置应用密码</string>
     <string name="auth_biometric_unavailable_password_required">无可用生物识别，请先设置应用密码</string>
+    <string name="auth_error_method_incorrect">%1$s不正确</string>
+    <string name="auth_error_failed">验证失败，请重试</string>
+    <string name="auth_error_app_password_setup_failed">应用密码设置失败，请重试</string>
+    <string name="auth_error_password_too_short">应用密码至少需要 6 位</string>
     <string name="password_strength_very_weak">弱爆了</string>
     <string name="password_strength_weak">弱</string>
     <string name="password_strength_medium">一般</string>

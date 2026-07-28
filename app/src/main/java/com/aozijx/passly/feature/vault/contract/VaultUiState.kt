@@ -11,7 +11,6 @@ data class VaultUiState(
     val selectedTab: VaultTab = VaultTab.ALL,
     val selectedSort: VaultSortSpec = VaultSortSpec.DEFAULT,
     val isSearchActive: Boolean = false,
-    val isMoreMenuExpanded: Boolean = false,
     val isVaultItemsLoading: Boolean = true,
     val availableCategories: List<String> = emptyList(),
     val visibleTabs: List<VaultTab> = VaultTab.resolveVisible(VaultTab.defaultVisibleKeys),

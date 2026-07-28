@@ -137,21 +137,33 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setAppPassword(password: CharArray, onResult: (Boolean) -> Unit) {
+    fun setAppPassword(
+        password: CharArray,
+        onResult: (AuthenticationResult) -> Unit
+    ) {
         viewModelScope.launch {
-            onResult(authenticationMethodProvisioner.setAppPassword(password) is AuthenticationResult.Success)
+            onResult(authenticationMethodProvisioner.setAppPassword(password))
         }
     }
 
-    fun changeAppPassword(password: CharArray, onResult: (Boolean) -> Unit) {
+    fun changeAppPassword(
+        currentPassword: CharArray,
+        newPassword: CharArray,
+        onResult: (AuthenticationResult) -> Unit
+    ) {
         viewModelScope.launch {
-            onResult(authenticationMethodProvisioner.changeAppPassword(password) is AuthenticationResult.Success)
+            onResult(
+                authenticationMethodProvisioner.changeAppPassword(
+                    currentPassword,
+                    newPassword
+                )
+            )
         }
     }
 
-    fun disableAppPassword(onResult: (Boolean) -> Unit) {
+    fun disableAppPassword(onResult: (AuthenticationResult) -> Unit) {
         viewModelScope.launch {
-            onResult(authenticationMethodProvisioner.disableAppPassword() is AuthenticationResult.Success)
+            onResult(authenticationMethodProvisioner.disableAppPassword())
         }
     }
 }

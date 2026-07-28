@@ -53,6 +53,7 @@ fun VaultFab(
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntrySheet by remember { mutableStateOf(false) }
+    var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
     val expressive = PasslyTheme.isExpressive
     val motionScheme = MaterialTheme.motionScheme
 
@@ -66,6 +67,14 @@ fun VaultFab(
 
     LaunchedEffect(isVisible) {
         if (!isVisible) showFabMenu = false
+    }
+
+    LaunchedEffect(showAddEntrySheet, pendingSheetSelection) {
+        val selectedType = pendingSheetSelection ?: return@LaunchedEffect
+        if (!showAddEntrySheet) {
+            pendingSheetSelection = null
+            onAddTypeSelected(selectedType)
+        }
     }
 
     AnimatedVisibility(
@@ -134,7 +143,8 @@ fun VaultFab(
             onDismiss = { showAddEntrySheet = false },
             onSelectType = { type ->
                 showFabMenu = false
-                onAddTypeSelected(type)
+                pendingSheetSelection = type
+                showAddEntrySheet = false
             }
         )
     }

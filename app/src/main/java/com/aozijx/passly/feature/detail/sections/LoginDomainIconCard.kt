@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.detail.sections
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -29,7 +31,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -41,11 +45,13 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
+import com.aozijx.passly.core.ui.components.rememberAppIcon
+import com.aozijx.passly.core.ui.components.rememberAppMetadata
+import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
-import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import kotlinx.coroutines.launch
@@ -67,6 +73,7 @@ internal fun LoginDomainIconCard(
         mutableStateOf(TextFieldValue(entry.associatedDomain.orEmpty()))
     }
     val notSet = stringResource(R.string.not_set)
+    val associatedPackages = entry.website?.packageNames.orEmpty().sorted()
 
     InfoGroupCard(title = stringResource(R.string.vault_detail_domain_and_icon)) {
         Column(
@@ -124,6 +131,45 @@ internal fun LoginDomainIconCard(
                     fontWeight = FontWeight.Medium
                 )
             }
+            associatedPackages.forEach { packageName ->
+                AssociatedPackageRow(packageName)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AssociatedPackageRow(packageName: String) {
+    val icon = rememberAppIcon(packageName)
+    val metadata = rememberAppMetadata(packageName)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon != null) {
+            Image(
+                painter = icon,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Fit
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            metadata?.appName?.takeIf { it != packageName }?.let { appName ->
+                Text(
+                    text = appName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Text(
+                text = packageName,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

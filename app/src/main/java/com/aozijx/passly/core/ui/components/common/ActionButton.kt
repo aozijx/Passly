@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 fun ActionButton(
     modifier: Modifier = Modifier,
     progress: Boolean = false,
-    success: Boolean = false,
+    result: Boolean? = null,
     icon: ImageVector? = null,
     containerColor: Color? = null,
     text: String = "Unknown",
@@ -41,7 +41,7 @@ fun ActionButton(
             .fillMaxWidth()
             .height(46.dp),
         onClick = onClick,
-        enabled = enabled && !progress && !success,
+        enabled = enabled && !progress && result == null,
         shape = RoundedCornerShape(16.dp),
         colors = if (containerColor != null) {
             ButtonDefaults.filledTonalButtonColors(containerColor = containerColor)
@@ -50,10 +50,10 @@ fun ActionButton(
         }
     ) {
         AnimatedContent(
-            targetState = progress to success,
+            targetState = progress to result,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
             label = "ActionButtonContent"
-        ) { (loading, isSuccess) ->
+        ) { (loading, actionResult) ->
             when {
                 loading -> {
                     CircularProgressIndicator(
@@ -63,7 +63,7 @@ fun ActionButton(
                     )
                 }
 
-                content != null && !isSuccess -> {
+                content != null && actionResult == null -> {
                     content()
                 }
 
@@ -78,7 +78,7 @@ fun ActionButton(
                             Spacer(modifier = Modifier.size(8.dp))
                         }
                         Text(
-                            text = if (isSuccess) resultText else text,
+                            text = if (actionResult != null) resultText else text,
                             style = MaterialTheme.typography.titleMedium
                         )
                     }

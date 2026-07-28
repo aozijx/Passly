@@ -71,6 +71,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     },
                     onAppPasswordClick = {
                         handleAppPasswordEntryClick(
+                            context = context,
                             isAppPasswordEnabled = appPasswordEnabled,
                             settingsViewModel = settingsViewModel,
                             onAlreadyEnabled = localState::openAppPasswordActionDialog,

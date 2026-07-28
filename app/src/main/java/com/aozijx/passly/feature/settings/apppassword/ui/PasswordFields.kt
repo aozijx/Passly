@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.LockOpen
@@ -20,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -53,8 +56,11 @@ internal fun PasswordFields(
         trailingIcon = {
             IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
                 Icon(
-                    imageVector = if (newPasswordVisible) Icons.Outlined.VisibilityOff
-                    else Icons.Outlined.Visibility,
+                    imageVector = if (newPasswordVisible) {
+                        Icons.Outlined.VisibilityOff
+                    } else {
+                        Icons.Outlined.Visibility
+                    },
                     contentDescription = stringResource(
                         if (newPasswordVisible) R.string.hide_password
                         else R.string.show_password
@@ -62,8 +68,15 @@ internal fun PasswordFields(
                 )
             }
         },
-        visualTransformation = if (newPasswordVisible) VisualTransformation.None
-        else PasswordVisualTransformation(),
+        visualTransformation = if (newPasswordVisible) {
+            VisualTransformation.None
+        } else {
+            PasswordVisualTransformation()
+        },
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Next
+        ),
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp)
     )
@@ -93,8 +106,11 @@ internal fun PasswordFields(
         trailingIcon = {
             IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                 Icon(
-                    imageVector = if (confirmPasswordVisible) Icons.Outlined.VisibilityOff
-                    else Icons.Outlined.Visibility,
+                    imageVector = if (confirmPasswordVisible) {
+                        Icons.Outlined.VisibilityOff
+                    } else {
+                        Icons.Outlined.Visibility
+                    },
                     contentDescription = stringResource(
                         if (confirmPasswordVisible) R.string.hide_password
                         else R.string.show_password
@@ -102,8 +118,15 @@ internal fun PasswordFields(
                 )
             }
         },
-        visualTransformation = if (confirmPasswordVisible) VisualTransformation.None
-        else PasswordVisualTransformation(),
+        visualTransformation = if (confirmPasswordVisible) {
+            VisualTransformation.None
+        } else {
+            PasswordVisualTransformation()
+        },
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done
+        ),
         isError = confirmPassword.isNotEmpty() && newPassword != confirmPassword,
         supportingText = if (confirmPassword.isNotEmpty() && newPassword != confirmPassword) {
             { Text(stringResource(R.string.settings_auth_password_mismatch)) }

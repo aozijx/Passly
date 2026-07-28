@@ -114,7 +114,6 @@ fun RecoveryCodeDetail(
                     false -> MaterialTheme.colorScheme.errorContainer
                     else -> null
                 },
-                showResultFooter = true,
                 collapsedText = stringResource(R.string.auth_use_recovery_code),
                 expandedText = stringResource(R.string.auth_recovery_code_unlock),
                 inputLabel = stringResource(R.string.auth_recovery_code_label),
@@ -129,7 +128,8 @@ fun RecoveryCodeDetail(
                     if (!verifyInput.isEmpty) {
                         onVerifyCode(verifyInput.toPlainString().trim())
                     }
-                }
+                },
+                onResultConsumed = onClearVerifyResult
             )
 
             Spacer(modifier = Modifier.height(24.dp))

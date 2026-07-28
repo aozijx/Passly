@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.authentication.AppPasswordPolicy
 
 @Composable
 fun AppPasswordSetDialog(
@@ -23,10 +24,14 @@ fun AppPasswordSetDialog(
     onNewPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isBusy: Boolean = false,
+    errorMessage: String? = null
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (!isBusy) onDismiss()
+        },
         icon = {
             Icon(
                 imageVector = Icons.Outlined.Lock,
@@ -52,18 +57,28 @@ fun AppPasswordSetDialog(
                     onNewPasswordChange = onNewPasswordChange,
                     onConfirmPasswordChange = onConfirmPasswordChange
                 )
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                enabled = newPassword.isNotEmpty() && confirmPassword.isNotEmpty() && newPassword == confirmPassword
+                enabled = !isBusy &&
+                        AppPasswordPolicy.acceptsLength(newPassword.length) &&
+                        newPassword == confirmPassword
             ) {
                 Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isBusy) {
                 Text(stringResource(R.string.cancel))
             }
         }

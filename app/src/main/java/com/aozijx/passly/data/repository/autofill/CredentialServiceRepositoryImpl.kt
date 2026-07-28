@@ -1,5 +1,6 @@
 package com.aozijx.passly.data.repository.autofill
 
+import com.aozijx.passly.core.platform.PackageUtils
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
@@ -7,6 +8,7 @@ import com.aozijx.passly.data.local.dao.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.autofill.AutofillConfiguration
+import com.aozijx.passly.domain.autofill.policy.AutofillTitlePolicy
 import com.aozijx.passly.domain.autofill.policy.CredentialScopeMatcher
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.EntryHeader
@@ -40,6 +42,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     private val secretCodec: EntrySecretCodec,
     private val blindIndexer: BlindIndexer,
     private val entryCommandRepository: EntryCommandRepository,
+    private val packageUtils: PackageUtils,
 ) : CredentialServiceRepository {
 
     override suspend fun search(
@@ -160,6 +163,9 @@ class CredentialServiceRepositoryImpl @Inject constructor(
 
         val normalizedPackage = CredentialScopeMatcher.normalizePackage(packageName)
         val normalizedDomain = CredentialScopeMatcher.normalizeDomain(webDomain)
+        val appLabel = normalizedPackage
+            ?.let(packageUtils::getAppMetadata)
+            ?.appName
         val entry = VaultEntry(
             header = EntryHeader(
                 id = EntryId(""),
@@ -169,9 +175,13 @@ class CredentialServiceRepositoryImpl @Inject constructor(
                 updatedAt = 0L,
             ),
             summary = EntrySummary(
-                title = pageTitle?.trim()?.takeIf { it.isNotBlank() }
-                    ?: normalizedDomain
-                    ?: usernameValue.ifBlank { "Login" },
+                title = AutofillTitlePolicy.resolveSavedCredentialTitle(
+                    pageTitle = pageTitle,
+                    domain = normalizedDomain,
+                    appLabel = appLabel,
+                    packageName = normalizedPackage,
+                    fallback = usernameValue.ifBlank { "Login" }
+                ),
                 username = usernameValue,
                 website = WebsiteInfo(
                     primaryUrl = webDomain?.trim()?.takeIf { it.isNotBlank() },

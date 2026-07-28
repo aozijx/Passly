@@ -44,8 +44,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -321,7 +321,6 @@ class VaultViewModel @Inject constructor(
             selectedTab = search.selectedTab,
             selectedSort = search.selectedSort,
             isSearchActive = search.isSearchActive,
-            isMoreMenuExpanded = search.isMoreMenuExpanded,
             isVaultItemsLoading = list.isLoading,
             availableCategories = list.categories,
             visibleTabs = tabs,
@@ -337,7 +336,6 @@ class VaultViewModel @Inject constructor(
     )
 
     // --- 操作方法 ---
-    fun expandMoreMenu(expanded: Boolean) = searchFilter.expandMoreMenu(expanded)
     fun onSearchQueryChange(q: String) = searchFilter.updateSearchQuery(q)
     fun setSelectedCategory(category: String?) = searchFilter.updateSelectedCategory(category)
     fun clearSelectedCategory() = setSelectedCategory(null)

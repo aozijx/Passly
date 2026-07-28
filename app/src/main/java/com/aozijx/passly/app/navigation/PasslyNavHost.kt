@@ -30,6 +30,8 @@ import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.feature.vault.editor.password.AddPasswordScreen
+import com.aozijx.passly.feature.vault.editor.password.AddPasswordViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 /**
@@ -73,6 +75,11 @@ fun PasslyNavHost(
                         onDismiss = onDismiss
                     )
                 },
+                onAddPassword = {
+                    navController.navigate(AppRoute.AddPassword.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onSettingsClick = {
                     navController.navigate(AppRoute.Settings.route)
                 },
@@ -82,6 +89,18 @@ fun PasslyNavHost(
                 isDatabaseInitializing = isDatabaseInitializing
             )
         }
+
+            composable(AppRoute.AddPassword.route) {
+                val addPasswordViewModel: AddPasswordViewModel = hiltViewModel()
+                AddPasswordScreen(
+                    viewModel = addPasswordViewModel,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() },
+                    onUserInteraction = {
+                        mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+                    }
+                )
+            }
 
         composable(
             route = AppRoute.Detail.route,

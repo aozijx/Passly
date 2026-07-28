@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,10 +29,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.security.crypto.SecureString
+import kotlinx.coroutines.delay
 
 /**
  * 输入操作按钮：将“触发操作”和“输入数据”合并为一个控件。
@@ -46,23 +52,42 @@ fun InputActionButton(
     onExpandedChange: (Boolean) -> Unit,
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
+    onResultConsumed: () -> Unit = {},
     enabled: Boolean = true
 ) {
     val focusRequester = remember { FocusRequester() }
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val dismissInput = {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+        onExpandedChange(false)
+    }
     val submit = {
         if (enabled && !state.progress && !state.value.isEmpty) {
             onAction()
-            // 提交时通常收起输入框，如果需要保持展开可由外部 state 控制
-            onExpandedChange(false)
+            dismissInput()
         }
     }
 
     BackHandler(enabled = state.expanded) {
-        onExpandedChange(false)
+        dismissInput()
     }
 
     LaunchedEffect(state.expanded) {
-        if (state.expanded) focusRequester.requestFocus()
+        if (state.expanded) {
+            focusRequester.requestFocus()
+            delay(BRING_INTO_VIEW_DELAY_MS)
+            bringIntoViewRequester.bringIntoView()
+        }
+    }
+
+    LaunchedEffect(state.result) {
+        if (state.result != null) {
+            delay(RESULT_DISPLAY_DURATION_MS)
+            onResultConsumed()
+        }
     }
 
     Column(modifier = modifier) {
@@ -78,10 +103,14 @@ fun InputActionButton(
                     singleLine = true,
                     label = { Text(config.inputLabel) },
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
                     keyboardActions = KeyboardActions(onDone = { submit() }),
                     enabled = enabled && !state.progress,
                     modifier = Modifier
+                        .bringIntoViewRequester(bringIntoViewRequester)
                         .focusRequester(focusRequester)
                         .fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp)
@@ -93,7 +122,7 @@ fun InputActionButton(
         ActionButton(
             modifier = Modifier.fillMaxWidth(),
             progress = state.progress,
-            success = state.result == true,
+            result = state.result,
             icon = when (state.result) {
                 true -> config.successIcon
                 false -> config.errorIcon
@@ -125,13 +154,13 @@ fun InputActionButton(
     onExpandedChange: (Boolean) -> Unit,
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
+    onResultConsumed: () -> Unit = {},
     enabled: Boolean = true,
     icon: ImageVector = Icons.Default.Key,
     containerColor: Color? = null,
     result: Boolean? = null,
     successText: String = "Success",
-    errorText: String = "Failed",
-    showResultFooter: Boolean = false
+    errorText: String = "Failed"
 ) {
     InputActionButton(
         state = InputActionButtonState(value, expanded, progress, result),
@@ -142,12 +171,12 @@ fun InputActionButton(
             icon = icon,
             containerColor = containerColor,
             successText = successText,
-            errorText = errorText,
-            showResultFooter = showResultFooter
+            errorText = errorText
         ),
         onValueChange = onValueChange,
         onExpandedChange = onExpandedChange,
         onAction = onAction,
+        onResultConsumed = onResultConsumed,
         modifier = modifier,
         enabled = enabled
     )
@@ -169,6 +198,8 @@ data class InputActionButtonConfig(
     val successText: String = "Success",
     val errorText: String = "Failed",
     val successIcon: ImageVector = Icons.Default.CheckCircle,
-    val errorIcon: ImageVector = Icons.Default.Cancel,
-    val showResultFooter: Boolean = false
+    val errorIcon: ImageVector = Icons.Default.Cancel
 )
+
+private const val RESULT_DISPLAY_DURATION_MS = 2_500L
+private const val BRING_INTO_VIEW_DELAY_MS = 120L
