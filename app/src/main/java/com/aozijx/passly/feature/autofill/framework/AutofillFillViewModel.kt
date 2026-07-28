@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.autofill.framework
 
 import android.content.Context
+import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import androidx.lifecycle.ViewModel
@@ -29,6 +30,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed interface AutofillAuthenticationPayload {
+    data class Response(val value: FillResponse) : AutofillAuthenticationPayload
+    data class DatasetResult(val value: Dataset) : AutofillAuthenticationPayload
+}
+
 @HiltViewModel
 class AutofillFillViewModel @Inject constructor(
     private val autofillUseCases: AutofillUseCases,
@@ -43,7 +49,7 @@ class AutofillFillViewModel @Inject constructor(
         object Initial : UiState()
         object Loading : UiState()
         data class ShowCandidates(val candidates: List<ResolvedCandidate>) : UiState()
-        data class Result(val response: FillResponse?) : UiState()
+        data class Result(val payload: AutofillAuthenticationPayload?) : UiState()
         data class Error(val message: String) : UiState()
     }
 
@@ -63,6 +69,7 @@ class AutofillFillViewModel @Inject constructor(
         val webDomain: String?,
         val directEntryId: String?,
         val candidateEntryIds: List<String>,
+        val returnsDataset: Boolean,
     )
 
     fun initialize(request: FillRequest) {
@@ -146,7 +153,9 @@ class AutofillFillViewModel @Inject constructor(
             passwordId = request.passwordId,
             otpId = request.otpId
         )
-        _uiState.update { UiState.Result(response) }
+        _uiState.update {
+            UiState.Result(response?.let(AutofillAuthenticationPayload::Response))
+        }
     }
 
     private suspend fun handleSingleEntry(
@@ -180,8 +189,14 @@ class AutofillFillViewModel @Inject constructor(
 
         if (dataset != null) {
             autofillUseCases.recordUsage(candidate.candidateId)
-            val response = FillResponse.Builder().addDataset(dataset).build()
-            _uiState.update { UiState.Result(response) }
+            val payload = if (request.returnsDataset) {
+                AutofillAuthenticationPayload.DatasetResult(dataset)
+            } else {
+                AutofillAuthenticationPayload.Response(
+                    FillResponse.Builder().addDataset(dataset).build()
+                )
+            }
+            _uiState.update { UiState.Result(payload) }
         } else {
             _uiState.update { UiState.Error("No fillable fields detected") }
         }

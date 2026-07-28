@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.autofill.framework
 
 import android.content.Intent
 import android.os.Bundle
-import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
 import androidx.activity.compose.setContent
@@ -54,7 +53,7 @@ class AutofillFillActivity : FragmentActivity() {
                     }
 
                     is AutofillFillViewModel.UiState.Result -> {
-                        finishWithResult(state.response)
+                        finishWithResult(state.payload)
                     }
 
                     is AutofillFillViewModel.UiState.Error -> {
@@ -96,6 +95,7 @@ class AutofillFillActivity : FragmentActivity() {
         val webDomain = intent?.getStringExtra("web_domain")
         val directEntryId = intent?.getStringExtra("vault_item_id")
         val candidateEntryIds = intent?.getStringArrayExtra("vault_item_ids")?.toList().orEmpty()
+        val returnsDataset = intent?.getBooleanExtra(EXTRA_RETURN_DATASET, false) ?: false
 
         return AutofillFillViewModel.FillRequest(
             uiMode = uiMode,
@@ -106,7 +106,8 @@ class AutofillFillActivity : FragmentActivity() {
             packageName = packageName,
             webDomain = webDomain,
             directEntryId = directEntryId,
-            candidateEntryIds = candidateEntryIds
+            candidateEntryIds = candidateEntryIds,
+            returnsDataset = returnsDataset
         )
     }
 
@@ -126,14 +127,29 @@ class AutofillFillActivity : FragmentActivity() {
         }
     }
 
-    private fun finishWithResult(response: FillResponse?) {
-        if (response != null) {
-            setResult(RESULT_OK, Intent().apply {
-                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response)
-            })
-        } else {
-            setResult(RESULT_CANCELED)
+    private fun finishWithResult(payload: AutofillAuthenticationPayload?) {
+        val resultIntent = when (payload) {
+            is AutofillAuthenticationPayload.Response -> Intent().apply {
+                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
+            }
+
+            is AutofillAuthenticationPayload.DatasetResult -> Intent().apply {
+                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
+                putExtra(
+                    AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET,
+                    true
+                )
+            }
+
+            null -> null
         }
+
+        if (resultIntent == null) setResult(RESULT_CANCELED)
+        else setResult(RESULT_OK, resultIntent)
         finish()
+    }
+
+    companion object {
+        internal const val EXTRA_RETURN_DATASET = "autofill_return_dataset"
     }
 }

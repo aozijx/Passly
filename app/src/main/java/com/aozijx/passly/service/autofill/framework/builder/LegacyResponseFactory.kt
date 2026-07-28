@@ -71,7 +71,7 @@ internal object LegacyResponseFactory {
                         context,
                         candidate.candidateId.hashCode(),
                         intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                        authenticationPendingIntentFlags(),
                     )
                     val dsBuilder = Dataset.Builder().setAuthentication(pi.intentSender)
                     LegacyDatasetFactory.setMenuPresentationCompat(
@@ -175,6 +175,7 @@ internal object LegacyResponseFactory {
         putExtra("autofill_ui_mode", uiMode.name)
         putExtra("package_name", parsed.packageName)
         putExtra("web_domain", parsed.webDomain)
+        putExtra(AutofillFillActivity.EXTRA_RETURN_DATASET, true)
     }
 
     private fun addUnlockAuthentication(
@@ -191,7 +192,7 @@ internal object LegacyResponseFactory {
             context,
             parsed.packageName.hashCode(),
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            authenticationPendingIntentFlags(),
         )
         LegacyDatasetFactory.setAuthenticationCompat(
             builder,
@@ -216,7 +217,7 @@ internal object LegacyResponseFactory {
             context,
             candidates.map { it.candidateId }.hashCode(),
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            authenticationPendingIntentFlags(),
         )
         LegacyDatasetFactory.setAuthenticationCompat(
             builder,
@@ -250,4 +251,8 @@ internal object LegacyResponseFactory {
         if (parsed.passwordId != null) dataType = dataType or SaveInfo.SAVE_DATA_TYPE_PASSWORD
         builder.setSaveInfo(SaveInfo.Builder(dataType, requiredIds.toTypedArray()).build())
     }
+
+    private fun authenticationPendingIntentFlags(): Int =
+        PendingIntent.FLAG_UPDATE_CURRENT or
+                PendingIntent.FLAG_MUTABLE
 }

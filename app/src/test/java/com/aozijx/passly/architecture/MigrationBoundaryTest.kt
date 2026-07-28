@@ -509,6 +509,40 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun legacyAutofillAuthenticationReturnsTheMatchingPlatformType() {
+        val activity = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/framework/" +
+                    "AutofillFillActivity.kt"
+        ).readText()
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/framework/" +
+                    "AutofillFillViewModel.kt"
+        ).readText()
+        val responseFactory = File(
+            "src/main/java/com/aozijx/passly/service/autofill/framework/builder/" +
+                    "LegacyResponseFactory.kt"
+        ).readText()
+
+        assertTrue(
+            "Dataset authentication must return a Dataset for immediate filling",
+            "EXTRA_RETURN_DATASET" in activity &&
+                    "AutofillAuthenticationPayload.DatasetResult(dataset)" in viewModel &&
+                    "AutofillAuthenticationPayload.Response(" in viewModel
+        )
+        assertTrue(
+            "The authentication Activity must accept both platform payload types",
+            "is AutofillAuthenticationPayload.Response" in activity &&
+                    "is AutofillAuthenticationPayload.DatasetResult" in activity &&
+                    "EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET" in activity
+        )
+        assertTrue(
+            "Autofill authentication PendingIntents must remain mutable for platform extras",
+            "PendingIntent.FLAG_MUTABLE" in responseFactory &&
+                    "PendingIntent.FLAG_IMMUTABLE" !in responseFactory
+        )
+    }
+
+    @Test
     fun destructiveDatabaseRecoveryRequiresFreshAuthentication() {
         val mainViewModel = File(
             "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"
