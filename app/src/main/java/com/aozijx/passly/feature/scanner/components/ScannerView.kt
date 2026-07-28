@@ -102,10 +102,11 @@ fun ScannerView(
     LaunchedEffect(permissionHost) {
         val cameraPermission = permissionHost.status(RuntimePermission.CAMERA)
         hasPermission.value = cameraPermission == PermissionStatus.GRANTED
-        when {
-            cameraPermission == PermissionStatus.GRANTED -> Unit
-            cameraPermission == PermissionStatus.DENIED ->
+        when (cameraPermission) {
+            PermissionStatus.GRANTED -> Unit
+            PermissionStatus.DENIED ->
                 permissionHost.request(RuntimePermission.CAMERA)
+
             else -> onPermissionDenied()
         }
     }
@@ -128,7 +129,6 @@ fun ScannerView(
                 if (disposed) return@addListener
                 try {
                     val provider = cameraProviderFuture.get()
-                    if (disposed) return@addListener
 
                     val preview = Preview.Builder().build().apply {
                         surfaceProvider = previewView.surfaceProvider
@@ -180,9 +180,7 @@ fun ScannerView(
                         imageAnalysis
                     )
                 } catch (e: Exception) {
-                    if (!disposed) {
-                        AppTelemetry.e("ScannerView", "Camera binding failed", e)
-                    }
+                    AppTelemetry.e("ScannerView", "Camera binding failed", e)
                 }
             }, ContextCompat.getMainExecutor(context))
         }

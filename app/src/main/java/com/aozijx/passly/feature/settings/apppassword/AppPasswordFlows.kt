@@ -70,11 +70,8 @@ private fun Context.showToast(messageResource: Int) {
 }
 
 internal fun handleAppPasswordEntryClick(
-    context: Context,
     isAppPasswordEnabled: Boolean,
     settingsViewModel: SettingsViewModel,
-    title: String,
-    subtitle: String,
     onAlreadyEnabled: () -> Unit,
     onVerified: () -> Unit
 ) {
