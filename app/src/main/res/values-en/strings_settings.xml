@@ -187,6 +187,7 @@
     <string name="settings_trash_deleted_at">Deleted %1$s</string>
     <string name="settings_trash_description">Restore deleted entries or remove them permanently</string>
     <string name="settings_trash_empty">Trash is empty</string>
+    <string name="settings_trash_empty_description">Deleted entries will appear here</string>
     <string name="settings_trash_empty_action">Empty</string>
     <string name="settings_trash_empty_confirm_message">This permanently deletes %1$d entries in the trash and their attachments. This cannot be undone.</string>
     <string name="settings_trash_empty_confirm_title">Empty trash?</string>

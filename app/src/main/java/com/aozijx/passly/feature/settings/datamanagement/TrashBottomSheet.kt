@@ -4,6 +4,7 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,14 +18,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -38,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +69,8 @@ internal fun TrashBottomSheet(
     var pendingDelete by remember { mutableStateOf<EntryListItem?>(null) }
     var confirmEmpty by remember { mutableStateOf(false) }
     val isBusy = activeEntryId != null || isEmptying
+    val maxListHeight = (LocalConfiguration.current.screenHeightDp.dp * 0.62f)
+        .coerceAtMost(640.dp)
 
     ModalBottomSheet(
         onDismissRequest = {
@@ -105,21 +110,23 @@ internal fun TrashBottomSheet(
                 else -> LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 560.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        top = 8.dp,
+                        .heightIn(max = maxListHeight),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 12.dp,
+                        end = 16.dp,
                         bottom = 8.dp
-                    )
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(entries, key = EntryListItem::id) { entry ->
-                        TrashEntryRow(
+                        TrashEntryCard(
                             entry = entry,
                             busy = isBusy,
                             isOperating = activeEntryId == entry.id,
                             onRestore = { onRestore(entry) },
                             onDelete = { pendingDelete = entry }
                         )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
                     }
                 }
             }
@@ -212,9 +219,21 @@ private fun TrashHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 20.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Surface(
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Icon(
+                imageVector = Icons.Default.DeleteSweep,
+                contentDescription = null,
+                modifier = Modifier.padding(12.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.settings_trash_title),
@@ -239,6 +258,13 @@ private fun TrashHeader(
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(8.dp))
+            } else {
+                Icon(
+                    imageVector = Icons.Default.DeleteSweep,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
             }
             Text(
                 text = stringResource(
@@ -259,7 +285,7 @@ private fun TrashHeader(
 }
 
 @Composable
-private fun TrashEntryRow(
+private fun TrashEntryCard(
     entry: EntryListItem,
     busy: Boolean,
     isOperating: Boolean,
@@ -274,68 +300,143 @@ private fun TrashEntryRow(
         ).toString()
     }.orEmpty()
 
-    ListItem(
-        headlineContent = {
-            Text(
-                text = entry.title,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        supportingContent = {
-            Column {
-                Text(entry.entryType.displayName)
-                if (deletedLabel.isNotEmpty()) {
-                    Text(stringResource(R.string.settings_trash_deleted_at, deletedLabel))
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Box(
+                        modifier = Modifier.size(52.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        VaultItemIcon(iconable = entry)
+                    }
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = entry.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = entry.entryType.displayName,
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                        if (deletedLabel.isNotEmpty()) {
+                            Text(
+                                text = stringResource(
+                                    R.string.settings_trash_deleted_at,
+                                    deletedLabel
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
-        },
-        leadingContent = {
-            VaultItemIcon(iconable = entry)
-        },
-        trailingContent = {
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    enabled = !busy,
+                    onClick = onRestore,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RestoreFromTrash,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.settings_trash_restore))
+                }
+                TextButton(
+                    enabled = !busy,
+                    onClick = onDelete,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    val destructiveColor = if (busy) {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
+                    Icon(
+                        imageVector = Icons.Default.DeleteForever,
+                        contentDescription = null,
+                        tint = destructiveColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.settings_trash_delete),
+                        color = destructiveColor
+                    )
+                }
+            }
+
             if (isOperating) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
-            } else {
-                Row {
-                    IconButton(
-                        enabled = !busy,
-                        onClick = onRestore
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.RestoreFromTrash,
-                            contentDescription = stringResource(R.string.settings_trash_restore)
-                        )
-                    }
-                    IconButton(
-                        enabled = !busy,
-                        onClick = onDelete
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteForever,
-                            contentDescription = stringResource(R.string.settings_trash_delete),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
             }
-        },
-        modifier = Modifier.padding(horizontal = 4.dp)
-    )
+        }
+    }
 }
 
 @Composable
 private fun TrashLoading() {
-    Box(
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = MaterialTheme.shapes.large,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(48.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 16.dp, vertical = 20.dp)
     ) {
-        CircularProgressIndicator()
+        Box(
+            modifier = Modifier.padding(40.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
     }
 }
 
@@ -344,19 +445,31 @@ private fun TrashEmpty() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 48.dp),
+            .padding(horizontal = 32.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.DeleteSweep,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Surface(
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            shape = MaterialTheme.shapes.extraLarge
+        ) {
+            Icon(
+                imageVector = Icons.Default.DeleteSweep,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(20.dp)
+                    .size(36.dp)
+            )
+        }
         Text(
             text = stringResource(R.string.settings_trash_empty),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = stringResource(R.string.settings_trash_empty_description),
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -369,15 +482,21 @@ private fun TrashError(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.errorContainer,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Row(
-            modifier = Modifier.padding(start = 16.dp, end = 8.dp),
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = Icons.Default.ErrorOutline,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,

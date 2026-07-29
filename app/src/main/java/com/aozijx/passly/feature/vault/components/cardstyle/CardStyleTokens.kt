@@ -6,14 +6,12 @@ import androidx.compose.ui.unit.sp
 object CardStyleTokens {
 
     object Base {
-        val corner = 16.dp
         const val CONTAINER_ALPHA = 0.3f
         val contentPadding = 16.dp
         val iconTextSpacing = 20.dp
     }
 
     object Password {
-        val corner = 16.dp
         val elevation = 3.dp
         val contentPadding = 16.dp
         val iconTextSpacing = 20.dp
@@ -38,12 +36,8 @@ object CardStyleTokens {
     }
 
     object Totp {
-        val corner = 24.dp
         val elevation = 1.dp
         val contentPadding = 16.dp
-
-        val marginHorizontal = 16.dp
-        val marginVertical = 6.dp
 
         val rowSpacing = 16.dp
         val iconContainerCorner = 16.dp

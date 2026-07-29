@@ -1,48 +1,38 @@
 package com.aozijx.passly.core.ui.components.widgets
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import kotlinx.coroutines.launch
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 data class SwipeAction(
     val icon: ImageVector,
@@ -61,141 +51,94 @@ fun SwipeToAction(
     actions: List<SwipeAction>,
     modifier: Modifier = Modifier,
     isActive: Boolean = true,
-    cornerRadius: Dp = 16.dp,
-    actionThreshold: Float = 0.5f,
+    shape: Shape = MaterialTheme.shapes.extraLarge,
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val componentWidthPx = remember { mutableFloatStateOf(0f) }
-    val offset = remember { Animatable(0f) }
     val hapticFeedback = LocalHapticFeedback.current
-    val hasTriggeredHaptic = remember { mutableStateOf(false) }
-
-    val thresholdPx = remember(componentWidthPx.floatValue) {
-        componentWidthPx.floatValue * actionThreshold
+    val leftAction = remember(actions) {
+        actions.find { it.direction == SwipeDirection.LEFT }
     }
-
-    val leftAction = actions.find { it.direction == SwipeDirection.LEFT }
-    val rightAction = actions.find { it.direction == SwipeDirection.RIGHT }
-
-    val swipeFraction = if (thresholdPx > 0) {
-        (abs(offset.value) / thresholdPx).coerceIn(0f, 1f)
-    } else 0f
-
-    val currentAction = remember(offset.value) {
-        when {
-            offset.value < 0 -> leftAction
-            offset.value > 0 -> rightAction
-            else -> null
-        }
+    val rightAction = remember(actions) {
+        actions.find { it.direction == SwipeDirection.RIGHT }
     }
+    val currentLeftAction = rememberUpdatedState(leftAction)
+    val currentRightAction = rememberUpdatedState(rightAction)
+    val dismissState = rememberSwipeToDismissBoxState()
 
-    LaunchedEffect(swipeFraction) {
-        if (swipeFraction >= 1f && !hasTriggeredHaptic.value) {
+    LaunchedEffect(dismissState.targetValue) {
+        if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-            hasTriggeredHaptic.value = true
-        } else if (swipeFraction < 1f) {
-            hasTriggeredHaptic.value = false
         }
     }
-
-    val draggableState = rememberDraggableState(
-        onDelta = { delta ->
-            scope.launch {
-                val dampingFactor = 1f
-                val newOffset = (offset.value + delta * dampingFactor).coerceIn(
-                    -componentWidthPx.floatValue, componentWidthPx.floatValue
-                )
-                offset.snapTo(newOffset)
-            }
-        })
 
     LaunchedEffect(isActive) {
-        if (!isActive && offset.value != 0f) {
-            offset.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
+        if (!isActive && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            dismissState.reset()
         }
     }
 
-    Box(modifier = modifier
-        .fillMaxWidth()
-        .onSizeChanged { size ->
-            componentWidthPx.floatValue = size.width.toFloat()
+    val onDismiss = remember(dismissState, scope) {
+        { direction: SwipeToDismissBoxValue ->
+            val action = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> currentRightAction.value
+                SwipeToDismissBoxValue.EndToStart -> currentLeftAction.value
+                SwipeToDismissBoxValue.Settled -> null
+            }
+            action?.onAction?.invoke()
+            scope.launch { dismissState.reset() }
+            Unit
         }
-        .clip(RoundedCornerShape(cornerRadius))) {
-        if (currentAction != null) {
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape),
+        enableDismissFromStartToEnd = rightAction != null,
+        enableDismissFromEndToStart = leftAction != null,
+        gesturesEnabled = isActive,
+        onDismiss = onDismiss,
+        backgroundContent = {
+            val currentAction = when (dismissState.dismissDirection) {
+                SwipeToDismissBoxValue.StartToEnd -> rightAction
+                SwipeToDismissBoxValue.EndToStart -> leftAction
+                SwipeToDismissBoxValue.Settled -> null
+            }
+            val progress = dismissState.progress.coerceIn(0f, 1f)
             Box(
                 modifier = Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = if (offset.value < 0) {
-                                listOf(
-                                    Color.Transparent,
-                                    currentAction.backgroundColor.copy(alpha = swipeFraction * 0.3f),
-                                    currentAction.backgroundColor.copy(alpha = swipeFraction * 0.7f)
-                                )
-                            } else {
-                                listOf(
-                                    currentAction.backgroundColor.copy(alpha = swipeFraction * 0.7f),
-                                    currentAction.backgroundColor.copy(alpha = swipeFraction * 0.3f),
-                                    Color.Transparent
-                                )
-                            }
-                        )
-                    ),
-                contentAlignment = if (offset.value < 0) Alignment.CenterEnd else Alignment.CenterStart
+                    .fillMaxSize()
+                    .clip(shape)
+                    .background(currentAction?.backgroundColor ?: Color.Transparent),
+                contentAlignment = when (dismissState.dismissDirection) {
+                    SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                    SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                    SwipeToDismissBoxValue.Settled -> Alignment.Center
+                }
             ) {
-                Icon(
-                    imageVector = currentAction.icon,
-                    contentDescription = null,
-                    tint = currentAction.iconTint.copy(alpha = swipeFraction),
-                    modifier = Modifier
-                        .padding(
-                            end = if (offset.value < 0) 20.dp else 0.dp,
-                            start = if (offset.value < 0) 0.dp else 20.dp
-                        )
-                        .size(24.dp)
-                        .graphicsLayer {
-                            val scale = 0.8f + (swipeFraction * 0.4f).coerceAtMost(0.4f)
-                            scaleX = scale
-                            scaleY = scale
-                        }
-                )
+                currentAction?.let { action ->
+                    Icon(
+                        imageVector = action.icon,
+                        contentDescription = null,
+                        tint = action.iconTint.copy(alpha = progress),
+                        modifier = Modifier
+                            .padding(horizontal = 20.dp)
+                            .size(24.dp)
+                            .graphicsLayer {
+                                val scale = 0.8f + progress * 0.2f
+                                scaleX = scale
+                                scaleY = scale
+                            }
+                    )
+                }
             }
-        }
-
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .offset { IntOffset(offset.value.roundToInt(), 0) }
-                .draggable(
-                    state = draggableState,
-                    orientation = Orientation.Horizontal,
-                    enabled = isActive,
-                    onDragStopped = {
-                        scope.launch {
-                            val current = offset.value
-                            val action = when {
-                                current < 0 && abs(current) >= thresholdPx -> leftAction
-                                current > 0 && abs(current) >= thresholdPx -> rightAction
-                                else -> null
-                            }
-                            if (action != null) {
-                                action.onAction()
-                                offset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
-                            } else {
-                                offset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
-                            }
-                        }
-                    }
-                ),
-            shape = RoundedCornerShape(cornerRadius),
-            tonalElevation = 2.dp,
-            shadowElevation = 2.dp
-        ) {
+        },
+        content = {
             content()
         }
-    }
+    )
 }
 
 fun createSwipeAction(

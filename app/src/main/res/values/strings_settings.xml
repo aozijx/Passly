@@ -187,6 +187,7 @@
     <string name="settings_trash_deleted_at">删除于 %1$s</string>
     <string name="settings_trash_description">恢复已删除条目，或将其永久删除</string>
     <string name="settings_trash_empty">回收站是空的</string>
+    <string name="settings_trash_empty_description">删除的条目会显示在这里</string>
     <string name="settings_trash_empty_action">清空</string>
     <string name="settings_trash_empty_confirm_message">将永久删除回收站中的 %1$d 个条目及其附件，无法撤销。</string>
     <string name="settings_trash_empty_confirm_title">清空回收站？</string>

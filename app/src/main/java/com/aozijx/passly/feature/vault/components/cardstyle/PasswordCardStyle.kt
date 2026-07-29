@@ -80,7 +80,7 @@ fun PasswordStyleVaultItem(
         else -> "受保护的登录凭据"
     }
     val imageModel = remember(entry.iconCustomPath) { toLocalIconImageModel(entry.iconCustomPath) }
-    val corner = RoundedCornerShape(CardStyleTokens.Password.corner)
+    val corner = MaterialTheme.shapes.extraLarge
 
     var accentColor by remember(imageModel) { mutableStateOf<Color?>(null) }
     var onAccentColor by remember(imageModel) { mutableStateOf<Color?>(null) }

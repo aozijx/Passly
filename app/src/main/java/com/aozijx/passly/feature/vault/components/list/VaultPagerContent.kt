@@ -1,5 +1,9 @@
 package com.aozijx.passly.feature.vault.components.list
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
@@ -52,6 +57,7 @@ fun VaultPagerContent(
     modifier: Modifier = Modifier
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
+    val motionScheme = MaterialTheme.motionScheme
 
     HorizontalPager(
         modifier = modifier,
@@ -98,7 +104,14 @@ fun VaultPagerContent(
                         onSwipeTriggered = onSwipeTriggered,
                         onItemClick = { onItemClick(item) },
                         totpStates = totpStates,
-                        showTotpCode = uiState.showTOTPCode
+                        showTotpCode = uiState.showTOTPCode,
+                        modifier = Modifier
+                            .animateItem(
+                                fadeInSpec = null,
+                                placementSpec = motionScheme.defaultSpatialSpec<IntOffset>(),
+                                fadeOutSpec = motionScheme.fastEffectsSpec()
+                            )
+                            .fillMaxWidth()
                     )
                 }
 
@@ -124,7 +137,8 @@ private fun EntryListItemRow(
     onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
     onItemClick: () -> Unit,
     totpStates: StateFlow<Map<String, OtpUiState>>,
-    showTotpCode: Boolean
+    showTotpCode: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val totpState = if (item.hasOtp) {
         val itemTotpState = remember(item.id, totpStates) {
@@ -141,6 +155,10 @@ private fun EntryListItemRow(
         CardStyleRegistry.resolveStyle(item, entryCardPresentations)
     }
     val colorScheme = MaterialTheme.colorScheme
+    val motionScheme = MaterialTheme.motionScheme
+    val visibleState = remember(item.id) {
+        MutableTransitionState(false).apply { targetState = true }
+    }
     val actions =
         remember(item.id, swipeLeftAction, swipeRightAction, onSwipeTriggered, colorScheme) {
             listOfNotNull(
@@ -160,16 +178,27 @@ private fun EntryListItemRow(
             )
         }
 
-    SwipeToAction(
-        actions = actions,
-        modifier = Modifier.fillMaxWidth(),
-        isActive = isSwipeEnabled,
+    AnimatedVisibility(
+        visibleState = visibleState,
+        modifier = modifier,
+        enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
+                slideInVertically(
+                    animationSpec = motionScheme.defaultSpatialSpec<IntOffset>(),
+                    initialOffsetY = { height -> height / 4 }
+                )
     ) {
-        CardStyleRegistry.RenderVaultItem(
-            style = cardStyle, entry = item,
-            totpState = totpState,
-            showTotpCode = showTotpCode,
-            onClick = onItemClick
-        )
+        SwipeToAction(
+            actions = actions,
+            modifier = Modifier.fillMaxWidth(),
+            isActive = isSwipeEnabled,
+        ) {
+            CardStyleRegistry.RenderVaultItem(
+                style = cardStyle,
+                entry = item,
+                totpState = totpState,
+                showTotpCode = showTotpCode,
+                onClick = onItemClick
+            )
+        }
     }
 }

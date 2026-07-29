@@ -51,6 +51,7 @@ fun TotpStyleVaultItem(
     previewProgress: Float? = null,
     onClick: () -> Unit
 ) {
+    val cardShape = MaterialTheme.shapes.extraLarge
     val currentState =
         previewCode?.let { OtpUiState(code = it, progress = previewProgress ?: 0f) } ?: totpState
     val isSteam = remember(entry.otpType) {
@@ -80,20 +81,15 @@ fun TotpStyleVaultItem(
 
     Card(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = CardStyleTokens.Totp.marginHorizontal,
-                vertical = CardStyleTokens.Totp.marginVertical
-            ),
-        shape = RoundedCornerShape(CardStyleTokens.Totp.corner),
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = CardStyleTokens.Totp.elevation)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(CardStyleTokens.Totp.corner))
+                .clip(cardShape)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
