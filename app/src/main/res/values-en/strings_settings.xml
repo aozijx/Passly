@@ -74,6 +74,11 @@
     <string name="settings_interface_top_bar_collapsible">Collapsible top bar</string>
     <string name="settings_interface_top_bar_collapsible_description">Shrink the top bar on scroll for more content</string>
     <string name="settings_interface_vault_tabs_section">Vault tabs</string>
+    <string name="settings_interface_entry_hierarchy_section">Linked accounts</string>
+    <string name="settings_interface_entry_hierarchy_display_mode">Linked entry display</string>
+    <string name="settings_interface_entry_hierarchy_collapsed">Collapsed</string>
+    <string name="settings_interface_entry_hierarchy_expanded">Expanded</string>
+    <string name="settings_interface_entry_hierarchy_separate">Separate</string>
 
     <!-- Security and recovery -->
     <string name="settings_app_password_change_action">Change password</string>

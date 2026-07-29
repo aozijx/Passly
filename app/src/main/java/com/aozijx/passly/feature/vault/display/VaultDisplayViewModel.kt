@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.display
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,8 @@ data class VaultLayoutConfig(
 
 data class VaultStyleConfig(
     val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
+    val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
+        EntryHierarchyDisplayMode.COLLAPSED,
 )
 
 data class VaultInteractionConfig(
@@ -51,7 +54,8 @@ class VaultDisplayViewModel @Inject constructor(
                     tabBarMaxTabsWithoutScroll = settings.vault.maxTabsWithoutScroll
                 ),
                 style = VaultStyleConfig(
-                    entryCardPresentations = settings.vault.entryCardPresentations
+                    entryCardPresentations = settings.vault.entryCardPresentations,
+                    entryHierarchyDisplayMode = settings.vault.entryHierarchyDisplayMode
                 ),
                 interaction = VaultInteractionConfig(
                     isSwipeEnabled = settings.interaction.isSwipeEnabled,

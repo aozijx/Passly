@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -21,10 +22,12 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.sliderSettingsGroupItem
+import com.aozijx.passly.core.ui.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import kotlin.math.roundToInt
 
 @Composable
@@ -38,7 +41,8 @@ internal fun InterfaceDetail(
     onGroupItemSpacingChange: (Float) -> Unit,
     onGroupContentPaddingChange: (Float) -> Unit,
     onVisibleVaultTabsChange: (Set<String>) -> Unit,
-    onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit
+    onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit,
+    onEntryHierarchyDisplayModeChange: (EntryHierarchyDisplayMode) -> Unit
 ) {
     var outerRadius by remember(state.outerCornerRadiusDp) {
         mutableFloatStateOf(state.outerCornerRadiusDp)
@@ -52,6 +56,7 @@ internal fun InterfaceDetail(
     var contentPadding by remember(state.groupContentPaddingDp) {
         mutableFloatStateOf(state.groupContentPaddingDp)
     }
+    var showHierarchyModeMenu by remember { mutableStateOf(false) }
 
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -188,6 +193,33 @@ internal fun InterfaceDetail(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        SettingsSectionTitle(
+            text = stringResource(R.string.settings_interface_entry_hierarchy_section)
+        )
+        RoundedGroup(
+            items = listOf(
+                dropdownSettingsGroupItem(
+                    key = "interface.entry_hierarchy_display_mode",
+                    icon = Icons.Default.SpaceDashboard,
+                    title = stringResource(
+                        R.string.settings_interface_entry_hierarchy_display_mode
+                    ),
+                    selected = state.entryHierarchyDisplayMode,
+                    selectedLabel = stringResource(
+                        state.entryHierarchyDisplayMode.labelResource()
+                    ),
+                    options = EntryHierarchyDisplayMode.entries.map {
+                        it to stringResource(it.labelResource())
+                    },
+                    expanded = showHierarchyModeMenu,
+                    onExpandedChange = { showHierarchyModeMenu = it },
+                    onSelect = onEntryHierarchyDisplayModeChange
+                )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         VaultTabsSettingsSection(
             visibleVaultTabs = state.visibleVaultTabs,
             tabBarMaxTabsWithoutScroll = state.tabBarMaxTabsWithoutScroll,
@@ -195,4 +227,15 @@ internal fun InterfaceDetail(
             onVisibleVaultTabsChange = onVisibleVaultTabsChange
         )
     }
+}
+
+private fun EntryHierarchyDisplayMode.labelResource(): Int = when (this) {
+    EntryHierarchyDisplayMode.COLLAPSED ->
+        R.string.settings_interface_entry_hierarchy_collapsed
+
+    EntryHierarchyDisplayMode.EXPANDED ->
+        R.string.settings_interface_entry_hierarchy_expanded
+
+    EntryHierarchyDisplayMode.SEPARATE ->
+        R.string.settings_interface_entry_hierarchy_separate
 }

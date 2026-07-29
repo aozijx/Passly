@@ -269,4 +269,5 @@
     <string name="auth_purpose_export_diagnostics">Verify to export diagnostics</string>
     <string name="auth_purpose_recover_database">Verify to preserve the failed database and create a new one</string>
     <string name="auth_purpose_clear_database">Verify to clear vault data</string>
+    <string name="related_entries">Related entries</string>
 </resources>

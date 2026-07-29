@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.service.EntrySecretPolicy
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 
@@ -37,14 +38,37 @@ class CreateEntryExecutor @Inject constructor(
             val now = clock.now()
             val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
 
+            EntrySecretPolicy.requireValid(entry.entryType, entry.secret)
             val metaBlob = summaryCodec.encrypt(entry.summary, entryId)
             val credBlob = secretCodec.encrypt(entry.secret, entryId)
 
             val capabilityFlags = EntryCapabilityFlags.computeFrom(entry.secret)
             val otpType = EntryCapabilityFlags.otpTypeFrom(entry.secret)
 
+            if (entry.entryType == com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT) {
+                require(entry.parentEntryId == null) {
+                    "An ACCOUNT entry cannot have a parent"
+                }
+            }
+            entry.parentEntryId?.let { parentEntryId ->
+                val parent = requireNotNull(entryQueryDao().getById(parentEntryId)) {
+                    "Parent account entry does not exist: $parentEntryId"
+                }
+                require(parent.entryType == com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT) {
+                    "Parent entry must be an ACCOUNT"
+                }
+                require(parent.parentEntryId == null) {
+                    "An ACCOUNT parent cannot itself be a child"
+                }
+                require(parent.vaultId == entry.vaultId) {
+                    "Child and parent must belong to the same vault"
+                }
+            }
+
             val metaEntity = EntryEntity(
                 entryId = entryId,
+                vaultId = entry.vaultId,
+                parentEntryId = entry.parentEntryId,
                 entryType = entry.entryType,
                 capabilityFlags = capabilityFlags,
                 otpType = otpType,

@@ -28,6 +28,8 @@ object EntryListItemMapper {
         usageCount = 0,
         entryVersion = entity.version,
         capabilityFlags = entity.capabilityFlags,
-        otpTypeName = entity.otpType ?: ""
+        otpTypeName = entity.otpType ?: "",
+        vaultId = entity.vaultId,
+        parentEntryId = entity.parentEntryId
     )
 }

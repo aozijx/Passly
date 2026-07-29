@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "c272bdc1a92cee56ebc9bab97a7b9413",
+    "identityHash": "c5e3738d60e560cf79c1cde320fbeabb",
     "entities": [
       {
         "tableName": "vault_entries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `vaultId` TEXT NOT NULL, `entryType` TEXT NOT NULL, `version` INTEGER NOT NULL, `capabilityFlags` INTEGER NOT NULL, `otpType` TEXT, `searchIndexVersion` INTEGER NOT NULL, `summaryBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `vaultId` TEXT NOT NULL, `parentEntryId` TEXT, `entryType` TEXT NOT NULL, `version` INTEGER NOT NULL, `capabilityFlags` INTEGER NOT NULL, `otpType` TEXT, `searchIndexVersion` INTEGER NOT NULL, `summaryBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`), FOREIGN KEY(`parentEntryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "entryId",
@@ -19,6 +19,11 @@
             "columnName": "vaultId",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "parentEntryId",
+            "columnName": "parentEntryId",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "entryType",
@@ -110,6 +115,30 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_deletedAt_createdAt` ON `${TABLE_NAME}` (`deletedAt`, `createdAt`)"
+          },
+          {
+            "name": "index_vault_entries_parentEntryId_deletedAt_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "parentEntryId",
+              "deletedAt",
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_parentEntryId_deletedAt_updatedAt` ON `${TABLE_NAME}` (`parentEntryId`, `deletedAt`, `updatedAt`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "vault_entries",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "parentEntryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
           }
         ]
       },
@@ -587,7 +616,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c272bdc1a92cee56ebc9bab97a7b9413')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c5e3738d60e560cf79c1cde320fbeabb')"
     ]
   }
 }

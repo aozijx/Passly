@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.entry.model
 
 enum class EntryType(val displayName: String) {
+    ACCOUNT("账户"),
     LOGIN("登录"),
     NOTE("笔记"),
     CARD("卡片"),

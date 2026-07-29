@@ -53,6 +53,8 @@ class BackupDocumentMapper @Inject constructor() {
         attachmentIds: List<String> = emptyList()
     ): BackupEntryRecord = BackupEntryRecord(
         id = entry.id,
+        vaultId = entry.vaultId,
+        parentEntryId = entry.parentEntryId,
         type = entry.entryType.name,
         version = entry.entryVersion,
         createdAt = entry.createdAt,
@@ -71,7 +73,9 @@ class BackupDocumentMapper @Inject constructor() {
             version = EntryVersion(record.version),
             createdAt = record.createdAt,
             updatedAt = record.updatedAt,
-            deletedAt = record.deletedAt
+            deletedAt = record.deletedAt,
+            vaultId = record.vaultId,
+            parentEntryId = record.parentEntryId
         ),
         summary = EntrySummaryMapper.toDomain(record.summary.toPayload()),
         secret = EntrySecretMapper.toDomain(record.secret.toPayload())

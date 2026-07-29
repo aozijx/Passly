@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.entry.model.EntryChanges
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
@@ -11,6 +12,7 @@ import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
+import com.aozijx.passly.domain.entry.repository.EntryHierarchyRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import com.aozijx.passly.domain.entry.repository.FaviconRepository
 import com.aozijx.passly.domain.entry.service.EntryTypePolicy
@@ -35,6 +37,7 @@ class DetailViewModel @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
     private val activityQueryRepository: ActivityQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
+    private val entryHierarchyRepository: EntryHierarchyRepository,
     private val activityRecorder: ActivityRecorder,
     private val faviconRepository: FaviconRepository,
     private val entryTypePolicy: EntryTypePolicy,
@@ -73,6 +76,7 @@ class DetailViewModel @Inject constructor(
                     val latest =
                         entryQueryRepository.getById(event.initialEntry.id) ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
+                    loadRelatedEntries(latest)
                     autoDownloadFavicon(latest)
                 }
 
@@ -204,6 +208,25 @@ class DetailViewModel @Inject constructor(
                     }
             }
         }
+    }
+
+    private suspend fun loadRelatedEntries(entry: VaultEntry) {
+        val accountId = if (entry.entryType == EntryType.ACCOUNT) {
+            entry.id
+        } else {
+            entry.parentEntryId
+        }
+        if (accountId == null) {
+            _uiState.update { it.copy(relatedEntries = emptyList()) }
+            return
+        }
+        val account = entryQueryRepository.getById(accountId)
+        val children = entryHierarchyRepository.getChildren(accountId)
+        val related = buildList {
+            if (account != null && account.id != entry.id) add(account)
+            children.filterTo(this) { it.id != entry.id }
+        }
+        _uiState.update { it.copy(relatedEntries = related) }
     }
 
     private suspend fun downloadFavicon(input: String): FaviconOutcome {

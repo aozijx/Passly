@@ -115,8 +115,21 @@ data class VaultViewSettings(
     val maxTabsWithoutScroll: Int = 4,
     val visibleTabs: VisibleTabsConfig? = null,
     val sort: VaultSortSpec = VaultSortSpec.DEFAULT,
-    val entryCardPresentations: List<EntryCardPresentation> = emptyList()
+    val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
+    val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
+        EntryHierarchyDisplayMode.COLLAPSED
 )
+
+enum class EntryHierarchyDisplayMode(val key: String) {
+    COLLAPSED("collapsed"),
+    EXPANDED("expanded"),
+    SEPARATE("separate");
+
+    companion object {
+        fun fromKey(key: String?): EntryHierarchyDisplayMode =
+            entries.firstOrNull { it.key == key } ?: COLLAPSED
+    }
+}
 
 data class VisibleTabsConfig(
     val tabKeys: Set<String>,

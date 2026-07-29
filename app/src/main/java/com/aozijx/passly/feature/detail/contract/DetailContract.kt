@@ -15,7 +15,8 @@ data class DetailUiState(
     val strategyReady: Boolean = false,
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<String, String> = emptyMap(),
-    val history: List<EntryActivity> = emptyList()
+    val history: List<EntryActivity> = emptyList(),
+    val relatedEntries: List<VaultEntry> = emptyList()
 ) {
     fun revealed(key: String): String? = revealedFields[key]
 }

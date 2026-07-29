@@ -21,7 +21,12 @@ import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.secret.CardSecret
+import com.aozijx.passly.domain.entry.model.secret.IdentitySecret
 import com.aozijx.passly.domain.entry.model.secret.LoginSecret
+import com.aozijx.passly.domain.entry.model.secret.PasskeySecret
+import com.aozijx.passly.domain.entry.model.secret.SshSecret
+import com.aozijx.passly.domain.entry.model.secret.WifiSecret
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -40,9 +45,9 @@ fun AddGenericEntryDialog(
         AddType.WIFI -> EntryType.WIFI
         AddType.SSH_KEY -> EntryType.SSH_KEY
         AddType.ID_CARD -> EntryType.ID_CARD
-        AddType.SEED_PHRASE -> EntryType.LOGIN
-        AddType.PASSKEY -> EntryType.LOGIN
-        AddType.RECOVERY_CODE -> EntryType.LOGIN
+        AddType.SEED_PHRASE -> EntryType.SEED_PHRASE
+        AddType.PASSKEY -> EntryType.PASSKEY
+        AddType.RECOVERY_CODE -> EntryType.RECOVERY_CODE
         else -> EntryType.LOGIN
     }
 
@@ -65,10 +70,9 @@ fun AddGenericEntryDialog(
                         username = state.username,
                         icon = null
                     ),
-                    EntrySecret(
-                        login = LoginSecret(
-                            password = state.password
-                        ),
+                    secretFor(
+                        type = entryTypeValue,
+                        value = state.password,
                         notes = state.notes.ifBlank { null }
                     )
                 )
@@ -114,4 +118,34 @@ fun AddGenericEntryDialog(
             availableCategories = uiState.availableCategories
         )
     }
+}
+
+private fun secretFor(type: EntryType, value: String, notes: String?): EntrySecret = when (type) {
+    EntryType.BANK_CARD, EntryType.CARD ->
+        EntrySecret(card = CardSecret(cardNumber = value), notes = notes)
+
+    EntryType.WIFI ->
+        EntrySecret(wifi = WifiSecret(password = value), notes = notes)
+
+    EntryType.SSH_KEY ->
+        EntrySecret(ssh = SshSecret(privateKey = value), notes = notes)
+
+    EntryType.ID_CARD, EntryType.IDENTITY, EntryType.PASSPORT, EntryType.LICENSE ->
+        EntrySecret(identity = IdentitySecret(idNumber = value), notes = notes)
+
+    EntryType.SEED_PHRASE ->
+        EntrySecret(identity = IdentitySecret(seedPhrase = value), notes = notes)
+
+    EntryType.RECOVERY_CODE ->
+        EntrySecret(
+            identity = IdentitySecret(
+                recoveryCodes = value.lines().map(String::trim).filter(String::isNotEmpty)
+            ),
+            notes = notes
+        )
+
+    EntryType.PASSKEY ->
+        EntrySecret(passkey = PasskeySecret(privateKeyReference = value), notes = notes)
+
+    else -> EntrySecret(login = LoginSecret(password = value), notes = notes)
 }

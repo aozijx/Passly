@@ -200,6 +200,7 @@ fun VaultContent(
             pagerState = pagerState,
             uiState = uiState,
             entryCardPresentations = entryCardPresentations,
+            hierarchyDisplayMode = vaultDisplayConfig.style.entryHierarchyDisplayMode,
             totpStates = vaultViewModel.totpStatesFlow,
             swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
             swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,

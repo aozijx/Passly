@@ -149,6 +149,8 @@ class TextVaultRenderer @Inject constructor() {
         // 技术信息（仅在显式开启时输出）
         if (options.includeTechnicalInfo) {
             appendField(sb, "条目 ID", entry.id)
+            appendField(sb, "保险库 ID", entry.vaultId)
+            appendField(sb, "父账户条目 ID", entry.parentEntryId)
             appendField(sb, "版本", entry.version.toString())
             appendField(sb, "创建时间", formatTimestamp(entry.createdAt))
             appendField(sb, "更新时间", formatTimestamp(entry.updatedAt))

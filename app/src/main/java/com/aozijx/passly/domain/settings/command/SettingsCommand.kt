@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.notice.model.NoticeTopic
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.ExportFormat
 import com.aozijx.passly.domain.settings.model.FallbackPalette
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
@@ -68,6 +69,9 @@ sealed interface SettingsCommand {
     data class SetVaultSortOption(val sort: VaultSortSpec) : SettingsCommand
     data class SetEntryCardPresentation(val presentation: EntryCardPresentation) : SettingsCommand
     data class RemoveEntryCardPresentation(val entryTypeKey: String) : SettingsCommand
+    data class SetEntryHierarchyDisplayMode(
+        val mode: EntryHierarchyDisplayMode
+    ) : SettingsCommand
 
     // Messages
     data class SetOptionalMessagesEnabled(val enabled: Boolean) : SettingsCommand

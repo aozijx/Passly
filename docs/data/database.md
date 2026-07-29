@@ -22,7 +22,7 @@ flowchart TB
 
 | 表 | 用途 |
 |---|---|
-| `vault_entries` | 条目身份、结构类型、能力位、时间戳和加密 `summaryBlob` |
+| `vault_entries` | 条目身份、结构类型、自关联父账户、能力位、时间戳和加密 `summaryBlob` |
 | `entry_secrets` | 一条条目对应的一份加密 `secretBlob` |
 | `entry_revisions` | 完整的加密历史快照 |
 | `entry_activities` | 查看、复制、使用等审计/统计事件，不用于恢复 |
@@ -39,11 +39,16 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `app/schemas`�
   `LOGIN`。
 - `vaultId` 当前默认值为 `default`，预留给多保险库/工作区隔离。它既不是用户分类，也不是
   “同一账户的多种密码集合”。当前数据库仍是单保险库实现。
+- `ACCOUNT` 是没有敏感 payload 的账户容器 Entry；`LOGIN`、`OTP`、`PASSKEY` 等凭据仍是
+  独立 Entry，通过 `parentEntryId` 外键指向同一保险库内的 `ACCOUNT`。一个凭据最多属于一个
+  账户，一个账户可包含任意多个凭据；`parentEntryId = null` 表示独立凭据。
+- `parentEntryId` 使用 `ON DELETE SET NULL`。删除账户容器只会将子凭据转为独立条目，不会级联
+  删除密码、OTP 或 Passkey；`ACCOUNT` 本身禁止再成为其他账户的子项。
 - 当前 UI 中名为 category 的筛选值实际直接来自 `entryType.name`。这意味着**自定义分类尚未实现**，
   也说明现有命名发生了概念混用。后续自定义分类应使用独立 `categoryId`/关联表；`tags` 继续用于
   多值标签，不能复用 `entryType`。
-- `capabilityFlags` 表示一个条目实际具有的能力（密码、OTP、附件等），用于表达“登录 + OTP”
-  这类组合，不能再制造一个新的混合 `entryType`。
+- `capabilityFlags` 表示一个原子条目实际具有的能力（密码、OTP、附件等），用于列表和详情快速
+  判断，不表示跨条目的账户组合，也不能替代 `entryType` 或 `parentEntryId`。
 
 ## Blob 与 `color`
 
@@ -61,7 +66,7 @@ Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
 
 ## 历史与附件体积策略
 
-- 历史采用完整快照而非 diff。唯一格式为 `rev2:` + Base64(GZIP(snapshot))，再执行
+- 历史采用完整快照而非 diff。唯一格式为 `rev1:` + Base64(GZIP(snapshot))，再执行
   AES-GCM；不保留原始未版本化快照的转换兼容。解压设置 8 MiB 上限，组件长度也会校验，避免损坏数据
   导致超大分配。
 - 附件正文不进入 Room Blob，而是保存为 `filesDir/attachments/<entryId>/<attachmentId>.enc`；
@@ -82,6 +87,8 @@ stateDiagram-v2
 - 错误密钥或 Schema 不匹配必须返回明确错误，禁止自动删库。
 - 锁定顺序为：拒绝新操作 → 关闭数据库 → 擦除 DEK 与会话密钥。
 - 导入的覆盖/合并操作必须在事务中完成，失败整体回滚。
+- 当前开发期 Room Schema、Secret Payload、Revision 和 Backup Document 均从版本 `1` 重新开始；
+  不提供旧字段转换或旧开发库迁移。安装已有开发版本时必须清除应用数据后再启动。
 - 数据库关闭超时不能制造“已关闭”的假象；详见[代码审查](../reviews/2026-07-code-review.md)。
 
 ## 初始化失败恢复

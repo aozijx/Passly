@@ -13,6 +13,7 @@ import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.service.EntrySecretPolicy
 import javax.inject.Inject
 
 /**
@@ -44,6 +45,7 @@ class UpdateEntryExecutor @Inject constructor(
         val newSummary = changes.summary ?: oldSummary
         val newSecret = changes.secret ?: (oldSecret ?: EntrySecret())
         val now = clock.now()
+        EntrySecretPolicy.requireValid(metaEntity.entryType, newSecret)
 
         // 1. 版本校验 + metadata 更新（原子操作）
         val metaBlob = summaryCodec.encrypt(newSummary, id)

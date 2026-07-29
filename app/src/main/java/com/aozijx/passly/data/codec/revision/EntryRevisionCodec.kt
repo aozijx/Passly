@@ -85,7 +85,7 @@ class EntryRevisionCodec @Inject constructor(
             .toByteArray(Charsets.UTF_8)
         val payload = RevisionPayload(summaryJson, secretJson)
         val compressed = gzip(payload.toBytes())
-        val encoded = FORMAT_V2_PREFIX + Base64.getEncoder().encodeToString(compressed)
+        val encoded = FORMAT_V1_PREFIX + Base64.getEncoder().encodeToString(compressed)
         return fieldEncryptor.encrypt(
             encoded,
             AadProvider.revision(entryId)
@@ -97,10 +97,10 @@ class EntryRevisionCodec @Inject constructor(
         entryId: String
     ): Pair<EntrySummary, EntrySecret> {
         val encoded = fieldEncryptor.decrypt(blob, AadProvider.revision(entryId))
-        require(encoded.startsWith(FORMAT_V2_PREFIX)) {
+        require(encoded.startsWith(FORMAT_V1_PREFIX)) {
             "Unsupported revision snapshot format"
         }
-        val compressed = Base64.getDecoder().decode(encoded.removePrefix(FORMAT_V2_PREFIX))
+        val compressed = Base64.getDecoder().decode(encoded.removePrefix(FORMAT_V1_PREFIX))
         val payloadBytes = gunzip(compressed)
         val revisionPayload = RevisionPayload.fromBytes(payloadBytes)
         val summary = AppJson.decodeFromString(
@@ -136,7 +136,7 @@ class EntryRevisionCodec @Inject constructor(
         }
 
     private companion object {
-        const val FORMAT_V2_PREFIX = "rev2:"
+        const val FORMAT_V1_PREFIX = "rev1:"
         const val MAX_REVISION_BYTES = 8 * 1024 * 1024
     }
 }

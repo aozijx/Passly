@@ -104,10 +104,11 @@ data class CustomFieldPayload(
 // --- Flat root payload ---
 
 /**
- * 扁平化凭据载荷。
+ * 原子凭据载荷。
  *
- * 所有字段均为可选，支持同时存储多种凭据类型（如登录 + OTP）。
- * 兼容旧版密封类序列化可以通过 [schemaVersion] 判断。
+ * [EntryEntity.entryType] is the discriminator. Repository policy permits at
+ * most one typed payload slot; notes and custom fields are common extensions.
+ * The reset development schema starts again at payload version 1.
  */
 @Serializable
 data class SecretPayload(
@@ -120,5 +121,5 @@ data class SecretPayload(
     val passkey: PasskeySecretPayload? = null,
     val otp: OtpSecretPayload? = null,
     val customFields: List<CustomFieldPayload> = emptyList(),
-    val schemaVersion: Int = 2
+    val schemaVersion: Int = 1
 )

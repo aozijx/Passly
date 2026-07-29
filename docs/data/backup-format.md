@@ -92,6 +92,8 @@ Registry 按内容评分选择唯一适配器；无法识别或同分歧义时�
 | 字段              | 类型           | 必需 | 约束                          |
 |-----------------|--------------|---:|-----------------------------|
 | `id`            | string       |  是 | `[A-Za-z0-9_-]{1,160}`，全局唯一 |
+| `vaultId`       | string       |  是 | 所属保险库；v1 当前为 `default`      |
+| `parentEntryId` | string       |  否 | 父 `ACCOUNT` 条目；省略表示独立条目    |
 | `type`          | string       |  是 | Passly `EntryType` 名称       |
 | `version`       | integer      |  是 | `>= 1`                      |
 | `createdAt`     | epoch millis |  是 | `>= 0`                      |
@@ -115,7 +117,8 @@ Registry 按内容评分选择唯一适配器；无法识别或同分歧义时�
 
 ### 4.4 Secret
 
-`secret` 是可组合对象，同一条目可以同时拥有 Login、OTP 和其他能力：
+`secret` 是原子凭据对象。以下 typed payload 中每个 Entry 最多只能出现一个，并且必须与
+`type` 对应；`notes` 和 `customFields` 是该凭据的通用扩展：
 
 | 对象         | 字段                                                                                   |
 |------------|--------------------------------------------------------------------------------------|
@@ -129,6 +132,11 @@ Registry 按内容评分选择唯一适配器；无法识别或同分歧义时�
 | 根字段        | `notes`, `customFields[]`                                                            |
 
 `customFields[]` 包含 `name`、`value`、`type`。
+
+同一账户的 Login、OTP、Passkey 等能力必须导出为独立 Entry。它们通过
+`parentEntryId` 指向一个 `type = "ACCOUNT"`、`secret = {}` 的账户容器。父账户必须位于
+同一 `vaultId`，不能再拥有父账户。导入按 `ACCOUNT` 优先顺序恢复；无效引用、混合 payload
+或跨保险库引用会使整个导入失败，不会静默丢弃关系。
 
 OTP config：
 

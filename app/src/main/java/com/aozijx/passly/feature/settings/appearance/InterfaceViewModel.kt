@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +24,8 @@ data class InterfaceUiState(
     val groupContentPaddingDp: Float = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP,
     val visibleVaultTabs: Set<String>? = null,
     val tabBarMaxTabsWithoutScroll: Int = 4,
+    val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
+        EntryHierarchyDisplayMode.COLLAPSED,
 )
 
 sealed interface InterfaceUiAction {
@@ -35,6 +38,9 @@ sealed interface InterfaceUiAction {
     data class SetGroupContentPadding(val paddingDp: Float) : InterfaceUiAction
     data class SetVisibleVaultTabs(val tabs: Set<String>) : InterfaceUiAction
     data class SetMaxTabsWithoutScroll(val maxTabs: Int) : InterfaceUiAction
+    data class SetEntryHierarchyDisplayMode(
+        val mode: EntryHierarchyDisplayMode
+    ) : InterfaceUiAction
 }
 
 @HiltViewModel
@@ -54,7 +60,8 @@ class InterfaceViewModel @Inject constructor(
                 groupItemSpacingDp = prefs.groupItemSpacingDp,
                 groupContentPaddingDp = prefs.groupContentPaddingDp,
                 visibleVaultTabs = settings.vault.visibleTabs?.tabKeys,
-                tabBarMaxTabsWithoutScroll = settings.vault.maxTabsWithoutScroll
+                tabBarMaxTabsWithoutScroll = settings.vault.maxTabsWithoutScroll,
+                entryHierarchyDisplayMode = settings.vault.entryHierarchyDisplayMode
             )
         }
         .stateIn(
@@ -99,6 +106,12 @@ class InterfaceViewModel @Inject constructor(
 
             is InterfaceUiAction.SetMaxTabsWithoutScroll -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetMaxTabsWithoutScroll(action.maxTabs))
+            }
+
+            is InterfaceUiAction.SetEntryHierarchyDisplayMode -> viewModelScope.launch {
+                settingsRepository.update(
+                    SettingsCommand.SetEntryHierarchyDisplayMode(action.mode)
+                )
             }
         }
     }

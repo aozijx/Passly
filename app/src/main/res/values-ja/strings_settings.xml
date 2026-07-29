@@ -74,6 +74,11 @@
     <string name="settings_interface_top_bar_collapsible">トップバーを折りたたむ</string>
     <string name="settings_interface_top_bar_collapsible_description">スクロール時にトップバーを収縮</string>
     <string name="settings_interface_vault_tabs_section">保管庫タブ</string>
+    <string name="settings_interface_entry_hierarchy_section">関連アカウント</string>
+    <string name="settings_interface_entry_hierarchy_display_mode">関連エントリの表示</string>
+    <string name="settings_interface_entry_hierarchy_collapsed">折りたたむ</string>
+    <string name="settings_interface_entry_hierarchy_expanded">展開</string>
+    <string name="settings_interface_entry_hierarchy_separate">個別表示</string>
 
     <!-- Security and recovery -->
     <string name="settings_app_password_change_action">パスワードを変更</string>

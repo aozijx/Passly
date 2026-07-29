@@ -29,7 +29,7 @@ class OtpEntryFactoryTest {
         )
 
         val config = requireNotNull(entry.secret.otp?.config)
-        assertEquals(EntryType.LOGIN, entry.entryType)
+        assertEquals(EntryType.OTP, entry.entryType)
         assertEquals("Example", entry.summary.title)
         assertEquals("user@example.com", entry.summary.username)
         assertEquals("example.com", entry.summary.website?.primaryUrl)

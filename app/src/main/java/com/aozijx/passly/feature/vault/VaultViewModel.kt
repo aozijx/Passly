@@ -132,7 +132,7 @@ class VaultViewModel @Inject constructor(
             val entry = VaultEntry(
                 header = EntryHeader(
                     id = EntryId(""),
-                    entryType = EntryType.LOGIN,
+                    entryType = EntryType.OTP,
                     version = EntryVersion.INITIAL,
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()

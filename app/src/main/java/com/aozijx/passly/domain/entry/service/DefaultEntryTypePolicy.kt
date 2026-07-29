@@ -22,6 +22,10 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
     )
 
     private val configs: Map<EntryType, PolicyConfig> = mapOf(
+        EntryType.ACCOUNT to PolicyConfig(
+            suggestedCategory = "账户",
+            summaryExtractor = { "关联账户" }
+        ),
         EntryType.LOGIN to PolicyConfig(
             supportsAutofill = true,
             suggestedCategory = "账户",

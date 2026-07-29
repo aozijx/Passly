@@ -29,15 +29,15 @@ class DetailSectionResolverTest {
     }
 
     @Test
-    fun `mixed entry adds passkey component from structured secret capability`() {
+    fun `passkey entry adds passkey component without login credential section`() {
         val sections = DetailSectionResolver.resolve(
             entry(
-                type = EntryType.LOGIN,
+                type = EntryType.PASSKEY,
                 secret = EntrySecret(passkey = PasskeySecret(privateKeyReference = "key-ref")),
             )
         )
 
-        assertTrue(DetailSectionKey.CREDENTIAL in sections)
+        assertFalse(DetailSectionKey.CREDENTIAL in sections)
         assertTrue(DetailSectionKey.PASSKEY in sections)
     }
 

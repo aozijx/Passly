@@ -27,6 +27,7 @@ import com.aozijx.passly.core.ui.components.widgets.SwipeToAction
 import com.aozijx.passly.core.ui.components.widgets.createSwipeAction
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
@@ -41,6 +42,7 @@ fun VaultPagerContent(
     pagerState: PagerState,
     uiState: VaultUiState,
     entryCardPresentations: List<EntryCardPresentation>,
+    hierarchyDisplayMode: EntryHierarchyDisplayMode,
     totpStates: StateFlow<Map<String, OtpUiState>>,
     swipeLeftAction: SwipeActionType,
     swipeRightAction: SwipeActionType,
@@ -62,7 +64,10 @@ fun VaultPagerContent(
         }
     ) { pageIndex ->
         val currentTab = uiState.visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
-        val displayItems = uiState.vaultItemsByTab[currentTab] ?: emptyList()
+        val displayItems = arrangeEntryHierarchy(
+            entries = uiState.vaultItemsByTab[currentTab].orEmpty(),
+            mode = hierarchyDisplayMode
+        )
 
         if (displayItems.isEmpty()) {
             if (!uiState.isVaultItemsLoading) EmptyVaultPlaceholder()

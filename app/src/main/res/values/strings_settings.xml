@@ -74,6 +74,11 @@
     <string name="settings_interface_top_bar_collapsible">标题栏滚动</string>
     <string name="settings_interface_top_bar_collapsible_description">上滑时收缩标题以获得更多视野</string>
     <string name="settings_interface_vault_tabs_section">保险箱 Tab</string>
+    <string name="settings_interface_entry_hierarchy_section">关联账户</string>
+    <string name="settings_interface_entry_hierarchy_display_mode">关联条目展示</string>
+    <string name="settings_interface_entry_hierarchy_collapsed">折叠</string>
+    <string name="settings_interface_entry_hierarchy_expanded">展开</string>
+    <string name="settings_interface_entry_hierarchy_separate">分开</string>
 
     <!-- Security and recovery -->
     <string name="settings_app_password_change_action">修改密码</string>

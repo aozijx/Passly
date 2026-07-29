@@ -28,6 +28,7 @@ import com.aozijx.passly.feature.detail.sections.IdCardSection
 import com.aozijx.passly.feature.detail.sections.NotesSection
 import com.aozijx.passly.feature.detail.sections.PasskeySection
 import com.aozijx.passly.feature.detail.sections.SeedPhraseSection
+import com.aozijx.passly.feature.detail.sections.RelatedEntriesSection
 import com.aozijx.passly.feature.detail.sections.SshKeySection
 import com.aozijx.passly.feature.detail.sections.TotpSection
 import com.aozijx.passly.feature.detail.sections.WifiSection
@@ -42,7 +43,8 @@ fun DetailScrollableContent(
     onEvent: (DetailIntent) -> Unit,
     onInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onAuthenticate: DetailAuthenticate
+    onAuthenticate: DetailAuthenticate,
+    onOpenRelatedEntry: (VaultEntry) -> Unit
 ) {
     val entry = uiState.entry ?: return
     val registeredSections = DetailSectionResolver.resolve(entry)
@@ -172,6 +174,15 @@ fun DetailScrollableContent(
                     onRevealField = revealField,
                     onAuthenticate = onAuthenticate,
                     onEvent = onEvent,
+                )
+            }
+        }
+
+        if (uiState.relatedEntries.isNotEmpty()) {
+            item {
+                RelatedEntriesSection(
+                    entries = uiState.relatedEntries,
+                    onOpenEntry = onOpenRelatedEntry
                 )
             }
         }

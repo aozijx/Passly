@@ -34,8 +34,12 @@ internal object BackupBundleValidator {
         }
 
         val entryIds = document.entries.mapTo(hashSetOf()) { it.id }
+        val entriesById = document.entries.associateBy { it.id }
         val resourceIds = document.resources.mapTo(hashSetOf()) { it.id }
-        require(entryIds.all(SAFE_ID::matches) && resourceIds.all(SAFE_ID::matches)) {
+        require(
+            entryIds.all(SAFE_ID::matches) &&
+                resourceIds.all(SAFE_ID::matches)
+        ) {
             "备份包含不安全的条目或资源 ID"
         }
         require(document.resources.all { it.entryId in entryIds }) {
@@ -43,7 +47,30 @@ internal object BackupBundleValidator {
         }
         val validTypes = EntryType.entries.mapTo(hashSetOf()) { it.name }
         document.entries.forEach { entry ->
+            require(SAFE_ID.matches(entry.vaultId)) { "条目保险库 ID 无效: ${entry.id}" }
             require(entry.type in validTypes) { "未知条目类型: ${entry.type}" }
+            entry.parentEntryId?.let { parentEntryId ->
+                require(parentEntryId != entry.id) { "条目不能关联自身: ${entry.id}" }
+                val parent = requireNotNull(entriesById[parentEntryId]) {
+                    "条目引用了不存在的父账户: ${entry.id}"
+                }
+                require(parent.type == EntryType.ACCOUNT.name) {
+                    "父条目必须是 ACCOUNT: ${entry.id}"
+                }
+                require(parent.parentEntryId == null) {
+                    "ACCOUNT 父条目不能再关联父账户: ${parent.id}"
+                }
+                require(parent.vaultId == entry.vaultId) {
+                    "子条目与父账户不属于同一保险库: ${entry.id}"
+                }
+            }
+            if (entry.type == EntryType.ACCOUNT.name) {
+                require(entry.parentEntryId == null) { "ACCOUNT 不能作为子条目: ${entry.id}" }
+                require(entry.secret == com.aozijx.passly.data.backup.model.BackupSecretRecord()) {
+                    "ACCOUNT 不能包含敏感 payload: ${entry.id}"
+                }
+            }
+            requireAtomicSecret(entry)
             require(entry.version >= 1) { "条目版本无效: ${entry.id}" }
             require(entry.createdAt >= 0 && entry.updatedAt >= entry.createdAt) {
                 "条目时间无效: ${entry.id}"
@@ -125,4 +152,45 @@ internal object BackupBundleValidator {
         MessageDigest.getInstance("SHA-256")
             .digest(data)
             .joinToString("") { "%02x".format(it) }
+
+    private fun requireAtomicSecret(
+        entry: com.aozijx.passly.data.backup.model.BackupEntryRecord
+    ) {
+        val secret = entry.secret
+        val populated = buildSet {
+            if (secret.login != null) add("login")
+            if (secret.card != null) add("card")
+            if (secret.identity != null) add("identity")
+            if (secret.ssh != null) add("ssh")
+            if (secret.wifi != null) add("wifi")
+            if (secret.passkey != null) add("passkey")
+            if (secret.otp != null) add("otp")
+        }
+        val allowed = when (EntryType.valueOf(entry.type)) {
+            EntryType.ACCOUNT, EntryType.NOTE -> null
+            EntryType.CARD, EntryType.BANK_CARD -> "card"
+            EntryType.IDENTITY,
+            EntryType.PASSPORT,
+            EntryType.LICENSE,
+            EntryType.ID_CARD,
+            EntryType.SEED_PHRASE,
+            EntryType.RECOVERY_CODE -> "identity"
+
+            EntryType.SSH_KEY -> "ssh"
+            EntryType.WIFI -> "wifi"
+            EntryType.PASSKEY -> "passkey"
+            EntryType.OTP -> "otp"
+            EntryType.LOGIN,
+            EntryType.DATABASE,
+            EntryType.SERVER,
+            EntryType.API_KEY,
+            EntryType.CRYPTO_WALLET -> "login"
+        }
+        require(populated.size <= 1) {
+            "条目包含多个凭据 payload: ${entry.id}"
+        }
+        require(populated.isEmpty() || populated.single() == allowed) {
+            "条目类型与凭据 payload 不匹配: ${entry.id}"
+        }
+    }
 }

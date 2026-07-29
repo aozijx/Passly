@@ -196,6 +196,11 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                         viewModel.onAction(
                             InterfaceUiAction.SetMaxTabsWithoutScroll(it)
                         )
+                    },
+                    onEntryHierarchyDisplayModeChange = {
+                        viewModel.onAction(
+                            InterfaceUiAction.SetEntryHierarchyDisplayMode(it)
+                        )
                     }
                 )
             }

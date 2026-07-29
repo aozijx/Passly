@@ -24,6 +24,9 @@ interface EntryQueryDao {
     @Query("SELECT * FROM vault_entries WHERE entryId IN (:entryIds) AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeActiveByIds(entryIds: List<String>): Flow<List<EntryEntity>>
 
+    @Query("SELECT * FROM vault_entries WHERE parentEntryId = :parentEntryId AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    fun observeActiveChildren(parentEntryId: String): Flow<List<EntryEntity>>
+
     @Query("SELECT DISTINCT entryType FROM vault_entries WHERE deletedAt IS NULL ORDER BY entryType")
     fun observeDistinctActiveEntryTypes(): Flow<List<EntryType>>
 
@@ -60,6 +63,9 @@ interface EntryQueryDao {
 
     @Query("SELECT * FROM vault_entries WHERE entryId IN (:entryIds)")
     suspend fun getByIds(entryIds: List<String>): List<EntryEntity>
+
+    @Query("SELECT * FROM vault_entries WHERE parentEntryId = :parentEntryId ORDER BY updatedAt DESC")
+    suspend fun getChildren(parentEntryId: String): List<EntryEntity>
 
     @Query("SELECT * FROM vault_entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getActiveByType(entryType: EntryType): List<EntryEntity>

@@ -53,11 +53,19 @@ class VaultBackupReader @Inject constructor(
             "At least one entry type must be selected"
         }
         return sessionManager.query {
-            val metadataEntities = entryQueryDao().getAll()
+            val eligibleEntities = entryQueryDao().getAll()
                 .asSequence()
                 .filter { includeDeleted || it.deletedAt == null }
-                .filter { it.entryType in includedEntryTypes }
                 .toList()
+            val selectedEntities = eligibleEntities.filter {
+                it.entryType in includedEntryTypes
+            }
+            val requiredParentIds = selectedEntities.mapNotNullTo(hashSetOf()) {
+                it.parentEntryId
+            }
+            val metadataEntities = eligibleEntities.filter {
+                it in selectedEntities || it.entryId in requiredParentIds
+            }
             val entryIds = metadataEntities.map { it.entryId }
             val credentialEntities = entrySecretQueryDao().getByEntryIds(entryIds)
             val credentialMap = credentialEntities.associateBy { it.entryId }
@@ -171,11 +179,18 @@ class VaultBackupReader @Inject constructor(
             }
 
             val now = System.currentTimeMillis()
+            val exportedEntryIds = entries.mapTo(hashSetOf()) { it.id }
             val entryRecords = entries.map { entry ->
                 documentMapper.toRecord(
                     entry = entry,
                     attachmentIds = attachmentIdsByEntry[entry.id].orEmpty()
-                )
+                ).let { record ->
+                    if (record.parentEntryId in exportedEntryIds) {
+                        record
+                    } else {
+                        record.copy(parentEntryId = null)
+                    }
+                }
             }
             val document = BackupDocument(
                 format = BackupDocument.FORMAT,

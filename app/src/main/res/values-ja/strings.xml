@@ -268,4 +268,5 @@
     <string name="auth_purpose_export_diagnostics">認証して診断情報をエクスポート</string>
     <string name="auth_purpose_recover_database">認証して障害データベースを保持し、新規作成</string>
     <string name="auth_purpose_clear_database">認証して金庫データを消去</string>
+    <string name="related_entries">関連エントリ</string>
 </resources>

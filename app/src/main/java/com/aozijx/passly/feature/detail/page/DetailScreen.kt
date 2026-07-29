@@ -38,7 +38,8 @@ fun DetailScreen(
     onUpdateInteraction: () -> Unit,
     onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAutoUnlockTotp: (VaultEntry) -> Unit,
-    onAuthenticate: DetailAuthenticate
+    onAuthenticate: DetailAuthenticate,
+    onOpenRelatedEntry: (VaultEntry) -> Unit
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -99,7 +100,8 @@ fun DetailScreen(
             onEvent = onEvent,
             onInteraction = onUpdateInteraction,
             onUpdateVaultEntry = onUpdateVaultEntry,
-            onAuthenticate = onAuthenticate
+            onAuthenticate = onAuthenticate,
+            onOpenRelatedEntry = onOpenRelatedEntry
         )
     }
 }

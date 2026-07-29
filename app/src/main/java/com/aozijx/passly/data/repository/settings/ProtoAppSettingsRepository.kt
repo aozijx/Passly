@@ -26,6 +26,7 @@ import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.BackupSettings
 import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.ExportFormat
 import com.aozijx.passly.domain.settings.model.FallbackPalette
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
@@ -407,7 +408,9 @@ class ProtoAppSettingsRepository @Inject constructor(
                 )
             } else null,
             sort = if (p.hasSort()) p.sort.toDomain() else VaultSortSpec.DEFAULT,
-            entryCardPresentations = p.entryCardPresentationsList.map { it.toDomain() }
+            entryCardPresentations = p.entryCardPresentationsList.map { it.toDomain() },
+            entryHierarchyDisplayMode =
+                EntryHierarchyDisplayMode.fromKey(p.entryHierarchyDisplayMode)
         )
     }
 
@@ -736,6 +739,12 @@ class ProtoAppSettingsRepository @Inject constructor(
                     existing.removeAll { it.entryTypeKey == command.entryTypeKey }
                     vb.clearEntryCardPresentations()
                     vb.addAllEntryCardPresentations(existing)
+                    b.setVaultView(vb)
+                }
+
+                is SettingsCommand.SetEntryHierarchyDisplayMode -> {
+                    val vb = proto.vaultView.toBuilder()
+                    vb.entryHierarchyDisplayMode = command.mode.key
                     b.setVaultView(vb)
                 }
 

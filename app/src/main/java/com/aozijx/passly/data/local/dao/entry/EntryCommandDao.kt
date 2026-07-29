@@ -66,4 +66,15 @@ interface EntryCommandDao {
 
     @Query("UPDATE vault_entries SET capabilityFlags = capabilityFlags & :retainedMask WHERE entryId = :entryId")
     suspend fun retainCapabilities(entryId: String, retainedMask: Int): Int
+
+    @Query("UPDATE vault_entries SET parentEntryId = :parentEntryId, version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion")
+    suspend fun updateParent(
+        entryId: String,
+        expectedVersion: Int,
+        parentEntryId: String?,
+        updatedAt: Long
+    ): Int
+
+    @Query("UPDATE vault_entries SET parentEntryId = NULL, version = version + 1, updatedAt = :updatedAt WHERE parentEntryId = :parentEntryId")
+    suspend fun clearParent(parentEntryId: String, updatedAt: Long): Int
 }

@@ -26,7 +26,9 @@ data class EntryListItem(
     val entryVersion: Int,
     val capabilityFlags: Int,
     /** OTP 类型名（TOTP/HOTP/STEAM），仅 [hasOtp] 为 true 时有意义。 */
-    val otpTypeName: String = ""
+    val otpTypeName: String = "",
+    val vaultId: String = "default",
+    val parentEntryId: String? = null
 ) : VaultIconable {
     val hasPassword: Boolean
         get() = EntryCapabilityFlags.has(capabilityFlags, EntryCapabilityFlags.HAS_PASSWORD)

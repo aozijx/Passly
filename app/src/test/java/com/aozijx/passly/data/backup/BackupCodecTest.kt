@@ -363,16 +363,21 @@ class BackupCodecTest {
 
         val detected = registry.importer(requestedFormat = null, payload = payload)
         val bundle = detected.decode(payload, password = null)
-        val entry = bundle.document.entries.single()
+        val account = bundle.document.entries.single { it.type == "ACCOUNT" }
+        val login = bundle.document.entries.single { it.type == "LOGIN" }
+        val otp = bundle.document.entries.single { it.type == "OTP" }
 
         assertEquals(BackupFormats.BITWARDEN_JSON, detected.formatId)
-        assertEquals("Bank", entry.summary.title)
-        assertEquals("alice", entry.summary.username)
-        assertEquals(listOf("Finance"), entry.summary.tags)
-        assertEquals("secret", entry.secret.login?.password)
-        assertEquals("JBSWY3DPEHPK3PXP", entry.secret.otp?.config?.secret)
-        assertEquals("Bank", entry.secret.otp?.config?.issuer)
-        assertEquals("1234", entry.secret.customFields.single().value)
+        assertEquals("Bank", account.summary.title)
+        assertEquals(BackupSecretRecord(), account.secret)
+        assertEquals(account.id, login.parentEntryId)
+        assertEquals(account.id, otp.parentEntryId)
+        assertEquals("alice", login.summary.username)
+        assertEquals(listOf("Finance"), login.summary.tags)
+        assertEquals("secret", login.secret.login?.password)
+        assertEquals("1234", login.secret.customFields.single().value)
+        assertEquals("JBSWY3DPEHPK3PXP", otp.secret.otp?.config?.secret)
+        assertEquals("Bank", otp.secret.otp?.config?.issuer)
     }
 
     @Test
@@ -458,6 +463,7 @@ class BackupCodecTest {
             entries = listOf(
                 BackupEntryRecord(
                     id = "wire-entry",
+                    vaultId = "default",
                     type = "LOGIN",
                     version = 1,
                     createdAt = 1,
@@ -469,7 +475,6 @@ class BackupCodecTest {
                     ),
                     secret = BackupSecretRecord(
                         login = BackupLoginSecret(password = "secret"),
-                        otp = BackupOtpSecret(BackupOtpConfig(secret = "JBSWY3DPEHPK3PXP")),
                         customFields = listOf(BackupCustomField("PIN", "1234"))
                     )
                 )
@@ -484,11 +489,20 @@ class BackupCodecTest {
         val secret = entry.getValue("secret").jsonObject
 
         assertEquals(
-            setOf("id", "type", "version", "createdAt", "updatedAt", "summary", "secret"),
+            setOf(
+                "id",
+                "vaultId",
+                "type",
+                "version",
+                "createdAt",
+                "updatedAt",
+                "summary",
+                "secret"
+            ),
             entry.keys
         )
         assertEquals(setOf("title", "username", "website"), summary.keys)
-        assertEquals(setOf("login", "otp", "customFields"), secret.keys)
+        assertEquals(setOf("login", "customFields"), secret.keys)
         assertFalse(BackupJson.encodeToString(document).contains("schemaVersion"))
         assertFalse(BackupJson.encodeToString(document).contains("iconCustomPath"))
     }
@@ -506,6 +520,67 @@ class BackupCodecTest {
 
         assertThrows(IllegalArgumentException::class.java) {
             BackupBundleValidator.validate(bundle, requireResourceData = false)
+        }
+    }
+
+    @Test
+    fun documentValidator_acceptsAccountHierarchy_andRejectsMixedPayload() {
+        val account = BackupEntryRecord(
+            id = "account-1",
+            type = "ACCOUNT",
+            version = 1,
+            createdAt = 1,
+            updatedAt = 1,
+            summary = BackupSummaryRecord("Example", ""),
+            secret = BackupSecretRecord()
+        )
+        val login = BackupEntryRecord(
+            id = "login-1",
+            parentEntryId = account.id,
+            type = "LOGIN",
+            version = 1,
+            createdAt = 1,
+            updatedAt = 1,
+            summary = BackupSummaryRecord("Example login", "alice"),
+            secret = BackupSecretRecord(
+                login = BackupLoginSecret(password = "secret")
+            )
+        )
+        val valid = BackupBundle(
+            BackupDocument(
+                format = BackupDocument.FORMAT,
+                version = 1,
+                exportedAt = 1,
+                entries = listOf(login, account)
+            )
+        )
+
+        BackupBundleValidator.validate(valid, requireResourceData = false)
+        val json = JsonBackupExporter().export(valid)
+        val restored = JsonBackupImporter().import(json.toByteArray())
+        assertEquals(
+            account.id,
+            restored.document.entries.single { it.id == login.id }.parentEntryId
+        )
+
+        val mixed = login.copy(
+            secret = login.secret.copy(
+                otp = BackupOtpSecret(BackupOtpConfig(secret = "JBSWY3DPEHPK3PXP"))
+            )
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            BackupBundleValidator.validate(
+                valid.copy(document = valid.document.copy(entries = listOf(account, mixed))),
+                requireResourceData = false
+            )
+        }
+
+        val legacyWithoutVaultId = json.replace(
+            Regex("\\s*\"vaultId\"\\s*:\\s*\"default\"\\s*,"),
+            ""
+        )
+        assertThrows(Exception::class.java) {
+            JsonBackupImporter().import(legacyWithoutVaultId.toByteArray())
         }
     }
 

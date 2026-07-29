@@ -73,7 +73,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         val export = BackupJson.decodeFromString<BitwardenExport>(rawRoot.toString())
         val folderNames = export.folders.associate { it.id to it.name }
         val now = System.currentTimeMillis()
-        val entries = export.items.mapIndexed { index, item ->
+        val entries = export.items.flatMapIndexed { index, item ->
             if (item.type !in 1..4) {
                 throw BackupFailed(
                     "Bitwarden 条目类型 ${item.type} 暂不支持，已中止以避免数据丢失"
@@ -90,7 +90,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             if (item.passwordHistory.isNotEmpty()) {
                 throw BackupFailed("Bitwarden 条目包含密码历史，已中止以避免数据丢失")
             }
-            item.toBackupRecord(index, folderNames, now)
+            item.toBackupRecords(index, folderNames, now)
         }
         val bundle = BackupBundle(
             document = BackupDocument(
@@ -105,11 +105,11 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         return bundle
     }
 
-    private fun BitwardenItem.toBackupRecord(
+    private fun BitwardenItem.toBackupRecords(
         index: Int,
         folderNames: Map<String, String>,
         fallbackTime: Long
-    ): BackupEntryRecord {
+    ): List<BackupEntryRecord> {
         val updatedAt = parseTime(revisionDate) ?: fallbackTime
         val createdAt = (parseTime(creationDate) ?: updatedAt).coerceAtMost(updatedAt)
         val tags = folderId?.let(folderNames::get)?.let(::listOf).orEmpty()
@@ -177,7 +177,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             )
         }
 
-        return BackupEntryRecord(
+        val record = BackupEntryRecord(
             id = safeId(id, index),
             type = entryType,
             version = 1,
@@ -202,6 +202,29 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                 customFields = customFields
             )
         )
+        val otp = record.secret.otp ?: return listOf(record)
+        val accountId = relatedId(record.id, "account")
+        val otpId = relatedId(record.id, "otp")
+        val account = record.copy(
+            id = accountId,
+            type = "ACCOUNT",
+            secret = BackupSecretRecord()
+        )
+        val login = record.copy(
+            parentEntryId = accountId,
+            secret = record.secret.copy(otp = null)
+        )
+        val otpEntry = record.copy(
+            id = otpId,
+            parentEntryId = accountId,
+            type = "OTP",
+            summary = record.summary.copy(
+                title = "${record.summary.title} OTP",
+                tags = emptyList()
+            ),
+            secret = BackupSecretRecord(otp = otp)
+        )
+        return listOf(account, login, otpEntry)
     }
 
     private fun parseOtp(value: String): BackupOtpSecret {
@@ -271,6 +294,11 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             "bitwarden:${candidate.orEmpty()}:$index".toByteArray(Charsets.UTF_8)
         ).toString()
     }
+
+    private fun relatedId(entryId: String, role: String): String =
+        UUID.nameUUIDFromBytes(
+            "bitwarden:$entryId:$role".toByteArray(Charsets.UTF_8)
+        ).toString()
 
 }
 

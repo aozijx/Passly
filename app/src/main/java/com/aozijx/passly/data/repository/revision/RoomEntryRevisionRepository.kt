@@ -4,7 +4,6 @@ import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.revision.EntryRevisionCodec
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.revision.EntryRevision
@@ -30,14 +29,18 @@ class RoomEntryRevisionRepository @Inject constructor(
     override suspend fun getLatestRevision(entryId: String): EntryRevision? {
         return sessionManager.query {
             val entity = entryRevisionQueryDao().getByVersion(entryId, 1) ?: return@query null
+            val metadata = entryQueryDao().getById(entryId) ?: return@query null
             val (summary, secret) = revisionCodec.decrypt(entity.entryBlob, entity.entryId)
             val vaultEntry = VaultEntry(
                 header = EntryHeader(
                     id = EntryId(entity.entryId),
-                    entryType = EntryType.LOGIN,
+                    entryType = metadata.entryType,
                     version = EntryVersion(entity.version),
-                    createdAt = entity.createdAt,
-                    updatedAt = entity.createdAt
+                    createdAt = metadata.createdAt,
+                    updatedAt = entity.createdAt,
+                    deletedAt = metadata.deletedAt,
+                    vaultId = metadata.vaultId,
+                    parentEntryId = metadata.parentEntryId
                 ),
                 summary = summary,
                 secret = secret

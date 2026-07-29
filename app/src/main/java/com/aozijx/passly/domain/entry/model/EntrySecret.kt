@@ -10,10 +10,12 @@ import com.aozijx.passly.domain.entry.model.secret.SshSecret
 import com.aozijx.passly.domain.entry.model.secret.WifiSecret
 
 /**
- * 条目凭据数据的可组合聚合。
+ * 单个条目的凭据数据。
  *
- * 所有字段均为可空或空列表，同一 EntrySecret 可以同时持有
- * 登录凭据 + OTP 配置 + 自定义字段 + 备注，无需互斥。
+ * `login`、`card`、`identity`、`ssh`、`wifi`、`passkey`、`otp`
+ * 中最多只能有一个，与 EntryType 对应。备注和自定义字段是该原子凭据的扩展。
+ * 同一账户的 Login、OTP、Passkey 等能力应拆成多个 Entry，并通过 parentEntryId
+ * 关联到一个不含敏感 payload 的 ACCOUNT Entry。
  */
 data class EntrySecret(
     /** 登录凭据：用户名/邮箱 + 密码。 */

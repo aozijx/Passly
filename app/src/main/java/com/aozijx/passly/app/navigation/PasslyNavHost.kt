@@ -187,6 +187,9 @@ fun PasslyNavHost(
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
                     onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
+                    onOpenRelatedEntry = {
+                        navController.navigate(AppRoute.Detail.createRoute(it.id))
+                    },
                     onAuthenticate = DetailAuthenticate { action, accessLevel, success ->
                         mainViewModel.requestSensitiveAccess(
                             action = action,
