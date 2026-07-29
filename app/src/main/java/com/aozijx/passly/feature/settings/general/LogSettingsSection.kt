@@ -26,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
@@ -41,6 +43,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
+    val context = LocalContext.current
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsStateWithLifecycle()
     var showViewerDialog by remember { mutableStateOf(false) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
@@ -54,6 +57,16 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
     val exportLogsTitle = stringResource(R.string.settings_log_export_action)
     val exportLogsSubtitle = stringResource(R.string.settings_log_export_action_subtitle)
     val clearLogsTitle = stringResource(R.string.settings_log_clear_action)
+    val exportFailedMessage = stringResource(R.string.settings_log_export_failed)
+
+    LaunchedEffect(viewModel, exportFailedMessage) {
+        viewModel.events.collect { event ->
+            when (event) {
+                DiagnosticsEvent.ExportFailed ->
+                    Toast.makeText(context, exportFailedMessage, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     LaunchedEffect(showViewerDialog) {
         if (showViewerDialog) {

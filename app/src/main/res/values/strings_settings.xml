@@ -285,9 +285,12 @@
     <string name="settings_log_encrypted_title">加密诊断日志</string>
     <string name="settings_log_export_action">导出日志</string>
     <string name="settings_log_export_action_subtitle">验证后生成临时明文文件</string>
+    <string name="settings_log_export_failed">日志导出失败，请重试</string>
     <string name="settings_log_loading">正在加载日志…</string>
     <string name="settings_log_management_title">日志管理</string>
     <string name="settings_log_view_title">查看日志</string>
+    <string name="settings_system_notification_settings">系统通知权限</string>
+    <string name="settings_system_notification_settings_summary">前往系统权限中心管理通知权限和渠道</string>
 
     <!-- Other settings values -->
     <string name="settings_confirm">确定</string>

@@ -73,7 +73,7 @@ fun DetailScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            ClipboardUtils.clear(context)
+            ClipboardUtils.clearIfOwned(context)
             onEvent(DetailIntent.ClearSensitiveState)
         }
     }

@@ -6,6 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.provider.Settings
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
@@ -22,6 +25,7 @@ internal fun NotificationDetail(
     viewModel: NotificationSettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val noticePublisher = LocalAppNoticePublisher.current
     val permissionHost = rememberPermissionRequestHost("settings.notifications") { permission, result ->
         if (
@@ -45,6 +49,13 @@ internal fun NotificationDetail(
                 ) {
                     permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)
                 }
+            },
+            onOpenSystemNotificationSettings = {
+                context.startActivity(
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    }
+                )
             },
             onOptionalMessagesEnabledChange = viewModel::setOptionalMessagesEnabled,
             onTopicEnabledChange = viewModel::setMessageTopicEnabled

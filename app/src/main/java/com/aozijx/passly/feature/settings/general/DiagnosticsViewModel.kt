@@ -18,6 +18,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
+import com.aozijx.passly.app.diagnostics.AppTelemetry
+
+sealed interface DiagnosticsEvent {
+    data object ExportFailed : DiagnosticsEvent
+}
 
 @HiltViewModel
 class DiagnosticsViewModel @Inject constructor(
@@ -26,6 +33,9 @@ class DiagnosticsViewModel @Inject constructor(
     private val runtime: DiagnosticsRuntimeController,
     private val exportService: DiagnosticsExportService
 ) : ViewModel() {
+    private val eventChannel = Channel<DiagnosticsEvent>(Channel.BUFFERED)
+    val events = eventChannel.receiveAsFlow()
+
     val fileLoggingEnabled: StateFlow<Boolean> = policies.policies
         .map { it.isEncryptedFileEnabled() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
@@ -47,10 +57,16 @@ class DiagnosticsViewModel @Inject constructor(
             AuthenticationRequest(AuthenticationPurpose.EXPORT_DIAGNOSTICS)
         )
         if (result !is AuthenticationResult.Success) return@launch
-        val file = withContext(Dispatchers.IO) {
-            exportService.createPlaintextExport()
+        runCatching {
+            withContext(Dispatchers.IO) {
+                exportService.createPlaintextExport()
+            }
+        }.mapCatching { file ->
+            exportService.share(file).getOrThrow()
+        }.onFailure { error ->
+            AppTelemetry.e("DiagnosticsExport", "Plaintext diagnostics export failed", error)
+            eventChannel.trySend(DiagnosticsEvent.ExportFailed)
         }
-        exportService.share(file)
     }
 
     private companion object {

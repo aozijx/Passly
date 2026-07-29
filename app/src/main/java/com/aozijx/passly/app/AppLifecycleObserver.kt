@@ -2,8 +2,10 @@ package com.aozijx.passly.app
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import android.content.Context
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.app.diagnostics.DiagnosticsRuntimeController
+import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 /**
  * 监听 ProcessLifecycleOwner 的前后台切换，管理会话生命周期。
@@ -29,7 +32,8 @@ import javax.inject.Singleton
 class AppLifecycleObserver @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val diagnosticsRuntime: DiagnosticsRuntimeController,
-    private val idleTimeoutSettings: IdleTimeoutSettings
+    private val idleTimeoutSettings: IdleTimeoutSettings,
+    @param:ApplicationContext private val context: Context,
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -40,6 +44,7 @@ class AppLifecycleObserver @Inject constructor(
     }
 
     override fun onStop(owner: LifecycleOwner) {
+        ClipboardUtils.clearIfOwned(context)
         scope.launch {
             val lockOnBackground = idleTimeoutSettings.isLockOnBackground.first()
             if (!lockOnBackground) {

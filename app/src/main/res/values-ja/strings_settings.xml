@@ -285,9 +285,12 @@
     <string name="settings_log_encrypted_title">暗号化診断ログ</string>
     <string name="settings_log_export_action">ログをエクスポート</string>
     <string name="settings_log_export_action_subtitle">確認後に一時的な平文ファイルを作成</string>
+    <string name="settings_log_export_failed">ログをエクスポートできませんでした。もう一度お試しください</string>
     <string name="settings_log_loading">ログを読み込んでいます…</string>
     <string name="settings_log_management_title">ログ</string>
     <string name="settings_log_view_title">ログを表示</string>
+    <string name="settings_system_notification_settings">システム通知権限</string>
+    <string name="settings_system_notification_settings_summary">システム設定で通知権限とチャンネルを管理します</string>
 
     <!-- Other settings values -->
     <string name="settings_confirm">確定</string>
