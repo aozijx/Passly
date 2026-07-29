@@ -7,6 +7,8 @@ import android.view.autofill.AutofillManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.core.content.IntentCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
@@ -17,6 +19,7 @@ import com.aozijx.passly.feature.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -26,6 +29,7 @@ class AutofillFillActivity : FragmentActivity() {
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
     private val viewModel: AutofillFillViewModel by viewModels()
+    private val resultFinishing = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,6 +132,7 @@ class AutofillFillActivity : FragmentActivity() {
     }
 
     private fun finishWithResult(payload: AutofillAuthenticationPayload?) {
+        if (!resultFinishing.compareAndSet(false, true)) return
         val resultIntent = when (payload) {
             is AutofillAuthenticationPayload.Response -> Intent().apply {
                 putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, payload.value)
@@ -146,7 +151,18 @@ class AutofillFillActivity : FragmentActivity() {
 
         if (resultIntent == null) setResult(RESULT_CANCELED)
         else setResult(RESULT_OK, resultIntent)
-        finish()
+
+        // Compose password fields can keep the IME served view attached while
+        // this transparent Activity is being destroyed. Hide it explicitly
+        // before returning control to the client application.
+        currentFocus?.clearFocus()
+        WindowCompat.getInsetsController(window, window.decorView)
+            .hide(WindowInsetsCompat.Type.ime())
+
+        lifecycleScope.launch {
+            viewModel.closeRequestSession()
+            finish()
+        }
     }
 
     companion object {

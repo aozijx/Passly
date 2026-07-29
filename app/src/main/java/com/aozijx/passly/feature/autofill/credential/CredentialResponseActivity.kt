@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.ui.theme.AppTheme
@@ -15,6 +17,7 @@ import com.aozijx.passly.service.autofill.credential.ModernCredentialService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -25,6 +28,7 @@ class CredentialResponseActivity : AppCompatActivity() {
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
     private val viewModel: CredentialResponseViewModel by viewModels()
+    private val resultFinishing = AtomicBoolean(false)
 
     companion object {
         private const val TAG = "CredResponse"
@@ -43,9 +47,14 @@ class CredentialResponseActivity : AppCompatActivity() {
             viewModel.state.collectLatest { state ->
                 when (state) {
                     is CredentialResponseViewModel.UiState.Complete -> {
+                        if (!resultFinishing.compareAndSet(false, true)) {
+                            return@collectLatest
+                        }
                         // PendingIntentHandler requires RESULT_OK for both valid
                         // responses and valid Credential Manager exceptions.
                         setResult(RESULT_OK, state.resultIntent)
+                        hideIme()
+                        viewModel.closeRequestSession()
                         finish()
                     }
 
@@ -73,6 +82,13 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     private fun finishWithError() {
         setResult(RESULT_CANCELED)
+        hideIme()
         finish()
+    }
+
+    private fun hideIme() {
+        currentFocus?.clearFocus()
+        WindowCompat.getInsetsController(window, window.decorView)
+            .hide(WindowInsetsCompat.Type.ime())
     }
 }

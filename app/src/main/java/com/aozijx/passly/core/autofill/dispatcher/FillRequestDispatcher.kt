@@ -54,6 +54,15 @@ class FillRequestDispatcher(
             return InternalFillResponse(availability = FillAvailability.DISABLED)
         }
 
+        val matchResult = fieldMatchStrategy.match(request)
+        if (!matchResult.hasCredentials) {
+            AppTelemetry.i(TAG, "No credential fields matched")
+            return InternalFillResponse(availability = FillAvailability.UNSUPPORTED_FIELDS)
+        }
+
+        // Field recognition must happen before the lock check. Otherwise every
+        // focused form receives an unlock affordance while the vault is locked,
+        // including pages that do not contain a credential field.
         if (sessionState.isLocked()) {
             AppTelemetry.i(TAG, "Vault locked; fill request requires unlock")
             return InternalFillResponse(
@@ -61,12 +70,6 @@ class FillRequestDispatcher(
                 requireAuthentication = policy.requireAuthentication,
                 presentation = policy.presentation,
             )
-        }
-
-        val matchResult = fieldMatchStrategy.match(request)
-        if (!matchResult.hasCredentials) {
-            AppTelemetry.i(TAG, "No credential fields matched")
-            return InternalFillResponse(availability = FillAvailability.UNSUPPORTED_FIELDS)
         }
 
         val candidates = candidateResolver.resolve(request, policy)

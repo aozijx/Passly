@@ -219,7 +219,8 @@ class VaultSessionController @Inject constructor(
      * 根据 [LockReason] 决定锁定强度。
      * 使用 [VaultLockState] 强度比较，仅当目标强度高于当前状态时才执行。
      *
-     * - SOFT_LOCKED（USER / IDLE_TIMEOUT）：阻止新租约，数据库保持打开
+     * - SOFT_LOCKED（USER / IDLE_TIMEOUT / AUTOFILL_REQUEST_FINISHED）：
+     *   阻止新租约，数据库保持打开
      * - SEALED（BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：排干 + 关库 + 擦 DEK
      */
     suspend fun lock(reason: LockReason) {
@@ -278,7 +279,8 @@ class VaultSessionController @Inject constructor(
 
     private fun LockReason.toLockLevel(): VaultLockState = when (this) {
         LockReason.USER,
-        LockReason.IDLE_TIMEOUT -> VaultLockState.SOFT_LOCKED
+        LockReason.IDLE_TIMEOUT,
+        LockReason.AUTOFILL_REQUEST_FINISHED -> VaultLockState.SOFT_LOCKED
 
         LockReason.BACKGROUND,
         LockReason.INTEGRITY_FAILURE,

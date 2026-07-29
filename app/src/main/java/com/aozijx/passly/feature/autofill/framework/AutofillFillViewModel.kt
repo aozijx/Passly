@@ -9,15 +9,13 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.feature.autofill.AutofillRequestSession
 import com.aozijx.passly.service.autofill.framework.builder.LegacyDatasetFactory
 import com.aozijx.passly.service.autofill.framework.builder.LegacyResponseFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,9 +37,9 @@ sealed interface AutofillAuthenticationPayload {
 class AutofillFillViewModel @Inject constructor(
     private val autofillUseCases: AutofillUseCases,
     private val candidateResolver: CandidateResolver,
-    private val authenticationManager: AuthenticationManager,
     private val vaultAccessState: VaultAccessState,
     private val settingsRepository: AppSettingsRepository,
+    private val requestSession: AutofillRequestSession,
     @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -212,5 +210,9 @@ class AutofillFillViewModel @Inject constructor(
     }
 
     private suspend fun authenticateForAutofill(): AuthenticationResult =
-        authenticationManager.authenticate(AuthenticationRequest(AuthenticationPurpose.AUTOFILL))
+        requestSession.authenticate()
+
+    suspend fun closeRequestSession() {
+        requestSession.close()
+    }
 }

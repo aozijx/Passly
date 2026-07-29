@@ -18,13 +18,11 @@ import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.domain.authentication.AuthenticationManager
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
-import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.autofill.usecase.CreatePasswordCredentialResult
 import com.aozijx.passly.domain.autofill.usecase.CredentialResponseUseCases
 import com.aozijx.passly.domain.autofill.usecase.PasswordCredentialResult
+import com.aozijx.passly.feature.autofill.AutofillRequestSession
 import com.aozijx.passly.service.autofill.credential.CredentialBeginGetHandler
 import com.aozijx.passly.service.autofill.credential.CredentialCallingAppResolver
 import com.aozijx.passly.service.autofill.credential.CredentialResponseFactory
@@ -43,8 +41,8 @@ import javax.inject.Inject
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 class CredentialResponseViewModel @Inject constructor(
     private val useCase: CredentialResponseUseCases,
-    private val authenticationManager: AuthenticationManager,
     private val beginGetHandler: CredentialBeginGetHandler,
+    private val requestSession: AutofillRequestSession,
     @param:ApplicationContext private val appContext: android.content.Context,
 ) : ViewModel() {
 
@@ -93,14 +91,14 @@ class CredentialResponseViewModel @Inject constructor(
                     )
                 }
 
-                when (
-                    val result = useCase.resolvePasswordCredential(
+                when (val result = requestSession.trackUnlock {
+                    useCase.resolvePasswordCredential(
                         entryId,
                         packageName,
                         null,
                         passwordOption.allowedUserIds,
                     )
-                ) {
+                }) {
                     is PasswordCredentialResult.Success -> {
                         val intent = CredentialResponseFactory.buildPasswordResponse(
                             result.username, result.password
@@ -145,9 +143,7 @@ class CredentialResponseViewModel @Inject constructor(
                         )
                     )
                 }
-                val authentication = authenticationManager.authenticate(
-                    AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
-                )
+                val authentication = requestSession.authenticate()
                 if (authentication !is AuthenticationResult.Success) {
                     completeGetError(getAuthenticationException(authentication))
                     return@launch
@@ -193,13 +189,13 @@ class CredentialResponseViewModel @Inject constructor(
                         )
                     )
 
-                when (
-                    val result = useCase.createPasswordCredential(
+                when (val result = requestSession.trackUnlock {
+                    useCase.createPasswordCredential(
                         packageName = packageName,
                         username = createRequest.id,
                         password = createRequest.password,
                     )
-                ) {
+                }) {
                     CreatePasswordCredentialResult.Success -> {
                         _state.value = UiState.Complete(
                             CredentialResponseFactory.buildPasswordCreateResponse()
@@ -234,6 +230,10 @@ class CredentialResponseViewModel @Inject constructor(
         if (requestStarted.compareAndSet(false, true)) {
             _state.value = UiState.Unrecoverable
         }
+    }
+
+    suspend fun closeRequestSession() {
+        requestSession.close()
     }
 
     private fun completeGetError(exception: GetCredentialException) {

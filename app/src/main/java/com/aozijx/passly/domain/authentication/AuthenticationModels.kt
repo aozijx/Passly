@@ -105,7 +105,14 @@ data class AuthenticationFailure(
     override val code: String = "AUTH_${authCode.name}"
 }
 
-enum class LockReason { USER, IDLE_TIMEOUT, BACKGROUND, INTEGRITY_FAILURE, APP_EXIT }
+enum class LockReason {
+    USER,
+    IDLE_TIMEOUT,
+    AUTOFILL_REQUEST_FINISHED,
+    BACKGROUND,
+    INTEGRITY_FAILURE,
+    APP_EXIT,
+}
 
 data class AuthenticationSnapshot(
     val state: AuthenticationState,
