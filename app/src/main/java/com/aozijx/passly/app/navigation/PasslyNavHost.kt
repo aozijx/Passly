@@ -85,12 +85,6 @@ fun PasslyNavHost(
                 onUserInteraction = {
                     mainViewModel.handleIntent(MainIntent.UpdateInteraction)
                 },
-                scannerContent = { onSaveOtp, onDismiss ->
-                    VaultScanner(
-                        onSaveOtp = onSaveOtp,
-                        onDismiss = onDismiss
-                    )
-                },
                 onAddPassword = {
                     navController.navigate(AppRoute.AddPassword.route) {
                         launchSingleTop = true
@@ -139,7 +133,13 @@ fun PasslyNavHost(
                             mainViewModel.handleIntent(MainIntent.UpdateInteraction)
                         },
                         sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        scannerContent = { onResult, onDismiss ->
+                            VaultScanner(
+                                onSaveOtp = onResult,
+                                onDismiss = onDismiss
+                            )
+                        }
                 )
             }
 

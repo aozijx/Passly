@@ -5,7 +5,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -15,6 +15,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -22,8 +24,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.AppTextField
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.vault.components.editor.OtpConfigForm
 import com.aozijx.passly.feature.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.editor.common.CreateEntryEffect
@@ -35,7 +37,11 @@ fun AddOtpScreen(
     onSaved: () -> Unit,
     onUserInteraction: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    scannerContent: @Composable (
+        onResult: (OtpConfig) -> Unit,
+        onDismiss: () -> Unit
+    ) -> Unit
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -45,6 +51,7 @@ fun AddOtpScreen(
     val uriParsedMessage = stringResource(R.string.vault_otp_uri_parsed)
     val uriParseFailedMessage = stringResource(R.string.vault_otp_uri_parse_failed)
     val latestOnSaved by rememberUpdatedState(onSaved)
+    var showScanner by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel, snackbarHostState, saveFailedMessage) {
         viewModel.effects.collect { effect ->
@@ -62,7 +69,6 @@ fun AddOtpScreen(
             when (event) {
                 AddOtpEvent.UriParsed -> {
                     Toast.makeText(context, uriParsedMessage, Toast.LENGTH_SHORT).show()
-                    ClipboardUtils.clear(context)
                 }
 
                 AddOtpEvent.UriParseFailed -> {
@@ -105,18 +111,16 @@ fun AddOtpScreen(
                 TextButton(
                     onClick = {
                         onUserInteraction()
-                        viewModel.updateUri(
-                            value = ClipboardUtils.getText(context),
-                            reportFailure = true
-                        )
+                        keyboardController?.hide()
+                        showScanner = true
                     }
                 ) {
                     Icon(
-                        Icons.Default.ContentPaste,
+                        Icons.Default.QrCodeScanner,
                         contentDescription = null,
                         modifier = Modifier.padding(end = 4.dp)
                     )
-                    Text(stringResource(R.string.paste))
+                    Text(stringResource(R.string.vault_scan))
                 }
             }
         )
@@ -131,6 +135,16 @@ fun AddOtpScreen(
                 onUserInteraction()
                 viewModel.updateType(it)
             }
+        )
+    }
+
+    if (showScanner) {
+        scannerContent(
+            { config ->
+                onUserInteraction()
+                viewModel.applyScannedConfig(config)
+            },
+            { showScanner = false }
         )
     }
 }

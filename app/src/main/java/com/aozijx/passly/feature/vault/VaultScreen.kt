@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -27,7 +28,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.vault.action.rememberVaultActionProvider
 import com.aozijx.passly.feature.vault.components.dialog.VaultDialogs
 import com.aozijx.passly.feature.vault.components.fab.VaultFab
@@ -47,7 +47,6 @@ fun VaultContent(
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
     requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,
     onUserInteraction: () -> Unit,
-    scannerContent: @Composable ((OtpConfig) -> Unit, () -> Unit) -> Unit,
     onAddPassword: () -> Unit,
     onAddOtp: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
@@ -65,6 +64,10 @@ fun VaultContent(
 
     val entryCardPresentations = vaultDisplayConfig.style.entryCardPresentations
     var isFabVisible by remember { mutableStateOf(true) }
+
+    BackHandler(enabled = uiState.isSearchActive) {
+        vaultViewModel.toggleSearch(false)
+    }
 
     val actionProvider = rememberVaultActionProvider(
         vaultViewModel = vaultViewModel,
@@ -213,7 +216,6 @@ fun VaultContent(
         uiState = uiState,
         vaultViewModel = vaultViewModel,
         requestAuthentication = requestAuthentication,
-        onUpdateInteraction = actionProvider.onUpdateInteraction,
-        scannerContent = scannerContent
+        onUpdateInteraction = actionProvider.onUpdateInteraction
     )
 }

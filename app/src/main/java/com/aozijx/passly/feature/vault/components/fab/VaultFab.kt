@@ -129,7 +129,7 @@ fun VaultFab(
 
             Box(
                 modifier = sharedFabModifier
-                    .size(if (expressive) 64.dp else 56.dp)
+                    .size(if (expressive) 56.dp else 52.dp)
                     .shadow(4.dp, MaterialTheme.shapes.large)
                     .clip(MaterialTheme.shapes.large)
                     .background(MaterialTheme.colorScheme.primaryContainer)
@@ -195,12 +195,15 @@ fun FabMenuItemWithSpring(
 fun FabMenuItem(
     label: String, icon: ImageVector, onClick: () -> Unit
 ) {
+    val shape = MaterialTheme.shapes.large
     Surface(
         onClick = onClick,
-        shape = MaterialTheme.shapes.large,
+        shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 6.dp,
-        modifier = Modifier.height(48.dp)
+        modifier = Modifier
+            .height(48.dp)
+            .shadow(3.dp, shape)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

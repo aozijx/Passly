@@ -7,7 +7,6 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Pin
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.Wifi
@@ -25,7 +24,6 @@ enum class AddType(
 ) {
     PASSWORD(R.string.password, Icons.Default.Key),
     TOTP(R.string.otp, Icons.Default.Pin),
-    SCAN(R.string.vault_scan, Icons.Default.QrCodeScanner),
     BANK_CARD(R.string.vault_fab_bank_card, Icons.Default.CreditCard),
     WIFI(R.string.vault_fab_wifi, Icons.Default.Wifi),
     SSH_KEY(R.string.vault_fab_ssh_key, Icons.Default.VpnKey),
@@ -35,8 +33,8 @@ enum class AddType(
     RECOVERY_CODE(R.string.vault_fab_recovery_code, Icons.Default.Restore);
 
     companion object {
-        /** FAB 快捷菜单显示的项目（保持原有 3 项） */
-        val fabMenuOptions: List<AddType> = listOf(SCAN, TOTP, PASSWORD)
+        /** FAB 快捷菜单只保留直接创建的常用条目。 */
+        val fabMenuOptions: List<AddType> = listOf(TOTP, PASSWORD)
 
         /** ModalBottomSheet 中显示的所有添加类型 */
         val allOptions: List<AddType> = entries.toList()

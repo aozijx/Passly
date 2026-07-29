@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -53,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.media.ImageType
 import com.aozijx.passly.core.media.rememberImagePicker
+import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.scanner.components.ScannerView
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
@@ -68,6 +70,7 @@ fun VaultScanner(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val adaptiveLayout = LocalPasslyAdaptiveLayout.current
     val scannerUiState by scannerViewModel.uiState.collectAsStateWithLifecycle()
     // 适配系统返回手势：优先关闭扫码层，而不是直接退出上层页面。
     BackHandler(onBack = onDismiss)
@@ -168,18 +171,24 @@ fun VaultScanner(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(24.dp)
+                .padding(horizontal = if (adaptiveLayout.isAtLeastMedium) 24.dp else 12.dp)
+                .padding(bottom = if (adaptiveLayout.isAtLeastMedium) 20.dp else 12.dp)
         ) {
             scannedTotp?.let { totp ->
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 560.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
                     )
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(
+                            horizontal = if (adaptiveLayout.isAtLeastMedium) 20.dp else 12.dp,
+                            vertical = if (adaptiveLayout.isAtLeastMedium) 16.dp else 12.dp
+                        ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {

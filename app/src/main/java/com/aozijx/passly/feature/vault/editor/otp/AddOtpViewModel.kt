@@ -35,6 +35,11 @@ class AddOtpViewModel @Inject constructor(
         it.withTypeDefaults(type)
     }
 
+    fun applyScannedConfig(config: OtpConfig) {
+        mutateForm { it.fromParsedConfig(config) }
+        _events.trySend(AddOtpEvent.UriParsed)
+    }
+
     fun updateUri(value: String, reportFailure: Boolean = false) {
         mutateForm { it.copy(uriText = value) }
         if (uiState.value.isSaving || value.isBlank()) return

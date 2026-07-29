@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.components.dialog
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.components.editor.AddGenericEntryDialog
 import com.aozijx.passly.feature.vault.contract.VaultUiState
@@ -12,15 +11,9 @@ import com.aozijx.passly.feature.vault.model.AddType
 fun AddDialogHost(
     uiState: VaultUiState,
     vaultViewModel: VaultViewModel,
-    onUpdateInteraction: () -> Unit,
-    scannerContent: @Composable ((OtpConfig) -> Unit, () -> Unit) -> Unit
+    onUpdateInteraction: () -> Unit
 ) {
     when (uiState.addType) {
-        AddType.SCAN -> scannerContent(
-            vaultViewModel::addScannedOtp,
-            { vaultViewModel.setAddType(null) }
-        )
-
         AddType.BANK_CARD,
         AddType.WIFI,
         AddType.SSH_KEY,
@@ -64,14 +57,12 @@ fun VaultDialogs(
     uiState: VaultUiState,
     vaultViewModel: VaultViewModel,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
-    onUpdateInteraction: () -> Unit,
-    scannerContent: @Composable ((OtpConfig) -> Unit, () -> Unit) -> Unit
+    onUpdateInteraction: () -> Unit
 ) {
     AddDialogHost(
         uiState = uiState,
         vaultViewModel = vaultViewModel,
-        onUpdateInteraction = onUpdateInteraction,
-        scannerContent = scannerContent
+        onUpdateInteraction = onUpdateInteraction
     )
 
     DeleteDialogHost(
