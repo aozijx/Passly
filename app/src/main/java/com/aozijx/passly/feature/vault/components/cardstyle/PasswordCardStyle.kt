@@ -45,6 +45,7 @@ import coil.request.SuccessResult
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.core.ui.components.VaultItemIcon
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.feature.vault.model.OtpUiState
 
 private object PasswordCardPaletteCache {
     private const val MAX = 48
@@ -232,5 +233,29 @@ fun PasswordStyleVaultItem(
                 }
             }
         }
+    }
+}
+
+internal object PasswordVaultCardStyle : VaultCardStyleComponent {
+    override val key: String = "password"
+
+    override fun supports(entry: EntryListItem): Boolean = entry.hasPassword
+
+    @Composable
+    override fun Render(
+        entry: EntryListItem,
+        totpState: OtpUiState?,
+        showTotpCode: Boolean,
+        onClick: () -> Unit,
+    ) {
+        PasswordStyleVaultItem(entry = entry, onClick = onClick)
+    }
+
+    @Composable
+    override fun Preview(onClick: () -> Unit) {
+        PasswordStyleVaultItem(
+            entry = CardStylePreviewFixtures.passwordEntry,
+            onClick = onClick,
+        )
     }
 }

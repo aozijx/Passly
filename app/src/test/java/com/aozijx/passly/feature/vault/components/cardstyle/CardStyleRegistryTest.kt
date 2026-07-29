@@ -4,8 +4,8 @@ import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class CardStyleRegistryTest {
@@ -17,7 +17,7 @@ class CardStyleRegistryTest {
             listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "password")),
         )
 
-        assertEquals(VaultCardStyle.PASSWORD, style)
+        assertSame(PasswordVaultCardStyle, style)
     }
 
     @Test
@@ -33,7 +33,7 @@ class CardStyleRegistryTest {
             ),
         )
 
-        assertEquals(VaultCardStyle.PASSWORD, style)
+        assertSame(PasswordVaultCardStyle, style)
     }
 
     @Test
@@ -43,7 +43,35 @@ class CardStyleRegistryTest {
             listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "totp")),
         )
 
-        assertEquals(VaultCardStyle.DEFAULT, style)
+        assertSame(DefaultVaultCardStyle, style)
+    }
+
+    @Test
+    fun `password style falls back when the entry has no password capability`() {
+        val style = CardStyleRegistry.resolveStyle(
+            entry(type = EntryType.LOGIN, flags = EntryCapabilityFlags.HAS_OTP),
+            listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "password")),
+        )
+
+        assertSame(DefaultVaultCardStyle, style)
+    }
+
+    @Test
+    fun `unknown style key falls back to the default component`() {
+        val style = CardStyleRegistry.resolveStyle(
+            entry(type = EntryType.LOGIN, flags = EntryCapabilityFlags.HAS_PASSWORD),
+            listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "not-registered")),
+        )
+
+        assertSame(DefaultVaultCardStyle, style)
+    }
+
+    @Test
+    fun `all style components are discoverable through the registry`() {
+        assertEquals(
+            listOf("default", "password", "totp"),
+            CardStyleRegistry.styles.map(VaultCardStyleComponent::key),
+        )
     }
 
     private fun entry(type: EntryType, flags: Int) = EntryListItem(

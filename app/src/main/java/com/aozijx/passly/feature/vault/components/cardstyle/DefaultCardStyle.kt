@@ -217,3 +217,39 @@ fun AutoFillItem(
         }
     }
 }
+
+internal object DefaultVaultCardStyle : VaultCardStyleComponent {
+    override val key: String = "default"
+
+    @Composable
+    override fun Render(
+        entry: EntryListItem,
+        totpState: OtpUiState?,
+        showTotpCode: Boolean,
+        onClick: () -> Unit,
+    ) {
+        when {
+            entry.hasOtp -> TwoFAItem(
+                entry = entry,
+                totpState = totpState,
+                showCode = showTotpCode,
+                onClick = onClick,
+            )
+
+            entry.category == stringResource(R.string.category_autofill) -> AutoFillItem(
+                entry = entry,
+                onClick = onClick,
+            )
+
+            else -> VaultItem(entry = entry, onClick = onClick)
+        }
+    }
+
+    @Composable
+    override fun Preview(onClick: () -> Unit) {
+        VaultItem(
+            entry = CardStylePreviewFixtures.defaultEntry,
+            onClick = onClick,
+        )
+    }
+}

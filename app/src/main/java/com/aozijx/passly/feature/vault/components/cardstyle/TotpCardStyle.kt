@@ -184,3 +184,36 @@ fun TotpStyleVaultItem(
         }
     }
 }
+
+internal object TotpVaultCardStyle : VaultCardStyleComponent {
+    override val key: String = "totp"
+
+    override fun supports(entry: EntryListItem): Boolean = entry.hasOtp
+
+    @Composable
+    override fun Render(
+        entry: EntryListItem,
+        totpState: OtpUiState?,
+        showTotpCode: Boolean,
+        onClick: () -> Unit,
+    ) {
+        TotpStyleVaultItem(
+            entry = entry,
+            totpState = totpState,
+            showCode = showTotpCode,
+            onClick = onClick,
+        )
+    }
+
+    @Composable
+    override fun Preview(onClick: () -> Unit) {
+        TotpStyleVaultItem(
+            entry = CardStylePreviewFixtures.totpEntry,
+            totpState = null,
+            showCode = true,
+            previewCode = "123 456",
+            previewProgress = 0.4f,
+            onClick = onClick,
+        )
+    }
+}
