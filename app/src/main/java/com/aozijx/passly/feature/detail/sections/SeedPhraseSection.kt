@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -78,7 +79,6 @@ fun SeedPhraseSection(
                     fieldName = "seed phrase",
                     revealedValue = revealedSeedPhrase,
                     sourceValue = seedPhrase,
-                    onReveal = onSeedPhraseRevealed,
                     afterCopy = {
                         Toast.makeText(
                             context,
@@ -88,12 +88,14 @@ fun SeedPhraseSection(
                     }
                 )
             },
-            onEdit = {
+            onEdit = null,
+            onReveal = {
                 toggleRevealSensitiveField(
                     handler = actionHandler,
                     fieldName = "seed phrase",
                     revealedValue = revealedSeedPhrase,
                     sourceValue = seedPhrase,
+                    accessLevel = SensitiveAccessLevel.HIGH,
                     onReveal = onSeedPhraseRevealed
                 )
             }
@@ -132,6 +134,7 @@ fun SeedPhraseSection(
                         fieldName = "seed phrase",
                         revealedValue = revealedSeedPhrase,
                         sourceValue = seedPhrase,
+                        accessLevel = SensitiveAccessLevel.HIGH,
                         onReveal = onSeedPhraseRevealed
                     )
                 },

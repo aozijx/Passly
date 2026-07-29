@@ -44,6 +44,7 @@ sealed interface SettingsCommand {
     data class SetLockOnBackground(val enabled: Boolean) : SettingsCommand
     data class SetLockTimeout(val timeoutMs: Long) : SettingsCommand
     data class SetInvalidateBiometricKeyOnChange(val enabled: Boolean) : SettingsCommand
+    data class SetReauthenticateSensitiveCopies(val enabled: Boolean) : SettingsCommand
 
     // Interaction
     data class SetSwipeEnabled(val enabled: Boolean) : SettingsCommand

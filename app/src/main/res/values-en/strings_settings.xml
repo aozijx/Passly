@@ -113,6 +113,8 @@
     <string name="settings_security_app_password">Set password</string>
     <string name="settings_security_app_password_description">Unlock the app with a separate password</string>
     <string name="settings_security_auth_section">Authentication</string>
+    <string name="settings_security_reauthenticate_sensitive_copies">Verify sensitive copies</string>
+    <string name="settings_security_reauthenticate_sensitive_copies_description">Verify again before copying passwords, CVVs, private keys, and other sensitive content. This setting does not affect verification for revealing highly sensitive fields.</string>
     <string name="settings_security_auto_lock">Auto-lock</string>
     <string name="settings_security_auto_lock_delay">Auto-lock delay</string>
     <string name="settings_security_biometric_disabled_description">Existing credentials must be verified first</string>

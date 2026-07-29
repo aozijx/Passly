@@ -368,7 +368,8 @@ class ProtoAppSettingsRepository @Inject constructor(
             isFlipExitAndClearStackEnabled = p.flipExitAndClearStack,
             isLockOnBackground = p.lockOnBackground,
             lockTimeout = p.lockTimeoutMs,
-            isInvalidateBiometricKeyOnChange = p.invalidateBiometricKeyOnChange
+            isInvalidateBiometricKeyOnChange = p.invalidateBiometricKeyOnChange,
+            reauthenticateSensitiveCopies = p.reauthenticateSensitiveCopies
         )
 
     private fun readInteraction(p: InteractionPreferences): InteractionSettings =
@@ -579,6 +580,12 @@ class ProtoAppSettingsRepository @Inject constructor(
                 is SettingsCommand.SetInvalidateBiometricKeyOnChange -> {
                     val sb = proto.security.toBuilder()
                     sb.invalidateBiometricKeyOnChange = command.enabled
+                    b.setSecurity(sb)
+                }
+
+                is SettingsCommand.SetReauthenticateSensitiveCopies -> {
+                    val sb = proto.security.toBuilder()
+                    sb.reauthenticateSensitiveCopies = command.enabled
                     b.setSecurity(sb)
                 }
 

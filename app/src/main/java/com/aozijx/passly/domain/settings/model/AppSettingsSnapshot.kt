@@ -90,7 +90,8 @@ data class SecuritySettings(
     val isFlipExitAndClearStackEnabled: Boolean = false,
     val isLockOnBackground: Boolean = false,
     val lockTimeout: Long = 60000L,
-    val isInvalidateBiometricKeyOnChange: Boolean = true
+    val isInvalidateBiometricKeyOnChange: Boolean = true,
+    val reauthenticateSensitiveCopies: Boolean = true
 )
 
 // ============================================================

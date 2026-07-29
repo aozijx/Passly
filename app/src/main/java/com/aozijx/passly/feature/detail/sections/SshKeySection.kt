@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -37,6 +38,7 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
+import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun SshKeySection(
@@ -104,7 +106,6 @@ fun SshKeySection(
                         fieldName = "passphrase",
                         revealedValue = revealedPassword,
                         sourceValue = entry.secret.ssh?.passphrase,
-                        onReveal = onPasswordRevealed,
                         afterCopy = {
                             Toast.makeText(
                                 context,
@@ -117,6 +118,16 @@ fun SshKeySection(
                 onEdit = {
                     editState.editedPassword = revealedPassword ?: ""
                     editState.isEditingPassword = true
+                },
+                onReveal = {
+                    toggleRevealSensitiveField(
+                        handler = actionHandler,
+                        fieldName = "passphrase",
+                        revealedValue = revealedPassword,
+                        sourceValue = entry.secret.ssh?.passphrase,
+                        accessLevel = SensitiveAccessLevel.HIGH,
+                        onReveal = onPasswordRevealed
+                    )
                 }
             )
         }
@@ -129,7 +140,6 @@ fun SshKeySection(
                     fieldName = "private key",
                     revealedValue = revealedSshPrivateKey,
                     sourceValue = entry.secret.ssh?.privateKey,
-                    onReveal = onSshPrivateKeyRevealed,
                     afterCopy = {
                         Toast.makeText(
                             context,
@@ -197,7 +207,7 @@ fun SshKeySection(
                 onClick = {
                     val sshKey = entry.secret.ssh?.privateKey
                     if (!sshKey.isNullOrBlank()) {
-                        onAuthenticate {
+                        onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
                             onSshPrivateKeyRevealed(sshKey)
                             onEvent(
                                 DetailIntent.RecordAction(

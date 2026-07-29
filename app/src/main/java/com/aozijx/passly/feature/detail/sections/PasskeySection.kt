@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -56,7 +57,6 @@ fun PasskeySection(
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
                     sourceValue = entry.secret.passkey?.privateKeyReference,
-                    onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) },
                     afterCopy = {
                         Toast.makeText(
                             context,
@@ -66,12 +66,14 @@ fun PasskeySection(
                     }
                 )
             },
-            onEdit = {
+            onEdit = null,
+            onReveal = {
                 toggleRevealSensitiveField(
                     handler = actionHandler,
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
                     sourceValue = entry.secret.passkey?.privateKeyReference,
+                    accessLevel = SensitiveAccessLevel.HIGH,
                     onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) }
                 )
             }

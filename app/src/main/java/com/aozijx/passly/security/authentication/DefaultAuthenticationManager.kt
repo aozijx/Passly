@@ -20,6 +20,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationSnapshot
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
+import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.envelope.BootstrapStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -28,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
@@ -43,7 +45,8 @@ class DefaultAuthenticationManager @Inject constructor(
     private val bootstrapStore: BootstrapStore,
     private val biometricExecutor: BiometricMethodExecutor,
     private val credentialExecutor: CredentialMethodExecutor,
-    private val session: VaultSessionController
+    private val session: VaultSessionController,
+    private val settingsRepository: AppSettingsRepository
 ) : AuthenticationManager {
     private val biometricManager = BiometricManager.from(context)
     private val requestMutex = Mutex()
@@ -74,12 +77,19 @@ class DefaultAuthenticationManager @Inject constructor(
     /**
      * 指定目的是否需要新鲜认证。
      *
-     * 安全不变量：只有 UNLOCK_VAULT 可以在会话已解锁时复用。
-     * 所有其他目的（REVEAL_SECRET、BACKUP_EXPORT、EXPORT_DIAGNOSTICS 等）
-     * 必须始终触发重新认证。
+     * 高敏感字段的显示、备份和安全管理操作始终要求新鲜认证。
+     * 复制请求是否重新认证只由全局复制验证开关控制。
      */
-    private fun requiresFreshAuthentication(purpose: AuthenticationPurpose): Boolean =
-        purpose != AuthenticationPurpose.UNLOCK_VAULT
+    private suspend fun requiresFreshAuthentication(purpose: AuthenticationPurpose): Boolean =
+        authenticationRequiresFresh(
+            purpose = purpose,
+            reauthenticateSensitiveCopies = if (purpose == AuthenticationPurpose.COPY_SECRET) {
+                settingsRepository.settings.first()
+                    .security.reauthenticateSensitiveCopies
+            } else {
+                true
+            }
+        )
 
     /**
      * 指定目的允许的认证方式。
@@ -303,4 +313,16 @@ class DefaultAuthenticationManager @Inject constructor(
         }
         return result
     }
+}
+
+internal fun authenticationRequiresFresh(
+    purpose: AuthenticationPurpose,
+    reauthenticateSensitiveCopies: Boolean
+): Boolean = when (purpose) {
+    AuthenticationPurpose.UNLOCK_VAULT,
+    AuthenticationPurpose.REVEAL_SECRET -> false
+
+    AuthenticationPurpose.COPY_SECRET -> reauthenticateSensitiveCopies
+    AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET -> true
+    else -> true
 }

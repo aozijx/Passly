@@ -8,11 +8,16 @@ import com.github.f4b6a3.uuid.UuidCreator
 
 enum class AuthenticationMethod { BIOMETRIC, APP_PASSWORD, RECOVERY_CODE }
 
+enum class SensitiveAccessLevel { STANDARD, HIGH }
+enum class SensitiveAccessAction { REVEAL, COPY }
+
 enum class AuthenticationPurpose {
     UNLOCK_VAULT,
     REAUTHENTICATE,
     AUTOFILL,
     REVEAL_SECRET,
+    REVEAL_HIGH_SENSITIVITY_SECRET,
+    COPY_SECRET,
     DELETE_ENTRY,
     BACKUP_EXPORT,
     BACKUP_IMPORT,

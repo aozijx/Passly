@@ -111,7 +111,6 @@ fun WifiSection(
                         fieldName = "wifi password",
                         revealedValue = revealedPassword,
                         sourceValue = entry.secret.wifi?.password,
-                        onReveal = onPasswordRevealed,
                         afterCopy = {
                             Toast.makeText(
                                 context,

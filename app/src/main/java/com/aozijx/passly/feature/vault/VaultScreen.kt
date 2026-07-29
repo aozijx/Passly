@@ -45,6 +45,7 @@ fun VaultContent(
     vaultViewModel: VaultViewModel,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
+    requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,
     onUserInteraction: () -> Unit,
     scannerContent: @Composable ((OtpConfig) -> Unit, () -> Unit) -> Unit,
     onAddPassword: () -> Unit,
@@ -70,6 +71,7 @@ fun VaultContent(
         totpStates = vaultViewModel.totpStatesFlow,
         requestAuthentication = requestAuthentication,
         requestReauthentication = requestReauthentication,
+        requestSensitiveCopy = requestSensitiveCopy,
         onUserInteraction = onUserInteraction,
         onShowDetail = onShowDetail,
         isFabVisible = { isFabVisible = it }

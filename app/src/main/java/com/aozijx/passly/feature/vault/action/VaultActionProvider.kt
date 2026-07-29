@@ -31,6 +31,7 @@ fun rememberVaultActionProvider(
     totpStates: StateFlow<Map<String, OtpUiState>>,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     requestReauthentication: (onSuccess: () -> Unit) -> Unit,
+    requestSensitiveCopy: (onSuccess: () -> Unit) -> Unit,
     onUserInteraction: () -> Unit,
     onShowDetail: (EntryListItem) -> Unit,
     isFabVisible: (Boolean) -> Unit
@@ -41,6 +42,7 @@ fun rememberVaultActionProvider(
 
     val latestAuthentication by rememberUpdatedState(requestAuthentication)
     val latestReauthentication by rememberUpdatedState(requestReauthentication)
+    val latestSensitiveCopy by rememberUpdatedState(requestSensitiveCopy)
     val latestUserInteraction by rememberUpdatedState(onUserInteraction)
 
     val performCopy = remember(
@@ -84,9 +86,10 @@ fun rememberVaultActionProvider(
             handleSwipeAction(
                 actionType = action,
                 item = item,
-                onAuthRequired = { ok ->
+                onDeleteAuthRequired = { ok ->
                     latestReauthentication(ok)
                 },
+                onCopyAuthRequired = { ok -> latestSensitiveCopy(ok) },
                 onQuickDelete = { vaultViewModel.quickDelete(it) },
                 onCopy = { fieldKey -> performCopy(fieldKey, item) },
                 onShowDetail = onShowDetail

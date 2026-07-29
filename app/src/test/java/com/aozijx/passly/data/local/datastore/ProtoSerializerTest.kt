@@ -42,6 +42,7 @@ class ProtoSerializerTest {
 
         assertEquals(2, defaults.version)
         assertEquals(60_000L, defaults.security.lockTimeoutMs)
+        assertTrue(defaults.security.reauthenticateSensitiveCopies)
         assertEquals(true, defaults.appearance.dynamicColorEnabled)
         assertEquals(true, defaults.appearance.expressiveEnabled)
         assertEquals(true, defaults.security.secureContentEnabled)

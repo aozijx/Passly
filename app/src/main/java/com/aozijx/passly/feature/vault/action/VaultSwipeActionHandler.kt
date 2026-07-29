@@ -7,7 +7,8 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 fun handleSwipeAction(
     actionType: SwipeActionType,
     item: EntryListItem,
-    onAuthRequired: (onSuccess: () -> Unit) -> Unit,
+    onDeleteAuthRequired: (onSuccess: () -> Unit) -> Unit,
+    onCopyAuthRequired: (onSuccess: () -> Unit) -> Unit,
     onQuickDelete: (EntryListItem) -> Unit,
     onShowDetail: (EntryListItem) -> Unit,
     onCopy: (FieldKey) -> Unit
@@ -26,9 +27,13 @@ fun handleSwipeAction(
         }
     }
 
-    if (actionType == SwipeActionType.DELETE) {
-        onAuthRequired { performAction() }
-    } else {
-        performAction()
+    when {
+        actionType == SwipeActionType.DELETE ->
+            onDeleteAuthRequired { performAction() }
+
+        copyField != null ->
+            onCopyAuthRequired { performAction() }
+
+        else -> performAction()
     }
 }

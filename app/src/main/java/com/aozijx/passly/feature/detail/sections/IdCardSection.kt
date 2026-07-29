@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -55,7 +56,6 @@ fun IdCardSection(
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
                     sourceValue = entry.secret.identity?.idNumber,
-                    onReveal = onIdNumberRevealed,
                     afterCopy = {
                         Toast.makeText(
                             context,
@@ -65,12 +65,14 @@ fun IdCardSection(
                     }
                 )
             },
-            onEdit = {
+            onEdit = null,
+            onReveal = {
                 toggleRevealSensitiveField(
                     handler = actionHandler,
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
                     sourceValue = entry.secret.identity?.idNumber,
+                    accessLevel = SensitiveAccessLevel.HIGH,
                     onReveal = onIdNumberRevealed
                 )
             }

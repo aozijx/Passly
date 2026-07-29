@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,12 +20,14 @@ import javax.inject.Inject
 data class SecurityUiState(
     val lockTimeout: Long = 60_000L,
     val isInvalidateKeyOnBioChange: Boolean = true,
-    val isLockOnBackground: Boolean = false
+    val isLockOnBackground: Boolean = false,
+    val reauthenticateSensitiveCopies: Boolean = true
 )
 
 sealed interface SecurityUiAction {
     data class SetLockTimeout(val timeoutMs: Long) : SecurityUiAction
     data class ToggleLockOnBackground(val enabled: Boolean) : SecurityUiAction
+    data class ToggleSensitiveCopyReauthentication(val enabled: Boolean) : SecurityUiAction
     data class VerifyRecoveryCode(val code: String) : SecurityUiAction
     data object ClearVerifyResult : SecurityUiAction
 }
@@ -38,15 +39,13 @@ class SecurityViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
-    val config: StateFlow<SecurityUiState> = combine(
-        settingsRepository.lockTimeout,
-        settingsRepository.settings.map { it.security.isInvalidateBiometricKeyOnChange },
-        settingsRepository.isLockOnBackground
-    ) { lt, ibc, lob ->
+    val config: StateFlow<SecurityUiState> = settingsRepository.settings.map { settings ->
+        val security = settings.security
         SecurityUiState(
-            lockTimeout = lt,
-            isInvalidateKeyOnBioChange = ibc,
-            isLockOnBackground = lob
+            lockTimeout = security.lockTimeout,
+            isInvalidateKeyOnBioChange = security.isInvalidateBiometricKeyOnChange,
+            isLockOnBackground = security.isLockOnBackground,
+            reauthenticateSensitiveCopies = security.reauthenticateSensitiveCopies
         )
     }.stateIn(
         viewModelScope,
@@ -76,6 +75,12 @@ class SecurityViewModel @Inject constructor(
 
             is SecurityUiAction.ToggleLockOnBackground -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetLockOnBackground(action.enabled))
+            }
+
+            is SecurityUiAction.ToggleSensitiveCopyReauthentication -> viewModelScope.launch {
+                settingsRepository.update(
+                    SettingsCommand.SetReauthenticateSensitiveCopies(action.enabled)
+                )
             }
 
             is SecurityUiAction.VerifyRecoveryCode -> viewModelScope.launch {

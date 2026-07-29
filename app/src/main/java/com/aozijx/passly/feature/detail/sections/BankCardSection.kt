@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -42,6 +43,7 @@ import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
+import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun BankCardSection(
@@ -103,7 +105,6 @@ fun BankCardSection(
                         fieldName = "cardholder",
                         revealedValue = revealedCardholder,
                         sourceValue = entry.username,
-                        onReveal = { onRevealField(RevealedFieldKey.CARDHOLDER, it) },
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         }
@@ -162,13 +163,25 @@ fun BankCardSection(
                         fieldName = "card number",
                         revealedValue = revealedCardNumber,
                         sourceValue = entry.secret.card?.cardNumber,
-                        onReveal = { onRevealField(RevealedFieldKey.CARD_NUMBER, it) },
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         }
                     )
                 },
-                onEdit = { editState.editedPassword = revealedCardNumber ?: ""; editState.isEditingPassword = true }
+                onEdit = {
+                    editState.editedPassword = revealedCardNumber ?: ""
+                    editState.isEditingPassword = true
+                },
+                onReveal = {
+                    toggleRevealSensitiveField(
+                        handler = actionHandler,
+                        fieldName = "card number",
+                        revealedValue = revealedCardNumber,
+                        sourceValue = entry.secret.card?.cardNumber,
+                        accessLevel = SensitiveAccessLevel.HIGH,
+                        onReveal = { onRevealField(RevealedFieldKey.CARD_NUMBER, it) }
+                    )
+                }
             )
         }
 
@@ -219,7 +232,6 @@ fun BankCardSection(
                             fieldName = "CVV",
                             revealedValue = revealedCvv,
                             sourceValue = cvv,
-                            onReveal = { onRevealField(RevealedFieldKey.CVV, it) },
                             afterCopy = {
                                 Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                             }
@@ -227,6 +239,16 @@ fun BankCardSection(
                     },
                     onEdit = {
                         editState.editedTotp = revealedCvv ?: ""; editState.isEditingTotp = true
+                    },
+                    onReveal = {
+                        toggleRevealSensitiveField(
+                            handler = actionHandler,
+                            fieldName = "CVV",
+                            revealedValue = revealedCvv,
+                            sourceValue = cvv,
+                            accessLevel = SensitiveAccessLevel.HIGH,
+                            onReveal = { onRevealField(RevealedFieldKey.CVV, it) }
+                        )
                     }
                 )
             }
@@ -242,7 +264,7 @@ fun BankCardSection(
                     Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                     onEvent(DetailIntent.RecordAction("expiration", ActivityType.COPY_PASSWORD))
                 },
-                onEdit = {}
+                onEdit = null
             )
         }
 
@@ -258,20 +280,31 @@ fun BankCardSection(
                         fieldName = "payment PIN",
                         revealedValue = revealedPaymentPin,
                         sourceValue = pin,
-                        onReveal = { onRevealField(RevealedFieldKey.PAYMENT_PIN, it) },
                         afterCopy = {
                             Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
                         }
                     )
                 },
-                onEdit = {}
+                onEdit = null,
+                onReveal = {
+                    toggleRevealSensitiveField(
+                        handler = actionHandler,
+                        fieldName = "payment PIN",
+                        revealedValue = revealedPaymentPin,
+                        sourceValue = pin,
+                        accessLevel = SensitiveAccessLevel.HIGH,
+                        onReveal = {
+                            onRevealField(RevealedFieldKey.PAYMENT_PIN, it)
+                        }
+                    )
+                }
             )
         }
 
         if (revealedCardNumber == null && !editState.isEditingPassword) {
             Button(
                 onClick = {
-                    onAuthenticate {
+                    onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
                         onRevealField(
                             RevealedFieldKey.CARD_NUMBER,
                             entry.secret.card?.cardNumber
@@ -317,19 +350,21 @@ fun BankCardSection(
 }
 
 @Composable
-private fun BankCardNumberItem(label: String, value: String, isRevealed: Boolean, onCopy: () -> Unit, onEdit: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { if (isRevealed) onEdit() else onCopy() }
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.width(70.dp))
-        Text(text = value, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), letterSpacing = if (isRevealed) 0.sp else 3.sp, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.End, maxLines = 1)
-        Icon(imageVector = if (isRevealed) Icons.Default.Edit else Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.padding(start = 12.dp), tint = MaterialTheme.colorScheme.outline)
-    }
-}
+private fun BankCardNumberItem(
+    label: String,
+    value: String,
+    isRevealed: Boolean,
+    onCopy: () -> Unit,
+    onEdit: () -> Unit,
+    onReveal: () -> Unit
+) = DetailItem(
+    label = label,
+    value = value,
+    isRevealed = isRevealed,
+    onCopy = onCopy,
+    onEdit = onEdit,
+    onReveal = onReveal
+)
 
 private fun savePlaintext(newValue: String, oldValue: String?, onClose: () -> Unit, onSuccess: (String) -> Unit) {
     if (newValue == oldValue) { onClose(); return }

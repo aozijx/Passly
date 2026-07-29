@@ -20,7 +20,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.authentication.SensitiveAccessAction
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.feature.detail.DetailViewModel
+import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.page.DetailScreen
@@ -71,6 +74,13 @@ fun PasslyNavHost(
                 },
                 requestReauthentication = { onSuccess ->
                     mainViewModel.requestReauth(onSuccess = onSuccess)
+                },
+                requestSensitiveCopy = { onSuccess ->
+                    mainViewModel.requestSensitiveAccess(
+                        action = SensitiveAccessAction.COPY,
+                        accessLevel = SensitiveAccessLevel.STANDARD,
+                        onSuccess = onSuccess
+                    )
                 },
                 onUserInteraction = {
                     mainViewModel.handleIntent(MainIntent.UpdateInteraction)
@@ -177,8 +187,12 @@ fun PasslyNavHost(
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
                     onUpdateVaultEntry = { vaultViewModel.updateVaultEntry(it) },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
-                    onAuthenticate = { success ->
-                        mainViewModel.requestAuth(onSuccess = success)
+                    onAuthenticate = DetailAuthenticate { action, accessLevel, success ->
+                        mainViewModel.requestSensitiveAccess(
+                            action = action,
+                            accessLevel = accessLevel,
+                            onSuccess = success
+                        )
                     }
                 )
             }

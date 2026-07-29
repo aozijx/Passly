@@ -113,6 +113,8 @@
     <string name="settings_security_app_password">パスワードを設定</string>
     <string name="settings_security_app_password_description">専用パスワードでアプリをロック解除</string>
     <string name="settings_security_auth_section">認証</string>
+    <string name="settings_security_reauthenticate_sensitive_copies">機密データのコピーを認証</string>
+    <string name="settings_security_reauthenticate_sensitive_copies_description">パスワード、CVV、秘密鍵などをコピーする前に再認証します。この設定は高機密フィールドを表示する際の認証には影響しません。</string>
     <string name="settings_security_auto_lock">自動ロック</string>
     <string name="settings_security_auto_lock_delay">自動ロックまでの時間</string>
     <string name="settings_security_biometric_disabled_description">先に現在の資格情報を確認する必要があります</string>

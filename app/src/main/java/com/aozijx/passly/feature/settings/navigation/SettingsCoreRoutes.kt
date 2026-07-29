@@ -89,6 +89,11 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     },
                     onLockOnBackgroundChange = {
                         viewModel.onAction(SecurityUiAction.ToggleLockOnBackground(it))
+                    },
+                    onSensitiveCopyReauthenticationChange = {
+                        viewModel.onAction(
+                            SecurityUiAction.ToggleSensitiveCopyReauthentication(it)
+                        )
                     }
                 )
             }

@@ -9,6 +9,8 @@ import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationState
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
+import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.diagnostics.usecase.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
@@ -85,6 +87,26 @@ class MainViewModel @Inject constructor(
         authenticationManager.authenticate(
             AuthenticationRequest(AuthenticationPurpose.REAUTHENTICATE)
         ) { result ->
+            if (result is AuthenticationResult.Success) onSuccess()
+            else if (result is AuthenticationResult.Failure) onError?.invoke("认证失败")
+        }
+    }
+
+    fun requestSensitiveAccess(
+        action: SensitiveAccessAction,
+        accessLevel: SensitiveAccessLevel,
+        onSuccess: () -> Unit = {},
+        onError: ((String) -> Unit)? = null
+    ) {
+        val purpose = when (action) {
+            SensitiveAccessAction.COPY -> AuthenticationPurpose.COPY_SECRET
+            SensitiveAccessAction.REVEAL -> when (accessLevel) {
+                SensitiveAccessLevel.STANDARD -> AuthenticationPurpose.REVEAL_SECRET
+                SensitiveAccessLevel.HIGH ->
+                AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET
+            }
+        }
+        authenticationManager.authenticate(AuthenticationRequest(purpose)) { result ->
             if (result is AuthenticationResult.Success) onSuccess()
             else if (result is AuthenticationResult.Failure) onError?.invoke("认证失败")
         }

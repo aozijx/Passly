@@ -63,8 +63,7 @@ fun CredentialSection(
                     handler = actionHandler,
                     fieldName = "username",
                     revealedValue = revealedUsername,
-                    sourceValue = item.username,
-                    onReveal = onUsernameRevealed
+                    sourceValue = item.username
                 )
             },
             onSave = { newValue ->
@@ -91,8 +90,7 @@ fun CredentialSection(
                         handler = actionHandler,
                         fieldName = "password",
                         revealedValue = revealedPassword,
-                        sourceValue = item.secret.login?.password,
-                        onReveal = onPasswordRevealed
+                        sourceValue = item.secret.login?.password
                     )
                 },
                 onSave = { newValue ->
@@ -115,7 +113,7 @@ fun CredentialSection(
         if (revealedUsername == null || revealedPassword == null) {
             Button(
                 onClick = {
-                    onAuthenticate {
+                    onAuthenticate.reveal {
                         if (revealedUsername == null && item.username.isNotEmpty()) {
                             onUsernameRevealed(item.username)
                             onEvent(

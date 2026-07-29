@@ -113,6 +113,8 @@
     <string name="settings_security_app_password">设置密码</string>
     <string name="settings_security_app_password_description">使用独立密码解锁应用</string>
     <string name="settings_security_auth_section">认证</string>
+    <string name="settings_security_reauthenticate_sensitive_copies">复制敏感数据时验证</string>
+    <string name="settings_security_reauthenticate_sensitive_copies_description">复制密码、CVV、私钥等敏感内容前重新验证；此开关不影响高敏感字段的显示验证</string>
     <string name="settings_security_auto_lock">自动锁定</string>
     <string name="settings_security_auto_lock_delay">自动锁定时间</string>
     <string name="settings_security_biometric_disabled_description">需要先验证现有凭据</string>

@@ -17,7 +17,8 @@ internal fun SecurityDetail(
     onAppPasswordClick: () -> Unit,
     onBiometricEnabledChange: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
-    onLockOnBackgroundChange: (Boolean) -> Unit
+    onLockOnBackgroundChange: (Boolean) -> Unit,
+    onSensitiveCopyReauthenticationChange: (Boolean) -> Unit
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -27,11 +28,14 @@ internal fun SecurityDetail(
             isBiometricEnabled = isBiometricEnabled,
             isInvalidateKeyOnBioChange = state.isInvalidateKeyOnBioChange,
             isLockOnBackground = state.isLockOnBackground,
+            reauthenticateSensitiveCopies = state.reauthenticateSensitiveCopies,
             onLockTimeoutChange = onLockTimeoutChange,
             onAppPasswordClick = onAppPasswordClick,
             onBiometricEnabledChange = onBiometricEnabledChange,
             onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
-            onLockOnBackgroundChange = onLockOnBackgroundChange
+            onLockOnBackgroundChange = onLockOnBackgroundChange,
+            onSensitiveCopyReauthenticationChange =
+                onSensitiveCopyReauthenticationChange
         )
     }
 }

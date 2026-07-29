@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,15 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aozijx.passly.R
 
 @Composable
 fun DetailItem(
-    label: String, value: String, isRevealed: Boolean, onCopy: () -> Unit, onEdit: () -> Unit
+    label: String,
+    value: String,
+    isRevealed: Boolean,
+    onCopy: () -> Unit,
+    onEdit: (() -> Unit)?,
+    onReveal: (() -> Unit)? = null
 ) {
     Surface(
-        onClick = { if (isRevealed) onEdit() else onCopy() },
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         modifier = Modifier.padding(vertical = 4.dp)
@@ -55,14 +63,40 @@ fun DetailItem(
                 textAlign = TextAlign.End,
                 maxLines = 1
             )
-            Icon(
-                imageVector = if (isRevealed) Icons.Default.Edit else Icons.Default.ContentCopy,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(start = 12.dp)
-                    .size(16.dp),
-                tint = MaterialTheme.colorScheme.outline
-            )
+            IconButton(onClick = onCopy) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = stringResource(R.string.copy),
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
+            }
+            onReveal?.let {
+                IconButton(onClick = it) {
+                    Icon(
+                        imageVector = if (isRevealed) {
+                            Icons.Default.VisibilityOff
+                        } else {
+                            Icons.Default.Visibility
+                        },
+                        contentDescription = stringResource(
+                            if (isRevealed) R.string.hide_password else R.string.show_password
+                        ),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+            if (isRevealed && onEdit != null) {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.edit),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
         }
     }
 }
