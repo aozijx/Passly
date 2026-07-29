@@ -36,7 +36,6 @@ fun DetailScreen(
     onBack: () -> Unit,
     onEvent: (DetailIntent) -> Unit,
     onUpdateInteraction: () -> Unit,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAutoUnlockTotp: (VaultEntry) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onOpenRelatedEntry: (VaultEntry) -> Unit
@@ -99,7 +98,6 @@ fun DetailScreen(
             otpUiState = otpUiState,
             onEvent = onEvent,
             onInteraction = onUpdateInteraction,
-            onUpdateVaultEntry = onUpdateVaultEntry,
             onAuthenticate = onAuthenticate,
             onOpenRelatedEntry = onOpenRelatedEntry
         )

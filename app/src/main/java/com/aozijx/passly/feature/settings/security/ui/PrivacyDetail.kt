@@ -5,6 +5,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.filled.ContentPasteOff
+import androidx.compose.ui.res.stringResource
+import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
+import com.aozijx.passly.core.ui.components.group.settingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.feature.settings.security.PrivacyUiState
 
@@ -13,7 +22,8 @@ internal fun PrivacyDetail(
     state: PrivacyUiState,
     onSecureContentEnabledChange: (Boolean) -> Unit,
     onFlipToLockEnabledChange: (Boolean) -> Unit,
-    onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit
+    onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit,
+    onSensitiveCopyReauthenticationChange: (Boolean) -> Unit
 ) {
     SettingsSection {
         Spacer(modifier = Modifier.height(8.dp))
@@ -24,6 +34,33 @@ internal fun PrivacyDetail(
             onSecureContentEnabledChange = onSecureContentEnabledChange,
             onFlipToLockEnabledChange = onFlipToLockEnabledChange,
             onFlipExitAndClearStackEnabledChange = onFlipExitAndClearStackEnabledChange
+        )
+        SettingsSectionTitle(
+            text = stringResource(R.string.settings_privacy_sensitive_access_section)
+        )
+        RoundedGroup(
+            items = listOf(
+                switchSettingsGroupItem(
+                    key = "privacy.reauthenticate_sensitive_copies",
+                    icon = Icons.Default.VerifiedUser,
+                    title = stringResource(
+                        R.string.settings_security_reauthenticate_sensitive_copies
+                    ),
+                    subtitle = stringResource(
+                        R.string.settings_security_reauthenticate_sensitive_copies_description
+                    ),
+                    checked = state.reauthenticateSensitiveCopies,
+                    onCheckedChange = onSensitiveCopyReauthenticationChange
+                ),
+                settingsGroupItem(
+                    key = "privacy.clipboard_protection",
+                    icon = Icons.Default.ContentPasteOff,
+                    title = stringResource(R.string.settings_privacy_clipboard_protection),
+                    subtitle = stringResource(
+                        R.string.settings_privacy_clipboard_protection_description
+                    )
+                )
+            )
         )
     }
 }

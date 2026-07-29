@@ -148,7 +148,7 @@ internal object LegacyResponseFactory {
     private fun buildSubtitle(candidate: ResolvedCandidate): String {
         val infoParts = mutableListOf<String>()
         if (candidate.username.isNotBlank()) infoParts += candidate.username
-        val displayType = EntryType.fromName(candidate.entryType).displayName
+        val displayType = candidate.entryType.displayName
         if (infoParts.isEmpty()) infoParts += displayType
         val joined = infoParts.joinToString(" · ")
         return if (candidate.totpCode != null) "OTP · $joined" else joined

@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 import com.aozijx.passly.domain.entry.model.secret.LoginSecret
 import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -44,6 +45,51 @@ class CandidateResolverTest {
 
         assertEquals(entry.id, result.single().candidateId)
         assertEquals(7, repository.lastLimit)
+        assertEquals(false, repository.lastIncludeSecrets)
+    }
+
+    @Test
+    fun `inline fill without authentication loads fill values`() = runBlocking {
+        val entry = loginEntry(
+            id = "018f9dd6-66c5-7cc0-85b5-39a337956681",
+            packages = setOf("com.example.app"),
+        )
+        val repository = FakeCredentialRepository(entry)
+
+        CandidateResolver(repository).resolve(
+            InternalFillRequest(
+                parentPackage = "com.example.app",
+                fields = emptyList(),
+            ),
+            AutofillSettings(
+                requireAuthentication = false,
+                presentation = AutofillPresentation.SYSTEM_INLINE,
+            ),
+        )
+
+        assertEquals(true, repository.lastIncludeSecrets)
+    }
+
+    @Test
+    fun `bottom sheet candidates never preload secrets`() = runBlocking {
+        val entry = loginEntry(
+            id = "018f9dd6-66c5-7cc0-85b5-39a337956681",
+            packages = setOf("com.example.app"),
+        )
+        val repository = FakeCredentialRepository(entry)
+
+        CandidateResolver(repository).resolve(
+            InternalFillRequest(
+                parentPackage = "com.example.app",
+                fields = emptyList(),
+            ),
+            AutofillSettings(
+                requireAuthentication = false,
+                presentation = AutofillPresentation.BOTTOM_SHEET,
+            ),
+        )
+
+        assertEquals(false, repository.lastIncludeSecrets)
     }
 
     @Test
@@ -68,14 +114,17 @@ class CandidateResolverTest {
         private val entry: VaultEntry,
     ) : CredentialServiceRepository {
         var lastLimit: Int = 0
+        var lastIncludeSecrets: Boolean? = null
 
         override suspend fun search(
             packageName: String?,
             webDomain: String?,
             allowUnmatched: Boolean,
+            includeSecrets: Boolean,
             limit: Int,
         ): List<CredentialCandidate> {
             lastLimit = limit
+            lastIncludeSecrets = includeSecrets
             return listOf(
                 CredentialCandidate(
                     entry = entry,
@@ -89,7 +138,10 @@ class CandidateResolverTest {
         override suspend fun getById(entryId: String): VaultEntry? =
             entry.takeIf { it.id == entryId }
 
-        override suspend fun getByIds(entryIds: List<String>): List<VaultEntry> =
+        override suspend fun getByIds(
+            entryIds: List<String>,
+            includeSecrets: Boolean
+        ): List<VaultEntry> =
             listOf(entry).filter { it.id in entryIds }
 
         override suspend fun save(

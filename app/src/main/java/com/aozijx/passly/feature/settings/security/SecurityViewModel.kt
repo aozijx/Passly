@@ -20,14 +20,12 @@ import javax.inject.Inject
 data class SecurityUiState(
     val lockTimeout: Long = 60_000L,
     val isInvalidateKeyOnBioChange: Boolean = true,
-    val isLockOnBackground: Boolean = false,
-    val reauthenticateSensitiveCopies: Boolean = true
+    val isLockOnBackground: Boolean = false
 )
 
 sealed interface SecurityUiAction {
     data class SetLockTimeout(val timeoutMs: Long) : SecurityUiAction
     data class ToggleLockOnBackground(val enabled: Boolean) : SecurityUiAction
-    data class ToggleSensitiveCopyReauthentication(val enabled: Boolean) : SecurityUiAction
     data class VerifyRecoveryCode(val code: String) : SecurityUiAction
     data object ClearVerifyResult : SecurityUiAction
 }
@@ -44,8 +42,7 @@ class SecurityViewModel @Inject constructor(
         SecurityUiState(
             lockTimeout = security.lockTimeout,
             isInvalidateKeyOnBioChange = security.isInvalidateBiometricKeyOnChange,
-            isLockOnBackground = security.isLockOnBackground,
-            reauthenticateSensitiveCopies = security.reauthenticateSensitiveCopies
+            isLockOnBackground = security.isLockOnBackground
         )
     }.stateIn(
         viewModelScope,
@@ -75,12 +72,6 @@ class SecurityViewModel @Inject constructor(
 
             is SecurityUiAction.ToggleLockOnBackground -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetLockOnBackground(action.enabled))
-            }
-
-            is SecurityUiAction.ToggleSensitiveCopyReauthentication -> viewModelScope.launch {
-                settingsRepository.update(
-                    SettingsCommand.SetReauthenticateSensitiveCopies(action.enabled)
-                )
             }
 
             is SecurityUiAction.VerifyRecoveryCode -> viewModelScope.launch {

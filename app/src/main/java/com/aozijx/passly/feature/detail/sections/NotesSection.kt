@@ -32,7 +32,6 @@ import com.mikepenz.markdown.m3.markdownTypography
 fun NotesSection(
     entry: VaultEntry,
     editState: EntryEditState,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
@@ -57,7 +56,6 @@ fun NotesSection(
                 TextButton(
                     onClick = {
                         val updatedEntry = editState.applyNotesOnly(entry)
-                        onUpdateVaultEntry(updatedEntry)
                         onEntryUpdated(updatedEntry)
                         editState.isEditingNotes = false
                     },

@@ -89,11 +89,6 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     },
                     onLockOnBackgroundChange = {
                         viewModel.onAction(SecurityUiAction.ToggleLockOnBackground(it))
-                    },
-                    onSensitiveCopyReauthenticationChange = {
-                        viewModel.onAction(
-                            SecurityUiAction.ToggleSensitiveCopyReauthentication(it)
-                        )
                     }
                 )
             }
@@ -118,6 +113,11 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     },
                     onFlipExitAndClearStackEnabledChange = {
                         viewModel.onAction(PrivacyUiAction.SetFlipExitAndClearStackEnabled(it))
+                    },
+                    onSensitiveCopyReauthenticationChange = {
+                        viewModel.onAction(
+                            PrivacyUiAction.SetSensitiveCopyReauthentication(it)
+                        )
                     }
                 )
             }

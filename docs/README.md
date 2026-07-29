@@ -11,6 +11,7 @@
 ## 架构
 
 - [架构总览](architecture/overview.md)
+- [UI 宿主、导航与命名](architecture/ui-shell-and-naming.md)
 - [包边界](architecture/package-boundaries.md)
 - [运行时流程](architecture/runtime-flows.md)
 
@@ -28,6 +29,7 @@
 - [密钥管理](security/key-management.md)
 - [存储加密](security/storage-encryption.md)
 - [自动填充安全](security/autofill.md)
+- [敏感数据读取与剪贴板](security/sensitive-data-access.md)
 - [威胁模型](security/threat-model.md)
 
 ## 功能

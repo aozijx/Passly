@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 
 data class DetailUiState(
     val entry: VaultEntry? = null,
-    val vaultType: EntryType = EntryType.LOGIN,
+    val entryType: EntryType = EntryType.LOGIN,
     val strategySummary: String = "",
     val validationError: String? = null,
     val isEditingTitle: Boolean = false,
@@ -16,7 +16,8 @@ data class DetailUiState(
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<String, String> = emptyMap(),
     val history: List<EntryActivity> = emptyList(),
-    val relatedEntries: List<VaultEntry> = emptyList()
+    val relatedEntries: List<VaultEntry> = emptyList(),
+    val isFaviconDownloading: Boolean = false
 ) {
     fun revealed(key: String): String? = revealedFields[key]
 }
@@ -48,6 +49,7 @@ sealed interface DetailIntent {
     object ToggleFavorite : DetailIntent
 
     data class RevealField(val key: String, val value: String?) : DetailIntent
+    data class DownloadFavicon(val domain: String) : DetailIntent
 
     data class RecordAction(val field: String, val type: ActivityType) : DetailIntent
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailIntent

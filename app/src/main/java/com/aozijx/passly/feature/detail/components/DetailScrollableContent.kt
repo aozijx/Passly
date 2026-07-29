@@ -22,8 +22,8 @@ import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.sections.ActivityTimelineSection
 import com.aozijx.passly.feature.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.feature.detail.sections.BankCardSection
-import com.aozijx.passly.feature.detail.sections.CategoryItem
 import com.aozijx.passly.feature.detail.sections.CredentialSection
+import com.aozijx.passly.feature.detail.sections.EntryTypeItem
 import com.aozijx.passly.feature.detail.sections.IdCardSection
 import com.aozijx.passly.feature.detail.sections.NotesSection
 import com.aozijx.passly.feature.detail.sections.PasskeySection
@@ -42,7 +42,6 @@ fun DetailScrollableContent(
     otpUiState: OtpUiState?,
     onEvent: (DetailIntent) -> Unit,
     onInteraction: () -> Unit,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onOpenRelatedEntry: (VaultEntry) -> Unit
 ) {
@@ -188,13 +187,8 @@ fun DetailScrollableContent(
         }
 
         item {
-            InfoGroupCard(title = stringResource(R.string.category)) {
-                CategoryItem(
-                    entry = entry,
-                    editState = editState,
-                    onUpdateVaultEntry = onUpdateVaultEntry,
-                    onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
-                )
+            InfoGroupCard(title = stringResource(R.string.entry_type)) {
+                EntryTypeItem(entry.entryType)
             }
         }
 
@@ -202,7 +196,8 @@ fun DetailScrollableContent(
             AssociatedInfoSection(
                 entry = entry,
                 editState = editState,
-                onUpdateVaultEntry = onUpdateVaultEntry,
+                isFaviconDownloading = uiState.isFaviconDownloading,
+                onDownloadFavicon = { onEvent(DetailIntent.DownloadFavicon(it)) },
                 onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
             )
         }
@@ -211,7 +206,6 @@ fun DetailScrollableContent(
             NotesSection(
                 entry = entry,
                 editState = editState,
-                onUpdateVaultEntry = onUpdateVaultEntry,
                 onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) }
             )
         }

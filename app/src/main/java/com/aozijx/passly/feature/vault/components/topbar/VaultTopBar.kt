@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
 
@@ -54,9 +55,9 @@ fun VaultTopBar(
     isTabBarCollapsible: Boolean = true,
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: (Boolean) -> Unit,
-    onClearCategory: () -> Unit,
+    onClearEntryType: () -> Unit,
     onToggleTotpVisibility: () -> Unit,
-    onCategorySelected: (String?) -> Unit,
+    onEntryTypeSelected: (String?) -> Unit,
     onSortSelected: (VaultSortSpec) -> Unit,
     onSelectTab: (VaultTab) -> Unit
 ) {
@@ -106,14 +107,15 @@ fun VaultTopBar(
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (uiState.selectedCategory != null) stringResource(
-                                R.string.vault_title_category, uiState.selectedCategory
+                            text = if (uiState.selectedEntryTypeName != null) stringResource(
+                                R.string.vault_title_entry_type,
+                                EntryType.fromName(uiState.selectedEntryTypeName).displayName
                             )
                             else stringResource(R.string.vault_title_default),
                             fontWeight = FontWeight.Bold
                         )
-                        if (uiState.selectedCategory != null) {
-                            IconButton(onClick = onClearCategory) {
+                        if (uiState.selectedEntryTypeName != null) {
+                            IconButton(onClick = onClearEntryType) {
                                 Icon(
                                     Icons.Default.Clear,
                                     stringResource(R.string.vault_clear_filter),
@@ -149,9 +151,9 @@ fun VaultTopBar(
                                 onSettingsClick = {
                                     navigateToSettingsAfterDismiss = true
                                 },
-                                availableCategories = uiState.availableCategories,
-                                selectedCategory = uiState.selectedCategory,
-                                onCategorySelected = onCategorySelected,
+                                availableEntryTypes = uiState.availableEntryTypes,
+                                selectedEntryTypeName = uiState.selectedEntryTypeName,
+                                onEntryTypeSelected = onEntryTypeSelected,
                                 selectedSort = uiState.selectedSort,
                                 onSortSelected = onSortSelected
                             )
@@ -161,7 +163,7 @@ fun VaultTopBar(
             })
 
         AnimatedVisibility(
-            visible = uiState.visibleTabs.size > 1 && !uiState.isSearchActive && uiState.selectedCategory == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+            visible = uiState.visibleTabs.size > 1 && !uiState.isSearchActive && uiState.selectedEntryTypeName == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {

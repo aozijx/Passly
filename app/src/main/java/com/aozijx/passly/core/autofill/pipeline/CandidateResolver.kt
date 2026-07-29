@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,12 +35,17 @@ class CandidateResolver @Inject constructor(
         packageName: String?,
         webDomain: String?,
         settings: AutofillSettings,
+        includeSecrets: Boolean? = null,
     ): List<ResolvedCandidate> {
         return try {
             repository.search(
                 packageName = packageName,
                 webDomain = webDomain,
                 allowUnmatched = settings.allowUnmatchedSuggestions,
+                includeSecrets = includeSecrets ?: (
+                    !settings.requireAuthentication &&
+                        settings.presentation != AutofillPresentation.BOTTOM_SHEET
+                    ),
                 limit = settings.normalizedMaxSuggestions,
             ).map { it.toResolved(settings.includeOtp) }
         } catch (e: CancellationException) {
@@ -55,7 +61,7 @@ class CandidateResolver @Inject constructor(
         settings: AutofillSettings,
     ): List<ResolvedCandidate> {
         return try {
-            repository.getByIds(ids).map { entry ->
+            repository.getByIds(ids, includeSecrets = false).map { entry ->
                 entry.toResolvedCandidate(settings.includeOtp)
             }
         } catch (e: CancellationException) {
@@ -96,7 +102,7 @@ class CandidateResolver @Inject constructor(
             subtitle = buildSubtitle(this),
             iconName = entry.iconName,
             iconCustomPath = entry.iconCustomPath,
-            entryType = entry.entryType.name,
+            entryType = entry.entryType,
             matchedBy = matchedBy,
             matchedPackage = matchedPackage,
             matchedDomain = matchedDomain,
@@ -115,7 +121,7 @@ class CandidateResolver @Inject constructor(
             subtitle = username,
             iconName = iconName,
             iconCustomPath = iconCustomPath,
-            entryType = entryType.name,
+            entryType = entryType,
         )
     }
 

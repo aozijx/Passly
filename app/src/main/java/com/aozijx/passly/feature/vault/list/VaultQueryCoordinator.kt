@@ -24,25 +24,25 @@ internal class VaultQueryCoordinator(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeItems(
         debouncedSearchQuery: Flow<String>,
-        normalizedSelectedCategory: Flow<String?>,
+        normalizedSelectedEntryTypeName: Flow<String?>,
         refreshTrigger: Flow<Long>
     ): Flow<List<EntryListItem>> = combine(
         debouncedSearchQuery,
-        normalizedSelectedCategory,
+        normalizedSelectedEntryTypeName,
         refreshTrigger
-    ) { query, category, refreshId ->
-        QueryParams(query = query, category = category, refreshId = refreshId)
+    ) { query, entryTypeName, refreshId ->
+        QueryParams(query = query, entryTypeName = entryTypeName, refreshId = refreshId)
     }.distinctUntilChanged().flatMapLatest { params ->
         entryListQueryRepository.observe(
             query = params.query,
-            category = params.category,
+            entryTypeName = params.entryTypeName,
             filter = EntryFilter.ALL
         )
     }
 
     private data class QueryParams(
         val query: String,
-        val category: String?,
+        val entryTypeName: String?,
         val refreshId: Long
     )
 }

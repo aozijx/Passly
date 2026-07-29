@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 
 data class VaultListState(
     val isLoading: Boolean = true,
-    val categories: List<String> = emptyList(),
+    val entryTypes: List<String> = emptyList(),
     val itemsByTab: Map<VaultTab, List<EntryListItem>> = emptyMap()
 )
 
@@ -35,8 +35,8 @@ internal class VaultListCoordinator(
 
     private val loadingTrigger = combine(
         searchFilter.searchQuery,
-        searchFilter.selectedCategory
-    ) { query, category -> Pair(query.trim(), category?.trim()) }
+        searchFilter.selectedEntryTypeName
+    ) { query, entryTypeName -> Pair(query.trim(), entryTypeName?.trim()) }
         .distinctUntilChanged()
 
     init {
@@ -48,7 +48,7 @@ internal class VaultListCoordinator(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val rawItems: Flow<List<EntryListItem>> = queryCoordinator.observeItems(
         debouncedSearchQuery = searchFilter.debouncedSearchQuery,
-        normalizedSelectedCategory = searchFilter.normalizedSelectedCategory,
+        normalizedSelectedEntryTypeName = searchFilter.normalizedSelectedEntryTypeName,
         refreshTrigger = refreshTrigger
     ).onEach { items ->
         _isLoading.value = false
@@ -62,19 +62,19 @@ internal class VaultListCoordinator(
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val categories: StateFlow<List<String>> =
+    private val entryTypes: StateFlow<List<String>> =
         searchFilter.selectedTab.flatMapLatest { tab: VaultTab ->
-            entryListQueryRepository.observeCategories(tab.entryFilter)
+            entryListQueryRepository.observeEntryTypes(tab.entryFilter)
         }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val state: StateFlow<VaultListState> = combine(
         _isLoading,
-        categories,
+        entryTypes,
         sortedItems
     ) { loading, cats, items ->
         VaultListState(
             isLoading = loading,
-            categories = cats,
+            entryTypes = cats,
             itemsByTab = VaultTab.entries.associateWith { tab ->
                 when (tab) {
                     VaultTab.ALL -> items

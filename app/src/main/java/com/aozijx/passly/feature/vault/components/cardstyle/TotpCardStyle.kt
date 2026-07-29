@@ -127,7 +127,7 @@ fun TotpStyleVaultItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = entry.category,
+                        text = entry.entryType.displayName,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

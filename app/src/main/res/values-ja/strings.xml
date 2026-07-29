@@ -2,7 +2,6 @@
 
     <!-- 共通 -->
     <string name="auth_title">セキュリティ確認</string>
-    <string name="category">カテゴリ</string>
     <string name="verify">確認</string>
     <string name="save">保存</string>
     <string name="copy">コピー</string>
@@ -19,7 +18,6 @@
     <string name="title">タイトル</string>
     <string name="remark">メモ</string>
     <string name="default_label">既定</string>
-    <string name="category_optional">分類（任意）</string>
     <string name="edit_field">%sを編集</string>
     <string name="show_password">パスワード表示</string>
     <string name="hide_password">パスワード非表示</string>
@@ -29,7 +27,6 @@
 
     <!-- 自動入力サービス -->
     <string name="autofill_entry_compact_title">アカウントを選択</string>
-    <string name="autofill_pending_verification">検証待ちの自動入力項目</string>
     <string name="autofill_prompt_title">%1$s で自動入力</string>
     <string name="select">選択</string>
     <plurals name="autofill_trigger_count">
@@ -47,7 +44,9 @@
 
     <!-- 金庫 - その他 -->
     <string name="vault_search_placeholder">項目を検索…</string>
-    <string name="vault_title_category">分類：%s</string>
+    <string name="vault_title_entry_type">エントリ種別：%s</string>
+    <string name="vault_search_entry_type">エントリ種別を検索</string>
+    <string name="vault_search_entry_type_hint">エントリ種別を検索…</string>
     <string name="vault_title_default">安全な金庫</string>
     <string name="vault_clear_filter">フィルター解除</string>
     <string name="vault_menu_filter">分類フィルター</string>
@@ -136,7 +135,6 @@
     <string name="notification_channel_app_messages">アプリ情報</string>
     <string name="notification_channel_app_messages_summary">取得結果などのステータスバー情報</string>
     <!-- カテゴリ -->
-    <string name="category_autofill">自動入力</string>
 
     <!-- ウィジェット・ショートカット -->
 
@@ -269,4 +267,8 @@
     <string name="auth_purpose_recover_database">認証して障害データベースを保持し、新規作成</string>
     <string name="auth_purpose_clear_database">認証して金庫データを消去</string>
     <string name="related_entries">関連エントリ</string>
+    <string name="app_package_picker_title">関連アプリを選択</string>
+    <string name="app_package_picker_search">アプリまたはパッケージ名を検索</string>
+    <string name="app_package_picker_action">アプリを選択</string>
+    <string name="entry_type">エントリ種別</string>
 </resources>

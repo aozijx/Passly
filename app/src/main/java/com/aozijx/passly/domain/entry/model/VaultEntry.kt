@@ -13,7 +13,7 @@ data class VaultEntry(
     val summary: EntrySummary,
     val secret: EntrySecret
 ) : VaultIconable {
-    override val category: String get() = header.entryType.name
+    override val entryType: EntryType get() = header.entryType
     override val iconName: String? get() = summary.icon
     override val iconCustomPath: String? get() = summary.iconCustomPath
     override val associatedAppPackage: String? get() = summary.website?.packageNames?.firstOrNull()
@@ -23,7 +23,6 @@ data class VaultEntry(
     val id: String get() = header.entryId
     val title: String get() = summary.title
     val username: String get() = summary.username
-    val entryType: EntryType get() = header.entryType
     val vaultId: String get() = header.vaultId
     val parentEntryId: String? get() = header.parentEntryId
     val favorite: Boolean get() = summary.favorite

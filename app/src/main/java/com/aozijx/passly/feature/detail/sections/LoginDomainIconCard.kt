@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Button
@@ -27,14 +28,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -43,32 +42,24 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.media.FaviconUtils
-import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
+import com.aozijx.passly.core.ui.components.AppPackagePickerDialog
 import com.aozijx.passly.core.ui.components.rememberAppIcon
 import com.aozijx.passly.core.ui.components.rememberAppMetadata
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.domain.entry.model.WebsiteInfo
-import com.aozijx.passly.domain.notice.model.NoticeCode
-import com.aozijx.passly.domain.notice.model.newAppNotice
-import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
-import kotlinx.coroutines.launch
 
 @Composable
 internal fun LoginDomainIconCard(
     entry: VaultEntry,
     editState: EntryEditState,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    isFaviconDownloading: Boolean,
+    onDownloadFavicon: (String) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val noticePublisher = LocalAppNoticePublisher.current
-    var downloading by remember { mutableStateOf(false) }
+    var showPackagePicker by remember { mutableStateOf(false) }
     var domainInput by remember(entry.associatedDomain) {
         mutableStateOf(TextFieldValue(entry.associatedDomain.orEmpty()))
     }
@@ -97,29 +88,15 @@ internal fun LoginDomainIconCard(
             if (editState.isEditingDomain) {
                 DomainEditor(
                     value = domainInput,
-                    downloading = downloading,
+                    downloading = isFaviconDownloading,
                     onValueChange = {
                         domainInput = it
                         editState.editedDomain = it.text
                     },
-                    onDownload = {
-                        scope.launch {
-                            downloading = true
-                            downloadFavicon(
-                                domain = domainInput.text.trim(),
-                                entry = entry,
-                                context = context,
-                                noticePublisher = noticePublisher,
-                                onUpdateVaultEntry = onUpdateVaultEntry,
-                                onEntryUpdated = onEntryUpdated
-                            )
-                            downloading = false
-                        }
-                    },
+                    onDownload = { onDownloadFavicon(domainInput.text.trim()) },
                     onDone = {
                         focusManager.clearFocus()
                         val updated = editState.applyAssociatedOnly(entry)
-                        onUpdateVaultEntry(updated)
                         onEntryUpdated(updated)
                         editState.isEditingDomain = false
                     }
@@ -134,10 +111,26 @@ internal fun LoginDomainIconCard(
             associatedPackages.forEach { packageName ->
                 AssociatedPackageRow(packageName)
             }
+            TextButton(onClick = { showPackagePicker = true }) {
+                Icon(Icons.Default.Apps, null)
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.app_package_picker_action))
+            }
         }
     }
-}
 
+    if (showPackagePicker) {
+        AppPackagePickerDialog(
+            onSelect = {
+                editState.editedPackage = it.packageName
+                val updated = editState.applyAssociatedOnly(entry)
+                onEntryUpdated(updated)
+                showPackagePicker = false
+            },
+            onDismiss = { showPackagePicker = false }
+        )
+    }
+}
 @Composable
 private fun AssociatedPackageRow(packageName: String) {
     val icon = rememberAppIcon(packageName)
@@ -217,36 +210,4 @@ private fun DomainEditor(
             }
         }
     }
-}
-
-private suspend fun downloadFavicon(
-    domain: String,
-    entry: VaultEntry,
-    context: android.content.Context,
-    noticePublisher: AppNoticePublisher,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit
-) {
-    if (domain.isBlank()) return
-    val outcome = FaviconUtils.downloadAndSaveFavicon(domain, context)
-    val code = when (outcome.result) {
-        FaviconUtils.DownloadResult.SUCCESS -> {
-            val updated = entry.copy(
-                summary = entry.summary.copy(
-                    website = (entry.summary.website ?: WebsiteInfo()).copy(
-                        primaryUrl = domain
-                    ),
-                    icon = null
-                )
-            )
-            onUpdateVaultEntry(updated)
-            onEntryUpdated(updated)
-            NoticeCode.ICON_DOWNLOAD_COMPLETED
-        }
-        FaviconUtils.DownloadResult.NETWORK_ERROR,
-        FaviconUtils.DownloadResult.DECODE_ERROR,
-        FaviconUtils.DownloadResult.SAVE_ERROR,
-        FaviconUtils.DownloadResult.EMPTY_INPUT -> NoticeCode.ICON_DOWNLOAD_FAILED
-    }
-    noticePublisher.publish(newAppNotice(code))
 }

@@ -26,9 +26,9 @@ fun VaultContentTopBar(
     isDatabaseInitializing: Boolean = false,
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: (Boolean) -> Unit,
-    onClearCategory: () -> Unit,
+    onClearEntryType: () -> Unit,
     onToggleTotpVisibility: () -> Unit,
-    onCategorySelected: (String?) -> Unit,
+    onEntryTypeSelected: (String?) -> Unit,
     onSortSelected: (VaultSortSpec) -> Unit,
     onSelectTab: (VaultTab) -> Unit
 ) {
@@ -44,9 +44,9 @@ fun VaultContentTopBar(
             isTabBarCollapsible = isTabBarCollapsible,
             onSearchQueryChange = onSearchQueryChange,
             onToggleSearch = onToggleSearch,
-            onClearCategory = onClearCategory,
+            onClearEntryType = onClearEntryType,
             onToggleTotpVisibility = onToggleTotpVisibility,
-            onCategorySelected = onCategorySelected,
+            onEntryTypeSelected = onEntryTypeSelected,
             onSortSelected = onSortSelected,
             onSelectTab = onSelectTab
         )

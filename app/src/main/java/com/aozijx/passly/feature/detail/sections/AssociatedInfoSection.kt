@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.AppPackagePickerDialog
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
@@ -38,14 +40,16 @@ fun AssociatedInfoSection(
     modifier: Modifier = Modifier,
     entry: VaultEntry,
     editState: EntryEditState,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
+    isFaviconDownloading: Boolean,
+    onDownloadFavicon: (String) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     if (entry.entryType == EntryType.LOGIN) {
         LoginDomainIconCard(
             entry = entry,
             editState = editState,
-            onUpdateVaultEntry = onUpdateVaultEntry,
+            isFaviconDownloading = isFaviconDownloading,
+            onDownloadFavicon = onDownloadFavicon,
             onEntryUpdated = onEntryUpdated
         )
         return
@@ -55,6 +59,7 @@ fun AssociatedInfoSection(
     var localDomain by remember(entry.associatedDomain) {
         mutableStateOf(entry.associatedDomain.orEmpty())
     }
+    var showPackagePicker by remember { mutableStateOf(false) }
     val notSet = stringResource(R.string.not_set)
 
     Column(
@@ -79,7 +84,7 @@ fun AssociatedInfoSection(
                 editState.editedDomain = it
             },
             onSave = {
-                saveAssociated(entry, editState, onUpdateVaultEntry, onEntryUpdated)
+                saveAssociated(entry, editState, onEntryUpdated)
                 editState.isEditingDomain = false
             }
         )
@@ -96,9 +101,22 @@ fun AssociatedInfoSection(
             },
             onValueChange = { editState.editedPackage = it },
             onSave = {
-                saveAssociated(entry, editState, onUpdateVaultEntry, onEntryUpdated)
+                saveAssociated(entry, editState, onEntryUpdated)
                 editState.isEditingPackage = false
-            }
+            },
+            onPickPackage = { showPackagePicker = true }
+        )
+    }
+
+    if (showPackagePicker) {
+        AppPackagePickerDialog(
+            onSelect = {
+                editState.editedPackage = it.packageName
+                saveAssociated(entry, editState, onEntryUpdated)
+                editState.isEditingPackage = false
+                showPackagePicker = false
+            },
+            onDismiss = { showPackagePicker = false }
         )
     }
 }
@@ -113,7 +131,8 @@ private fun EditableAssociatedCard(
     placeholder: String? = null,
     onLongClick: () -> Unit,
     onValueChange: (String) -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onPickPackage: (() -> Unit)? = null
 ) {
     InfoGroupCard(title = title) {
         Column(
@@ -135,6 +154,13 @@ private fun EditableAssociatedCard(
                     placeholder = placeholder?.let { { Text(it) } },
                     singleLine = true
                 )
+                onPickPackage?.let { pick ->
+                    TextButton(onClick = pick) {
+                        Icon(Icons.Default.Apps, null)
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.app_package_picker_action))
+                    }
+                }
                 TextButton(onClick = onSave, modifier = Modifier.align(Alignment.End)) {
                     Icon(Icons.Default.Check, null)
                     Spacer(Modifier.width(4.dp))
@@ -160,10 +186,8 @@ private fun EditableAssociatedCard(
 private fun saveAssociated(
     entry: VaultEntry,
     editState: EntryEditState,
-    onUpdateVaultEntry: (VaultEntry) -> Unit,
     onEntryUpdated: (VaultEntry) -> Unit
 ) {
     val updated = editState.applyAssociatedOnly(entry)
-    onUpdateVaultEntry(updated)
     onEntryUpdated(updated)
 }

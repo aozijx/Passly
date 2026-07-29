@@ -17,12 +17,14 @@ data class PrivacyUiState(
     val isSecureContentEnabled: Boolean = true,
     val isFlipToLockEnabled: Boolean = false,
     val isFlipExitAndClearStackEnabled: Boolean = false,
+    val reauthenticateSensitiveCopies: Boolean = true,
 )
 
 sealed interface PrivacyUiAction {
     data class SetSecureContentEnabled(val enabled: Boolean) : PrivacyUiAction
     data class SetFlipToLockEnabled(val enabled: Boolean) : PrivacyUiAction
     data class SetFlipExitAndClearStackEnabled(val enabled: Boolean) : PrivacyUiAction
+    data class SetSensitiveCopyReauthentication(val enabled: Boolean) : PrivacyUiAction
 }
 
 @HiltViewModel
@@ -33,12 +35,14 @@ class PrivacyViewModel @Inject constructor(
     val config: StateFlow<PrivacyUiState> = combine(
         settingsRepository.settings.map { it.security.isSecureContentEnabled },
         settingsRepository.settings.map { it.security.isFlipToLockEnabled },
-        settingsRepository.settings.map { it.security.isFlipExitAndClearStackEnabled }
-    ) { sec, ftl, fec ->
+        settingsRepository.settings.map { it.security.isFlipExitAndClearStackEnabled },
+        settingsRepository.settings.map { it.security.reauthenticateSensitiveCopies }
+    ) { sec, ftl, fec, copyAuth ->
         PrivacyUiState(
             isSecureContentEnabled = sec,
             isFlipToLockEnabled = ftl,
             isFlipExitAndClearStackEnabled = fec,
+            reauthenticateSensitiveCopies = copyAuth,
         )
     }.stateIn(
         viewModelScope,
@@ -58,6 +62,12 @@ class PrivacyViewModel @Inject constructor(
 
             is PrivacyUiAction.SetFlipExitAndClearStackEnabled -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetFlipExitAndClearStackEnabled(action.enabled))
+            }
+
+            is PrivacyUiAction.SetSensitiveCopyReauthentication -> viewModelScope.launch {
+                settingsRepository.update(
+                    SettingsCommand.SetReauthenticateSensitiveCopies(action.enabled)
+                )
             }
         }
     }

@@ -49,6 +49,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         packageName: String?,
         webDomain: String?,
         allowUnmatched: Boolean,
+        includeSecrets: Boolean,
         limit: Int,
     ): List<CredentialCandidate> {
         if (sessionState.isLocked()) return emptyList()
@@ -88,9 +89,13 @@ class CredentialServiceRepositoryImpl @Inject constructor(
             }
             if (entities.isEmpty()) return@query emptyList()
 
-            val secretMap = entrySecretQueryDao()
-                .getByEntryIds(entities.map { it.entryId })
-                .associateBy { it.entryId }
+            val secretMap = if (includeSecrets) {
+                entrySecretQueryDao()
+                    .getByEntryIds(entities.map { it.entryId })
+                    .associateBy { it.entryId }
+            } else {
+                emptyMap()
+            }
 
             entities
                 .filter { it.deletedAt == null && AutofillConfiguration.isAutofillSupported(it.entryType) }
@@ -126,17 +131,24 @@ class CredentialServiceRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getById(entryId: String): VaultEntry? =
-        getByIds(listOf(entryId)).firstOrNull()
+        getByIds(listOf(entryId), includeSecrets = true).firstOrNull()
 
-    override suspend fun getByIds(entryIds: List<String>): List<VaultEntry> {
+    override suspend fun getByIds(
+        entryIds: List<String>,
+        includeSecrets: Boolean
+    ): List<VaultEntry> {
         if (sessionState.isLocked() || entryIds.isEmpty()) return emptyList()
         val uniqueIds = entryIds.distinct()
         return sessionManager.query {
             val entries = entryQueryDao().getByIds(uniqueIds)
                 .filter { it.deletedAt == null }
-            val secretMap = entrySecretQueryDao()
-                .getByEntryIds(entries.map { it.entryId })
-                .associateBy { it.entryId }
+            val secretMap = if (includeSecrets) {
+                entrySecretQueryDao()
+                    .getByEntryIds(entries.map { it.entryId })
+                    .associateBy { it.entryId }
+            } else {
+                emptyMap()
+            }
             val assembled = entries.associate { entity ->
                 val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)
                 val secret = secretMap[entity.entryId]

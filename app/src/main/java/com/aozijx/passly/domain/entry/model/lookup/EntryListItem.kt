@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 data class EntryListItem(
     val id: String,
-    val entryType: EntryType,
+    override val entryType: EntryType,
     val title: String,
     val username: String,
     val icon: String?,
@@ -37,7 +37,6 @@ data class EntryListItem(
     val hasAttachments: Boolean
         get() = EntryCapabilityFlags.has(capabilityFlags, EntryCapabilityFlags.HAS_ATTACHMENTS)
     val otpType: OtpType get() = runCatching { OtpType.valueOf(otpTypeName) }.getOrDefault(OtpType.TOTP)
-    override val category: String get() = entryType.name
     override val iconName: String? get() = icon
     override val associatedAppPackage: String? get() = website?.packageNames?.firstOrNull()
     override val associatedDomain: String? get() = website?.primaryUrl

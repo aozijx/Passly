@@ -3,12 +3,10 @@ package com.aozijx.passly.feature.vault.components.editor
 import android.widget.Toast
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.ui.components.AppDialog
@@ -36,7 +34,6 @@ fun AddGenericEntryDialog(
     addType: AddType,
     onUpdateInteraction: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val state = remember { GenericAddState() }
     val typeLabel = stringResource(addType.labelRes)
@@ -112,11 +109,6 @@ fun AddGenericEntryDialog(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
         )
 
-        CategoryDropdown(
-            selectedCategory = state.category,
-            onCategorySelected = { state.category = it },
-            availableCategories = uiState.availableCategories
-        )
     }
 }
 

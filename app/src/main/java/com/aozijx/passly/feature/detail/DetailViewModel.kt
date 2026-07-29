@@ -156,6 +156,13 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
+            is DetailIntent.DownloadFavicon -> {
+                val current = _uiState.value.entry ?: return
+                viewModelScope.launch {
+                    downloadAndApplyFavicon(current, event.domain, updateDomain = true)
+                }
+            }
+
             is DetailIntent.RecordAction -> {
                 val current = _uiState.value.entry ?: return
                 if (event.type == ActivityType.VIEW && !_uiState.value.isAccessHistoryEnabled) return
@@ -193,20 +200,7 @@ class DetailViewModel @Inject constructor(
     private fun autoDownloadFavicon(entry: VaultEntry) {
         if (entry.associatedDomain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return
         viewModelScope.launch {
-            val domain = entry.associatedDomain
-            val outcome = downloadFavicon(domain!!)
-            if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                val iconSummary = entry.summary.copy(icon = outcome.filePath)
-                entryCommandRepository.updateEntry(
-                    entry.id, entry.entryVersion, EntryChanges(summary = iconSummary)
-                ).onSuccess {
-                        refreshFromEntry(
-                            entry.copy(summary = entry.summary.copy(icon = outcome.filePath)),
-                            _uiState.value.isEditingTitle,
-                            _uiState.value.editedTitle
-                        )
-                    }
-            }
+            downloadAndApplyFavicon(entry, entry.associatedDomain!!, updateDomain = false)
         }
     }
 
@@ -234,13 +228,54 @@ class DetailViewModel @Inject constructor(
         return faviconRepository.download(input)
     }
 
+    private suspend fun downloadAndApplyFavicon(
+        entry: VaultEntry,
+        domain: String,
+        updateDomain: Boolean
+    ) {
+        if (domain.isBlank()) return
+        _uiState.update { it.copy(isFaviconDownloading = true) }
+        try {
+            val outcome = downloadFavicon(domain)
+            if (outcome.result != FaviconResult.SUCCESS || outcome.filePath == null) return
+            val website = if (updateDomain) {
+                (entry.summary.website ?: com.aozijx.passly.domain.entry.model.WebsiteInfo())
+                    .copy(primaryUrl = domain.trim())
+            } else {
+                entry.summary.website
+            }
+            val updatedSummary = entry.summary.copy(
+                website = website,
+                icon = null,
+                iconCustomPath = outcome.filePath
+            )
+            val updateResult = entryCommandRepository.updateEntry(
+                entry.id,
+                entry.entryVersion,
+                EntryChanges(summary = updatedSummary)
+            )
+            if (updateResult.isSuccess) {
+                val latest = entryQueryRepository.getById(entry.id)
+                if (latest != null) {
+                    refreshFromEntry(
+                        latest,
+                        _uiState.value.isEditingTitle,
+                        _uiState.value.editedTitle
+                    )
+                }
+            }
+        } finally {
+            _uiState.update { it.copy(isFaviconDownloading = false) }
+        }
+    }
+
     private fun refreshFromEntry(entry: VaultEntry, isEditingTitle: Boolean, editedTitle: String) {
         val analysis = entryAnalyzer.analyze(entry)
 
         _uiState.update {
             it.copy(
                 entry = entry,
-                vaultType = analysis.vaultType,
+                entryType = analysis.entryType,
                 strategySummary = analysis.strategySummary,
                 validationError = analysis.validationError,
                 isEditingTitle = isEditingTitle,

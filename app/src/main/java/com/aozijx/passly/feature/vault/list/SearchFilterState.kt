@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 
 internal data class SearchFilterUiState(
     val searchQuery: String = "",
-    val selectedCategory: String? = null,
+    val selectedEntryTypeName: String? = null,
     val selectedTab: VaultTab = VaultTab.ALL,
     val selectedSort: VaultSortSpec = VaultSortSpec.DEFAULT,
     val isSearchActive: Boolean = false
@@ -29,8 +29,8 @@ internal class SearchFilterState(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
-    private val _selectedCategory = MutableStateFlow<String?>(null)
-    val selectedCategory: StateFlow<String?> = _selectedCategory
+    private val _selectedEntryTypeName = MutableStateFlow<String?>(null)
+    val selectedEntryTypeName: StateFlow<String?> = _selectedEntryTypeName
 
     private val _selectedTab = MutableStateFlow(VaultTab.ALL)
     val selectedTab: StateFlow<VaultTab> = _selectedTab
@@ -44,17 +44,17 @@ internal class SearchFilterState(
     val uiStateFlow: StateFlow<SearchFilterUiState> = combine(
         combine(
             _searchQuery,
-            _selectedCategory,
+            _selectedEntryTypeName,
             _selectedTab,
             _isSearchActive
-        ) { query, category, tab, active ->
-            PartialState(query, category, tab, active)
+        ) { query, entryTypeName, tab, active ->
+            PartialState(query, entryTypeName, tab, active)
         },
         _selectedSort
     ) { partial, sort ->
         SearchFilterUiState(
             searchQuery = partial.query,
-            selectedCategory = partial.category,
+            selectedEntryTypeName = partial.entryTypeName,
             selectedTab = partial.tab,
             selectedSort = sort,
             isSearchActive = partial.active
@@ -63,7 +63,7 @@ internal class SearchFilterState(
 
     private data class PartialState(
         val query: String,
-        val category: String?,
+        val entryTypeName: String?,
         val tab: VaultTab,
         val active: Boolean
     )
@@ -72,13 +72,15 @@ internal class SearchFilterState(
     val debouncedSearchQuery: Flow<String> =
         _searchQuery.map { it.trim() }.debounce(250).distinctUntilChanged()
 
-    val normalizedSelectedCategory: Flow<String?> =
-        _selectedCategory.map { it?.trim()?.takeIf { category -> category.isNotEmpty() } }
+    val normalizedSelectedEntryTypeName: Flow<String?> =
+        _selectedEntryTypeName.map { it?.trim()?.takeIf(String::isNotEmpty) }
             .distinctUntilChanged()
 
     fun updateSearchQuery(query: String) { _searchQuery.value = query }
     fun updateSelectedTab(tab: VaultTab) { _selectedTab.value = tab }
-    fun updateSelectedCategory(category: String?) { _selectedCategory.value = category }
+    fun updateSelectedEntryTypeName(entryTypeName: String?) {
+        _selectedEntryTypeName.value = entryTypeName
+    }
     fun updateSelectedSort(sort: VaultSortSpec) {
         _selectedSort.value = sort
     }

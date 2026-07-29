@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 
 @Composable
@@ -117,14 +118,14 @@ internal fun SortSubMenu(
 
 @Composable
 internal fun FilterSubMenu(
-    isCategorySearchVisible: Boolean,
+    isEntryTypeSearchVisible: Boolean,
     onToggleSearch: (Boolean) -> Unit,
-    categorySearchQuery: String,
-    onCategorySearchQueryChange: (String) -> Unit,
-    categoryFocusRequester: FocusRequester,
-    filteredCategories: List<String>,
-    selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit,
+    entryTypeSearchQuery: String,
+    onEntryTypeSearchQueryChange: (String) -> Unit,
+    entryTypeFocusRequester: FocusRequester,
+    filteredEntryTypes: List<String>,
+    selectedEntryTypeName: String?,
+    onEntryTypeSelected: (String?) -> Unit,
     onBack: () -> Unit
 ) {
     DropdownMenuItem(
@@ -132,21 +133,26 @@ internal fun FilterSubMenu(
         onClick = onBack,
         leadingIcon = {
             Icon(
-                if (isCategorySearchVisible) Icons.Default.Close
+                if (isEntryTypeSearchVisible) Icons.Default.Close
                 else Icons.AutoMirrored.Filled.ArrowBack,
                 null
             )
         }
     )
-    AnimatedVisibility(isCategorySearchVisible) {
+    AnimatedVisibility(isEntryTypeSearchVisible) {
         OutlinedTextField(
-            value = categorySearchQuery,
-            onValueChange = onCategorySearchQueryChange,
+            value = entryTypeSearchQuery,
+            onValueChange = onEntryTypeSearchQueryChange,
             modifier = Modifier
                 .padding(horizontal = 12.dp, vertical = 4.dp)
                 .fillMaxWidth()
-                .focusRequester(categoryFocusRequester),
-            placeholder = { Text("搜索分类...", style = MaterialTheme.typography.bodySmall) },
+                .focusRequester(entryTypeFocusRequester),
+            placeholder = {
+                Text(
+                    stringResource(R.string.vault_search_entry_type_hint),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
             leadingIcon = {
                 Icon(Icons.Default.Search, null, modifier = Modifier.size(16.dp))
             },
@@ -157,24 +163,24 @@ internal fun FilterSubMenu(
             )
         )
     }
-    if (!isCategorySearchVisible) {
+    if (!isEntryTypeSearchVisible) {
         DropdownMenuItem(
-            text = { Text("搜索分类") },
+            text = { Text(stringResource(R.string.vault_search_entry_type)) },
             onClick = { onToggleSearch(true) },
             leadingIcon = { Icon(Icons.Default.Search, null) }
         )
     }
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-    CategoryMenuItem(
+    EntryTypeMenuItem(
         text = stringResource(R.string.tab_all),
-        selected = selectedCategory == null,
-        onClick = { onCategorySelected(null) }
+        selected = selectedEntryTypeName == null,
+        onClick = { onEntryTypeSelected(null) }
     )
-    filteredCategories.forEach { category ->
-        CategoryMenuItem(
-            text = category,
-            selected = selectedCategory == category,
-            onClick = { onCategorySelected(category) }
+    filteredEntryTypes.forEach { entryTypeName ->
+        EntryTypeMenuItem(
+            text = EntryType.fromName(entryTypeName).displayName,
+            selected = selectedEntryTypeName == entryTypeName,
+            onClick = { onEntryTypeSelected(entryTypeName) }
         )
     }
 }
@@ -190,7 +196,7 @@ private fun BackMenuItem(onBack: () -> Unit) {
 }
 
 @Composable
-private fun CategoryMenuItem(text: String, selected: Boolean, onClick: () -> Unit) {
+private fun EntryTypeMenuItem(text: String, selected: Boolean, onClick: () -> Unit) {
     DropdownMenuItem(
         text = {
             Text(

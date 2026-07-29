@@ -12,7 +12,7 @@ enum class DetailSectionKey {
     SSH,
     SEED_PHRASE,
     PASSKEY,
-    CATEGORY,
+    ENTRY_TYPE,
     ASSOCIATED_INFO,
     NOTES,
     METADATA,
@@ -49,7 +49,7 @@ object DetailSectionResolver {
     )
 
     private val commonSections = listOf(
-        DetailSectionKey.CATEGORY,
+        DetailSectionKey.ENTRY_TYPE,
         DetailSectionKey.ASSOCIATED_INFO,
         DetailSectionKey.NOTES,
         DetailSectionKey.METADATA,

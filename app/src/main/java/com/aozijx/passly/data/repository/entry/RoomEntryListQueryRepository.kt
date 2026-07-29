@@ -53,7 +53,7 @@ class RoomEntryListQueryRepository @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val allCategories: Flow<List<String>> = sessionState.isAuthorized
+    override val allEntryTypes: Flow<List<String>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
             else sessionManager.observeFlow {
@@ -64,7 +64,7 @@ class RoomEntryListQueryRepository @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observe(
-        query: String, category: String?, filter: EntryFilter
+        query: String, entryTypeName: String?, filter: EntryFilter
     ): Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
@@ -102,7 +102,7 @@ class RoomEntryListQueryRepository @Inject constructor(
                             ) else item
                         }
                         .filter { item ->
-                            category == null || item.category == category
+                            entryTypeName == null || item.entryType.name == entryTypeName
                         }
                         .filter { item ->
                             when (filter) {
@@ -122,7 +122,7 @@ class RoomEntryListQueryRepository @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeCategories(filter: EntryFilter): Flow<List<String>> =
+    override fun observeEntryTypes(filter: EntryFilter): Flow<List<String>> =
         sessionState.isAuthorized
             .flatMapLatest { authorized ->
                 if (!authorized) flowOf(emptyList())

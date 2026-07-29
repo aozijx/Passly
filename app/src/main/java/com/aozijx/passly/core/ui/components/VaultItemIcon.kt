@@ -15,10 +15,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.aozijx.passly.core.media.FaviconUtils
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
 import com.aozijx.passly.domain.entry.model.VaultIconable
 
@@ -28,29 +26,23 @@ fun VaultItemIcon(
     iconable: VaultIconable,
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
-    val context = LocalContext.current
-
     val appIconPainter = rememberAppIcon(iconable.associatedAppPackage)
 
-    val fallbackIconVector = remember(iconable.iconName, iconable.category) {
-        getCategoryIcon(context, iconable.category)
+    val fallbackIconVector = remember(iconable.iconName, iconable.entryType) {
+        getEntryTypeIcon(iconable.entryType)
     }
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
 
     val placeholderPainter = appIconPainter ?: fallbackPainter
 
     val customModel = remember(iconable.iconCustomPath) { toLocalIconImageModel(iconable.iconCustomPath) }
-    val domainUrl = remember(iconable.associatedDomain) {
-        iconable.associatedDomain?.let { "https://${FaviconUtils.cleanDomain(it)}/favicon.ico" }
-    }
-
     Box(
         modifier = modifier.size(36.dp), contentAlignment = Alignment.Center
     ) {
         when {
-            customModel != null || domainUrl != null -> {
+            customModel != null -> {
                 AsyncImage(
-                    model = customModel ?: domainUrl,
+                    model = customModel,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()

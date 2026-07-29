@@ -1,6 +1,7 @@
 package com.aozijx.passly.core.platform
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
@@ -54,6 +55,28 @@ class PackageUtils @Inject constructor(
             AppTelemetry.w(TAG, "App not found for package: $packageName", e)
             null
         }
+    }
+
+    /**
+     * 只列出带 Launcher 入口的应用，不申请 QUERY_ALL_PACKAGES。
+     *
+     * 这既满足用户选择自动填充关联包名的需求，也避免枚举设备上与此功能无关的软件。
+     */
+    fun getLaunchableApps(): List<AppMetadata> {
+        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        return packageManager.queryIntentActivities(launcherIntent, 0)
+            .mapNotNull { resolveInfo ->
+                val packageName = resolveInfo.activityInfo?.packageName ?: return@mapNotNull null
+                val appName = resolveInfo.loadLabel(packageManager).toString()
+                    .takeIf(String::isNotBlank)
+                    ?: packageName
+                AppMetadata(appName = appName, packageName = packageName)
+            }
+            .distinctBy(AppMetadata::packageName)
+            .sortedWith(
+                compareBy<AppMetadata> { it.appName.lowercase() }
+                    .thenBy(AppMetadata::packageName)
+            )
     }
 
     fun loadIcon(packageName: String): ImageBitmap? {

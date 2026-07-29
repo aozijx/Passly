@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.settings.appearance
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AppLanguage
@@ -16,15 +15,15 @@ fun ThemeMode.labelRes(): Int = when (this) {
 }
 
 /**
- * 使用 Locale 自带的本地化名称，避免在 ViewModel 中维护语言名到字符串资源的映射。
+ * 语言选择器使用语言自称（中文 / English / 日本語），不会随当前界面语言二次翻译。
  */
 @Composable
 fun AppLanguage.localizedDisplayName(): String {
     if (this == AppLanguage.SYSTEM) return stringResource(R.string.settings_follow_system)
 
-    val displayLocale = LocalConfiguration.current.locales[0]
-    val displayName = locale?.getDisplayName(displayLocale).orEmpty()
+    val languageLocale = locale ?: return name
+    val displayName = languageLocale.getDisplayName(languageLocale)
     return displayName.replaceFirstChar { first ->
-        if (first.isLowerCase()) first.titlecase(displayLocale) else first.toString()
+        if (first.isLowerCase()) first.titlecase(languageLocale) else first.toString()
     }
 }

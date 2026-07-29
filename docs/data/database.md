@@ -44,9 +44,9 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `app/schemas`�
   账户，一个账户可包含任意多个凭据；`parentEntryId = null` 表示独立凭据。
 - `parentEntryId` 使用 `ON DELETE SET NULL`。删除账户容器只会将子凭据转为独立条目，不会级联
   删除密码、OTP 或 Passkey；`ACCOUNT` 本身禁止再成为其他账户的子项。
-- 当前 UI 中名为 category 的筛选值实际直接来自 `entryType.name`。这意味着**自定义分类尚未实现**，
-  也说明现有命名发生了概念混用。后续自定义分类应使用独立 `categoryId`/关联表；`tags` 继续用于
-  多值标签，不能复用 `entryType`。
+- 当前 UI 的筛选项来自 `entryType.name`，并以“条目类型”展示；详情页不再把它当作可编辑分类。
+  **自定义分类尚未实现**。后续自定义分类应使用独立 `categoryId`/关联表；`tags` 继续用于多值标签，
+  不能复用 `entryType`。
 - `capabilityFlags` 表示一个原子条目实际具有的能力（密码、OTP、附件等），用于列表和详情快速
   判断，不表示跨条目的账户组合，也不能替代 `entryType` 或 `parentEntryId`。
 

@@ -80,11 +80,15 @@ class FillRequestDispatcherTest {
             packageName: String?,
             webDomain: String?,
             allowUnmatched: Boolean,
+            includeSecrets: Boolean,
             limit: Int,
         ): List<CredentialCandidate> = emptyList()
 
         override suspend fun getById(entryId: String): VaultEntry? = null
-        override suspend fun getByIds(entryIds: List<String>): List<VaultEntry> = emptyList()
+        override suspend fun getByIds(
+            entryIds: List<String>,
+            includeSecrets: Boolean
+        ): List<VaultEntry> = emptyList()
         override suspend fun save(
             packageName: String?,
             webDomain: String?,

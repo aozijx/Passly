@@ -119,7 +119,10 @@
     <string name="settings_security_app_password_description">使用独立密码解锁应用</string>
     <string name="settings_security_auth_section">认证</string>
     <string name="settings_security_reauthenticate_sensitive_copies">复制敏感数据时验证</string>
-    <string name="settings_security_reauthenticate_sensitive_copies_description">复制密码、CVV、私钥等敏感内容前重新验证；此开关不影响高敏感字段的显示验证</string>
+    <string name="settings_security_reauthenticate_sensitive_copies_description">直接复制隐藏的密码、CVV 或私钥前重新验证；已在当前详情页验证并显示的字段，复制时不重复验证</string>
+    <string name="settings_privacy_sensitive_access_section">敏感数据访问</string>
+    <string name="settings_privacy_clipboard_protection">自动清除剪贴板</string>
+    <string name="settings_privacy_clipboard_protection_description">Passly 写入的敏感内容会在 60 秒后或应用进入后台时清除，不会覆盖其他应用随后写入的内容</string>
     <string name="settings_security_auto_lock">自动锁定</string>
     <string name="settings_security_auto_lock_delay">自动锁定时间</string>
     <string name="settings_security_biometric_disabled_description">需要先验证现有凭据</string>

@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.core.graphics.drawable.toBitmap
 import coil.ImageLoader
-import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.app.diagnostics.AppTelemetry
@@ -295,13 +294,11 @@ object FaviconUtils {
     private suspend fun downloadFaviconWithCoil(urlString: String, context: Context): Bitmap? {
         return try {
             val imageLoader = ImageLoader.Builder(context)
-                .components {
-                    add(SvgDecoder.Factory())
-                }
                 .build()
 
             val request = ImageRequest.Builder(context)
                 .data(urlString)
+                .size(512, 512)
                 .addHeader("User-Agent", "Mozilla/5.0")
                 .build()
 

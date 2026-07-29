@@ -4,7 +4,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
@@ -17,7 +16,6 @@ class EntryEditState(initialEntry: VaultEntry) {
     var editedTitle by mutableStateOf(initialEntry.title)
     var editedUsername by mutableStateOf("")
     var editedPassword by mutableStateOf("")
-    var editedCategory by mutableStateOf(initialEntry.category)
     var editedNotes by mutableStateOf(
         initialEntry.secret.notes ?: ""
     )
@@ -45,18 +43,9 @@ class EntryEditState(initialEntry: VaultEntry) {
             title = editedTitle,
             website = buildWebsite(entry.summary.website)
         )
-        val newHeader = entry.header.copy(
-            entryType = runCatching { EntryType.valueOf(editedCategory) }.getOrDefault(entry.header.entryType)
-        )
         val newSecret = updateSecret(entry.secret)
-        return entry.copy(summary = newSummary, header = newHeader, secret = newSecret)
+        return entry.copy(summary = newSummary, secret = newSecret)
     }
-
-    fun applyCategoryOnly(entry: VaultEntry): VaultEntry = entry.copy(
-        header = entry.header.copy(
-            entryType = runCatching { EntryType.valueOf(editedCategory) }.getOrDefault(entry.header.entryType)
-        )
-    )
 
     fun applyTitleOnly(entry: VaultEntry): VaultEntry = entry.copy(
         summary = entry.summary.copy(title = editedTitle)

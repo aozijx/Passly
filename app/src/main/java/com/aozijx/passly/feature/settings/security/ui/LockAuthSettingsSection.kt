@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -43,13 +42,11 @@ fun LockAuthSettingsSection(
     isBiometricEnabled: Boolean,
     isInvalidateKeyOnBioChange: Boolean,
     isLockOnBackground: Boolean,
-    reauthenticateSensitiveCopies: Boolean,
     onLockTimeoutChange: (Long) -> Unit,
     onAppPasswordClick: () -> Unit,
     onBiometricEnabledChange: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
-    onLockOnBackgroundChange: (Boolean) -> Unit,
-    onSensitiveCopyReauthenticationChange: (Boolean) -> Unit
+    onLockOnBackgroundChange: (Boolean) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     val currentSeconds = (lockTimeout / 1000L).toFloat()
@@ -67,18 +64,6 @@ fun LockAuthSettingsSection(
                 subtitle = stringResource(R.string.settings_security_lock_on_background_description),
                 checked = isLockOnBackground,
                 onCheckedChange = onLockOnBackgroundChange
-            ),
-            switchSettingsGroupItem(
-                key = "security.reauthenticate_sensitive_copies",
-                icon = Icons.Default.VerifiedUser,
-                title = stringResource(
-                    R.string.settings_security_reauthenticate_sensitive_copies
-                ),
-                subtitle = stringResource(
-                    R.string.settings_security_reauthenticate_sensitive_copies_description
-                ),
-                checked = reauthenticateSensitiveCopies,
-                onCheckedChange = onSensitiveCopyReauthenticationChange
             ),
             navigationSettingsGroupItem(
                 key = "security.lock_timeout",

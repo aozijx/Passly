@@ -119,7 +119,10 @@
     <string name="settings_security_app_password_description">Unlock the app with a separate password</string>
     <string name="settings_security_auth_section">Authentication</string>
     <string name="settings_security_reauthenticate_sensitive_copies">Verify sensitive copies</string>
-    <string name="settings_security_reauthenticate_sensitive_copies_description">Verify again before copying passwords, CVVs, private keys, and other sensitive content. This setting does not affect verification for revealing highly sensitive fields.</string>
+    <string name="settings_security_reauthenticate_sensitive_copies_description">Verify before directly copying a hidden password, CVV, or private key. Copying a field already verified and revealed on this detail page does not verify again.</string>
+    <string name="settings_privacy_sensitive_access_section">Sensitive data access</string>
+    <string name="settings_privacy_clipboard_protection">Clear clipboard automatically</string>
+    <string name="settings_privacy_clipboard_protection_description">Sensitive content written by Passly is cleared after 60 seconds or when the app enters the background, without overwriting newer content from another app.</string>
     <string name="settings_security_auto_lock">Auto-lock</string>
     <string name="settings_security_auto_lock_delay">Auto-lock delay</string>
     <string name="settings_security_biometric_disabled_description">Existing credentials must be verified first</string>

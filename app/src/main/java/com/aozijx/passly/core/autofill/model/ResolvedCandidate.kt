@@ -1,6 +1,7 @@
 package com.aozijx.passly.core.autofill.model
 
 import com.aozijx.passly.domain.entry.model.VaultIconable
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 
 /**
@@ -35,11 +36,9 @@ data class ResolvedCandidate(
     val fields: Map<FieldRole, String> = emptyMap(),
     override val iconName: String? = null,
     override val iconCustomPath: String? = null,
-    val entryType: String = "",
+    override val entryType: EntryType = EntryType.LOGIN,
     /** 匹配类型（仅 Pipeline 路径有值，BottomSheet 直接查阅路径为 null） */
     val matchedBy: MatchType? = null,
     val matchedPackage: String? = null,
     val matchedDomain: String? = null,
-) : VaultIconable {
-    override val category: String get() = ""
-}
+) : VaultIconable

@@ -103,19 +103,16 @@ class AutofillFillViewModel @Inject constructor(
                         _uiState.update { UiState.ShowCandidates(candidates) }
                     }
                 } else {
-                    val candidate = request.directEntryId
-                        ?.let {
-                            candidateResolver.resolveSelected(
-                                entryId = it,
-                                packageName = request.packageName,
-                                webDomain = request.webDomain,
-                                settings = settings,
-                            )
-                        }
+                    if (!ensureAuthenticatedForSecretAccess(settings)) return@launch
+                    val candidate = loadSelectedCandidate(
+                        request.directEntryId,
+                        request,
+                        settings,
+                    )
                     if (candidate == null) {
                         _uiState.update { UiState.Error("Entry not found") }
                     } else {
-                        handleSingleEntry(candidate, request, settings)
+                        handleSingleEntry(candidate, request)
                     }
                 }
             } catch (e: Exception) {
@@ -139,6 +136,7 @@ class AutofillFillViewModel @Inject constructor(
             request.packageName,
             request.webDomain,
             settings,
+            includeSecrets = true,
         )
         if (candidates.isEmpty()) {
             _uiState.update { UiState.Result(null) }
@@ -159,19 +157,7 @@ class AutofillFillViewModel @Inject constructor(
     private suspend fun handleSingleEntry(
         candidate: ResolvedCandidate,
         request: FillRequest,
-        settings: AutofillSettings,
     ) {
-        val needsAuthentication = vaultAccessState.isLocked() ||
-                (settings.requireAuthentication && !authenticatedForCurrentRequest)
-        if (needsAuthentication) {
-            val authResult = authenticateForAutofill()
-            if (authResult !is AuthenticationResult.Success) {
-                _uiState.update { UiState.Result(null) }
-                return
-            }
-            authenticatedForCurrentRequest = true
-        }
-
         val basicCred = LegacyResponseFactory.getBasicCredentials(candidate)
         if (basicCred == null) {
             _uiState.update { UiState.Error("Failed to decrypt credentials") }
@@ -205,8 +191,49 @@ class AutofillFillViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
             val settings = settingsRepository.settings.first().interaction.autofill
-            handleSingleEntry(candidate, request, settings)
+            if (!ensureAuthenticatedForSecretAccess(settings)) return@launch
+            val resolved = loadSelectedCandidate(
+                candidate.candidateId,
+                request,
+                settings,
+            )
+            if (resolved == null) {
+                _uiState.update { UiState.Error("Entry not found") }
+                return@launch
+            }
+            handleSingleEntry(resolved, request)
         }
+    }
+
+    /**
+     * 候选列表只持有展示字段。认证完成后才按 ID 读取并解密被选中的单条凭据。
+     */
+    private suspend fun loadSelectedCandidate(
+        entryId: String?,
+        request: FillRequest,
+        settings: AutofillSettings,
+    ): ResolvedCandidate? = entryId?.let {
+        candidateResolver.resolveSelected(
+            entryId = it,
+            packageName = request.packageName,
+            webDomain = request.webDomain,
+            settings = settings,
+        )
+    }
+
+    private suspend fun ensureAuthenticatedForSecretAccess(
+        settings: AutofillSettings,
+    ): Boolean {
+        val needsAuthentication = vaultAccessState.isLocked() ||
+            (settings.requireAuthentication && !authenticatedForCurrentRequest)
+        if (!needsAuthentication) return true
+        val authResult = authenticateForAutofill()
+        if (authResult !is AuthenticationResult.Success) {
+            _uiState.update { UiState.Result(null) }
+            return false
+        }
+        authenticatedForCurrentRequest = true
+        return true
     }
 
     private suspend fun authenticateForAutofill(): AuthenticationResult =

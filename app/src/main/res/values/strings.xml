@@ -4,7 +4,6 @@
 
     <!-- 通用字符串 -->
     <string name="auth_title">身份认证</string>
-    <string name="category">分类</string>
     <string name="verify">验证</string>
     <string name="save">保存</string>
     <string name="copy">复制</string>
@@ -21,7 +20,6 @@
     <string name="title">标题</string>
     <string name="remark">备注</string>
     <string name="default_label">默认</string>
-    <string name="category_optional">分类 (可选)</string>
     <string name="edit_field">编辑%s</string>
     <string name="show_password">显示密码</string>
     <string name="hide_password">隐藏密码</string>
@@ -37,7 +35,6 @@
 
     <!-- Autofill 服务相关 -->
     <string name="autofill_entry_compact_title">选择账号</string>
-    <string name="autofill_pending_verification">待验证项</string>
     <string name="autofill_prompt_title">使用 %1$s 自动填充</string>
     <string name="select">选择</string>
     <plurals name="autofill_trigger_count">
@@ -55,7 +52,9 @@
 
     <!-- 其余 vault 相关 -->
     <string name="vault_search_placeholder">搜索密码项…</string>
-    <string name="vault_title_category">分类: %s</string>
+    <string name="vault_title_entry_type">条目类型：%s</string>
+    <string name="vault_search_entry_type">搜索条目类型</string>
+    <string name="vault_search_entry_type_hint">搜索条目类型…</string>
     <string name="vault_title_default">安全保险箱</string>
     <string name="vault_clear_filter">清除筛选</string>
     <string name="vault_menu_filter">分类筛选</string>
@@ -194,7 +193,6 @@
     <!-- 设置: 界面行为 -->
 
     <!-- 类别 -->
-    <string name="category_autofill">自动填充</string>
 
     <!-- WiFi 相关 -->
     <string name="wifi_ssid">WiFi名称</string>
@@ -345,4 +343,8 @@
     <string name="auth_purpose_recover_database">验证后保留故障库并创建新库</string>
     <string name="auth_purpose_clear_database">验证后清除保险库数据</string>
     <string name="related_entries">关联条目</string>
+    <string name="app_package_picker_title">选择关联应用</string>
+    <string name="app_package_picker_search">搜索应用或包名</string>
+    <string name="app_package_picker_action">选择应用</string>
+    <string name="entry_type">条目类型</string>
 </resources>

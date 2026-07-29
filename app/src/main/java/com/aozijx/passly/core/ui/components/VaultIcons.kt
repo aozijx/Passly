@@ -1,6 +1,5 @@
 package com.aozijx.passly.core.ui.components
 
-import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalance
@@ -44,6 +43,7 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.EntryType
 
 object VaultIcons {
     val allIcons = mapOf(
@@ -102,31 +102,17 @@ object VaultIcons {
     }
 }
 
-fun getCategoryIcon(context: Context, category: String): ImageVector {
-    val input = category.trim()
-    val res = context.resources
-
-    fun isMatch(arrayId: Int): Boolean = res.getStringArray(arrayId).contains(input)
-
-    return when {
-        isMatch(R.array.category_keywords_personal) -> Icons.Default.Fingerprint
-        isMatch(R.array.category_keywords_bank) -> Icons.Default.AccountBalance
-        isMatch(R.array.category_keywords_payment) -> Icons.Default.Payments
-        isMatch(R.array.category_keywords_finance) -> Icons.AutoMirrored.Filled.TrendingUp
-        isMatch(R.array.category_keywords_account) -> Icons.Default.VpnKey
-        isMatch(R.array.category_keywords_social) -> Icons.Default.Forum
-        isMatch(R.array.category_keywords_email) -> Icons.Default.Email
-        isMatch(R.array.category_keywords_apps) || input == context.getString(R.string.category_autofill) -> Icons.Default.Apps
-        isMatch(R.array.category_keywords_game) -> Icons.Default.SportsEsports
-        isMatch(R.array.category_keywords_video) -> Icons.Default.Subscriptions
-        isMatch(R.array.category_keywords_shopping) -> Icons.Default.ShoppingCart
-        isMatch(R.array.category_keywords_health) -> Icons.Default.HealthAndSafety
-        isMatch(R.array.category_keywords_note) -> Icons.Default.EditNote
-        isMatch(R.array.category_keywords_work) -> Icons.Default.Work
-        isMatch(R.array.category_keywords_school) -> Icons.Default.School
-        isMatch(R.array.category_keywords_travel) -> Icons.Default.Train
-        isMatch(R.array.category_keywords_wifi) -> Icons.Default.Wifi
-        isMatch(R.array.category_keywords_security) -> Icons.Default.Security
-        else -> Icons.Default.Key
-    }
+fun getEntryTypeIcon(entryType: EntryType): ImageVector = when (entryType) {
+    EntryType.ACCOUNT -> Icons.Default.Person
+    EntryType.LOGIN -> Icons.Default.VpnKey
+    EntryType.NOTE -> Icons.Default.EditNote
+    EntryType.CARD, EntryType.BANK_CARD -> Icons.Default.CreditCard
+    EntryType.IDENTITY, EntryType.ID_CARD, EntryType.PASSPORT, EntryType.LICENSE ->
+        Icons.Default.Badge
+    EntryType.SSH_KEY, EntryType.API_KEY -> Icons.Default.Terminal
+    EntryType.WIFI -> Icons.Default.Wifi
+    EntryType.PASSKEY -> Icons.Default.Fingerprint
+    EntryType.OTP, EntryType.RECOVERY_CODE -> Icons.Default.Security
+    EntryType.DATABASE, EntryType.SERVER -> Icons.Default.Cloud
+    EntryType.CRYPTO_WALLET, EntryType.SEED_PHRASE -> Icons.Default.AccountBalanceWallet
 }

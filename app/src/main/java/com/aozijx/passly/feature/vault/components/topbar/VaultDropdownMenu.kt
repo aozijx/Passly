@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.entry.model.EntryType
 
 private enum class MenuPage { MAIN, SORT, FILTER }
 
@@ -31,25 +32,29 @@ fun VaultDropdownMenu(
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onSettingsClick: () -> Unit,
-    availableCategories: List<String>,
-    selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit,
+    availableEntryTypes: List<String>,
+    selectedEntryTypeName: String?,
+    onEntryTypeSelected: (String?) -> Unit,
     selectedSort: VaultSortSpec,
     onSortSelected: (VaultSortSpec) -> Unit
 ) {
     var currentPage by remember { mutableStateOf(MenuPage.MAIN) }
-    var categorySearchQuery by remember { mutableStateOf("") }
-    var categorySearchVisible by remember { mutableStateOf(false) }
-    val categoryFocusRequester = remember { FocusRequester() }
+    var entryTypeSearchQuery by remember { mutableStateOf("") }
+    var entryTypeSearchVisible by remember { mutableStateOf(false) }
+    val entryTypeFocusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(categorySearchVisible) {
-        if (categorySearchVisible) categoryFocusRequester.requestFocus()
+    LaunchedEffect(entryTypeSearchVisible) {
+        if (entryTypeSearchVisible) entryTypeFocusRequester.requestFocus()
     }
 
-    val filteredCategories = remember(availableCategories, categorySearchQuery) {
-        if (categorySearchQuery.isBlank()) availableCategories
-        else availableCategories.filter {
-            it.contains(categorySearchQuery, ignoreCase = true)
+    val filteredEntryTypes = remember(availableEntryTypes, entryTypeSearchQuery) {
+        if (entryTypeSearchQuery.isBlank()) availableEntryTypes
+        else availableEntryTypes.filter {
+            it.contains(entryTypeSearchQuery, ignoreCase = true) ||
+                EntryType.fromName(it).displayName.contains(
+                    entryTypeSearchQuery,
+                    ignoreCase = true
+                )
         }
     }
 
@@ -90,21 +95,21 @@ fun VaultDropdownMenu(
                         onBack = { currentPage = MenuPage.MAIN }
                     )
                     MenuPage.FILTER -> FilterSubMenu(
-                        isCategorySearchVisible = categorySearchVisible,
-                        onToggleSearch = { categorySearchVisible = it },
-                        categorySearchQuery = categorySearchQuery,
-                        onCategorySearchQueryChange = { categorySearchQuery = it },
-                        categoryFocusRequester = categoryFocusRequester,
-                        filteredCategories = filteredCategories,
-                        selectedCategory = selectedCategory,
-                        onCategorySelected = {
-                            onCategorySelected(it)
+                        isEntryTypeSearchVisible = entryTypeSearchVisible,
+                        onToggleSearch = { entryTypeSearchVisible = it },
+                        entryTypeSearchQuery = entryTypeSearchQuery,
+                        onEntryTypeSearchQueryChange = { entryTypeSearchQuery = it },
+                        entryTypeFocusRequester = entryTypeFocusRequester,
+                        filteredEntryTypes = filteredEntryTypes,
+                        selectedEntryTypeName = selectedEntryTypeName,
+                        onEntryTypeSelected = {
+                            onEntryTypeSelected(it)
                             onDismissRequest()
                         },
                         onBack = {
-                            if (categorySearchVisible) {
-                                categorySearchVisible = false
-                                categorySearchQuery = ""
+                            if (entryTypeSearchVisible) {
+                                entryTypeSearchVisible = false
+                                entryTypeSearchQuery = ""
                             } else {
                                 currentPage = MenuPage.MAIN
                             }

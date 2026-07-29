@@ -8,11 +8,15 @@ interface CredentialServiceRepository {
         packageName: String?,
         webDomain: String?,
         allowUnmatched: Boolean,
+        includeSecrets: Boolean,
         limit: Int,
     ): List<CredentialCandidate>
 
     suspend fun getById(entryId: String): VaultEntry?
-    suspend fun getByIds(entryIds: List<String>): List<VaultEntry>
+    suspend fun getByIds(
+        entryIds: List<String>,
+        includeSecrets: Boolean = true
+    ): List<VaultEntry>
     suspend fun save(
         packageName: String?,
         webDomain: String?,

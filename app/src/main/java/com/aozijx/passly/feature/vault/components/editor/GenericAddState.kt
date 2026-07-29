@@ -12,6 +12,5 @@ class GenericAddState {
     var username by mutableStateOf("")
     var password by mutableStateOf("")
     var notes by mutableStateOf("")
-    var category by mutableStateOf("")
     var isPasswordVisible by mutableStateOf(false)
 }
