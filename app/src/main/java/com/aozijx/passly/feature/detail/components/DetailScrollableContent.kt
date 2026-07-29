@@ -13,7 +13,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.util.TotpUtils
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -27,6 +26,8 @@ import com.aozijx.passly.feature.detail.sections.CategoryItem
 import com.aozijx.passly.feature.detail.sections.CredentialSection
 import com.aozijx.passly.feature.detail.sections.IdCardSection
 import com.aozijx.passly.feature.detail.sections.NotesSection
+import com.aozijx.passly.feature.detail.sections.PasskeySection
+import com.aozijx.passly.feature.detail.sections.SeedPhraseSection
 import com.aozijx.passly.feature.detail.sections.SshKeySection
 import com.aozijx.passly.feature.detail.sections.TotpSection
 import com.aozijx.passly.feature.detail.sections.WifiSection
@@ -44,7 +45,7 @@ fun DetailScrollableContent(
     onAuthenticate: DetailAuthenticate
 ) {
     val entry = uiState.entry ?: return
-    val vaultType = uiState.vaultType
+    val registeredSections = DetailSectionResolver.resolve(entry)
 
     val revealField: (String, String?) -> Unit = { key, value ->
         onEvent(DetailIntent.RevealField(key, value))
@@ -61,12 +62,7 @@ fun DetailScrollableContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        val isCredentialType = vaultType in listOf(
-            EntryType.LOGIN, EntryType.OTP, EntryType.SEED_PHRASE, EntryType.RECOVERY_CODE,
-            EntryType.PASSKEY, EntryType.NOTE, EntryType.DATABASE,
-            EntryType.SERVER, EntryType.API_KEY, EntryType.CRYPTO_WALLET
-        )
-        if (entry.secret.login != null || isCredentialType) {
+        if (DetailSectionKey.CREDENTIAL in registeredSections) {
             item {
                 CredentialSection(
                     item = entry,
@@ -82,7 +78,7 @@ fun DetailScrollableContent(
             }
         }
 
-        if (entry.secret.otp != null || vaultType == EntryType.OTP) {
+        if (DetailSectionKey.OTP in registeredSections) {
             item {
                 val otpConfig = entry.secret.otp?.config
                 val totpUri =
@@ -95,7 +91,7 @@ fun DetailScrollableContent(
             }
         }
 
-        if (entry.secret.card != null || vaultType == EntryType.BANK_CARD || vaultType == EntryType.CARD) {
+        if (DetailSectionKey.BANK_CARD in registeredSections) {
             item {
                 BankCardSection(
                     entry = entry,
@@ -112,13 +108,7 @@ fun DetailScrollableContent(
             }
         }
 
-        if (entry.secret.identity != null || vaultType in listOf(
-                EntryType.ID_CARD,
-                EntryType.IDENTITY,
-                EntryType.PASSPORT,
-                EntryType.LICENSE
-            )
-        ) {
+        if (DetailSectionKey.IDENTITY in registeredSections) {
             item {
                 IdCardSection(
                     entry = entry,
@@ -130,7 +120,7 @@ fun DetailScrollableContent(
             }
         }
 
-        if (entry.secret.wifi != null || vaultType == EntryType.WIFI) {
+        if (DetailSectionKey.WIFI in registeredSections) {
             item {
                 WifiSection(
                     entry = entry,
@@ -144,7 +134,7 @@ fun DetailScrollableContent(
             }
         }
 
-        if (entry.secret.ssh != null || vaultType == EntryType.SSH_KEY) {
+        if (DetailSectionKey.SSH in registeredSections) {
             item {
                 SshKeySection(
                     entry = entry,
@@ -156,6 +146,32 @@ fun DetailScrollableContent(
                     onAuthenticate = onAuthenticate,
                     onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                     onEvent = onEvent
+                )
+            }
+        }
+
+        if (DetailSectionKey.SEED_PHRASE in registeredSections) {
+            item {
+                SeedPhraseSection(
+                    entry = entry,
+                    revealedSeedPhrase = uiState.revealed(RevealedFieldKey.SEED_PHRASE),
+                    onSeedPhraseRevealed = {
+                        revealField(RevealedFieldKey.SEED_PHRASE, it)
+                    },
+                    onAuthenticate = onAuthenticate,
+                    onEvent = onEvent,
+                )
+            }
+        }
+
+        if (DetailSectionKey.PASSKEY in registeredSections) {
+            item {
+                PasskeySection(
+                    entry = entry,
+                    revealedPasskeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA),
+                    onRevealField = revealField,
+                    onAuthenticate = onAuthenticate,
+                    onEvent = onEvent,
                 )
             }
         }

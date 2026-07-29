@@ -28,7 +28,6 @@ import com.aozijx.passly.core.ui.components.widgets.createSwipeAction
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.OtpUiState
@@ -133,15 +132,8 @@ private fun EntryListItemRow(
     } else {
         null
     }
-    val cardStyle = remember(item.entryType, entryCardPresentations) {
-        val presentation = entryCardPresentations.find {
-            it.entryTypeKey == item.entryType.name.lowercase()
-        }
-        when (presentation?.variantKey) {
-            "password" -> VaultCardStyle.PASSWORD
-            "totp" -> VaultCardStyle.TOTP
-            else -> VaultCardStyle.DEFAULT
-        }
+    val cardStyle = remember(item.entryType, item.capabilityFlags, entryCardPresentations) {
+        CardStyleRegistry.resolveStyle(item, entryCardPresentations)
     }
     val colorScheme = MaterialTheme.colorScheme
     val actions =

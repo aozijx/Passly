@@ -15,11 +15,11 @@ object TabLayoutConstraints {
 object InterfaceStyleConstraints {
     const val MIN_OUTER_RADIUS_DP = 0f
     const val MAX_OUTER_RADIUS_DP = 48f
-    const val DEFAULT_OUTER_RADIUS_DP = 28f
+    const val DEFAULT_OUTER_RADIUS_DP = 16f
 
     const val MIN_INNER_RADIUS_DP = 0f
     const val MAX_INNER_RADIUS_DP = 24f
-    const val DEFAULT_INNER_RADIUS_DP = 8f
+    const val DEFAULT_INNER_RADIUS_DP = 6f
 
     const val MIN_ITEM_SPACING_DP = 0f
     const val MAX_ITEM_SPACING_DP = 12f

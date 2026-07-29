@@ -48,31 +48,36 @@ fun CredentialSection(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
+    val hasUsername = item.username.isNotBlank()
+    val hasPassword = !item.secret.login?.password.isNullOrBlank()
+    val showUsername = hasUsername || !hasPassword
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        CredentialRow(
-            label = stringResource(R.string.username),
-            isEditing = editState.isEditingUsername,
-            editedValue = editState.editedUsername,
-            revealedValue = revealedUsername,
-            onEditToggle = { editState.isEditingUsername = it },
-            onValueChange = { editState.editedUsername = it },
-            onCopy = {
-                copySensitiveField(
-                    context = context,
-                    handler = actionHandler,
-                    fieldName = "username",
-                    revealedValue = revealedUsername,
-                    sourceValue = item.username
-                )
-            },
-            onSave = { newValue ->
-                if (newValue != revealedUsername) {
-                    onEntryUpdated(item.copy(summary = item.summary.copy(username = newValue)))
-                    onUsernameRevealed(newValue)
-                }
-                editState.isEditingUsername = false
-            })
+        if (showUsername) {
+            CredentialRow(
+                label = stringResource(R.string.username),
+                isEditing = editState.isEditingUsername,
+                editedValue = editState.editedUsername,
+                revealedValue = revealedUsername,
+                onEditToggle = { editState.isEditingUsername = it },
+                onValueChange = { editState.editedUsername = it },
+                onCopy = {
+                    copySensitiveField(
+                        context = context,
+                        handler = actionHandler,
+                        fieldName = "username",
+                        revealedValue = revealedUsername,
+                        sourceValue = item.username
+                    )
+                },
+                onSave = { newValue ->
+                    if (newValue != revealedUsername) {
+                        onEntryUpdated(item.copy(summary = item.summary.copy(username = newValue)))
+                        onUsernameRevealed(newValue)
+                    }
+                    editState.isEditingUsername = false
+                })
+        }
 
         val showPassword =
             (item.secret.login?.password?.isNotEmpty() == true) || item.entryType != EntryType.LOGIN
@@ -110,7 +115,9 @@ fun CredentialSection(
                 })
         }
 
-        if (revealedUsername == null || revealedPassword == null) {
+        val hasHiddenUsername = showUsername && hasUsername && revealedUsername == null
+        val hasHiddenPassword = showPassword && hasPassword && revealedPassword == null
+        if (hasHiddenUsername || hasHiddenPassword) {
             Button(
                 onClick = {
                     onAuthenticate.reveal {

@@ -7,10 +7,33 @@ import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.VaultCardStyle
 import com.aozijx.passly.feature.vault.model.OtpUiState
 
 object CardStyleRegistry {
+    /**
+     * Resolves one primary list-card style for an entry.
+     *
+     * Detail-page capability composition is intentionally handled elsewhere.
+     * A mixed login + OTP entry still occupies one list row and uses its
+     * primary entry type's presentation.
+     */
+    fun resolveStyle(
+        entry: EntryListItem,
+        presentations: List<EntryCardPresentation>,
+    ): VaultCardStyle {
+        val presentation = presentations.firstOrNull {
+            it.entryTypeKey.equals(entry.entryType.name, ignoreCase = true)
+        }
+        val requested = VaultCardStyle.fromKey(presentation?.variantKey)
+        return if (requested == VaultCardStyle.TOTP && !entry.hasOtp) {
+            VaultCardStyle.DEFAULT
+        } else {
+            requested
+        }
+    }
+
     private val previewBaseEntry = EntryListItem(
         id = "-100",
         entryType = EntryType.LOGIN,

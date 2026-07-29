@@ -28,11 +28,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -61,8 +59,6 @@ fun SeedPhraseSection(
     }
 
     val seedPhrase = entry.secret.identity?.seedPhrase
-    val notes = entry.secret.notes
-
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.seed_phrase_title),
@@ -145,19 +141,6 @@ fun SeedPhraseSection(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.vault_reveal_info))
             }
-        }
-
-        if (notes != null) {
-            DetailItem(
-                label = stringResource(R.string.remark),
-                value = notes,
-                isRevealed = true,
-                onCopy = {
-                    ClipboardUtils.copy(context, notes)
-                    actionHandler.record("notes", ActivityType.COPY_PASSWORD)
-                },
-                onEdit = {}
-            )
         }
     }
 }
