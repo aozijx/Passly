@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.FallbackPalette
@@ -27,47 +28,145 @@ data class ThemePreset(
     val palette: ThemePalette? = null
 )
 
+private fun accentFamily(
+    lightAccent: Long,
+    lightOnAccent: Long,
+    lightContainer: Long,
+    lightOnContainer: Long,
+    darkAccent: Long,
+    darkOnAccent: Long,
+    darkContainer: Long,
+    darkOnContainer: Long,
+) = AccentColorFamily(
+    light = AccentColorRoles(
+        accent = Color(lightAccent),
+        onAccent = Color(lightOnAccent),
+        container = Color(lightContainer),
+        onContainer = Color(lightOnContainer),
+    ),
+    dark = AccentColorRoles(
+        accent = Color(darkAccent),
+        onAccent = Color(darkOnAccent),
+        container = Color(darkContainer),
+        onContainer = Color(darkOnContainer),
+    ),
+)
+
+/*
+ * Static Material 3 role families. These are design tokens, not runtime seeds:
+ * each family explicitly supplies light/dark accent, container and foreground roles.
+ */
+private val AzureAccent = accentFamily(
+    0xFF006495, 0xFFFFFFFF, 0xFFCBE6FF, 0xFF001E30,
+    0xFF8FCDFF, 0xFF003450, 0xFF004C71, 0xFFCBE6FF,
+)
+private val SlateAccent = accentFamily(
+    0xFF50606E, 0xFFFFFFFF, 0xFFD3E5F5, 0xFF0C1D29,
+    0xFFB8C8D9, 0xFF22323F, 0xFF384956, 0xFFD3E5F5,
+)
+private val AquaAccent = accentFamily(
+    0xFF006A6A, 0xFFFFFFFF, 0xFF9CF1F1, 0xFF002020,
+    0xFF81D5D5, 0xFF003737, 0xFF004F4F, 0xFF9CF1F1,
+)
+private val GreenAccent = accentFamily(
+    0xFF286C3A, 0xFFFFFFFF, 0xFFACF4B5, 0xFF002108,
+    0xFF91D89B, 0xFF003914, 0xFF0D5225, 0xFFACF4B5,
+)
+private val AmberAccent = accentFamily(
+    0xFF795900, 0xFFFFFFFF, 0xFFFFDEA5, 0xFF261900,
+    0xFFF5BE48, 0xFF402D00, 0xFF5D4200, 0xFFFFDEA5,
+)
+private val RedAccent = accentFamily(
+    0xFFB3261E, 0xFFFFFFFF, 0xFFF9DEDC, 0xFF410E0B,
+    0xFFF2B8B5, 0xFF601410, 0xFF8C1D18, 0xFFF9DEDC,
+)
+private val RoseAccent = accentFamily(
+    0xFF7D5260, 0xFFFFFFFF, 0xFFFFD8E4, 0xFF31111D,
+    0xFFEFB8C8, 0xFF492532, 0xFF633B48, 0xFFFFD8E4,
+)
+private val GoldAccent = accentFamily(
+    0xFF735C00, 0xFFFFFFFF, 0xFFFFE17B, 0xFF241A00,
+    0xFFE9C349, 0xFF3C2F00, 0xFF574500, 0xFFFFE17B,
+)
+private val PurpleAccent = accentFamily(
+    0xFF6750A4, 0xFFFFFFFF, 0xFFEADDFF, 0xFF21005D,
+    0xFFD0BCFF, 0xFF381E72, 0xFF4F378B, 0xFFEADDFF,
+)
+private val LavenderAccent = accentFamily(
+    0xFF625B71, 0xFFFFFFFF, 0xFFE8DEF8, 0xFF1D192B,
+    0xFFCCC2DC, 0xFF332D41, 0xFF4A4458, 0xFFE8DEF8,
+)
+private val OrangeAccent = accentFamily(
+    0xFF8B5000, 0xFFFFFFFF, 0xFFFFDCC2, 0xFF2C1600,
+    0xFFFFB870, 0xFF4A2800, 0xFF6A3C00, 0xFFFFDCC2,
+)
+private val BrownAccent = accentFamily(
+    0xFF6F4F46, 0xFFFFFFFF, 0xFFF9DBD1, 0xFF281813,
+    0xFFDCB9AF, 0xFF3F2D27, 0xFF573A32, 0xFFF9DBD1,
+)
+private val OliveAccent = accentFamily(
+    0xFF5D6400, 0xFFFFFFFF, 0xFFE2EA7B, 0xFF1B1D00,
+    0xFFC6CE62, 0xFF303300, 0xFF454B00, 0xFFE2EA7B,
+)
+private val PinkAccent = accentFamily(
+    0xFFA90052, 0xFFFFFFFF, 0xFFFFD9E2, 0xFF3F001B,
+    0xFFFFB0C8, 0xFF65002F, 0xFF8B0043, 0xFFFFD9E2,
+)
+
+private val BlueThemePalette = ThemePalette(AzureAccent, SlateAccent, AquaAccent)
+private val GreenThemePalette = ThemePalette(GreenAccent, AquaAccent, AmberAccent)
+private val RedThemePalette = ThemePalette(RedAccent, RoseAccent, GoldAccent)
+private val PurpleThemePalette = ThemePalette(PurpleAccent, LavenderAccent, RoseAccent)
+private val OrangeThemePalette = ThemePalette(OrangeAccent, BrownAccent, RoseAccent)
+private val TealThemePalette = ThemePalette(AquaAccent, SlateAccent, OliveAccent)
+private val PinkThemePalette = ThemePalette(PinkAccent, RoseAccent, OrangeAccent)
+
 val themePresets = listOf(
     ThemePreset(0, R.string.default_label),
     ThemePreset(
         color = 0xFF4285F4,
         nameKey = R.string.settings_theme_color_blue,
-        palette = ThemePalette(0xFF4285F4, 0xFF5B5F97, 0xFFA5417A)
+        palette = BlueThemePalette,
     ),
     ThemePreset(
         color = 0xFF34A853,
         nameKey = R.string.settings_theme_color_green,
-        palette = ThemePalette(0xFF34A853, 0xFF00796B, 0xFFA06400)
+        palette = GreenThemePalette,
     ),
     ThemePreset(
         color = 0xFFEA4335,
         nameKey = R.string.settings_theme_color_red,
-        palette = ThemePalette(0xFFEA4335, 0xFF8E4B61, 0xFF8A5A00)
+        palette = RedThemePalette,
     ),
     ThemePreset(
         color = 0xFF9C27B0,
         nameKey = R.string.settings_theme_color_purple,
-        palette = ThemePalette(0xFF9C27B0, 0xFF4658A9, 0xFFC23E70)
+        palette = PurpleThemePalette,
     ),
     ThemePreset(
         color = 0xFFFF9800,
         nameKey = R.string.settings_theme_color_orange,
-        palette = ThemePalette(0xFFFF9800, 0xFF795548, 0xFFC13E68)
+        palette = OrangeThemePalette,
     ),
     ThemePreset(
         color = 0xFF009688,
         nameKey = R.string.settings_theme_color_teal,
-        palette = ThemePalette(0xFF009688, 0xFF3974B8, 0xFF708B22)
+        palette = TealThemePalette,
     ),
     ThemePreset(
         color = 0xFFE91E63,
         nameKey = R.string.settings_theme_color_pink,
-        palette = ThemePalette(0xFFE91E63, 0xFF8246AF, 0xFFE7653B)
+        palette = PinkThemePalette,
     ),
 )
 
 fun themePresetByColor(color: Long): ThemePreset =
     themePresets.firstOrNull { it.color == color } ?: themePresets.first()
+
+internal fun manualThemePalette(color: Long?): ThemePalette? =
+    color
+        ?.takeIf { it != 0L }
+        ?.let { selected -> themePresets.firstOrNull { it.color == selected }?.palette }
 
 fun themePresetByFallbackPalette(palette: FallbackPalette): ThemePreset {
     val color = when (palette) {
@@ -87,8 +186,7 @@ fun themePresetByFallbackPalette(palette: FallbackPalette): ThemePreset {
 fun AppTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = true,
-    fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
-    customSeedArgb: Long? = null,
+    manualThemeColorArgb: Long? = null,
     fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
     expressive: Boolean = true,
     outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,
@@ -103,13 +201,8 @@ fun AppTheme(
         ThemeMode.DARK -> true
     }
     val context = LocalContext.current
-    val selectedPalette = remember(customSeedArgb) {
-        customSeedArgb
-            ?.takeIf { it != 0L }
-            ?.let { selected -> themePresets.firstOrNull { it.color == selected }?.palette }
-    }
-    val fallbackThemePalette = remember(fallbackPalette) {
-        themePresetByFallbackPalette(fallbackPalette).palette
+    val selectedPalette = remember(manualThemeColorArgb) {
+        manualThemePalette(manualThemeColorArgb)
     }
     val appColorScheme = if (isDark) AppColor.darkScheme() else AppColor.lightScheme()
     val colorScheme = when {
@@ -117,7 +210,6 @@ fun AppTheme(
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
         selectedPalette != null -> selectedPalette.applyTo(appColorScheme, isDark)
-        fallbackThemePalette != null -> fallbackThemePalette.applyTo(appColorScheme, isDark)
         else -> appColorScheme
     }
     val typography =

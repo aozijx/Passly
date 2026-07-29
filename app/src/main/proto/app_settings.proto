@@ -25,7 +25,7 @@ message AppearancePreferences {
     optional ThemeMode theme_mode = 1 [default = THEME_MODE_SYSTEM];
     optional bool dynamic_color_enabled = 2 [default = true];
     optional FallbackPalette fallback_palette = 3 [default = FALLBACK_PALETTE_BLUE];
-    optional fixed64 custom_seed_argb = 4;
+    optional fixed64 manual_theme_color_argb = 4;
     // BCP-47 语言标签: "system", "zh-CN", "en", "ja"
     optional string language = 5 [default = "system"];
     // 字体标识: "app.default", "system"

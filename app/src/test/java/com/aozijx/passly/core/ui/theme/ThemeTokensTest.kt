@@ -1,9 +1,13 @@
 package com.aozijx.passly.core.ui.theme
 
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.settings.model.FallbackPalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -64,5 +68,50 @@ class ThemeTokensTest {
         assertEquals(FallbackPalette.entries.size, presets.map { it.color }.distinct().size)
         assertTrue(presets.all { it.color != 0L })
         assertTrue(presets.all { it.palette != null })
+    }
+
+    @Test
+    fun emptyOrUnknownManualSelection_resolvesToTheAppDefault() {
+        assertEquals(0L, themePresetByColor(0L).color)
+        assertNull(manualThemePalette(null))
+        assertNull(manualThemePalette(0L))
+        assertNull(manualThemePalette(0xFF123456))
+    }
+
+    @Test
+    fun manualPalettes_mapIndependentAccentFamiliesWithoutTintingSurfaces() {
+        val neutralScheme = lightColorScheme()
+
+        themePresets.mapNotNull(ThemePreset::palette).forEach { palette ->
+            val scheme = palette.applyTo(neutralScheme, isDark = false)
+
+            assertEquals(palette.primary.light.accent, scheme.primary)
+            assertEquals(palette.secondary.light.accent, scheme.secondary)
+            assertEquals(palette.tertiary.light.accent, scheme.tertiary)
+            assertEquals(palette.primary.light.container, scheme.primaryFixed)
+            assertEquals(palette.secondary.light.container, scheme.secondaryFixed)
+            assertEquals(palette.tertiary.light.container, scheme.tertiaryFixed)
+            assertEquals(neutralScheme.surface, scheme.surface)
+            assertEquals(neutralScheme.surfaceContainer, scheme.surfaceContainer)
+            assertEquals(neutralScheme.surfaceVariant, scheme.surfaceVariant)
+        }
+    }
+
+    @Test
+    fun manualPaletteForegroundPairsMeetAccessibleTextContrast() {
+        themePresets.mapNotNull(ThemePreset::palette).forEach { palette ->
+            listOf(palette.primary, palette.secondary, palette.tertiary).forEach { family ->
+                listOf(family.light, family.dark).forEach { roles ->
+                    assertTrue(contrastRatio(roles.accent, roles.onAccent) >= 4.5)
+                    assertTrue(contrastRatio(roles.container, roles.onContainer) >= 4.5)
+                }
+            }
+        }
+    }
+
+    private fun contrastRatio(first: Color, second: Color): Float {
+        val lighter = maxOf(first.luminance(), second.luminance())
+        val darker = minOf(first.luminance(), second.luminance())
+        return (lighter + 0.05f) / (darker + 0.05f)
     }
 }

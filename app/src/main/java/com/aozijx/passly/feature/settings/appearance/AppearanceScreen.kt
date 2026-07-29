@@ -29,7 +29,6 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.theme.themePresetByColor
-import com.aozijx.passly.core.ui.theme.themePresetByFallbackPalette
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
@@ -103,10 +102,7 @@ internal fun AppearanceDetail(
                         stringResource(R.string.settings_dynamic_color)
                     } else {
                         stringResource(
-                            state.customSeedArgb
-                                ?.let(::themePresetByColor)
-                                ?.nameKey
-                                ?: themePresetByFallbackPalette(state.fallbackPalette).nameKey
+                            themePresetByColor(state.manualThemeColorArgb ?: 0L).nameKey
                         )
                     },
                     onClick = { showThemeColorSheet = !showThemeColorSheet }
@@ -165,8 +161,7 @@ internal fun AppearanceDetail(
 
     if (showThemeColorSheet) {
         ThemePicker(
-            selectedColor = state.customSeedArgb
-                ?: themePresetByFallbackPalette(state.fallbackPalette).color,
+            selectedColor = state.manualThemeColorArgb ?: 0L,
             sheetState = themeColorSheetState,
             onSelect = { color ->
                 onManualThemeColorSelect(if (color == 0L) null else color)

@@ -9,9 +9,9 @@ import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
-import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.domain.authentication.LockReason
+import com.aozijx.passly.domain.authentication.SensitiveAccessAction
+import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.diagnostics.usecase.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
@@ -158,8 +158,7 @@ class MainViewModel @Inject constructor(
                         it.copy(
                             themeMode = appearance.themeMode,
                             isDynamicColor = appearance.isDynamicColor,
-                            fallbackPalette = appearance.fallbackPalette,
-                            customSeedArgb = appearance.customSeedArgb,
+                            manualThemeColorArgb = appearance.manualThemeColorArgb,
                             fontFamily = appearance.fontFamily,
                             language = appearance.language,
                             isExpressive = appearance.isExpressive,

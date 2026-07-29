@@ -333,7 +333,8 @@ class ProtoAppSettingsRepository @Inject constructor(
             themeMode = p.themeMode.toDomain(),
             isDynamicColor = p.dynamicColorEnabled,
             fallbackPalette = p.fallbackPalette.toDomain(),
-            customSeedArgb = if (p.hasCustomSeedArgb()) p.customSeedArgb else null,
+            manualThemeColorArgb =
+                if (p.hasManualThemeColorArgb()) p.manualThemeColorArgb else null,
             language = p.language.toAppLanguageDomain(),
             fontFamily = p.fontFamily.toFontFamilyDomain(),
             isExpressive = p.expressiveEnabled
@@ -470,8 +471,8 @@ class ProtoAppSettingsRepository @Inject constructor(
 
                 is SettingsCommand.SelectManualThemeColor -> {
                     val ab = proto.appearance.toBuilder()
-                    if (command.argb != null) ab.customSeedArgb = command.argb
-                    else ab.clearCustomSeedArgb()
+                    if (command.argb != null) ab.manualThemeColorArgb = command.argb
+                    else ab.clearManualThemeColorArgb()
                     ab.dynamicColorEnabled = false
                     b.setAppearance(ab)
                 }

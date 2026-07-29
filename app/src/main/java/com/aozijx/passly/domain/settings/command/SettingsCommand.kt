@@ -22,7 +22,7 @@ sealed interface SettingsCommand {
 
     /**
      * Selects a manual palette and disables dynamic color in the same settings transaction.
-     * A null value selects the app/fallback palette.
+     * A null value selects the app's default static color scheme.
      */
     data class SelectManualThemeColor(val argb: Long?) : SettingsCommand
     data class SetLanguage(val language: AppLanguage) : SettingsCommand

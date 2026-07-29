@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.FallbackPalette
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
@@ -20,8 +19,7 @@ import javax.inject.Inject
 data class AppearanceUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isDynamicColor: Boolean = true,
-    val fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
-    val customSeedArgb: Long? = null,
+    val manualThemeColorArgb: Long? = null,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
     val isExpressive: Boolean = true
@@ -30,7 +28,6 @@ data class AppearanceUiState(
 sealed interface AppearanceUiAction {
     data class SetThemeMode(val mode: ThemeMode) : AppearanceUiAction
     data class SetDynamicColor(val enabled: Boolean) : AppearanceUiAction
-    data class SetFallbackPalette(val palette: FallbackPalette) : AppearanceUiAction
     data class SelectManualThemeColor(val argb: Long?) : AppearanceUiAction
     data class SetLanguage(val language: AppLanguage) : AppearanceUiAction
     data class SetFontFamily(val mode: FontFamilyMode) : AppearanceUiAction
@@ -60,10 +57,6 @@ class AppearanceViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetDynamicColor(action.enabled))
             }
 
-            is AppearanceUiAction.SetFallbackPalette -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetFallbackPalette(action.palette))
-            }
-
             is AppearanceUiAction.SelectManualThemeColor -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SelectManualThemeColor(action.argb))
             }
@@ -86,8 +79,7 @@ class AppearanceViewModel @Inject constructor(
 private fun AppearanceSettings.toUiState(): AppearanceUiState = AppearanceUiState(
     themeMode = themeMode,
     isDynamicColor = isDynamicColor,
-    fallbackPalette = fallbackPalette,
-    customSeedArgb = customSeedArgb,
+    manualThemeColorArgb = manualThemeColorArgb,
     language = language,
     fontFamily = fontFamily,
     isExpressive = isExpressive

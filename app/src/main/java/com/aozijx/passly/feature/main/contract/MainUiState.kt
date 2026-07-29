@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.main.contract
 
 import com.aozijx.passly.domain.settings.model.AppLanguage
-import com.aozijx.passly.domain.settings.model.FallbackPalette
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.ThemeMode
@@ -10,8 +9,7 @@ data class MainUiState(
     val isAuthorized: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isDynamicColor: Boolean = true,
-    val fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
-    val customSeedArgb: Long? = null,
+    val manualThemeColorArgb: Long? = null,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
     val isExpressive: Boolean = true,
