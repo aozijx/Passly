@@ -25,6 +25,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
 
 @Composable
 fun NotesSection(
@@ -80,10 +82,28 @@ fun NotesSection(
                     )
                     .padding(16.dp)
             ) {
-                Text(
-                    text = entry.resolveNotes() ?: noNotesLabel,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                val notes = entry.resolveNotes()
+                if (notes.isNullOrBlank()) {
+                    Text(text = noNotesLabel, style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    Markdown(
+                        content = notes,
+                        modifier = Modifier.fillMaxWidth(),
+                        typography = markdownTypography(
+                            h1 = MaterialTheme.typography.headlineLarge,
+                            h2 = MaterialTheme.typography.headlineMedium,
+                            h3 = MaterialTheme.typography.headlineSmall,
+                            h4 = MaterialTheme.typography.titleLarge,
+                            h5 = MaterialTheme.typography.titleMedium,
+                            h6 = MaterialTheme.typography.titleSmall,
+                            text = MaterialTheme.typography.bodyMedium,
+                            paragraph = MaterialTheme.typography.bodyMedium,
+                            ordered = MaterialTheme.typography.bodyMedium,
+                            bullet = MaterialTheme.typography.bodyMedium,
+                            list = MaterialTheme.typography.bodyMedium
+                        )
+                    )
+                }
             }
         }
     }

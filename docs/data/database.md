@@ -20,17 +20,37 @@ flowchart TB
 
 ## 当前表
 
-| 表                   | 用途                                 |
-|---------------------|------------------------------------|
-| `vault_metadata`    | 列表所需的低敏元数据                         |
-| `vault_credentials` | 加密业务负载                             |
-| `vault_historys`    | 条目快照历史；表名存在历史拼写问题                  |
-| `vault_activities`  | 操作活动记录                             |
-| `vault_attachments` | 附件元数据和内容引用                         |
-| `lookup_index`      | Blind Index 检索数据                   |
-| `key_envelopes`     | 遗留表，当前信封真相源已迁至 Bootstrap Proto，待移除 |
+| 表 | 用途 |
+|---|---|
+| `vault_entries` | 条目身份、结构类型、能力位、时间戳和加密 `summaryBlob` |
+| `entry_secrets` | 一条条目对应的一份加密 `secretBlob` |
+| `entry_revisions` | 完整的加密历史快照 |
+| `entry_activities` | 查看、复制、使用等审计/统计事件，不用于恢复 |
+| `entry_attachments` | 可查询附件元数据及加密内容元数据；文件正文单独加密落盘 |
+| `search_tokens` | keyed blind-index token |
+| `entry_drafts` | 添加/编辑流程的暂存状态 |
 
 Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `app/schemas`，本文不复制完整字段声明。
+
+## `entryType`、`vaultId` 与分类边界
+
+- `entryType` 是条目的**结构类型**，决定可用字段、详情组件和能力，例如 `LOGIN`、
+  `BANK_CARD`、`SSH_KEY`。数据库根记录不应全部写成 `LOGIN`；只有确实采用登录结构的条目才是
+  `LOGIN`。
+- `vaultId` 当前默认值为 `default`，预留给多保险库/工作区隔离。它既不是用户分类，也不是
+  “同一账户的多种密码集合”。当前数据库仍是单保险库实现。
+- 当前 UI 中名为 category 的筛选值实际直接来自 `entryType.name`。这意味着**自定义分类尚未实现**，
+  也说明现有命名发生了概念混用。后续自定义分类应使用独立 `categoryId`/关联表；`tags` 继续用于
+  多值标签，不能复用 `entryType`。
+- `capabilityFlags` 表示一个条目实际具有的能力（密码、OTP、附件等），用于表达“登录 + OTP”
+  这类组合，不能再制造一个新的混合 `entryType`。
+
+## Blob 与 `color`
+
+`summaryBlob` 是字段级 AES-GCM 密文，解密后为 `SummaryPayload`。`color` 位于该 payload 中，
+是条目卡片/主题的可选展示元数据，不是加密参数、分类或类型判别字段。当前代码只透传该值，
+尚未形成完整的颜色编辑功能；若 UI 不再使用，应通过 payload schema 演进移除，不能直接把
+数据库 Blob 当 JSON 修改。
 
 ## 热冷分离与聚合
 
@@ -38,6 +58,16 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `app/schemas`�
 Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
 
 历史、备份和导出共享 Vault Snapshot 语义，但数据库 Entity、备份 DTO 与 Domain model 仍应由 Mapper 隔离。
+
+## 历史与附件体积策略
+
+- 历史采用完整快照而非 diff。唯一格式为 `rev2:` + Base64(GZIP(snapshot))，再执行
+  AES-GCM；不保留原始未版本化快照的转换兼容。解压设置 8 MiB 上限，组件长度也会校验，避免损坏数据
+  导致超大分配。
+- 附件正文不进入 Room Blob，而是保存为 `filesDir/attachments/<entryId>/<attachmentId>.enc`；
+  表内 Blob 只包含加密路径、哈希等元数据。
+- 附件不做通用压缩。图片、PDF、视频、ZIP 等通常已经压缩，再压缩收益小且增加内存和解压炸弹
+  风险。若未来为纯文本附件启用压缩，必须记录算法、原始长度、压缩长度和硬性解压上限。
 
 ## 生命周期约束
 
