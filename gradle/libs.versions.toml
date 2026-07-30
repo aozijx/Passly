@@ -24,7 +24,7 @@ hilt-navigation-compose = "1.2.0"
 
 # Jetpack Compose & UI
 # Compose BOM 决定了大部分 ui-* 库的版本，手动指定版本时需注意不被 BOM 覆盖
-composeBom = "2026.03.00"
+composeBom = "2026.06.01"
 activityCompose = "1.13.0"
 foundation = "1.10.6"
 material3 = "1.5.0-alpha18"
