@@ -10,24 +10,16 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,18 +28,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.theme.PasslyTheme
 import com.aozijx.passly.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
+import com.aozijx.passly.feature.vault.editor.common.SharedAddEntryExtendedFab
 import com.aozijx.passly.feature.vault.model.AddType
 
 @Composable
@@ -127,27 +117,28 @@ fun VaultFab(
                 }
             }
 
-            Box(
+            SharedAddEntryExtendedFab(
+                label = stringResource(R.string.vault_fab_add_title),
+                onClick = { showFabMenu = !showFabMenu },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.add),
+                        modifier = Modifier
+                            .size(24.dp)
+                            .rotate(rotation)
+                    )
+                },
+                expanded = false,
                 modifier = sharedFabModifier
                     .size(if (expressive) 56.dp else 52.dp)
-                    .shadow(4.dp, MaterialTheme.shapes.large)
-                    .clip(MaterialTheme.shapes.large)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { showFabMenu = !showFabMenu },
                             onLongPress = { showAddEntrySheet = true }
                         )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = stringResource(R.string.add),
-                    modifier = Modifier.rotate(rotation),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
+                    }
+            )
         }
     }
 
@@ -195,27 +186,17 @@ fun FabMenuItemWithSpring(
 fun FabMenuItem(
     label: String, icon: ImageVector, onClick: () -> Unit
 ) {
-    val shape = MaterialTheme.shapes.large
-    Surface(
+    SharedAddEntryExtendedFab(
+        label = label,
         onClick = onClick,
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 6.dp,
-        modifier = Modifier
-            .height(48.dp)
-            .shadow(3.dp, shape)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp)
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
             )
-        }
-    }
+        },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    )
 }

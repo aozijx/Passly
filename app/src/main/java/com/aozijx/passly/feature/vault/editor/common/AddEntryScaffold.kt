@@ -7,14 +7,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -22,10 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -34,7 +29,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
@@ -122,27 +116,24 @@ private fun SaveEntryFab(
         )
     }
 
-    ExtendedFloatingActionButton(
+    val labelVisible = rememberSharedFabLabelVisible(visible = !isSaving)
+    SharedAddEntryExtendedFab(
+        label = stringResource(R.string.save),
         onClick = { if (enabled) onSave() },
-        modifier = sharedModifier
-            .then(if (enabled) Modifier else Modifier.alpha(0.5f))
-            .then(if (enabled) Modifier else Modifier.semantics { disabled() }),
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-    ) {
-        if (isSaving) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp
-            )
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        icon = {
+            if (isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
                 Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.save))
             }
-        }
-    }
+        },
+        expanded = !isSaving,
+        enabled = enabled,
+        labelVisible = labelVisible,
+        modifier = sharedModifier
+            .then(if (enabled) Modifier else Modifier.semantics { disabled() })
+    )
 }
-
-const val ADD_ENTRY_FAB_SHARED_KEY = "vault-add-entry-fab"
