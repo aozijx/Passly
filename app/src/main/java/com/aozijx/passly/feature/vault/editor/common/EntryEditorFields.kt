@@ -7,16 +7,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.PasswordInput
-import com.aozijx.passly.core.ui.components.passlyTextFieldColors
-import com.aozijx.passly.core.ui.components.passlyTextFieldShape
 
 @Composable
 fun EntryEditorSection(
@@ -61,10 +59,10 @@ fun EntryEditorTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
     enabled: Boolean = true
 ) {
-    OutlinedTextField(
+    PasslyOutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = label,
         enabled = enabled,
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = keyboardOptions,
@@ -72,9 +70,7 @@ fun EntryEditorTextField(
         singleLine = singleLine,
         minLines = minLines,
         maxLines = maxLines,
-        trailingIcon = trailingIcon,
-        shape = passlyTextFieldShape(),
-        colors = passlyTextFieldColors()
+        trailingIcon = trailingIcon
     )
 }
 
