@@ -27,9 +27,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
-import com.aozijx.passly.core.ui.components.widgets.SwipeDirection
-import com.aozijx.passly.core.ui.components.widgets.SwipeToAction
-import com.aozijx.passly.core.ui.components.widgets.createSwipeAction
+import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
+import com.aozijx.passly.core.ui.components.widgets.createSwipeActionSpec
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
@@ -159,22 +158,22 @@ private fun EntryListItemRow(
     val visibleState = remember(item.id) {
         MutableTransitionState(false).apply { targetState = true }
     }
-    val actions =
-        remember(item.id, swipeLeftAction, swipeRightAction, onSwipeTriggered, colorScheme) {
-            listOfNotNull(
-                createSwipeAction(
-                    actionType = swipeLeftAction,
-                    direction = SwipeDirection.LEFT,
-                    onAction = { onSwipeTriggered(swipeLeftAction, item) },
-                    backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.primary,
-                    iconTint = Color.White
-                ), createSwipeAction(
-                    actionType = swipeRightAction,
-                    direction = SwipeDirection.RIGHT,
-                    onAction = { onSwipeTriggered(swipeRightAction, item) },
-                    backgroundColor = if (swipeRightAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.secondary,
-                    iconTint = Color.White
-                )
+    val leftAction =
+        remember(item.id, swipeLeftAction, onSwipeTriggered, colorScheme) {
+            createSwipeActionSpec(
+                actionType = swipeLeftAction,
+                onAction = { onSwipeTriggered(swipeLeftAction, item) },
+                backgroundColor = if (swipeLeftAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.primary,
+                iconTint = Color.White
+            )
+        }
+    val rightAction =
+        remember(item.id, swipeRightAction, onSwipeTriggered, colorScheme) {
+            createSwipeActionSpec(
+                actionType = swipeRightAction,
+                onAction = { onSwipeTriggered(swipeRightAction, item) },
+                backgroundColor = if (swipeRightAction == SwipeActionType.DELETE) colorScheme.error else colorScheme.secondary,
+                iconTint = Color.White
             )
         }
 
@@ -187,10 +186,11 @@ private fun EntryListItemRow(
                     initialOffsetY = { height -> height / 4 }
                 )
     ) {
-        SwipeToAction(
-            actions = actions,
+        SwipeActionContainer(
+            leftAction = leftAction,
+            rightAction = rightAction,
             modifier = Modifier.fillMaxWidth(),
-            isActive = isSwipeEnabled,
+            enabled = isSwipeEnabled,
         ) {
             CardStyleRegistry.RenderVaultItem(
                 style = cardStyle,
