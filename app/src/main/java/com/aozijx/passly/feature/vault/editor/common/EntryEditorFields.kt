@@ -10,9 +10,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.PasswordInput
 
@@ -136,6 +138,7 @@ fun EntryPasswordField(
     isVisible: Boolean,
     onVisibilityChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    label: String = stringResource(R.string.password),
     imeAction: ImeAction = ImeAction.Next
 ) {
     PasswordInput(
@@ -144,6 +147,7 @@ fun EntryPasswordField(
         isVisible = isVisible,
         onVisibilityChange = onVisibilityChange,
         modifier = modifier,
+        label = label,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password,
             imeAction = imeAction

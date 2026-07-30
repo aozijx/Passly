@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.components.dialog
 
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.feature.vault.components.editor.AddTypedEntryDialog
+import com.aozijx.passly.feature.vault.components.editor.AddEntryDialog
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -22,7 +22,7 @@ fun AddDialogHost(
         AddType.PASSKEY,
         AddType.RECOVERY_CODE -> {
             val type = uiState.addType
-            AddTypedEntryDialog(
+            AddEntryDialog(
                 viewModel = vaultViewModel,
                 addType = type,
                 onUpdateInteraction = onUpdateInteraction
