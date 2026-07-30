@@ -38,6 +38,7 @@ import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
+import com.aozijx.passly.feature.detail.internal.withWifiPassword
 
 @Composable
 fun WifiSection(
@@ -81,14 +82,7 @@ fun WifiSection(
                 trailingIcon = {
                     IconButton(onClick = {
                         if (editState.editedPassword != revealedPassword) {
-                            val wifi = entry.secret.wifi
-                            onEntryUpdated(
-                                entry.copy(
-                                    secret = entry.secret.copy(
-                                        wifi = wifi?.copy(password = editState.editedPassword)
-                                    )
-                                )
-                            )
+                            onEntryUpdated(entry.withWifiPassword(editState.editedPassword))
                             onPasswordRevealed(editState.editedPassword)
                         }
                         editState.isEditingPassword = false

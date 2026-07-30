@@ -35,6 +35,9 @@ import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
+import com.aozijx.passly.feature.detail.internal.withCardCvv
+import com.aozijx.passly.feature.detail.internal.withCardNumber
+import com.aozijx.passly.feature.detail.internal.withDetailUsername
 
 @Composable
 fun BankCardSection(
@@ -70,7 +73,7 @@ fun BankCardSection(
                 trailingIcon = {
                     IconButton(onClick = {
                         savePlaintext(editState.editedUsername, revealedCardholder, { editState.isEditingUsername = false }) {
-                            onEntryUpdated(entry.copy(summary = entry.summary.copy(username = it)))
+                            onEntryUpdated(entry.withDetailUsername(it))
                             onRevealField(RevealedFieldKey.CARDHOLDER, editState.editedUsername)
                         }
                     }) {
@@ -115,15 +118,7 @@ fun BankCardSection(
                 trailingIcon = {
                     IconButton(onClick = {
                         savePlaintext(editState.editedPassword, revealedCardNumber, { editState.isEditingPassword = false }) {
-                            onEntryUpdated(
-                                entry.copy(
-                                    secret = entry.secret.copy(
-                                        card = entry.secret.card?.copy(
-                                            cardNumber = it
-                                        )
-                                    )
-                                )
-                            )
+                            onEntryUpdated(entry.withCardNumber(it))
                             onRevealField(RevealedFieldKey.CARD_NUMBER, editState.editedPassword)
                         }
                     }) {
@@ -179,15 +174,7 @@ fun BankCardSection(
                     trailingIcon = {
                         IconButton(onClick = {
                             savePlaintext(editState.editedTotp, revealedCvv, { editState.isEditingTotp = false }) {
-                                onEntryUpdated(
-                                    entry.copy(
-                                        secret = entry.secret.copy(
-                                            card = entry.secret.card.copy(
-                                                cardCvv = it
-                                            )
-                                        )
-                                    )
-                                )
+                                onEntryUpdated(entry.withCardCvv(it))
                                 onRevealField(RevealedFieldKey.CVV, editState.editedTotp)
                             }
                         }) {

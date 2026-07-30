@@ -22,7 +22,6 @@ import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.secret.LoginSecret
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.components.DetailItem
 import com.aozijx.passly.feature.detail.components.EditTextField
@@ -30,6 +29,8 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
+import com.aozijx.passly.feature.detail.internal.withDetailUsername
+import com.aozijx.passly.feature.detail.internal.withLoginPassword
 
 @Composable
 fun CredentialSection(
@@ -72,7 +73,7 @@ fun CredentialSection(
                 },
                 onSave = { newValue ->
                     if (newValue != revealedUsername) {
-                        onEntryUpdated(item.copy(summary = item.summary.copy(username = newValue)))
+                        onEntryUpdated(item.withDetailUsername(newValue))
                         onUsernameRevealed(newValue)
                     }
                     editState.isEditingUsername = false
@@ -100,15 +101,7 @@ fun CredentialSection(
                 },
                 onSave = { newValue ->
                     if (newValue != revealedPassword) {
-                        onEntryUpdated(
-                            item.copy(
-                                secret = item.secret.copy(
-                                    login = item.secret.login?.copy(
-                                        password = newValue
-                                    ) ?: LoginSecret(password = newValue)
-                                )
-                            )
-                        )
+                        onEntryUpdated(item.withLoginPassword(newValue))
                         onPasswordRevealed(newValue)
                     }
                     editState.isEditingPassword = false

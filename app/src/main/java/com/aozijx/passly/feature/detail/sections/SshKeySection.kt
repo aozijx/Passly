@@ -39,6 +39,7 @@ import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
+import com.aozijx.passly.feature.detail.internal.withSshPassphrase
 
 @Composable
 fun SshKeySection(
@@ -80,15 +81,7 @@ fun SshKeySection(
                 label = stringResource(R.string.edit_field, passphraseLabel),
                 onSave = {
                     if (editState.editedPassword != revealedPassword) {
-                        onEntryUpdated(
-                            entry.copy(
-                                secret = entry.secret.copy(
-                                    ssh = entry.secret.ssh?.copy(
-                                        passphrase = editState.editedPassword
-                                    )
-                                )
-                            )
-                        )
+                        onEntryUpdated(entry.withSshPassphrase(editState.editedPassword))
                         onPasswordRevealed(editState.editedPassword)
                     }
                     editState.isEditingPassword = false
