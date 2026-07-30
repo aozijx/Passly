@@ -16,7 +16,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -73,12 +73,11 @@ fun WifiSection(
         )
 
         if (editState.isEditingPassword) {
-            OutlinedTextField(
+            PasslyOutlinedTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = { Text(stringResource(R.string.edit_field, wifiPasswordLabel)) },
+                label = stringResource(R.string.edit_field, wifiPasswordLabel),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
                     IconButton(onClick = {
                         if (editState.editedPassword != revealedPassword) {

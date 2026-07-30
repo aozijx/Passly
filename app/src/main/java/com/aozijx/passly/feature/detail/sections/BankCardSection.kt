@@ -1,38 +1,29 @@
 package com.aozijx.passly.feature.detail.sections
 
 import android.widget.Toast
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
+import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -68,19 +59,14 @@ fun BankCardSection(
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (editState.isEditingUsername) {
-            OutlinedTextField(
+            PasslyOutlinedTextField(
                 value = editState.editedUsername,
                 onValueChange = { editState.editedUsername = it },
-                label = {
-                    Text(
-                        stringResource(
-                            R.string.edit_field,
-                            stringResource(R.string.cardholder)
-                        )
-                    )
-                },
+                label = stringResource(
+                    R.string.edit_field,
+                    stringResource(R.string.cardholder)
+                ),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
                     IconButton(onClick = {
                         savePlaintext(editState.editedUsername, revealedCardholder, { editState.isEditingUsername = false }) {
@@ -118,19 +104,14 @@ fun BankCardSection(
         }
 
         if (editState.isEditingPassword) {
-            OutlinedTextField(
+            PasslyOutlinedTextField(
                 value = editState.editedPassword,
                 onValueChange = { editState.editedPassword = it },
-                label = {
-                    Text(
-                        stringResource(
-                            R.string.edit_field,
-                            stringResource(R.string.card_number)
-                        )
-                    )
-                },
+                label = stringResource(
+                    R.string.edit_field,
+                    stringResource(R.string.card_number)
+                ),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
                     IconButton(onClick = {
                         savePlaintext(editState.editedPassword, revealedCardNumber, { editState.isEditingPassword = false }) {
@@ -187,19 +168,14 @@ fun BankCardSection(
 
         entry.secret.card?.cardCvv?.let { cvv ->
             if (editState.isEditingTotp) {
-                OutlinedTextField(
+                PasslyOutlinedTextField(
                     value = editState.editedTotp,
                     onValueChange = { editState.editedTotp = it },
-                    label = {
-                        Text(
-                            stringResource(
-                                R.string.edit_field,
-                                stringResource(R.string.card_cvv)
-                            )
-                        )
-                    },
+                    label = stringResource(
+                        R.string.edit_field,
+                        stringResource(R.string.card_cvv)
+                    ),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
                     trailingIcon = {
                         IconButton(onClick = {
                             savePlaintext(editState.editedTotp, revealedCvv, { editState.isEditingTotp = false }) {

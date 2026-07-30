@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.AppPackagePickerDialog
+import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
@@ -146,11 +146,11 @@ private fun EditableAssociatedCard(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (editing) {
-                OutlinedTextField(
+                PasslyOutlinedTextField(
                     value = editedValue,
                     onValueChange = onValueChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(title) },
+                    label = title,
                     placeholder = placeholder?.let { { Text(it) } },
                     singleLine = true
                 )
