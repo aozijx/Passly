@@ -10,9 +10,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,6 +23,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,16 +34,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.theme.PasslyTheme
 import com.aozijx.passly.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
-import com.aozijx.passly.feature.vault.editor.common.SharedAddEntryExtendedFab
 import com.aozijx.passly.feature.vault.model.AddType
 
 @Composable
@@ -52,6 +59,8 @@ fun VaultFab(
     var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
     val expressive = PasslyTheme.isExpressive
     val motionScheme = MaterialTheme.motionScheme
+    val fabShape = MaterialTheme.shapes.large
+    val fabInteractionSource = remember { MutableInteractionSource() }
 
     val rotation by animateFloatAsState(
         targetValue = if (showFabMenu) 45f else 0f,
@@ -102,7 +111,7 @@ fun VaultFab(
         ) {
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 fabMenuOptions.forEach { type ->
                     FabMenuItemWithSpring(
@@ -117,10 +126,23 @@ fun VaultFab(
                 }
             }
 
-            SharedAddEntryExtendedFab(
-                label = stringResource(R.string.vault_fab_add_title),
-                onClick = { showFabMenu = !showFabMenu },
-                icon = {
+            Surface(
+                modifier = sharedFabModifier
+                    .size(if (expressive) 56.dp else 52.dp)
+                    .clip(fabShape)
+                    .combinedClickable(
+                        interactionSource = fabInteractionSource,
+                        indication = ripple(bounded = true),
+                        role = Role.Button,
+                        onClick = { showFabMenu = !showFabMenu },
+                        onLongClick = { showAddEntrySheet = true }
+                    ),
+                shape = fabShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shadowElevation = 4.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = stringResource(R.string.add),
@@ -128,17 +150,8 @@ fun VaultFab(
                             .size(24.dp)
                             .rotate(rotation)
                     )
-                },
-                expanded = false,
-                modifier = sharedFabModifier
-                    .size(if (expressive) 56.dp else 52.dp)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onTap = { showFabMenu = !showFabMenu },
-                            onLongPress = { showAddEntrySheet = true }
-                        )
-                    }
-            )
+                }
+            }
         }
     }
 
@@ -186,17 +199,29 @@ fun FabMenuItemWithSpring(
 fun FabMenuItem(
     label: String, icon: ImageVector, onClick: () -> Unit
 ) {
-    SharedAddEntryExtendedFab(
-        label = label,
+    Surface(
         onClick = onClick,
-        icon = {
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shadowElevation = 3.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(18.dp)
             )
-        },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = MaterialTheme.colorScheme.onSurface
-    )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
 }
