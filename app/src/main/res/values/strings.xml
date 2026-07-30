@@ -168,6 +168,8 @@
     <string name="auth_set_app_password">设置应用密码</string>
     <string name="auth_biometric_unavailable_password_required">无可用生物识别，请先设置应用密码</string>
     <string name="auth_error_method_incorrect">%1$s不正确</string>
+    <string name="auth_error_method_incorrect_attempts">%1$s不正确，还可重试 %2$d 次</string>
+    <string name="auth_error_rate_limited">尝试次数过多，请 %1$d 秒后再试</string>
     <string name="auth_error_failed">验证失败，请重试</string>
     <string name="auth_error_app_password_setup_failed">应用密码设置失败，请重试</string>
     <string name="auth_error_password_too_short">应用密码至少需要 6 位</string>

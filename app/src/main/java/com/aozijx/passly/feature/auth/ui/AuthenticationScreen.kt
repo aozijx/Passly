@@ -205,6 +205,13 @@ private fun AuthenticationFailure.message(
         authCode == AuthenticationFailureCode.CREDENTIAL_INCORRECT &&
         methodLabel != null
     ) {
+        if (remainingAttempts > 0) {
+            return stringResource(
+                R.string.auth_error_method_incorrect_attempts,
+                methodLabel,
+                remainingAttempts
+            )
+        }
         return stringResource(R.string.auth_error_method_incorrect, methodLabel)
     }
 
@@ -212,8 +219,13 @@ private fun AuthenticationFailure.message(
         forSetup && authCode == AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION ->
             R.string.auth_error_password_too_short
 
+        authCode == AuthenticationFailureCode.RATE_LIMITED -> R.string.auth_error_rate_limited
         forSetup -> R.string.auth_error_app_password_setup_failed
         else -> R.string.auth_error_failed
     }
-    return stringResource(message)
+    return if (authCode == AuthenticationFailureCode.RATE_LIMITED) {
+        stringResource(message, ((retryAfterMs + 999L) / 1000L).coerceAtLeast(1L))
+    } else {
+        stringResource(message)
+    }
 }

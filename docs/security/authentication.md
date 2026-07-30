@@ -40,6 +40,10 @@ SavedStateHandle 或 PendingIntent。`KeyMissing`、`KeyInvalidated`、`CryptoOb
 可能继续；worker 返回后检查 request token，已取消的结果只擦除、不提交。密码副本、派生 key 和未交接 DEK 由拥有者
 在同步 `finally` 中尽力覆盖，正常状态与 callback 在 Main.immediate 串行提交。
 
+应用密码和恢复码的连续错误次数由认证中心记录。当前策略是每种凭据方式最多连续错误 5 次；第 5 次起返回
+`RATE_LIMITED`，30 秒后允许再次尝试。成功认证会清除该方式的计数。计数只保存在进程内存中，不写入
+DataStore、数据库或日志；页面只展示 `AuthenticationFailure` 中的剩余次数或等待时间，不能自行判断密码是否正确。
+
 ## 恢复码草稿
 
 ```mermaid

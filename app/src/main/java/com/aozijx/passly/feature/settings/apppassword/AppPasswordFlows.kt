@@ -88,21 +88,43 @@ private fun Context.showToast(messageResource: Int) {
     Toast.makeText(this, messageResource, Toast.LENGTH_SHORT).show()
 }
 
+private fun Context.showToast(message: String) {
+    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+}
+
 private fun Context.showFailure(result: AuthenticationResult) {
     if (result is AuthenticationResult.Cancelled) return
-    val messageResource = when ((result as? AuthenticationResult.Failure)?.failure?.authCode) {
-        AuthenticationFailureCode.CREDENTIAL_INCORRECT ->
-            R.string.settings_auth_current_password_incorrect
+    val failure = (result as? AuthenticationResult.Failure)?.failure
+    when (failure?.authCode) {
+        AuthenticationFailureCode.CREDENTIAL_INCORRECT -> {
+            if (failure.remainingAttempts > 0) {
+                showToast(
+                    getString(
+                        R.string.auth_error_method_incorrect_attempts,
+                        getString(R.string.auth_app_password_label),
+                        failure.remainingAttempts
+                    )
+                )
+            } else {
+                showToast(R.string.settings_auth_current_password_incorrect)
+            }
+        }
+
+        AuthenticationFailureCode.RATE_LIMITED -> showToast(
+            getString(
+                R.string.auth_error_rate_limited,
+                ((failure.retryAfterMs + 999L) / 1000L).coerceAtLeast(1L)
+            )
+        )
 
         AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION ->
-            R.string.settings_auth_password_too_short
+            showToast(R.string.settings_auth_password_too_short)
 
         AuthenticationFailureCode.LAST_METHOD_REQUIRED ->
-            R.string.settings_auth_last_method_required
+            showToast(R.string.settings_auth_last_method_required)
 
-        else -> R.string.settings_auth_operation_failed
+        else -> showToast(R.string.settings_auth_operation_failed)
     }
-    showToast(messageResource)
 }
 
 internal fun handleAppPasswordEntryClick(

@@ -98,6 +98,11 @@ enum class AuthenticationFailureCode {
 data class AuthenticationFailure(
     val authCode: AuthenticationFailureCode,
     override val correlationId: String,
+    val method: AuthenticationMethod? = null,
+    val attemptCount: Int = 0,
+    val maxAttempts: Int = 0,
+    val remainingAttempts: Int = 0,
+    val retryAfterMs: Long = 0L,
     override val origin: FailureOrigin = FailureOrigin.SECURITY,
     override val severity: FailureSeverity = FailureSeverity.ERROR,
     override val recoveryAction: RecoveryAction = RecoveryAction.RETRY

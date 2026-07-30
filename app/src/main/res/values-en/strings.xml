@@ -124,6 +124,8 @@
     <string name="auth_set_app_password">Set App Password</string>
     <string name="auth_biometric_unavailable_password_required">No biometric available. Please set an app password first.</string>
     <string name="auth_error_method_incorrect">Incorrect %1$s</string>
+    <string name="auth_error_method_incorrect_attempts">Incorrect %1$s. %2$d attempts left.</string>
+    <string name="auth_error_rate_limited">Too many attempts. Try again in %1$d seconds.</string>
     <string name="auth_error_failed">Verification failed. Try again.</string>
     <string name="auth_error_app_password_setup_failed">Couldn\'t set the app password. Try again.</string>
     <string name="auth_error_password_too_short">Use at least 6 characters</string>

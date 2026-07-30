@@ -123,6 +123,8 @@
     <string name="auth_set_app_password">アプリパスワードを設定</string>
     <string name="auth_biometric_unavailable_password_required">生体認証が利用できません。先にアプリパスワードを設定してください。</string>
     <string name="auth_error_method_incorrect">%1$sが正しくありません</string>
+    <string name="auth_error_method_incorrect_attempts">%1$sが正しくありません。残り%2$d回です</string>
+    <string name="auth_error_rate_limited">試行回数が多すぎます。%1$d秒後にもう一度お試しください</string>
     <string name="auth_error_failed">認証に失敗しました。もう一度お試しください。</string>
     <string name="auth_error_app_password_setup_failed">アプリパスワードを設定できませんでした。もう一度お試しください。</string>
     <string name="auth_error_password_too_short">6文字以上で入力してください</string>
