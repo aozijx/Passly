@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Icon
@@ -13,22 +14,25 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.AppTextField
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.vault.components.editor.OtpConfigForm
 import com.aozijx.passly.feature.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.editor.common.CreateEntryEffect
+import com.aozijx.passly.feature.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.editor.common.EntryEditorTextField
+import com.aozijx.passly.feature.vault.editor.common.EntryTitleField
 
 @Composable
 fun AddOtpScreen(
@@ -91,51 +95,56 @@ fun AddOtpScreen(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope
     ) {
-        AppTextField(
-            value = uiState.form.title,
-            onValueChange = {
-                onUserInteraction()
-                viewModel.updateForm(uiState.form.copy(title = it))
-            },
-            label = stringResource(R.string.title)
-        )
+        EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
+            EntryTitleField(
+                value = uiState.form.title,
+                onValueChange = {
+                    onUserInteraction()
+                    viewModel.updateForm(uiState.form.copy(title = it))
+                },
+                label = stringResource(R.string.title)
+            )
+        }
 
-        AppTextField(
-            value = uiState.form.uriText,
-            onValueChange = {
-                onUserInteraction()
-                viewModel.updateUri(it)
-            },
-            label = stringResource(R.string.twofa_uri_hint),
-            trailingIcon = {
-                TextButton(
-                    onClick = {
-                        onUserInteraction()
-                        keyboardController?.hide()
-                        showScanner = true
+        EntryEditorSection(title = stringResource(R.string.vault_editor_section_otp_setup)) {
+            EntryEditorTextField(
+                value = uiState.form.uriText,
+                onValueChange = {
+                    onUserInteraction()
+                    viewModel.updateUri(it)
+                },
+                label = stringResource(R.string.twofa_uri_hint),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                trailingIcon = {
+                    TextButton(
+                        onClick = {
+                            onUserInteraction()
+                            keyboardController?.hide()
+                            showScanner = true
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        Text(stringResource(R.string.vault_scan))
                     }
-                ) {
-                    Icon(
-                        Icons.Default.QrCodeScanner,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                    Text(stringResource(R.string.vault_scan))
                 }
-            }
-        )
+            )
 
-        OtpConfigForm(
-            state = uiState.form,
-            onFieldUpdate = {
-                onUserInteraction()
-                viewModel.updateForm(it)
-            },
-            onTypeChange = {
-                onUserInteraction()
-                viewModel.updateType(it)
-            }
-        )
+            OtpConfigForm(
+                state = uiState.form,
+                onFieldUpdate = {
+                    onUserInteraction()
+                    viewModel.updateForm(it)
+                },
+                onTypeChange = {
+                    onUserInteraction()
+                    viewModel.updateType(it)
+                }
+            )
+        }
     }
 
     if (showScanner) {

@@ -2,28 +2,25 @@ package com.aozijx.passly.feature.vault.editor.password
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.AppTextField
-import com.aozijx.passly.core.ui.components.PasswordInput
 import com.aozijx.passly.feature.vault.editor.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.editor.common.CreateEntryEffect
+import com.aozijx.passly.feature.vault.editor.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.editor.common.EntryNotesField
+import com.aozijx.passly.feature.vault.editor.common.EntryPasswordField
+import com.aozijx.passly.feature.vault.editor.common.EntryTitleField
+import com.aozijx.passly.feature.vault.editor.common.EntryUsernameField
+import com.aozijx.passly.feature.vault.editor.common.EntryWebsiteField
 
 @Composable
 fun AddPasswordScreen(
@@ -106,48 +103,43 @@ private fun PasswordForm(
     onNotesChange: (String) -> Unit,
     onSave: () -> Unit
 ) {
-    AppTextField(
-        value = state.title,
-        onValueChange = onTitleChange,
-        label = stringResource(R.string.title),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-    )
-    AppTextField(
-        value = state.username,
-        onValueChange = onUsernameChange,
-        label = stringResource(R.string.username_hint),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Email,
-            imeAction = ImeAction.Next
+    EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
+        EntryTitleField(
+            value = state.title,
+            onValueChange = onTitleChange,
+            label = stringResource(R.string.title)
         )
-    )
-    PasswordInput(
-        password = state.password,
-        onPasswordChange = onPasswordChange,
-        isVisible = state.isPasswordVisible,
-        onVisibilityChange = onPasswordVisibilityChange
-    )
-    AppTextField(
-        value = state.website,
-        onValueChange = onWebsiteChange,
-        label = stringResource(R.string.vault_add_password_website),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Uri,
-            imeAction = ImeAction.Next
+        EntryUsernameField(
+            value = state.username,
+            onValueChange = onUsernameChange,
+            label = stringResource(R.string.username_hint)
         )
-    )
-    OutlinedTextField(
-        value = state.notes,
-        onValueChange = onNotesChange,
-        label = { Text(stringResource(R.string.remark)) },
-        modifier = Modifier.fillMaxWidth(),
-        minLines = 4,
-        maxLines = 8,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(
-            onDone = {
-                if (state.isValid) onSave()
-            }
+    }
+
+    EntryEditorSection(title = stringResource(R.string.vault_editor_section_credentials)) {
+        EntryPasswordField(
+            password = state.password,
+            onPasswordChange = onPasswordChange,
+            isVisible = state.isPasswordVisible,
+            onVisibilityChange = onPasswordVisibilityChange
         )
-    )
+    }
+
+    EntryEditorSection(title = stringResource(R.string.vault_editor_section_details)) {
+        EntryWebsiteField(
+            value = state.website,
+            onValueChange = onWebsiteChange,
+            label = stringResource(R.string.vault_add_password_website)
+        )
+        EntryNotesField(
+            value = state.notes,
+            onValueChange = onNotesChange,
+            label = stringResource(R.string.remark),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    if (state.isValid) onSave()
+                }
+            )
+        )
+    }
 }

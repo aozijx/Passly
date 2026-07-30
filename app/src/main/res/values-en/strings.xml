@@ -57,6 +57,7 @@
     <string name="otp">otp</string>
 
     <string name="vault_scan">Scan</string>
+    <string name="vault_add_entry_save_failed">Couldn\'t save entry</string>
     <string name="vault_empty_placeholder">Your vault is empty</string>
     <string name="vault_scanner_error_not_otp">Scanned successfully, but not a valid QR code</string>
     <string name="vault_scanner_action_album">Import from album</string>
@@ -76,6 +77,10 @@
     <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
 
     <!-- Detail additions -->
+    <string name="vault_editor_section_basic_info">Basic info</string>
+    <string name="vault_editor_section_credentials">Credentials</string>
+    <string name="vault_editor_section_details">Details</string>
+    <string name="vault_editor_section_otp_setup">OTP setup</string>
     <string name="vault_add_password_title">Add Password</string>
     <string name="vault_add_password_website">Website or app address</string>
     <string name="vault_add_password_save_failed">Couldn\'t save password</string>

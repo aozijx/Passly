@@ -56,6 +56,7 @@
     <string name="otp">otp</string>
 
     <string name="vault_scan">スキャン</string>
+    <string name="vault_add_entry_save_failed">項目を保存できませんでした</string>
     <string name="vault_empty_placeholder">金庫は空です</string>
     <string name="vault_scanner_error_not_otp">スキャン成功しましたが、有効な QRコードではありません</string>
     <string name="vault_scanner_action_album">アルバムから選択</string>
@@ -75,6 +76,10 @@
     <string name="backup_directory_permission_failed">保存先ディレクトリの書き込みテストに失敗しました。再選択してください。</string>
 
     <!-- 詳細と編集 -->
+    <string name="vault_editor_section_basic_info">基本情報</string>
+    <string name="vault_editor_section_credentials">認証情報</string>
+    <string name="vault_editor_section_details">詳細</string>
+    <string name="vault_editor_section_otp_setup">OTP設定</string>
     <string name="vault_add_password_title">パスワードを追加</string>
     <string name="vault_add_password_website">ウェブサイトまたはアプリのアドレス</string>
     <string name="vault_add_password_save_failed">パスワードを保存できませんでした</string>

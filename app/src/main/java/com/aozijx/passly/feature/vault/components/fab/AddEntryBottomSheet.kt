@@ -29,7 +29,7 @@ import com.aozijx.passly.feature.vault.model.AddType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEntrySheet(
+fun AddEntryBottomSheet(
     onDismiss: () -> Unit,
     onSelectType: (AddType) -> Unit
 ) {

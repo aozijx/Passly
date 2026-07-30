@@ -7,9 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -22,6 +20,7 @@ import com.aozijx.passly.core.ui.components.common.DropdownSelector
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.feature.vault.editor.common.EntryEditorTextField
 import com.aozijx.passly.feature.vault.model.OtpFormState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,12 +44,11 @@ fun OtpConfigForm(
             optionToString = { it.name }
         )
 
-        OutlinedTextField(
+        EntryEditorTextField(
             value = state.secret,
             onValueChange = { onFieldUpdate(state.copy(secret = it)) },
-            label = { Text(stringResource(R.string.totp_secret)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            label = stringResource(R.string.totp_secret),
+            modifier = Modifier.fillMaxWidth()
         )
 
         DropdownSelector(
@@ -68,33 +66,30 @@ fun OtpConfigForm(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (state.type == OtpType.HOTP) {
-                OutlinedTextField(
+                EntryEditorTextField(
                     value = state.counter,
                     onValueChange = { onFieldUpdate(state.copy(counter = it)) },
-                    label = { Text(stringResource(R.string.otp_counter)) },
+                    label = stringResource(R.string.otp_counter),
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             } else {
-                OutlinedTextField(
+                EntryEditorTextField(
                     value = state.period,
                     onValueChange = { onFieldUpdate(state.copy(period = it)) },
-                    label = { Text(stringResource(R.string.totp_period)) },
+                    label = stringResource(R.string.totp_period),
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
 
-            OutlinedTextField(
+            EntryEditorTextField(
                 value = state.digits,
                 onValueChange = { onFieldUpdate(state.copy(digits = it)) },
-                label = { Text(stringResource(R.string.totp_digits)) },
+                label = stringResource(R.string.totp_digits),
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = state.type != OtpType.STEAM,
-                singleLine = true
+                enabled = state.type != OtpType.STEAM
             )
         }
 

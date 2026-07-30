@@ -75,6 +75,7 @@
     <string name="vault_fab_recovery_code">恢复码</string>
     <string name="vault_fab_add_title">添加条目</string>
     <string name="vault_add_generic_title">添加 %s</string>
+    <string name="vault_add_entry_save_failed">保存条目失败</string>
     <string name="vault_empty_placeholder">你的保险箱空空如也</string>
     <string name="vault_scanner_error_not_otp">非有效二维码</string>
     <string name="vault_scanner_action_album">相册导入</string>
@@ -99,6 +100,10 @@
     <string name="database_recovery_create_new_action">保留故障库并创建新库</string>
 
     <!-- 详情与编辑 -->
+    <string name="vault_editor_section_basic_info">基本信息</string>
+    <string name="vault_editor_section_credentials">凭据</string>
+    <string name="vault_editor_section_details">详情</string>
+    <string name="vault_editor_section_otp_setup">动态口令设置</string>
     <string name="vault_add_password_title">添加密码项</string>
     <string name="vault_add_password_website">网站或应用地址</string>
     <string name="vault_add_password_save_failed">保存密码项失败</string>

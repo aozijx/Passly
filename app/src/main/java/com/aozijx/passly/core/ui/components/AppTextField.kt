@@ -8,11 +8,14 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -26,7 +29,8 @@ fun AppTextField(
     label: String,
     modifier: Modifier = Modifier,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    trailingIcon: @Composable (() -> Unit)? = null
+    trailingIcon: @Composable (() -> Unit)? = null,
+    shape: Shape = passlyTextFieldShape()
 ) {
     OutlinedTextField(
         value = value,
@@ -35,7 +39,9 @@ fun AppTextField(
         singleLine = true,
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = keyboardOptions,
-        trailingIcon = trailingIcon
+        trailingIcon = trailingIcon,
+        shape = shape,
+        colors = passlyTextFieldColors()
     )
 }
 
@@ -46,7 +52,8 @@ fun PasswordInput(
     isVisible: Boolean,
     onVisibilityChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+    keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+    shape: Shape = passlyTextFieldShape()
 ) {
     OutlinedTextField(
         value = password,
@@ -56,6 +63,8 @@ fun PasswordInput(
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = keyboardOptions,
         visualTransformation = if (isVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        shape = shape,
+        colors = passlyTextFieldColors(),
         trailingIcon = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { onVisibilityChange(!isVisible) }) {
@@ -72,3 +81,22 @@ fun PasswordInput(
         }
     )
 }
+
+@Composable
+fun passlyTextFieldShape(): Shape = MaterialTheme.shapes.large
+
+@Composable
+fun passlyTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    errorContainerColor = MaterialTheme.colorScheme.errorContainer,
+    cursorColor = MaterialTheme.colorScheme.primary,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+    disabledBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.38f),
+    errorBorderColor = MaterialTheme.colorScheme.error,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    errorLabelColor = MaterialTheme.colorScheme.error
+)

@@ -55,7 +55,7 @@ fun VaultFab(
     isVisible: Boolean = true
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
-    var showAddEntrySheet by remember { mutableStateOf(false) }
+    var showAddEntryBottomSheet by remember { mutableStateOf(false) }
     var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
     val expressive = PasslyTheme.isExpressive
     val motionScheme = MaterialTheme.motionScheme
@@ -81,9 +81,9 @@ fun VaultFab(
         if (!isVisible) showFabMenu = false
     }
 
-    LaunchedEffect(showAddEntrySheet, pendingSheetSelection) {
+    LaunchedEffect(showAddEntryBottomSheet, pendingSheetSelection) {
         val selectedType = pendingSheetSelection ?: return@LaunchedEffect
-        if (!showAddEntrySheet) {
+        if (!showAddEntryBottomSheet) {
             pendingSheetSelection = null
             onAddTypeSelected(selectedType)
         }
@@ -135,7 +135,7 @@ fun VaultFab(
                         indication = ripple(bounded = true),
                         role = Role.Button,
                         onClick = { showFabMenu = !showFabMenu },
-                        onLongClick = { showAddEntrySheet = true }
+                        onLongClick = { showAddEntryBottomSheet = true }
                     ),
                 shape = fabShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
@@ -155,13 +155,13 @@ fun VaultFab(
         }
     }
 
-    if (showAddEntrySheet) {
-        AddEntrySheet(
-            onDismiss = { showAddEntrySheet = false },
+    if (showAddEntryBottomSheet) {
+        AddEntryBottomSheet(
+            onDismiss = { showAddEntryBottomSheet = false },
             onSelectType = { type ->
                 showFabMenu = false
                 pendingSheetSelection = type
-                showAddEntrySheet = false
+                showAddEntryBottomSheet = false
             }
         )
     }
