@@ -15,6 +15,27 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
 
+@Composable
+fun EntryCategoryItem(category: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.entry_category),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = category,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
 /**
  * EntryType 是结构契约，不是可编辑的用户分类。
  */
@@ -28,7 +49,7 @@ fun EntryTypeItem(entryType: EntryType) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = stringResource(R.string.entry_type),
+            text = stringResource(R.string.entry_template_type),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

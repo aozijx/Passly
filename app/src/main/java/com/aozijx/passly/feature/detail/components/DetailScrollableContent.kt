@@ -23,6 +23,7 @@ import com.aozijx.passly.feature.detail.sections.ActivityTimelineSection
 import com.aozijx.passly.feature.detail.sections.AssociatedInfoSection
 import com.aozijx.passly.feature.detail.sections.BankCardSection
 import com.aozijx.passly.feature.detail.sections.CredentialSection
+import com.aozijx.passly.feature.detail.sections.EntryCategoryItem
 import com.aozijx.passly.feature.detail.sections.EntryTypeItem
 import com.aozijx.passly.feature.detail.sections.IdCardSection
 import com.aozijx.passly.feature.detail.sections.NotesSection
@@ -187,7 +188,10 @@ fun DetailScrollableContent(
         }
 
         item {
-            InfoGroupCard(title = stringResource(R.string.entry_type)) {
+            InfoGroupCard(title = stringResource(R.string.entry_category)) {
+                entry.tags.firstOrNull { it.isNotBlank() }?.let { category ->
+                    EntryCategoryItem(category.trim())
+                }
                 EntryTypeItem(entry.entryType)
             }
         }

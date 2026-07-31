@@ -24,6 +24,8 @@
     <string name="show_password">显示密码</string>
     <string name="hide_password">隐藏密码</string>
     <string name="username_hint">账号/邮箱</string>
+    <string name="entry_category">分类</string>
+    <string name="entry_template_type">数据模板</string>
     <string name="sort_default">默认排序</string>
     <string name="sort_name">名称</string>
     <string name="sort_created">创建时间</string>

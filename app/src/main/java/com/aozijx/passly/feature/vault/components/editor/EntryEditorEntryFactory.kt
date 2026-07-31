@@ -27,6 +27,7 @@ fun EntryEditorSchema.toVaultEntry(state: EntryEditorFormState): VaultEntry {
         summary = EntrySummary(
             title = state.value(EntryEditorFieldKey.TITLE),
             username = state.value(EntryEditorFieldKey.SUMMARY),
+            tags = state.value(EntryEditorFieldKey.TAGS).toSummaryTags(),
             icon = null
         ),
         secret = secretFor(
@@ -66,3 +67,9 @@ private fun secretFor(type: EntryType, value: String, notes: String?): EntrySecr
 
     else -> EntrySecret(login = LoginSecret(password = value), notes = notes)
 }
+
+private fun String.toSummaryTags(): List<String> =
+    split(',', '，', ';', '；', '\n')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .distinctBy { it.lowercase() }

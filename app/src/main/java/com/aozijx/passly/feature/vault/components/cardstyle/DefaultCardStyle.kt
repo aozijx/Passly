@@ -59,7 +59,7 @@ fun VaultItem(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = entry.entryType.displayName,
+                    text = entry.categoryOrTemplateLabel,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -110,7 +110,7 @@ fun TwoFAItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = entry.entryType.displayName,
+                    text = entry.categoryOrTemplateLabel,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

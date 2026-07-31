@@ -29,6 +29,7 @@ data class EntryEditorFieldSchema(
 enum class EntryEditorFieldKey {
     TITLE,
     SUMMARY,
+    TAGS,
     SECRET,
     NOTES
 }
@@ -57,6 +58,10 @@ fun AddType.toEntryEditorSchema(): EntryEditorSchema {
                     EntryEditorFieldSchema(
                         key = EntryEditorFieldKey.SUMMARY,
                         labelRes = summaryFieldLabelRes()
+                    ),
+                    EntryEditorFieldSchema(
+                        key = EntryEditorFieldKey.TAGS,
+                        labelRes = R.string.entry_category
                     )
                 )
             ),
