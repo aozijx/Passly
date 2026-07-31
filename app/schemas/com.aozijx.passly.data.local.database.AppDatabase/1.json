@@ -144,7 +144,7 @@
       },
       {
         "tableName": "entry_secrets",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `secretBlob` BLOB NOT NULL, PRIMARY KEY(`entryId`), FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `secretBlob` BLOB NOT NULL, `highSensitivityBlob` BLOB, PRIMARY KEY(`entryId`), FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "entryId",
@@ -157,6 +157,12 @@
             "columnName": "secretBlob",
             "affinity": "BLOB",
             "notNull": true
+          },
+          {
+            "fieldPath": "highSensitivityBlob",
+            "columnName": "highSensitivityBlob",
+            "affinity": "BLOB",
+            "notNull": false
           }
         ],
         "primaryKey": {

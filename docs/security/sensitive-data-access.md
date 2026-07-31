@@ -15,15 +15,22 @@
 
 ## 当前读取边界
 
-`entry_secrets.secretBlob` 是一个 Entry 的聚合 AES-GCM blob。即使 Repository 只返回其中一个字段，底层也必须
-先解密整个 blob；“SQL 只查询 CVV”在当前 schema 下并不成立。真正的字段级独立解密需要拆分密文记录和 AAD，
-这属于 schema 与备份格式变更。
+`entry_secrets` 已拆成普通 `secretBlob` 与高敏 `highSensitivityBlob` 两个 AES-GCM blob。普通详情读取通过
+`EntryQueryRepository.getByIdWithoutHighSensitivity()`，不会解密高敏 blob。高敏字段必须走
+`EntryHighSensitivityRepository.getHighSensitivitySecretForReveal()`，并且只能由完成 reveal 认证的流程调用。
 
-当前详情页仍将完整 `VaultEntry.secret` 放入 ViewModel 状态，用于动态组装多个详情 section。这比理想边界更宽，
-尚不能宣称“只在点击时解密”。后续应增加 `EntryDetailMetadata` 与 `readSecretField(entryId, fieldKey)`：
+当前实际迁出的高敏字段是银行卡卡号、CVV 和支付 PIN。它们不会在普通详情读取时进入 `VaultEntry.secret`；
+详情页 reveal 后只把本次获授权的字段值放入 `DetailUiState.revealedFields`。Domain/Payload 已预留更多高敏
+字段结构，但 SSH、助记词、Passkey、OTP 等 UI reveal 链路仍需逐类迁入。
+
+两 blob 方案提供的是“普通敏感 / 高敏感”分层，不是字段级独立 blob。解密 CVV 时会解开同一条目的
+`highSensitivityBlob`，因此同 blob 内的其他高敏字段会短暂存在于 Repository 层内存中。若未来需要
+“只解密单个字段”，再演进到字段级密文记录。
+
+后续更理想的方向是增加 `EntryDetailMetadata` 与 `readSecretField(entryId, fieldKey)`：
 
 1. 初次进入只加载 header、summary 和 capability flags；
-2. 认证成功后按 entry ID 读取 secret blob；
+2. 认证成功后按 entry ID 和字段 key 读取对应密文；
 3. 在 Repository 内提取请求字段，立即丢弃聚合对象；
 4. UI 只保存已获授权的单字段值，并在隐藏/离开/锁定时清除。
 

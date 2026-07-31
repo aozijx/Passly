@@ -8,7 +8,9 @@ package com.aozijx.passly.domain.entry.model
  */
 data class EntryChanges(
     val summary: EntrySummary? = null,
-    val secret: EntrySecret? = null
+    val secret: EntrySecret? = null,
+    val highSensitivitySecret: EntryHighSensitivitySecret? = null
 ) {
-    val hasChanges: Boolean get() = summary != null || secret != null
+    val hasChanges: Boolean get() =
+        summary != null || secret != null || highSensitivitySecret != null
 }

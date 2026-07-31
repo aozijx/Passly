@@ -172,9 +172,9 @@ class MigrationBoundaryTest {
         val summaryPayload = File(
             "src/main/java/com/aozijx/passly/data/model/payload/summary/SummaryPayload.kt"
         ).readText()
-        val loginAssociationCard = File(
+        val associatedInfoSection = File(
             "src/main/java/com/aozijx/passly/feature/detail/sections/" +
-                    "LoginDomainIconCard.kt"
+                    "AssociatedInfoSection.kt"
         ).readText()
 
         assertTrue(
@@ -184,8 +184,8 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "Login details must expose associated package names",
-            "entry.website?.packageNames" in loginAssociationCard &&
-                    "AssociatedPackageRow" in loginAssociationCard
+            "entry.website?.packageNames" in associatedInfoSection &&
+                    "AssociatedAppRow" in associatedInfoSection
         )
     }
 

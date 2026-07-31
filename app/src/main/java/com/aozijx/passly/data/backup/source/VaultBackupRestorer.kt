@@ -7,6 +7,7 @@ import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
 import com.aozijx.passly.data.backup.model.BackupBundle
 import com.aozijx.passly.data.backup.model.BackupResourceKind
+import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.crypto.AadProvider
@@ -17,6 +18,8 @@ import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.extractHighSensitivity
+import com.aozijx.passly.domain.entry.model.withoutHighSensitivity
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,6 +44,7 @@ class VaultBackupRestorer @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
+    private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec,
     private val documentMapper: BackupDocumentMapper,
     private val fieldEncryptor: FieldEncryptor
 ) {
@@ -121,9 +125,15 @@ class VaultBackupRestorer @Inject constructor(
                         target.absolutePath
                     }
                     val summary = restoredEntry.summary.copy(iconCustomPath = iconPath)
-                    val secret = restoredEntry.secret
+                    val secret = restoredEntry.fullSecret
+                    val highSensitivitySecret = restoredEntry.highSensitivitySecret
+                        ?: secret.extractHighSensitivity()
+                    val persistedSecret = secret.withoutHighSensitivity()
                     val metaBlob = summaryCodec.encrypt(summary, entryId)
-                    val credBlob = secretCodec.encrypt(secret, entryId)
+                    val credBlob = secretCodec.encrypt(persistedSecret, entryId)
+                    val highSensitivityBlob = highSensitivitySecret
+                        .takeUnless { it.isEmpty }
+                        ?.let { highSensitivitySecretCodec.encrypt(it, entryId) }
 
                     val attachmentResources = entryResources.filter {
                         it.kind == BackupResourceKind.ATTACHMENT
@@ -150,7 +160,8 @@ class VaultBackupRestorer @Inject constructor(
 
                     val credEntity = EntrySecretEntity(
                         entryId = entryId,
-                        secretBlob = credBlob
+                        secretBlob = credBlob,
+                        highSensitivityBlob = highSensitivityBlob
                     )
 
                     entryCommandDao().insertStrict(metaEntity)

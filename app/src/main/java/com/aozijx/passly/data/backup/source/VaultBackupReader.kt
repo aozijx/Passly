@@ -8,12 +8,15 @@ import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
 import com.aozijx.passly.data.backup.model.BackupBundle
 import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupResourceKind
+import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.withHighSensitivity
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -39,6 +42,7 @@ class VaultBackupReader @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
+    private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec,
     private val fieldEncryptor: FieldEncryptor,
     private val documentMapper: BackupDocumentMapper
 ) {
@@ -72,9 +76,17 @@ class VaultBackupReader @Inject constructor(
 
             val entries = metadataEntities.map { metaEntity ->
                 val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
-                val secret = credentialMap[metaEntity.entryId]
-                    ?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-                EntryAggregateAssembler.assembleFromDatabase(metaEntity, summary, secret)
+                val credential = credentialMap[metaEntity.entryId]
+                val secret = credential?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
+                val highSensitivitySecret = credential
+                    ?.highSensitivityBlob
+                    ?.let { highSensitivitySecretCodec.decrypt(it, metaEntity.entryId) }
+                EntryAggregateAssembler.assembleFromDatabase(
+                    metaEntity,
+                    summary,
+                    secret,
+                    highSensitivitySecret
+                ).copy(secret = (secret ?: EntrySecret()).withHighSensitivity(highSensitivitySecret))
             }
 
             val resourceRecords =

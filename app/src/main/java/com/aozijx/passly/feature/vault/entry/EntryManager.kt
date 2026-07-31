@@ -42,7 +42,7 @@ internal class EntryManager(
                     if (!domain.isNullOrBlank()) {
                         val outcome = downloadFavicon(domain)
                         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
-                            val savedEntry = entryQueryRepository.getById(entryId)
+                            val savedEntry = entryQueryRepository.getByIdWithoutHighSensitivity(entryId)
                             if (savedEntry != null) {
                                 val iconSummary = savedEntry.summary.copy(icon = outcome.filePath)
                                 entryCommandRepository.updateEntry(
@@ -71,7 +71,7 @@ internal class EntryManager(
      */
     fun updateEntry(entry: VaultEntry) {
         scope.launch(Dispatchers.IO + handler) {
-            val current = entryQueryRepository.getById(entry.id) ?: return@launch
+            val current = entryQueryRepository.getByIdWithoutHighSensitivity(entry.id) ?: return@launch
 
             val metaChanged = current.summary != entry.summary
             val credChanged = current.secret != entry.secret
@@ -111,7 +111,7 @@ internal class EntryManager(
         if (!acquired) return
 
         try {
-            val entry = presetEntry ?: entryQueryRepository.getById(entryId)
+            val entry = presetEntry ?: entryQueryRepository.getByIdWithoutHighSensitivity(entryId)
             if (entry == null) return
             when (
                 val result = entryCommandRepository.moveToTrash(

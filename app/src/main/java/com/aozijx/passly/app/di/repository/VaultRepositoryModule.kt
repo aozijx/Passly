@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
+import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
 import com.aozijx.passly.domain.entry.repository.EntryHierarchyRepository
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
@@ -35,6 +36,12 @@ abstract class VaultRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindEntryQueryRepository(impl: RoomEntryQueryRepository): EntryQueryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEntryHighSensitivityRepository(
+        impl: RoomEntryQueryRepository
+    ): EntryHighSensitivityRepository
 
     @Binds
     @Singleton

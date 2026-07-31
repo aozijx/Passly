@@ -256,7 +256,7 @@ class VaultViewModel @Inject constructor(
     }
 
     fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) =
-        viewModelScope.launch { entryQueryRepository.getById(entryId)?.let(onLoaded) }
+        viewModelScope.launch { entryQueryRepository.getByIdWithoutHighSensitivity(entryId)?.let(onLoaded) }
 
     // --- 条目操作委托 ---
     fun addItem(entry: VaultEntry) =
@@ -267,7 +267,7 @@ class VaultViewModel @Inject constructor(
     fun confirmDelete() {
         val item = _dialogState.value.pendingDelete ?: return
         viewModelScope.launch {
-            val entry = entryQueryRepository.getById(item.id) ?: return@launch
+            val entry = entryQueryRepository.getByIdWithoutHighSensitivity(item.id) ?: return@launch
             entryManager.deleteEntry(entry)
         }
     }

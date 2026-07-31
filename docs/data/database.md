@@ -23,7 +23,7 @@ flowchart TB
 | 表 | 用途 |
 |---|---|
 | `vault_entries` | 条目身份、结构类型、自关联父账户、能力位、时间戳和加密 `summaryBlob` |
-| `entry_secrets` | 一条条目对应的一份加密 `secretBlob` |
+| `entry_secrets` | 一条条目对应的普通加密 `secretBlob`，以及按需读取的高敏 `highSensitivityBlob` |
 | `entry_revisions` | 完整的加密历史快照 |
 | `entry_activities` | 查看、复制、使用等审计/统计事件，不用于恢复 |
 | `entry_attachments` | 可查询附件元数据及加密内容元数据；文件正文单独加密落盘 |
@@ -57,10 +57,21 @@ Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `app/schemas`�
 尚未形成完整的颜色编辑功能；若 UI 不再使用，应通过 payload schema 演进移除，不能直接把
 数据库 Blob 当 JSON 修改。
 
-## 热冷分离与聚合
+## Secret Blob 分层与读取边界
 
-列表优先读取 metadata，详情再读取 credential 并解密；Repository 将两者聚合成领域模型。搜索使用基于会话密钥的
-Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
+`entry_secrets` 分成两块字段级 AES-GCM blob：
+
+- `secretBlob`：普通详情需要的敏感字段。
+- `highSensitivityBlob`：需要更严格 reveal 语义的高敏字段。当前实际迁出的字段是银行卡卡号、CVV
+  和支付 PIN；Domain/Payload 已预留 identity、SSH、Passkey、OTP 的高敏承载结构，后续按 UI
+  reveal 链路逐类迁入。
+
+应用层普通读取必须通过 `EntryQueryRepository.getByIdWithoutHighSensitivity()`。这个命名是刻意的：
+调用者不能误以为拿到完整 secret。高敏读取单独走 `EntryHighSensitivityRepository
+.getHighSensitivitySecretForReveal()`，只应在完成 reveal 认证后由明确的高敏流程调用。
+
+列表优先读取 metadata，详情读取普通 credential；Repository 将两者聚合成不含高敏字段的领域模型。
+搜索使用基于会话密钥的 Blind Index，不能对明文敏感字段使用 SQLite `LIKE`。
 
 历史、备份和导出共享 Vault Snapshot 语义，但数据库 Entity、备份 DTO 与 Domain model 仍应由 Mapper 隔离。
 

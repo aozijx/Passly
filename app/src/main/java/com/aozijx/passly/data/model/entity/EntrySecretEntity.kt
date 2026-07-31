@@ -20,5 +20,7 @@ data class EntrySecretEntity(
     @PrimaryKey
     val entryId: String,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
-    val secretBlob: ByteArray
+    val secretBlob: ByteArray,
+    @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
+    val highSensitivityBlob: ByteArray? = null
 )

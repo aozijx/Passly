@@ -11,7 +11,8 @@ package com.aozijx.passly.domain.entry.model
 data class VaultEntry(
     val header: EntryHeader,
     val summary: EntrySummary,
-    val secret: EntrySecret
+    val secret: EntrySecret,
+    val highSensitivitySecret: EntryHighSensitivitySecret? = null
 ) : VaultIconable {
     override val entryType: EntryType get() = header.entryType
     override val iconName: String? get() = summary.icon
@@ -33,4 +34,6 @@ data class VaultEntry(
     val updatedAt: Long get() = header.updatedAt
     val deletedAt: Long? get() = header.deletedAt
     val entryVersion: Int get() = header.version.value
+
+    val fullSecret: EntrySecret get() = secret.withHighSensitivity(highSensitivitySecret)
 }

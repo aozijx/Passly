@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
+import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
 import com.aozijx.passly.domain.entry.repository.EntryHierarchyRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import com.aozijx.passly.domain.entry.repository.FaviconRepository
@@ -20,6 +21,7 @@ import com.aozijx.passly.domain.entry.service.EntryValidatorProvider
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.page.internal.DetailEntryAnalyzer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,6 +37,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
+    private val entryHighSensitivityRepository: EntryHighSensitivityRepository,
     private val activityQueryRepository: ActivityQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
     private val entryHierarchyRepository: EntryHierarchyRepository,
@@ -74,7 +77,8 @@ class DetailViewModel @Inject constructor(
 
                 viewModelScope.launch {
                     val latest =
-                        entryQueryRepository.getById(event.initialEntry.id) ?: event.initialEntry
+                        entryQueryRepository.getByIdWithoutHighSensitivity(event.initialEntry.id)
+                            ?: event.initialEntry
                     refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
                     loadRelatedEntries(latest)
                     autoDownloadFavicon(latest)
@@ -163,6 +167,35 @@ class DetailViewModel @Inject constructor(
                 }
             }
 
+            is DetailIntent.RevealHighSensitivityField -> {
+                val current = _uiState.value.entry ?: return
+                val key = event.key
+                if (_uiState.value.revealed(key) != null) {
+                    _uiState.update { state ->
+                        state.copy(revealedFields = state.revealedFields - key)
+                    }
+                    return
+                }
+                viewModelScope.launch {
+                    val high = entryHighSensitivityRepository
+                        .getHighSensitivitySecretForReveal(current.id)
+                    val value = when (key) {
+                        RevealedFieldKey.CARD_NUMBER -> high?.card?.cardNumber
+                        RevealedFieldKey.CVV -> high?.card?.cardCvv
+                        RevealedFieldKey.PAYMENT_PIN -> high?.card?.paymentPin
+                        RevealedFieldKey.SSH_PRIVATE_KEY -> high?.ssh?.privateKey
+                        RevealedFieldKey.SEED_PHRASE -> high?.identity?.seedPhrase
+                        RevealedFieldKey.PASSKEY_DATA -> high?.passkey?.privateKeyReference
+                        RevealedFieldKey.ID_NUMBER -> high?.identity?.idNumber
+                        else -> null
+                    }?.takeIf { it.isNotBlank() } ?: return@launch
+                    _uiState.update { state ->
+                        state.copy(revealedFields = state.revealedFields + (key to value))
+                    }
+                    activityRecorder.recordUsage(current.id, ActivityType.VIEW)
+                }
+            }
+
             is DetailIntent.RecordAction -> {
                 val current = _uiState.value.entry ?: return
                 if (event.type == ActivityType.VIEW && !_uiState.value.isAccessHistoryEnabled) return
@@ -214,7 +247,7 @@ class DetailViewModel @Inject constructor(
             _uiState.update { it.copy(relatedEntries = emptyList()) }
             return
         }
-        val account = entryQueryRepository.getById(accountId)
+        val account = entryQueryRepository.getByIdWithoutHighSensitivity(accountId)
         val children = entryHierarchyRepository.getChildren(accountId)
         val related = buildList {
             if (account != null && account.id != entry.id) add(account)
@@ -255,7 +288,7 @@ class DetailViewModel @Inject constructor(
                 EntryChanges(summary = updatedSummary)
             )
             if (updateResult.isSuccess) {
-                val latest = entryQueryRepository.getById(entry.id)
+                val latest = entryQueryRepository.getByIdWithoutHighSensitivity(entry.id)
                 if (latest != null) {
                     refreshFromEntry(
                         latest,

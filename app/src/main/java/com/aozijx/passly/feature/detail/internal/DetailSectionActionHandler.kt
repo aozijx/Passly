@@ -24,14 +24,14 @@ internal inline fun copySensitiveField(
     sourceValue: String?,
     crossinline afterCopy: (String) -> Unit = {}
 ) {
-    val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
-    val value = revealedValue ?: source
     if (revealedValue != null) {
-        ClipboardUtils.copy(context, value)
-        afterCopy(value)
+        ClipboardUtils.copy(context, revealedValue)
+        afterCopy(revealedValue)
         handler.record(fieldName, ActivityType.COPY_PASSWORD)
         return
     }
+    val source = sourceValue?.takeIf { it.isNotBlank() } ?: return
+    val value = revealedValue ?: source
     handler.onAuthenticate.copy {
         ClipboardUtils.copy(context, value)
         afterCopy(value)

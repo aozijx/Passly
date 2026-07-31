@@ -19,8 +19,12 @@ interface EntrySecretCommandDao {
 
     // === Update ===
 
-    @Query("UPDATE entry_secrets SET secretBlob = :secretBlob WHERE entryId = :entryId")
-    suspend fun updateBlob(entryId: String, secretBlob: ByteArray): Int
+    @Query("UPDATE entry_secrets SET secretBlob = :secretBlob, highSensitivityBlob = :highSensitivityBlob WHERE entryId = :entryId")
+    suspend fun updateBlob(
+        entryId: String,
+        secretBlob: ByteArray,
+        highSensitivityBlob: ByteArray?
+    ): Int
 
     // === Maintenance API ===
 

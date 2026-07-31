@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.mapper.entry
 
 import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -13,7 +14,8 @@ object EntryAggregateAssembler {
     fun assembleFromDatabase(
         entity: EntryEntity,
         summary: EntrySummary,
-        secret: EntrySecret?
+        secret: EntrySecret?,
+        highSensitivitySecret: EntryHighSensitivitySecret? = null
     ): VaultEntry {
         return VaultEntry(
             header = EntryHeader(
@@ -27,7 +29,8 @@ object EntryAggregateAssembler {
                 parentEntryId = entity.parentEntryId
             ),
             summary = summary,
-            secret = secret ?: EntrySecret()
+            secret = secret ?: EntrySecret(),
+            highSensitivitySecret = highSensitivitySecret
         )
     }
 }

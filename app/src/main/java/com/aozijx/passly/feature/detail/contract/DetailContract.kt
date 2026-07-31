@@ -49,6 +49,7 @@ sealed interface DetailIntent {
     object ToggleFavorite : DetailIntent
 
     data class RevealField(val key: String, val value: String?) : DetailIntent
+    data class RevealHighSensitivityField(val key: String) : DetailIntent
     data class DownloadFavicon(val domain: String) : DetailIntent
 
     data class RecordAction(val field: String, val type: ActivityType) : DetailIntent

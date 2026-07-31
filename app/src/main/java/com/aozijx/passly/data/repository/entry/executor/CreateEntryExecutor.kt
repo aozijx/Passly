@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.entry.executor
 
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.search.toLookupFields
@@ -15,6 +16,8 @@ import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.extractHighSensitivity
+import com.aozijx.passly.domain.entry.model.withoutHighSensitivity
 import com.aozijx.passly.domain.entry.service.EntrySecretPolicy
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
@@ -28,6 +31,7 @@ class CreateEntryExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
+    private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec,
     private val blindIndexHelper: EntryBlindIndexHelper,
     private val snapshotHelper: EntryRevisionHelper,
     private val activityHelper: EntryActivityHelper,
@@ -38,12 +42,19 @@ class CreateEntryExecutor @Inject constructor(
             val now = clock.now()
             val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }
 
-            EntrySecretPolicy.requireValid(entry.entryType, entry.secret)
-            val metaBlob = summaryCodec.encrypt(entry.summary, entryId)
-            val credBlob = secretCodec.encrypt(entry.secret, entryId)
+            val fullSecret = entry.fullSecret
+            val highSensitivitySecret = entry.highSensitivitySecret ?: fullSecret.extractHighSensitivity()
+            val persistedSecret = fullSecret.withoutHighSensitivity()
 
-            val capabilityFlags = EntryCapabilityFlags.computeFrom(entry.secret)
-            val otpType = EntryCapabilityFlags.otpTypeFrom(entry.secret)
+            EntrySecretPolicy.requireValid(entry.entryType, fullSecret)
+            val metaBlob = summaryCodec.encrypt(entry.summary, entryId)
+            val credBlob = secretCodec.encrypt(persistedSecret, entryId)
+            val highSensitivityBlob = highSensitivitySecret
+                .takeUnless { it.isEmpty }
+                ?.let { highSensitivitySecretCodec.encrypt(it, entryId) }
+
+            val capabilityFlags = EntryCapabilityFlags.computeFrom(fullSecret)
+            val otpType = EntryCapabilityFlags.otpTypeFrom(fullSecret)
 
             if (entry.entryType == com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT) {
                 require(entry.parentEntryId == null) {
@@ -78,7 +89,8 @@ class CreateEntryExecutor @Inject constructor(
             )
             val credEntity = EntrySecretEntity(
                 entryId = entryId,
-                secretBlob = credBlob
+                secretBlob = credBlob,
+                highSensitivityBlob = highSensitivityBlob
             )
 
             entryCommandDao().insertStrict(metaEntity)
@@ -93,7 +105,7 @@ class CreateEntryExecutor @Inject constructor(
                 entryId = entryId,
                 entryVersion = 1,
                 summary = entry.summary,
-                secret = entry.secret,
+                secret = fullSecret,
                 now = now
             )
 
