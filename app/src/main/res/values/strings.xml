@@ -32,7 +32,7 @@
     <string name="sort_updated">修改时间</string>
     <string name="sort_usage">使用次数</string>
     <string name="sort_last_used">最近使用</string>
-    <string name="sort_entry_type">条目类型</string>
+    <string name="sort_entry_type">数据模板</string>
     <string name="not_set">未设置</string>
 
     <!-- Autofill 服务相关 -->
@@ -54,12 +54,12 @@
 
     <!-- 其余 vault 相关 -->
     <string name="vault_search_placeholder">搜索密码项…</string>
-    <string name="vault_title_entry_type">条目类型：%s</string>
-    <string name="vault_search_entry_type">搜索条目类型</string>
-    <string name="vault_search_entry_type_hint">搜索条目类型…</string>
+    <string name="vault_title_entry_type">数据模板：%s</string>
+    <string name="vault_search_entry_type">搜索数据模板</string>
+    <string name="vault_search_entry_type_hint">搜索数据模板…</string>
     <string name="vault_title_default">安全保险箱</string>
     <string name="vault_clear_filter">清除筛选</string>
-    <string name="vault_menu_filter">分类筛选</string>
+    <string name="vault_menu_filter">数据模板筛选</string>
     <string name="vault_menu_sort">排序方式</string>
     <string name="vault_menu_hide_totp">隐藏验证码</string>
     <string name="vault_menu_show_totp">显示验证码</string>
