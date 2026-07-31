@@ -55,6 +55,19 @@ class DetailSectionResolverTest {
         assertTrue(DetailSectionKey.OTP in sections)
     }
 
+    @Test
+    fun `note entry uses notes area without login credential section`() {
+        val sections = DetailSectionResolver.resolve(
+            entry(
+                type = EntryType.NOTE,
+                secret = EntrySecret(notes = "# Note"),
+            )
+        )
+
+        assertFalse(DetailSectionKey.CREDENTIAL in sections)
+        assertTrue(DetailSectionKey.NOTES in sections)
+    }
+
     private fun entry(type: EntryType, secret: EntrySecret) = VaultEntry(
         header = EntryHeader(
             id = EntryId("018f9dd6-66c5-7cc0-85b5-39a337956681"),
