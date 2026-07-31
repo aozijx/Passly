@@ -5,10 +5,11 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 
 /**
- * 已解析的候选凭据：裁剪后的 UI 安全子集 + Fill 所需的全部字段。
+ * 已解析的候选凭据：裁剪后的 UI 安全子集 + 可选的二阶段 Fill 字段。
  *
  * 不包含 notes、customFields、attachments、SSH key、credit card 等敏感字段，
- * 仅暴露 BottomSheet 展示 & ResponseFactory 填充所需的最小集合。
+ * 阶段一候选展示默认不包含密码/OTP。只有用户选择填充并通过二阶段验证后，
+ * 才允许携带实际填充值。
  *
  * 遵循最小暴露原则（Principle of Least Exposure）。
  *
@@ -20,11 +21,11 @@ data class ResolvedCandidate(
     val candidateId: String,
     /** 用户可见标题 */
     val displayName: String,
-    /** 解密后的用户名 */
+    /** 用户名，来自低敏展示数据。 */
     val username: String,
-    /** 解密后的密码 */
+    /** 二阶段填充时才应出现的密码；阶段一候选必须保持为空。 */
     val password: String,
-    /** 解密后的 TOTP Code（若可用） */
+    /** 二阶段填充时才应出现的 TOTP Code（若可用）。 */
     val totpCode: String? = null,
     /** 关联域名（用于 PendingIntent 构建） */
     override val associatedDomain: String? = null,

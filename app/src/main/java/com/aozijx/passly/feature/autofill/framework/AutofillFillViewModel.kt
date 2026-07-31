@@ -136,18 +136,21 @@ class AutofillFillViewModel @Inject constructor(
             request.packageName,
             request.webDomain,
             settings,
-            includeSecrets = true,
+            includeSecrets = false,
         )
         if (candidates.isEmpty()) {
             _uiState.update { UiState.Result(null) }
             return
         }
-        val response = LegacyResponseFactory.buildPostUnlockFillResponse(
+        val response = LegacyResponseFactory.buildCandidateAuthenticationResponse(
             appContext,
             candidates = candidates,
             usernameId = request.usernameId,
             passwordId = request.passwordId,
-            otpId = request.otpId
+            otpId = request.otpId,
+            packageName = request.packageName,
+            webDomain = request.webDomain,
+            uiMode = request.uiMode,
         )
         _uiState.update {
             UiState.Result(response?.let(AutofillAuthenticationPayload::Response))

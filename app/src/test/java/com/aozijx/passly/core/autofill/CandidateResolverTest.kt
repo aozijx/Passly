@@ -49,7 +49,7 @@ class CandidateResolverTest {
     }
 
     @Test
-    fun `inline fill without authentication loads fill values`() = runBlocking {
+    fun `inline fill without authentication does not preload secrets`() = runBlocking {
         val entry = loginEntry(
             id = "018f9dd6-66c5-7cc0-85b5-39a337956681",
             packages = setOf("com.example.app"),
@@ -67,7 +67,7 @@ class CandidateResolverTest {
             ),
         )
 
-        assertEquals(true, repository.lastIncludeSecrets)
+        assertEquals(false, repository.lastIncludeSecrets)
     }
 
     @Test
@@ -90,6 +90,24 @@ class CandidateResolverTest {
         )
 
         assertEquals(false, repository.lastIncludeSecrets)
+    }
+
+    @Test
+    fun `explicit second phase lookup can load secrets`() = runBlocking {
+        val entry = loginEntry(
+            id = "018f9dd6-66c5-7cc0-85b5-39a337956681",
+            packages = setOf("com.example.app"),
+        )
+        val repository = FakeCredentialRepository(entry)
+
+        CandidateResolver(repository).resolveByPackage(
+            packageName = "com.example.app",
+            webDomain = null,
+            settings = AutofillSettings(requireAuthentication = false),
+            includeSecrets = true,
+        )
+
+        assertEquals(true, repository.lastIncludeSecrets)
     }
 
     @Test

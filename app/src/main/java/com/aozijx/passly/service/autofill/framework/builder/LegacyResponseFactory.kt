@@ -10,7 +10,6 @@ import android.view.autofill.AutofillId
 import com.aozijx.passly.core.autofill.model.FillAvailability
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.framework.AutofillFillActivity
@@ -22,8 +21,8 @@ import com.aozijx.passly.service.autofill.framework.parser.ParsedStructure
  *
  * 包含两种路径：
  * - 未解锁：构建解锁触发器
- * - 已解锁：构建候选项 Dataset 列表
- * - 解锁后直填：构建直接填充的 Dataset 列表
+ * - 已解锁：构建候选项认证入口列表
+ * - 选中候选后：由 AutofillFillActivity 二阶段读取并构建单条直填 Dataset
  */
 internal object LegacyResponseFactory {
 
@@ -32,7 +31,7 @@ internal object LegacyResponseFactory {
         val password: String
     )
 
-    // ── Phase 1: 构建 FillResponse（未解锁/已解锁 Dataset 列表） ──
+    // ── Phase 1: 构建 FillResponse（未解锁/已解锁候选入口） ──
 
     fun buildFillResponse(
         context: Context,
@@ -59,38 +58,7 @@ internal object LegacyResponseFactory {
             }
 
             response.candidates.isNotEmpty() -> response.candidates.forEach { candidate ->
-                val presentation = AutofillRemoteViewFactory.createDatasetItem(
-                    context = context,
-                    candidate = candidate,
-                    subtitle = candidate.subtitle,
-                    badge = buildBadge(candidate),
-                )
-                if (response.requireAuthentication) {
-                    val intent = createFillIntent(context, candidate, parsed, uiMode)
-                    val pi = PendingIntent.getActivity(
-                        context,
-                        candidate.candidateId.hashCode(),
-                        intent,
-                        authenticationPendingIntentFlags(),
-                    )
-                    val dsBuilder = Dataset.Builder().setAuthentication(pi.intentSender)
-                    LegacyDatasetFactory.setMenuPresentationCompat(
-                        dsBuilder,
-                        parsed.allIds,
-                        presentation,
-                    )
-                    builder.addDataset(dsBuilder.build())
-                } else {
-                    LegacyDatasetFactory.createFillDataset(
-                        usernameId = parsed.usernameId,
-                        passwordId = parsed.passwordId,
-                        otpId = parsed.otpId,
-                        username = candidate.username,
-                        password = candidate.password,
-                        totpCode = candidate.totpCode,
-                        presentation = presentation,
-                    )?.let(builder::addDataset)
-                }
+                addCandidateAuthenticationDataset(builder, context, candidate, parsed, uiMode)
             }
 
             !response.savePromptsEnabled -> builder.disableAutofill(5_000)
@@ -100,44 +68,30 @@ internal object LegacyResponseFactory {
         return builder.build()
     }
 
-    // ── Phase 2: 解锁后构建 FillResponse（多个候选项直接填充） ──
-
-    fun buildPostUnlockFillResponse(
+    fun buildCandidateAuthenticationResponse(
         context: Context,
         candidates: List<ResolvedCandidate>,
         usernameId: AutofillId?,
         passwordId: AutofillId?,
         otpId: AutofillId?,
+        packageName: String?,
+        webDomain: String?,
+        uiMode: AutofillPresentation,
     ): FillResponse? {
+        val parsed = ParsedStructure(
+            usernameId = usernameId,
+            passwordId = passwordId,
+            otpId = otpId,
+            packageName = packageName,
+            webDomain = webDomain,
+        )
+        if (parsed.allIds.isEmpty() || candidates.isEmpty()) return null
+
         val builder = FillResponse.Builder()
-        var datasetCount = 0
-
         candidates.forEach { candidate ->
-            val subtitle = buildSubtitle(candidate)
-            val badge = buildBadge(candidate)
-            val presentation = AutofillRemoteViewFactory.createDatasetItem(
-                context = context, candidate = candidate, subtitle = subtitle, badge = badge
-            )
-
-            val basicCred = getBasicCredentials(candidate)
-            if (basicCred != null) {
-                val dataset = LegacyDatasetFactory.createFillDataset(
-                    usernameId = usernameId,
-                    passwordId = passwordId,
-                    otpId = otpId,
-                    username = basicCred.username,
-                    password = basicCred.password,
-                    totpCode = candidate.totpCode,
-                    presentation = presentation
-                )
-                if (dataset != null) {
-                    builder.addDataset(dataset)
-                    datasetCount++
-                }
-            }
+            addCandidateAuthenticationDataset(builder, context, candidate, parsed, uiMode)
         }
-
-        return if (datasetCount > 0) builder.build() else null
+        return builder.build()
     }
 
     fun getBasicCredentials(candidate: ResolvedCandidate): BasicCredentials? {
@@ -145,13 +99,33 @@ internal object LegacyResponseFactory {
         return BasicCredentials(candidate.username, candidate.password)
     }
 
-    private fun buildSubtitle(candidate: ResolvedCandidate): String {
-        val infoParts = mutableListOf<String>()
-        if (candidate.username.isNotBlank()) infoParts += candidate.username
-        val displayType = candidate.entryType.displayName
-        if (infoParts.isEmpty()) infoParts += displayType
-        val joined = infoParts.joinToString(" · ")
-        return if (candidate.totpCode != null) "OTP · $joined" else joined
+    private fun addCandidateAuthenticationDataset(
+        builder: FillResponse.Builder,
+        context: Context,
+        candidate: ResolvedCandidate,
+        parsed: ParsedStructure,
+        uiMode: AutofillPresentation,
+    ) {
+        val presentation = AutofillRemoteViewFactory.createDatasetItem(
+            context = context,
+            candidate = candidate,
+            subtitle = candidate.subtitle,
+            badge = buildBadge(candidate),
+        )
+        val intent = createFillIntent(context, candidate, parsed, uiMode)
+        val pi = PendingIntent.getActivity(
+            context,
+            candidate.candidateId.hashCode(),
+            intent,
+            authenticationPendingIntentFlags(),
+        )
+        val dsBuilder = Dataset.Builder().setAuthentication(pi.intentSender)
+        LegacyDatasetFactory.setMenuPresentationCompat(
+            dsBuilder,
+            parsed.allIds,
+            presentation,
+        )
+        builder.addDataset(dsBuilder.build())
     }
 
     private fun buildBadge(candidate: ResolvedCandidate): String {

@@ -56,7 +56,6 @@ class CredentialPlatformAdapter @Inject constructor() {
     ): List<PasswordCredentialEntry> {
         val candidates = response.candidates.filter {
             it.username.isNotBlank() &&
-                    it.password.isNotBlank() &&
                     (option.allowedUserIds.isEmpty() || it.username in option.allowedUserIds)
         }
         if (candidates.isEmpty()) {
