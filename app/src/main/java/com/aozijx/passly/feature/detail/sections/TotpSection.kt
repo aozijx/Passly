@@ -20,7 +20,7 @@ fun TotpSection(
     modifier: Modifier = Modifier,
     currentState: OtpUiState?,
     totpUri: String? = null,
-    showProgress: Boolean = false,
+    showProgress: Boolean = true,
     onEvent: (DetailIntent) -> Unit,
 ) {
     val context = LocalContext.current

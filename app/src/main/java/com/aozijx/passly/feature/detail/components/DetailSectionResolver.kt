@@ -30,7 +30,7 @@ object DetailSectionResolver {
     private val typeSections: Map<EntryType, Set<DetailSectionKey>> = mapOf(
         EntryType.LOGIN to setOf(DetailSectionKey.CREDENTIAL),
         EntryType.NOTE to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.OTP to setOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.OTP),
+        EntryType.OTP to setOf(DetailSectionKey.OTP),
         EntryType.CARD to setOf(DetailSectionKey.BANK_CARD),
         EntryType.BANK_CARD to setOf(DetailSectionKey.BANK_CARD),
         EntryType.IDENTITY to setOf(DetailSectionKey.IDENTITY),

@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.secret.IdentitySecret
+import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 import com.aozijx.passly.domain.entry.model.secret.PasskeySecret
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -39,6 +40,19 @@ class DetailSectionResolverTest {
 
         assertFalse(DetailSectionKey.CREDENTIAL in sections)
         assertTrue(DetailSectionKey.PASSKEY in sections)
+    }
+
+    @Test
+    fun `otp entry uses otp component without login credential section`() {
+        val sections = DetailSectionResolver.resolve(
+            entry(
+                type = EntryType.OTP,
+                secret = EntrySecret(otp = OtpSecret()),
+            )
+        )
+
+        assertFalse(DetailSectionKey.CREDENTIAL in sections)
+        assertTrue(DetailSectionKey.OTP in sections)
     }
 
     private fun entry(type: EntryType, secret: EntrySecret) = VaultEntry(

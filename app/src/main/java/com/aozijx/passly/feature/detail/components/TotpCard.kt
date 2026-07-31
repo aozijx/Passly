@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.detail.components
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCode
@@ -23,7 +25,6 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CardDefaults.shape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +41,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -49,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.qr.QrCodeUtils
 import com.aozijx.passly.feature.vault.model.OtpUiState
+import kotlin.math.PI
+import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,32 +134,25 @@ fun TotpCard(
                 fontFamily = FontFamily.Monospace
             )
 
-            val indicatorColor = if (progress < 0.2f) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.primary
-            }
-
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                if (showProgress) {
+                    TotpWaveProgressIndicator(
+                        progress = animatedProgress,
+                        isExpiring = progress < 0.2f,
+                        modifier = Modifier.size(52.dp)
+                    )
+                    Spacer(Modifier.width(16.dp))
+                }
                 Text(
                     text = displayText,
                     style = codeStyle,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
-                if (showProgress) {
-                    CircularProgressIndicator(
-                        progress = { animatedProgress },
-                        modifier = Modifier.size(28.dp),
-                        strokeWidth = 4.dp,
-                        color = indicatorColor,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    )
-                }
             }
         }
         if (showQrSheet) {
@@ -163,6 +163,58 @@ fun TotpCard(
                 onDismiss = { showQrSheet = false }
             )
         }
+    }
+}
+
+@Composable
+private fun TotpWaveProgressIndicator(
+    progress: Float,
+    isExpiring: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val boundedProgress = progress.coerceIn(0f, 1f)
+    val containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+    val waveColor = if (isExpiring) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val ringColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
+
+    Canvas(modifier = modifier) {
+        val diameter = size.minDimension
+        val radius = diameter / 2f
+        val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
+        val circle = Path().apply {
+            addOval(androidx.compose.ui.geometry.Rect(topLeft, Size(diameter, diameter)))
+        }
+        val center = Offset(size.width / 2f, size.height / 2f)
+
+        drawCircle(containerColor, radius = radius, center = center)
+        clipPath(circle) {
+            val waveHeight = diameter * 0.10f
+            val fillTop = topLeft.y + diameter * (1f - boundedProgress)
+            val path = Path().apply {
+                moveTo(topLeft.x, fillTop)
+                val steps = 32
+                for (step in 0..steps) {
+                    val x = topLeft.x + diameter * step / steps
+                    val phase = step / steps.toFloat() * PI * 2.0
+                    val y = fillTop + sin(phase).toFloat() * waveHeight
+                    lineTo(x, y)
+                }
+                lineTo(topLeft.x + diameter, topLeft.y + diameter)
+                lineTo(topLeft.x, topLeft.y + diameter)
+                close()
+            }
+            drawPath(path, waveColor.copy(alpha = 0.86f))
+        }
+        drawCircle(
+            color = ringColor,
+            radius = radius - 1.dp.toPx(),
+            center = center,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+        )
     }
 }
 
