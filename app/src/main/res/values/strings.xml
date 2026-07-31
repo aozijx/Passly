@@ -110,7 +110,7 @@
     <string name="vault_reveal_info">验证并显示详情</string>
     <string name="vault_edit_modified_hint">已修改，别忘了保存</string>
     <string name="vault_detail_associated_domain">关联域名</string>
-    <string name="vault_detail_associated_package">关联包名</string>
+    <string name="vault_detail_associated_package">关联应用</string>
 
     <!-- 详情页补充 -->
     <string name="vault_export_qr_title">导出 otp 密钥</string>
@@ -140,7 +140,6 @@
     <string name="vault_detail_totp_label">两步验证码</string>
     <string name="vault_detail_domain_label">域名或图标链接</string>
     <string name="vault_detail_domain_placeholder">如 google.com 或图标链接</string>
-    <string name="vault_detail_domain_and_icon">域名、应用与图标</string>
     <string name="vault_detail_download_icon">下载图标</string>
     <string name="vault_detail_icon_download_success">图标下载成功！</string>
     <string name="vault_detail_icon_download_failed">图标下载失败</string>

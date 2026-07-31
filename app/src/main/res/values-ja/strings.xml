@@ -86,7 +86,7 @@
     <string name="vault_reveal_info">本人確認して詳細を表示</string>
     <string name="vault_edit_modified_hint">変更されました。保存をお忘れなく</string>
     <string name="vault_detail_associated_domain">関連ドメイン</string>
-    <string name="vault_detail_associated_package">関連パッケージ名</string>
+    <string name="vault_detail_associated_package">関連アプリ</string>
 
     <string name="vault_export_qr_title">otp秘密鍵をエクスポート</string>
     <string name="vault_export_qr_message">他のデバイスの認証アプリでこのQRコードをスキャンしてください</string>
@@ -112,7 +112,6 @@
     <string name="vault_detail_totp_label">二要素認証コード</string>
     <string name="vault_detail_domain_label">ウェブサイトドメインまたはアイコンURL</string>
     <string name="vault_detail_domain_placeholder">例：google.com または https://example.com/icon.png</string>
-    <string name="vault_detail_domain_and_icon">ドメイン、アプリ、アイコン</string>
     <string name="vault_detail_download_icon">アイコンをダウンロード</string>
     <string name="vault_detail_icon_download_success">アイコンのダウンロードに成功しました！</string>
     <string name="vault_detail_icon_download_failed">アイコンのダウンロードに失敗しました</string>
