@@ -58,6 +58,17 @@ fun BankCardSection(
         onAuthenticate = onAuthenticate,
         onEvent = onEvent
     )
+    val cardSecret = entry.secret.card
+    val hasCardNumber = cardSecret?.hasCardNumber == true ||
+        !cardSecret?.cardNumber.isNullOrBlank() ||
+        revealedCardNumber != null
+    val hasCardCvv = cardSecret?.hasCardCvv == true ||
+        !cardSecret?.cardCvv.isNullOrBlank() ||
+        revealedCvv != null ||
+        editState.isEditingTotp
+    val hasPaymentPin = cardSecret?.hasPaymentPin == true ||
+        !cardSecret?.paymentPin.isNullOrBlank() ||
+        revealedPaymentPin != null
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (editState.isEditingUsername) {
@@ -180,7 +191,7 @@ fun BankCardSection(
                 },
                 singleLine = true
             )
-        } else {
+        } else if (hasCardCvv) {
             DetailItem(
                 label = stringResource(R.string.card_cvv),
                 value = revealedCvv ?: HiddenMask.SHORT,
@@ -212,7 +223,7 @@ fun BankCardSection(
             )
         }
 
-        entry.secret.card?.cardExpiry?.let { expiration ->
+        cardSecret?.cardExpiry?.let { expiration ->
             DetailItem(
                 label = stringResource(R.string.card_expiration),
                 value = expiration,
@@ -226,51 +237,52 @@ fun BankCardSection(
             )
         }
 
-        DetailItem(
-            label = stringResource(R.string.payment_pin),
-            value = revealedPaymentPin ?: HiddenMask.DEFAULT,
-            isRevealed = revealedPaymentPin != null,
-            onCopy = {
-                copySensitiveField(
-                    context = context,
-                    handler = actionHandler,
-                    fieldName = "payment PIN",
-                    revealedValue = revealedPaymentPin,
-                    sourceValue = null,
-                    afterCopy = {
-                        Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
-                    }
-                )
-            },
-            onEdit = null,
-            onReveal = {
-                if (revealedPaymentPin != null) {
-                    onRevealField(RevealedFieldKey.PAYMENT_PIN, null)
-                } else {
-                    onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
-                        onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PAYMENT_PIN))
+        if (hasPaymentPin) {
+            DetailItem(
+                label = stringResource(R.string.payment_pin),
+                value = revealedPaymentPin ?: HiddenMask.DEFAULT,
+                isRevealed = revealedPaymentPin != null,
+                onCopy = {
+                    copySensitiveField(
+                        context = context,
+                        handler = actionHandler,
+                        fieldName = "payment PIN",
+                        revealedValue = revealedPaymentPin,
+                        sourceValue = null,
+                        afterCopy = {
+                            Toast.makeText(context, cardCopiedMsg, Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                },
+                onEdit = null,
+                onReveal = {
+                    if (revealedPaymentPin != null) {
+                        onRevealField(RevealedFieldKey.PAYMENT_PIN, null)
+                    } else {
+                        onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
+                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PAYMENT_PIN))
+                        }
                     }
                 }
-            }
-        )
+            )
+        }
 
-        if (revealedCardNumber == null && !editState.isEditingPassword) {
+        val canRevealMore =
+            (hasCardNumber && revealedCardNumber == null) ||
+                (hasCardCvv && revealedCvv == null) ||
+                (hasPaymentPin && revealedPaymentPin == null)
+        if (canRevealMore && !editState.isEditingPassword) {
             Button(
                 onClick = {
                     onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
-                        onRevealField(
-                            RevealedFieldKey.CARD_NUMBER,
-                            null
-                        )
-                        onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CARD_NUMBER))
-                        onEvent(
-                            DetailIntent.RecordAction(
-                                "card number",
-                                ActivityType.VIEW
-                            )
-                        )
-                        if (revealedCvv == null) {
+                        if (hasCardNumber && revealedCardNumber == null) {
+                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CARD_NUMBER))
+                        }
+                        if (hasCardCvv && revealedCvv == null) {
                             onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CVV))
+                        }
+                        if (hasPaymentPin && revealedPaymentPin == null) {
+                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PAYMENT_PIN))
                         }
                         if (revealedCardholder == null) {
                             onRevealField(RevealedFieldKey.CARDHOLDER, entry.username)

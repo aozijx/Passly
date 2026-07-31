@@ -65,6 +65,9 @@ fun EntrySecret.extractHighSensitivity(): EntryHighSensitivitySecret =
 fun EntrySecret.withoutHighSensitivity(): EntrySecret =
     copy(
         card = card?.copy(
+            hasCardNumber = card.cardNumber.hasText() || card.hasCardNumber,
+            hasCardCvv = card.cardCvv.hasText() || card.hasCardCvv,
+            hasPaymentPin = card.paymentPin.hasText() || card.hasPaymentPin,
             cardNumber = null,
             cardCvv = null,
             paymentPin = null
@@ -84,12 +87,67 @@ fun EntrySecret.withHighSensitivity(high: EntryHighSensitivitySecret?): EntrySec
 
 fun EntryHighSensitivitySecret.mergeWith(update: EntryHighSensitivitySecret): EntryHighSensitivitySecret =
     EntryHighSensitivitySecret(
-        card = update.card ?: card,
-        identity = update.identity ?: identity,
-        ssh = update.ssh ?: ssh,
-        passkey = update.passkey ?: passkey,
-        otp = update.otp ?: otp
+        card = mergeHighCardSecret(card, update.card),
+        identity = mergeHighIdentitySecret(identity, update.identity),
+        ssh = mergeHighSshSecret(ssh, update.ssh),
+        passkey = mergeHighPasskeySecret(passkey, update.passkey),
+        otp = mergeHighOtpSecret(otp, update.otp)
     )
+
+private fun mergeHighCardSecret(
+    current: HighSensitivityCardSecret?,
+    update: HighSensitivityCardSecret?
+): HighSensitivityCardSecret? {
+    if (current == null && update == null) return null
+    return HighSensitivityCardSecret(
+        cardNumber = update?.cardNumber ?: current?.cardNumber,
+        cardCvv = update?.cardCvv ?: current?.cardCvv,
+        paymentPin = update?.paymentPin ?: current?.paymentPin
+    ).takeUnless { it == HighSensitivityCardSecret() }
+}
+
+private fun mergeHighIdentitySecret(
+    current: HighSensitivityIdentitySecret?,
+    update: HighSensitivityIdentitySecret?
+): HighSensitivityIdentitySecret? {
+    if (current == null && update == null) return null
+    return HighSensitivityIdentitySecret(
+        idNumber = update?.idNumber ?: current?.idNumber,
+        seedPhrase = update?.seedPhrase ?: current?.seedPhrase,
+        recoveryCodes = update?.recoveryCodes?.takeIf { it.isNotEmpty() } ?: current?.recoveryCodes.orEmpty()
+    ).takeUnless { it == HighSensitivityIdentitySecret() }
+}
+
+private fun mergeHighSshSecret(
+    current: HighSensitivitySshSecret?,
+    update: HighSensitivitySshSecret?
+): HighSensitivitySshSecret? {
+    if (current == null && update == null) return null
+    return HighSensitivitySshSecret(
+        privateKey = update?.privateKey ?: current?.privateKey,
+        passphrase = update?.passphrase ?: current?.passphrase
+    ).takeUnless { it == HighSensitivitySshSecret() }
+}
+
+private fun mergeHighPasskeySecret(
+    current: HighSensitivityPasskeySecret?,
+    update: HighSensitivityPasskeySecret?
+): HighSensitivityPasskeySecret? {
+    if (current == null && update == null) return null
+    return HighSensitivityPasskeySecret(
+        privateKeyReference = update?.privateKeyReference ?: current?.privateKeyReference
+    ).takeUnless { it == HighSensitivityPasskeySecret() }
+}
+
+private fun mergeHighOtpSecret(
+    current: HighSensitivityOtpSecret?,
+    update: HighSensitivityOtpSecret?
+): HighSensitivityOtpSecret? {
+    if (current == null && update == null) return null
+    return HighSensitivityOtpSecret(
+        secret = update?.secret ?: current?.secret
+    ).takeUnless { it == HighSensitivityOtpSecret() }
+}
 
 private fun mergeCardSecret(
     secret: CardSecret?,
@@ -146,3 +204,5 @@ private fun mergeOtpSecret(
         config = config?.copy(secret = high?.secret ?: config.secret)
     )
 }
+
+private fun String?.hasText(): Boolean = !isNullOrBlank()

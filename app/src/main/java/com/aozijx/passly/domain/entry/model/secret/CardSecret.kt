@@ -6,5 +6,8 @@ data class CardSecret(
     val cardCvv: String? = null,
     val cardHolder: String? = null,
     val paymentPin: String? = null,
-    val paymentPlatform: String? = null
+    val paymentPlatform: String? = null,
+    val hasCardNumber: Boolean = false,
+    val hasCardCvv: Boolean = false,
+    val hasPaymentPin: Boolean = false
 )

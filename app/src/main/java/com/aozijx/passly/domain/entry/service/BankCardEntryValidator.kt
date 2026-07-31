@@ -8,14 +8,16 @@ import javax.inject.Singleton
 class BankCardEntryValidator @Inject constructor() : EntryValidator {
     override fun validateRequiredFields(entry: VaultEntry): String? {
         if (entry.summary.title.isBlank()) return "银行名称不能为空"
-        if (entry.secret.card?.cardNumber.isNullOrBlank()) return "卡号不能为空"
+        val cardSecret = entry.secret.card
+        val hasCardNumber = cardSecret?.hasCardNumber == true || !cardSecret?.cardNumber.isNullOrBlank()
+        if (!hasCardNumber) return "卡号不能为空"
         return null
     }
 
     override fun validateFieldContent(entry: VaultEntry): String? {
         val cardSecret = entry.secret.card
         val cardNumber = cardSecret?.cardNumber.orEmpty().filter { it.isDigit() }
-        if (cardNumber.length !in 13..19) return "无效的卡号长度"
+        if (cardNumber.isNotEmpty() && cardNumber.length !in 13..19) return "无效的卡号长度"
 
         cardSecret?.cardExpiry?.let {
             if (!it.matches(Regex("^\\d{2}/\\d{2}$"))) return "有效期格式应为 MM/YY"
