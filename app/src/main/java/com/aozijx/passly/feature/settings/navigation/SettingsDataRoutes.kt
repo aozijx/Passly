@@ -280,8 +280,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
         val verifyResult by viewModel.verifyResult.collectAsStateWithLifecycle()
 
         LaunchedEffect(recoveryCode) {
-            if (recoveryCode != null) localState.showRecoveryCodeSheet =
-                !localState.showRecoveryCodeSheet
+            if (recoveryCode != null) localState.showRecoveryCodeSheet = true
         }
         recoveryCode?.let { code ->
             if (localState.showRecoveryCodeSheet) {
@@ -289,11 +288,11 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                     recoveryCode = code,
                     sheetState = localState.recoveryCodeSheetState,
                     onConfirm = {
-                        localState.showRecoveryCodeSheet = !localState.showRecoveryCodeSheet
+                        localState.showRecoveryCodeSheet = false
                         draftViewModel.confirmAndEnable()
                     },
                     onDismiss = {
-                        localState.showRecoveryCodeSheet = !localState.showRecoveryCodeSheet
+                        localState.showRecoveryCodeSheet = false
                         draftViewModel.dismiss()
                     }
                 )
