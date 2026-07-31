@@ -100,9 +100,10 @@ fun CredentialSection(
                     )
                 },
                 onSave = { newValue ->
-                    if (newValue != revealedPassword) {
-                        onEntryUpdated(item.withLoginPassword(newValue))
-                        onPasswordRevealed(newValue)
+                    val normalizedValue = newValue.trim()
+                    if (normalizedValue != revealedPassword) {
+                        onEntryUpdated(item.withLoginPassword(normalizedValue))
+                        onPasswordRevealed(normalizedValue)
                     }
                     editState.isEditingPassword = false
                 })

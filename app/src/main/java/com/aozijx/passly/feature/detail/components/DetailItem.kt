@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.detail.components
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -42,6 +43,7 @@ fun DetailItem(
 ) {
     val haptic = LocalHapticFeedback.current
     val editAction = onEdit?.takeIf { isRevealed }
+    val interactionSource = remember { MutableInteractionSource() }
 
     Surface(
         shape = MaterialTheme.shapes.large,
@@ -53,6 +55,8 @@ fun DetailItem(
                     Modifier
                 } else {
                     Modifier.combinedClickable(
+                        interactionSource = interactionSource,
+                        indication = null,
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             editAction()
@@ -72,18 +76,23 @@ fun DetailItem(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.width(70.dp)
+                modifier = Modifier.width(56.dp)
             )
             Text(
                 text = value,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
                 letterSpacing = if (isRevealed) 0.sp else 3.sp,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.End,
                 maxLines = 1
             )
-            IconButton(onClick = onCopy) {
+            IconButton(
+                onClick = onCopy,
+                modifier = Modifier.size(36.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
                     contentDescription = stringResource(R.string.copy),
@@ -92,7 +101,10 @@ fun DetailItem(
                 )
             }
             onReveal?.let {
-                IconButton(onClick = it) {
+                IconButton(
+                    onClick = it,
+                    modifier = Modifier.size(36.dp)
+                ) {
                     Icon(
                         imageVector = if (isRevealed) {
                             Icons.Default.VisibilityOff
@@ -102,16 +114,6 @@ fun DetailItem(
                         contentDescription = stringResource(
                             if (isRevealed) R.string.hide_password else R.string.show_password
                         ),
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.outline
-                    )
-                }
-            }
-            if (isRevealed && onEdit != null) {
-                IconButton(onClick = onEdit) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.edit),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.outline
                     )
