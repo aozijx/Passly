@@ -27,8 +27,10 @@ fun VaultContentTopBar(
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: (Boolean) -> Unit,
     onClearEntryType: () -> Unit,
+    onClearCategory: () -> Unit,
     onToggleTotpVisibility: () -> Unit,
     onEntryTypeSelected: (String?) -> Unit,
+    onCategorySelected: (String?) -> Unit,
     onSortSelected: (VaultSortSpec) -> Unit,
     onSelectTab: (VaultTab) -> Unit
 ) {
@@ -45,8 +47,10 @@ fun VaultContentTopBar(
             onSearchQueryChange = onSearchQueryChange,
             onToggleSearch = onToggleSearch,
             onClearEntryType = onClearEntryType,
+            onClearCategory = onClearCategory,
             onToggleTotpVisibility = onToggleTotpVisibility,
             onEntryTypeSelected = onEntryTypeSelected,
+            onCategorySelected = onCategorySelected,
             onSortSelected = onSortSelected,
             onSelectTab = onSelectTab
         )

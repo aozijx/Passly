@@ -189,11 +189,13 @@ class VaultViewModel @Inject constructor(
         VaultUiState(
             searchQuery = search.searchQuery,
             selectedEntryTypeName = search.selectedEntryTypeName,
+            selectedCategory = search.selectedCategory,
             selectedTab = search.selectedTab,
             selectedSort = search.selectedSort,
             isSearchActive = search.isSearchActive,
             isVaultItemsLoading = list.isLoading,
             availableEntryTypes = list.entryTypes,
+            availableCategories = list.categories,
             visibleTabs = tabs,
             vaultItemsByTab = list.itemsByTab,
             showTOTPCode = showCode,
@@ -211,6 +213,9 @@ class VaultViewModel @Inject constructor(
     fun setSelectedEntryType(entryTypeName: String?) =
         searchFilter.updateSelectedEntryTypeName(entryTypeName)
     fun clearSelectedEntryType() = setSelectedEntryType(null)
+    fun setSelectedCategory(category: String?) =
+        searchFilter.updateSelectedCategory(category)
+    fun clearSelectedCategory() = setSelectedCategory(null)
     fun selectSortOption(sort: VaultSortSpec) {
         searchFilter.updateSelectedSort(sort)
         viewModelScope.launch { settingsRepository.update(SettingsCommand.SetVaultSortOption(sort)) }

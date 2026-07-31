@@ -174,8 +174,10 @@ fun VaultContent(
                 onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
                 onToggleSearch = { vaultViewModel.toggleSearch(it) },
                 onClearEntryType = { vaultViewModel.clearSelectedEntryType() },
+                onClearCategory = { vaultViewModel.clearSelectedCategory() },
                 onToggleTotpVisibility = { vaultViewModel.toggleShowTOTPCode() },
                 onEntryTypeSelected = { vaultViewModel.setSelectedEntryType(it) },
+                onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
                 onSortSelected = { vaultViewModel.selectSortOption(it) },
                 onSelectTab = { vaultViewModel.selectTab(it) }
             )

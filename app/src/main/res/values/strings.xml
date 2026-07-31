@@ -55,11 +55,15 @@
     <!-- 其余 vault 相关 -->
     <string name="vault_search_placeholder">搜索密码项…</string>
     <string name="vault_title_entry_type">数据模板：%s</string>
+    <string name="vault_title_category">分类：%s</string>
     <string name="vault_search_entry_type">搜索数据模板</string>
     <string name="vault_search_entry_type_hint">搜索数据模板…</string>
+    <string name="vault_search_category">搜索分类</string>
+    <string name="vault_search_category_hint">搜索分类…</string>
     <string name="vault_title_default">安全保险箱</string>
     <string name="vault_clear_filter">清除筛选</string>
-    <string name="vault_menu_filter">数据模板筛选</string>
+    <string name="vault_menu_filter">分类筛选</string>
+    <string name="vault_menu_entry_type_filter">数据模板筛选</string>
     <string name="vault_menu_sort">排序方式</string>
     <string name="vault_menu_hide_totp">隐藏验证码</string>
     <string name="vault_menu_show_totp">显示验证码</string>

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 internal data class SearchFilterUiState(
     val searchQuery: String = "",
     val selectedEntryTypeName: String? = null,
+    val selectedCategory: String? = null,
     val selectedTab: VaultTab = VaultTab.ALL,
     val selectedSort: VaultSortSpec = VaultSortSpec.DEFAULT,
     val isSearchActive: Boolean = false
@@ -32,6 +33,9 @@ internal class SearchFilterState(
     private val _selectedEntryTypeName = MutableStateFlow<String?>(null)
     val selectedEntryTypeName: StateFlow<String?> = _selectedEntryTypeName
 
+    private val _selectedCategory = MutableStateFlow<String?>(null)
+    val selectedCategory: StateFlow<String?> = _selectedCategory
+
     private val _selectedTab = MutableStateFlow(VaultTab.ALL)
     val selectedTab: StateFlow<VaultTab> = _selectedTab
 
@@ -45,16 +49,18 @@ internal class SearchFilterState(
         combine(
             _searchQuery,
             _selectedEntryTypeName,
+            _selectedCategory,
             _selectedTab,
             _isSearchActive
-        ) { query, entryTypeName, tab, active ->
-            PartialState(query, entryTypeName, tab, active)
+        ) { query, entryTypeName, category, tab, active ->
+            PartialState(query, entryTypeName, category, tab, active)
         },
         _selectedSort
     ) { partial, sort ->
         SearchFilterUiState(
             searchQuery = partial.query,
             selectedEntryTypeName = partial.entryTypeName,
+            selectedCategory = partial.category,
             selectedTab = partial.tab,
             selectedSort = sort,
             isSearchActive = partial.active
@@ -64,6 +70,7 @@ internal class SearchFilterState(
     private data class PartialState(
         val query: String,
         val entryTypeName: String?,
+        val category: String?,
         val tab: VaultTab,
         val active: Boolean
     )
@@ -76,10 +83,17 @@ internal class SearchFilterState(
         _selectedEntryTypeName.map { it?.trim()?.takeIf(String::isNotEmpty) }
             .distinctUntilChanged()
 
+    val normalizedSelectedCategory: Flow<String?> =
+        _selectedCategory.map { it?.trim()?.takeIf(String::isNotEmpty) }
+            .distinctUntilChanged()
+
     fun updateSearchQuery(query: String) { _searchQuery.value = query }
     fun updateSelectedTab(tab: VaultTab) { _selectedTab.value = tab }
     fun updateSelectedEntryTypeName(entryTypeName: String?) {
         _selectedEntryTypeName.value = entryTypeName
+    }
+    fun updateSelectedCategory(category: String?) {
+        _selectedCategory.value = category
     }
     fun updateSelectedSort(sort: VaultSortSpec) {
         _selectedSort.value = sort

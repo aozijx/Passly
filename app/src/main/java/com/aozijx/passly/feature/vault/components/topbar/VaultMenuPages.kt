@@ -31,13 +31,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 
 @Composable
 internal fun MainMenuContent(
     onSortClick: () -> Unit,
-    onFilterClick: () -> Unit,
+    onCategoryFilterClick: () -> Unit,
+    onEntryTypeFilterClick: () -> Unit,
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onDismissRequest: () -> Unit,
@@ -50,7 +50,12 @@ internal fun MainMenuContent(
     )
     DropdownMenuItem(
         text = { Text(stringResource(R.string.vault_menu_filter)) },
-        onClick = onFilterClick,
+        onClick = onCategoryFilterClick,
+        leadingIcon = { Icon(Icons.Default.FilterList, null) }
+    )
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.vault_menu_entry_type_filter)) },
+        onClick = onEntryTypeFilterClick,
         leadingIcon = { Icon(Icons.Default.FilterList, null) }
     )
     DropdownMenuItem(
@@ -118,14 +123,17 @@ internal fun SortSubMenu(
 
 @Composable
 internal fun FilterSubMenu(
-    isEntryTypeSearchVisible: Boolean,
+    searchLabelRes: Int,
+    searchHintRes: Int,
+    isSearchVisible: Boolean,
     onToggleSearch: (Boolean) -> Unit,
-    entryTypeSearchQuery: String,
-    onEntryTypeSearchQueryChange: (String) -> Unit,
-    entryTypeFocusRequester: FocusRequester,
-    filteredEntryTypes: List<String>,
-    selectedEntryTypeName: String?,
-    onEntryTypeSelected: (String?) -> Unit,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    focusRequester: FocusRequester,
+    items: List<String>,
+    selectedItem: String?,
+    itemText: (String) -> String,
+    onItemSelected: (String?) -> Unit,
     onBack: () -> Unit
 ) {
     DropdownMenuItem(
@@ -133,23 +141,23 @@ internal fun FilterSubMenu(
         onClick = onBack,
         leadingIcon = {
             Icon(
-                if (isEntryTypeSearchVisible) Icons.Default.Close
+                if (isSearchVisible) Icons.Default.Close
                 else Icons.AutoMirrored.Filled.ArrowBack,
                 null
             )
         }
     )
-    AnimatedVisibility(isEntryTypeSearchVisible) {
+    AnimatedVisibility(isSearchVisible) {
         OutlinedTextField(
-            value = entryTypeSearchQuery,
-            onValueChange = onEntryTypeSearchQueryChange,
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
             modifier = Modifier
                 .padding(horizontal = 12.dp, vertical = 4.dp)
                 .fillMaxWidth()
-                .focusRequester(entryTypeFocusRequester),
+                .focusRequester(focusRequester),
             placeholder = {
                 Text(
-                    stringResource(R.string.vault_search_entry_type_hint),
+                    stringResource(searchHintRes),
                     style = MaterialTheme.typography.bodySmall
                 )
             },
@@ -163,9 +171,9 @@ internal fun FilterSubMenu(
             )
         )
     }
-    if (!isEntryTypeSearchVisible) {
+    if (!isSearchVisible) {
         DropdownMenuItem(
-            text = { Text(stringResource(R.string.vault_search_entry_type)) },
+            text = { Text(stringResource(searchLabelRes)) },
             onClick = { onToggleSearch(true) },
             leadingIcon = { Icon(Icons.Default.Search, null) }
         )
@@ -173,14 +181,14 @@ internal fun FilterSubMenu(
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     EntryTypeMenuItem(
         text = stringResource(R.string.tab_all),
-        selected = selectedEntryTypeName == null,
-        onClick = { onEntryTypeSelected(null) }
+        selected = selectedItem == null,
+        onClick = { onItemSelected(null) }
     )
-    filteredEntryTypes.forEach { entryTypeName ->
+    items.forEach { item ->
         EntryTypeMenuItem(
-            text = EntryType.fromName(entryTypeName).displayName,
-            selected = selectedEntryTypeName == entryTypeName,
-            onClick = { onEntryTypeSelected(entryTypeName) }
+            text = itemText(item),
+            selected = selectedItem == item,
+            onClick = { onItemSelected(item) }
         )
     }
 }

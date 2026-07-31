@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 data class VaultListState(
     val isLoading: Boolean = true,
     val entryTypes: List<String> = emptyList(),
+    val categories: List<String> = emptyList(),
     val itemsByTab: Map<VaultTab, List<EntryListItem>> = emptyMap()
 )
 
@@ -36,7 +38,9 @@ internal class VaultListCoordinator(
     private val loadingTrigger = combine(
         searchFilter.searchQuery,
         searchFilter.selectedEntryTypeName
-    ) { query, entryTypeName -> Pair(query.trim(), entryTypeName?.trim()) }
+    ) { query, entryTypeName ->
+        LoadingKey(query.trim(), entryTypeName?.trim())
+    }
         .distinctUntilChanged()
 
     init {
@@ -46,19 +50,35 @@ internal class VaultListCoordinator(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val rawItems: Flow<List<EntryListItem>> = queryCoordinator.observeItems(
+    private val rawItems: StateFlow<List<EntryListItem>> = queryCoordinator.observeItems(
         debouncedSearchQuery = searchFilter.debouncedSearchQuery,
         normalizedSelectedEntryTypeName = searchFilter.normalizedSelectedEntryTypeName,
         refreshTrigger = refreshTrigger
     ).onEach { items ->
         _isLoading.value = false
-    }
+    }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val categories: StateFlow<List<String>> = rawItems
+        .map { items ->
+            items.flatMap { item -> item.tags }
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinctBy { it.lowercase() }
+                .sortedWith(String.CASE_INSENSITIVE_ORDER)
+        }
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val sortedItems: StateFlow<List<EntryListItem>> = combine(
         rawItems,
-        searchFilter.selectedSort
-    ) { items, sort ->
-        VaultListSorter.sort(items, sort)
+        searchFilter.selectedSort,
+        searchFilter.normalizedSelectedCategory
+    ) { items, sort, selectedCategory ->
+        val filteredItems = selectedCategory?.let { category ->
+            items.filter { item ->
+                item.tags.any { it.equals(category, ignoreCase = true) }
+            }
+        } ?: items
+        VaultListSorter.sort(filteredItems, sort)
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -70,11 +90,13 @@ internal class VaultListCoordinator(
     val state: StateFlow<VaultListState> = combine(
         _isLoading,
         entryTypes,
+        categories,
         sortedItems
-    ) { loading, cats, items ->
+    ) { loading, types, cats, items ->
         VaultListState(
             isLoading = loading,
-            entryTypes = cats,
+            entryTypes = types,
+            categories = cats,
             itemsByTab = VaultTab.entries.associateWith { tab ->
                 when (tab) {
                     VaultTab.ALL -> items
@@ -84,4 +106,9 @@ internal class VaultListCoordinator(
             }
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())
+
+    private data class LoadingKey(
+        val query: String,
+        val entryTypeName: String?
+    )
 }

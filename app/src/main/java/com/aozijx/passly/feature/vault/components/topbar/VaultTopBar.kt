@@ -56,8 +56,10 @@ fun VaultTopBar(
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: (Boolean) -> Unit,
     onClearEntryType: () -> Unit,
+    onClearCategory: () -> Unit,
     onToggleTotpVisibility: () -> Unit,
     onEntryTypeSelected: (String?) -> Unit,
+    onCategorySelected: (String?) -> Unit,
     onSortSelected: (VaultSortSpec) -> Unit,
     onSelectTab: (VaultTab) -> Unit
 ) {
@@ -106,16 +108,24 @@ fun VaultTopBar(
                     )
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        val hasCategoryFilter = !uiState.selectedCategory.isNullOrBlank()
+                        val hasEntryTypeFilter = !uiState.selectedEntryTypeName.isNullOrBlank()
                         Text(
-                            text = if (uiState.selectedEntryTypeName != null) stringResource(
-                                R.string.vault_title_entry_type,
-                                EntryType.fromName(uiState.selectedEntryTypeName).displayName
-                            )
-                            else stringResource(R.string.vault_title_default),
+                            text = when {
+                                hasCategoryFilter -> stringResource(
+                                    R.string.vault_title_category,
+                                    uiState.selectedCategory.orEmpty()
+                                )
+                                hasEntryTypeFilter -> stringResource(
+                                    R.string.vault_title_entry_type,
+                                    EntryType.fromName(uiState.selectedEntryTypeName.orEmpty()).displayName
+                                )
+                                else -> stringResource(R.string.vault_title_default)
+                            },
                             fontWeight = FontWeight.Bold
                         )
-                        if (uiState.selectedEntryTypeName != null) {
-                            IconButton(onClick = onClearEntryType) {
+                        if (hasCategoryFilter || hasEntryTypeFilter) {
+                            IconButton(onClick = if (hasCategoryFilter) onClearCategory else onClearEntryType) {
                                 Icon(
                                     Icons.Default.Clear,
                                     stringResource(R.string.vault_clear_filter),
@@ -152,8 +162,11 @@ fun VaultTopBar(
                                     navigateToSettingsAfterDismiss = true
                                 },
                                 availableEntryTypes = uiState.availableEntryTypes,
+                                availableCategories = uiState.availableCategories,
                                 selectedEntryTypeName = uiState.selectedEntryTypeName,
+                                selectedCategory = uiState.selectedCategory,
                                 onEntryTypeSelected = onEntryTypeSelected,
+                                onCategorySelected = onCategorySelected,
                                 selectedSort = uiState.selectedSort,
                                 onSortSelected = onSortSelected
                             )
@@ -163,7 +176,11 @@ fun VaultTopBar(
             })
 
         AnimatedVisibility(
-            visible = uiState.visibleTabs.size > 1 && !uiState.isSearchActive && uiState.selectedEntryTypeName == null && (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+            visible = uiState.visibleTabs.size > 1 &&
+                !uiState.isSearchActive &&
+                uiState.selectedEntryTypeName == null &&
+                uiState.selectedCategory == null &&
+                (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
