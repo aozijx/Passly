@@ -1,12 +1,9 @@
 package com.aozijx.passly.security.authentication
 
-import android.content.Context
-import androidx.biometric.BiometricManager
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.ErrorCode
+import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.core.telemetry.SafeLogValue
-import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthMethodAvailability
 import com.aozijx.passly.domain.authentication.AuthenticationCallback
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
@@ -23,8 +20,6 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
-import com.aozijx.passly.security.envelope.BootstrapStore
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,16 +35,14 @@ import javax.inject.Singleton
 
 @Singleton
 class DefaultAuthenticationManager @Inject constructor(
-    @ApplicationContext context: Context,
     private val scope: CoroutineScope,
     private val hostRegistry: AuthenticationHostRegistry,
-    private val bootstrapStore: BootstrapStore,
     private val biometricExecutor: BiometricMethodExecutor,
     private val credentialExecutor: CredentialMethodExecutor,
     private val session: VaultSessionController,
-    private val settingsRepository: AppSettingsRepository
+    private val settingsRepository: AppSettingsRepository,
+    private val availabilityResolver: AuthenticationAvailabilityResolver
 ) : AuthenticationManager {
-    private val biometricManager = BiometricManager.from(context)
     private val requestMutex = Mutex()
     private val activeCorrelationId = AtomicReference<String?>(null)
     private val _methods = MutableStateFlow(AuthMethodAvailability())
@@ -280,18 +273,7 @@ class DefaultAuthenticationManager @Inject constructor(
     override suspend fun lock(reason: LockReason) = session.lock(reason)
 
     override suspend fun refreshAvailability() {
-        _methods.value = withContext(Dispatchers.Default) {
-            val biometricState = bootstrapStore.loadBiometricState()
-            AuthMethodAvailability(
-                biometric = biometricManager.canAuthenticate(
-                    BiometricManager.Authenticators.BIOMETRIC_STRONG
-                ) == BiometricManager.BIOMETRIC_SUCCESS &&
-                    bootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
-                    biometricState.binding != null,
-                appPassword = bootstrapStore.load(EnvelopeType.APP_PASSWORD) != null,
-                recoveryCode = bootstrapStore.load(EnvelopeType.RECOVERY) != null
-            )
-        }
+        _methods.value = availabilityResolver.resolve()
     }
 
     override fun snapshot(): AuthenticationSnapshot {

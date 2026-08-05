@@ -33,9 +33,9 @@
     <string name="vault_detail_activity_view">表示</string>
     <string name="vault_detail_activity_export">エクスポート</string>
     <string name="vault_detail_activity_import">インポート</string>
-    <string name="auth_use_recovery_code">復旧モードに入る</string>
+    <string name="auth_use_recovery_code">アクセスを復旧</string>
     <string name="auth_recovery_code_label">復旧コード</string>
-    <string name="auth_recovery_code_unlock">確認して復旧モードに入る</string>
+    <string name="auth_recovery_code_unlock">復旧コードを確認</string>
     <string name="wifi_ssid">WiFi名</string>
     <string name="wifi_password">WiFiパスワード</string>
     <string name="wifi_encryption">セキュリティ</string>

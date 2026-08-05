@@ -264,7 +264,7 @@
     <string name="continue_action">Continue</string>
     <string name="auth_verify_identity">Verify identity</string>
     <string name="auth_method_biometric">Biometrics</string>
-    <string name="auth_method_recovery_code">Enter recovery mode</string>
+    <string name="auth_method_recovery_code">Restore access</string>
     <string name="auth_biometric_subtitle">Verify your identity to continue</string>
     <string name="auth_purpose_unlock_vault">Unlock vault</string>
     <string name="auth_purpose_autofill">Verify to autofill</string>

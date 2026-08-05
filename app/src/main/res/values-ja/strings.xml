@@ -263,7 +263,7 @@
     <string name="continue_action">続行</string>
     <string name="auth_verify_identity">本人確認</string>
     <string name="auth_method_biometric">生体認証</string>
-    <string name="auth_method_recovery_code">復旧モードに入る</string>
+    <string name="auth_method_recovery_code">アクセスを復旧</string>
     <string name="auth_biometric_subtitle">続行するには本人確認を行ってください</string>
     <string name="auth_purpose_unlock_vault">金庫をロック解除</string>
     <string name="auth_purpose_autofill">認証して自動入力</string>

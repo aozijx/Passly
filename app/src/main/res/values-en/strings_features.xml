@@ -33,9 +33,9 @@
     <string name="vault_detail_activity_view">Viewed</string>
     <string name="vault_detail_activity_export">Exported</string>
     <string name="vault_detail_activity_import">Imported</string>
-    <string name="auth_use_recovery_code">Enter recovery mode</string>
+    <string name="auth_use_recovery_code">Restore access</string>
     <string name="auth_recovery_code_label">Recovery code</string>
-    <string name="auth_recovery_code_unlock">Verify and enter recovery mode</string>
+    <string name="auth_recovery_code_unlock">Verify recovery code</string>
     <string name="wifi_ssid">WiFi name</string>
     <string name="wifi_password">WiFi password</string>
     <string name="wifi_encryption">Security</string>

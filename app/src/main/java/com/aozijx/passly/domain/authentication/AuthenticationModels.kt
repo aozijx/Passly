@@ -18,7 +18,6 @@ enum class AuthenticationPurpose {
     REVEAL_SECRET,
     REVEAL_HIGH_SENSITIVITY_SECRET,
     COPY_SECRET,
-    DELETE_ENTRY,
     BACKUP_EXPORT,
 
     /** Recovery-code-only encrypted export from the restricted recovery session. */

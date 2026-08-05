@@ -18,5 +18,10 @@ interface AuthenticationMethodProvisioner {
     suspend fun disableBiometric(): AuthenticationResult
     suspend fun rotateBiometricPolicy(invalidateOnEnrollment: Boolean): AuthenticationResult
     suspend fun hasRecoveryCode(): Boolean
-    suspend fun verifyRecoveryCode(code: CharArray): Boolean
+
+    /**
+     * 检查给定的恢复码是否有效。此方法仅验证恢复码，不进行认证操作，
+     * 不会产生认证成功状态。用于设置页验证恢复码是否正确。
+     */
+    suspend fun checkRecoveryCode(code: CharArray): Boolean
 }

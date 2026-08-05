@@ -35,7 +35,7 @@ class AutofillRequestSession @Inject constructor(
     }
 
     suspend fun <T> trackUnlock(block: suspend () -> T): T {
-        val startedLocked = vaultAccessState.isLocked()
+        val startedLocked = !vaultAccessState.hasFullVaultAccess()
         return try {
             block()
         } finally {

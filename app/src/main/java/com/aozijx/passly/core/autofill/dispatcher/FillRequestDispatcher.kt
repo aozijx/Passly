@@ -63,7 +63,7 @@ class FillRequestDispatcher(
         // Field recognition must happen before the lock check. Otherwise every
         // focused form receives an unlock affordance while the vault is locked,
         // including pages that do not contain a credential field.
-        if (sessionState.isLocked()) {
+        if (!sessionState.hasFullVaultAccess()) {
             AppTelemetry.i(TAG, "Vault locked; fill request requires unlock")
             return InternalFillResponse(
                 availability = FillAvailability.LOCKED,

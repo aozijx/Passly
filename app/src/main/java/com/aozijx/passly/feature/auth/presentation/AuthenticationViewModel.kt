@@ -29,12 +29,29 @@ class AuthenticationViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AuthenticationUiState())
     val uiState: StateFlow<AuthenticationUiState> = _uiState.asStateFlow()
 
-    fun verifyWithBiometric() {
+    fun onIntent(intent: AuthenticationIntent) {
+        when (intent) {
+            AuthenticationIntent.BiometricClicked -> verifyWithBiometric()
+            is AuthenticationIntent.AppPasswordChanged -> onAppPasswordChange(intent.value)
+            AuthenticationIntent.AppPasswordSubmitted -> verifyWithAppPassword()
+            is AuthenticationIntent.RecoveryCodeChanged -> onRecoveryCodeChange(intent.value)
+            AuthenticationIntent.RecoveryCodeSubmitted -> unlockWithRecoveryCode()
+            is AuthenticationIntent.InputExpanded -> onInputExpanded(intent.method, intent.expanded)
+            is AuthenticationIntent.NewAppPasswordChanged -> onNewAppPasswordChange(intent.value)
+            is AuthenticationIntent.ConfirmAppPasswordChanged -> onConfirmAppPasswordChange(intent.value)
+            AuthenticationIntent.SetPasswordClicked -> onShowSetPasswordDialog()
+            AuthenticationIntent.SetPasswordConfirmed -> bootstrapAppPassword()
+            AuthenticationIntent.DismissSetPasswordDialog -> onDismissSetPasswordDialog()
+            AuthenticationIntent.ClearVerificationFailure -> clearVerificationFailure()
+        }
+    }
+
+    private fun verifyWithBiometric() {
         resetInputState()
         authenticate(AuthenticationMethod.BIOMETRIC)
     }
 
-    fun onAppPasswordChange(value: String) {
+    private fun onAppPasswordChange(value: String) {
         _uiState.value.appPassword.wipe()
         _uiState.update {
             it.copy(
@@ -44,7 +61,7 @@ class AuthenticationViewModel @Inject constructor(
         }
     }
 
-    fun onRecoveryCodeChange(value: String) {
+    private fun onRecoveryCodeChange(value: String) {
         _uiState.value.recoveryCode.wipe()
         _uiState.update {
             it.copy(
@@ -54,7 +71,7 @@ class AuthenticationViewModel @Inject constructor(
         }
     }
 
-    fun onNewAppPasswordChange(value: String) {
+    private fun onNewAppPasswordChange(value: String) {
         _uiState.value.newAppPassword.wipe()
         _uiState.update {
             it.copy(
@@ -64,7 +81,7 @@ class AuthenticationViewModel @Inject constructor(
         }
     }
 
-    fun onConfirmAppPasswordChange(value: String) {
+    private fun onConfirmAppPasswordChange(value: String) {
         _uiState.value.confirmAppPassword.wipe()
         _uiState.update {
             it.copy(
@@ -74,7 +91,7 @@ class AuthenticationViewModel @Inject constructor(
         }
     }
 
-    fun onInputExpanded(method: AuthenticationMethod, expanded: Boolean) {
+    private fun onInputExpanded(method: AuthenticationMethod, expanded: Boolean) {
         if (expanded) {
             _uiState.value.expandedMethod
                 ?.takeUnless { it == method }
@@ -94,14 +111,14 @@ class AuthenticationViewModel @Inject constructor(
         }
     }
 
-    fun verifyWithAppPassword() {
+    private fun verifyWithAppPassword() {
         authenticate(
             method = AuthenticationMethod.APP_PASSWORD,
             credential = _uiState.value.appPassword.toCharArray()
         )
     }
 
-    fun unlockWithRecoveryCode() {
+    private fun unlockWithRecoveryCode() {
         authenticate(
             method = AuthenticationMethod.RECOVERY_CODE,
             credential = _uiState.value.recoveryCode.toCharArray(),
@@ -109,20 +126,11 @@ class AuthenticationViewModel @Inject constructor(
         )
     }
 
-    fun recoverBiometric(onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            onResult(
-                methodProvisioner.rotateBiometricPolicy(invalidateOnEnrollment = true) is
-                        AuthenticationResult.Success
-            )
-        }
-    }
-
-    fun onShowSetPasswordDialog() = _uiState.update {
+    private fun onShowSetPasswordDialog() = _uiState.update {
         it.copy(showSetPasswordDialog = true, setupFailure = null)
     }
 
-    fun onDismissSetPasswordDialog() {
+    private fun onDismissSetPasswordDialog() {
         _uiState.value.newAppPassword.wipe()
         _uiState.value.confirmAppPassword.wipe()
         _uiState.update {
@@ -135,7 +143,7 @@ class AuthenticationViewModel @Inject constructor(
         }
     }
 
-    fun bootstrapAppPassword() {
+    private fun bootstrapAppPassword() {
         val password = _uiState.value.newAppPassword.toCharArray()
         val confirm = _uiState.value.confirmAppPassword.toCharArray()
 
@@ -178,7 +186,7 @@ class AuthenticationViewModel @Inject constructor(
         }
     }
 
-    fun clearVerificationFailure() {
+    private fun clearVerificationFailure() {
         _uiState.update { it.copy(verificationFailure = null) }
     }
 

@@ -55,7 +55,7 @@ class CredentialResponseUseCases @Inject constructor(
             return PasswordCredentialResult.NotFound
         }
 
-        if (policy.requireAuthentication || vaultAccessState.isLocked()) {
+        if (policy.requireAuthentication || !vaultAccessState.hasFullVaultAccess()) {
             val authentication = authenticationManager.authenticate(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )
@@ -101,7 +101,7 @@ class CredentialResponseUseCases @Inject constructor(
             return CreatePasswordCredentialResult.NotSaved
         }
 
-        if (policy.requireAuthentication || vaultAccessState.isLocked()) {
+        if (policy.requireAuthentication || !vaultAccessState.hasFullVaultAccess()) {
             val authentication = authenticationManager.authenticate(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )

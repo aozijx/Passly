@@ -198,9 +198,9 @@
     <string name="notification_channel_app_messages_summary">下载结果等状态栏信息</string>
 
     <!-- 恢复码 -->
-    <string name="auth_use_recovery_code">进入恢复模式</string>
+    <string name="auth_use_recovery_code">恢复访问权限</string>
     <string name="auth_recovery_code_label">恢复码</string>
-    <string name="auth_recovery_code_unlock">验证并进入恢复模式</string>
+    <string name="auth_recovery_code_unlock">验证恢复码</string>
 
     <!-- 设置: 界面行为 -->
 
@@ -345,7 +345,7 @@
     <string name="continue_action">继续</string>
     <string name="auth_verify_identity">验证身份</string>
     <string name="auth_method_biometric">生物识别</string>
-    <string name="auth_method_recovery_code">进入恢复模式</string>
+    <string name="auth_method_recovery_code">恢复访问权限</string>
     <string name="auth_biometric_subtitle">请验证身份以继续</string>
     <string name="auth_purpose_unlock_vault">解锁保险库</string>
     <string name="auth_purpose_autofill">验证后自动填充</string>

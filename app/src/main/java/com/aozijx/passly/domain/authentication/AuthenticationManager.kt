@@ -35,6 +35,13 @@ interface VaultAccessState {
     val authenticationState: StateFlow<AuthenticationState>
     val isAuthorized: Flow<Boolean>
         get() = authenticationState.map { it is AuthenticationState.Authenticated }
+
+    /** 数据库是否已打开（包括恢复模式） */
+    fun isDatabaseOpen(): Boolean = isUnlocked()
+
+    /** 是否有完整 Vault 访问权限（Authenticated 且非 RecoveryMode） */
+    fun hasFullVaultAccess(): Boolean = isUnlocked() && !isRecoveryMode()
+
     fun isUnlocked(): Boolean
     fun isRecoveryMode(): Boolean = authenticationState.value is AuthenticationState.RecoveryMode
     fun isLocked(): Boolean = !isUnlocked()

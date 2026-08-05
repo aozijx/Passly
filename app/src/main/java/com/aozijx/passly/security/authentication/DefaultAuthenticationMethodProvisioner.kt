@@ -31,7 +31,8 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val bootstrapStore: BootstrapStore,
     private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
     private val biometricRotationCoordinator: BiometricRotationCoordinator,
-    private val cryptoFactory: BiometricCryptoFactory
+    private val cryptoFactory: BiometricCryptoFactory,
+    private val availabilityResolver: AuthenticationAvailabilityResolver
 ) : AuthenticationMethodProvisioner {
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
@@ -122,10 +123,8 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
             )
         )
         if (authentication !is AuthenticationResult.Success) return authentication
-        val alternatives = bootstrapStore.loadAll().any {
-            it.type == EnvelopeType.BIOMETRIC || it.type == EnvelopeType.RECOVERY
-        }
-        if (!alternatives) {
+        // Rely on the resolver for a consistent primary-factor availability check.
+        if (!availabilityResolver.hasAlternativePrimaryFactor(EnvelopeType.APP_PASSWORD)) {
             return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
             )
@@ -141,10 +140,8 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
             AuthenticationRequest(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY)
         )
         if (authentication !is AuthenticationResult.Success) return authentication
-        val alternatives = bootstrapStore.loadAll().any {
-            it.type == EnvelopeType.APP_PASSWORD || it.type == EnvelopeType.RECOVERY
-        }
-        if (!alternatives) {
+        // Rely on the resolver for a consistent primary-factor availability check.
+        if (!availabilityResolver.hasAlternativePrimaryFactor(EnvelopeType.BIOMETRIC)) {
             return AuthenticationResult.Failure(
                 AuthenticationFailure(AuthenticationFailureCode.LAST_METHOD_REQUIRED, correlationId)
             )
@@ -187,7 +184,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     override suspend fun hasRecoveryCode(): Boolean =
         bootstrapStore.load(EnvelopeType.RECOVERY) != null
 
-    override suspend fun verifyRecoveryCode(code: CharArray): Boolean {
+    override suspend fun checkRecoveryCode(code: CharArray): Boolean {
         val envelope = bootstrapStore.load(EnvelopeType.RECOVERY) ?: run {
             code.fill('\u0000')
             return false

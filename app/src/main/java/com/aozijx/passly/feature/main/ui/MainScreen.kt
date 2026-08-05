@@ -21,7 +21,6 @@ import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
-import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.main.MainConfigViewModel
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
@@ -29,6 +28,7 @@ import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.message.AppNoticeHostViewModel
 import com.aozijx.passly.feature.recovery.RecoveryModeScreen
+import com.aozijx.passly.feature.recovery.RecoveryModeViewModel
 
 @Composable
 internal fun MainScreen(
@@ -52,7 +52,7 @@ internal fun MainScreen(
     val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
 
     val authenticationViewModel: AuthenticationViewModel = hiltViewModel()
-    val backupViewModel: BackupViewModel = hiltViewModel()
+    val recoveryViewModel: RecoveryModeViewModel = hiltViewModel()
     val messageHostViewModel: AppNoticeHostViewModel = hiltViewModel()
 
     LaunchedEffect(messageHostViewModel) {
@@ -118,8 +118,7 @@ internal fun MainScreen(
 
             "recovery" -> {
                 RecoveryModeScreen(
-                    authenticationViewModel = authenticationViewModel,
-                    backupViewModel = backupViewModel,
+                    viewModel = recoveryViewModel,
                     onExit = { viewModel.handleIntent(MainIntent.ExitRecovery) }
                 )
             }

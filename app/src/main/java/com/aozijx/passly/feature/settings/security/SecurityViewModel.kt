@@ -75,7 +75,7 @@ class SecurityViewModel @Inject constructor(
             }
 
             is SecurityUiAction.VerifyRecoveryCode -> viewModelScope.launch {
-                val valid = methodProvisioner.verifyRecoveryCode(action.code.toCharArray())
+                val valid = methodProvisioner.checkRecoveryCode(action.code.toCharArray())
                 _verifyResult.value = valid
             }
 

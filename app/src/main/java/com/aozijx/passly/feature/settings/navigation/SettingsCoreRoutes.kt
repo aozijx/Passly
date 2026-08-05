@@ -37,8 +37,6 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     settingsViewModel: SettingsViewModel,
     onOuterBack: () -> Unit,
     onGroupClick: (SettingsRoute) -> Unit,
-    authDecryptTitle: String,
-    setAppPasswordSubtitle: String,
     isTwoPane: Boolean
 ) {
     composable(

@@ -80,7 +80,7 @@ class AutofillFillViewModel @Inject constructor(
                     handleUnlockOnly(request, settings)
                     return@launch
                 }
-                if (vaultAccessState.isLocked()) {
+                if (!vaultAccessState.hasFullVaultAccess()) {
                     val authentication = authenticateForAutofill()
                     if (authentication !is AuthenticationResult.Success) {
                         _uiState.update { UiState.Result(null) }
@@ -227,7 +227,7 @@ class AutofillFillViewModel @Inject constructor(
     private suspend fun ensureAuthenticatedForSecretAccess(
         settings: AutofillSettings,
     ): Boolean {
-        val needsAuthentication = vaultAccessState.isLocked() ||
+        val needsAuthentication = !vaultAccessState.hasFullVaultAccess() ||
             (settings.requireAuthentication && !authenticatedForCurrentRequest)
         if (!needsAuthentication) return true
         val authResult = authenticateForAutofill()

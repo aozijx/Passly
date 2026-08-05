@@ -33,6 +33,7 @@ import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.feature.auth.presentation.AuthenticationIntent
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
 
@@ -114,7 +115,7 @@ fun AuthenticationScreen(
                     text = stringResource(R.string.auth_biometric_unlock),
                     progress = activeMethod == AuthenticationMethod.BIOMETRIC,
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.BIOMETRIC,
-                    onClick = viewModel::verifyWithBiometric
+                    onClick = { viewModel.onIntent(AuthenticationIntent.BiometricClicked) }
                 )
             }
 
@@ -131,12 +132,21 @@ fun AuthenticationScreen(
                     errorText = appPasswordFailure?.message(appPasswordLabel)
                         ?: stringResource(R.string.auth_error_failed),
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD,
-                    onValueChange = viewModel::onAppPasswordChange,
-                    onExpandedChange = {
-                        viewModel.onInputExpanded(AuthenticationMethod.APP_PASSWORD, it)
+                    onValueChange = {
+                        viewModel.onIntent(AuthenticationIntent.AppPasswordChanged(it))
                     },
-                    onAction = viewModel::verifyWithAppPassword,
-                    onResultConsumed = viewModel::clearVerificationFailure
+                    onExpandedChange = {
+                        viewModel.onIntent(
+                            AuthenticationIntent.InputExpanded(
+                                AuthenticationMethod.APP_PASSWORD,
+                                it
+                            )
+                        )
+                    },
+                    onAction = { viewModel.onIntent(AuthenticationIntent.AppPasswordSubmitted) },
+                    onResultConsumed = {
+                        viewModel.onIntent(AuthenticationIntent.ClearVerificationFailure)
+                    }
                 )
             }
 
@@ -146,7 +156,7 @@ fun AuthenticationScreen(
                     text = stringResource(R.string.auth_set_app_password),
                     progress = uiState.isSettingAppPassword,
                     enabled = activeMethod == null && !uiState.isSettingAppPassword,
-                    onClick = viewModel::onShowSetPasswordDialog
+                    onClick = { viewModel.onIntent(AuthenticationIntent.SetPasswordClicked) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -170,12 +180,20 @@ fun AuthenticationScreen(
                     errorText = recoveryCodeFailure?.message(recoveryCodeLabel)
                         ?: stringResource(R.string.auth_error_failed),
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.RECOVERY_CODE,
-                    onValueChange = viewModel::onRecoveryCodeChange,
-                    onExpandedChange = {
-                        viewModel.onInputExpanded(AuthenticationMethod.RECOVERY_CODE, it)
+                    onValueChange = {
+                        viewModel.onIntent(AuthenticationIntent.RecoveryCodeChanged(it))
                     },
-                    onAction = viewModel::unlockWithRecoveryCode,
-                    onResultConsumed = viewModel::clearVerificationFailure
+                    onExpandedChange = {
+                        viewModel.onIntent(
+                            AuthenticationIntent.InputExpanded(
+                                AuthenticationMethod.RECOVERY_CODE, it
+                            )
+                        )
+                    },
+                    onAction = { viewModel.onIntent(AuthenticationIntent.RecoveryCodeSubmitted) },
+                    onResultConsumed = {
+                        viewModel.onIntent(AuthenticationIntent.ClearVerificationFailure)
+                    }
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -186,10 +204,14 @@ fun AuthenticationScreen(
         AppPasswordSetDialog(
             newPassword = uiState.newAppPassword.toPlainString(),
             confirmPassword = uiState.confirmAppPassword.toPlainString(),
-            onNewPasswordChange = viewModel::onNewAppPasswordChange,
-            onConfirmPasswordChange = viewModel::onConfirmAppPasswordChange,
-            onConfirm = viewModel::bootstrapAppPassword,
-            onDismiss = viewModel::onDismissSetPasswordDialog,
+            onNewPasswordChange = {
+                viewModel.onIntent(AuthenticationIntent.NewAppPasswordChanged(it))
+            },
+            onConfirmPasswordChange = {
+                viewModel.onIntent(AuthenticationIntent.ConfirmAppPasswordChanged(it))
+            },
+            onConfirm = { viewModel.onIntent(AuthenticationIntent.SetPasswordConfirmed) },
+            onDismiss = { viewModel.onIntent(AuthenticationIntent.DismissSetPasswordDialog) },
             isBusy = uiState.isSettingAppPassword,
             errorMessage = uiState.setupFailure?.message(forSetup = true)
         )

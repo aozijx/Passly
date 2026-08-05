@@ -645,6 +645,9 @@ class MigrationBoundaryTest {
         val authenticationManager = File(
             "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
         ).readText()
+        val authPolicy = File(
+            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
+        ).readText()
         val credentialExecutor = File(
             "src/main/java/com/aozijx/passly/security/authentication/CredentialMethodExecutor.kt"
         ).readText()
@@ -679,13 +682,14 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "Recovery code must remain available for damaged database recovery only",
-            "AuthenticationPurpose.RECOVER_DATABASE" in authenticationManager &&
+            "AuthenticationPurpose.RECOVER_DATABASE" in authPolicy &&
                     "AuthenticationPurpose.RECOVER_DATABASE -> AuthenticationMethod.entries.toSet()" in
-                authenticationManager
+                    authPolicy
         )
         assertTrue(
             "Permanent database deletion must reject the recovery code",
-            "AuthenticationPurpose.CLEAR_DATABASE -> PRIMARY_METHODS" in authenticationManager
+            "AuthenticationPurpose.CLEAR_DATABASE -> PRIMARY_METHODS" in authPolicy ||
+                    "CLEAR_DATABASE -> PRIMARY_METHODS" in authPolicy
         )
         assertTrue(
             "Cold-start recovery must stage the DEK without opening the broken database",
@@ -859,5 +863,151 @@ class MigrationBoundaryTest {
             .toList()
 
         assertTrue("Incomplete center implementations: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun recoveryCodeCannotActAsEverydayUnlockMethod() {
+        val authPolicy = File(
+            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"
+        ).readText()
+        val authModels = File(
+            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
+        ).readText()
+        val authManager = File(
+            "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt"
+        ).readText()
+        val sessionController = File(
+            "src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt"
+        ).readText()
+        val credentialExecutor = File(
+            "src/main/java/com/aozijx/passly/security/authentication/CredentialMethodExecutor.kt"
+        ).readText()
+        val provisioner = File(
+            "src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationMethodProvisioner.kt"
+        ).readText()
+        val provisionerInterface = File(
+            "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationMethodProvisioner.kt"
+        ).readText()
+        val authViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/auth/presentation/AuthenticationViewModel.kt"
+        ).readText()
+        val mainViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"
+        ).readText()
+        val mainUiState = File(
+            "src/main/java/com/aozijx/passly/feature/main/contract/MainUiState.kt"
+        ).readText()
+        val mainScreen = File(
+            "src/main/java/com/aozijx/passly/feature/main/ui/MainScreen.kt"
+        ).readText()
+        val recoveryModeScreen = File(
+            "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeScreen.kt"
+        ).readText()
+        val backupViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/backup/BackupViewModel.kt"
+        ).readText()
+        val securityViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/SecurityViewModel.kt"
+        ).readText()
+
+        // 1. UNLOCK_VAULT must not allow recovery code
+        assertTrue(
+            "UNLOCK_VAULT must use PRIMARY_METHODS only",
+            "UNLOCK_VAULT," in authPolicy && "CLEAR_DATABASE -> PRIMARY_METHODS" in authPolicy
+        )
+
+        // 2. Recovery mode state must exist
+        assertTrue(
+            "RecoveryMode state must be defined",
+            "data class RecoveryMode" in authModels
+        )
+        assertTrue(
+            "MainUiState must track recovery mode",
+            "isRecoveryMode: Boolean" in mainUiState
+        )
+        assertTrue(
+            "MainScreen must render RecoveryModeScreen",
+            "RecoveryModeScreen(" in mainScreen
+        )
+
+        // 3. VaultSessionController must support recovery unlock
+        assertTrue(
+            "commitRecoveryUnlock must exist",
+            "fun commitRecoveryUnlock" in sessionController
+        )
+        assertTrue(
+            "markRecoveryMode must exist",
+            "fun markRecoveryMode" in sessionController
+        )
+        assertTrue(
+            "isRecoveryMode must check RecoveryMode state",
+            "is AuthenticationState.RecoveryMode" in sessionController
+        )
+
+        // 4. CredentialMethodExecutor must route recovery purposes
+        assertTrue(
+            "RECOVER_AUTH_METHODS must call commitRecoveryUnlock",
+            "AuthenticationPurpose.RECOVER_AUTH_METHODS" in credentialExecutor &&
+                    "commitRecoveryUnlock" in credentialExecutor
+        )
+        assertTrue(
+            "RECOVERY_EXPORT must call commitRecoveryUnlock",
+            "AuthenticationPurpose.RECOVERY_EXPORT" in credentialExecutor &&
+                    "commitRecoveryUnlock" in credentialExecutor
+        )
+
+        // 5. AuthenticationManager must gate recovery mode purposes
+        assertTrue(
+            "AuthenticationManager must check RECOVERY_MODE_PURPOSES",
+            "RECOVERY_MODE_PURPOSES" in authManager
+        )
+        assertTrue(
+            "AuthenticationManager must allow recovery mode reuse",
+            "RECOVERY_MODE_REUSABLE_PURPOSES" in authManager
+        )
+
+        // 6. Provisioner must not allow recovery code as substitute for primary methods
+        assertTrue(
+            "disableAppPassword must use hasAlternativePrimaryFactor",
+            "availabilityResolver.hasAlternativePrimaryFactor" in provisioner &&
+                    "EnvelopeType.APP_PASSWORD" in provisioner
+        )
+        assertTrue(
+            "disableBiometric must use hasAlternativePrimaryFactor",
+            "availabilityResolver.hasAlternativePrimaryFactor" in provisioner &&
+                    "EnvelopeType.BIOMETRIC" in provisioner
+        )
+
+        // 7. checkRecoveryCode must not produce authentication success
+        assertTrue(
+            "checkRecoveryCode must exist in interface",
+            "suspend fun checkRecoveryCode" in provisionerInterface
+        )
+        assertTrue(
+            "SecurityViewModel must use checkRecoveryCode",
+            "methodProvisioner.checkRecoveryCode" in securityViewModel
+        )
+
+        // 8. Recovery code unlock must use RECOVER_AUTH_METHODS purpose
+        assertTrue(
+            "unlockWithRecoveryCode must use RECOVER_AUTH_METHODS",
+            "AuthenticationPurpose.RECOVER_AUTH_METHODS" in authViewModel
+        )
+
+        // 9. Recovery mode exit must lock with RECOVERY_EXIT
+        assertTrue(
+            "ExitRecovery must lock with RECOVERY_EXIT",
+            "LockReason.RECOVERY_EXIT" in mainViewModel
+        )
+
+        // 10. BackupViewModel must support recovery export
+        assertTrue(
+            "BackupViewModel must use RECOVERY_EXPORT purpose",
+            "AuthenticationPurpose.RECOVERY_EXPORT" in backupViewModel
+        )
+        assertTrue(
+            "BackupViewModel must have isRecoveryExport flag",
+            "isRecoveryExport" in backupViewModel
+        )
     }
 }

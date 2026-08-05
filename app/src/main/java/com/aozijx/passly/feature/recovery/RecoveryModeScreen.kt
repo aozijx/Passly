@@ -22,11 +22,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -34,10 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
-import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
+import com.aozijx.passly.feature.backup.contract.BackupUiState
+import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
+import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
+import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
 import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreSheetHost
 import com.aozijx.passly.feature.settings.datamanagement.BackupSheet
@@ -45,34 +44,25 @@ import com.aozijx.passly.feature.settings.datamanagement.BackupSheet
 /** Restricted UI shown after recovery-code verification. No Vault content is mounted here. */
 @Composable
 fun RecoveryModeScreen(
-    authenticationViewModel: AuthenticationViewModel,
-    backupViewModel: BackupViewModel,
+    viewModel: RecoveryModeViewModel,
     onExit: () -> Unit
 ) {
-    val authState by authenticationViewModel.uiState.collectAsStateWithLifecycle()
-    val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
-    var showExportOptions by remember { mutableStateOf(false) }
-    var biometricResult by remember { mutableStateOf<Boolean?>(null) }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     val exportPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri ->
-        if (uri == null) {
-            backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
-        } else {
-            backupViewModel.onIntent(
-                BackupIntent.StartExport(
-                    uri = uri,
-                    fileNameHint = backupViewModel.buildExportFileName()
-                )
-            )
-            backupViewModel.onIntent(BackupIntent.ProcessBackupAction)
-        }
+        viewModel.onIntent(RecoveryModeIntent.ExportTargetPicked(uri))
     }
 
-    DisposableEffect(backupViewModel) {
-        onDispose {
-            backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is RecoveryModeEffect.PickExportTarget -> exportPicker.launch(effect.fileName)
+                is RecoveryModeEffect.ExitRecovery -> onExit()
+                is RecoveryModeEffect.ShowMessage -> { /* handled by UI state */
+                }
+            }
         }
     }
 
@@ -106,18 +96,15 @@ fun RecoveryModeScreen(
         RecoveryActionButton(
             icon = Icons.Default.LockReset,
             text = stringResource(R.string.recovery_mode_set_password),
-            onClick = authenticationViewModel::onShowSetPasswordDialog
+            onClick = { viewModel.onIntent(RecoveryModeIntent.SetPasswordClicked) }
         )
         Spacer(Modifier.height(8.dp))
         RecoveryActionButton(
             icon = Icons.Default.Fingerprint,
             text = stringResource(R.string.recovery_mode_reconfigure_biometric),
-            onClick = {
-                biometricResult = null
-                authenticationViewModel.recoverBiometric { biometricResult = it }
-            }
+            onClick = { viewModel.onIntent(RecoveryModeIntent.ReconfigureBiometricClicked) }
         )
-        biometricResult?.let { success ->
+        state.biometricResult?.let { success ->
             Text(
                 text = stringResource(
                     if (success) R.string.recovery_mode_biometric_success
@@ -135,12 +122,9 @@ fun RecoveryModeScreen(
         RecoveryActionButton(
             icon = Icons.Default.FileDownload,
             text = stringResource(R.string.recovery_mode_export),
-            onClick = {
-                backupViewModel.onIntent(BackupIntent.PrepareRecoveryExport)
-                showExportOptions = true
-            }
+            onClick = { viewModel.onIntent(RecoveryModeIntent.ExportClicked) }
         )
-        if (backupState.status is BackupOperationStatus.Failure) {
+        if (state.exportError != null) {
             Text(
                 text = stringResource(R.string.recovery_mode_export_failed),
                 style = MaterialTheme.typography.bodySmall,
@@ -148,7 +132,10 @@ fun RecoveryModeScreen(
             )
         }
         Spacer(Modifier.height(16.dp))
-        OutlinedButton(onClick = onExit, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = { viewModel.onIntent(RecoveryModeIntent.ExitClicked) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
             Text(
                 text = stringResource(R.string.recovery_mode_exit),
@@ -157,47 +144,61 @@ fun RecoveryModeScreen(
         }
     }
 
-    if (authState.showSetPasswordDialog) {
+    if (state.showSetPasswordDialog) {
         AppPasswordSetDialog(
-            newPassword = authState.newAppPassword.toPlainString(),
-            confirmPassword = authState.confirmAppPassword.toPlainString(),
-            onNewPasswordChange = authenticationViewModel::onNewAppPasswordChange,
-            onConfirmPasswordChange = authenticationViewModel::onConfirmAppPasswordChange,
-            onConfirm = authenticationViewModel::bootstrapAppPassword,
-            onDismiss = authenticationViewModel::onDismissSetPasswordDialog,
-            isBusy = authState.isSettingAppPassword,
-            errorMessage = authState.setupFailure?.let {
-                stringResource(R.string.auth_error_app_password_setup_failed)
-            }
+            newPassword = state.newPassword,
+            confirmPassword = state.confirmPassword,
+            onNewPasswordChange = {
+                viewModel.onIntent(RecoveryModeIntent.NewPasswordChanged(it))
+            },
+            onConfirmPasswordChange = {
+                viewModel.onIntent(RecoveryModeIntent.ConfirmPasswordChanged(it))
+            },
+            onConfirm = { viewModel.onIntent(RecoveryModeIntent.SubmitNewPassword) },
+            onDismiss = { viewModel.onIntent(RecoveryModeIntent.DismissSheet) },
+            isBusy = state.isSettingPassword,
+            errorMessage = state.passwordSetupError
+        )
+    }
+
+    // Map RecoveryModeUiState to BackupUiState for the export sheet
+    val backupUiState = remember(state) {
+        BackupUiState(
+            status = if (state.isExporting) BackupOperationStatus.Loading
+            else if (state.exportError != null) BackupOperationStatus.Failure
+            else BackupOperationStatus.Idle,
+            isExporting = true,
+            isRecoveryExport = true,
+            backupPassword = state.exportPassword,
+            selectedExportFormat = BackupExportUiFormat.ENCRYPTED,
+            includeIcons = state.includeIcons,
+            includeAttachments = state.includeAttachments,
+            includeDeleted = state.includeDeleted
         )
     }
 
     BackupRestoreSheetHost(
-        sheet = if (showExportOptions) BackupSheet.EXPORT_OPTIONS else null,
-        state = backupState,
+        sheet = if (state.showExportOptions) BackupSheet.EXPORT_OPTIONS else null,
+        state = backupUiState,
         configuredDirectoryLabel = null,
-        onDismiss = {
-            showExportOptions = false
-            backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
-        },
+        onDismiss = { viewModel.onIntent(RecoveryModeIntent.DismissSheet) },
         onFormatSelected = {},
-        onPasswordChange = { backupViewModel.onIntent(BackupIntent.UpdatePassword(it)) },
+        onPasswordChange = {
+            viewModel.onIntent(RecoveryModeIntent.ExportPasswordChanged(it))
+        },
         onIncludeIconsChange = {
-            backupViewModel.onIntent(BackupIntent.UpdateIncludeIcons(it))
+            viewModel.onIntent(RecoveryModeIntent.IncludeIconsChanged(it))
         },
         onIncludeAttachmentsChange = {
-            backupViewModel.onIntent(BackupIntent.UpdateIncludeAttachments(it))
+            viewModel.onIntent(RecoveryModeIntent.IncludeAttachmentsChanged(it))
         },
         onIncludeDeletedChange = {
-            backupViewModel.onIntent(BackupIntent.UpdateIncludeDeleted(it))
+            viewModel.onIntent(RecoveryModeIntent.IncludeDeletedChanged(it))
         },
-        onIncludedEntryTypesChange = {
-            backupViewModel.onIntent(BackupIntent.UpdateIncludedEntryTypes(it))
-        },
+        onIncludedEntryTypesChange = {},
         onImportModeChange = {},
         onExport = {
-            showExportOptions = false
-            exportPicker.launch(backupViewModel.buildExportFileName())
+            viewModel.onIntent(RecoveryModeIntent.SubmitExport)
         },
         onImport = {}
     )

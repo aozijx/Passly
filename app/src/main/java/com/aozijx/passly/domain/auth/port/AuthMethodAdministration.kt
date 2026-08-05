@@ -26,6 +26,6 @@ interface AuthMethodAdministration {
     /** 是否有恢复码 */
     suspend fun hasRecoveryCode(): Boolean
 
-    /** 验证恢复码 */
-    suspend fun verifyRecoveryCode(code: CharArray): Boolean
+    /** 检查恢复码是否有效（不产生认证状态） */
+    suspend fun checkRecoveryCode(code: CharArray): Boolean
 }

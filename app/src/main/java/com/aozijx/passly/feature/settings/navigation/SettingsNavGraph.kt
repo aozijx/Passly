@@ -227,8 +227,6 @@ private fun SettingsNavHost(
             settingsViewModel = settingsViewModel,
             onOuterBack = onOuterBack,
             onGroupClick = onGroupClick,
-            authDecryptTitle = authDecryptTitle,
-            setAppPasswordSubtitle = setAppPasswordSubtitle,
             isTwoPane = isTwoPane
         )
         registerDataSettingsRoutes(

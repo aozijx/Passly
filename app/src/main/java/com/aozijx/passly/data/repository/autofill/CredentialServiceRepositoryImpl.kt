@@ -52,7 +52,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         includeSecrets: Boolean,
         limit: Int,
     ): List<CredentialCandidate> {
-        if (sessionState.isLocked()) return emptyList()
+        if (!sessionState.hasFullVaultAccess()) return emptyList()
 
         val normalizedPackage = CredentialScopeMatcher.normalizePackage(packageName)
         val normalizedDomain = CredentialScopeMatcher.normalizeDomain(webDomain)
@@ -137,7 +137,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         entryIds: List<String>,
         includeSecrets: Boolean
     ): List<VaultEntry> {
-        if (sessionState.isLocked() || entryIds.isEmpty()) return emptyList()
+        if (!sessionState.hasFullVaultAccess() || entryIds.isEmpty()) return emptyList()
         val uniqueIds = entryIds.distinct()
         return sessionManager.query {
             val entries = entryQueryDao().getByIds(uniqueIds)
@@ -170,7 +170,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         usernameValue: String,
         passwordValue: String,
     ): Boolean {
-        if (sessionState.isLocked()) return false
+        if (!sessionState.hasFullVaultAccess()) return false
         if (usernameValue.isBlank() && passwordValue.isBlank()) return false
 
         val normalizedPackage = CredentialScopeMatcher.normalizePackage(packageName)

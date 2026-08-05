@@ -35,10 +35,10 @@ import com.aozijx.passly.feature.settings.navigation.SettingsRoute
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsMainPage(
+    modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onGroupClick: (SettingsRoute) -> Unit,
     selectedRouteKey: String? = null,
-    modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier,

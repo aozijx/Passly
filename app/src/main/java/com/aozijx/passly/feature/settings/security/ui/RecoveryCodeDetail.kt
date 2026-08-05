@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,8 +44,13 @@ fun RecoveryCodeDetail(
     var verifyInput by remember { mutableStateOf(SecureString.EMPTY) }
     var isExpanded by remember { mutableStateOf(false) }
 
-    // 当验证结果返回时，停止进度显示
-    val isVerifying = verifyResult == null && !verifyInput.isEmpty && !isExpanded
+    // 显式追踪验证进度，不依赖 verifyInput/isExpanded 的同步状态推导
+    var isVerifying by remember { mutableStateOf(false) }
+    LaunchedEffect(verifyResult) {
+        if (verifyResult != null) {
+            isVerifying = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -126,6 +132,7 @@ fun RecoveryCodeDetail(
                 onExpandedChange = { isExpanded = it },
                 onAction = {
                     if (!verifyInput.isEmpty) {
+                        isVerifying = true
                         onVerifyCode(verifyInput.toPlainString().trim())
                     }
                 },
