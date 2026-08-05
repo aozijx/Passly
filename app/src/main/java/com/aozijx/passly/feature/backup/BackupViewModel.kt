@@ -51,6 +51,7 @@ class BackupViewModel @Inject constructor(
         when (intent) {
             is BackupIntent.CheckDirectoryPermission -> checkDirectoryPermission(intent.uri)
             is BackupIntent.PrepareExport -> prepareExport(intent.format)
+            BackupIntent.PrepareRecoveryExport -> prepareRecoveryExport()
             is BackupIntent.StartExport -> startExport(
                 uri = intent.uri,
                 fileNameHint = intent.fileNameHint,
@@ -97,6 +98,7 @@ class BackupViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 isExporting = true,
+                isRecoveryExport = false,
                 selectedExportFormat = format,
                 backupUri = null,
                 backupPassword = "",
@@ -110,6 +112,11 @@ class BackupViewModel @Inject constructor(
                 error = null
             )
         }
+    }
+
+    private fun prepareRecoveryExport() {
+        prepareExport(BackupExportUiFormat.ENCRYPTED)
+        _uiState.update { it.copy(isRecoveryExport = true) }
     }
 
     private fun startExport(
@@ -133,7 +140,7 @@ class BackupViewModel @Inject constructor(
         if (!snapshot.isExporting || !snapshot.canSubmitExport) return
         viewModelScope.launch {
             if (!authenticate(
-                    AuthenticationPurpose.BACKUP_EXPORT,
+                    snapshot.exportAuthenticationPurpose(),
                     BackupOperation.EXPORT
                 )
             ) {
@@ -176,6 +183,7 @@ class BackupViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 isExporting = false,
+                isRecoveryExport = false,
                 backupUri = uri,
                 backupPassword = "",
                 importMode = com.aozijx.passly.domain.backup.model.ImportMode.APPEND,
@@ -217,7 +225,7 @@ class BackupViewModel @Inject constructor(
         if (snapshot.isExporting && !snapshot.canSubmitExport) return
         viewModelScope.launch {
             val purpose = if (snapshot.isExporting) {
-                AuthenticationPurpose.BACKUP_EXPORT
+                snapshot.exportAuthenticationPurpose()
             } else {
                 AuthenticationPurpose.BACKUP_IMPORT
             }
@@ -252,6 +260,17 @@ class BackupViewModel @Inject constructor(
         }
 
     private suspend fun performOperation(state: BackupUiState, targetUri: Uri) {
+        if (state.isRecoveryExport &&
+            (state.selectedExportFormat != BackupExportUiFormat.ENCRYPTED ||
+                    state.backupPassword.isBlank())
+        ) {
+            fail(
+                BackupFailed("恢复模式只能导出使用新备份密码加密的 Passly 备份"),
+                BackupOperation.EXPORT
+            )
+            clearPendingFields()
+            return
+        }
         _uiState.update { it.copy(status = BackupOperationStatus.Loading, error = null) }
         val password = state.backupPassword
             .takeIf(String::isNotEmpty)
@@ -342,7 +361,8 @@ class BackupViewModel @Inject constructor(
                 backupUri = null,
                 backupPassword = "",
                 pendingExportFileName = null,
-                deleteTargetOnFailure = false
+                deleteTargetOnFailure = false,
+                isRecoveryExport = false
             )
         }
     }
@@ -353,6 +373,13 @@ class BackupViewModel @Inject constructor(
 
     private fun BackupUiState.toOperation(): BackupOperation =
         if (isExporting) BackupOperation.EXPORT else BackupOperation.IMPORT
+
+    private fun BackupUiState.exportAuthenticationPurpose(): AuthenticationPurpose =
+        if (isRecoveryExport) {
+            AuthenticationPurpose.RECOVERY_EXPORT
+        } else {
+            AuthenticationPurpose.BACKUP_EXPORT
+        }
 
     private enum class BackupOperation {
         EXPORT,

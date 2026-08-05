@@ -28,6 +28,7 @@
     <string name="settings_section_other">其他</string>
     <string name="settings_section_security">安全</string>
     <string name="settings_title">设置</string>
+    <string name="settings_select_item_hint">选择设置项</string>
 
     <!-- Appearance -->
     <string name="settings_dynamic_color">动态取色</string>

@@ -104,8 +104,18 @@ class AuthenticationViewModel @Inject constructor(
     fun unlockWithRecoveryCode() {
         authenticate(
             method = AuthenticationMethod.RECOVERY_CODE,
-            credential = _uiState.value.recoveryCode.toCharArray()
+            credential = _uiState.value.recoveryCode.toCharArray(),
+            purpose = AuthenticationPurpose.RECOVER_AUTH_METHODS
         )
+    }
+
+    fun recoverBiometric(onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            onResult(
+                methodProvisioner.rotateBiometricPolicy(invalidateOnEnrollment = true) is
+                        AuthenticationResult.Success
+            )
+        }
     }
 
     fun onShowSetPasswordDialog() = _uiState.update {
@@ -174,7 +184,8 @@ class AuthenticationViewModel @Inject constructor(
 
     private fun authenticate(
         method: AuthenticationMethod,
-        credential: CharArray? = null
+        credential: CharArray? = null,
+        purpose: AuthenticationPurpose = AuthenticationPurpose.UNLOCK_VAULT
     ) {
         if (_uiState.value.activeMethod != null) {
             credential?.let(MemoryCleaner::wipeCharArray)
@@ -188,7 +199,7 @@ class AuthenticationViewModel @Inject constructor(
                 when (
                     val result = authenticationManager.authenticate(
                         AuthenticationRequest(
-                            purpose = AuthenticationPurpose.UNLOCK_VAULT,
+                            purpose = purpose,
                             allowedMethods = setOf(method)
                         ),
                         credential

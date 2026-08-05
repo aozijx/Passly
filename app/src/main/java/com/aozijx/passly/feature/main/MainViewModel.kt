@@ -59,6 +59,12 @@ class MainViewModel @Inject constructor(
                 }
             }
 
+            MainIntent.ExitRecovery -> {
+                viewModelScope.launch {
+                    authenticationManager.lock(LockReason.RECOVERY_EXIT)
+                }
+            }
+
             MainIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             MainIntent.RecoverDatabase -> recoverDatabase()
@@ -116,6 +122,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             authenticationManager.state.collect { state ->
                 val authorized = state is AuthenticationState.Authenticated
+                val recoveryMode = state is AuthenticationState.RecoveryMode
                 if (authorized) {
                     _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
 
@@ -138,10 +145,23 @@ class MainViewModel @Inject constructor(
                         rebuildSearchIndex()
                     }
 
-                    _uiState.update { it.copy(isAuthorized = true) }
+                    _uiState.update {
+                        it.copy(isAuthorized = true, isRecoveryMode = false)
+                    }
                     emitEffect(MainEffect.NavigateToVault)
+                } else if (recoveryMode) {
+                    _uiState.update {
+                        it.copy(
+                            isAuthorized = false,
+                            isRecoveryMode = true,
+                            isDatabaseInitializing = false,
+                            databaseError = null
+                        )
+                    }
                 } else {
-                    _uiState.update { it.copy(isAuthorized = false) }
+                    _uiState.update {
+                        it.copy(isAuthorized = false, isRecoveryMode = false)
+                    }
                 }
             }
         }

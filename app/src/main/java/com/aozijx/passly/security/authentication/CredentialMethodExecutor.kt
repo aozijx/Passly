@@ -71,6 +71,16 @@ class CredentialMethodExecutor @Inject constructor(
                             }
                         }
 
+                        AuthenticationPurpose.RECOVER_AUTH_METHODS,
+                        AuthenticationPurpose.RECOVERY_EXPORT -> {
+                            if (session.commitRecoveryUnlock(ownedDek, request.correlationId)) {
+                                attemptLimiter.recordSuccess(method)
+                                MethodExecutionResult.Success(method)
+                            } else {
+                                failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
+                            }
+                        }
+
                         AuthenticationPurpose.RECOVER_DATABASE -> {
                             if (session.stageDatabaseRecovery(type, ownedDek)) {
                                 attemptLimiter.recordSuccess(method)

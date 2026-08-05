@@ -198,9 +198,9 @@
     <string name="notification_channel_app_messages_summary">下载结果等状态栏信息</string>
 
     <!-- 恢复码 -->
-    <string name="auth_use_recovery_code">使用恢复码</string>
+    <string name="auth_use_recovery_code">进入恢复模式</string>
     <string name="auth_recovery_code_label">恢复码</string>
-    <string name="auth_recovery_code_unlock">解锁保险库</string>
+    <string name="auth_recovery_code_unlock">验证并进入恢复模式</string>
 
     <!-- 设置: 界面行为 -->
 
@@ -345,18 +345,29 @@
     <string name="continue_action">继续</string>
     <string name="auth_verify_identity">验证身份</string>
     <string name="auth_method_biometric">生物识别</string>
-    <string name="auth_method_recovery_code">使用恢复码</string>
+    <string name="auth_method_recovery_code">进入恢复模式</string>
     <string name="auth_biometric_subtitle">请验证身份以继续</string>
     <string name="auth_purpose_unlock_vault">解锁保险库</string>
     <string name="auth_purpose_autofill">验证后自动填充</string>
     <string name="auth_purpose_backup_export">验证后导出备份</string>
+    <string name="auth_purpose_recovery_export">使用恢复码导出加密备份</string>
     <string name="auth_purpose_backup_import">验证后导入备份</string>
     <string name="auth_purpose_export_diagnostics">验证后导出诊断</string>
     <string name="auth_purpose_recover_database">验证后保留故障库并创建新库</string>
+    <string name="auth_purpose_recover_auth_methods">使用恢复码恢复认证方式</string>
     <string name="auth_purpose_clear_database">验证后清除保险库数据</string>
     <string name="related_entries">关联条目</string>
     <string name="app_package_picker_title">选择关联应用</string>
     <string name="app_package_picker_search">搜索应用或包名</string>
     <string name="app_package_picker_action">选择应用</string>
     <string name="entry_type">条目类型</string>
+    <string name="recovery_mode_title">恢复模式</string>
+    <string name="recovery_mode_description">恢复码不会创建普通保险库会话。你只能重建主认证方式，或使用新的备份密码导出加密备份。</string>
+    <string name="recovery_mode_set_password">设置新的应用密码</string>
+    <string name="recovery_mode_reconfigure_biometric">重新配置生物识别</string>
+    <string name="recovery_mode_biometric_success">生物识别已重新配置。设置新的应用密码后可返回普通会话。</string>
+    <string name="recovery_mode_biometric_failed">无法重新配置生物识别</string>
+    <string name="recovery_mode_export">使用恢复码导出备份</string>
+    <string name="recovery_mode_export_failed">恢复备份导出失败</string>
+    <string name="recovery_mode_exit">退出并锁定</string>
 </resources>

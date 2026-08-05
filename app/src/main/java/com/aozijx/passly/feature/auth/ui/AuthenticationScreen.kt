@@ -140,7 +140,7 @@ fun AuthenticationScreen(
                 )
             }
 
-            if (!methods.biometric && !methods.appPassword) {
+            if (!methods.biometric && !methods.appPassword && !methods.recoveryCode) {
                 ActionButton(
                     icon = Icons.Default.Password,
                     text = stringResource(R.string.auth_set_app_password),

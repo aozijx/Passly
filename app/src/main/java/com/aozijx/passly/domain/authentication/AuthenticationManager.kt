@@ -36,5 +36,6 @@ interface VaultAccessState {
     val isAuthorized: Flow<Boolean>
         get() = authenticationState.map { it is AuthenticationState.Authenticated }
     fun isUnlocked(): Boolean
+    fun isRecoveryMode(): Boolean = authenticationState.value is AuthenticationState.RecoveryMode
     fun isLocked(): Boolean = !isUnlocked()
 }

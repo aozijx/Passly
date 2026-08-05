@@ -14,6 +14,9 @@ stateDiagram-v2
     AwaitingHost --> Authenticating: Host 可用
     Authenticating --> Unlocking: 凭据成功且需解封
     Unlocking --> Authenticated: DEK 与数据库会话就绪
+    Unlocking --> RecoveryMode: 恢复码验证成功
+    RecoveryMode --> Authenticated: 新应用密码设置成功
+    RecoveryMode --> Locking: 退出 / 超时 / 后台
     Authenticated --> Authenticating: 新鲜复验
     Authenticated --> Locking: 手动 / 超时 / 后台 / 完整性错误
     Locking --> Locked: 拒绝 lease、关库、擦除密钥
@@ -59,7 +62,28 @@ stateDiagram-v2
 - 明文由 Activity-retained `RecoveryCodeDraft` 持有，不进入 StateFlow、SavedStateHandle、Bundle 或磁盘。
 - SavedStateHandle 只保存 disclosure 标记和 generation ID。进程恢复但草稿不存在时显示
   “恢复码草稿已过期，请重新认证后生成”。
-- 恢复码只允许 `UnlockVault`，不参与备份加密；不存在“查看已有恢复码”。
+- 恢复码不再产生普通 `Authenticated` 会话。验证成功后进入受限 `RecoveryMode`：数据库可以为恢复任务打开，
+  但 `VaultAccessState.isAuthorized` 仍为 false，主 Vault、详情、查看和复制密码都不能挂载。
+- 恢复模式只允许设置新的应用密码、重新配置生物识别、`RECOVERY_EXPORT` 和退出锁定。设置新应用密码后才提升为
+  普通完整会话。
+- `RECOVERY_EXPORT` 只接受恢复码，并且只能输出要求新备份密码的 Passly 加密格式；恢复码不作为备份密码，也不能
+  放宽普通 `BACKUP_EXPORT`。
+- 不存在“查看已有恢复码”。
+
+## 认证目的边界
+
+| 目的                              | 生物识别 / 应用密码 | 恢复码                             |
+|---------------------------------|-------------|---------------------------------|
+| `UNLOCK_VAULT`                  | 允许          | 拒绝；恢复码改走 `RECOVER_AUTH_METHODS` |
+| `REVEAL_SECRET` / `COPY_SECRET` | 允许          | 拒绝                              |
+| `BACKUP_EXPORT`                 | 允许          | 拒绝                              |
+| `RECOVERY_EXPORT`               | 拒绝          | 允许，仅恢复模式内的加密导出                  |
+| `RECOVER_AUTH_METHODS`          | 拒绝          | 允许                              |
+| `RECOVER_DATABASE`              | 允许          | 允许                              |
+| `CLEAR_DATABASE`                | 允许          | 拒绝                              |
+
+`AuthenticationRequest.allowedMethods` 只能继续缩小上表，不能扩大。最终交集由认证中心的
+`allowedAuthenticationMethods` 计算，页面和 ViewModel 不复制认证方式映射。
 
 ## 生物识别策略轮换
 

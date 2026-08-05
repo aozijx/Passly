@@ -28,6 +28,7 @@
     <string name="settings_section_other">Other</string>
     <string name="settings_section_security">Security</string>
     <string name="settings_title">Settings</string>
+    <string name="settings_select_item_hint">Select an item</string>
 
     <!-- Appearance -->
     <string name="settings_dynamic_color">Dynamic Color</string>

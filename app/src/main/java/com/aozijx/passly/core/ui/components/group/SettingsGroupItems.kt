@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,17 +30,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 
 fun customSettingsItem(
     key: String,
     visible: Boolean = true,
     onClick: (() -> Unit)? = null,
     contentPadding: PaddingValues? = null,
+    containerColor: (@Composable () -> Color)? = null,
     leading: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
     trailing: @Composable RowScope.() -> Unit = {}
@@ -46,6 +48,7 @@ fun customSettingsItem(
     GroupCard(
         itemScope = itemScope,
         contentPadding = contentPadding ?: itemScope.contentPadding,
+        containerColor = containerColor?.invoke() ?: itemScope.containerColor,
         onClick = onClick
     ) {
         SettingsItemRow(leading = leading, content = content, trailing = trailing)
@@ -60,12 +63,18 @@ fun settingsGroupItem(
     title: String,
     subtitle: String? = null,
     isLoading: Boolean = false,
+    selected: Boolean = false,
     onClick: (() -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {}
 ): RoundedGroupItem = customSettingsItem(
     key = key,
     visible = visible,
     onClick = onClick,
+    containerColor = if (selected) {
+        { MaterialTheme.colorScheme.secondaryContainer }
+    } else {
+        null
+    },
     leading = icon.asLeadingContent(iconPlaceholder),
     content = {
         Text(
@@ -198,6 +207,7 @@ fun navigationSettingsGroupItem(
     subtitle: String? = null,
     value: String? = null,
     isLoading: Boolean = false,
+    selected: Boolean = false,
     onClick: () -> Unit
 ): RoundedGroupItem = settingsGroupItem(
     key = key,
@@ -207,6 +217,7 @@ fun navigationSettingsGroupItem(
     title = title,
     subtitle = subtitle,
     isLoading = isLoading,
+    selected = selected,
     onClick = onClick,
     trailing = {
         value?.takeIf(String::isNotBlank)?.let {

@@ -678,10 +678,14 @@ class MigrationBoundaryTest {
                 recoveryStore.indexOf("clearActiveDatabase(databaseFile)")
         )
         assertTrue(
-            "Recovery code must remain available when Room cannot open",
+            "Recovery code must remain available for damaged database recovery only",
             "AuthenticationPurpose.RECOVER_DATABASE" in authenticationManager &&
-                "AuthenticationPurpose.CLEAR_DATABASE -> AuthenticationMethod.entries.toSet()" in
+                    "AuthenticationPurpose.RECOVER_DATABASE -> AuthenticationMethod.entries.toSet()" in
                 authenticationManager
+        )
+        assertTrue(
+            "Permanent database deletion must reject the recovery code",
+            "AuthenticationPurpose.CLEAR_DATABASE -> PRIMARY_METHODS" in authenticationManager
         )
         assertTrue(
             "Cold-start recovery must stage the DEK without opening the broken database",

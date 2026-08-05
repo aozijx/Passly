@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.shell
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -20,11 +21,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
@@ -35,11 +36,12 @@ import com.aozijx.passly.feature.settings.navigation.SettingsRoute
 @Composable
 internal fun SettingsMainPage(
     onBack: () -> Unit,
-    onGroupClick: (SettingsRoute) -> Unit
+    onGroupClick: (SettingsRoute) -> Unit,
+    selectedRouteKey: String? = null,
+    modifier: Modifier = Modifier
 ) {
-    val adaptiveLayout = LocalPasslyAdaptiveLayout.current
-
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -65,12 +67,12 @@ internal fun SettingsMainPage(
     ) { innerPadding ->
         val sections = SettingsGroup.entries.groupBy { it.sectionTitleRes }.toList()
         LazyVerticalGrid(
-            columns = GridCells.Fixed(if (adaptiveLayout.isExpanded) 2 else 1),
+            columns = GridCells.Fixed(1),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                start = if (adaptiveLayout.isAtLeastMedium) 32.dp else 16.dp,
+                start = 16.dp,
                 top = innerPadding.calculateTopPadding() + 8.dp,
-                end = if (adaptiveLayout.isAtLeastMedium) 32.dp else 16.dp,
+                end = 16.dp,
                 bottom = innerPadding.calculateBottomPadding() + 16.dp
             ),
             horizontalArrangement = Arrangement.spacedBy(20.dp),
@@ -86,6 +88,7 @@ internal fun SettingsMainPage(
                                 icon = group.icon,
                                 title = stringResource(group.titleRes),
                                 subtitle = stringResource(group.subtitleRes),
+                                selected = group.route.route == selectedRouteKey,
                                 onClick = { onGroupClick(group.route) }
                             )
                         }
@@ -94,5 +97,22 @@ internal fun SettingsMainPage(
                 }
             }
         }
+    }
+}
+
+/**
+ * 双栏模式下右侧详情栏尚未选中任何设置项时的占位提示。
+ */
+@Composable
+internal fun SettingsDetailPlaceholder() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(com.aozijx.passly.R.string.settings_select_item_hint),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

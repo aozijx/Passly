@@ -21,12 +21,14 @@ import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
+import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.main.MainConfigViewModel
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.message.AppNoticeHostViewModel
+import com.aozijx.passly.feature.recovery.RecoveryModeScreen
 
 @Composable
 internal fun MainScreen(
@@ -50,6 +52,7 @@ internal fun MainScreen(
     val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
 
     val authenticationViewModel: AuthenticationViewModel = hiltViewModel()
+    val backupViewModel: BackupViewModel = hiltViewModel()
     val messageHostViewModel: AppNoticeHostViewModel = hiltViewModel()
 
     LaunchedEffect(messageHostViewModel) {
@@ -79,6 +82,7 @@ internal fun MainScreen(
         targetState = when {
             mainUiState.databaseError != null -> "error"
             mainUiState.isAuthorized -> "main"
+            mainUiState.isRecoveryMode -> "recovery"
             else -> "verification"
         },
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
@@ -109,6 +113,14 @@ internal fun MainScreen(
             "main" -> {
                 AppMainContent(
                     mainViewModel = viewModel
+                )
+            }
+
+            "recovery" -> {
+                RecoveryModeScreen(
+                    authenticationViewModel = authenticationViewModel,
+                    backupViewModel = backupViewModel,
+                    onExit = { viewModel.handleIntent(MainIntent.ExitRecovery) }
                 )
             }
 

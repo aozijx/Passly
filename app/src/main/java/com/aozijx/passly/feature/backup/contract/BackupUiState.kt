@@ -16,6 +16,7 @@ data class BackupUiState(
     val status: BackupOperationStatus = BackupOperationStatus.Idle,
     val error: AppError? = null,
     val isExporting: Boolean = false,
+    val isRecoveryExport: Boolean = false,
     val backupUri: Uri? = null,
     val backupPassword: String = "",
     val importMode: ImportMode = ImportMode.APPEND,
@@ -29,5 +30,8 @@ data class BackupUiState(
 ) {
     val canSubmitExport: Boolean
         get() = includedEntryTypes.isNotEmpty() &&
-            (!selectedExportFormat.requiresPassword || backupPassword.isNotBlank())
+                (!selectedExportFormat.requiresPassword || backupPassword.isNotBlank()) &&
+                (!isRecoveryExport ||
+                        selectedExportFormat == BackupExportUiFormat.ENCRYPTED &&
+                        backupPassword.isNotBlank())
 }

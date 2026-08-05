@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.settings.model.ThemeMode
 
 data class MainUiState(
     val isAuthorized: Boolean = false,
+    val isRecoveryMode: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isDynamicColor: Boolean = true,
     val manualThemeColorArgb: Long? = null,

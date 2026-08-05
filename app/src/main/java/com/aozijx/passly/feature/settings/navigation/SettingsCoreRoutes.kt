@@ -25,6 +25,7 @@ import com.aozijx.passly.feature.settings.security.handleBiometricToggle
 import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
 import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
 import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
+import com.aozijx.passly.feature.settings.shell.SettingsDetailPlaceholder
 import com.aozijx.passly.feature.settings.shell.SettingsMainPage
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
@@ -35,8 +36,10 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     localState: SettingsScreenLocalState,
     settingsViewModel: SettingsViewModel,
     onOuterBack: () -> Unit,
+    onGroupClick: (SettingsRoute) -> Unit,
     authDecryptTitle: String,
-    setAppPasswordSubtitle: String
+    setAppPasswordSubtitle: String,
+    isTwoPane: Boolean
 ) {
     composable(
         route = SettingsRoute.Main.route,
@@ -45,10 +48,14 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
         popEnterTransition = { null },
         popExitTransition = { null }
     ) {
-        SettingsMainPage(
-            onBack = onOuterBack,
-            onGroupClick = { navController.navigate(it.route) }
-        )
+        if (isTwoPane) {
+            SettingsDetailPlaceholder()
+        } else {
+            SettingsMainPage(
+                onBack = onOuterBack,
+                onGroupClick = onGroupClick
+            )
+        }
     }
 
     composable(SettingsRoute.Security.route) {

@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
+import com.aozijx.passly.domain.authentication.AuthenticationMethodPolicy
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationRequestHandle
@@ -81,7 +82,7 @@ class DefaultAuthenticationManager @Inject constructor(
      * 复制请求是否重新认证只由全局复制验证开关控制。
      */
     private suspend fun requiresFreshAuthentication(purpose: AuthenticationPurpose): Boolean =
-        authenticationRequiresFresh(
+        AuthenticationMethodPolicy.requiresFreshAuthentication(
             purpose = purpose,
             reauthenticateSensitiveCopies = if (purpose == AuthenticationPurpose.COPY_SECRET) {
                 settingsRepository.settings.first()
@@ -90,21 +91,6 @@ class DefaultAuthenticationManager @Inject constructor(
                 true
             }
         )
-
-    /**
-     * 指定目的允许的认证方式。
-     *
-     * - RECOVERY_CODE 仅限 UNLOCK_VAULT
-     * - RECOVER_DATABASE / CLEAR_DATABASE 允许恢复码，确保数据库不可用时仍有恢复路径
-     * - 其他非解锁目的仅限 BIOMETRIC 和 APP_PASSWORD
-     */
-    private fun allowedMethods(purpose: AuthenticationPurpose): Set<AuthenticationMethod> =
-        when (purpose) {
-            AuthenticationPurpose.UNLOCK_VAULT,
-            AuthenticationPurpose.RECOVER_DATABASE,
-            AuthenticationPurpose.CLEAR_DATABASE -> AuthenticationMethod.entries.toSet()
-            else -> setOf(AuthenticationMethod.BIOMETRIC, AuthenticationMethod.APP_PASSWORD)
-        }
 
     // ============================== 认证 ==============================
 
@@ -121,11 +107,37 @@ class DefaultAuthenticationManager @Inject constructor(
             )
         }
         activeCorrelationId.set(request.correlationId)
+        val previousState = session.authenticationState.value
         val wasUnlocked = session.isUnlocked()
-        val isFullUnlock = request.purpose == AuthenticationPurpose.UNLOCK_VAULT
+        val wasRecoveryMode = session.isRecoveryMode()
+        val opensSession = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
+            request.purpose == AuthenticationPurpose.RECOVER_AUTH_METHODS ||
+            request.purpose == AuthenticationPurpose.RECOVERY_EXPORT
         try {
+            if (wasRecoveryMode && request.purpose !in AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES) {
+                return finish(
+                    request,
+                    AuthenticationResult.Failure(
+                        AuthenticationFailure(
+                            AuthenticationFailureCode.SESSION_MODE_RESTRICTED,
+                            request.correlationId
+                        )
+                    )
+                )
+            }
+            // A recovery-code verification has already established this restricted session.
+            // Allow only its narrowly scoped actions to reuse it.
+            if (wasRecoveryMode && request.purpose in AuthenticationMethodPolicy.RECOVERY_MODE_REUSABLE_PURPOSES) {
+                session.onUserInteraction()
+                return AuthenticationResult.Success(
+                    method = AuthenticationMethod.RECOVERY_CODE,
+                    reusedSession = true
+                )
+            }
             // 策略决策：是否可复用会话
-            if (wasUnlocked && !requiresFreshAuthentication(request.purpose)) {
+            if (wasUnlocked && !wasRecoveryMode &&
+                !requiresFreshAuthentication(request.purpose)
+            ) {
                 session.onUserInteraction()
                 // 返回上一次认证方式，而非硬编码 BIOMETRIC
                 return AuthenticationResult.Success(
@@ -134,7 +146,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 )
             }
             refreshAvailability()
-            if (isFullUnlock) {
+            if (opensSession) {
                 session.transition(AuthenticationState.AwaitingHost(request.correlationId))
             }
             val lease = hostRegistry.awaitLease() ?: return finish(
@@ -145,15 +157,15 @@ class DefaultAuthenticationManager @Inject constructor(
                         request.correlationId
                     )
                 )
-            ).also { if (isFullUnlock) restoreState(wasUnlocked) }
+            ).also { if (opensSession) restoreState(previousState) }
             // 策略决策：根据目的确定可用的认证方式。
             // 调用者的 allowedMethods 只能缩小范围，不能扩权。
-            val authorizedByPurpose = allowedMethods(request.purpose)
+            val authorizedByPurpose = AuthenticationMethodPolicy.allowedAuthenticationMethods(request.purpose)
             val available = request.allowedMethods
                 .intersect(authorizedByPurpose)
                 .filter(_methods.value::available)
             if (available.isEmpty()) {
-                if (isFullUnlock) restoreState(wasUnlocked)
+                if (opensSession) restoreState(previousState)
                 return finish(
                     request,
                     AuthenticationResult.Failure(
@@ -165,7 +177,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 )
             }
             val host = lease.hostOrNull() ?: run {
-                if (isFullUnlock) restoreState(wasUnlocked)
+                if (opensSession) restoreState(previousState)
                 return finish(
                     request,
                     AuthenticationResult.Failure(
@@ -181,12 +193,12 @@ class DefaultAuthenticationManager @Inject constructor(
                 AuthenticationMethod.BIOMETRIC in available -> AuthenticationMethod.BIOMETRIC
                 else -> host.chooseMethod(request.purpose, available)
                     ?: run {
-                        if (isFullUnlock) restoreState(wasUnlocked)
+                        if (opensSession) restoreState(previousState)
                         return finish(request, AuthenticationResult.Cancelled(byUser = true))
                     }
             }
             if (!hostRegistry.isCurrent(lease)) {
-                if (isFullUnlock) restoreState(wasUnlocked)
+                if (opensSession) restoreState(previousState)
                 return finish(
                     request,
                     AuthenticationResult.Failure(
@@ -197,7 +209,7 @@ class DefaultAuthenticationManager @Inject constructor(
                     )
                 )
             }
-            if (isFullUnlock) {
+            if (opensSession) {
                 session.transition(
                     AuthenticationState.Authenticating(
                         request.correlationId,
@@ -217,25 +229,25 @@ class DefaultAuthenticationManager @Inject constructor(
             }
             val result = when (execution) {
                 is MethodExecutionResult.Success -> {
-                    if (!isFullUnlock) session.onUserInteraction()
+                    if (!opensSession) session.onUserInteraction()
                     lastAuthMethod = execution.method
                     AuthenticationResult.Success(execution.method)
                 }
                 is MethodExecutionResult.Cancelled -> {
-                    if (isFullUnlock) restoreState(wasUnlocked)
+                    if (opensSession) restoreState(previousState)
                     AuthenticationResult.Cancelled(execution.byUser)
                 }
                 is MethodExecutionResult.Failure -> {
-                    if (isFullUnlock) restoreState(wasUnlocked)
+                    if (opensSession) restoreState(previousState)
                     AuthenticationResult.Failure(execution.failure)
                 }
             }
             return finish(request, result)
         } catch (cancelled: CancellationException) {
-            if (isFullUnlock) restoreState(wasUnlocked)
+            if (opensSession) restoreState(previousState)
             throw cancelled
         } catch (failure: Throwable) {
-            if (isFullUnlock) restoreState(wasUnlocked)
+            if (opensSession) restoreState(previousState)
             return finish(
                 request,
                 AuthenticationResult.Failure(
@@ -287,15 +299,22 @@ class DefaultAuthenticationManager @Inject constructor(
         return AuthenticationSnapshot(
             state = current,
             activeCorrelationId = activeCorrelationId.get(),
-            authenticatedAtMs = (current as? AuthenticationState.Authenticated)?.authenticatedAtMs
+            authenticatedAtMs = when (current) {
+                is AuthenticationState.Authenticated -> current.authenticatedAtMs
+                is AuthenticationState.RecoveryMode -> current.authenticatedAtMs
+                else -> null
+            }
         )
     }
 
     override fun onUserInteraction() = session.onUserInteraction()
 
-    private suspend fun restoreState(wasUnlocked: Boolean) {
-        if (wasUnlocked) session.markAuthenticated()
-        else session.transition(AuthenticationState.Locked)
+    private suspend fun restoreState(previousState: AuthenticationState) {
+        when (previousState) {
+            is AuthenticationState.Authenticated -> session.markAuthenticated()
+            is AuthenticationState.RecoveryMode -> session.markRecoveryMode()
+            else -> session.transition(AuthenticationState.Locked)
+        }
     }
 
     private fun finish(
@@ -313,16 +332,4 @@ class DefaultAuthenticationManager @Inject constructor(
         }
         return result
     }
-}
-
-internal fun authenticationRequiresFresh(
-    purpose: AuthenticationPurpose,
-    reauthenticateSensitiveCopies: Boolean
-): Boolean = when (purpose) {
-    AuthenticationPurpose.UNLOCK_VAULT,
-    AuthenticationPurpose.REVEAL_SECRET -> false
-
-    AuthenticationPurpose.COPY_SECRET -> reauthenticateSensitiveCopies
-    AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET -> true
-    else -> true
 }

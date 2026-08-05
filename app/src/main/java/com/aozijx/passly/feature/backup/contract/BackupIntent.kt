@@ -10,6 +10,9 @@ sealed interface BackupIntent {
 
     data class PrepareExport(val format: BackupExportUiFormat) : BackupIntent
 
+    /** Prepare the recovery-code-only path. This always exports encrypted Passly format. */
+    data object PrepareRecoveryExport : BackupIntent
+
     data class StartExport(
         val uri: Uri,
         val fileNameHint: String? = null,

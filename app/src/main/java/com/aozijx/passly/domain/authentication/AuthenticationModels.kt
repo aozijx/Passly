@@ -20,9 +20,15 @@ enum class AuthenticationPurpose {
     COPY_SECRET,
     DELETE_ENTRY,
     BACKUP_EXPORT,
+
+    /** Recovery-code-only encrypted export from the restricted recovery session. */
+    RECOVERY_EXPORT,
     BACKUP_IMPORT,
     MANAGE_APP_PASSWORD,
     MANAGE_RECOVERY_CODE,
+
+    /** Enter the restricted flow used to rebuild the primary authentication methods. */
+    RECOVER_AUTH_METHODS,
     CHANGE_BIOMETRIC_POLICY,
     EXPORT_DIAGNOSTICS,
     RECOVER_DATABASE,
@@ -55,6 +61,14 @@ sealed interface AuthenticationState {
     ) : AuthenticationState
     data class Unlocking(val correlationId: String) : AuthenticationState
     data class Authenticated(val authenticatedAtMs: Long) : AuthenticationState
+
+    /**
+     * The database is open, but normal Vault reads are not authorized.
+     *
+     * This state can only be entered by a recovery code and is intentionally distinct from
+     * [Authenticated] so recovery never becomes a second everyday unlock method.
+     */
+    data class RecoveryMode(val authenticatedAtMs: Long) : AuthenticationState
     data class Locking(val reason: LockReason) : AuthenticationState
 }
 
@@ -92,6 +106,7 @@ enum class AuthenticationFailureCode {
     ENVELOPE_CORRUPTED,
     LAST_METHOD_REQUIRED,
     RATE_LIMITED,
+    SESSION_MODE_RESTRICTED,
     SESSION_TRANSITION_FAILED
 }
 
@@ -115,6 +130,7 @@ enum class LockReason {
     IDLE_TIMEOUT,
     AUTOFILL_REQUEST_FINISHED,
     BACKGROUND,
+    RECOVERY_EXIT,
     INTEGRITY_FAILURE,
     APP_EXIT,
 }

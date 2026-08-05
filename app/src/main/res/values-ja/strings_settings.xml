@@ -28,6 +28,7 @@
     <string name="settings_section_other">その他</string>
     <string name="settings_section_security">セキュリティ</string>
     <string name="settings_title">設定</string>
+    <string name="settings_select_item_hint">項目を選択</string>
 
     <!-- Appearance -->
     <string name="settings_dynamic_color">ダイナミックカラー</string>
