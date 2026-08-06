@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.list
 
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
+import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -24,25 +24,21 @@ internal class VaultQueryCoordinator(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeItems(
         debouncedSearchQuery: Flow<String>,
-        normalizedSelectedEntryTypeName: Flow<String?>,
         refreshTrigger: Flow<Long>
     ): Flow<List<EntryListItem>> = combine(
         debouncedSearchQuery,
-        normalizedSelectedEntryTypeName,
         refreshTrigger
-    ) { query, entryTypeName, refreshId ->
-        QueryParams(query = query, entryTypeName = entryTypeName, refreshId = refreshId)
+    ) { query, refreshId ->
+        QueryParams(query = query, refreshId = refreshId)
     }.distinctUntilChanged().flatMapLatest { params ->
         entryListQueryRepository.observe(
             query = params.query,
-            entryTypeName = params.entryTypeName,
             filter = EntryFilter.ALL
         )
     }
 
     private data class QueryParams(
         val query: String,
-        val entryTypeName: String?,
         val refreshId: Long
     )
 }

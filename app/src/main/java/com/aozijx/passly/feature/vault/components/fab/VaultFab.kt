@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.presentation.labelRes
 
 @Composable
 fun VaultFab(
@@ -115,7 +116,7 @@ fun VaultFab(
                     FabMenuItemWithSpring(
                         visible = showFabMenu,
                         label = stringResource(type.labelRes),
-                        icon = type.icon,
+                        icon = type.icon(),
                         onClick = {
                             showFabMenu = false
                             onAddTypeSelected(type)
@@ -195,7 +196,9 @@ fun FabMenuItemWithSpring(
 
 @Composable
 fun FabMenuItem(
-    label: String, icon: ImageVector, onClick: () -> Unit
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,

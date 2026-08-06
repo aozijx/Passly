@@ -193,13 +193,8 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     onGroupContentPaddingChange = {
                         viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(it))
                     },
-                    onVisibleVaultTabsChange = {
-                        viewModel.onAction(InterfaceSettingsAction.SetVisibleVaultTabs(it))
-                    },
-                    onTabBarMaxTabsWithoutScrollChange = {
-                        viewModel.onAction(
-                            InterfaceSettingsAction.SetMaxTabsWithoutScroll(it)
-                        )
+                    onVisibleVaultTabToggle = {
+                        viewModel.onAction(InterfaceSettingsAction.ToggleVisibleVaultTab(it))
                     },
                     onEntryHierarchyDisplayModeChange = {
                         viewModel.onAction(

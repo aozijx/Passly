@@ -109,7 +109,6 @@ data class InteractionSettings(
 // ============================================================
 
 data class VaultViewSettings(
-    val maxTabsWithoutScroll: Int = 4,
     val visibleTabs: VisibleTabsConfig? = null,
     val sort: VaultSortSpec = VaultSortSpec.DEFAULT,
     val entryCardPresentations: List<EntryCardPresentation> = emptyList(),

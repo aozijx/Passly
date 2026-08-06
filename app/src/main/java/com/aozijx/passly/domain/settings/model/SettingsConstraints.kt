@@ -7,11 +7,6 @@ object LockTimeoutConstraints {
     const val SLIDER_STEP_MS = 5_000L
 }
 
-object TabLayoutConstraints {
-    const val MIN_TABS_WITHOUT_SCROLL = 2
-    const val MAX_TABS_WITHOUT_SCROLL = 8
-}
-
 object InterfaceStyleConstraints {
     const val MIN_OUTER_RADIUS_DP = 0f
     const val MAX_OUTER_RADIUS_DP = 48f

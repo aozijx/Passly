@@ -22,8 +22,7 @@ class VaultDisplayViewModel @Inject constructor(
                 layout = VaultLayoutConfig(
                     hideSystemBars = settings.interfacePrefs.hideSystemBars,
                     collapseTopBarOnScroll = settings.interfacePrefs.collapseTopBarOnScroll,
-                    collapseTabBarOnScroll = settings.interfacePrefs.collapseTabBarOnScroll,
-                    tabBarMaxTabsWithoutScroll = settings.vault.maxTabsWithoutScroll
+                    collapseTabBarOnScroll = settings.interfacePrefs.collapseTabBarOnScroll
                 ),
                 style = VaultStyleConfig(
                     entryCardPresentations = settings.vault.entryCardPresentations,

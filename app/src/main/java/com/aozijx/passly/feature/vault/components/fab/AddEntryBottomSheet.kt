@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.presentation.labelRes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +83,7 @@ private fun AddTypeRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = type.icon,
+            imageVector = type.icon(),
             contentDescription = null,
             modifier = Modifier.size(24.dp),
             tint = MaterialTheme.colorScheme.onSurface

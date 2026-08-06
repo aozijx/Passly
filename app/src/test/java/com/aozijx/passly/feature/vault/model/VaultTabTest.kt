@@ -8,9 +8,9 @@ import org.junit.Test
 class VaultTabTest {
 
     @Test
-    fun defaultsShowEverySupportedTab() {
+    fun defaultsOnlyShowRequiredTabs() {
         assertEquals(
-            VaultTab.entries.map(VaultTab::settingsKey).toSet(),
+            setOf(VaultTab.ALL.settingsKey),
             VaultTab.defaultVisibleKeys
         )
     }
@@ -19,5 +19,22 @@ class VaultTabTest {
     fun allTabCannotBeRemovedBySettings() {
         assertFalse(VaultTab.ALL.isToggleable)
         assertTrue(VaultTab.ALL in VaultTab.resolveVisible(emptySet()))
+    }
+
+    @Test
+    fun toggleVisibleKeyKeepsRequiredTabsAndTogglesSelectedTab() {
+        val withPasswords = VaultTab.toggleVisibleKey(
+            enabledKeys = VaultTab.defaultVisibleKeys,
+            tab = VaultTab.PASSWORDS
+        )
+
+        assertEquals(setOf("all", "passwords"), withPasswords)
+
+        val withoutPasswords = VaultTab.toggleVisibleKey(
+            enabledKeys = withPasswords,
+            tab = VaultTab.PASSWORDS
+        )
+
+        assertEquals(setOf("all"), withoutPasswords)
     }
 }

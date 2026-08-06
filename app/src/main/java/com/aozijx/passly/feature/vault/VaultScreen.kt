@@ -4,11 +4,15 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -32,7 +36,7 @@ import com.aozijx.passly.feature.vault.action.rememberVaultActionProvider
 import com.aozijx.passly.feature.vault.components.dialog.VaultDialogs
 import com.aozijx.passly.feature.vault.components.fab.VaultFab
 import com.aozijx.passly.feature.vault.components.list.VaultPagerContent
-import com.aozijx.passly.feature.vault.components.topbar.VaultContentTopBar
+import com.aozijx.passly.feature.vault.components.topbar.VaultTopBar
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.display.VaultDisplayViewModel
 import com.aozijx.passly.feature.vault.model.AddType
@@ -161,26 +165,32 @@ fun VaultContent(
             )
             .nestedScroll(actionProvider.fabScrollConnection),
         topBar = {
-            VaultContentTopBar(
-                uiState = uiState,
-                selectedTabIndex = pagerState.currentPage,
-                maxTabsWithoutScroll = vaultDisplayConfig.layout.tabBarMaxTabsWithoutScroll,
-                scrollBehavior = scrollBehavior,
-                onSettingsClick = onSettingsClick,
-                isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
-                isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
-                isTabBarCollapsible = vaultDisplayConfig.layout.collapseTabBarOnScroll,
-                isDatabaseInitializing = isDatabaseInitializing,
-                onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
-                onToggleSearch = { vaultViewModel.toggleSearch(it) },
-                onClearEntryType = { vaultViewModel.clearSelectedEntryType() },
-                onClearCategory = { vaultViewModel.clearSelectedCategory() },
-                onToggleTotpVisibility = { vaultViewModel.toggleShowTOTPCode() },
-                onEntryTypeSelected = { vaultViewModel.setSelectedEntryType(it) },
-                onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
-                onSortSelected = { vaultViewModel.selectSortOption(it) },
-                onSelectTab = { vaultViewModel.selectTab(it) }
-            )
+            Column {
+                VaultTopBar(
+                    uiState = uiState,
+                    selectedTabIndex = pagerState.currentPage,
+                    scrollBehavior = scrollBehavior,
+                    onSettingsClick = onSettingsClick,
+                    isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
+                    isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
+                    isTabBarCollapsible = vaultDisplayConfig.layout.collapseTabBarOnScroll,
+                    onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
+                    onToggleSearch = { vaultViewModel.toggleSearch(it) },
+                    onClearCategory = { vaultViewModel.clearSelectedCategory() },
+                    onToggleTotpVisibility = { vaultViewModel.toggleShowTOTPCode() },
+                    onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
+                    onSortSelected = { vaultViewModel.selectSortOption(it) },
+                    onSelectTab = { vaultViewModel.selectTab(it) }
+                )
+
+                if (uiState.isVaultItemsLoading || isDatabaseInitializing) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+            }
         },
         floatingActionButton = {
             VaultFab(

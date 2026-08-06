@@ -400,7 +400,6 @@ class ProtoAppSettingsRepository @Inject constructor(
 
     private fun readVault(p: VaultViewPreferences): VaultViewSettings {
         return VaultViewSettings(
-            maxTabsWithoutScroll = p.maxTabsWithoutScroll,
             visibleTabs = if (p.hasVisibleTabs()) {
                 VisibleTabsConfig(
                     tabKeys = p.visibleTabs.tabKeysList.toSet(),
@@ -686,12 +685,6 @@ class ProtoAppSettingsRepository @Inject constructor(
                 }
 
                 // ==================== Vault ====================
-                is SettingsCommand.SetMaxTabsWithoutScroll -> {
-                    val vb = proto.vaultView.toBuilder()
-                    vb.maxTabsWithoutScroll = command.maxTabs.coerceIn(2, 8)
-                    b.setVaultView(vb)
-                }
-
                 is SettingsCommand.SetVisibleVaultTabs -> {
                     val vb = proto.vaultView.toBuilder()
                     vb.visibleTabs = VisibleTabs.newBuilder()

@@ -20,34 +20,25 @@ class VaultQueryCoordinatorTest {
 
         coordinator.observeItems(
             debouncedSearchQuery = flowOf("query"),
-            normalizedSelectedEntryTypeName = flowOf("LOGIN"),
             refreshTrigger = flowOf(1L)
         ).first()
 
         assertEquals(EntryFilter.ALL, repository.lastFilter)
         assertEquals("query", repository.lastQuery)
-        assertEquals("LOGIN", repository.lastEntryTypeName)
     }
 
     private class RecordingRepository : EntryListQueryRepository {
-        override val allEntryTypes: Flow<List<String>> = emptyFlow()
         override val deletedEntries: Flow<List<EntryListItem>> = emptyFlow()
         var lastQuery: String? = null
-        var lastEntryTypeName: String? = null
         var lastFilter: EntryFilter? = null
 
         override fun observe(
             query: String,
-            entryTypeName: String?,
             filter: EntryFilter
         ): Flow<List<EntryListItem>> {
             lastQuery = query
-            lastEntryTypeName = entryTypeName
             lastFilter = filter
             return flowOf(emptyList())
         }
-
-        override fun observeEntryTypes(filter: EntryFilter): Flow<List<String>> =
-            emptyFlow()
     }
 }

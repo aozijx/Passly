@@ -54,7 +54,6 @@ class ProtoSerializerTest {
         assertTrue(defaults.interaction.autofill.requireAuthentication)
         assertFalse(defaults.interaction.autofill.allowUnmatchedSuggestions)
         assertEquals(5, defaults.interaction.autofill.maxSuggestions)
-        assertEquals(4, defaults.vaultView.maxTabsWithoutScroll)
         assertFalse(defaults.hasMessage())
     }
 

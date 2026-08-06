@@ -37,7 +37,6 @@ import com.aozijx.passly.domain.settings.model.VaultSortSpec
 internal fun MainMenuContent(
     onSortClick: () -> Unit,
     onCategoryFilterClick: () -> Unit,
-    onEntryTypeFilterClick: () -> Unit,
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onDismissRequest: () -> Unit,
@@ -51,11 +50,6 @@ internal fun MainMenuContent(
     DropdownMenuItem(
         text = { Text(stringResource(R.string.vault_menu_filter)) },
         onClick = onCategoryFilterClick,
-        leadingIcon = { Icon(Icons.Default.FilterList, null) }
-    )
-    DropdownMenuItem(
-        text = { Text(stringResource(R.string.vault_menu_entry_type_filter)) },
-        onClick = onEntryTypeFilterClick,
         leadingIcon = { Icon(Icons.Default.FilterList, null) }
     )
     DropdownMenuItem(

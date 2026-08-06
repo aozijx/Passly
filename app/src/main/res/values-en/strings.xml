@@ -68,9 +68,6 @@
 
     <!-- Vault - other strings -->
     <string name="vault_search_placeholder">Search vault items…</string>
-    <string name="vault_title_entry_type">Entry type: %s</string>
-    <string name="vault_search_entry_type">Search entry types</string>
-    <string name="vault_search_entry_type_hint">Search entry types…</string>
     <string name="vault_title_default">Secure Vault</string>
     <string name="vault_clear_filter">Clear filter</string>
     <string name="vault_menu_filter">Filter by category</string>

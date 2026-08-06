@@ -34,7 +34,6 @@ class VaultListCoordinatorTest {
             scope = scope,
             queryCoordinator = VaultQueryCoordinator(repository),
             searchFilter = searchFilter,
-            entryListQueryRepository = repository,
             refreshTrigger = flowOf(0L)
         )
 
@@ -51,7 +50,6 @@ class VaultListCoordinatorTest {
                 .filter { it.itemsByTab.getValue(VaultTab.ALL).size == 1 }
                 .first()
             assertEquals("Mail", filtered.itemsByTab.getValue(VaultTab.ALL).single().title)
-            assertEquals(null, repository.lastEntryTypeName)
         } finally {
             scope.cancel()
         }
@@ -59,21 +57,14 @@ class VaultListCoordinatorTest {
 
     private class StaticRepository(items: List<EntryListItem>) : EntryListQueryRepository {
         private val itemsFlow = MutableStateFlow(items)
-        override val allEntryTypes: Flow<List<String>> = emptyFlow()
         override val deletedEntries: Flow<List<EntryListItem>> = emptyFlow()
-        var lastEntryTypeName: String? = null
 
         override fun observe(
             query: String,
-            entryTypeName: String?,
             filter: EntryFilter
         ): Flow<List<EntryListItem>> {
-            lastEntryTypeName = entryTypeName
             return itemsFlow
         }
-
-        override fun observeEntryTypes(filter: EntryFilter): Flow<List<String>> =
-            flowOf(listOf(EntryType.LOGIN.name))
     }
 
     private fun item(

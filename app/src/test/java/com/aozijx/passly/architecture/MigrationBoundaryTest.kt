@@ -321,6 +321,36 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun vaultTabModelDoesNotOwnUiPresentation() {
+        val vaultTab = File(
+            "src/main/java/com/aozijx/passly/feature/vault/model/VaultTab.kt"
+        ).readText()
+
+        assertTrue(
+            "VaultTab must stay a pure filtering/settings model",
+            "androidx.compose" !in vaultTab &&
+                    "com.aozijx.passly.R" !in vaultTab &&
+                    "ImageVector" !in vaultTab &&
+                    "titleRes" !in vaultTab
+        )
+    }
+
+    @Test
+    fun addTypeModelDoesNotOwnUiPresentation() {
+        val addType = File(
+            "src/main/java/com/aozijx/passly/feature/vault/model/AddType.kt"
+        ).readText()
+
+        assertTrue(
+            "AddType must stay a pure creation-type model",
+            "androidx.compose" !in addType &&
+                    "com.aozijx.passly.R" !in addType &&
+                    "ImageVector" !in addType &&
+                    "labelRes" !in addType
+        )
+    }
+
+    @Test
     fun recoveryCodeCreationUsesFreshIdentityVerification() {
         val recoveryDraftViewModel = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/RecoveryDraftViewModel.kt"

@@ -8,7 +8,6 @@ data class VaultLayoutConfig(
     val hideSystemBars: Boolean = false,
     val collapseTopBarOnScroll: Boolean = false,
     val collapseTabBarOnScroll: Boolean = false,
-    val tabBarMaxTabsWithoutScroll: Int = 4,
 )
 
 data class VaultStyleConfig(

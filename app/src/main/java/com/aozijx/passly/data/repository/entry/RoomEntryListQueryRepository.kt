@@ -53,18 +53,8 @@ class RoomEntryListQueryRepository @Inject constructor(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val allEntryTypes: Flow<List<String>> = sessionState.isAuthorized
-        .flatMapLatest { authorized ->
-            if (!authorized) flowOf(emptyList())
-            else sessionManager.observeFlow {
-                entryQueryDao().observeDistinctActiveEntryTypes()
-                    .map { types -> types.map { it.name } }
-            }
-        }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observe(
-        query: String, entryTypeName: String?, filter: EntryFilter
+        query: String, filter: EntryFilter
     ): Flow<List<EntryListItem>> = sessionState.isAuthorized
         .flatMapLatest { authorized ->
             if (!authorized) flowOf(emptyList())
@@ -102,9 +92,6 @@ class RoomEntryListQueryRepository @Inject constructor(
                             ) else item
                         }
                         .filter { item ->
-                            entryTypeName == null || item.entryType.name == entryTypeName
-                        }
-                        .filter { item ->
                             when (filter) {
                                 EntryFilter.ALL -> true
                                 EntryFilter.PASSWORD_ONLY -> item.hasPassword
@@ -120,28 +107,6 @@ class RoomEntryListQueryRepository @Inject constructor(
                     .flowOn(Dispatchers.IO)
             }
         }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeEntryTypes(filter: EntryFilter): Flow<List<String>> =
-        sessionState.isAuthorized
-            .flatMapLatest { authorized ->
-                if (!authorized) flowOf(emptyList())
-                else sessionManager.observeFlow {
-                    val entryFlow = when (filter) {
-                        EntryFilter.ALL -> entryQueryDao().observeDistinctActiveEntryTypes()
-                        EntryFilter.TOTP_ONLY -> entryQueryDao()
-                            .observeActiveWithCapability(EntryCapabilityFlags.HAS_OTP)
-                            .map { entries -> entries.map { it.entryType }.distinct() }
-
-                        EntryFilter.PASSWORD_ONLY -> entryQueryDao()
-                            .observeActiveWithCapability(EntryCapabilityFlags.HAS_PASSWORD)
-                            .map { entries -> entries.map { it.entryType }.distinct() }
-                    }
-                    entryFlow
-                        .map { types -> types.map { it.name }.distinct() }
-                        .flowOn(Dispatchers.IO)
-                }
-            }
 
     /**
      * 使用盲索引对 [metaEntities] 进行预过滤，仅返回与 [query] 匹配的条目。

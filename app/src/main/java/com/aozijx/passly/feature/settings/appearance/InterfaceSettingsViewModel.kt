@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
+import com.aozijx.passly.feature.vault.model.VaultTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,8 +29,8 @@ class InterfaceSettingsViewModel @Inject constructor(
                 innerCornerRadiusDp = prefs.innerCornerRadiusDp,
                 groupItemSpacingDp = prefs.groupItemSpacingDp,
                 groupContentPaddingDp = prefs.groupContentPaddingDp,
-                visibleVaultTabs = settings.vault.visibleTabs?.tabKeys,
-                tabBarMaxTabsWithoutScroll = settings.vault.maxTabsWithoutScroll,
+                enabledVaultTabKeys =
+                    settings.vault.visibleTabs?.tabKeys ?: VaultTab.defaultVisibleKeys,
                 entryHierarchyDisplayMode = settings.vault.entryHierarchyDisplayMode
             )
         }
@@ -69,12 +70,12 @@ class InterfaceSettingsViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetGroupContentPadding(action.paddingDp))
             }
 
-            is InterfaceSettingsAction.SetVisibleVaultTabs -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetVisibleVaultTabs(action.tabs))
-            }
-
-            is InterfaceSettingsAction.SetMaxTabsWithoutScroll -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetMaxTabsWithoutScroll(action.maxTabs))
+            is InterfaceSettingsAction.ToggleVisibleVaultTab -> viewModelScope.launch {
+                val nextKeys = VaultTab.toggleVisibleKey(
+                    enabledKeys = config.value.enabledVaultTabKeys,
+                    tab = action.tab
+                )
+                settingsRepository.update(SettingsCommand.SetVisibleVaultTabs(nextKeys))
             }
 
             is InterfaceSettingsAction.SetEntryHierarchyDisplayMode -> viewModelScope.launch {

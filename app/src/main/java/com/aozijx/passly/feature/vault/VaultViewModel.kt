@@ -114,7 +114,6 @@ class VaultViewModel @Inject constructor(
         scope = viewModelScope,
         queryCoordinator = queryCoordinator,
         searchFilter = searchFilter,
-        entryListQueryRepository = entryListQueryRepository,
         refreshTrigger = _refreshTrigger
     )
 
@@ -190,13 +189,11 @@ class VaultViewModel @Inject constructor(
         val (tabs, showCode) = settings
         VaultUiState(
             searchQuery = search.searchQuery,
-            selectedEntryTypeName = search.selectedEntryTypeName,
             selectedCategory = search.selectedCategory,
             selectedTab = search.selectedTab,
             selectedSort = search.selectedSort,
             isSearchActive = search.isSearchActive,
             isVaultItemsLoading = list.isLoading,
-            availableEntryTypes = list.entryTypes,
             availableCategories = list.categories,
             visibleTabs = tabs,
             vaultItemsByTab = list.itemsByTab,
@@ -212,9 +209,6 @@ class VaultViewModel @Inject constructor(
 
     // --- 操作方法 ---
     fun onSearchQueryChange(q: String) = searchFilter.updateSearchQuery(q)
-    fun setSelectedEntryType(entryTypeName: String?) =
-        searchFilter.updateSelectedEntryTypeName(entryTypeName)
-    fun clearSelectedEntryType() = setSelectedEntryType(null)
     fun setSelectedCategory(category: String?) =
         searchFilter.updateSelectedCategory(category)
     fun clearSelectedCategory() = setSelectedCategory(null)

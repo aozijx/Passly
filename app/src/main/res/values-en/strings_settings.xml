@@ -67,12 +67,10 @@
     <string name="settings_interface_outer_corner_radius_description">Adjust outer corners across groups and components</string>
     <string name="settings_interface_style_title">Corners &amp; spacing</string>
     <string name="settings_interface_tab_bar_collapsible">Collapsible tab bar</string>
-    <string name="settings_interface_tab_bar_collapsible_description">Auto-hide tabs when scrolling</string>
-    <string name="settings_interface_tab_threshold_description">When tab count is within threshold, tabs are evenly distributed; otherwise they scroll horizontally.</string>
-    <string name="settings_interface_tab_threshold_label">Tab threshold</string>
+    <string name="settings_interface_tab_bar_collapsible_description">Auto-hide categories when scrolling</string>
     <string name="settings_interface_top_bar_collapsible">Collapsible top bar</string>
     <string name="settings_interface_top_bar_collapsible_description">Shrink the top bar on scroll for more content</string>
-    <string name="settings_interface_vault_tabs_section">Vault tabs</string>
+    <string name="settings_interface_vault_tabs_section">Vault categories</string>
     <string name="settings_interface_entry_hierarchy_section">Linked accounts</string>
     <string name="settings_interface_entry_hierarchy_display_mode">Linked entry display</string>
     <string name="settings_interface_entry_hierarchy_collapsed">Collapsed</string>

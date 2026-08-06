@@ -62,7 +62,6 @@ sealed interface SettingsCommand {
     data class SetFaviconDownloadWhitelist(val whitelist: Set<String>) : SettingsCommand
 
     // Vault
-    data class SetMaxTabsWithoutScroll(val maxTabs: Int) : SettingsCommand
     data class SetVisibleVaultTabs(val keys: Set<String>) : SettingsCommand
     data object ClearVisibleVaultTabs : SettingsCommand
     data class SetVaultSortOption(val sort: VaultSortSpec) : SettingsCommand

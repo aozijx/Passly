@@ -21,13 +21,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.core.ui.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.feature.vault.model.VaultTab
 import kotlin.math.roundToInt
 
 @Composable
@@ -40,8 +41,7 @@ internal fun InterfaceDetail(
     onInnerCornerRadiusChange: (Float) -> Unit,
     onGroupItemSpacingChange: (Float) -> Unit,
     onGroupContentPaddingChange: (Float) -> Unit,
-    onVisibleVaultTabsChange: (Set<String>) -> Unit,
-    onTabBarMaxTabsWithoutScrollChange: (Int) -> Unit,
+    onVisibleVaultTabToggle: (VaultTab) -> Unit,
     onEntryHierarchyDisplayModeChange: (EntryHierarchyDisplayMode) -> Unit
 ) {
     var outerRadius by remember(state.outerCornerRadiusDp) {
@@ -221,10 +221,8 @@ internal fun InterfaceDetail(
         Spacer(modifier = Modifier.height(24.dp))
 
         VaultTabsSettingsSection(
-            visibleVaultTabs = state.visibleVaultTabs,
-            tabBarMaxTabsWithoutScroll = state.tabBarMaxTabsWithoutScroll,
-            onTabBarMaxTabsWithoutScrollChange = onTabBarMaxTabsWithoutScrollChange,
-            onVisibleVaultTabsChange = onVisibleVaultTabsChange
+            enabledVaultTabKeys = state.enabledVaultTabKeys,
+            onVaultTabToggle = onVisibleVaultTabToggle
         )
     }
 }

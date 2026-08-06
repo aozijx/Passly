@@ -4,6 +4,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.presentation.labelRes
 
 data class EntryEditorSchema(
     val addType: AddType,

@@ -20,14 +20,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.text.localizedName
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 
-private enum class MenuPage { MAIN, SORT, CATEGORY_FILTER, ENTRY_TYPE_FILTER }
+private enum class MenuPage { MAIN, SORT, CATEGORY_FILTER }
 
 @Composable
 fun VaultDropdownMenu(
@@ -35,43 +32,21 @@ fun VaultDropdownMenu(
     showTOTPCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onSettingsClick: () -> Unit,
-    availableEntryTypes: List<String>,
     availableCategories: List<String>,
-    selectedEntryTypeName: String?,
     selectedCategory: String?,
-    onEntryTypeSelected: (String?) -> Unit,
     onCategorySelected: (String?) -> Unit,
     selectedSort: VaultSortSpec,
     onSortSelected: (VaultSortSpec) -> Unit
 ) {
     var currentPage by remember { mutableStateOf(MenuPage.MAIN) }
-    var entryTypeSearchQuery by remember { mutableStateOf("") }
-    var entryTypeSearchVisible by remember { mutableStateOf(false) }
-    val entryTypeFocusRequester = remember { FocusRequester() }
     var categorySearchQuery by remember { mutableStateOf("") }
     var categorySearchVisible by remember { mutableStateOf(false) }
     val categoryFocusRequester = remember { FocusRequester() }
-    val entryTypeLabels = availableEntryTypes.associateWith {
-        EntryType.fromName(it).localizedName()
-    }
 
-    LaunchedEffect(entryTypeSearchVisible) {
-        if (entryTypeSearchVisible) entryTypeFocusRequester.requestFocus()
-    }
     LaunchedEffect(categorySearchVisible) {
         if (categorySearchVisible) categoryFocusRequester.requestFocus()
     }
 
-    val filteredEntryTypes = remember(availableEntryTypes, entryTypeSearchQuery, entryTypeLabels) {
-        if (entryTypeSearchQuery.isBlank()) availableEntryTypes
-        else availableEntryTypes.filter {
-            it.contains(entryTypeSearchQuery, ignoreCase = true) ||
-                entryTypeLabels.getValue(it).contains(
-                    entryTypeSearchQuery,
-                    ignoreCase = true
-                )
-        }
-    }
     val filteredCategories = remember(availableCategories, categorySearchQuery) {
         if (categorySearchQuery.isBlank()) availableCategories
         else availableCategories.filter {
@@ -105,7 +80,6 @@ fun VaultDropdownMenu(
                     MenuPage.MAIN -> MainMenuContent(
                         onSortClick = { currentPage = MenuPage.SORT },
                         onCategoryFilterClick = { currentPage = MenuPage.CATEGORY_FILTER },
-                        onEntryTypeFilterClick = { currentPage = MenuPage.ENTRY_TYPE_FILTER },
                         showTOTPCode = showTOTPCode,
                         onToggleTotpVisibility = onToggleTotpVisibility,
                         onDismissRequest = onDismissRequest,
@@ -135,30 +109,6 @@ fun VaultDropdownMenu(
                             if (categorySearchVisible) {
                                 categorySearchVisible = false
                                 categorySearchQuery = ""
-                            } else {
-                                currentPage = MenuPage.MAIN
-                            }
-                        }
-                    )
-                    MenuPage.ENTRY_TYPE_FILTER -> FilterSubMenu(
-                        searchLabelRes = R.string.vault_search_entry_type,
-                        searchHintRes = R.string.vault_search_entry_type_hint,
-                        isSearchVisible = entryTypeSearchVisible,
-                        onToggleSearch = { entryTypeSearchVisible = it },
-                        searchQuery = entryTypeSearchQuery,
-                        onSearchQueryChange = { entryTypeSearchQuery = it },
-                        focusRequester = entryTypeFocusRequester,
-                        items = filteredEntryTypes,
-                        selectedItem = selectedEntryTypeName,
-                        itemText = { entryTypeLabels.getValue(it) },
-                        onItemSelected = {
-                            onEntryTypeSelected(it)
-                            onDismissRequest()
-                        },
-                        onBack = {
-                            if (entryTypeSearchVisible) {
-                                entryTypeSearchVisible = false
-                                entryTypeSearchQuery = ""
                             } else {
                                 currentPage = MenuPage.MAIN
                             }

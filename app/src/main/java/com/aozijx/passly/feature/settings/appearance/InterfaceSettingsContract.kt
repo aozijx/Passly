@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.appearance
 
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
+import com.aozijx.passly.feature.vault.model.VaultTab
 
 data class InterfaceSettingsUiState(
     val hideSystemBars: Boolean = false,
@@ -11,8 +12,7 @@ data class InterfaceSettingsUiState(
     val innerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP,
     val groupItemSpacingDp: Float = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP,
     val groupContentPaddingDp: Float = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP,
-    val visibleVaultTabs: Set<String>? = null,
-    val tabBarMaxTabsWithoutScroll: Int = 4,
+    val enabledVaultTabKeys: Set<String> = VaultTab.defaultVisibleKeys,
     val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
         EntryHierarchyDisplayMode.COLLAPSED,
 )
@@ -25,8 +25,7 @@ sealed interface InterfaceSettingsAction {
     data class SetInnerCornerRadius(val radiusDp: Float) : InterfaceSettingsAction
     data class SetGroupItemSpacing(val spacingDp: Float) : InterfaceSettingsAction
     data class SetGroupContentPadding(val paddingDp: Float) : InterfaceSettingsAction
-    data class SetVisibleVaultTabs(val tabs: Set<String>) : InterfaceSettingsAction
-    data class SetMaxTabsWithoutScroll(val maxTabs: Int) : InterfaceSettingsAction
+    data class ToggleVisibleVaultTab(val tab: VaultTab) : InterfaceSettingsAction
     data class SetEntryHierarchyDisplayMode(
         val mode: EntryHierarchyDisplayMode
     ) : InterfaceSettingsAction

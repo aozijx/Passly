@@ -37,9 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.VaultTab
 
@@ -48,7 +46,6 @@ import com.aozijx.passly.feature.vault.model.VaultTab
 fun VaultTopBar(
     uiState: VaultUiState,
     selectedTabIndex: Int,
-    maxTabsWithoutScroll: Int,
     scrollBehavior: TopAppBarScrollBehavior,
     onSettingsClick: () -> Unit = {},
     isStatusBarAutoHide: Boolean = false,
@@ -56,10 +53,8 @@ fun VaultTopBar(
     isTabBarCollapsible: Boolean = true,
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: (Boolean) -> Unit,
-    onClearEntryType: () -> Unit,
     onClearCategory: () -> Unit,
     onToggleTotpVisibility: () -> Unit,
-    onEntryTypeSelected: (String?) -> Unit,
     onCategorySelected: (String?) -> Unit,
     onSortSelected: (VaultSortSpec) -> Unit,
     onSelectTab: (VaultTab) -> Unit
@@ -110,28 +105,18 @@ fun VaultTopBar(
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val hasCategoryFilter = !uiState.selectedCategory.isNullOrBlank()
-                        val hasEntryTypeFilter = !uiState.selectedEntryTypeName.isNullOrBlank()
-                        val selectedEntryTypeLabel = if (hasEntryTypeFilter) {
-                            EntryType.fromName(uiState.selectedEntryTypeName.orEmpty()).localizedName()
-                        } else {
-                            ""
-                        }
                         Text(
                             text = when {
                                 hasCategoryFilter -> stringResource(
                                     R.string.vault_title_category,
                                     uiState.selectedCategory.orEmpty()
                                 )
-                                hasEntryTypeFilter -> stringResource(
-                                    R.string.vault_title_entry_type,
-                                    selectedEntryTypeLabel
-                                )
                                 else -> stringResource(R.string.vault_title_default)
                             },
                             fontWeight = FontWeight.Bold
                         )
-                        if (hasCategoryFilter || hasEntryTypeFilter) {
-                            IconButton(onClick = if (hasCategoryFilter) onClearCategory else onClearEntryType) {
+                        if (hasCategoryFilter) {
+                            IconButton(onClick = onClearCategory) {
                                 Icon(
                                     Icons.Default.Clear,
                                     stringResource(R.string.vault_clear_filter),
@@ -167,11 +152,8 @@ fun VaultTopBar(
                                 onSettingsClick = {
                                     navigateToSettingsAfterDismiss = true
                                 },
-                                availableEntryTypes = uiState.availableEntryTypes,
                                 availableCategories = uiState.availableCategories,
-                                selectedEntryTypeName = uiState.selectedEntryTypeName,
                                 selectedCategory = uiState.selectedCategory,
-                                onEntryTypeSelected = onEntryTypeSelected,
                                 onCategorySelected = onCategorySelected,
                                 selectedSort = uiState.selectedSort,
                                 onSortSelected = onSortSelected
@@ -184,16 +166,14 @@ fun VaultTopBar(
         AnimatedVisibility(
             visible = uiState.visibleTabs.size > 1 &&
                 !uiState.isSearchActive &&
-                uiState.selectedEntryTypeName == null &&
                 uiState.selectedCategory == null &&
                 (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            VaultTabRow(
+            VaultCategoryBar(
                 tabs = uiState.visibleTabs,
                 selectedTabIndex = selectedTabIndex,
-                maxTabsWithoutScroll = maxTabsWithoutScroll,
                 onTabSelected = { index ->
                     uiState.visibleTabs.getOrNull(index)?.let { onSelectTab(it) }
                 }

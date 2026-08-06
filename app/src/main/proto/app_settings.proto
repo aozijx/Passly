@@ -101,12 +101,11 @@ message AutofillPreferences {
 // 保险库视图 / 条目卡片
 
 message VaultViewPreferences {
-    optional int32 max_tabs_without_scroll = 1 [default = 4];
-    optional VisibleTabs visible_tabs = 2;
-    optional VaultSortPreference sort = 3;
-    repeated EntryCardPresentation entry_card_presentations = 4;
+    optional VisibleTabs visible_tabs = 1;
+    optional VaultSortPreference sort = 2;
+    repeated EntryCardPresentation entry_card_presentations = 3;
     // "collapsed", "expanded", "separate"
-    optional string entry_hierarchy_display_mode = 5 [default = "collapsed"];
+    optional string entry_hierarchy_display_mode = 4 [default = "collapsed"];
 }
 
 message VisibleTabs {

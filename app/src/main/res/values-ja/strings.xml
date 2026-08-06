@@ -67,9 +67,6 @@
 
     <!-- 金庫 - その他 -->
     <string name="vault_search_placeholder">項目を検索…</string>
-    <string name="vault_title_entry_type">エントリ種別：%s</string>
-    <string name="vault_search_entry_type">エントリ種別を検索</string>
-    <string name="vault_search_entry_type_hint">エントリ種別を検索…</string>
     <string name="vault_title_default">安全な金庫</string>
     <string name="vault_clear_filter">フィルター解除</string>
     <string name="vault_menu_filter">分類フィルター</string>
