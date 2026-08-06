@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.normalization
+package com.aozijx.passly.core.util
 
 /**
  * Android 包名展示名格式化：

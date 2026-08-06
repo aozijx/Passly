@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.security.password
+package com.aozijx.passly.core.util
 
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult

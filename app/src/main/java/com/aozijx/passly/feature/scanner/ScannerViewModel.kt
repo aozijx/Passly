@@ -5,7 +5,7 @@ import android.net.Uri
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
-import com.aozijx.passly.core.qr.QrCodeUtils
+import com.aozijx.passly.core.util.QrCodeUtils
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent

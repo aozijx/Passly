@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.aozijx.passly.R
-import com.aozijx.passly.core.security.password.PasswordStrengthEngine
+import com.aozijx.passly.core.util.PasswordStrengthEngine
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 

@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.autofill.policy
 
-import com.aozijx.passly.core.normalization.PackageDisplayNameFormatter
+import com.aozijx.passly.core.util.PackageDisplayNameFormatter
 
 /**
  * 应用标题生成策略：

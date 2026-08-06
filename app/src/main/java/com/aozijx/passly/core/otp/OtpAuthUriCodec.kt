@@ -47,7 +47,7 @@ object OtpAuthUriCodec {
             } else {
                 val colonIndex = rawLabel.indexOf(':')
                 if (colonIndex > 0) {
-                    rawLabel.substring(0, colonIndex) to rawLabel.substring(colonIndex + 1)
+                    rawLabel.take(colonIndex) to rawLabel.substring(colonIndex + 1)
                 } else {
                     null to rawLabel
                 }

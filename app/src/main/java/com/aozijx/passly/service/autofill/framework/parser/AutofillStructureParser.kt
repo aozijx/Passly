@@ -4,7 +4,7 @@ import android.app.assist.AssistStructure
 import android.service.autofill.FillContext
 import android.text.InputType
 import android.view.autofill.AutofillId
-import com.aozijx.passly.core.normalization.DomainNormalizer
+import com.aozijx.passly.core.util.DomainNormalizer
 
 data class ParsedStructure(
     val usernameId: AutofillId? = null,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.storage
+package com.aozijx.passly.core.util
 
 import androidx.core.net.toUri
 

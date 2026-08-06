@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.normalization
+package com.aozijx.passly.core.util
 
 /**
  * 域名标准化工具：
