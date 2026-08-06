@@ -15,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -153,10 +153,9 @@ fun TotpStyleVaultItem(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.progressRowSpacing)
                         ) {
-                            CircularProgressIndicator(
+                            CircularWavyProgressIndicator(
                                 progress = { progress },
                                 modifier = Modifier.size(CardStyleTokens.Totp.progressSize),
-                                strokeWidth = CardStyleTokens.Totp.progressStrokeWidth,
                                 color = progressColor,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(
                                     alpha = CardStyleTokens.Totp.PROGRESS_TRACK_ALPHA

@@ -59,7 +59,9 @@ object DetailSectionResolver {
     fun resolve(entry: VaultEntry): List<DetailSectionKey> {
         val selected = typeSections[entry.entryType].orEmpty().toMutableSet()
         with(entry.secret) {
-            if (login != null) selected += DetailSectionKey.CREDENTIAL
+            if (login != null && entry.entryType != EntryType.OTP) {
+                selected += DetailSectionKey.CREDENTIAL
+            }
             if (otp != null) selected += DetailSectionKey.OTP
             if (card != null) selected += DetailSectionKey.BANK_CARD
             if (wifi != null) selected += DetailSectionKey.WIFI
