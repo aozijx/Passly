@@ -7,35 +7,30 @@ import javax.inject.Inject
 class BackupSessionPolicy @Inject constructor(
     private val vaultAccessState: VaultAccessState
 ) {
-    fun canPrepareRegularExport(): BackupSessionCheck =
+    fun regularExportDenial(): String? =
         requireFullVaultAccess("当前会话不能导出普通备份")
 
-    fun canPrepareRecoveryExport(): BackupSessionCheck =
+    fun recoveryExportDenial(): String? =
         if (vaultAccessState.isRecoveryMode()) {
-            BackupSessionCheck.Allowed
+            null
         } else {
-            BackupSessionCheck.Denied("恢复导出只能在恢复模式中使用")
+            "恢复导出只能在恢复模式中使用"
         }
 
-    fun canPrepareImport(): BackupSessionCheck =
+    fun importDenial(): String? =
         requireFullVaultAccess("当前会话不能导入备份")
 
-    fun canUsePendingOperation(state: BackupUiState): BackupSessionCheck =
+    fun pendingOperationDenial(state: BackupUiState): String? =
         if (state.isRecoveryExport) {
-            canPrepareRecoveryExport()
+            recoveryExportDenial()
         } else {
             requireFullVaultAccess("当前会话不能执行备份操作")
         }
 
-    private fun requireFullVaultAccess(message: String): BackupSessionCheck =
+    private fun requireFullVaultAccess(message: String): String? =
         if (vaultAccessState.hasFullVaultAccess()) {
-            BackupSessionCheck.Allowed
+            null
         } else {
-            BackupSessionCheck.Denied(message)
+            message
         }
-}
-
-sealed interface BackupSessionCheck {
-    data object Allowed : BackupSessionCheck
-    data class Denied(val message: String) : BackupSessionCheck
 }

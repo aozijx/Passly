@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.backup.model.BackupExportOptions
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
+import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.backup.service.VaultBackupService
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.notice.model.NoticeCode
@@ -60,13 +61,18 @@ class BackupViewModel @Inject constructor(
             )
             BackupIntent.StartExportInConfiguredDirectory -> startExportInConfiguredDirectory()
             is BackupIntent.StartImport -> startImport(intent.uri)
-            is BackupIntent.UpdatePassword -> updatePassword(intent.password)
-            is BackupIntent.UpdateImportMode -> updateImportMode(intent.mode)
-            is BackupIntent.UpdateIncludeIcons -> updateIncludeIcons(intent.include)
-            is BackupIntent.UpdateIncludeAttachments -> updateIncludeAttachments(intent.include)
-            is BackupIntent.UpdateIncludeDeleted -> updateIncludeDeleted(intent.include)
+            is BackupIntent.UpdatePassword ->
+                _uiState.update { it.copy(backupPassword = intent.password) }
+            is BackupIntent.UpdateImportMode ->
+                _uiState.update { it.copy(importMode = intent.mode) }
+            is BackupIntent.UpdateIncludeIcons ->
+                _uiState.update { it.copy(includeIcons = intent.include) }
+            is BackupIntent.UpdateIncludeAttachments ->
+                _uiState.update { it.copy(includeAttachments = intent.include) }
+            is BackupIntent.UpdateIncludeDeleted ->
+                _uiState.update { it.copy(includeDeleted = intent.include) }
             is BackupIntent.UpdateIncludedEntryTypes ->
-                updateIncludedEntryTypes(intent.types)
+                _uiState.update { it.copy(includedEntryTypes = intent.types) }
             BackupIntent.CancelPendingOperation -> clearPendingOperation()
             BackupIntent.ProcessBackupAction -> processBackupAction()
         }
@@ -96,40 +102,32 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun prepareExport(format: BackupExportUiFormat) {
-        if (!requireSession(sessionPolicy.canPrepareRegularExport(), BackupOperation.EXPORT)) return
-        _uiState.update {
-            it.copy(
-                isExporting = true,
-                isRecoveryExport = false,
-                selectedExportFormat = format,
-                backupUri = null,
-                backupPassword = "",
-                includeIcons = format.supportsResources,
-                includeAttachments = format.supportsResources,
-                includeDeleted = true,
-                includedEntryTypes = EntryType.entries.toSet(),
-                pendingExportFileName = buildExportFileName(format),
-                deleteTargetOnFailure = false,
-                status = BackupOperationStatus.Idle,
-                error = null
-            )
-        }
+        if (!requireSession(sessionPolicy.regularExportDenial(), BackupOperation.EXPORT)) return
+        preparePendingExport(format, isRecoveryExport = false)
     }
 
     private fun prepareRecoveryExport() {
-        if (!requireSession(sessionPolicy.canPrepareRecoveryExport(), BackupOperation.EXPORT)) return
+        if (!requireSession(sessionPolicy.recoveryExportDenial(), BackupOperation.EXPORT)) return
+        preparePendingExport(BackupExportUiFormat.ENCRYPTED, isRecoveryExport = true)
+    }
+
+    private fun preparePendingExport(
+        format: BackupExportUiFormat,
+        isRecoveryExport: Boolean
+    ) {
+        val includeResources = isRecoveryExport || format.supportsResources
         _uiState.update {
             it.copy(
                 isExporting = true,
-                isRecoveryExport = true,
-                selectedExportFormat = BackupExportUiFormat.ENCRYPTED,
+                isRecoveryExport = isRecoveryExport,
+                selectedExportFormat = format,
                 backupUri = null,
                 backupPassword = "",
-                includeIcons = true,
-                includeAttachments = true,
+                includeIcons = includeResources,
+                includeAttachments = includeResources,
                 includeDeleted = true,
                 includedEntryTypes = EntryType.entries.toSet(),
-                pendingExportFileName = buildExportFileName(BackupExportUiFormat.ENCRYPTED),
+                pendingExportFileName = buildExportFileName(format),
                 deleteTargetOnFailure = false,
                 status = BackupOperationStatus.Idle,
                 error = null
@@ -200,44 +198,20 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun startImport(uri: Uri) {
-        if (!requireSession(sessionPolicy.canPrepareImport(), BackupOperation.IMPORT)) return
+        if (!requireSession(sessionPolicy.importDenial(), BackupOperation.IMPORT)) return
         _uiState.update {
             it.copy(
                 isExporting = false,
                 isRecoveryExport = false,
                 backupUri = uri,
                 backupPassword = "",
-                importMode = com.aozijx.passly.domain.backup.model.ImportMode.APPEND,
+                importMode = ImportMode.APPEND,
                 pendingExportFileName = null,
                 deleteTargetOnFailure = false,
                 status = BackupOperationStatus.Idle,
                 error = null
             )
         }
-    }
-
-    private fun updatePassword(password: String) {
-        _uiState.update { it.copy(backupPassword = password) }
-    }
-
-    private fun updateImportMode(mode: com.aozijx.passly.domain.backup.model.ImportMode) {
-        _uiState.update { it.copy(importMode = mode) }
-    }
-
-    private fun updateIncludeIcons(include: Boolean) {
-        _uiState.update { it.copy(includeIcons = include) }
-    }
-
-    private fun updateIncludeAttachments(include: Boolean) {
-        _uiState.update { it.copy(includeAttachments = include) }
-    }
-
-    private fun updateIncludeDeleted(include: Boolean) {
-        _uiState.update { it.copy(includeDeleted = include) }
-    }
-
-    private fun updateIncludedEntryTypes(types: Set<EntryType>) {
-        _uiState.update { it.copy(includedEntryTypes = types) }
     }
 
     private fun processBackupAction() {
@@ -411,20 +385,18 @@ class BackupViewModel @Inject constructor(
         state: BackupUiState,
         operation: BackupOperation = state.toOperation()
     ): Boolean {
-        if (requireSession(sessionPolicy.canUsePendingOperation(state), operation)) return true
+        if (requireSession(sessionPolicy.pendingOperationDenial(state), operation)) return true
         clearPendingFields()
         return false
     }
 
     private fun requireSession(
-        check: BackupSessionCheck,
+        denialMessage: String?,
         operation: BackupOperation
-    ): Boolean = when (check) {
-        BackupSessionCheck.Allowed -> true
-        is BackupSessionCheck.Denied -> {
-            fail(BackupFailed(check.message), operation)
-            false
-        }
+    ): Boolean {
+        if (denialMessage == null) return true
+        fail(BackupFailed(denialMessage), operation)
+        return false
     }
 
     private enum class BackupOperation {
