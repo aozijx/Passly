@@ -7,6 +7,31 @@ import org.junit.Test
 class SwipeActionContainerTest {
 
     @Test
+    fun revealDistance_scalesWithContainerWidth() {
+        val revealDistance = calculateSwipeRevealDistance(
+            containerWidth = 400f
+        )
+
+        assertEquals(112f, revealDistance, 0.001f)
+    }
+
+    @Test
+    fun revealDistance_returnsZeroBeforeMeasurement() {
+        assertEquals(0f, calculateSwipeRevealDistance(containerWidth = 0f), 0.001f)
+    }
+
+    @Test
+    fun triggerThreshold_scalesWithContainerWidthAndStaysInsideRevealDistance() {
+        val triggerThreshold = calculateSwipeTriggerThreshold(
+            containerWidth = 400f,
+            revealDistance = 112f
+        )
+
+        assertEquals(88f, triggerThreshold, 0.001f)
+        assertTrue(triggerThreshold < 112f)
+    }
+
+    @Test
     fun visualOffset_isResistedBeforeTheRevealLimit() {
         val rawOffset = 48f
         val visualOffset = calculateSwipeVisualOffset(

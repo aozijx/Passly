@@ -38,17 +38,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.settings.model.SwipeActionType
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 data class SwipeActionSpec(
     val icon: ImageVector,
@@ -57,8 +56,9 @@ data class SwipeActionSpec(
     val onAction: () -> Unit
 )
 
-private val SwipeRevealDistance = 96.dp
-private val SwipeTriggerThreshold = 72.dp
+private const val SwipeRevealWidthFraction = 0.28f
+private const val SwipeTriggerWidthFraction = 0.22f
+private const val SwipeTriggerRevealFraction = 0.9f
 private const val SwipeUnavailableDirectionResistance = 0.12f
 private const val SwipeOverflowResistance = 0.22f
 private const val SwipeOverflowCap = 1.35f
@@ -79,20 +79,20 @@ fun SwipeActionContainer(
     val hapticFeedback = LocalHapticFeedback.current
     val currentLeftAction = rememberUpdatedState(leftAction)
     val currentRightAction = rememberUpdatedState(rightAction)
-    val density = LocalDensity.current
-    val revealDistancePx = with(density) { SwipeRevealDistance.toPx() }
-    val defaultTriggerThresholdPx = with(density) { SwipeTriggerThreshold.toPx() }
     val settleSpec = spring<Float>(
         dampingRatio = Spring.DampingRatioNoBouncy,
         stiffness = Spring.StiffnessMediumLow
     )
 
     var widthPx by remember { mutableFloatStateOf(0f) }
-    val maxSwipePx = remember(widthPx, revealDistancePx) {
-        if (widthPx > 0f) min(revealDistancePx, widthPx * 0.36f) else revealDistancePx
+    val maxSwipePx = remember(widthPx) {
+        calculateSwipeRevealDistance(containerWidth = widthPx)
     }
-    val triggerThresholdPx = remember(maxSwipePx, defaultTriggerThresholdPx) {
-        min(defaultTriggerThresholdPx, maxSwipePx * 0.82f)
+    val triggerThresholdPx = remember(widthPx, maxSwipePx) {
+        calculateSwipeTriggerThreshold(
+            containerWidth = widthPx,
+            revealDistance = maxSwipePx
+        )
     }
     var rawDragOffset by remember { mutableFloatStateOf(0f) }
     var swipeOffset by remember { mutableFloatStateOf(0f) }
@@ -152,6 +152,9 @@ fun SwipeActionContainer(
                     else -> null
                 }
                 thresholdHapticSent = false
+                if (action != null) {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
                 action?.onAction?.invoke()
                 settleToRest()
             },
@@ -239,6 +242,25 @@ private fun BoxScope.ActionBackground(
                 }
         )
     }
+}
+
+internal fun calculateSwipeRevealDistance(
+    containerWidth: Float
+): Float {
+    if (containerWidth <= 0f) return 0f
+    return containerWidth * SwipeRevealWidthFraction
+}
+
+internal fun calculateSwipeTriggerThreshold(
+    containerWidth: Float,
+    revealDistance: Float
+): Float {
+    if (containerWidth <= 0f || revealDistance <= 0f) return 0f
+
+    return min(
+        containerWidth * SwipeTriggerWidthFraction,
+        revealDistance * SwipeTriggerRevealFraction
+    )
 }
 
 internal fun calculateSwipeVisualOffset(
