@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.sections
+package com.aozijx.passly.feature.detail.ui.sections
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +32,7 @@ import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.components.DetailItem
+import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField

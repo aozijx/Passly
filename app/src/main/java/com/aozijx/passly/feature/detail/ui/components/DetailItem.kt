@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.components
+package com.aozijx.passly.feature.detail.ui.components
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource

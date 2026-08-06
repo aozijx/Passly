@@ -173,7 +173,7 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/data/model/payload/summary/SummaryPayload.kt"
         ).readText()
         val associatedInfoSection = File(
-            "src/main/java/com/aozijx/passly/feature/detail/sections/" +
+            "src/main/java/com/aozijx/passly/feature/detail/ui/sections/" +
                     "AssociatedInfoSection.kt"
         ).readText()
 

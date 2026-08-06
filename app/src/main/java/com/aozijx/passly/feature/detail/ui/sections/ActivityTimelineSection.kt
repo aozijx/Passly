@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.sections
+package com.aozijx.passly.feature.detail.ui.sections
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.feature.detail.components.InfoGroupCard
+import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

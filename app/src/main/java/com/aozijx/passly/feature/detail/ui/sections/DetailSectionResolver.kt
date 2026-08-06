@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.components
+package com.aozijx.passly.feature.detail.ui.sections
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry

@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.sections
+package com.aozijx.passly.feature.detail.ui.sections
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
@@ -46,7 +46,7 @@ import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.rememberAppIcon
 import com.aozijx.passly.core.ui.components.rememberAppMetadata
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.feature.detail.components.InfoGroupCard
+import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 
 @Composable

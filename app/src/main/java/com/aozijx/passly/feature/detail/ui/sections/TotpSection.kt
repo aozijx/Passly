@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.sections
+package com.aozijx.passly.feature.detail.ui.sections
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.feature.detail.components.TotpCard
+import com.aozijx.passly.feature.detail.ui.components.TotpCard
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.vault.model.OtpUiState
 

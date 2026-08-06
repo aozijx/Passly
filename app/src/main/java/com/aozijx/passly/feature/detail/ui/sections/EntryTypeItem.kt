@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.sections
+package com.aozijx.passly.feature.detail.ui.sections
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

@@ -20,11 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,44 +28,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
-import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import com.aozijx.passly.core.media.ImageResolver.toLocalIconImageModel
+import com.aozijx.passly.core.media.rememberImagePaletteColors
 import com.aozijx.passly.core.ui.components.VaultItemIcon
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.feature.vault.model.OtpUiState
-
-private object PasswordCardPaletteCache {
-    private const val MAX = 48
-    private val cache = object : LinkedHashMap<String, Pair<Color, Color>>(MAX, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Color, Color>>): Boolean {
-            return size > MAX
-        }
-    }
-
-    @Synchronized
-    fun get(key: String): Pair<Color, Color>? = cache[key]
-
-    @Synchronized
-    fun put(key: String, value: Pair<Color, Color>) {
-        cache[key] = value
-    }
-}
 
 @Composable
 fun PasswordStyleVaultItem(
     entry: EntryListItem,
     onClick: () -> Unit
 ) {
-    val context = LocalContext.current
     val secondaryText = when {
         !entry.associatedDomain.isNullOrBlank() -> entry.associatedDomain.orEmpty()
         !entry.associatedAppPackage.isNullOrBlank() -> entry.associatedAppPackage.orEmpty()
@@ -82,38 +55,9 @@ fun PasswordStyleVaultItem(
     }
     val imageModel = remember(entry.iconCustomPath) { toLocalIconImageModel(entry.iconCustomPath) }
     val corner = MaterialTheme.shapes.extraLarge
-
-    var accentColor by remember(imageModel) { mutableStateOf<Color?>(null) }
-    var onAccentColor by remember(imageModel) { mutableStateOf<Color?>(null) }
-
-    LaunchedEffect(imageModel) {
-        accentColor = null
-        onAccentColor = null
-        if (imageModel.isNullOrBlank()) return@LaunchedEffect
-
-        PasswordCardPaletteCache.get(imageModel)?.let { cached ->
-            accentColor = cached.first
-            onAccentColor = cached.second
-            return@LaunchedEffect
-        }
-
-        runCatching {
-            val request =
-                ImageRequest.Builder(context).data(imageModel).allowHardware(false).build()
-            val result = context.imageLoader.execute(request)
-            (result as? SuccessResult)?.drawable?.toBitmap()
-        }.getOrNull()?.let { bitmap ->
-            val palette = Palette.from(bitmap).clearFilters().generate()
-            val swatch = palette.vibrantSwatch ?: palette.dominantSwatch ?: palette.mutedSwatch
-            swatch?.let {
-                val accent = Color(it.rgb)
-                val onAccent = Color(it.bodyTextColor)
-                accentColor = accent
-                onAccentColor = onAccent
-                PasswordCardPaletteCache.put(imageModel, accent to onAccent)
-            }
-        }
-    }
+    val paletteColors = rememberImagePaletteColors(imageModel)
+    val accentColor = paletteColors?.accent
+    val onAccentColor = paletteColors?.onAccent
 
     val chipBg = accentColor?.copy(alpha = CardStyleTokens.Password.CHIP_BG_ALPHA)
         ?: MaterialTheme.colorScheme.primaryContainer.copy(alpha = CardStyleTokens.Password.CHIP_FALLBACK_BG_ALPHA)

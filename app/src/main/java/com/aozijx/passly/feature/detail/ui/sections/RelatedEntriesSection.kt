@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.sections
+package com.aozijx.passly.feature.detail.ui.sections
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.feature.detail.components.InfoGroupCard
+import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun RelatedEntriesSection(

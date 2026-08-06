@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 data class EntryListItem(
     val id: String,
-    override val entryType: EntryType,
+    val entryType: EntryType,
     val title: String,
     val username: String,
     val icon: String?,

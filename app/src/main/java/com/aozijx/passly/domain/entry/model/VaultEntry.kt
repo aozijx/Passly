@@ -14,7 +14,7 @@ data class VaultEntry(
     val secret: EntrySecret,
     val highSensitivitySecret: EntryHighSensitivitySecret? = null
 ) : VaultIconable {
-    override val entryType: EntryType get() = header.entryType
+    val entryType: EntryType get() = header.entryType
     override val iconName: String? get() = summary.icon
     override val iconCustomPath: String? get() = summary.iconCustomPath
     override val associatedAppPackage: String? get() = summary.website?.packageNames?.firstOrNull()

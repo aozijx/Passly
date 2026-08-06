@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.sections
+package com.aozijx.passly.feature.detail.ui.sections
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,8 +23,8 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.components.DetailItem
-import com.aozijx.passly.feature.detail.components.EditTextField
+import com.aozijx.passly.feature.detail.ui.components.DetailItem
+import com.aozijx.passly.feature.detail.ui.components.EditTextField
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState

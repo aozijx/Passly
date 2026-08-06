@@ -43,7 +43,6 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.EntryType
 
 object VaultIcons {
     val allIcons = mapOf(
@@ -100,19 +99,4 @@ object VaultIcons {
     fun getIconByRes(resId: Int?): ImageVector {
         return allIcons[resId] ?: Icons.Default.Key
     }
-}
-
-fun getEntryTypeIcon(entryType: EntryType): ImageVector = when (entryType) {
-    EntryType.ACCOUNT -> Icons.Default.Person
-    EntryType.LOGIN -> Icons.Default.VpnKey
-    EntryType.NOTE -> Icons.Default.EditNote
-    EntryType.CARD, EntryType.BANK_CARD -> Icons.Default.CreditCard
-    EntryType.IDENTITY, EntryType.ID_CARD, EntryType.PASSPORT, EntryType.LICENSE ->
-        Icons.Default.Badge
-    EntryType.SSH_KEY, EntryType.API_KEY -> Icons.Default.Terminal
-    EntryType.WIFI -> Icons.Default.Wifi
-    EntryType.PASSKEY -> Icons.Default.Fingerprint
-    EntryType.OTP, EntryType.RECOVERY_CODE -> Icons.Default.Security
-    EntryType.DATABASE, EntryType.SERVER -> Icons.Default.Cloud
-    EntryType.CRYPTO_WALLET, EntryType.SEED_PHRASE -> Icons.Default.AccountBalanceWallet
 }

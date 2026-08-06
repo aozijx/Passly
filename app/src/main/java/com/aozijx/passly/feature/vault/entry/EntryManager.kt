@@ -44,7 +44,10 @@ internal class EntryManager(
                         if (outcome.result == FaviconResult.SUCCESS && outcome.filePath != null) {
                             val savedEntry = entryQueryRepository.getByIdWithoutHighSensitivity(entryId)
                             if (savedEntry != null) {
-                                val iconSummary = savedEntry.summary.copy(icon = outcome.filePath)
+                                val iconSummary = savedEntry.summary.copy(
+                                    icon = null,
+                                    iconCustomPath = outcome.filePath
+                                )
                                 entryCommandRepository.updateEntry(
                                     savedEntry.id,
                                     savedEntry.entryVersion,

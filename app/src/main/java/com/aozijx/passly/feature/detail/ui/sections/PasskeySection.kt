@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.sections
+package com.aozijx.passly.feature.detail.ui.sections
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -15,25 +15,26 @@ import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.components.DetailItem
+import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailIntent
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 
 @Composable
-fun IdCardSection(
+fun PasskeySection(
     entry: VaultEntry,
-    revealedIdNumber: String?,
-    onIdNumberRevealed: (String?) -> Unit,
+    revealedPasskeyData: String?,
+    onRevealField: (String, String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEvent: (DetailIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val msgCopySuccess = stringResource(R.string.msg_copy_success)
-    val idNumberLabel = stringResource(R.string.id_number)
-    val usernameLabel = stringResource(R.string.vault_detail_username)
+    val passkeyDataLabel = stringResource(R.string.passkey_data)
+    val hardwareKeyInfoLabel = stringResource(R.string.hardware_key_info)
     val notSet = stringResource(R.string.not_set)
     val actionHandler = DetailSectionActionHandler(
         onAuthenticate = onAuthenticate,
@@ -42,24 +43,24 @@ fun IdCardSection(
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
-            label = idNumberLabel,
+            label = passkeyDataLabel,
             value = when {
-                entry.secret.identity?.idNumber.isNullOrBlank() -> notSet
-                revealedIdNumber != null -> revealedIdNumber
+                entry.secret.passkey?.privateKeyReference.isNullOrBlank() -> notSet
+                revealedPasskeyData != null -> revealedPasskeyData
                 else -> HiddenMask.DEFAULT
             },
-            isRevealed = revealedIdNumber != null,
+            isRevealed = revealedPasskeyData != null,
             onCopy = {
                 copySensitiveField(
                     context = context,
                     handler = actionHandler,
-                    fieldName = "ID number",
-                    revealedValue = revealedIdNumber,
-                    sourceValue = entry.secret.identity?.idNumber,
+                    fieldName = "passkey data",
+                    revealedValue = revealedPasskeyData,
+                    sourceValue = entry.secret.passkey?.privateKeyReference,
                     afterCopy = {
                         Toast.makeText(
                             context,
-                            msgCopySuccess.format(idNumberLabel),
+                            msgCopySuccess.format(passkeyDataLabel),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -69,29 +70,32 @@ fun IdCardSection(
             onReveal = {
                 toggleRevealSensitiveField(
                     handler = actionHandler,
-                    fieldName = "ID number",
-                    revealedValue = revealedIdNumber,
-                    sourceValue = entry.secret.identity?.idNumber,
+                    fieldName = "passkey data",
+                    revealedValue = revealedPasskeyData,
+                    sourceValue = entry.secret.passkey?.privateKeyReference,
                     accessLevel = SensitiveAccessLevel.HIGH,
-                    onReveal = onIdNumberRevealed
+                    onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) }
                 )
             }
         )
 
-        if (entry.username.isNotBlank()) {
+        if (!entry.secret.passkey?.hardwareKeyInfo.isNullOrBlank()) {
             DetailItem(
-                label = usernameLabel,
-                value = entry.username,
+                label = hardwareKeyInfoLabel,
+                value = entry.secret.passkey.hardwareKeyInfo,
                 isRevealed = true,
                 onCopy = {
-                    ClipboardUtils.copy(context, entry.username)
+                    ClipboardUtils.copy(
+                        context,
+                        entry.secret.passkey.hardwareKeyInfo
+                    )
                     Toast.makeText(
                         context,
-                        msgCopySuccess.format(usernameLabel),
+                        msgCopySuccess.format(hardwareKeyInfoLabel),
                         Toast.LENGTH_SHORT
                     ).show()
                     actionHandler.record(
-                        "username",
+                        "hardware key info",
                         ActivityType.COPY_PASSWORD
                     )
                 },

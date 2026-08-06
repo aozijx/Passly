@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.components
+package com.aozijx.passly.feature.detail.ui.components
 
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState

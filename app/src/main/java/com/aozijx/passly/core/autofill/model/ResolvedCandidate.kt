@@ -35,7 +35,7 @@ data class ResolvedCandidate(
     val fields: Map<FieldRole, String> = emptyMap(),
     override val iconName: String? = null,
     override val iconCustomPath: String? = null,
-    override val entryType: EntryType = EntryType.LOGIN,
+    val entryType: EntryType = EntryType.LOGIN,
     /** 匹配类型（仅 Pipeline 路径有值，BottomSheet 直接查阅路径为 null） */
     val matchedBy: MatchType? = null,
     val matchedPackage: String? = null,

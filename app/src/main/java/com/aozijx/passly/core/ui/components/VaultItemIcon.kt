@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -27,12 +29,13 @@ fun VaultItemIcon(
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
     val appIconPainter = rememberAppIcon(iconable.associatedAppPackage)
-
-    val fallbackIconVector = remember(iconable.iconName, iconable.entryType) {
-        getEntryTypeIcon(iconable.entryType)
+    val explicitIconVector = remember(iconable.iconName) {
+        iconable.iconName
+            ?.takeIf { it.isNotBlank() }
+            ?.let(VaultIcons::getIconByName)
     }
+    val fallbackIconVector = explicitIconVector ?: Icons.Default.Key
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
-
     val placeholderPainter = appIconPainter ?: fallbackPainter
 
     val customModel = remember(iconable.iconCustomPath) { toLocalIconImageModel(iconable.iconCustomPath) }

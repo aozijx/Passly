@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.detail.components
+package com.aozijx.passly.feature.detail.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,20 +19,24 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.EntryEditState
-import com.aozijx.passly.feature.detail.sections.ActivityTimelineSection
-import com.aozijx.passly.feature.detail.sections.AssociatedInfoSection
-import com.aozijx.passly.feature.detail.sections.BankCardSection
-import com.aozijx.passly.feature.detail.sections.CredentialSection
-import com.aozijx.passly.feature.detail.sections.EntryCategoryItem
-import com.aozijx.passly.feature.detail.sections.EntryTypeItem
-import com.aozijx.passly.feature.detail.sections.IdCardSection
-import com.aozijx.passly.feature.detail.sections.NotesSection
-import com.aozijx.passly.feature.detail.sections.PasskeySection
-import com.aozijx.passly.feature.detail.sections.SeedPhraseSection
-import com.aozijx.passly.feature.detail.sections.RelatedEntriesSection
-import com.aozijx.passly.feature.detail.sections.SshKeySection
-import com.aozijx.passly.feature.detail.sections.TotpSection
-import com.aozijx.passly.feature.detail.sections.WifiSection
+import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
+import com.aozijx.passly.feature.detail.ui.components.MetadataSection
+import com.aozijx.passly.feature.detail.ui.sections.ActivityTimelineSection
+import com.aozijx.passly.feature.detail.ui.sections.AssociatedInfoSection
+import com.aozijx.passly.feature.detail.ui.sections.BankCardSection
+import com.aozijx.passly.feature.detail.ui.sections.CredentialSection
+import com.aozijx.passly.feature.detail.ui.sections.DetailSectionKey
+import com.aozijx.passly.feature.detail.ui.sections.DetailSectionResolver
+import com.aozijx.passly.feature.detail.ui.sections.EntryCategoryItem
+import com.aozijx.passly.feature.detail.ui.sections.EntryTypeItem
+import com.aozijx.passly.feature.detail.ui.sections.IdCardSection
+import com.aozijx.passly.feature.detail.ui.sections.NotesSection
+import com.aozijx.passly.feature.detail.ui.sections.PasskeySection
+import com.aozijx.passly.feature.detail.ui.sections.RelatedEntriesSection
+import com.aozijx.passly.feature.detail.ui.sections.SeedPhraseSection
+import com.aozijx.passly.feature.detail.ui.sections.SshKeySection
+import com.aozijx.passly.feature.detail.ui.sections.TotpSection
+import com.aozijx.passly.feature.detail.ui.sections.WifiSection
 import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
@@ -64,6 +68,18 @@ fun DetailScrollableContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        item {
+            DetailHeader(
+                item = entry,
+                onIconClick = {
+                    entry.associatedDomain
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { onEvent(DetailIntent.DownloadFavicon(it)) }
+                },
+                onTitleLongClick = { onEvent(DetailIntent.StartTitleEdit) }
+            )
+        }
+
         if (DetailSectionKey.CREDENTIAL in registeredSections) {
             item {
                 CredentialSection(
