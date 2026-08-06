@@ -383,10 +383,11 @@
     <string name="app_package_picker_action">选择应用</string>
     <string name="entry_type">条目类型</string>
     <string name="recovery_mode_title">恢复模式</string>
-    <string name="recovery_mode_description">恢复码不会创建普通保险库会话。你只能重建主认证方式，或使用新的备份密码导出加密备份。</string>
-    <string name="recovery_mode_set_password">设置新的应用密码</string>
+    <string name="recovery_mode_description">恢复码不会创建普通保险库会话。你只能重建主认证方式，或使用新的备份密码导出加密备份。重设密码后应用会锁定，请使用新密码重新解锁。</string>
+    <string name="recovery_mode_set_password">重设应用密码</string>
+    <string name="recovery_mode_password_reset_success">应用密码已重设，请使用新密码重新解锁。</string>
     <string name="recovery_mode_reconfigure_biometric">重新配置生物识别</string>
-    <string name="recovery_mode_biometric_success">生物识别已重新配置。设置新的应用密码后可返回普通会话。</string>
+    <string name="recovery_mode_biometric_success">生物识别已重新配置。重设应用密码后可使用新认证方式解锁。</string>
     <string name="recovery_mode_biometric_failed">无法重新配置生物识别</string>
     <string name="recovery_mode_export">使用恢复码导出备份</string>
     <string name="recovery_mode_export_failed">恢复备份导出失败</string>

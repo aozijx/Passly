@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.envelope.BootstrapStore
 import com.github.f4b6a3.uuid.UuidCreator
@@ -36,6 +37,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
 ) : AuthenticationMethodProvisioner {
     override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
+        val wasRecoveryMode = session.isRecoveryMode()
         if (!AppPasswordPolicy.acceptsLength(password.size)) {
             password.fill('\u0000')
             return AuthenticationResult.Failure(
@@ -70,7 +72,11 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
                     )
                 }
                 authenticationManager.refreshAvailability()
-                session.markAuthenticated()
+                if (wasRecoveryMode) {
+                    session.lock(LockReason.RECOVERY_EXIT)
+                } else {
+                    session.markAuthenticated()
+                }
                 AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
             } finally {
                 rawKey.fill(0)

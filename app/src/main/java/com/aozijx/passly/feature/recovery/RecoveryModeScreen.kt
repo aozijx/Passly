@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.recovery
 
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -53,6 +55,7 @@ fun RecoveryModeScreen(
     onExit: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     val exportPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream")
@@ -65,8 +68,15 @@ fun RecoveryModeScreen(
             when (effect) {
                 is RecoveryModeEffect.PickExportTarget -> exportPicker.launch(effect.fileName)
                 is RecoveryModeEffect.ExitRecovery -> onExit()
-                is RecoveryModeEffect.ShowMessage -> { /* handled by UI state */
-                }
+                is RecoveryModeEffect.PasswordResetCompleted ->
+                    Toast.makeText(
+                        context,
+                        R.string.recovery_mode_password_reset_success,
+                        Toast.LENGTH_LONG
+                    ).show()
+                is RecoveryModeEffect.ExportCompleted ->
+                    Toast.makeText(context, R.string.backup_export_success, Toast.LENGTH_SHORT)
+                        .show()
             }
         }
     }

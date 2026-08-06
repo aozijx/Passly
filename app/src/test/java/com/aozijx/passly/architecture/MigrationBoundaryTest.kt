@@ -1110,6 +1110,19 @@ class MigrationBoundaryTest {
                     "ensureRecoveryMode" in recoveryModeViewModel
         )
         assertTrue(
+            "Recovery password reset must seal recovery session instead of promoting it",
+            "wasRecoveryMode" in provisioner &&
+                    "LockReason.RECOVERY_EXIT" in provisioner &&
+                    "session.lock(LockReason.RECOVERY_EXIT)" in provisioner
+        )
+        assertTrue(
+            "markAuthenticated must not promote RecoveryMode to full Vault access",
+            "Recovery mode must not be promoted" in sessionController &&
+                    "markAuthenticatedInternal()" !in sessionController.substringAfter(
+                        "if (_state.value is AuthenticationState.RecoveryMode)"
+                    ).substringBefore("} else")
+        )
+        assertTrue(
             "BackupViewModel must gate normal backup versus recovery export",
             "BackupSessionPolicy" in backupViewModel &&
                     "VaultAccessState" !in backupViewModel &&

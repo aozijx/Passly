@@ -106,6 +106,8 @@ class RecoveryModeViewModel @Inject constructor(
                                 isSettingPassword = false,
                                 passwordSetupError = null
                             )
+                        }.also {
+                            _effect.emit(RecoveryModeEffect.PasswordResetCompleted)
                         }
 
                     is AuthenticationResult.Cancelled ->
@@ -193,9 +195,7 @@ class RecoveryModeViewModel @Inject constructor(
                                     exportError = null
                                 )
                             }
-                            _effect.emit(
-                                RecoveryModeEffect.ShowMessage("备份导出成功")
-                            )
+                            _effect.emit(RecoveryModeEffect.ExportCompleted)
                         }
 
                         is AppResult.Failure -> {

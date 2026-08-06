@@ -172,9 +172,11 @@ class VaultSessionController @Inject constructor(
      */
     suspend fun markAuthenticated(): Boolean = mutex.withLock {
         if (lockLevel == VaultLockState.UNLOCKED) {
-            // Recovery mode is intentionally promoted only after a primary method is rebuilt.
             if (_state.value is AuthenticationState.RecoveryMode) {
-                markAuthenticatedInternal()
+                // Recovery mode must not be promoted by a generic session marker.
+                // Leaving recovery after rebuilding a primary method is handled by
+                // the recovery flow with a sealed lock and a normal re-unlock.
+                resetIdleTimer()
             } else {
                 resetIdleTimer()
             }
