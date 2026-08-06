@@ -948,6 +948,9 @@ class MigrationBoundaryTest {
         val detailViewModel = File(
             "src/main/java/com/aozijx/passly/feature/detail/DetailViewModel.kt"
         ).readText()
+        val detailAccessPolicy = File(
+            "src/main/java/com/aozijx/passly/feature/detail/DetailAccessPolicy.kt"
+        ).readText()
         val recoveryModeViewModel = File(
             "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
         ).readText()
@@ -1091,8 +1094,10 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "DetailViewModel must gate detail reads and reveal actions",
-            "VaultAccessState" in detailViewModel &&
-                    detailViewModel.split("hasFullVaultAccess()").size - 1 >= 4
+            "DetailAccessPolicy" in detailViewModel &&
+                    "VaultAccessState" !in detailViewModel &&
+                    "hasFullVaultAccess()" in detailAccessPolicy &&
+                    detailViewModel.split("hasFullAccess()").size - 1 >= 4
         )
         assertTrue(
             "RecoveryModeViewModel must only run in RecoveryMode",
