@@ -29,9 +29,13 @@ class AuthenticationViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AuthenticationUiState())
     val uiState: StateFlow<AuthenticationUiState> = _uiState.asStateFlow()
 
+    private var recoveryRevealTapCount = 0
+
     fun onIntent(intent: AuthenticationIntent) {
         when (intent) {
             AuthenticationIntent.BiometricClicked -> verifyWithBiometric()
+            AuthenticationIntent.LockIconClicked -> revealRecoveryUnlock()
+            AuthenticationIntent.BackPressed -> onBackPressed()
             is AuthenticationIntent.AppPasswordChanged -> onAppPasswordChange(intent.value)
             AuthenticationIntent.AppPasswordSubmitted -> verifyWithAppPassword()
             is AuthenticationIntent.RecoveryCodeChanged -> onRecoveryCodeChange(intent.value)
@@ -43,6 +47,29 @@ class AuthenticationViewModel @Inject constructor(
             AuthenticationIntent.SetPasswordConfirmed -> bootstrapAppPassword()
             AuthenticationIntent.DismissSetPasswordDialog -> onDismissSetPasswordDialog()
             AuthenticationIntent.ClearVerificationFailure -> clearVerificationFailure()
+        }
+    }
+
+    private fun revealRecoveryUnlock() {
+        val state = _uiState.value
+        if (!methodAvailability.value.recoveryCode || state.recoveryUnlockVisible) return
+        recoveryRevealTapCount += 1
+        if (recoveryRevealTapCount >= RECOVERY_REVEAL_TAP_THRESHOLD) {
+            recoveryRevealTapCount = 0
+            _uiState.update { it.copy(recoveryUnlockVisible = true) }
+        }
+    }
+
+    private fun onBackPressed() {
+        when (val expandedMethod = _uiState.value.expandedMethod) {
+            AuthenticationMethod.APP_PASSWORD,
+            AuthenticationMethod.RECOVERY_CODE -> onInputExpanded(expandedMethod, false)
+
+            AuthenticationMethod.BIOMETRIC,
+            null -> {
+                recoveryRevealTapCount = 0
+                _uiState.update { it.copy(recoveryUnlockVisible = false) }
+            }
         }
     }
 
@@ -241,11 +268,13 @@ class AuthenticationViewModel @Inject constructor(
     }
 
     private fun resetInputState() {
+        recoveryRevealTapCount = 0
         wipeUnlockInputs()
         _uiState.update {
             it.copy(
                 appPassword = SecureString.EMPTY,
                 recoveryCode = SecureString.EMPTY,
+                recoveryUnlockVisible = false,
                 expandedMethod = null,
                 verificationFailure = null
             )
@@ -266,5 +295,9 @@ class AuthenticationViewModel @Inject constructor(
     private fun wipeSetupPasswords() {
         _uiState.value.newAppPassword.wipe()
         _uiState.value.confirmAppPassword.wipe()
+    }
+
+    private companion object {
+        const val RECOVERY_REVEAL_TAP_THRESHOLD = 12
     }
 }

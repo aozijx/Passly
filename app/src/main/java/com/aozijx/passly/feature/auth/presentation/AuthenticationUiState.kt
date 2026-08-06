@@ -16,6 +16,7 @@ data class AuthenticationUiState(
     val isSettingAppPassword: Boolean = false,
     val appPassword: SecureString = SecureString.EMPTY,
     val recoveryCode: SecureString = SecureString.EMPTY,
+    val recoveryUnlockVisible: Boolean = false,
     val expandedMethod: AuthenticationMethod? = null,
     val activeMethod: AuthenticationMethod? = null,
     val verificationFailure: AuthenticationVerificationFailure? = null,

@@ -1,6 +1,9 @@
 package com.aozijx.passly.feature.auth.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -57,6 +61,11 @@ fun AuthenticationScreen(
     val biometricFailure = verificationFailure?.takeIf {
         it.method == AuthenticationMethod.BIOMETRIC
     }?.failure
+    val lockIconInteractionSource = remember { MutableInteractionSource() }
+
+    BackHandler(enabled = !uiState.showSetPasswordDialog) {
+        viewModel.onIntent(AuthenticationIntent.BackPressed)
+    }
 
     Column(
         modifier = Modifier
@@ -74,7 +83,14 @@ fun AuthenticationScreen(
             Icon(
                 imageVector = Icons.Default.Lock,
                 contentDescription = null,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier
+                    .size(64.dp)
+                    .clickable(
+                        interactionSource = lockIconInteractionSource,
+                        indication = null
+                    ) {
+                        viewModel.onIntent(AuthenticationIntent.LockIconClicked)
+                    },
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -166,7 +182,7 @@ fun AuthenticationScreen(
                 )
             }
 
-            if (methods.recoveryCode) {
+            if (methods.recoveryCode && uiState.recoveryUnlockVisible) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
                     value = uiState.recoveryCode,

@@ -4,6 +4,8 @@ import com.aozijx.passly.domain.authentication.AuthenticationMethod
 
 sealed interface AuthenticationIntent {
     data object BiometricClicked : AuthenticationIntent
+    data object LockIconClicked : AuthenticationIntent
+    data object BackPressed : AuthenticationIntent
     data class AppPasswordChanged(val value: String) : AuthenticationIntent
     data object AppPasswordSubmitted : AuthenticationIntent
     data class RecoveryCodeChanged(val value: String) : AuthenticationIntent
