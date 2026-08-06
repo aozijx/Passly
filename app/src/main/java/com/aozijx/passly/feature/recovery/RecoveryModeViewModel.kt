@@ -47,15 +47,23 @@ class RecoveryModeViewModel @Inject constructor(
     fun onIntent(intent: RecoveryModeIntent) {
         when (intent) {
             RecoveryModeIntent.SetPasswordClicked -> showSetPasswordDialog()
-            is RecoveryModeIntent.NewPasswordChanged -> updateNewPassword(intent.value)
-            is RecoveryModeIntent.ConfirmPasswordChanged -> updateConfirmPassword(intent.value)
+            is RecoveryModeIntent.NewPasswordChanged ->
+                _uiState.update { it.copy(newPassword = intent.value, passwordSetupError = null) }
+            is RecoveryModeIntent.ConfirmPasswordChanged ->
+                _uiState.update {
+                    it.copy(confirmPassword = intent.value, passwordSetupError = null)
+                }
             RecoveryModeIntent.SubmitNewPassword -> submitNewPassword()
             RecoveryModeIntent.ReconfigureBiometricClicked -> reconfigureBiometric()
             RecoveryModeIntent.ExportClicked -> prepareExport()
-            is RecoveryModeIntent.ExportPasswordChanged -> updateExportPassword(intent.value)
-            is RecoveryModeIntent.IncludeIconsChanged -> updateIncludeIcons(intent.include)
-            is RecoveryModeIntent.IncludeAttachmentsChanged -> updateIncludeAttachments(intent.include)
-            is RecoveryModeIntent.IncludeDeletedChanged -> updateIncludeDeleted(intent.include)
+            is RecoveryModeIntent.ExportPasswordChanged ->
+                _uiState.update { it.copy(exportPassword = intent.value, exportError = null) }
+            is RecoveryModeIntent.IncludeIconsChanged ->
+                _uiState.update { it.copy(includeIcons = intent.include) }
+            is RecoveryModeIntent.IncludeAttachmentsChanged ->
+                _uiState.update { it.copy(includeAttachments = intent.include) }
+            is RecoveryModeIntent.IncludeDeletedChanged ->
+                _uiState.update { it.copy(includeDeleted = intent.include) }
             RecoveryModeIntent.SubmitExport -> submitExport()
             is RecoveryModeIntent.ExportTargetPicked -> handleExportTarget(intent.uri)
             RecoveryModeIntent.ExitClicked -> exitRecovery()
@@ -70,14 +78,6 @@ class RecoveryModeViewModel @Inject constructor(
     private fun showSetPasswordDialog() {
         if (!ensureRecoveryMode()) return
         _uiState.update { it.copy(showSetPasswordDialog = true, passwordSetupError = null) }
-    }
-
-    private fun updateNewPassword(value: String) {
-        _uiState.update { it.copy(newPassword = value, passwordSetupError = null) }
-    }
-
-    private fun updateConfirmPassword(value: String) {
-        _uiState.update { it.copy(confirmPassword = value, passwordSetupError = null) }
     }
 
     private fun submitNewPassword() {
@@ -97,7 +97,7 @@ class RecoveryModeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 when (val result = methodProvisioner.setAppPassword(password)) {
-                    is AuthenticationResult.Success -> {
+                    is AuthenticationResult.Success ->
                         _uiState.update {
                             it.copy(
                                 showSetPasswordDialog = false,
@@ -107,20 +107,17 @@ class RecoveryModeViewModel @Inject constructor(
                                 passwordSetupError = null
                             )
                         }
-                    }
 
-                    is AuthenticationResult.Cancelled -> {
+                    is AuthenticationResult.Cancelled ->
                         _uiState.update { it.copy(isSettingPassword = false) }
-                    }
 
-                    is AuthenticationResult.Failure -> {
+                    is AuthenticationResult.Failure ->
                         _uiState.update {
                             it.copy(
                                 isSettingPassword = false,
                                 passwordSetupError = "设置密码失败"
                             )
                         }
-                    }
                 }
             } finally {
                 MemoryCleaner.wipeCharArray(password)
@@ -166,22 +163,6 @@ class RecoveryModeViewModel @Inject constructor(
         }
     }
 
-    private fun updateExportPassword(value: String) {
-        _uiState.update { it.copy(exportPassword = value, exportError = null) }
-    }
-
-    private fun updateIncludeIcons(include: Boolean) {
-        _uiState.update { it.copy(includeIcons = include) }
-    }
-
-    private fun updateIncludeAttachments(include: Boolean) {
-        _uiState.update { it.copy(includeAttachments = include) }
-    }
-
-    private fun updateIncludeDeleted(include: Boolean) {
-        _uiState.update { it.copy(includeDeleted = include) }
-    }
-
     private fun handleExportTarget(uri: Uri?) {
         if (!ensureRecoveryMode()) return
         if (uri == null) {
@@ -202,19 +183,7 @@ class RecoveryModeViewModel @Inject constructor(
                 val state = _uiState.value
                 val password = state.exportPassword.toCharArray()
                 try {
-                    val result = backupService.export(
-                        BackupExportRequest(
-                            targetUri = uri.toString(),
-                            format = BackupFormats.PASSLY_ENCRYPTED,
-                            password = password,
-                            options = BackupExportOptions(
-                                includeIcons = state.includeIcons,
-                                includeAttachments = state.includeAttachments,
-                                includeDeleted = state.includeDeleted,
-                                includedEntryTypes = EntryType.entries.toSet()
-                            )
-                        )
-                    )
+                    val result = backupService.export(state.toExportRequest(uri, password))
                     when (result) {
                         is AppResult.Success -> {
                             _uiState.update {
@@ -230,26 +199,35 @@ class RecoveryModeViewModel @Inject constructor(
                         }
 
                         is AppResult.Failure -> {
-                            _uiState.update {
-                                it.copy(
-                                    isExporting = false,
-                                    exportError = "备份导出失败"
-                                )
-                            }
+                            markExportFailed()
                         }
                     }
                 } finally {
                     password.fill('\u0000')
                 }
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isExporting = false,
-                        exportError = "备份导出失败"
-                    )
-                }
+                markExportFailed()
             }
         }
+    }
+
+    private fun RecoveryModeUiState.toExportRequest(
+        uri: Uri,
+        password: CharArray
+    ): BackupExportRequest = BackupExportRequest(
+        targetUri = uri.toString(),
+        format = BackupFormats.PASSLY_ENCRYPTED,
+        password = password,
+        options = BackupExportOptions(
+            includeIcons = includeIcons,
+            includeAttachments = includeAttachments,
+            includeDeleted = includeDeleted,
+            includedEntryTypes = EntryType.entries.toSet()
+        )
+    )
+
+    private fun markExportFailed() {
+        _uiState.update { it.copy(isExporting = false, exportError = "备份导出失败") }
     }
 
     private fun exitRecovery() {

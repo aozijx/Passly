@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,16 +31,11 @@ class DataManagementSettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(
-                settingsRepository.settings.map { it.interaction.isAutoDownloadIcons },
-                settingsRepository.settings.map { it.backup.directoryTreeUri }
-            ) { autoDownloadIcons, directoryUri ->
-                autoDownloadIcons to directoryUri
-            }.collect { (autoDownloadIcons, directoryUri) ->
+            settingsRepository.settings.collect { settings ->
                 _config.update {
                     it.copy(
-                        isAutoDownloadIcons = autoDownloadIcons,
-                        directoryUri = directoryUri
+                        isAutoDownloadIcons = settings.interaction.isAutoDownloadIcons,
+                        directoryUri = settings.backup.directoryTreeUri
                     )
                 }
             }
@@ -70,17 +63,12 @@ class DataManagementSettingsViewModel @Inject constructor(
 
     fun onAction(action: DataManagementSettingsAction) {
         when (action) {
-            is DataManagementSettingsAction.SetAutoDownloadIcons -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetAutoDownloadIcons(action.enabled))
-            }
-
-            is DataManagementSettingsAction.SetBackupDirectoryUri -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetBackupDirectoryUri(action.uri))
-            }
-
-            is DataManagementSettingsAction.ClearBackupDirectory -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.ClearBackupDirectoryUri)
-            }
+            is DataManagementSettingsAction.SetAutoDownloadIcons ->
+                updateSettings(SettingsCommand.SetAutoDownloadIcons(action.enabled))
+            is DataManagementSettingsAction.SetBackupDirectoryUri ->
+                updateSettings(SettingsCommand.SetBackupDirectoryUri(action.uri))
+            is DataManagementSettingsAction.ClearBackupDirectory ->
+                updateSettings(SettingsCommand.ClearBackupDirectoryUri)
 
             is DataManagementSettingsAction.RestoreTrashEntry -> runTrashEntryAction(action.entryId) {
                 entryCommandRepository.restoreEntry(
@@ -104,32 +92,21 @@ class DataManagementSettingsViewModel @Inject constructor(
         }
     }
 
+    private fun updateSettings(command: SettingsCommand) {
+        viewModelScope.launch { settingsRepository.update(command) }
+    }
+
     private fun runTrashEntryAction(
         entryId: String,
         operation: suspend () -> AppResult<Unit>
     ) {
         if (_config.value.isTrashBusy) return
-        if (!vaultAccessState.hasFullVaultAccess()) {
-            _config.update { it.copy(trashError = "当前会话不能操作回收站") }
-            return
-        }
+        if (!requireTrashAccess()) return
         viewModelScope.launch {
-            if (!vaultAccessState.hasFullVaultAccess()) {
-                _config.update { it.copy(trashError = "当前会话不能操作回收站") }
-                return@launch
-            }
-            _config.update {
-                it.copy(activeTrashEntryId = entryId, trashError = null)
-            }
+            if (!requireTrashAccess()) return@launch
+            _config.update { it.copy(activeTrashEntryId = entryId, trashError = null) }
             try {
-                when (val result = operation()) {
-                    is AppResult.Success -> Unit
-                    is AppResult.Failure -> {
-                        _config.update {
-                            it.copy(trashError = result.error.toUiMessage("回收站操作失败"))
-                        }
-                    }
-                }
+                operation().updateTrashError("回收站操作失败")
             } finally {
                 _config.update { it.copy(activeTrashEntryId = null) }
             }
@@ -138,28 +115,27 @@ class DataManagementSettingsViewModel @Inject constructor(
 
     private fun emptyTrash() {
         if (_config.value.isTrashBusy || _config.value.deletedEntries.isEmpty()) return
-        if (!vaultAccessState.hasFullVaultAccess()) {
-            _config.update { it.copy(trashError = "当前会话不能操作回收站") }
-            return
-        }
+        if (!requireTrashAccess()) return
         viewModelScope.launch {
-            if (!vaultAccessState.hasFullVaultAccess()) {
-                _config.update { it.copy(trashError = "当前会话不能操作回收站") }
-                return@launch
-            }
+            if (!requireTrashAccess()) return@launch
             _config.update { it.copy(isEmptyingTrash = true, trashError = null) }
             try {
-                when (val result = entryCommandRepository.emptyTrash()) {
-                    is AppResult.Success -> Unit
-                    is AppResult.Failure -> {
-                        _config.update {
-                            it.copy(trashError = result.error.toUiMessage("无法清空回收站"))
-                        }
-                    }
-                }
+                entryCommandRepository.emptyTrash().updateTrashError("无法清空回收站")
             } finally {
                 _config.update { it.copy(isEmptyingTrash = false) }
             }
+        }
+    }
+
+    private fun requireTrashAccess(): Boolean {
+        if (vaultAccessState.hasFullVaultAccess()) return true
+        _config.update { it.copy(trashError = "当前会话不能操作回收站") }
+        return false
+    }
+
+    private fun AppResult<*>.updateTrashError(fallback: String) {
+        if (this is AppResult.Failure) {
+            _config.update { it.copy(trashError = error.toUiMessage(fallback)) }
         }
     }
 }

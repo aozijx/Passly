@@ -67,12 +67,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             runCatching {
-                val swipeLeft = settingsRepository.settings.first().interaction.swipeLeftAction
-                val swipeRight = settingsRepository.settings.first().interaction.swipeRightAction
+                val interaction = settingsRepository.settings.first().interaction
                 _uiState.update {
                     it.copy(
-                        swipeLeftAction = swipeLeft,
-                        swipeRightAction = swipeRight,
+                        swipeLeftAction = interaction.swipeLeftAction,
+                        swipeRightAction = interaction.swipeRightAction,
                         isLoading = false
                     )
                 }
@@ -84,22 +83,25 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun setSwipeLeftAction(action: SwipeActionType) {
-        viewModelScope.launch {
-            runCatching {
-                settingsRepository.update(SettingsCommand.SetSwipeLeftAction(action))
-                _uiState.update { it.copy(swipeLeftAction = action) }
-                _effects.tryEmit(SettingsEffect.SettingsSaved)
-            }.onFailure { error ->
-                _effects.tryEmit(SettingsEffect.ShowError(error.message ?: "保存失败"))
-            }
+        saveSwipeAction(SettingsCommand.SetSwipeLeftAction(action)) {
+            it.copy(swipeLeftAction = action)
         }
     }
 
     private fun setSwipeRightAction(action: SwipeActionType) {
+        saveSwipeAction(SettingsCommand.SetSwipeRightAction(action)) {
+            it.copy(swipeRightAction = action)
+        }
+    }
+
+    private fun saveSwipeAction(
+        command: SettingsCommand,
+        updateState: (SettingsUiState) -> SettingsUiState
+    ) {
         viewModelScope.launch {
             runCatching {
-                settingsRepository.update(SettingsCommand.SetSwipeRightAction(action))
-                _uiState.update { it.copy(swipeRightAction = action) }
+                settingsRepository.update(command)
+                _uiState.update(updateState)
                 _effects.tryEmit(SettingsEffect.SettingsSaved)
             }.onFailure { error ->
                 _effects.tryEmit(SettingsEffect.ShowError(error.message ?: "保存失败"))
@@ -148,12 +150,8 @@ class SettingsViewModel @Inject constructor(
         password: CharArray,
         onResult: (AuthenticationResult) -> Unit
     ) {
-        if (isRecoveryMode()) {
-            onResult(sessionModeRestrictedResult())
-            return
-        }
-        viewModelScope.launch {
-            onResult(authenticationMethodProvisioner.setAppPassword(password))
+        runPrimaryAuthMethodChange(onResult) {
+            authenticationMethodProvisioner.setAppPassword(password)
         }
     }
 
@@ -162,28 +160,26 @@ class SettingsViewModel @Inject constructor(
         newPassword: CharArray,
         onResult: (AuthenticationResult) -> Unit
     ) {
-        if (isRecoveryMode()) {
-            onResult(sessionModeRestrictedResult())
-            return
-        }
-        viewModelScope.launch {
-            onResult(
-                authenticationMethodProvisioner.changeAppPassword(
-                    currentPassword,
-                    newPassword
-                )
-            )
+        runPrimaryAuthMethodChange(onResult) {
+            authenticationMethodProvisioner.changeAppPassword(currentPassword, newPassword)
         }
     }
 
     fun disableAppPassword(onResult: (AuthenticationResult) -> Unit) {
+        runPrimaryAuthMethodChange(onResult) {
+            authenticationMethodProvisioner.disableAppPassword()
+        }
+    }
+
+    private fun runPrimaryAuthMethodChange(
+        onResult: (AuthenticationResult) -> Unit,
+        operation: suspend () -> AuthenticationResult
+    ) {
         if (isRecoveryMode()) {
             onResult(sessionModeRestrictedResult())
             return
         }
-        viewModelScope.launch {
-            onResult(authenticationMethodProvisioner.disableAppPassword())
-        }
+        viewModelScope.launch { onResult(operation()) }
     }
 
     private fun isRecoveryMode(): Boolean =

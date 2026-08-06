@@ -63,7 +63,7 @@ class SecuritySettingsViewModel @Inject constructor(
             }
 
             is SecuritySettingsAction.VerifyRecoveryCode -> viewModelScope.launch {
-                if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
+                if (isRecoveryMode()) {
                     _verifyResult.value = false
                     return@launch
                 }
@@ -89,10 +89,7 @@ class SecuritySettingsViewModel @Inject constructor(
         onResult: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
-            if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
-                onResult(false)
-                return@launch
-            }
+            if (isRecoveryMode()) return@launch onResult(false)
             val result = methodProvisioner.rotateBiometricPolicy(enabled)
             if (result is AuthenticationResult.Success) {
                 settingsRepository.update(SettingsCommand.SetInvalidateBiometricKeyOnChange(enabled))
@@ -106,10 +103,7 @@ class SecuritySettingsViewModel @Inject constructor(
         onResult: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
-            if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
-                onResult(false)
-                return@launch
-            }
+            if (isRecoveryMode()) return@launch onResult(false)
             val result = if (enabled) {
                 methodProvisioner.rotateBiometricPolicy(config.value.isInvalidateKeyOnBioChange)
             } else {
@@ -118,4 +112,7 @@ class SecuritySettingsViewModel @Inject constructor(
             onResult(result is AuthenticationResult.Success)
         }
     }
+
+    private fun isRecoveryMode(): Boolean =
+        authenticationManager.state.value is AuthenticationState.RecoveryMode
 }

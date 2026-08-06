@@ -3,10 +3,10 @@ package com.aozijx.passly.feature.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.entry.model.EntryChanges
+import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
@@ -78,39 +78,15 @@ class DetailViewModel @Inject constructor(
         }
         when (event) {
             is DetailIntent.Initialize -> {
-                refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
-
-                viewModelScope.launch {
-                    if (!accessPolicy.hasFullAccess()) return@launch
-                    val latest =
-                        entryQueryRepository.getByIdWithoutHighSensitivity(event.initialEntry.id)
-                            ?: event.initialEntry
-                    refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
-                    loadRelatedEntries(latest)
-                    autoDownloadFavicon(latest)
-                }
-
-                viewModelScope.launch {
-                    if (!accessPolicy.hasFullAccess()) return@launch
-                    activityQueryRepository.observeByEntryId(event.initialEntry.id)
-                        .collect { list: List<EntryActivity> ->
-                            _uiState.update { it.copy(history = list) }
-                        }
-                }
+                initialize(event.initialEntry)
             }
 
             is DetailIntent.SyncEntry -> {
-                val editedTitle = if (_uiState.value.isEditingTitle) _uiState.value.editedTitle else event.entry.title
-                refreshFromEntry(event.entry, _uiState.value.isEditingTitle, editedTitle)
+                refreshKeepingTitleEdit(event.entry)
             }
 
             is DetailIntent.CommitEntryUpdate -> {
-                val editedTitle = if (_uiState.value.isEditingTitle) {
-                    _uiState.value.editedTitle
-                } else {
-                    event.entry.title
-                }
-                refreshFromEntry(event.entry, _uiState.value.isEditingTitle, editedTitle)
+                refreshKeepingTitleEdit(event.entry)
                 emitEntryUpdated(event.entry)
             }
 
@@ -155,16 +131,13 @@ class DetailViewModel @Inject constructor(
 
             DetailIntent.ToggleFavorite -> {
                 val current = _uiState.value.entry ?: return
-                commitEntryUpdate(current.copy(summary = current.summary.copy(favorite = !current.favorite)))
+                commitEntryUpdate(
+                    current.copy(summary = current.summary.copy(favorite = !current.favorite))
+                )
             }
 
             is DetailIntent.RevealField -> {
-                _uiState.update { state ->
-                    val updated = state.revealedFields.toMutableMap()
-                    if (event.value != null) updated[event.key] = event.value
-                    else updated.remove(event.key)
-                    state.copy(revealedFields = updated)
-                }
+                setRevealedField(event.key, event.value)
             }
 
             is DetailIntent.DownloadFavicon -> {
@@ -187,19 +160,8 @@ class DetailViewModel @Inject constructor(
                     if (!accessPolicy.hasFullAccess()) return@launch
                     val high = entryHighSensitivityRepository
                         .getHighSensitivitySecretForReveal(current.id)
-                    val value = when (key) {
-                        RevealedFieldKey.CARD_NUMBER -> high?.card?.cardNumber
-                        RevealedFieldKey.CVV -> high?.card?.cardCvv
-                        RevealedFieldKey.PAYMENT_PIN -> high?.card?.paymentPin
-                        RevealedFieldKey.SSH_PRIVATE_KEY -> high?.ssh?.privateKey
-                        RevealedFieldKey.SEED_PHRASE -> high?.identity?.seedPhrase
-                        RevealedFieldKey.PASSKEY_DATA -> high?.passkey?.privateKeyReference
-                        RevealedFieldKey.ID_NUMBER -> high?.identity?.idNumber
-                        else -> null
-                    }?.takeIf { it.isNotBlank() } ?: return@launch
-                    _uiState.update { state ->
-                        state.copy(revealedFields = state.revealedFields + (key to value))
-                    }
+                    val value = high?.valueFor(key)?.takeIf { it.isNotBlank() } ?: return@launch
+                    setRevealedField(key, value)
                     activityRecorder.recordUsage(current.id, ActivityType.VIEW)
                 }
             }
@@ -207,7 +169,7 @@ class DetailViewModel @Inject constructor(
             is DetailIntent.RecordAction -> {
                 val current = _uiState.value.entry ?: return
                 if (event.type == ActivityType.VIEW && !_uiState.value.isAccessHistoryEnabled) return
-                if (event.type == ActivityType.COPY_PASSWORD || event.type == ActivityType.COPY_USERNAME) {
+                if (event.type.clearsRevealedFields()) {
                     _uiState.update { it.copy(revealedFields = emptyMap()) }
                 }
 
@@ -228,6 +190,58 @@ class DetailViewModel @Inject constructor(
             }
         }
     }
+
+    private fun initialize(initialEntry: VaultEntry) {
+        refreshFromEntry(initialEntry, isEditingTitle = false, editedTitle = initialEntry.title)
+        viewModelScope.launch {
+            if (!accessPolicy.hasFullAccess()) return@launch
+            val latest = entryQueryRepository.getByIdWithoutHighSensitivity(initialEntry.id)
+                ?: initialEntry
+            refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
+            loadRelatedEntries(latest)
+            autoDownloadFavicon(latest)
+        }
+        viewModelScope.launch {
+            if (!accessPolicy.hasFullAccess()) return@launch
+            activityQueryRepository.observeByEntryId(initialEntry.id)
+                .collect { history -> _uiState.update { it.copy(history = history) } }
+        }
+    }
+
+    private fun refreshKeepingTitleEdit(entry: VaultEntry) {
+        val isEditing = _uiState.value.isEditingTitle
+        refreshFromEntry(
+            entry,
+            isEditingTitle = isEditing,
+            editedTitle = if (isEditing) _uiState.value.editedTitle else entry.title
+        )
+    }
+
+    private fun setRevealedField(key: String, value: String?) {
+        _uiState.update { state ->
+            state.copy(
+                revealedFields = if (value == null) {
+                    state.revealedFields - key
+                } else {
+                    state.revealedFields + (key to value)
+                }
+            )
+        }
+    }
+
+    private fun EntryHighSensitivitySecret.valueFor(key: String): String? = when (key) {
+        RevealedFieldKey.CARD_NUMBER -> card?.cardNumber
+        RevealedFieldKey.CVV -> card?.cardCvv
+        RevealedFieldKey.PAYMENT_PIN -> card?.paymentPin
+        RevealedFieldKey.SSH_PRIVATE_KEY -> ssh?.privateKey
+        RevealedFieldKey.SEED_PHRASE -> identity?.seedPhrase
+        RevealedFieldKey.PASSKEY_DATA -> passkey?.privateKeyReference
+        RevealedFieldKey.ID_NUMBER -> identity?.idNumber
+        else -> null
+    }
+
+    private fun ActivityType.clearsRevealedFields(): Boolean =
+        this == ActivityType.COPY_PASSWORD || this == ActivityType.COPY_USERNAME
 
     private fun commitEntryUpdate(entry: VaultEntry, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
         val editedTitle = if (isEditingTitle) _uiState.value.editedTitle else entry.title
