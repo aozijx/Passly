@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
@@ -44,7 +45,8 @@ class DetailViewModel @Inject constructor(
     private val activityRecorder: ActivityRecorder,
     private val faviconRepository: FaviconRepository,
     private val entryTypePolicy: EntryTypePolicy,
-    private val entryValidatorProvider: EntryValidatorProvider
+    private val entryValidatorProvider: EntryValidatorProvider,
+    private val vaultAccessState: VaultAccessState
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy, entryValidatorProvider)
 
@@ -71,11 +73,16 @@ class DetailViewModel @Inject constructor(
     }
 
     fun handleIntent(event: DetailIntent) {
+        if (event !is DetailIntent.ClearSensitiveState && !vaultAccessState.hasFullVaultAccess()) {
+            _uiState.update { DetailUiState() }
+            return
+        }
         when (event) {
             is DetailIntent.Initialize -> {
                 refreshFromEntry(event.initialEntry, isEditingTitle = false, editedTitle = event.initialEntry.title)
 
                 viewModelScope.launch {
+                    if (!vaultAccessState.hasFullVaultAccess()) return@launch
                     val latest =
                         entryQueryRepository.getByIdWithoutHighSensitivity(event.initialEntry.id)
                             ?: event.initialEntry
@@ -85,6 +92,7 @@ class DetailViewModel @Inject constructor(
                 }
 
                 viewModelScope.launch {
+                    if (!vaultAccessState.hasFullVaultAccess()) return@launch
                     activityQueryRepository.observeByEntryId(event.initialEntry.id)
                         .collect { list: List<EntryActivity> ->
                             _uiState.update { it.copy(history = list) }
@@ -177,6 +185,7 @@ class DetailViewModel @Inject constructor(
                     return
                 }
                 viewModelScope.launch {
+                    if (!vaultAccessState.hasFullVaultAccess()) return@launch
                     val high = entryHighSensitivityRepository
                         .getHighSensitivitySecretForReveal(current.id)
                     val value = when (key) {
@@ -204,6 +213,7 @@ class DetailViewModel @Inject constructor(
                 }
 
                 viewModelScope.launch {
+                    if (!vaultAccessState.hasFullVaultAccess()) return@launch
                     activityRecorder.recordUsage(current.id, event.type)
                 }
             }
@@ -269,8 +279,9 @@ class DetailViewModel @Inject constructor(
         if (domain.isBlank()) return
         _uiState.update { it.copy(isFaviconDownloading = true) }
         try {
-            val outcome = downloadFavicon(domain)
-            if (outcome.result != FaviconResult.SUCCESS || outcome.filePath == null) return
+        val outcome = downloadFavicon(domain)
+        if (!vaultAccessState.hasFullVaultAccess()) return
+        if (outcome.result != FaviconResult.SUCCESS || outcome.filePath == null) return
             val website = if (updateDomain) {
                 (entry.summary.website ?: com.aozijx.passly.domain.entry.model.WebsiteInfo())
                     .copy(primaryUrl = domain.trim())

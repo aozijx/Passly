@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.recovery
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,16 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.group.RoundedGroup
+import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
+import com.aozijx.passly.core.ui.components.group.settingsGroupItem
+import com.aozijx.passly.core.ui.components.settings.SettingsSection
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.backup.contract.BackupUiState
 import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
@@ -70,6 +75,7 @@ fun RecoveryModeScreen(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -93,53 +99,71 @@ fun RecoveryModeScreen(
         )
         Spacer(Modifier.height(32.dp))
 
-        RecoveryActionButton(
-            icon = Icons.Default.LockReset,
-            text = stringResource(R.string.recovery_mode_set_password),
-            onClick = { viewModel.onIntent(RecoveryModeIntent.SetPasswordClicked) }
-        )
-        Spacer(Modifier.height(8.dp))
-        RecoveryActionButton(
-            icon = Icons.Default.Fingerprint,
-            text = stringResource(R.string.recovery_mode_reconfigure_biometric),
-            onClick = { viewModel.onIntent(RecoveryModeIntent.ReconfigureBiometricClicked) }
-        )
-        state.biometricResult?.let { success ->
-            Text(
-                text = stringResource(
-                    if (success) R.string.recovery_mode_biometric_success
-                    else R.string.recovery_mode_biometric_failed
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (success) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                }
+        SettingsSection(modifier = Modifier.fillMaxWidth()) {
+            SettingsSectionTitle(text = stringResource(R.string.settings_security_auth_section))
+            RoundedGroup(
+                items = listOf(
+                    navigationSettingsGroupItem(
+                        key = "recovery.set_app_password",
+                        icon = Icons.Default.LockReset,
+                        title = stringResource(R.string.recovery_mode_set_password),
+                        subtitle = stringResource(R.string.settings_security_app_password_description),
+                        isLoading = state.isSettingPassword,
+                        onClick = { viewModel.onIntent(RecoveryModeIntent.SetPasswordClicked) }
+                    ),
+                    navigationSettingsGroupItem(
+                        key = "recovery.reconfigure_biometric",
+                        icon = Icons.Default.Fingerprint,
+                        title = stringResource(R.string.recovery_mode_reconfigure_biometric),
+                        subtitle = state.biometricResult?.let { success ->
+                            stringResource(
+                                if (success) R.string.recovery_mode_biometric_success
+                                else R.string.recovery_mode_biometric_failed
+                            )
+                        },
+                        isLoading = state.isReconfiguringBiometric,
+                        onClick = {
+                            viewModel.onIntent(RecoveryModeIntent.ReconfigureBiometricClicked)
+                        }
+                    )
+                )
             )
         }
-        Spacer(Modifier.height(8.dp))
-        RecoveryActionButton(
-            icon = Icons.Default.FileDownload,
-            text = stringResource(R.string.recovery_mode_export),
-            onClick = { viewModel.onIntent(RecoveryModeIntent.ExportClicked) }
-        )
-        if (state.exportError != null) {
-            Text(
-                text = stringResource(R.string.recovery_mode_export_failed),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
+
         Spacer(Modifier.height(16.dp))
-        OutlinedButton(
-            onClick = { viewModel.onIntent(RecoveryModeIntent.ExitClicked) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
-            Text(
-                text = stringResource(R.string.recovery_mode_exit),
-                modifier = Modifier.padding(start = 8.dp)
+        SettingsSection(modifier = Modifier.fillMaxWidth()) {
+            SettingsSectionTitle(text = stringResource(R.string.settings_backup_restore_section))
+            RoundedGroup(
+                items = listOf(
+                    navigationSettingsGroupItem(
+                        key = "recovery.export_backup",
+                        icon = Icons.Default.FileDownload,
+                        title = stringResource(R.string.recovery_mode_export),
+                        subtitle = if (state.exportError != null) {
+                            stringResource(R.string.recovery_mode_export_failed)
+                        } else {
+                            stringResource(R.string.settings_backup_format_encrypted_description)
+                        },
+                        isLoading = state.isExporting,
+                        onClick = { viewModel.onIntent(RecoveryModeIntent.ExportClicked) }
+                    )
+                )
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+        SettingsSection(modifier = Modifier.fillMaxWidth()) {
+            RoundedGroup(
+                items = listOf(
+                    settingsGroupItem(
+                        key = "recovery.exit",
+                        icon = Icons.AutoMirrored.Filled.Logout,
+                        title = stringResource(R.string.recovery_mode_exit),
+                        subtitle = stringResource(R.string.notice_app_locked),
+                        onClick = { viewModel.onIntent(RecoveryModeIntent.ExitClicked) }
+                    )
+                ),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
             )
         }
     }
@@ -202,16 +226,4 @@ fun RecoveryModeScreen(
         },
         onImport = {}
     )
-}
-
-@Composable
-private fun RecoveryActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
-    onClick: () -> Unit
-) {
-    Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Icon(icon, contentDescription = null)
-        Text(text = text, modifier = Modifier.padding(start = 8.dp))
-    }
 }

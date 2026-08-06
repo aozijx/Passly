@@ -23,7 +23,7 @@ internal fun AutofillSettingsSection(
     settings: AutofillSettings,
     isSystemServiceEnabled: Boolean,
     onOpenAutofillSettings: () -> Unit,
-    onAction: (InteractionUiAction) -> Unit,
+    onAction: (InteractionSettingsAction) -> Unit,
 ) {
     var candidateLimit by remember {
         mutableFloatStateOf(settings.normalizedMaxSuggestions.toFloat())
@@ -57,7 +57,7 @@ internal fun AutofillSettingsSection(
                     subtitle = stringResource(R.string.settings_autofill_enabled_summary),
                     checked = settings.enabled,
                     onCheckedChange = {
-                        onAction(InteractionUiAction.SetAutofillEnabled(it))
+                        onAction(InteractionSettingsAction.SetAutofillEnabled(it))
                     },
                 )
             )
@@ -83,7 +83,7 @@ internal fun AutofillSettingsSection(
                                 AutofillPresentation.BOTTOM_SHEET ->
                                     AutofillPresentation.SYSTEM_INLINE
                             }
-                            onAction(InteractionUiAction.SetAutofillPresentation(next))
+                            onAction(InteractionSettingsAction.SetAutofillPresentation(next))
                         },
                     )
                 )
@@ -97,7 +97,7 @@ internal fun AutofillSettingsSection(
                             ),
                             checked = settings.credentialManagerEnabled,
                             onCheckedChange = {
-                                onAction(InteractionUiAction.SetCredentialManagerEnabled(it))
+                                onAction(InteractionSettingsAction.SetCredentialManagerEnabled(it))
                             },
                         )
                     )
@@ -112,7 +112,7 @@ internal fun AutofillSettingsSection(
                         checked = settings.requireAuthentication,
                         onCheckedChange = {
                             onAction(
-                                InteractionUiAction.SetAutofillAuthenticationRequired(it)
+                                InteractionSettingsAction.SetAutofillAuthenticationRequired(it)
                             )
                         },
                     )
@@ -124,7 +124,7 @@ internal fun AutofillSettingsSection(
                         subtitle = stringResource(R.string.settings_autofill_include_otp_summary),
                         checked = settings.includeOtp,
                         onCheckedChange = {
-                            onAction(InteractionUiAction.SetAutofillOtpEnabled(it))
+                            onAction(InteractionSettingsAction.SetAutofillOtpEnabled(it))
                         },
                     )
                 )
@@ -135,7 +135,9 @@ internal fun AutofillSettingsSection(
                         subtitle = stringResource(R.string.settings_autofill_save_prompts_summary),
                         checked = settings.savePromptsEnabled,
                         onCheckedChange = {
-                            onAction(InteractionUiAction.SetAutofillSavePromptsEnabled(it))
+                            onAction(
+                                InteractionSettingsAction.SetAutofillSavePromptsEnabled(it)
+                            )
                         },
                     )
                 )
@@ -147,7 +149,7 @@ internal fun AutofillSettingsSection(
                         checked = settings.allowUnmatchedSuggestions,
                         onCheckedChange = {
                             onAction(
-                                InteractionUiAction.SetUnmatchedAutofillSuggestionsEnabled(it)
+                                InteractionSettingsAction.SetUnmatchedAutofillSuggestionsEnabled(it)
                             )
                         },
                     )
@@ -168,7 +170,7 @@ internal fun AutofillSettingsSection(
                         onValueChange = { candidateLimit = it },
                         onValueChangeFinished = {
                             onAction(
-                                InteractionUiAction.SetAutofillMaxSuggestions(
+                                InteractionSettingsAction.SetAutofillMaxSuggestions(
                                     candidateLimit.roundToInt()
                                 )
                             )

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.notice.model.NoticeLevel
 import com.aozijx.passly.domain.notice.model.NoticeTopic
-import com.aozijx.passly.domain.notice.model.TopicMessageSettings
 import com.aozijx.passly.domain.notice.port.SystemNotificationStateProvider
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
@@ -16,23 +15,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-data class NotificationSettingsUiState(
-    val optionalMessagesEnabled: Boolean = true,
-    val systemNotificationsEnabled: Boolean = true,
-    val runtimeNotificationPermissionGranted: Boolean = true,
-    val notificationsEnabledBySystem: Boolean = true,
-    val notificationChannelEnabled: Boolean = true,
-    val topicSettings: Map<NoticeTopic, TopicMessageSettings> = emptyMap()
-) {
-    val systemNotificationAvailable: Boolean
-        get() = runtimeNotificationPermissionGranted &&
-            notificationsEnabledBySystem &&
-            notificationChannelEnabled
-
-    fun topicSetting(topic: NoticeTopic): TopicMessageSettings =
-        topicSettings[topic] ?: TopicMessageSettings()
-}
 
 @HiltViewModel
 class NotificationSettingsViewModel @Inject constructor(

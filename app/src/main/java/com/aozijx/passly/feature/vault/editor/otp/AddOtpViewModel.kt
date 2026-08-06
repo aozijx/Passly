@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.editor.otp
 
 import com.aozijx.passly.core.util.TotpUtils
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
@@ -11,17 +12,14 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
 
-sealed interface AddOtpEvent {
-    data object UriParsed : AddOtpEvent
-    data object UriParseFailed : AddOtpEvent
-}
-
 @HiltViewModel
 class AddOtpViewModel @Inject constructor(
-    entryCommandRepository: EntryCommandRepository
+    entryCommandRepository: EntryCommandRepository,
+    vaultAccessState: VaultAccessState
 ) : CreateEntryViewModel<OtpFormState>(
     initialForm = OtpFormState(),
     entryCommandRepository = entryCommandRepository,
+    vaultAccessState = vaultAccessState,
     isFormValid = OtpFormState::isValid,
     createEntry = { OtpEntryFactory.create(it) }
 ) {

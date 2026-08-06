@@ -26,7 +26,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
 internal fun DataManagementDetail(
-    state: DataUiState,
+    state: DataManagementSettingsUiState,
     isClearingDatabase: Boolean,
     onAutoDownloadIconsChange: (Boolean) -> Unit,
     onRestoreTrashEntry: (entryId: String, expectedVersion: Int) -> Unit,

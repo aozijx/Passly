@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AppearanceDetail(
-    state: AppearanceUiState,
+    state: AppearanceSettingsUiState,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onExpressiveEnabledChange: (Boolean) -> Unit,

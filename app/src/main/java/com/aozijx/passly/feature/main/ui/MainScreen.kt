@@ -21,7 +21,7 @@ import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
-import com.aozijx.passly.feature.main.MainConfigViewModel
+import com.aozijx.passly.feature.main.AppShellSettingsViewModel
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
@@ -48,7 +48,7 @@ internal fun MainScreen(
         ).show()
     }
 
-    val mainConfigViewModel: MainConfigViewModel = hiltViewModel()
+    val mainConfigViewModel: AppShellSettingsViewModel = hiltViewModel()
     val mainConfig by mainConfigViewModel.config.collectAsStateWithLifecycle()
 
     val authenticationViewModel: AuthenticationViewModel = hiltViewModel()

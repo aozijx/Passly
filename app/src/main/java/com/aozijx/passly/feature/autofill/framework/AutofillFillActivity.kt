@@ -47,20 +47,20 @@ class AutofillFillActivity : FragmentActivity() {
         lifecycleScope.launch {
             viewModel.uiState.collect { state ->
                 when (state) {
-                    is AutofillFillViewModel.UiState.Initial -> Unit
-                    is AutofillFillViewModel.UiState.Loading -> {
+                    is AutofillFillUiState.Initial -> Unit
+                    is AutofillFillUiState.Loading -> {
                         // 可显示加载指示（不阻塞 UI）
                     }
 
-                    is AutofillFillViewModel.UiState.ShowCandidates -> {
+                    is AutofillFillUiState.ShowCandidates -> {
                         showBottomSheet(state.candidates)
                     }
 
-                    is AutofillFillViewModel.UiState.Result -> {
+                    is AutofillFillUiState.Result -> {
                         finishWithResult(state.payload)
                     }
 
-                    is AutofillFillViewModel.UiState.Error -> {
+                    is AutofillFillUiState.Error -> {
                         // 显示错误 Toast 或直接取消
                         finishWithResult(null)
                     }
@@ -72,7 +72,7 @@ class AutofillFillActivity : FragmentActivity() {
         viewModel.initialize(request)
     }
 
-    private fun parseIntent(intent: Intent?): AutofillFillViewModel.FillRequest {
+    private fun parseIntent(intent: Intent?): AutofillFillRequest {
         val raw = intent?.getStringExtra("autofill_ui_mode")
         val uiMode = AutofillPresentation.entries
             .firstOrNull { it.name == raw }
@@ -101,7 +101,7 @@ class AutofillFillActivity : FragmentActivity() {
         val candidateEntryIds = intent?.getStringArrayExtra("vault_item_ids")?.toList().orEmpty()
         val returnsDataset = intent?.getBooleanExtra(EXTRA_RETURN_DATASET, false) ?: false
 
-        return AutofillFillViewModel.FillRequest(
+        return AutofillFillRequest(
             uiMode = uiMode,
             isUnlockOnly = isUnlockOnly,
             usernameId = usernameId,

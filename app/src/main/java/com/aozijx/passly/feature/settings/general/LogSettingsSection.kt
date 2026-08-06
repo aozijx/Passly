@@ -42,7 +42,7 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
-fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
+fun LogSettingsSection(viewModel: DiagnosticsSettingsViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsStateWithLifecycle()
     var showViewerDialog by remember { mutableStateOf(false) }
@@ -62,7 +62,7 @@ fun LogSettingsSection(viewModel: DiagnosticsViewModel = hiltViewModel()) {
     LaunchedEffect(viewModel, exportFailedMessage) {
         viewModel.events.collect { event ->
             when (event) {
-                DiagnosticsEvent.ExportFailed ->
+                DiagnosticsSettingsEffect.ExportFailed ->
                     Toast.makeText(context, exportFailedMessage, Toast.LENGTH_SHORT).show()
             }
         }

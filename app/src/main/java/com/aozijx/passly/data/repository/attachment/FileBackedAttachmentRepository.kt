@@ -1,11 +1,13 @@
 package com.aozijx.passly.data.repository.attachment
 
 import android.content.Context
+import com.aozijx.passly.core.error.SessionModeRestricted
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.mapper.attachment.AttachmentMapper
 import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.attachment.EntryAttachment
@@ -37,6 +39,7 @@ import javax.inject.Singleton
 class FileBackedAttachmentRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
+    private val sessionState: VaultAccessState,
     private val fieldEncryptor: FieldEncryptor
 ) : AttachmentRepository {
 
@@ -45,65 +48,77 @@ class FileBackedAttachmentRepository @Inject constructor(
         get() = File(context.filesDir, "attachments")
 
     override suspend fun getAttachments(entryId: String): List<EntryAttachment> =
-        sessionManager.query {
-            entryAttachmentQueryDao().getByEntryId(entryId)
-                .map { AttachmentMapper.toDomain(it) }
+        if (!sessionState.hasFullVaultAccess()) {
+            emptyList()
+        } else {
+            sessionManager.query {
+                entryAttachmentQueryDao().getByEntryId(entryId)
+                    .map { AttachmentMapper.toDomain(it) }
+            }
         }
 
     override suspend fun getPendingAttachments(draftId: String): List<EntryAttachment> =
-        sessionManager.query {
-            entryAttachmentQueryDao().getPendingByOwner(draftId)
-                .map { AttachmentMapper.toDomain(it) }
+        if (!sessionState.hasFullVaultAccess()) {
+            emptyList()
+        } else {
+            sessionManager.query {
+                entryAttachmentQueryDao().getPendingByOwner(draftId)
+                    .map { AttachmentMapper.toDomain(it) }
+            }
         }
 
     override suspend fun saveAttachment(
         entryId: String,
         attachment: EntryAttachment,
         content: ByteArray
-    ) = sessionManager.transaction {
-        val now = System.currentTimeMillis()
-        val attachmentId = attachment.attachmentId
+    ) {
+        requireFullVaultAccess("attachment.save")
+        sessionManager.transaction {
+            val now = System.currentTimeMillis()
+            val attachmentId = attachment.attachmentId
 
-        // 1. 准备加密内容；先完成 DB 严格插入，避免 ID 冲突覆盖已有文件。
-        val sha256Hex = sha256Hex(content)
-        val encryptedContent = fieldEncryptor.encrypt(
-            Base64.getEncoder().encodeToString(content),
-            AadProvider.attachmentContent(entryId, attachmentId)
-        )
-        val file = resolveFile(entryId, attachmentId)
-
-        try {
-            // 2. 构建加密元数据（AttachmentPayload → encryptedBlob）
-            val payload = AttachmentPayload(
-                attachmentId = attachmentId,
-                fileName = attachment.fileName,
-                mimeType = attachment.mimeType ?: "",
-                fileSize = attachment.fileSize,
-                encryptedPath = "${entryId}/${attachmentId}.enc",
-                sha256 = sha256Hex,
-                createdAt = now
+            // 1. 准备加密内容；先完成 DB 严格插入，避免 ID 冲突覆盖已有文件。
+            val sha256Hex = sha256Hex(content)
+            val encryptedContent = fieldEncryptor.encrypt(
+                Base64.getEncoder().encodeToString(content),
+                AadProvider.attachmentContent(entryId, attachmentId)
             )
-            val encryptedBlob =
-                AttachmentCipher.encrypt(payload, entryId, attachmentId, fieldEncryptor)
+            val file = resolveFile(entryId, attachmentId)
 
-            // 3. 写入 DB
-            val entity = AttachmentMapper.toEntity(
-                attachment.copy(createdAt = now),
-                encryptedBlob
-            )
-            entryAttachmentCommandDao().insertStrict(entity)
-            if (entity.status == AttachmentStatus.COMMITTED.name) {
-                entryCommandDao().addCapability(entryId, EntryCapabilityFlags.HAS_ATTACHMENTS)
+            try {
+                // 2. 构建加密元数据（AttachmentPayload → encryptedBlob）
+                val payload = AttachmentPayload(
+                    attachmentId = attachmentId,
+                    fileName = attachment.fileName,
+                    mimeType = attachment.mimeType ?: "",
+                    fileSize = attachment.fileSize,
+                    encryptedPath = "${entryId}/${attachmentId}.enc",
+                    sha256 = sha256Hex,
+                    createdAt = now
+                )
+                val encryptedBlob =
+                    AttachmentCipher.encrypt(payload, entryId, attachmentId, fieldEncryptor)
+
+                // 3. 写入 DB
+                val entity = AttachmentMapper.toEntity(
+                    attachment.copy(createdAt = now),
+                    encryptedBlob
+                )
+                entryAttachmentCommandDao().insertStrict(entity)
+                if (entity.status == AttachmentStatus.COMMITTED.name) {
+                    entryCommandDao().addCapability(entryId, EntryCapabilityFlags.HAS_ATTACHMENTS)
+                }
+
+                // 4. 最后原子替换文件；失败会抛出并回滚 Room 事务。
+                writeAtomically(file, encryptedContent)
+            } finally {
+                encryptedContent.fill(0)
             }
-
-            // 4. 最后原子替换文件；失败会抛出并回滚 Room 事务。
-            writeAtomically(file, encryptedContent)
-        } finally {
-            encryptedContent.fill(0)
         }
     }
 
-    override suspend fun deleteAttachment(attachmentId: String) =
+    override suspend fun deleteAttachment(attachmentId: String) {
+        requireFullVaultAccess("attachment.delete")
         sessionManager.transaction {
             // 先查实体获取路径
             val entity = entryAttachmentQueryDao().getById(attachmentId) ?: return@transaction
@@ -122,6 +137,7 @@ class FileBackedAttachmentRepository @Inject constructor(
             val file = resolveFile(entity.entryId, attachmentId)
             if (file.exists()) file.delete()
         }
+    }
 
     // ======== 内部工具 ========
 
@@ -148,5 +164,11 @@ class FileBackedAttachmentRepository @Inject constructor(
     private fun sha256Hex(data: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256")
         return digest.digest(data).joinToString("") { "%02x".format(it) }
+    }
+
+    private fun requireFullVaultAccess(operation: String) {
+        if (!sessionState.hasFullVaultAccess()) {
+            throw SessionModeRestricted("Vault operation requires a full authenticated session: $operation")
+        }
     }
 }

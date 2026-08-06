@@ -9,11 +9,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-data class RenderedNotice(
-    val text: String,
-    val longDuration: Boolean
-)
-
 @HiltViewModel
 class AppNoticeHostViewModel @Inject constructor(
     inAppNoticeStream: InAppNoticeStream,

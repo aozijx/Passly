@@ -6,6 +6,7 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
 import com.aozijx.passly.domain.authentication.SessionStateProvider
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -58,7 +59,8 @@ class VaultViewModel @Inject constructor(
     private val faviconRepository: FaviconRepository,
     val entryFieldReader: EntryFieldReader,
     private val vaultDataRefreshNotifier: VaultDataRefreshNotifier,
-    private val sessionStateProvider: SessionStateProvider
+    private val sessionStateProvider: SessionStateProvider,
+    private val vaultAccessState: VaultAccessState
 ) : ViewModel() {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
@@ -120,6 +122,7 @@ class VaultViewModel @Inject constructor(
     private val _showTOTPCode = MutableStateFlow(true)
 
     fun addScannedOtp(config: OtpConfig) {
+        if (!ensureFullVaultAccess("恢复模式不能保存 OTP")) return
         try {
             val title = buildString {
                 if (!config.issuer.isNullOrBlank()) append(config.issuer)
@@ -227,6 +230,7 @@ class VaultViewModel @Inject constructor(
     }
 
     fun setAddType(type: AddType?) {
+        if (type != null && !ensureFullVaultAccess("当前会话不能新建条目")) return
         _dialogState.value = _dialogState.value.copy(addType = type)
     }
 
@@ -234,7 +238,11 @@ class VaultViewModel @Inject constructor(
         _dialogState.value = _dialogState.value.copy(pendingDelete = item)
     }
 
-    fun autoUnlockTotp(entryId: String) = totp.autoUnlock(entryId)
+    fun autoUnlockTotp(entryId: String) {
+        if (vaultAccessState.hasFullVaultAccess()) {
+            totp.autoUnlock(entryId)
+        }
+    }
 
     init {
         totp.start()
@@ -261,20 +269,42 @@ class VaultViewModel @Inject constructor(
     }
 
     fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) =
-        viewModelScope.launch { entryQueryRepository.getByIdWithoutHighSensitivity(entryId)?.let(onLoaded) }
+        viewModelScope.launch {
+            if (!vaultAccessState.hasFullVaultAccess()) return@launch
+            entryQueryRepository.getByIdWithoutHighSensitivity(entryId)?.let(onLoaded)
+        }
 
     // --- 条目操作委托 ---
-    fun addItem(entry: VaultEntry) =
+    fun addItem(entry: VaultEntry) {
+        if (!ensureFullVaultAccess("当前会话不能新建条目")) return
         entryManager.addItem(entry, onComplete = { setAddType(null) })
+    }
 
-    fun updateVaultEntry(entry: VaultEntry) = entryManager.updateEntry(entry)
-    fun quickDelete(item: EntryListItem) = entryManager.deleteEntryById(item.id)
+    fun updateVaultEntry(entry: VaultEntry) {
+        if (!ensureFullVaultAccess("当前会话不能修改条目")) return
+        entryManager.updateEntry(entry)
+    }
+
+    fun quickDelete(item: EntryListItem) {
+        if (!ensureFullVaultAccess("当前会话不能删除条目")) return
+        entryManager.deleteEntryById(item.id)
+    }
+
     fun confirmDelete() {
+        if (!ensureFullVaultAccess("当前会话不能删除条目")) return
         val item = _dialogState.value.pendingDelete ?: return
         viewModelScope.launch {
+            if (!vaultAccessState.hasFullVaultAccess()) return@launch
             val entry = entryQueryRepository.getByIdWithoutHighSensitivity(item.id) ?: return@launch
             entryManager.deleteEntry(entry)
         }
+    }
+
+    private fun ensureFullVaultAccess(message: String): Boolean {
+        if (vaultAccessState.hasFullVaultAccess()) return true
+        emitError(message)
+        _dialogState.value = VaultDialogState()
+        return false
     }
 
     override fun onCleared() {

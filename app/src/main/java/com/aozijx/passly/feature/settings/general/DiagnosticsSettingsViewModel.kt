@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.AuthenticationState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -22,18 +23,14 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 
-sealed interface DiagnosticsEvent {
-    data object ExportFailed : DiagnosticsEvent
-}
-
 @HiltViewModel
-class DiagnosticsViewModel @Inject constructor(
+class DiagnosticsSettingsViewModel @Inject constructor(
     private val policies: TelemetryPolicyController,
     private val authenticationManager: AuthenticationManager,
     private val runtime: DiagnosticsRuntimeController,
     private val exportService: DiagnosticsExportService
 ) : ViewModel() {
-    private val eventChannel = Channel<DiagnosticsEvent>(Channel.BUFFERED)
+    private val eventChannel = Channel<DiagnosticsSettingsEffect>(Channel.BUFFERED)
     val events = eventChannel.receiveAsFlow()
 
     val fileLoggingEnabled: StateFlow<Boolean> = policies.policies
@@ -44,15 +41,24 @@ class DiagnosticsViewModel @Inject constructor(
         if (enabled) policies.enableEncryptedFile() else policies.disableEncryptedFile()
     }
 
-    suspend fun readPage(): String = withContext(Dispatchers.IO) {
+    suspend fun readPage(): String = if (authenticationManager.state.value is AuthenticationState.Authenticated) {
+        withContext(Dispatchers.IO) {
         runtime.readLines(MAX_VIEW_LINES).joinToString("\n")
+        }
+    } else {
+        ""
     }
 
     fun clear() = viewModelScope.launch(Dispatchers.IO) {
+        if (authenticationManager.state.value !is AuthenticationState.Authenticated) return@launch
         runtime.clear()
     }
 
     fun authenticateAndExport() = viewModelScope.launch {
+        if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
+            eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
+            return@launch
+        }
         val result = authenticationManager.authenticate(
             AuthenticationRequest(AuthenticationPurpose.EXPORT_DIAGNOSTICS)
         )
@@ -65,7 +71,7 @@ class DiagnosticsViewModel @Inject constructor(
             exportService.share(file).getOrThrow()
         }.onFailure { error ->
             AppTelemetry.e("DiagnosticsExport", "Plaintext diagnostics export failed", error)
-            eventChannel.trySend(DiagnosticsEvent.ExportFailed)
+            eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
         }
     }
 

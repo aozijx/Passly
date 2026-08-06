@@ -3,10 +3,13 @@ package com.aozijx.passly.feature.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationFailure
+import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.diagnostics.usecase.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.model.SwipeActionType
@@ -106,6 +109,10 @@ class SettingsViewModel @Inject constructor(
 
     private fun clearDatabase() {
         if (_uiState.value.isClearingDatabase) return
+        if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
+            _effects.tryEmit(SettingsEffect.ShowError("恢复模式不能清除数据库"))
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isClearingDatabase = true) }
             when (
@@ -141,6 +148,10 @@ class SettingsViewModel @Inject constructor(
         password: CharArray,
         onResult: (AuthenticationResult) -> Unit
     ) {
+        if (isRecoveryMode()) {
+            onResult(sessionModeRestrictedResult())
+            return
+        }
         viewModelScope.launch {
             onResult(authenticationMethodProvisioner.setAppPassword(password))
         }
@@ -151,6 +162,10 @@ class SettingsViewModel @Inject constructor(
         newPassword: CharArray,
         onResult: (AuthenticationResult) -> Unit
     ) {
+        if (isRecoveryMode()) {
+            onResult(sessionModeRestrictedResult())
+            return
+        }
         viewModelScope.launch {
             onResult(
                 authenticationMethodProvisioner.changeAppPassword(
@@ -162,8 +177,23 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun disableAppPassword(onResult: (AuthenticationResult) -> Unit) {
+        if (isRecoveryMode()) {
+            onResult(sessionModeRestrictedResult())
+            return
+        }
         viewModelScope.launch {
             onResult(authenticationMethodProvisioner.disableAppPassword())
         }
     }
+
+    private fun isRecoveryMode(): Boolean =
+        authenticationManager.state.value is AuthenticationState.RecoveryMode
+
+    private fun sessionModeRestrictedResult(): AuthenticationResult =
+        AuthenticationResult.Failure(
+            AuthenticationFailure(
+                AuthenticationFailureCode.SESSION_MODE_RESTRICTED,
+                correlationId = "settings-viewmodel"
+            )
+        )
 }

@@ -46,14 +46,10 @@ class CredentialResponseViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: android.content.Context,
 ) : ViewModel() {
 
-    sealed class UiState {
-        object Loading : UiState()
-        data class Complete(val resultIntent: Intent) : UiState()
-        object Unrecoverable : UiState()
-    }
-
-    private val _state = MutableStateFlow<UiState>(UiState.Loading)
-    val state: StateFlow<UiState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<CredentialResponseUiState>(
+        CredentialResponseUiState.Loading
+    )
+    val state: StateFlow<CredentialResponseUiState> = _state.asStateFlow()
     private val requestStarted = AtomicBoolean(false)
 
     fun handlePasswordGet(sourceIntent: Intent) {
@@ -103,7 +99,7 @@ class CredentialResponseViewModel @Inject constructor(
                         val intent = CredentialResponseFactory.buildPasswordResponse(
                             result.username, result.password
                         )
-                        _state.value = UiState.Complete(intent)
+                        _state.value = CredentialResponseUiState.Complete(intent)
                         AppTelemetry.i(TAG, "Password credential resolved")
                     }
 
@@ -155,7 +151,7 @@ class CredentialResponseViewModel @Inject constructor(
                 )
                 val result = Intent()
                 PendingIntentHandler.setBeginGetCredentialResponse(result, response)
-                _state.value = UiState.Complete(result)
+                _state.value = CredentialResponseUiState.Complete(result)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -197,7 +193,7 @@ class CredentialResponseViewModel @Inject constructor(
                     )
                 }) {
                     CreatePasswordCredentialResult.Success -> {
-                        _state.value = UiState.Complete(
+                        _state.value = CredentialResponseUiState.Complete(
                             CredentialResponseFactory.buildPasswordCreateResponse()
                         )
                         AppTelemetry.i(TAG, "Password credential created")
@@ -228,7 +224,7 @@ class CredentialResponseViewModel @Inject constructor(
 
     fun rejectUnknownAction() {
         if (requestStarted.compareAndSet(false, true)) {
-            _state.value = UiState.Unrecoverable
+            _state.value = CredentialResponseUiState.Unrecoverable
         }
     }
 
@@ -237,7 +233,7 @@ class CredentialResponseViewModel @Inject constructor(
     }
 
     private fun completeGetError(exception: GetCredentialException) {
-        _state.value = UiState.Complete(
+        _state.value = CredentialResponseUiState.Complete(
             CredentialResponseFactory.buildGetException(exception)
         )
     }
@@ -245,7 +241,7 @@ class CredentialResponseViewModel @Inject constructor(
     private fun completeCreateError(
         exception: CreateCredentialException,
     ) {
-        _state.value = UiState.Complete(
+        _state.value = CredentialResponseUiState.Complete(
             CredentialResponseFactory.buildCreateException(exception)
         )
     }

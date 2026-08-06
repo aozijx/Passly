@@ -32,7 +32,7 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun InterfaceDetail(
-    state: InterfaceUiState,
+    state: InterfaceSettingsUiState,
     onStatusBarAutoHideChange: (Boolean) -> Unit,
     onTopBarCollapsibleChange: (Boolean) -> Unit,
     onTabBarCollapsibleChange: (Boolean) -> Unit,

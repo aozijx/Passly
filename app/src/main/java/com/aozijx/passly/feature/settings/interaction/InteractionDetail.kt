@@ -9,11 +9,11 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 
 @Composable
 internal fun InteractionDetail(
-    state: InteractionUiState,
+    state: InteractionSettingsUiState,
     onSwipeEnabledChange: (Boolean) -> Unit,
     onLeftSwipeActionClick: () -> Unit,
     onRightSwipeActionClick: () -> Unit,
-    onAutofillAction: (InteractionUiAction) -> Unit,
+    onAutofillAction: (InteractionSettingsAction) -> Unit,
     onOpenAutofillSettings: () -> Unit
 ) {
     SettingsSection {

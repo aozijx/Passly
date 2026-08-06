@@ -15,11 +15,11 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.feature.settings.security.PrivacyUiState
+import com.aozijx.passly.feature.settings.security.PrivacySettingsUiState
 
 @Composable
 internal fun PrivacyDetail(
-    state: PrivacyUiState,
+    state: PrivacySettingsUiState,
     onSecureContentEnabledChange: (Boolean) -> Unit,
     onFlipToLockEnabledChange: (Boolean) -> Unit,
     onFlipExitAndClearStackEnabledChange: (Boolean) -> Unit,

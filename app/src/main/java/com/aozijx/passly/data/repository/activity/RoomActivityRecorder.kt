@@ -1,9 +1,11 @@
 package com.aozijx.passly.data.repository.activity
 
 import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.SessionModeRestricted
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.EntryActivityEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
@@ -14,6 +16,7 @@ import javax.inject.Singleton
 class RoomActivityRecorder @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val sessionManager: UnifiedSessionManager,
+    private val sessionState: VaultAccessState,
 ) : ActivityRecorder {
 
     override suspend fun recordUsage(
@@ -27,11 +30,19 @@ class RoomActivityRecorder @Inject constructor(
     }
 
     override suspend fun deleteByEntryId(entryId: String) {
+        requireFullVaultAccess("activity.deleteByEntryId")
         sessionManager.transaction { entryActivityCommandDao().deleteByEntryId(entryId) }
     }
 
     override suspend fun deleteBefore(timestamp: Long) {
+        requireFullVaultAccess("activity.deleteBefore")
         sessionManager.transaction { entryActivityCommandDao().deleteBefore(timestamp) }
+    }
+
+    private fun requireFullVaultAccess(operation: String) {
+        if (!sessionState.hasFullVaultAccess()) {
+            throw SessionModeRestricted("Vault operation requires a full authenticated session: $operation")
+        }
     }
 
     private companion object {

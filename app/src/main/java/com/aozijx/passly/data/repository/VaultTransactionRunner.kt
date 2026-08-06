@@ -2,8 +2,10 @@ package com.aozijx.passly.data.repository
 
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.Conflict
+import com.aozijx.passly.core.error.SessionModeRestricted
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.database.AppDatabase
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,7 +24,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class VaultTransactionRunner @Inject constructor(
-    private val sessionManager: UnifiedSessionManager
+    private val sessionManager: UnifiedSessionManager,
+    private val sessionState: VaultAccessState
 ) {
 
     /**
@@ -34,6 +37,7 @@ class VaultTransactionRunner @Inject constructor(
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
         return AppResult.runSuspendCatching(operation) {
+            requireFullVaultAccess(operation)
             sessionManager.transaction {
                 block()
             }
@@ -48,6 +52,7 @@ class VaultTransactionRunner @Inject constructor(
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
         return AppResult.runSuspendCatching(operation) {
+            requireFullVaultAccess(operation)
             sessionManager.query {
                 block()
             }
@@ -73,6 +78,12 @@ class VaultTransactionRunner @Inject constructor(
             throw Conflict(
                 "entry:$entryId optimistic lock failed: expected version=$expectedVersion"
             )
+        }
+    }
+
+    private fun requireFullVaultAccess(operation: String) {
+        if (!sessionState.hasFullVaultAccess()) {
+            throw SessionModeRestricted("Vault operation requires a full authenticated session: $operation")
         }
     }
 }

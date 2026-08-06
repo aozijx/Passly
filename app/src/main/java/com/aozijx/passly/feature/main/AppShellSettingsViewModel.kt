@@ -11,25 +11,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
-data class MainConfigUiState(
-    val isSecureContentEnabled: Boolean = true,
-    val isFlipToLockEnabled: Boolean = false,
-    val isFlipExitAndClearStackEnabled: Boolean = false,
-    val isStatusBarAutoHide: Boolean = true,
-)
-
 @HiltViewModel
-class MainConfigViewModel @Inject constructor(
+class AppShellSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
-    val config: StateFlow<MainConfigUiState> = combine(
+    val config: StateFlow<AppShellSettingsUiState> = combine(
         settingsRepository.settings.map { it.security.isSecureContentEnabled },
         settingsRepository.settings.map { it.security.isFlipToLockEnabled },
         settingsRepository.settings.map { it.security.isFlipExitAndClearStackEnabled },
         settingsRepository.settings.map { it.interfacePrefs.hideSystemBars }
     ) { sec, ftl, fec, sb ->
-        MainConfigUiState(
+        AppShellSettingsUiState(
             isSecureContentEnabled = sec,
             isFlipToLockEnabled = ftl,
             isFlipExitAndClearStackEnabled = fec,
@@ -38,6 +31,6 @@ class MainConfigViewModel @Inject constructor(
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
-        MainConfigUiState()
+        AppShellSettingsUiState()
     )
 }

@@ -5,6 +5,7 @@ import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
@@ -19,12 +20,14 @@ import javax.inject.Singleton
 @Singleton
 class RoomEntryQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
+    private val sessionState: VaultAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec
 ) : EntryQueryRepository, EntryHighSensitivityRepository {
 
     override suspend fun getByIdWithoutHighSensitivity(entryId: String): VaultEntry? {
+        if (!sessionState.hasFullVaultAccess()) return null
         return sessionManager.query {
             val metaEntity = entryQueryDao().getById(entryId) ?: return@query null
             val credEntity = entrySecretQueryDao().getByEntryId(entryId)
@@ -35,6 +38,7 @@ class RoomEntryQueryRepository @Inject constructor(
     }
 
     override suspend fun getHighSensitivitySecretForReveal(entryId: String): EntryHighSensitivitySecret? {
+        if (!sessionState.hasFullVaultAccess()) return null
         return sessionManager.query {
             val entity = entrySecretQueryDao().getByEntryId(entryId) ?: return@query null
             val blob = entity.highSensitivityBlob ?: return@query null
@@ -43,6 +47,7 @@ class RoomEntryQueryRepository @Inject constructor(
     }
 
     override suspend fun getEntriesForIconResync(): List<VaultEntry> {
+        if (!sessionState.hasFullVaultAccess()) return emptyList()
         return sessionManager.query {
             val metaEntities = entryQueryDao().getActive()
             val credEntities = entrySecretQueryDao().getByEntryIds(metaEntities.map { it.entryId })
@@ -61,6 +66,7 @@ class RoomEntryQueryRepository @Inject constructor(
     }
 
     override suspend fun count(): Int {
+        if (!sessionState.hasFullVaultAccess()) return 0
         return sessionManager.query { entryQueryDao().countActive() }
     }
 }

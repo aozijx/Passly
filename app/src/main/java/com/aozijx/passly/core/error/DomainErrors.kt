@@ -57,3 +57,16 @@ class Conflict(
     trace = trace,
     cause = cause
 )
+
+class SessionModeRestricted(
+    message: String = "当前会话模式不允许执行此操作",
+    trace: ErrorTrace = ErrorTrace(ErrorLayer.DOMAIN),
+    cause: Throwable? = null
+) : DomainError(
+    code = SESSION_MODE_RESTRICTED,
+    message = message,
+    recoverable = true,
+    severity = ErrorSeverity.WARNING,
+    trace = trace,
+    cause = cause
+)

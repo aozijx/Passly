@@ -32,19 +32,19 @@ import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreDetail
 import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreSheetHost
 import com.aozijx.passly.feature.settings.datamanagement.BackupSheet
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
-import com.aozijx.passly.feature.settings.datamanagement.DataUiAction
-import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
+import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
+import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
 import com.aozijx.passly.feature.settings.datamanagement.handleBackupPathPicked
 import com.aozijx.passly.feature.settings.general.GeneralDetail
 import com.aozijx.passly.feature.settings.general.NotificationDetail
 import com.aozijx.passly.feature.settings.interaction.InteractionDetail
-import com.aozijx.passly.feature.settings.interaction.InteractionUiAction
-import com.aozijx.passly.feature.settings.interaction.InteractionViewModel
+import com.aozijx.passly.feature.settings.interaction.InteractionSettingsAction
+import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.feature.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.RecoveryDraftState
 import com.aozijx.passly.feature.settings.security.RecoveryDraftViewModel
-import com.aozijx.passly.feature.settings.security.SecurityUiAction
-import com.aozijx.passly.feature.settings.security.SecurityViewModel
+import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
+import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.security.messageOrNull
 import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeDetail
 import com.aozijx.passly.feature.settings.security.ui.RecoveryCodeSheet
@@ -56,8 +56,8 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     navController: NavHostController,
     context: Context,
     localState: SettingsScreenLocalState,
-    interactionViewModel: InteractionViewModel,
-    dataViewModel: DataViewModel,
+    interactionViewModel: InteractionSettingsViewModel,
+    dataViewModel: DataManagementSettingsViewModel,
     backupViewModel: BackupViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState
@@ -72,7 +72,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                 InteractionDetail(
                     state = state,
                     onSwipeEnabledChange = {
-                        interactionViewModel.onAction(InteractionUiAction.SetSwipeEnabled(it))
+                        interactionViewModel.onAction(InteractionSettingsAction.SetSwipeEnabled(it))
                     },
                     onLeftSwipeActionClick = localState::openLeftActionDialog,
                     onRightSwipeActionClick = localState::openRightActionDialog,
@@ -96,23 +96,29 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                     state = state,
                     isClearingDatabase = settingsState.isClearingDatabase,
                     onAutoDownloadIconsChange = {
-                        dataViewModel.onAction(DataUiAction.SetAutoDownloadIcons(it))
+                        dataViewModel.onAction(DataManagementSettingsAction.SetAutoDownloadIcons(it))
                     },
                     onRestoreTrashEntry = { entryId, expectedVersion ->
                         dataViewModel.onAction(
-                            DataUiAction.RestoreTrashEntry(entryId, expectedVersion)
+                            DataManagementSettingsAction.RestoreTrashEntry(
+                                entryId,
+                                expectedVersion
+                            )
                         )
                     },
                     onDeleteTrashEntry = { entryId, expectedVersion ->
                         dataViewModel.onAction(
-                            DataUiAction.DeleteTrashEntry(entryId, expectedVersion)
+                            DataManagementSettingsAction.DeleteTrashEntry(
+                                entryId,
+                                expectedVersion
+                            )
                         )
                     },
                     onEmptyTrash = {
-                        dataViewModel.onAction(DataUiAction.EmptyTrash)
+                        dataViewModel.onAction(DataManagementSettingsAction.EmptyTrash)
                     },
                     onClearTrashError = {
-                        dataViewModel.onAction(DataUiAction.ClearTrashError)
+                        dataViewModel.onAction(DataManagementSettingsAction.ClearTrashError)
                     },
                     onClearDatabase = {
                         settingsViewModel.handleIntent(SettingsIntent.ClearDatabase)
@@ -169,7 +175,9 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
             ActivityResultContracts.OpenDocumentTree()
         ) { uri ->
             handleBackupPathPicked(context, uri) { resolvedUri ->
-                dataViewModel.onAction(DataUiAction.SetBackupDirectoryUri(resolvedUri))
+                dataViewModel.onAction(
+                    DataManagementSettingsAction.SetBackupDirectoryUri(resolvedUri)
+                )
             }
         }
 
@@ -266,7 +274,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     }
 
     composable(SettingsRoute.RecoveryCode.route) {
-        val viewModel: SecurityViewModel = hiltViewModel()
+        val viewModel: SecuritySettingsViewModel = hiltViewModel()
         val draftViewModel: RecoveryDraftViewModel = hiltViewModel()
         val draftState by draftViewModel.state.collectAsStateWithLifecycle()
         val recoveryCode = remember(draftState) {
@@ -323,10 +331,10 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                         draftViewModel.generate()
                     },
                     onVerifyCode = {
-                        viewModel.onAction(SecurityUiAction.VerifyRecoveryCode(it))
+                        viewModel.onAction(SecuritySettingsAction.VerifyRecoveryCode(it))
                     },
                     onClearVerifyResult = {
-                        viewModel.onAction(SecurityUiAction.ClearVerifyResult)
+                        viewModel.onAction(SecuritySettingsAction.ClearVerifyResult)
                     }
                 )
             }

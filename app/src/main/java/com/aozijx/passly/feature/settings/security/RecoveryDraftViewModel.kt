@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraft
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraftCreation
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
@@ -17,21 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
-
-sealed interface RecoveryDraftState {
-    data object Empty : RecoveryDraftState
-    data object Authenticating : RecoveryDraftState
-    data object Generating : RecoveryDraftState
-    data class Ready(val generationId: String) : RecoveryDraftState
-    data object DraftExpired : RecoveryDraftState
-    data object Committed : RecoveryDraftState
-    data object Failed : RecoveryDraftState
-}
-
-fun RecoveryDraftState.messageOrNull(): String? = when (this) {
-    RecoveryDraftState.DraftExpired -> "恢复码草稿已过期，请重新认证后生成。"
-    else -> null
-}
 
 @HiltViewModel
 class RecoveryDraftViewModel @Inject constructor(
@@ -47,6 +33,10 @@ class RecoveryDraftViewModel @Inject constructor(
     val state: StateFlow<RecoveryDraftState> = _state.asStateFlow()
 
     fun generate() {
+        if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
+            _state.value = RecoveryDraftState.Failed
+            return
+        }
         if (_state.value is RecoveryDraftState.Authenticating ||
             _state.value is RecoveryDraftState.Generating
         ) return
@@ -64,10 +54,20 @@ class RecoveryDraftViewModel @Inject constructor(
         }
     }
 
-    fun revealCode(): CharArray? = draft?.reveal()
+    fun revealCode(): CharArray? =
+        if (authenticationManager.state.value is AuthenticationState.Authenticated) {
+            draft?.reveal()
+        } else {
+            null
+        }
 
     fun confirmAndEnable() {
         viewModelScope.launch {
+            if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
+                dismiss()
+                _state.value = RecoveryDraftState.Failed
+                return@launch
+            }
             val activeDraft = draft ?: return@launch
             when (activeDraft.commit()) {
                 is AuthenticationResult.Success -> {

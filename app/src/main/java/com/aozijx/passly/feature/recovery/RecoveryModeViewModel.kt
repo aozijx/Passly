@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.backup.model.BackupExportOptions
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupFormats
@@ -67,6 +68,7 @@ class RecoveryModeViewModel @Inject constructor(
     // --- Set Password ---
 
     private fun showSetPasswordDialog() {
+        if (!ensureRecoveryMode()) return
         _uiState.update { it.copy(showSetPasswordDialog = true, passwordSetupError = null) }
     }
 
@@ -80,6 +82,7 @@ class RecoveryModeViewModel @Inject constructor(
 
     private fun submitNewPassword() {
         val state = _uiState.value
+        if (!ensureRecoveryMode()) return
         val password = state.newPassword.toCharArray()
         val confirm = state.confirmPassword.toCharArray()
 
@@ -129,6 +132,7 @@ class RecoveryModeViewModel @Inject constructor(
     // --- Biometric ---
 
     private fun reconfigureBiometric() {
+        if (!ensureRecoveryMode()) return
         _uiState.update { it.copy(biometricResult = null, isReconfiguringBiometric = true) }
         viewModelScope.launch {
             val result = methodProvisioner.rotateBiometricPolicy(invalidateOnEnrollment = true)
@@ -144,6 +148,7 @@ class RecoveryModeViewModel @Inject constructor(
     // --- Export ---
 
     private fun prepareExport() {
+        if (!ensureRecoveryMode()) return
         _uiState.update {
             it.copy(
                 showExportOptions = true,
@@ -154,6 +159,7 @@ class RecoveryModeViewModel @Inject constructor(
 
     private fun submitExport() {
         val state = _uiState.value
+        if (!ensureRecoveryMode()) return
         if (!state.canSubmitExport) return
         viewModelScope.launch {
             _effect.emit(RecoveryModeEffect.PickExportTarget(buildExportFileName()))
@@ -177,6 +183,7 @@ class RecoveryModeViewModel @Inject constructor(
     }
 
     private fun handleExportTarget(uri: Uri?) {
+        if (!ensureRecoveryMode()) return
         if (uri == null) {
             dismissSheet()
             return
@@ -258,5 +265,22 @@ class RecoveryModeViewModel @Inject constructor(
                 exportError = null
             )
         }
+    }
+
+    private fun ensureRecoveryMode(): Boolean {
+        val recoveryMode = authenticationManager.state.value is AuthenticationState.RecoveryMode
+        if (recoveryMode) return true
+        _uiState.update {
+            it.copy(
+                showSetPasswordDialog = false,
+                showExportOptions = false,
+                isSettingPassword = false,
+                isReconfiguringBiometric = false,
+                isExporting = false,
+                passwordSetupError = "当前不在恢复模式",
+                exportError = "当前不在恢复模式"
+            )
+        }
+        return false
     }
 }

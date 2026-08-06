@@ -10,17 +10,17 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.AppearanceDetail
-import com.aozijx.passly.feature.settings.appearance.AppearanceUiAction
-import com.aozijx.passly.feature.settings.appearance.AppearanceViewModel
+import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsAction
+import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.InterfaceDetail
-import com.aozijx.passly.feature.settings.appearance.InterfaceUiAction
-import com.aozijx.passly.feature.settings.appearance.InterfaceViewModel
+import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsAction
+import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsViewModel
 import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordEntryClick
 import com.aozijx.passly.feature.settings.internal.SettingsGroup
-import com.aozijx.passly.feature.settings.security.PrivacyUiAction
-import com.aozijx.passly.feature.settings.security.PrivacyViewModel
-import com.aozijx.passly.feature.settings.security.SecurityUiAction
-import com.aozijx.passly.feature.settings.security.SecurityViewModel
+import com.aozijx.passly.feature.settings.security.PrivacySettingsAction
+import com.aozijx.passly.feature.settings.security.PrivacySettingsViewModel
+import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
+import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.security.handleBiometricToggle
 import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
 import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
@@ -57,7 +57,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     }
 
     composable(SettingsRoute.Security.route) {
-        val viewModel: SecurityViewModel = hiltViewModel()
+        val viewModel: SecuritySettingsViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
         val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
         val biometricEnabled by viewModel.isBiometricEnabled.collectAsStateWithLifecycle()
@@ -72,7 +72,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     isAppPasswordEnabled = appPasswordEnabled,
                     isBiometricEnabled = biometricEnabled,
                     onLockTimeoutChange = {
-                        viewModel.onAction(SecurityUiAction.SetLockTimeout(it))
+                        viewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
                     },
                     onAppPasswordClick = {
                         handleAppPasswordEntryClick(
@@ -93,7 +93,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                         )
                     },
                     onLockOnBackgroundChange = {
-                        viewModel.onAction(SecurityUiAction.ToggleLockOnBackground(it))
+                        viewModel.onAction(SecuritySettingsAction.ToggleLockOnBackground(it))
                     }
                 )
             }
@@ -101,7 +101,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     }
 
     composable(SettingsRoute.Privacy.route) {
-        val viewModel: PrivacyViewModel = hiltViewModel()
+        val viewModel: PrivacySettingsViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.PRIVACY.titleRes),
@@ -111,17 +111,19 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                 PrivacyDetail(
                     state = state,
                     onSecureContentEnabledChange = {
-                        viewModel.onAction(PrivacyUiAction.SetSecureContentEnabled(it))
+                        viewModel.onAction(PrivacySettingsAction.SetSecureContentEnabled(it))
                     },
                     onFlipToLockEnabledChange = {
-                        viewModel.onAction(PrivacyUiAction.SetFlipToLockEnabled(it))
+                        viewModel.onAction(PrivacySettingsAction.SetFlipToLockEnabled(it))
                     },
                     onFlipExitAndClearStackEnabledChange = {
-                        viewModel.onAction(PrivacyUiAction.SetFlipExitAndClearStackEnabled(it))
+                        viewModel.onAction(
+                            PrivacySettingsAction.SetFlipExitAndClearStackEnabled(it)
+                        )
                     },
                     onSensitiveCopyReauthenticationChange = {
                         viewModel.onAction(
-                            PrivacyUiAction.SetSensitiveCopyReauthentication(it)
+                            PrivacySettingsAction.SetSensitiveCopyReauthentication(it)
                         )
                     }
                 )
@@ -130,7 +132,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     }
 
     composable(SettingsRoute.Appearance.route) {
-        val viewModel: AppearanceViewModel = hiltViewModel()
+        val viewModel: AppearanceSettingsViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.APPEARANCE.titleRes),
@@ -140,22 +142,22 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                 AppearanceDetail(
                     state = state,
                     onThemeModeChange = {
-                        viewModel.onAction(AppearanceUiAction.SetThemeMode(it))
+                        viewModel.onAction(AppearanceSettingsAction.SetThemeMode(it))
                     },
                     onDynamicColorChange = {
-                        viewModel.onAction(AppearanceUiAction.SetDynamicColor(it))
+                        viewModel.onAction(AppearanceSettingsAction.SetDynamicColor(it))
                     },
                     onExpressiveEnabledChange = {
-                        viewModel.onAction(AppearanceUiAction.SetExpressiveEnabled(it))
+                        viewModel.onAction(AppearanceSettingsAction.SetExpressiveEnabled(it))
                     },
                     onManualThemeColorSelect = {
-                        viewModel.onAction(AppearanceUiAction.SelectManualThemeColor(it))
+                        viewModel.onAction(AppearanceSettingsAction.SelectManualThemeColor(it))
                     },
                     onLanguageChange = {
-                        viewModel.onAction(AppearanceUiAction.SetLanguage(it))
+                        viewModel.onAction(AppearanceSettingsAction.SetLanguage(it))
                     },
                     onFontFamilyChange = {
-                        viewModel.onAction(AppearanceUiAction.SetFontFamily(it))
+                        viewModel.onAction(AppearanceSettingsAction.SetFontFamily(it))
                     }
                 )
             }
@@ -163,7 +165,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     }
 
     composable(SettingsRoute.Interface.route) {
-        val viewModel: InterfaceViewModel = hiltViewModel()
+        val viewModel: InterfaceSettingsViewModel = hiltViewModel()
         val state by viewModel.config.collectAsStateWithLifecycle()
 
         SettingsSecondaryPage(
@@ -174,37 +176,37 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                 InterfaceDetail(
                     state = state,
                     onStatusBarAutoHideChange = {
-                        viewModel.onAction(InterfaceUiAction.SetHideSystemBars(it))
+                        viewModel.onAction(InterfaceSettingsAction.SetHideSystemBars(it))
                     },
                     onTopBarCollapsibleChange = {
-                        viewModel.onAction(InterfaceUiAction.SetTopBarCollapsible(it))
+                        viewModel.onAction(InterfaceSettingsAction.SetTopBarCollapsible(it))
                     },
                     onTabBarCollapsibleChange = {
-                        viewModel.onAction(InterfaceUiAction.SetTabBarCollapsible(it))
+                        viewModel.onAction(InterfaceSettingsAction.SetTabBarCollapsible(it))
                     },
                     onOuterCornerRadiusChange = {
-                        viewModel.onAction(InterfaceUiAction.SetOuterCornerRadius(it))
+                        viewModel.onAction(InterfaceSettingsAction.SetOuterCornerRadius(it))
                     },
                     onInnerCornerRadiusChange = {
-                        viewModel.onAction(InterfaceUiAction.SetInnerCornerRadius(it))
+                        viewModel.onAction(InterfaceSettingsAction.SetInnerCornerRadius(it))
                     },
                     onGroupItemSpacingChange = {
-                        viewModel.onAction(InterfaceUiAction.SetGroupItemSpacing(it))
+                        viewModel.onAction(InterfaceSettingsAction.SetGroupItemSpacing(it))
                     },
                     onGroupContentPaddingChange = {
-                        viewModel.onAction(InterfaceUiAction.SetGroupContentPadding(it))
+                        viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(it))
                     },
                     onVisibleVaultTabsChange = {
-                        viewModel.onAction(InterfaceUiAction.SetVisibleVaultTabs(it))
+                        viewModel.onAction(InterfaceSettingsAction.SetVisibleVaultTabs(it))
                     },
                     onTabBarMaxTabsWithoutScrollChange = {
                         viewModel.onAction(
-                            InterfaceUiAction.SetMaxTabsWithoutScroll(it)
+                            InterfaceSettingsAction.SetMaxTabsWithoutScroll(it)
                         )
                     },
                     onEntryHierarchyDisplayModeChange = {
                         viewModel.onAction(
-                            InterfaceUiAction.SetEntryHierarchyDisplayMode(it)
+                            InterfaceSettingsAction.SetEntryHierarchyDisplayMode(it)
                         )
                     }
                 )

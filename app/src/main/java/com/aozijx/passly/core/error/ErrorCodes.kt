@@ -34,6 +34,7 @@ const val VALIDATION_ERROR = "VALIDATION_ERROR"
 const val NOT_FOUND = "NOT_FOUND"
 const val RATE_LIMITED = "RATE_LIMITED"
 const val CONFLICT = "CONFLICT"
+const val SESSION_MODE_RESTRICTED = "SESSION_MODE_RESTRICTED"
 
 // ─── 兜底/未知 ─────────────────────────────
 const val UNEXPECTED = "UNEXPECTED"

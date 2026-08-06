@@ -32,9 +32,9 @@ import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordAction
 import com.aozijx.passly.feature.settings.contract.SettingsEffect
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
-import com.aozijx.passly.feature.settings.datamanagement.DataUiAction
-import com.aozijx.passly.feature.settings.datamanagement.DataViewModel
-import com.aozijx.passly.feature.settings.interaction.InteractionViewModel
+import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
+import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
+import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.feature.settings.shell.SettingsMainPage
 import com.aozijx.passly.feature.settings.shell.SettingsScreenDialogsHost
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
@@ -55,9 +55,9 @@ fun SettingsNavGraph(
 ) {
     val localState = rememberSettingsScreenLocalState()
     val context = LocalContext.current
-    val interactionViewModel: InteractionViewModel = hiltViewModel()
+    val interactionViewModel: InteractionSettingsViewModel = hiltViewModel()
     val interactionState by interactionViewModel.config.collectAsStateWithLifecycle()
-    val dataViewModel: DataViewModel = hiltViewModel()
+    val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
     val backupViewModel: BackupViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -165,7 +165,7 @@ fun SettingsNavGraph(
             },
             submitAppPasswordAction = ::submitAppPasswordAction,
             onClearBackupDirectory = {
-                dataViewModel.onAction(DataUiAction.ClearBackupDirectory)
+                dataViewModel.onAction(DataManagementSettingsAction.ClearBackupDirectory)
             }
         )
     )
@@ -183,8 +183,8 @@ private fun SettingsNavHost(
     onGroupClick: (SettingsRoute) -> Unit,
     authDecryptTitle: String,
     setAppPasswordSubtitle: String,
-    interactionViewModel: InteractionViewModel,
-    dataViewModel: DataViewModel,
+    interactionViewModel: InteractionSettingsViewModel,
+    dataViewModel: DataManagementSettingsViewModel,
     backupViewModel: BackupViewModel,
     settingsState: SettingsUiState,
     modifier: Modifier = Modifier

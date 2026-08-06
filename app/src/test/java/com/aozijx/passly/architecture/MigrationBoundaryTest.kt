@@ -283,6 +283,21 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun viewModelsDoNotOwnTopLevelMviContracts() {
+        val topLevelContractPattern = Regex("""(?m)^(data class|sealed interface|sealed class)\s+""")
+        val offenders = productionKotlinFiles
+            .filter { it.name.endsWith("ViewModel.kt") }
+            .filter { topLevelContractPattern.containsMatchIn(it.readText()) }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue(
+            "Move ViewModel-owned MVI contracts into dedicated contract files: $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
     fun migratedFeaturePresentationKeepsComposeInsideUiPackagesOrFeatureScreens() {
         val guardedFeaturePaths = listOf(
             "/feature/verification/",
@@ -907,7 +922,37 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/backup/BackupViewModel.kt"
         ).readText()
         val securityViewModel = File(
-            "src/main/java/com/aozijx/passly/feature/settings/security/SecurityViewModel.kt"
+            "src/main/java/com/aozijx/passly/feature/settings/security/SecuritySettingsViewModel.kt"
+        ).readText()
+        val transactionRunner = File(
+            "src/main/java/com/aozijx/passly/data/repository/VaultTransactionRunner.kt"
+        ).readText()
+        val entryQueryRepository = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/RoomEntryQueryRepository.kt"
+        ).readText()
+        val otpConfigRepository = File(
+            "src/main/java/com/aozijx/passly/data/repository/otp/RoomOtpConfigRepository.kt"
+        ).readText()
+        val attachmentRepository = File(
+            "src/main/java/com/aozijx/passly/data/repository/attachment/FileBackedAttachmentRepository.kt"
+        ).readText()
+        val vaultViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/vault/VaultViewModel.kt"
+        ).readText()
+        val createEntryViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/vault/editor/common/CreateEntryViewModel.kt"
+        ).readText()
+        val detailViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/detail/DetailViewModel.kt"
+        ).readText()
+        val recoveryModeViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
+        ).readText()
+        val dataViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/datamanagement/DataManagementSettingsViewModel.kt"
+        ).readText()
+        val diagnosticsViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/general/DiagnosticsSettingsViewModel.kt"
         ).readText()
 
         // 1. UNLOCK_VAULT must not allow recovery code
@@ -984,7 +1029,7 @@ class MigrationBoundaryTest {
             "suspend fun checkRecoveryCode" in provisionerInterface
         )
         assertTrue(
-            "SecurityViewModel must use checkRecoveryCode",
+            "SecuritySettingsViewModel must use checkRecoveryCode",
             "methodProvisioner.checkRecoveryCode" in securityViewModel
         )
 
@@ -1008,6 +1053,63 @@ class MigrationBoundaryTest {
         assertTrue(
             "BackupViewModel must have isRecoveryExport flag",
             "isRecoveryExport" in backupViewModel
+        )
+
+        // 11. Plain Vault repositories must not treat an open recovery database as full access.
+        assertTrue(
+            "VaultTransactionRunner must require full Vault access before write/read",
+            "hasFullVaultAccess()" in transactionRunner &&
+                    "SessionModeRestricted" in transactionRunner
+        )
+        assertTrue(
+            "Entry query repository must gate normal and high-sensitivity reads",
+            entryQueryRepository.split("hasFullVaultAccess()").size - 1 >= 4
+        )
+        assertTrue(
+            "OTP config repository must gate secret reads",
+            "hasFullVaultAccess()" in otpConfigRepository
+        )
+        assertTrue(
+            "Attachment repository must gate metadata and file writes",
+            attachmentRepository.split("hasFullVaultAccess()").size - 1 >= 3 &&
+                    "SessionModeRestricted" in attachmentRepository
+        )
+
+        // 12. Sensitive ViewModels must express their session-mode boundary explicitly.
+        assertTrue(
+            "VaultViewModel must gate normal Vault actions",
+            "VaultAccessState" in vaultViewModel &&
+                    vaultViewModel.split("hasFullVaultAccess()").size - 1 >= 4
+        )
+        assertTrue(
+            "CreateEntryViewModel must gate entry creation",
+            "VaultAccessState" in createEntryViewModel &&
+                    "hasFullVaultAccess()" in createEntryViewModel
+        )
+        assertTrue(
+            "DetailViewModel must gate detail reads and reveal actions",
+            "VaultAccessState" in detailViewModel &&
+                    detailViewModel.split("hasFullVaultAccess()").size - 1 >= 4
+        )
+        assertTrue(
+            "RecoveryModeViewModel must only run in RecoveryMode",
+            "AuthenticationState.RecoveryMode" in recoveryModeViewModel &&
+                    "ensureRecoveryMode" in recoveryModeViewModel
+        )
+        assertTrue(
+            "BackupViewModel must gate normal backup versus recovery export",
+            "VaultAccessState" in backupViewModel &&
+                    "hasFullVaultAccess()" in backupViewModel &&
+                    "isRecoveryMode()" in backupViewModel
+        )
+        assertTrue(
+            "DataManagementSettingsViewModel must gate trash operations",
+            "VaultAccessState" in dataViewModel &&
+                    "hasFullVaultAccess()" in dataViewModel
+        )
+        assertTrue(
+            "DiagnosticsSettingsViewModel must not expose diagnostics outside full auth",
+            "AuthenticationState.Authenticated" in diagnosticsViewModel
         )
     }
 }

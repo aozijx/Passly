@@ -46,7 +46,7 @@ class CredentialResponseActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.state.collectLatest { state ->
                 when (state) {
-                    is CredentialResponseViewModel.UiState.Complete -> {
+                    is CredentialResponseUiState.Complete -> {
                         if (!resultFinishing.compareAndSet(false, true)) {
                             return@collectLatest
                         }
@@ -58,8 +58,8 @@ class CredentialResponseActivity : AppCompatActivity() {
                         finish()
                     }
 
-                    is CredentialResponseViewModel.UiState.Unrecoverable -> finishWithError()
-                    is CredentialResponseViewModel.UiState.Loading -> { /* 等待结果 */
+                    is CredentialResponseUiState.Unrecoverable -> finishWithError()
+                    is CredentialResponseUiState.Loading -> { /* 等待结果 */
                     }
                 }
             }

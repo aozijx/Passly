@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.backup.model.BackupExportOptions
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
@@ -41,6 +42,7 @@ class BackupViewModel @Inject constructor(
     private val backupService: VaultBackupService,
     private val storageSupport: BackupExportStorageSupport,
     private val authenticationManager: AuthenticationManager,
+    private val vaultAccessState: VaultAccessState,
     private val noticePublisher: AppNoticePublisher
 ) : ViewModel() {
 
@@ -95,6 +97,10 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun prepareExport(format: BackupExportUiFormat) {
+        if (!vaultAccessState.hasFullVaultAccess()) {
+            fail(BackupFailed("当前会话不能导出普通备份"), BackupOperation.EXPORT)
+            return
+        }
         _uiState.update {
             it.copy(
                 isExporting = true,
@@ -115,8 +121,27 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun prepareRecoveryExport() {
-        prepareExport(BackupExportUiFormat.ENCRYPTED)
-        _uiState.update { it.copy(isRecoveryExport = true) }
+        if (!vaultAccessState.isRecoveryMode()) {
+            fail(BackupFailed("恢复导出只能在恢复模式中使用"), BackupOperation.EXPORT)
+            return
+        }
+        _uiState.update {
+            it.copy(
+                isExporting = true,
+                isRecoveryExport = true,
+                selectedExportFormat = BackupExportUiFormat.ENCRYPTED,
+                backupUri = null,
+                backupPassword = "",
+                includeIcons = true,
+                includeAttachments = true,
+                includeDeleted = true,
+                includedEntryTypes = EntryType.entries.toSet(),
+                pendingExportFileName = buildExportFileName(BackupExportUiFormat.ENCRYPTED),
+                deleteTargetOnFailure = false,
+                status = BackupOperationStatus.Idle,
+                error = null
+            )
+        }
     }
 
     private fun startExport(
@@ -124,6 +149,7 @@ class BackupViewModel @Inject constructor(
         fileNameHint: String?,
         deleteOnFailure: Boolean
     ) {
+        if (!canUseCurrentModeForPendingExport()) return
         _uiState.update {
             it.copy(
                 isExporting = true,
@@ -138,6 +164,7 @@ class BackupViewModel @Inject constructor(
     private fun startExportInConfiguredDirectory() {
         val snapshot = _uiState.value
         if (!snapshot.isExporting || !snapshot.canSubmitExport) return
+        if (!canUseMode(snapshot)) return
         viewModelScope.launch {
             if (!authenticate(
                     snapshot.exportAuthenticationPurpose(),
@@ -180,6 +207,10 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun startImport(uri: Uri) {
+        if (!vaultAccessState.hasFullVaultAccess()) {
+            fail(BackupFailed("当前会话不能导入备份"), BackupOperation.IMPORT)
+            return
+        }
         _uiState.update {
             it.copy(
                 isExporting = false,
@@ -234,6 +265,7 @@ class BackupViewModel @Inject constructor(
             } else {
                 BackupOperation.IMPORT
             }
+            if (!canUseMode(snapshot, operation)) return@launch
             if (!authenticate(purpose, operation)) {
                 clearPendingOperation()
                 return@launch
@@ -260,6 +292,7 @@ class BackupViewModel @Inject constructor(
         }
 
     private suspend fun performOperation(state: BackupUiState, targetUri: Uri) {
+        if (!canUseMode(state, state.toOperation())) return
         if (state.isRecoveryExport &&
             (state.selectedExportFormat != BackupExportUiFormat.ENCRYPTED ||
                     state.backupPassword.isBlank())
@@ -380,6 +413,33 @@ class BackupViewModel @Inject constructor(
         } else {
             AuthenticationPurpose.BACKUP_EXPORT
         }
+
+    private fun canUseCurrentModeForPendingExport(): Boolean =
+        canUseMode(_uiState.value, BackupOperation.EXPORT)
+
+    private fun canUseMode(
+        state: BackupUiState,
+        operation: BackupOperation = state.toOperation()
+    ): Boolean {
+        val allowed = if (state.isRecoveryExport) {
+            vaultAccessState.isRecoveryMode()
+        } else {
+            vaultAccessState.hasFullVaultAccess()
+        }
+        if (allowed) return true
+        fail(
+            BackupFailed(
+                if (state.isRecoveryExport) {
+                    "恢复导出只能在恢复模式中使用"
+                } else {
+                    "当前会话不能执行备份操作"
+                }
+            ),
+            operation
+        )
+        clearPendingFields()
+        return false
+    }
 
     private enum class BackupOperation {
         EXPORT,

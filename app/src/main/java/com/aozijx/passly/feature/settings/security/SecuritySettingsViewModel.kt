@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.settings.security
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.settings.command.SettingsCommand
@@ -17,29 +18,16 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class SecurityUiState(
-    val lockTimeout: Long = 60_000L,
-    val isInvalidateKeyOnBioChange: Boolean = true,
-    val isLockOnBackground: Boolean = false
-)
-
-sealed interface SecurityUiAction {
-    data class SetLockTimeout(val timeoutMs: Long) : SecurityUiAction
-    data class ToggleLockOnBackground(val enabled: Boolean) : SecurityUiAction
-    data class VerifyRecoveryCode(val code: String) : SecurityUiAction
-    data object ClearVerifyResult : SecurityUiAction
-}
-
 @HiltViewModel
-class SecurityViewModel @Inject constructor(
+class SecuritySettingsViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val methodProvisioner: AuthenticationMethodProvisioner,
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
-    val config: StateFlow<SecurityUiState> = settingsRepository.settings.map { settings ->
+    val config: StateFlow<SecuritySettingsUiState> = settingsRepository.settings.map { settings ->
         val security = settings.security
-        SecurityUiState(
+        SecuritySettingsUiState(
             lockTimeout = security.lockTimeout,
             isInvalidateKeyOnBioChange = security.isInvalidateBiometricKeyOnChange,
             isLockOnBackground = security.isLockOnBackground
@@ -47,7 +35,7 @@ class SecurityViewModel @Inject constructor(
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
-        SecurityUiState()
+        SecuritySettingsUiState()
     )
 
     val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
@@ -64,22 +52,26 @@ class SecurityViewModel @Inject constructor(
     private val _verifyResult = MutableStateFlow<Boolean?>(null)
     val verifyResult: StateFlow<Boolean?> = _verifyResult.asStateFlow()
 
-    fun onAction(action: SecurityUiAction) {
+    fun onAction(action: SecuritySettingsAction) {
         when (action) {
-            is SecurityUiAction.SetLockTimeout -> viewModelScope.launch {
+            is SecuritySettingsAction.SetLockTimeout -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetLockTimeout(action.timeoutMs))
             }
 
-            is SecurityUiAction.ToggleLockOnBackground -> viewModelScope.launch {
+            is SecuritySettingsAction.ToggleLockOnBackground -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetLockOnBackground(action.enabled))
             }
 
-            is SecurityUiAction.VerifyRecoveryCode -> viewModelScope.launch {
+            is SecuritySettingsAction.VerifyRecoveryCode -> viewModelScope.launch {
+                if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
+                    _verifyResult.value = false
+                    return@launch
+                }
                 val valid = methodProvisioner.checkRecoveryCode(action.code.toCharArray())
                 _verifyResult.value = valid
             }
 
-            SecurityUiAction.ClearVerifyResult -> {
+            SecuritySettingsAction.ClearVerifyResult -> {
                 _verifyResult.value = null
             }
 
@@ -97,6 +89,10 @@ class SecurityViewModel @Inject constructor(
         onResult: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
+            if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
+                onResult(false)
+                return@launch
+            }
             val result = methodProvisioner.rotateBiometricPolicy(enabled)
             if (result is AuthenticationResult.Success) {
                 settingsRepository.update(SettingsCommand.SetInvalidateBiometricKeyOnChange(enabled))
@@ -110,6 +106,10 @@ class SecurityViewModel @Inject constructor(
         onResult: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
+            if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
+                onResult(false)
+                return@launch
+            }
             val result = if (enabled) {
                 methodProvisioner.rotateBiometricPolicy(config.value.isInvalidateKeyOnBioChange)
             } else {

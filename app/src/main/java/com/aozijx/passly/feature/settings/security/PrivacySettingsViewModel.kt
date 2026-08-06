@@ -13,32 +13,18 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class PrivacyUiState(
-    val isSecureContentEnabled: Boolean = true,
-    val isFlipToLockEnabled: Boolean = false,
-    val isFlipExitAndClearStackEnabled: Boolean = false,
-    val reauthenticateSensitiveCopies: Boolean = true,
-)
-
-sealed interface PrivacyUiAction {
-    data class SetSecureContentEnabled(val enabled: Boolean) : PrivacyUiAction
-    data class SetFlipToLockEnabled(val enabled: Boolean) : PrivacyUiAction
-    data class SetFlipExitAndClearStackEnabled(val enabled: Boolean) : PrivacyUiAction
-    data class SetSensitiveCopyReauthentication(val enabled: Boolean) : PrivacyUiAction
-}
-
 @HiltViewModel
-class PrivacyViewModel @Inject constructor(
+class PrivacySettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
-    val config: StateFlow<PrivacyUiState> = combine(
+    val config: StateFlow<PrivacySettingsUiState> = combine(
         settingsRepository.settings.map { it.security.isSecureContentEnabled },
         settingsRepository.settings.map { it.security.isFlipToLockEnabled },
         settingsRepository.settings.map { it.security.isFlipExitAndClearStackEnabled },
         settingsRepository.settings.map { it.security.reauthenticateSensitiveCopies }
     ) { sec, ftl, fec, copyAuth ->
-        PrivacyUiState(
+        PrivacySettingsUiState(
             isSecureContentEnabled = sec,
             isFlipToLockEnabled = ftl,
             isFlipExitAndClearStackEnabled = fec,
@@ -47,24 +33,24 @@ class PrivacyViewModel @Inject constructor(
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
-        PrivacyUiState()
+        PrivacySettingsUiState()
     )
 
-    fun onAction(action: PrivacyUiAction) {
+    fun onAction(action: PrivacySettingsAction) {
         when (action) {
-            is PrivacyUiAction.SetSecureContentEnabled -> viewModelScope.launch {
+            is PrivacySettingsAction.SetSecureContentEnabled -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetSecureContentEnabled(action.enabled))
             }
 
-            is PrivacyUiAction.SetFlipToLockEnabled -> viewModelScope.launch {
+            is PrivacySettingsAction.SetFlipToLockEnabled -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetFlipToLockEnabled(action.enabled))
             }
 
-            is PrivacyUiAction.SetFlipExitAndClearStackEnabled -> viewModelScope.launch {
+            is PrivacySettingsAction.SetFlipExitAndClearStackEnabled -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetFlipExitAndClearStackEnabled(action.enabled))
             }
 
-            is PrivacyUiAction.SetSensitiveCopyReauthentication -> viewModelScope.launch {
+            is PrivacySettingsAction.SetSensitiveCopyReauthentication -> viewModelScope.launch {
                 settingsRepository.update(
                     SettingsCommand.SetReauthenticateSensitiveCopies(action.enabled)
                 )

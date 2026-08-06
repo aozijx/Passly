@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.AppResult
 import com.aozijx.passly.core.error.ui.toUiMessage
-import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
 import com.aozijx.passly.domain.settings.command.SettingsCommand
@@ -20,46 +20,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class DataUiState(
-    val isAutoDownloadIcons: Boolean = true,
-    val directoryUri: String? = null,
-    val deletedEntries: List<EntryListItem> = emptyList(),
-    val isTrashLoading: Boolean = true,
-    val activeTrashEntryId: String? = null,
-    val isEmptyingTrash: Boolean = false,
-    val trashError: String? = null
-) {
-    val isTrashBusy: Boolean
-        get() = activeTrashEntryId != null || isEmptyingTrash
-}
-
-sealed interface DataUiAction {
-    data class SetAutoDownloadIcons(val enabled: Boolean) : DataUiAction
-    data class SetBackupDirectoryUri(val uri: String) : DataUiAction
-    data object ClearBackupDirectory : DataUiAction
-    data class RestoreTrashEntry(
-        val entryId: String,
-        val expectedVersion: Int
-    ) : DataUiAction
-
-    data class DeleteTrashEntry(
-        val entryId: String,
-        val expectedVersion: Int
-    ) : DataUiAction
-
-    data object EmptyTrash : DataUiAction
-    data object ClearTrashError : DataUiAction
-}
-
 @HiltViewModel
-class DataViewModel @Inject constructor(
+class DataManagementSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
-    private val entryCommandRepository: EntryCommandRepository
+    private val entryCommandRepository: EntryCommandRepository,
+    private val vaultAccessState: VaultAccessState
 ) : ViewModel() {
 
-    private val _config = MutableStateFlow(DataUiState())
-    val config: StateFlow<DataUiState> = _config.asStateFlow()
+    private val _config = MutableStateFlow(DataManagementSettingsUiState())
+    val config: StateFlow<DataManagementSettingsUiState> = _config.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -98,37 +68,37 @@ class DataViewModel @Inject constructor(
         }
     }
 
-    fun onAction(action: DataUiAction) {
+    fun onAction(action: DataManagementSettingsAction) {
         when (action) {
-            is DataUiAction.SetAutoDownloadIcons -> viewModelScope.launch {
+            is DataManagementSettingsAction.SetAutoDownloadIcons -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetAutoDownloadIcons(action.enabled))
             }
 
-            is DataUiAction.SetBackupDirectoryUri -> viewModelScope.launch {
+            is DataManagementSettingsAction.SetBackupDirectoryUri -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetBackupDirectoryUri(action.uri))
             }
 
-            is DataUiAction.ClearBackupDirectory -> viewModelScope.launch {
+            is DataManagementSettingsAction.ClearBackupDirectory -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.ClearBackupDirectoryUri)
             }
 
-            is DataUiAction.RestoreTrashEntry -> runTrashEntryAction(action.entryId) {
+            is DataManagementSettingsAction.RestoreTrashEntry -> runTrashEntryAction(action.entryId) {
                 entryCommandRepository.restoreEntry(
                     id = action.entryId,
                     expectedVersion = action.expectedVersion
                 )
             }
 
-            is DataUiAction.DeleteTrashEntry -> runTrashEntryAction(action.entryId) {
+            is DataManagementSettingsAction.DeleteTrashEntry -> runTrashEntryAction(action.entryId) {
                 entryCommandRepository.deletePermanently(
                     id = action.entryId,
                     expectedVersion = action.expectedVersion
                 )
             }
 
-            is DataUiAction.EmptyTrash -> emptyTrash()
+            is DataManagementSettingsAction.EmptyTrash -> emptyTrash()
 
-            is DataUiAction.ClearTrashError -> {
+            is DataManagementSettingsAction.ClearTrashError -> {
                 _config.update { it.copy(trashError = null) }
             }
         }
@@ -139,7 +109,15 @@ class DataViewModel @Inject constructor(
         operation: suspend () -> AppResult<Unit>
     ) {
         if (_config.value.isTrashBusy) return
+        if (!vaultAccessState.hasFullVaultAccess()) {
+            _config.update { it.copy(trashError = "当前会话不能操作回收站") }
+            return
+        }
         viewModelScope.launch {
+            if (!vaultAccessState.hasFullVaultAccess()) {
+                _config.update { it.copy(trashError = "当前会话不能操作回收站") }
+                return@launch
+            }
             _config.update {
                 it.copy(activeTrashEntryId = entryId, trashError = null)
             }
@@ -160,7 +138,15 @@ class DataViewModel @Inject constructor(
 
     private fun emptyTrash() {
         if (_config.value.isTrashBusy || _config.value.deletedEntries.isEmpty()) return
+        if (!vaultAccessState.hasFullVaultAccess()) {
+            _config.update { it.copy(trashError = "当前会话不能操作回收站") }
+            return
+        }
         viewModelScope.launch {
+            if (!vaultAccessState.hasFullVaultAccess()) {
+                _config.update { it.copy(trashError = "当前会话不能操作回收站") }
+                return@launch
+            }
             _config.update { it.copy(isEmptyingTrash = true, trashError = null) }
             try {
                 when (val result = entryCommandRepository.emptyTrash()) {
