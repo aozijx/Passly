@@ -7,6 +7,7 @@ import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import android.service.autofill.SaveInfo
 import android.view.autofill.AutofillId
+import com.aozijx.passly.R
 import com.aozijx.passly.core.autofill.model.FillAvailability
 import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
@@ -109,8 +110,7 @@ internal object LegacyResponseFactory {
         val presentation = AutofillRemoteViewFactory.createDatasetItem(
             context = context,
             candidate = candidate,
-            subtitle = candidate.subtitle,
-            badge = buildBadge(candidate),
+            badge = buildBadge(context, candidate),
         )
         val intent = createFillIntent(context, candidate, parsed, uiMode)
         val pi = PendingIntent.getActivity(
@@ -128,10 +128,10 @@ internal object LegacyResponseFactory {
         builder.addDataset(dsBuilder.build())
     }
 
-    private fun buildBadge(candidate: ResolvedCandidate): String {
+    private fun buildBadge(context: Context, candidate: ResolvedCandidate): String {
         return when (candidate.matchedBy) {
-            MatchType.PACKAGE_NAME -> candidate.matchedPackage ?: ""
-            MatchType.WEB_DOMAIN -> candidate.matchedDomain ?: ""
+            MatchType.PACKAGE_NAME -> context.getString(R.string.autofill_badge_app)
+            MatchType.WEB_DOMAIN -> context.getString(R.string.autofill_badge_website)
             else -> ""
         }
     }

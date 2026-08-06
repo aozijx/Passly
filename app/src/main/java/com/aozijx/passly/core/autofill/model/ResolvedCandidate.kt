@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.autofill.model
 
-import com.aozijx.passly.domain.entry.model.VaultIconable
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.VaultIconable
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 
 /**
@@ -31,8 +31,6 @@ data class ResolvedCandidate(
     override val associatedDomain: String? = null,
     /** 关联应用包名 */
     override val associatedAppPackage: String? = null,
-    /** 副标题（匹配类型、使用频次等上下文信息） */
-    val subtitle: String = "",
     /** 字段到值的映射：key = FieldRole，value = 待填内容 */
     val fields: Map<FieldRole, String> = emptyMap(),
     override val iconName: String? = null,

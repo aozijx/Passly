@@ -50,7 +50,10 @@
 
     <!-- Autofill service -->
     <string name="autofill_entry_compact_title">Choose account</string>
+    <string name="autofill_entry_compact_summary">%1$d fillable accounts found</string>
     <string name="autofill_prompt_title">Autofill with %1$s</string>
+    <string name="autofill_badge_app">App</string>
+    <string name="autofill_badge_website">Website</string>
     <string name="select">Select</string>
     <plurals name="autofill_trigger_count">
         <item quantity="one">%d matching account · Tap to select</item>

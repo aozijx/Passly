@@ -50,7 +50,10 @@
 
     <!-- 自動入力サービス -->
     <string name="autofill_entry_compact_title">アカウントを選択</string>
+    <string name="autofill_entry_compact_summary">%1$d 件の入力可能なアカウント</string>
     <string name="autofill_prompt_title">%1$s で自動入力</string>
+    <string name="autofill_badge_app">アプリ</string>
+    <string name="autofill_badge_website">Web</string>
     <string name="select">選択</string>
     <plurals name="autofill_trigger_count">
         <item quantity="other">%d 件のアカウント · タップして選択</item>

@@ -9,7 +9,6 @@ import com.aozijx.passly.domain.autofill.policy.CredentialScopeMatcher
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
-import com.aozijx.passly.domain.entry.model.lookup.MatchType
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
@@ -95,7 +94,6 @@ class CandidateResolver @Inject constructor(
             totpCode = if (includeOtp) generateTotpFromEntry(entry) else null,
             associatedDomain = entry.associatedDomain,
             associatedAppPackage = entry.associatedAppPackage,
-            subtitle = buildSubtitle(this),
             iconName = entry.iconName,
             iconCustomPath = entry.iconCustomPath,
             entryType = entry.entryType,
@@ -114,7 +112,6 @@ class CandidateResolver @Inject constructor(
             totpCode = if (includeOtp) generateTotpFromEntry(this) else null,
             associatedDomain = associatedDomain,
             associatedAppPackage = associatedAppPackage,
-            subtitle = username,
             iconName = iconName,
             iconCustomPath = iconCustomPath,
             entryType = entryType,
@@ -128,19 +125,6 @@ class CandidateResolver @Inject constructor(
             is OtpResult.Success -> result.code
             is OtpResult.Failure -> null
         }
-    }
-
-    private fun buildSubtitle(candidate: CredentialCandidate): String {
-        val parts = mutableListOf<String>()
-        when (candidate.matchedBy) {
-            MatchType.PACKAGE_NAME -> candidate.matchedPackage?.let { parts.add(it) }
-            MatchType.WEB_DOMAIN -> candidate.matchedDomain?.let { parts.add(it) }
-            else -> {}
-        }
-        if (candidate.entry.secret.otp?.config?.secret?.isNotBlank() == true) {
-            parts.add("2FA")
-        }
-        return parts.joinToString(" · ")
     }
 
 }
