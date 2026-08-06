@@ -103,7 +103,6 @@ class MainActivity : AppCompatActivity() {
                         dynamicColor = mainUiState.isDynamicColor,
                         manualThemeColorArgb = mainUiState.manualThemeColorArgb,
                         fontFamily = mainUiState.fontFamily,
-                        expressive = mainUiState.isExpressive,
                         outerCornerRadiusDp = mainUiState.outerCornerRadiusDp,
                         innerCornerRadiusDp = mainUiState.innerCornerRadiusDp,
                         groupItemSpacingDp = mainUiState.groupItemSpacingDp,

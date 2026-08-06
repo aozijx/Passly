@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.domain.settings.model.FallbackPalette
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,14 +15,12 @@ class ThemeTokensTest {
     @Test
     fun numericValues_areExposedAsRoundedGroupTokens() {
         val definition = passlyThemeDefinition(
-            expressive = true,
             outerCornerRadiusDp = 36f,
             innerCornerRadiusDp = 10f,
             groupItemSpacingDp = 5f,
             groupContentPaddingDp = 20f
         )
 
-        assertTrue(definition.tokens.isExpressive)
         assertEquals(36.dp, definition.tokens.roundedGroup.outerRadius)
         assertEquals(10.dp, definition.tokens.roundedGroup.innerRadius)
         assertEquals(5.dp, definition.tokens.roundedGroup.itemSpacing)
@@ -31,24 +28,8 @@ class ThemeTokensTest {
     }
 
     @Test
-    fun expressiveFlag_doesNotOverrideUserGeometry() {
-        val definition = passlyThemeDefinition(
-            expressive = false,
-            outerCornerRadiusDp = 22f,
-            innerCornerRadiusDp = 6f,
-            groupItemSpacingDp = 2f,
-            groupContentPaddingDp = 16f
-        )
-
-        assertFalse(definition.tokens.isExpressive)
-        assertEquals(22.dp, definition.tokens.roundedGroup.outerRadius)
-        assertEquals(6.dp, definition.tokens.roundedGroup.innerRadius)
-    }
-
-    @Test
     fun outOfRangeValues_areClampedAtThemeBoundary() {
         val style = passlyThemeDefinition(
-            expressive = true,
             outerCornerRadiusDp = 80f,
             innerCornerRadiusDp = -4f,
             groupItemSpacingDp = 30f,

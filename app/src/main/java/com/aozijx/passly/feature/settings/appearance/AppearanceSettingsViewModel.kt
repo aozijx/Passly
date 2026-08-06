@@ -47,10 +47,6 @@ class AppearanceSettingsViewModel @Inject constructor(
             is AppearanceSettingsAction.SetFontFamily -> viewModelScope.launch {
                 settingsRepository.update(SettingsCommand.SetFontFamily(action.mode))
             }
-
-            is AppearanceSettingsAction.SetExpressiveEnabled -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetExpressiveEnabled(action.enabled))
-            }
         }
     }
 }
@@ -60,6 +56,5 @@ private fun AppearanceSettings.toUiState(): AppearanceSettingsUiState = Appearan
     isDynamicColor = isDynamicColor,
     manualThemeColorArgb = manualThemeColorArgb,
     language = language,
-    fontFamily = fontFamily,
-    isExpressive = isExpressive
+    fontFamily = fontFamily
 )

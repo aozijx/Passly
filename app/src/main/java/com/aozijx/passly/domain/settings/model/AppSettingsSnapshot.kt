@@ -23,8 +23,7 @@ data class AppearanceSettings(
     val fallbackPalette: FallbackPalette = FallbackPalette.BLUE,
     val manualThemeColorArgb: Long? = null,
     val language: AppLanguage = AppLanguage.SYSTEM,
-    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
-    val isExpressive: Boolean = true
+    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
 )
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }

@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.settings.appearance
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
@@ -42,7 +41,6 @@ internal fun AppearanceDetail(
     state: AppearanceSettingsUiState,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
-    onExpressiveEnabledChange: (Boolean) -> Unit,
     onManualThemeColorSelect: (Long?) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onFontFamilyChange: (FontFamilyMode) -> Unit
@@ -85,14 +83,6 @@ internal fun AppearanceDetail(
                     subtitle = stringResource(R.string.settings_dynamic_color_description),
                     checked = state.isDynamicColor,
                     onCheckedChange = onDynamicColorChange
-                ),
-                switchSettingsGroupItem(
-                    key = "appearance.expressive",
-                    icon = Icons.Default.AutoAwesome,
-                    title = stringResource(R.string.settings_expressive),
-                    subtitle = stringResource(R.string.settings_expressive_description),
-                    checked = state.isExpressive,
-                    onCheckedChange = onExpressiveEnabledChange
                 ),
                 navigationSettingsGroupItem(
                     key = "appearance.theme_color",

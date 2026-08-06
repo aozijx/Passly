@@ -33,8 +33,6 @@
     <!-- Appearance -->
     <string name="settings_dynamic_color">Dynamic Color</string>
     <string name="settings_dynamic_color_description">Use wallpaper colors as app theme</string>
-    <string name="settings_expressive">Material 3 Expressive</string>
-    <string name="settings_expressive_description">Use bolder shapes and motion</string>
     <string name="settings_font">Font</string>
     <string name="settings_font_app">Use bundled app font</string>
     <string name="settings_font_system">Use system font</string>

@@ -147,9 +147,6 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     onDynamicColorChange = {
                         viewModel.onAction(AppearanceSettingsAction.SetDynamicColor(it))
                     },
-                    onExpressiveEnabledChange = {
-                        viewModel.onAction(AppearanceSettingsAction.SetExpressiveEnabled(it))
-                    },
                     onManualThemeColorSelect = {
                         viewModel.onAction(AppearanceSettingsAction.SelectManualThemeColor(it))
                     },

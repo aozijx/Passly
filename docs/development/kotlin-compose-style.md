@@ -224,7 +224,7 @@ AppExpressiveTokens
 - 页面和组件优先读取项目主题 token。
 - 圆角、组内间距、内容 padding 等可配置项应来自同一个事件源/设置源。
 - `RoundedGroup`、输入框、BottomSheet、卡片、菜单等基础组件应共享 shape/spacing token。
-- Material Expressive 开关只能影响允许表达性增强的动效、形状和视觉强调，不应改变业务行为。
+- Material Expressive 始终启用；设置页不提供关闭开关。
 
 推荐：
 
@@ -238,7 +238,6 @@ AppExpressiveTokens
   - bottom-only corner；
   - standalone corner。
 - 动效拆分为：
-  - 是否启用 expressive；
   - 是否启用组件增强动画；
   - 是否降低动态效果。
 
@@ -246,7 +245,7 @@ AppExpressiveTokens
 
 - 到处写 `16.dp`、`24.dp` 作为永久组件参数。
 - 在业务页面复制 shape 计算。
-- 让 Material Expressive 开关决定认证、数据库、导出等业务逻辑。
+- 让 Material Expressive 决定认证、数据库、导出等业务逻辑。
 
 ## 输入框和表单
 

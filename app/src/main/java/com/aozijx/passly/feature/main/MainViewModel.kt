@@ -160,7 +160,6 @@ class MainViewModel @Inject constructor(
                             manualThemeColorArgb = appearance.manualThemeColorArgb,
                             fontFamily = appearance.fontFamily,
                             language = appearance.language,
-                            isExpressive = appearance.isExpressive,
                             outerCornerRadiusDp = interfacePrefs.outerCornerRadiusDp,
                             innerCornerRadiusDp = interfacePrefs.innerCornerRadiusDp,
                             groupItemSpacingDp = interfacePrefs.groupItemSpacingDp,

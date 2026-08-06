@@ -336,8 +336,7 @@ class ProtoAppSettingsRepository @Inject constructor(
             manualThemeColorArgb =
                 if (p.hasManualThemeColorArgb()) p.manualThemeColorArgb else null,
             language = p.language.toAppLanguageDomain(),
-            fontFamily = p.fontFamily.toFontFamilyDomain(),
-            isExpressive = p.expressiveEnabled
+            fontFamily = p.fontFamily.toFontFamilyDomain()
         )
 
     private fun readInterface(p: InterfacePreferences): InterfaceSettings =
@@ -486,12 +485,6 @@ class ProtoAppSettingsRepository @Inject constructor(
                 is SettingsCommand.SetFontFamily -> {
                     val ab = proto.appearance.toBuilder()
                     ab.fontFamily = command.mode.toFontFamilyString()
-                    b.setAppearance(ab)
-                }
-
-                is SettingsCommand.SetExpressiveEnabled -> {
-                    val ab = proto.appearance.toBuilder()
-                    ab.expressiveEnabled = command.enabled
                     b.setAppearance(ab)
                 }
 

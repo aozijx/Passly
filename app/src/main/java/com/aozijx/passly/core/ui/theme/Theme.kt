@@ -3,7 +3,6 @@ package com.aozijx.passly.core.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialExpressiveTheme
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -188,7 +187,6 @@ fun AppTheme(
     dynamicColor: Boolean = true,
     manualThemeColorArgb: Long? = null,
     fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
-    expressive: Boolean = true,
     outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,
     innerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP,
     groupItemSpacingDp: Float = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP,
@@ -215,14 +213,12 @@ fun AppTheme(
     val typography =
         if (fontFamily == FontFamilyMode.SYSTEM) SystemTypography else themeTypography()
     val themeDefinition = remember(
-        expressive,
         outerCornerRadiusDp,
         innerCornerRadiusDp,
         groupItemSpacingDp,
         groupContentPaddingDp
     ) {
         passlyThemeDefinition(
-            expressive = expressive,
             outerCornerRadiusDp = outerCornerRadiusDp,
             innerCornerRadiusDp = innerCornerRadiusDp,
             groupItemSpacingDp = groupItemSpacingDp,
@@ -231,22 +227,12 @@ fun AppTheme(
     }
 
     CompositionLocalProvider(LocalPasslyThemeTokens provides themeDefinition.tokens) {
-        if (expressive) {
-            MaterialExpressiveTheme(
-                colorScheme = colorScheme,
-                motionScheme = MotionScheme.expressive(),
-                typography = typography,
-                shapes = themeDefinition.shapes,
-                content = content
-            )
-        } else {
-            MaterialTheme(
-                colorScheme = colorScheme,
-                motionScheme = MotionScheme.standard(),
-                typography = typography,
-                shapes = themeDefinition.shapes,
-                content = content
-            )
-        }
+        MaterialExpressiveTheme(
+            colorScheme = colorScheme,
+            motionScheme = MotionScheme.expressive(),
+            typography = typography,
+            shapes = themeDefinition.shapes,
+            content = content
+        )
     }
 }

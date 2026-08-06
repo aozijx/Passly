@@ -9,8 +9,7 @@ data class AppearanceSettingsUiState(
     val isDynamicColor: Boolean = true,
     val manualThemeColorArgb: Long? = null,
     val language: AppLanguage = AppLanguage.SYSTEM,
-    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
-    val isExpressive: Boolean = true
+    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
 )
 
 sealed interface AppearanceSettingsAction {
@@ -19,5 +18,4 @@ sealed interface AppearanceSettingsAction {
     data class SelectManualThemeColor(val argb: Long?) : AppearanceSettingsAction
     data class SetLanguage(val language: AppLanguage) : AppearanceSettingsAction
     data class SetFontFamily(val mode: FontFamilyMode) : AppearanceSettingsAction
-    data class SetExpressiveEnabled(val enabled: Boolean) : AppearanceSettingsAction
 }

@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.theme.PasslyTheme
 import com.aozijx.passly.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -57,7 +56,6 @@ fun VaultFab(
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntryBottomSheet by remember { mutableStateOf(false) }
     var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
-    val expressive = PasslyTheme.isExpressive
     val motionScheme = MaterialTheme.motionScheme
     val fabShape = MaterialTheme.shapes.large
     val fabInteractionSource = remember { MutableInteractionSource() }
@@ -128,7 +126,7 @@ fun VaultFab(
 
             Surface(
                 modifier = sharedFabModifier
-                    .size(if (expressive) 56.dp else 52.dp)
+                    .size(56.dp)
                     .clip(fabShape)
                     .combinedClickable(
                         interactionSource = fabInteractionSource,

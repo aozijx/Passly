@@ -28,12 +28,10 @@ data class RoundedGroupStyle(
 
 @Immutable
 data class PasslyThemeTokens(
-    val isExpressive: Boolean,
     val roundedGroup: RoundedGroupStyle
 )
 
 private val DefaultThemeTokens = PasslyThemeTokens(
-    isExpressive = true,
     roundedGroup = RoundedGroupStyle(
         outerRadius = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP.dp,
         innerRadius = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP.dp,
@@ -51,11 +49,6 @@ object PasslyTheme {
         @ReadOnlyComposable
         get() = LocalPasslyThemeTokens.current
 
-    val isExpressive: Boolean
-        @Composable
-        @ReadOnlyComposable
-        get() = tokens.isExpressive
-
     val roundedGroup: RoundedGroupStyle
         @Composable
         @ReadOnlyComposable
@@ -68,7 +61,6 @@ internal data class PasslyThemeDefinition(
 )
 
 internal fun passlyThemeDefinition(
-    expressive: Boolean,
     outerCornerRadiusDp: Float,
     innerCornerRadiusDp: Float,
     groupItemSpacingDp: Float,
@@ -105,7 +97,6 @@ internal fun passlyThemeDefinition(
             )
         ),
         tokens = PasslyThemeTokens(
-            isExpressive = expressive,
             roundedGroup = RoundedGroupStyle(
                 outerRadius = outerRadius.dp,
                 innerRadius = innerRadius.dp,
