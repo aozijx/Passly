@@ -1,25 +1,25 @@
 package com.aozijx.passly.domain.entry.model
 
-enum class EntryType(val displayName: String) {
-    ACCOUNT("账户"),
-    LOGIN("登录"),
-    NOTE("笔记"),
-    CARD("卡片"),
-    IDENTITY("身份"),
-    SSH_KEY("SSH密钥"),
-    WIFI("Wi-Fi"),
-    PASSKEY("Passkey"),
-    OTP("OTP"),
-    PASSPORT("护照"),
-    LICENSE("证件"),
-    DATABASE("数据库"),
-    SERVER("服务器"),
-    API_KEY("API密钥"),
-    CRYPTO_WALLET("加密钱包"),
-    BANK_CARD("银行卡"),
-    ID_CARD("身份证"),
-    SEED_PHRASE("助记词"),
-    RECOVERY_CODE("恢复码");
+enum class EntryType {
+    ACCOUNT,
+    LOGIN,
+    NOTE,
+    CARD,
+    IDENTITY,
+    SSH_KEY,
+    WIFI,
+    PASSKEY,
+    OTP,
+    PASSPORT,
+    LICENSE,
+    DATABASE,
+    SERVER,
+    API_KEY,
+    CRYPTO_WALLET,
+    BANK_CARD,
+    ID_CARD,
+    SEED_PHRASE,
+    RECOVERY_CODE;
 
     companion object {
         fun fromName(name: String): EntryType =

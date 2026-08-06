@@ -22,6 +22,29 @@
     <string name="show_password">パスワード表示</string>
     <string name="hide_password">パスワード非表示</string>
     <string name="username_hint">ユーザー名／メールアドレス</string>
+    <string name="entry_category">カテゴリ</string>
+    <string name="entry_template_type">項目タイプ</string>
+
+    <!-- エントリ種別名称 -->
+    <string name="entry_type_account">アカウント</string>
+    <string name="entry_type_login">ログイン</string>
+    <string name="entry_type_note">ノート</string>
+    <string name="entry_type_card">カード</string>
+    <string name="entry_type_identity">ID情報</string>
+    <string name="entry_type_ssh_key">SSHキー</string>
+    <string name="entry_type_wifi" translatable="false">Wi-Fi</string>
+    <string name="entry_type_passkey" translatable="false">Passkey</string>
+    <string name="entry_type_otp" translatable="false">OTP</string>
+    <string name="entry_type_passport">パスポート</string>
+    <string name="entry_type_license">免許証</string>
+    <string name="entry_type_database">データベース</string>
+    <string name="entry_type_server">サーバー</string>
+    <string name="entry_type_api_key" translatable="false">API Key</string>
+    <string name="entry_type_crypto_wallet">暗号資産ウォレット</string>
+    <string name="entry_type_bank_card">銀行カード</string>
+    <string name="entry_type_id_card">身分証</string>
+    <string name="entry_type_seed_phrase">リカバリーフレーズ</string>
+    <string name="entry_type_recovery_code">復旧コード</string>
 
     <!-- アプリ情報 -->
 
@@ -280,7 +303,7 @@
     <string name="app_package_picker_action">アプリを選択</string>
     <string name="entry_type">エントリ種別</string>
     <string name="recovery_mode_title">復旧モード</string>
-    <string name="recovery_mode_description">復旧コードでは通常の保管庫セッションは作成されません。主認証の再構築、または新しいバックアップパスワードで保護された暗号化バックアップの出力のみ行えます。</string>
+    <string name="recovery_mode_description">復旧モードでは通常の保管庫セッションは作成されません。主認証の再構築、または新しいバックアップパスワードで保護された暗号化バックアップの出力のみ行えます。</string>
     <string name="recovery_mode_set_password">新しいアプリパスワードを設定</string>
     <string name="recovery_mode_reconfigure_biometric">生体認証を再設定</string>
     <string name="recovery_mode_biometric_success">生体認証を再設定しました。通常セッションに戻るには新しいアプリパスワードを設定してください。</string>

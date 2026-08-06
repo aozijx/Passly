@@ -35,6 +35,27 @@
     <string name="sort_entry_type">数据模板</string>
     <string name="not_set">未设置</string>
 
+    <!-- 条目类型名称 -->
+    <string name="entry_type_account">账户</string>
+    <string name="entry_type_login">登录</string>
+    <string name="entry_type_note">笔记</string>
+    <string name="entry_type_card">卡片</string>
+    <string name="entry_type_identity">身份</string>
+    <string name="entry_type_ssh_key">SSH密钥</string>
+    <string name="entry_type_wifi" translatable="false">Wi-Fi</string>
+    <string name="entry_type_passkey" translatable="false">Passkey</string>
+    <string name="entry_type_otp" translatable="false">OTP</string>
+    <string name="entry_type_passport">护照</string>
+    <string name="entry_type_license">证件</string>
+    <string name="entry_type_database">数据库</string>
+    <string name="entry_type_server">服务器</string>
+    <string name="entry_type_api_key" translatable="false">API Key</string>
+    <string name="entry_type_crypto_wallet">加密钱包</string>
+    <string name="entry_type_bank_card">银行卡</string>
+    <string name="entry_type_id_card">身份证</string>
+    <string name="entry_type_seed_phrase">助记词</string>
+    <string name="entry_type_recovery_code">恢复码</string>
+
     <!-- Autofill 服务相关 -->
     <string name="autofill_entry_compact_title">选择账号</string>
     <string name="autofill_prompt_title">使用 %1$s 自动填充</string>

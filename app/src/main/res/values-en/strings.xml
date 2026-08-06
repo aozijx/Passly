@@ -22,6 +22,29 @@
     <string name="show_password">Show password</string>
     <string name="hide_password">Hide password</string>
     <string name="username_hint">Username / Email</string>
+    <string name="entry_category">Category</string>
+    <string name="entry_template_type">Entry Type</string>
+
+    <!-- Entry Type Names -->
+    <string name="entry_type_account">Account</string>
+    <string name="entry_type_login">Login</string>
+    <string name="entry_type_note">Note</string>
+    <string name="entry_type_card">Card</string>
+    <string name="entry_type_identity">Identity</string>
+    <string name="entry_type_ssh_key">SSH Key</string>
+    <string name="entry_type_wifi" translatable="false">Wi-Fi</string>
+    <string name="entry_type_passkey" translatable="false">Passkey</string>
+    <string name="entry_type_otp" translatable="false">OTP</string>
+    <string name="entry_type_passport">Passport</string>
+    <string name="entry_type_license">License</string>
+    <string name="entry_type_database">Database</string>
+    <string name="entry_type_server">Server</string>
+    <string name="entry_type_api_key" translatable="false">API Key</string>
+    <string name="entry_type_crypto_wallet">Crypto Wallet</string>
+    <string name="entry_type_bank_card">Bank Card</string>
+    <string name="entry_type_id_card">ID Card</string>
+    <string name="entry_type_seed_phrase">Seed Phrase</string>
+    <string name="entry_type_recovery_code">Recovery Code</string>
 
     <!-- App info -->
 

@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.contract.VaultUiState
@@ -110,6 +111,11 @@ fun VaultTopBar(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val hasCategoryFilter = !uiState.selectedCategory.isNullOrBlank()
                         val hasEntryTypeFilter = !uiState.selectedEntryTypeName.isNullOrBlank()
+                        val selectedEntryTypeLabel = if (hasEntryTypeFilter) {
+                            EntryType.fromName(uiState.selectedEntryTypeName.orEmpty()).localizedName()
+                        } else {
+                            ""
+                        }
                         Text(
                             text = when {
                                 hasCategoryFilter -> stringResource(
@@ -118,7 +124,7 @@ fun VaultTopBar(
                                 )
                                 hasEntryTypeFilter -> stringResource(
                                     R.string.vault_title_entry_type,
-                                    EntryType.fromName(uiState.selectedEntryTypeName.orEmpty()).displayName
+                                    selectedEntryTypeLabel
                                 )
                                 else -> stringResource(R.string.vault_title_default)
                             },

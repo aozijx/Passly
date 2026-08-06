@@ -45,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.contract.BackupUiState
@@ -274,7 +275,7 @@ private fun BackupExportOptionsContent(
                         }
                         onIncludedEntryTypesChange(updated)
                     },
-                    label = { Text(type.displayName) }
+                    label = { Text(type.localizedName()) }
                 )
             }
         }

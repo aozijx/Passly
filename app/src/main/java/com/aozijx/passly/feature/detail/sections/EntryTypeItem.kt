@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.entry.model.EntryType
 
 @Composable
@@ -54,7 +55,7 @@ fun EntryTypeItem(entryType: EntryType) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = entryType.displayName,
+            text = entryType.localizedName(),
             fontWeight = FontWeight.SemiBold,
         )
     }

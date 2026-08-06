@@ -73,7 +73,7 @@ fun PasswordStyleVaultItem(
     val secondaryText = when {
         !entry.associatedDomain.isNullOrBlank() -> entry.associatedDomain.orEmpty()
         !entry.associatedAppPackage.isNullOrBlank() -> entry.associatedAppPackage.orEmpty()
-        else -> entry.categoryOrTemplateLabel
+        else -> entry.categoryOrTemplateLabel()
     }
     val tertiaryText = when {
         entry.favorite -> "已收藏 · 加密保存"

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.components.InfoGroupCard
 
@@ -29,7 +30,7 @@ fun RelatedEntriesSection(
             entries.forEachIndexed { index, entry ->
                 ListItem(
                     headlineContent = { Text(entry.title) },
-                    supportingContent = { Text(entry.entryType.displayName) },
+                    supportingContent = { Text(entry.entryType.localizedName()) },
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },

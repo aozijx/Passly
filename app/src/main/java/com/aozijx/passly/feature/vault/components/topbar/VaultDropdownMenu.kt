@@ -20,8 +20,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 
@@ -49,6 +51,9 @@ fun VaultDropdownMenu(
     var categorySearchQuery by remember { mutableStateOf("") }
     var categorySearchVisible by remember { mutableStateOf(false) }
     val categoryFocusRequester = remember { FocusRequester() }
+    val entryTypeLabels = availableEntryTypes.associateWith {
+        EntryType.fromName(it).localizedName()
+    }
 
     LaunchedEffect(entryTypeSearchVisible) {
         if (entryTypeSearchVisible) entryTypeFocusRequester.requestFocus()
@@ -57,11 +62,11 @@ fun VaultDropdownMenu(
         if (categorySearchVisible) categoryFocusRequester.requestFocus()
     }
 
-    val filteredEntryTypes = remember(availableEntryTypes, entryTypeSearchQuery) {
+    val filteredEntryTypes = remember(availableEntryTypes, entryTypeSearchQuery, entryTypeLabels) {
         if (entryTypeSearchQuery.isBlank()) availableEntryTypes
         else availableEntryTypes.filter {
             it.contains(entryTypeSearchQuery, ignoreCase = true) ||
-                EntryType.fromName(it).displayName.contains(
+                entryTypeLabels.getValue(it).contains(
                     entryTypeSearchQuery,
                     ignoreCase = true
                 )
@@ -145,7 +150,7 @@ fun VaultDropdownMenu(
                         focusRequester = entryTypeFocusRequester,
                         items = filteredEntryTypes,
                         selectedItem = selectedEntryTypeName,
-                        itemText = { EntryType.fromName(it).displayName },
+                        itemText = { entryTypeLabels.getValue(it) },
                         onItemSelected = {
                             onEntryTypeSelected(it)
                             onDismissRequest()

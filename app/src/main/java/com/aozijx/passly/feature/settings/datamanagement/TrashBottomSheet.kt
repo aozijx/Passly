@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.VaultItemIcon
+import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -346,7 +347,7 @@ private fun TrashEntryCard(
                             shape = MaterialTheme.shapes.small
                         ) {
                             Text(
-                                text = entry.entryType.displayName,
+                                text = entry.entryType.localizedName(),
                                 style = MaterialTheme.typography.labelMedium,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
