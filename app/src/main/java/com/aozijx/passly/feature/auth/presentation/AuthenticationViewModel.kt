@@ -52,43 +52,35 @@ class AuthenticationViewModel @Inject constructor(
     }
 
     private fun onAppPasswordChange(value: String) {
-        _uiState.value.appPassword.wipe()
-        _uiState.update {
-            it.copy(
-                appPassword = SecureString.fromString(value),
-                verificationFailure = null
-            )
+        updateSecureInput({ appPassword.wipe() }) {
+            it.copy(appPassword = SecureString.fromString(value), verificationFailure = null)
         }
     }
 
     private fun onRecoveryCodeChange(value: String) {
-        _uiState.value.recoveryCode.wipe()
-        _uiState.update {
-            it.copy(
-                recoveryCode = SecureString.fromString(value),
-                verificationFailure = null
-            )
+        updateSecureInput({ recoveryCode.wipe() }) {
+            it.copy(recoveryCode = SecureString.fromString(value), verificationFailure = null)
         }
     }
 
     private fun onNewAppPasswordChange(value: String) {
-        _uiState.value.newAppPassword.wipe()
-        _uiState.update {
-            it.copy(
-                newAppPassword = SecureString.fromString(value),
-                setupFailure = null
-            )
+        updateSecureInput({ newAppPassword.wipe() }) {
+            it.copy(newAppPassword = SecureString.fromString(value), setupFailure = null)
         }
     }
 
     private fun onConfirmAppPasswordChange(value: String) {
-        _uiState.value.confirmAppPassword.wipe()
-        _uiState.update {
-            it.copy(
-                confirmAppPassword = SecureString.fromString(value),
-                setupFailure = null
-            )
+        updateSecureInput({ confirmAppPassword.wipe() }) {
+            it.copy(confirmAppPassword = SecureString.fromString(value), setupFailure = null)
         }
+    }
+
+    private fun updateSecureInput(
+        wipeCurrent: AuthenticationUiState.() -> Unit,
+        update: (AuthenticationUiState) -> AuthenticationUiState
+    ) {
+        _uiState.value.wipeCurrent()
+        _uiState.update(update)
     }
 
     private fun onInputExpanded(method: AuthenticationMethod, expanded: Boolean) {
@@ -160,8 +152,7 @@ class AuthenticationViewModel @Inject constructor(
             try {
                 when (val result = methodProvisioner.setAppPassword(password)) {
                     is AuthenticationResult.Success -> {
-                        _uiState.value.newAppPassword.wipe()
-                        _uiState.value.confirmAppPassword.wipe()
+                        wipeSetupPasswords()
                         resetInputState()
                         _uiState.update {
                             it.copy(
@@ -250,8 +241,7 @@ class AuthenticationViewModel @Inject constructor(
     }
 
     private fun resetInputState() {
-        _uiState.value.appPassword.wipe()
-        _uiState.value.recoveryCode.wipe()
+        wipeUnlockInputs()
         _uiState.update {
             it.copy(
                 appPassword = SecureString.EMPTY,
@@ -263,10 +253,18 @@ class AuthenticationViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        wipeUnlockInputs()
+        wipeSetupPasswords()
+        super.onCleared()
+    }
+
+    private fun wipeUnlockInputs() {
         _uiState.value.appPassword.wipe()
         _uiState.value.recoveryCode.wipe()
+    }
+
+    private fun wipeSetupPasswords() {
         _uiState.value.newAppPassword.wipe()
         _uiState.value.confirmAppPassword.wipe()
-        super.onCleared()
     }
 }

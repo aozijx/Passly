@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
+import com.aozijx.passly.domain.diagnostics.usecase.DatabaseInitOutcome
 import com.aozijx.passly.domain.diagnostics.usecase.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
@@ -53,18 +54,8 @@ class MainViewModel @Inject constructor(
 
     fun handleIntent(intent: MainIntent) {
         when (intent) {
-            MainIntent.Lock -> {
-                viewModelScope.launch {
-                    authenticationManager.lock(LockReason.USER)
-                }
-            }
-
-            MainIntent.ExitRecovery -> {
-                viewModelScope.launch {
-                    authenticationManager.lock(LockReason.RECOVERY_EXIT)
-                }
-            }
-
+            MainIntent.Lock -> lock(LockReason.USER)
+            MainIntent.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
             MainIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             MainIntent.RecoverDatabase -> recoverDatabase()
@@ -78,24 +69,14 @@ class MainViewModel @Inject constructor(
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        authenticationManager.authenticate(
-            AuthenticationRequest(AuthenticationPurpose.UNLOCK_VAULT)
-        ) { result ->
-            if (result is AuthenticationResult.Success) onSuccess()
-            else if (result is AuthenticationResult.Failure) onError?.invoke("认证失败")
-        }
+        requestAuthentication(AuthenticationPurpose.UNLOCK_VAULT, onSuccess, onError)
     }
 
     fun requestReauth(
         onSuccess: () -> Unit = {},
         onError: ((String) -> Unit)? = null
     ) {
-        authenticationManager.authenticate(
-            AuthenticationRequest(AuthenticationPurpose.REAUTHENTICATE)
-        ) { result ->
-            if (result is AuthenticationResult.Success) onSuccess()
-            else if (result is AuthenticationResult.Failure) onError?.invoke("认证失败")
-        }
+        requestAuthentication(AuthenticationPurpose.REAUTHENTICATE, onSuccess, onError)
     }
 
     fun requestSensitiveAccess(
@@ -112,10 +93,22 @@ class MainViewModel @Inject constructor(
                 AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET
             }
         }
+        requestAuthentication(purpose, onSuccess, onError)
+    }
+
+    private fun requestAuthentication(
+        purpose: AuthenticationPurpose,
+        onSuccess: () -> Unit,
+        onError: ((String) -> Unit)?
+    ) {
         authenticationManager.authenticate(AuthenticationRequest(purpose)) { result ->
             if (result is AuthenticationResult.Success) onSuccess()
             else if (result is AuthenticationResult.Failure) onError?.invoke("认证失败")
         }
+    }
+
+    private fun lock(reason: LockReason) {
+        viewModelScope.launch { authenticationManager.lock(reason) }
     }
 
     private fun observeAuthStates() {
@@ -124,23 +117,9 @@ class MainViewModel @Inject constructor(
                 val authorized = state is AuthenticationState.Authenticated
                 val recoveryMode = state is AuthenticationState.RecoveryMode
                 if (authorized) {
-                    _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
-
-                    // 重试逻辑已下沉至 DatabaseLifecycleUseCases
-                    val outcome = databaseLifecycleUseCases.preWarmAndReport()
-
-                    _uiState.update {
-                        it.copy(
-                            isDatabaseInitializing = false,
-                            databaseError = outcome.error
-                        )
+                    val outcome = runDatabaseInitialization {
+                        databaseLifecycleUseCases.preWarmAndReport()
                     }
-
-                    outcome.error?.let { error ->
-                        val msg = "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
-                        emitEffect(MainEffect.ShowError(msg))
-                    }
-
                     if (outcome.success) {
                         rebuildSearchIndex()
                     }
@@ -194,20 +173,29 @@ class MainViewModel @Inject constructor(
 
     private fun initializeDatabase() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
-            val outcome = databaseLifecycleUseCases.retryAndReport()
+            val outcome = runDatabaseInitialization {
+                databaseLifecycleUseCases.retryAndReport()
+            }
             if (outcome.success) authenticationManager.clearDatabaseFailure()
-            _uiState.update {
-                it.copy(
-                    isDatabaseInitializing = false, databaseError = outcome.error
-                )
-            }
-
-            outcome.error?.let { error ->
-                val msg = "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
-                emitEffect(MainEffect.ShowError(msg))
-            }
         }
+    }
+
+    private suspend fun runDatabaseInitialization(
+        block: suspend () -> DatabaseInitOutcome
+    ): DatabaseInitOutcome {
+        _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
+        val outcome = block()
+        _uiState.update {
+            it.copy(isDatabaseInitializing = false, databaseError = outcome.error)
+        }
+        outcome.error?.let { error ->
+            emitEffect(
+                MainEffect.ShowError(
+                    "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
+                )
+            )
+        }
+        return outcome
     }
 
     private fun observeDatabaseFailures() {
