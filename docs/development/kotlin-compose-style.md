@@ -110,14 +110,18 @@ core/*           与业务无关的基础设施
 
 ```text
 feature/example/
-  ExampleScreen.kt
-  ExampleViewModel.kt
   contract/
     ExampleUiState.kt
     ExampleIntent.kt
     ExampleEffect.kt
-  components/
+  presentation/
+    ExampleViewModel.kt
+  ui/
+    ExampleScreen.kt
+    components/
 ```
+
+完整目录和命名边界见 [MVI 架构与命名](../architecture/mvi.md)。
 
 必须：
 

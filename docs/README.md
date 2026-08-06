@@ -13,6 +13,7 @@
 
 - [架构总览](architecture/overview.md)
 - [UI 宿主、导航与命名](architecture/ui-shell-and-naming.md)
+- [MVI 架构与命名](architecture/mvi.md)
 - [包边界](architecture/package-boundaries.md)
 - [运行时流程](architecture/runtime-flows.md)
 

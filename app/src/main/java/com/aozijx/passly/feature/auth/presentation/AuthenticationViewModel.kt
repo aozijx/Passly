@@ -8,6 +8,9 @@ import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
+import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
+import com.aozijx.passly.feature.auth.contract.AuthenticationVerificationFailure
 import com.aozijx.passly.security.MemoryCleaner
 import com.aozijx.passly.security.crypto.SecureString
 import dagger.hilt.android.lifecycle.HiltViewModel

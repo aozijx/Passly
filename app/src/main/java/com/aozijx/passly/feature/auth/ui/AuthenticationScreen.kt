@@ -37,7 +37,7 @@ import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
-import com.aozijx.passly.feature.auth.presentation.AuthenticationIntent
+import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
 

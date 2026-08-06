@@ -224,7 +224,7 @@ class MigrationBoundaryTest {
                     "AuthenticationViewModel.kt"
         ).readText()
         val authenticationUiState = File(
-            "src/main/java/com/aozijx/passly/feature/auth/presentation/" +
+            "src/main/java/com/aozijx/passly/feature/auth/contract/" +
                     "AuthenticationUiState.kt"
         ).readText()
 

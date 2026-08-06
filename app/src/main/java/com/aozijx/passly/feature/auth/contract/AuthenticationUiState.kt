@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.auth.presentation
+package com.aozijx.passly.feature.auth.contract
 
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
