@@ -942,6 +942,9 @@ class MigrationBoundaryTest {
         val vaultViewModel = File(
             "src/main/java/com/aozijx/passly/feature/vault/VaultViewModel.kt"
         ).readText()
+        val vaultAccessPolicy = File(
+            "src/main/java/com/aozijx/passly/feature/vault/VaultAccessPolicy.kt"
+        ).readText()
         val createEntryViewModel = File(
             "src/main/java/com/aozijx/passly/feature/vault/editor/common/CreateEntryViewModel.kt"
         ).readText()
@@ -1084,8 +1087,10 @@ class MigrationBoundaryTest {
         // 12. Sensitive ViewModels must express their session-mode boundary explicitly.
         assertTrue(
             "VaultViewModel must gate normal Vault actions",
-            "VaultAccessState" in vaultViewModel &&
-                    vaultViewModel.split("hasFullVaultAccess()").size - 1 >= 4
+            "VaultAccessPolicy" in vaultViewModel &&
+                    "VaultAccessState" !in vaultViewModel &&
+                    "hasFullVaultAccess()" in vaultAccessPolicy &&
+                    vaultViewModel.split("hasFullAccess()").size - 1 >= 4
         )
         assertTrue(
             "CreateEntryViewModel must gate entry creation",

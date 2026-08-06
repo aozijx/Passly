@@ -6,7 +6,6 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
 import com.aozijx.passly.domain.authentication.SessionStateProvider
-import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -60,7 +59,7 @@ class VaultViewModel @Inject constructor(
     val entryFieldReader: EntryFieldReader,
     private val vaultDataRefreshNotifier: VaultDataRefreshNotifier,
     private val sessionStateProvider: SessionStateProvider,
-    private val vaultAccessState: VaultAccessState
+    private val accessPolicy: VaultAccessPolicy
 ) : ViewModel() {
 
     private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
@@ -239,7 +238,7 @@ class VaultViewModel @Inject constructor(
     }
 
     fun autoUnlockTotp(entryId: String) {
-        if (vaultAccessState.hasFullVaultAccess()) {
+        if (accessPolicy.hasFullAccess()) {
             totp.autoUnlock(entryId)
         }
     }
@@ -270,7 +269,7 @@ class VaultViewModel @Inject constructor(
 
     fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) =
         viewModelScope.launch {
-            if (!vaultAccessState.hasFullVaultAccess()) return@launch
+            if (!accessPolicy.hasFullAccess()) return@launch
             entryQueryRepository.getByIdWithoutHighSensitivity(entryId)?.let(onLoaded)
         }
 
@@ -294,14 +293,14 @@ class VaultViewModel @Inject constructor(
         if (!ensureFullVaultAccess("当前会话不能删除条目")) return
         val item = _dialogState.value.pendingDelete ?: return
         viewModelScope.launch {
-            if (!vaultAccessState.hasFullVaultAccess()) return@launch
+            if (!accessPolicy.hasFullAccess()) return@launch
             val entry = entryQueryRepository.getByIdWithoutHighSensitivity(item.id) ?: return@launch
             entryManager.deleteEntry(entry)
         }
     }
 
     private fun ensureFullVaultAccess(message: String): Boolean {
-        if (vaultAccessState.hasFullVaultAccess()) return true
+        if (accessPolicy.hasFullAccess()) return true
         emitError(message)
         _dialogState.value = VaultDialogState()
         return false
