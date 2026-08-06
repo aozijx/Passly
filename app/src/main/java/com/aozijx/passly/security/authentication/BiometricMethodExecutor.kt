@@ -30,9 +30,7 @@ class BiometricMethodExecutor @Inject constructor(
     ): MethodExecutionResult {
         val requiresDek = request.purpose == AuthenticationPurpose.UNLOCK_VAULT ||
             request.purpose == AuthenticationPurpose.RECOVER_DATABASE
-        if (!requiresDek) {
-            return hostResult(request, host)
-        }
+        if (!requiresDek) return hostResult(request, host)
         val envelope = bootstrapStore.load(EnvelopeType.BIOMETRIC)
             ?: return failure(AuthenticationFailureCode.METHOD_UNAVAILABLE, request)
         val alias = bootstrapStore.loadBiometricState().binding?.activeAlias

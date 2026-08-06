@@ -30,9 +30,7 @@ internal class DatabaseRecoveryStore @Inject constructor(
         val resourceDirectories = RESOURCE_DIRECTORIES
             .map { File(context.filesDir, it) }
             .filter(File::exists)
-        if (databaseFiles.isEmpty() && resourceDirectories.isEmpty()) {
-            return null
-        }
+        if (databaseFiles.isEmpty() && resourceDirectories.isEmpty()) return null
 
         val recoveryId = "${System.currentTimeMillis()}-${UUID.randomUUID()}"
         val recoveryRoot = File(context.noBackupFilesDir, RECOVERY_ROOT)

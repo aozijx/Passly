@@ -77,9 +77,7 @@ class StrictMatchStrategy @Inject constructor() : FieldMatchStrategy {
         val shortId = rawId.substringAfterLast("/", rawId)
 
         for ((pattern, role) in RESOURCE_ID_PATTERNS) {
-            if (pattern.containsMatchIn(shortId)) {
-                return role
-            }
+            if (pattern.containsMatchIn(shortId)) return role
         }
 
         // Submit 按钮

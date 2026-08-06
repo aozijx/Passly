@@ -123,9 +123,7 @@ internal class TotpCoordinator(
             handleSessionLocked()
             return OtpResult.Failure(OtpError.InvalidSecret)
         } ?: return OtpResult.Failure(OtpError.InvalidSecret)
-        if (config.type != OtpType.HOTP) {
-            return OtpResult.Failure(OtpError.InvalidSecret)
-        }
+        if (config.type != OtpType.HOTP) return OtpResult.Failure(OtpError.InvalidSecret)
         val counter = config.counter ?: return OtpResult.Failure(OtpError.InvalidCounter)
         if (counter < 0) return OtpResult.Failure(OtpError.InvalidCounter)
 

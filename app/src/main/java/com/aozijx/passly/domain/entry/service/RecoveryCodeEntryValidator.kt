@@ -15,9 +15,7 @@ class RecoveryCodeEntryValidator @Inject constructor() : EntryValidator {
 
     override fun validateFieldContent(entry: VaultEntry): String? {
         val recoveryCodes = entry.secret.identity?.recoveryCodes.orEmpty()
-        if (recoveryCodes.isNotEmpty() && recoveryCodes.any { it.length < 4 }) {
-            return "恢复码内容异常"
-        }
+        if (recoveryCodes.isNotEmpty() && recoveryCodes.any { it.length < 4 }) return "恢复码内容异常"
         return null
     }
 }

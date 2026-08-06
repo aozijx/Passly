@@ -324,7 +324,10 @@ private fun BankCardNumberItem(
 )
 
 private fun savePlaintext(newValue: String, oldValue: String?, onClose: () -> Unit, onSuccess: (String) -> Unit) {
-    if (newValue == oldValue) { onClose(); return }
+    if (newValue == oldValue) {
+        onClose()
+        return
+    }
     onSuccess(newValue)
     onClose()
 }

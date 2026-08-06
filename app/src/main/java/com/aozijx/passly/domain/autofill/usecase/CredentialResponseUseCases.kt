@@ -51,9 +51,7 @@ class CredentialResponseUseCases @Inject constructor(
         allowedUserIds: Set<String> = emptySet(),
     ): PasswordCredentialResult {
         val policy = settingsRepository.settings.first().interaction.autofill
-        if (!policy.enabled || !policy.credentialManagerEnabled) {
-            return PasswordCredentialResult.NotFound
-        }
+        if (!policy.enabled || !policy.credentialManagerEnabled) return PasswordCredentialResult.NotFound
 
         if (policy.requireAuthentication || !vaultAccessState.hasFullVaultAccess()) {
             val authentication = authenticationManager.authenticate(

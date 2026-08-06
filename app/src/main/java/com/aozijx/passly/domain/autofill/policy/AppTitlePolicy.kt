@@ -15,9 +15,7 @@ object AppTitlePolicy {
      * @return 生成的标题
      */
     fun generate(appLabel: String?, packageName: String?, fallback: String): String {
-        if (appLabel != null && appLabel.isNotBlank()) {
-            return appLabel.trim()
-        }
+        if (appLabel != null && appLabel.isNotBlank()) return appLabel.trim()
 
         return PackageNormalizer.extractReadableName(packageName, fallback)
     }

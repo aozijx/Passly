@@ -36,9 +36,7 @@ class CredentialBeginGetHandler @Inject constructor(
     ): BeginGetCredentialResponse {
         val passwordOptions = request.beginGetCredentialOptions
             .filterIsInstance<BeginGetPasswordOption>()
-        if (passwordOptions.isEmpty()) {
-            return BeginGetCredentialResponse()
-        }
+        if (passwordOptions.isEmpty()) return BeginGetCredentialResponse()
 
         val packageName =
             CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)

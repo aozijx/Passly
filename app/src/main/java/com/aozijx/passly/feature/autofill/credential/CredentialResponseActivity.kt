@@ -47,9 +47,7 @@ class CredentialResponseActivity : AppCompatActivity() {
             viewModel.state.collectLatest { state ->
                 when (state) {
                     is CredentialResponseUiState.Complete -> {
-                        if (!resultFinishing.compareAndSet(false, true)) {
-                            return@collectLatest
-                        }
+                if (!resultFinishing.compareAndSet(false, true)) return@collectLatest
                         // PendingIntentHandler requires RESULT_OK for both valid
                         // responses and valid Credential Manager exceptions.
                         setResult(RESULT_OK, state.resultIntent)

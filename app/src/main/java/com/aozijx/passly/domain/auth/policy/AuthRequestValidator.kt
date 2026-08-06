@@ -13,9 +13,7 @@ class AuthRequestValidator @Inject constructor() {
     }
 
     fun validateRequest(title: String): AuthRequestValidationResult {
-        if (title.isBlank()) {
-            return AuthRequestValidationResult.Invalid("验证标题不能为空")
-        }
+        if (title.isBlank()) return AuthRequestValidationResult.Invalid("验证标题不能为空")
 
         return AuthRequestValidationResult.Valid
     }

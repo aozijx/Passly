@@ -15,9 +15,7 @@ class SeedPhraseEntryValidator @Inject constructor() : EntryValidator {
     override fun validateFieldContent(entry: VaultEntry): String? {
         entry.secret.identity?.seedPhrase?.let { phrase ->
             val wordCount = phrase.split(Regex("\\s+")).size
-            if (wordCount !in setOf(12, 24)) {
-                return "助记词应包含 12 或 24 个单词，实际 $wordCount 个"
-            }
+            if (wordCount !in setOf(12, 24)) return "助记词应包含 12 或 24 个单词，实际 $wordCount 个"
         }
         return null
     }

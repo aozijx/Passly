@@ -121,9 +121,7 @@ object FaviconUtils {
         if (href.contains(':') && !href.startsWith("/")) return null
 
         val uri = java.net.URI(baseUrl)
-        if (href.startsWith("/")) {
-            return "${uri.scheme}://${uri.host}$href"
-        }
+        if (href.startsWith("/")) return "${uri.scheme}://${uri.host}$href"
 
         val path = uri.path
         val base = if (path.isEmpty() || path == "/") {

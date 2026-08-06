@@ -39,9 +39,7 @@ class CredentialBeginCreateHandler @Inject constructor(
         }
 
         val policy = settingsRepository.settings.first().interaction.autofill
-        if (!policy.enabled || !policy.credentialManagerEnabled) {
-            return BeginCreateCredentialResponse()
-        }
+        if (!policy.enabled || !policy.credentialManagerEnabled) return BeginCreateCredentialResponse()
 
         if (CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo) == null) {
             return BeginCreateCredentialResponse()

@@ -17,9 +17,7 @@ object PasswordStrengthEngine {
         val trimmed = password.trim()
         if (trimmed.isEmpty()) return PasswordStrengthResult(0, PasswordStrengthLevel.VERY_WEAK)
 
-        if (containsWeakPattern(trimmed)) {
-            return PasswordStrengthResult(5, PasswordStrengthLevel.VERY_WEAK)
-        }
+        if (containsWeakPattern(trimmed)) return PasswordStrengthResult(5, PasswordStrengthLevel.VERY_WEAK)
 
         // 1. 长度分:不再硬封顶在7,而是连续增长、边际递减(而非直接截断)
         val lengthScore = lengthScore(trimmed.length) // 见下

@@ -81,9 +81,7 @@ internal class VaultBackupServiceImpl @Inject constructor(
         fileStore.checkWritable(uri)
 
     private fun validatePassword(required: Boolean, password: CharArray?) {
-        if (required && (password == null || password.isEmpty())) {
-            throw BackupFailed("该备份格式需要密码")
-        }
+        if (required && (password == null || password.isEmpty())) throw BackupFailed("该备份格式需要密码")
     }
 }
 

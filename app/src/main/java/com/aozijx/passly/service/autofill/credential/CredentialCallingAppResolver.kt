@@ -15,9 +15,7 @@ import androidx.credentials.provider.CallingAppInfo
 internal object CredentialCallingAppResolver {
 
     fun resolveNativePackage(callingAppInfo: CallingAppInfo?): String? {
-        if (callingAppInfo == null || callingAppInfo.isOriginPopulated()) {
-            return null
-        }
+        if (callingAppInfo == null || callingAppInfo.isOriginPopulated()) return null
         return callingAppInfo.packageName.takeIf(String::isNotBlank)
     }
 }

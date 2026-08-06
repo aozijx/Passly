@@ -24,9 +24,7 @@ class DeleteEntryPermanentlyExecutor @Inject constructor(
         val result = transactionRunner.write("entry.deletePermanently") {
             val entity = entryQueryDao().getById(id)
                 ?: throw NotFound("entry:$id not found")
-            if (entity.deletedAt == null) {
-                throw ValidationError("只能永久删除回收站中的条目")
-            }
+            if (entity.deletedAt == null) throw ValidationError("只能永久删除回收站中的条目")
             transactionRunner.checkVersion(id, entity.version, expectedVersion)
 
             val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)

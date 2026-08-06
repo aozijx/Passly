@@ -32,9 +32,7 @@ internal class BackupFormatRegistry @Inject constructor(
             val adapter = importersById[requestedFormat] ?: throw BackupFailed(
                 "不支持的备份导入格式: ${requestedFormat.value}"
             )
-            if (adapter.probe(payload) <= 0) {
-                throw BackupFailed("文件内容与所选备份格式不匹配")
-            }
+            if (adapter.probe(payload) <= 0) throw BackupFailed("文件内容与所选备份格式不匹配")
             return adapter
         }
 

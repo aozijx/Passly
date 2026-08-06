@@ -28,9 +28,7 @@ object CredentialScopeMatcher {
                 addAll(entry.website?.matchDomains.orEmpty())
                 entry.website?.primaryUrl?.let(::add)
             }
-            if (entryDomains.any { normalizeDomain(it) == requestedDomain }) {
-                return MatchType.WEB_DOMAIN
-            }
+        if (entryDomains.any { normalizeDomain(it) == requestedDomain }) return MatchType.WEB_DOMAIN
         }
         return MatchType.UNKNOWN
     }

@@ -40,14 +40,10 @@ object ImageResolver {
         if (!customModel.isNullOrBlank()) return customModel
 
         // 2. 优先级中：域名图标 (Favicon)
-        if (!domain.isNullOrBlank()) {
-            return domain  // 返回原始 domain，由调用方决定如何获取 favicon
-        }
+        if (!domain.isNullOrBlank()) return domain  // 返回原始 domain，由调用方决定如何获取 favicon
 
         // 3. 优先级低：App 包名
-        if (allowPackage && !packageName.isNullOrBlank()) {
-            return packageName
-        }
+        if (allowPackage && !packageName.isNullOrBlank()) return packageName
 
         return null
     }

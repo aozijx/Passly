@@ -47,9 +47,7 @@ enum class AppLanguage(val locale: Locale?) {
         private const val SYSTEM_STORAGE_TAG = "system"
 
         fun fromLanguageTag(tag: String): AppLanguage {
-            if (tag.isBlank() || tag.equals(SYSTEM_STORAGE_TAG, ignoreCase = true)) {
-                return SYSTEM
-            }
+            if (tag.isBlank() || tag.equals(SYSTEM_STORAGE_TAG, ignoreCase = true)) return SYSTEM
 
             val requested = Locale.forLanguageTag(tag)
             return entries.firstOrNull { language ->

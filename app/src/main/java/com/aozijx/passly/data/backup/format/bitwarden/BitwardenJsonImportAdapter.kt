@@ -287,9 +287,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
 
     private fun safeId(value: String?, index: Int): String {
         val candidate = value?.trim()
-        if (candidate != null && candidate.matches(Regex("[A-Za-z0-9_-]{1,160}"))) {
-            return candidate
-        }
+        if (candidate != null && candidate.matches(Regex("[A-Za-z0-9_-]{1,160}"))) return candidate
         return UUID.nameUUIDFromBytes(
             "bitwarden:${candidate.orEmpty()}:$index".toByteArray(Charsets.UTF_8)
         ).toString()

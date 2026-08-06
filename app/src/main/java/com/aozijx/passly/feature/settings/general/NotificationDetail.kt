@@ -46,9 +46,7 @@ internal fun NotificationDetail(
     }
 
     val permissionHost = rememberPermissionRequestHost("settings.notifications") { permission, result ->
-        if (permission != RuntimePermission.POST_NOTIFICATIONS) {
-            return@rememberPermissionRequestHost
-        }
+        if (permission != RuntimePermission.POST_NOTIFICATIONS) return@rememberPermissionRequestHost
         when (result) {
             PermissionRequestOutcome.Granted -> {
                 if (viewModel.systemNotificationsAvailableNow()) {

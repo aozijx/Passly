@@ -46,9 +46,7 @@ class AndroidSystemNotificationGateway @Inject constructor(
     override suspend fun deliver(notice: AppNotice): SinkResult {
         val state = current()
         if (!state.runtimePermissionGranted) return SinkResult.PermissionMissing
-        if (!state.notificationsEnabledBySystem || !state.channelEnabled) {
-            return SinkResult.Disabled
-        }
+        if (!state.notificationsEnabledBySystem || !state.channelEnabled) return SinkResult.Disabled
         return runCatching {
             ensureChannel()
             val resolved = textResolver.resolve(notice)

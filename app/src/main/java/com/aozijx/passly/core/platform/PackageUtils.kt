@@ -81,9 +81,7 @@ class PackageUtils @Inject constructor(
 
     fun loadIcon(packageName: String): ImageBitmap? {
         val cachedBitmap = iconCache.get(packageName)
-        if (cachedBitmap != null) {
-            return cachedBitmap.asImageBitmap()
-        }
+        if (cachedBitmap != null) return cachedBitmap.asImageBitmap()
 
         return try {
             val appIcon = packageManager.getApplicationIcon(packageName)
