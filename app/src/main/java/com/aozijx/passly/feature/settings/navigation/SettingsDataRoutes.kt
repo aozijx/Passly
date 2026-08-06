@@ -20,7 +20,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.PathUtils
+import com.aozijx.passly.core.storage.PathDisplayFormatter
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupIntent
 import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
@@ -133,7 +133,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
         val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
         val notSetText = stringResource(R.string.not_set)
         val pathLabel = remember(state.directoryUri) {
-            PathUtils.formatPath(state.directoryUri) ?: notSetText
+            PathDisplayFormatter.format(state.directoryUri) ?: notSetText
         }
         var activeSheet by remember { mutableStateOf<BackupSheet?>(null) }
 

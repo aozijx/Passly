@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.autofill.policy
 
-import com.aozijx.passly.core.util.DomainNormalizer
+import com.aozijx.passly.core.normalization.DomainNormalizer
 
 /**
  * 网页标题生成策略：

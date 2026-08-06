@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.TotpUtils
+import com.aozijx.passly.core.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -100,7 +100,7 @@ fun DetailScrollableContent(
             item {
                 val otpConfig = entry.secret.otp?.config
                 val totpUri =
-                    otpConfig?.let { TotpUtils.constructOtpAuthUri(it, entry.title) }
+                    otpConfig?.let { OtpAuthUriCodec.format(it, entry.title) }
                 TotpSection(
                     currentState = otpUiState,
                     totpUri = totpUri,

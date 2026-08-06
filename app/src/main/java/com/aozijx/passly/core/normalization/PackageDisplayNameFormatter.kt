@@ -1,21 +1,22 @@
-package com.aozijx.passly.core.util
+package com.aozijx.passly.core.normalization
 
 /**
- * 包名标准化工具：
+ * Android 包名展示名格式化：
  * 从 Android 包名中提取有意义的名称，
  * 用于自动填充场景下的标题生成。
  */
-object PackageNormalizer {
+object PackageDisplayNameFormatter {
     /**
      * 从包名中提取可读名称
      * @param packageName Android 包名（如 com.example.app）
      * @param fallback 如果无法提取时的默认值
      * @return 提取的名称（首字母大写）
      */
-    fun extractReadableName(packageName: String?, fallback: String): String {
-        if (packageName == null) return fallback
+    fun format(packageName: String?, fallback: String): String {
+        val value = packageName?.trim()
+        if (value.isNullOrBlank()) return fallback
 
-        val segments = packageName.split('.')
+        val segments = value.split('.').filter(String::isNotBlank)
         return when {
             segments.size >= 3 -> {
                 val lastTwo = segments.takeLast(2)

@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.editor.otp
 
-import com.aozijx.passly.core.util.TotpUtils
+import com.aozijx.passly.core.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -42,7 +42,7 @@ class AddOtpViewModel @Inject constructor(
         mutateForm { it.copy(uriText = value) }
         if (uiState.value.isSaving || value.isBlank()) return
 
-        val parsed = TotpUtils.parseOtpAuthUri(value)
+        val parsed = OtpAuthUriCodec.parse(value)
         if (parsed == null) {
             if (reportFailure) {
                 _events.trySend(AddOtpEvent.UriParseFailed)

@@ -12,9 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 
-/**
- * 封装的照片选择工具
- */
 @Composable
 fun rememberImagePicker(
     onImagePicked: (Uri, ImageType) -> Unit
@@ -24,7 +21,6 @@ fun rememberImagePicker(
     fun handleUriResult(uri: Uri?) {
         val type = pendingImageType.value ?: return
         if (uri != null) {
-            // 现代选择器返回的 URI 在单次会话中已有读取权限
             onImagePicked(uri, type)
         }
         pendingImageType.value = null
@@ -32,7 +28,8 @@ fun rememberImagePicker(
 
     val pickMediaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> handleUriResult(uri) })
+        onResult = { uri -> handleUriResult(uri) }
+    )
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()

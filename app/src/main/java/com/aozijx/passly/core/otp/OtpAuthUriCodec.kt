@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.util
+package com.aozijx.passly.core.otp
 
 import android.net.Uri
 import androidx.core.net.toUri
@@ -17,14 +17,14 @@ import java.net.URLDecoder
  * - algorithm=SHA1|SHA256|SHA512
  * - digits, period, counter, issuer, secret 等参数
  */
-object TotpUtils {
+object OtpAuthUriCodec {
 
     /**
      * 解析 otpauth:// URI 为 [OtpConfig]。
      *
      * @return 解析成功返回 [OtpConfig]，失败返回 null
      */
-    fun parseOtpAuthUri(uriString: String): OtpConfig? {
+    fun parse(uriString: String): OtpConfig? {
         if (uriString.isBlank() || !uriString.startsWith("otpauth://")) return null
         return try {
             val uri = uriString.toUri()
@@ -95,7 +95,7 @@ object TotpUtils {
     /**
      * 将 [OtpConfig] 构建为 otpauth:// URI。
      */
-    fun constructOtpAuthUri(config: OtpConfig, title: String): String {
+    fun format(config: OtpConfig, title: String): String {
         val host = when (config.type) {
             OtpType.TOTP, OtpType.STEAM -> "totp"
             OtpType.HOTP -> "hotp"

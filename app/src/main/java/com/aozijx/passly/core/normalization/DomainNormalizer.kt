@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.util
+package com.aozijx.passly.core.normalization
 
 /**
  * 域名标准化工具：
@@ -6,6 +6,12 @@ package com.aozijx.passly.core.util
  * 避免在 data / service 多处重复实现导致匹配行为漂移。
  */
 object DomainNormalizer {
+    private val commonSuffixes = listOf(
+        ".com", ".cn", ".net", ".org", ".edu", ".gov",
+        ".io", ".ai", ".app", ".dev", ".tech",
+        ".co.uk", ".com.cn", ".net.cn"
+    )
+
     /**
      * 标准化域名
      * @param raw 原始域名或 URL
@@ -27,15 +33,10 @@ object DomainNormalizer {
      * @return 移除后缀后的域名，如果结果过短则返回原域名
      */
     fun removeCommonDomainSuffix(domain: String): String {
-        val commonSuffixes = listOf(
-            ".com", ".cn", ".net", ".org", ".edu", ".gov",
-            ".io", ".ai", ".app", ".dev", ".tech",
-            ".co.uk", ".com.cn", ".net.cn"
-        )
         var result = domain
         for (suffix in commonSuffixes) {
             if (result.endsWith(suffix, ignoreCase = true)) {
-                result = result.removeSuffix(suffix)
+                result = result.dropLast(suffix.length)
                 break
             }
         }
