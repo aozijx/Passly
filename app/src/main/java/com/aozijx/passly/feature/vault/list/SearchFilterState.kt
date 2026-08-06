@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.list
 
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 internal data class SearchFilterUiState(
     val searchQuery: String = "",
     val selectedCategory: String? = null,
-    val selectedTab: VaultTab = VaultTab.ALL,
+    val selectedQuickFilter: VaultQuickFilter = VaultQuickFilter.ALL,
     val selectedSort: VaultSortSpec = VaultSortSpec.DEFAULT,
     val isSearchActive: Boolean = false
 )
@@ -32,8 +32,8 @@ internal class SearchFilterState(
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory
 
-    private val _selectedTab = MutableStateFlow(VaultTab.ALL)
-    val selectedTab: StateFlow<VaultTab> = _selectedTab
+    private val _selectedQuickFilter = MutableStateFlow(VaultQuickFilter.ALL)
+    val selectedQuickFilter: StateFlow<VaultQuickFilter> = _selectedQuickFilter
 
     private val _isSearchActive = MutableStateFlow(false)
     val isSearchActive: StateFlow<Boolean> = _isSearchActive
@@ -45,17 +45,17 @@ internal class SearchFilterState(
         combine(
             _searchQuery,
             _selectedCategory,
-            _selectedTab,
+            _selectedQuickFilter,
             _isSearchActive
-        ) { query, category, tab, active ->
-            PartialState(query, category, tab, active)
+        ) { query, category, quickFilter, active ->
+            PartialState(query, category, quickFilter, active)
         },
         _selectedSort
     ) { partial, sort ->
         SearchFilterUiState(
             searchQuery = partial.query,
             selectedCategory = partial.category,
-            selectedTab = partial.tab,
+            selectedQuickFilter = partial.quickFilter,
             selectedSort = sort,
             isSearchActive = partial.active
         )
@@ -64,7 +64,7 @@ internal class SearchFilterState(
     private data class PartialState(
         val query: String,
         val category: String?,
-        val tab: VaultTab,
+        val quickFilter: VaultQuickFilter,
         val active: Boolean
     )
 
@@ -77,10 +77,14 @@ internal class SearchFilterState(
             .distinctUntilChanged()
 
     fun updateSearchQuery(query: String) { _searchQuery.value = query }
-    fun updateSelectedTab(tab: VaultTab) { _selectedTab.value = tab }
+    fun updateSelectedQuickFilter(quickFilter: VaultQuickFilter) {
+        _selectedQuickFilter.value = quickFilter
+    }
+
     fun updateSelectedCategory(category: String?) {
         _selectedCategory.value = category
     }
+
     fun updateSelectedSort(sort: VaultSortSpec) {
         _selectedSort.value = sort
     }

@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -40,16 +40,19 @@ class VaultListCoordinatorTest {
         try {
             val initial = coordinator.state.filter {
                 it.categories == listOf("Finance", "Personal", "Work") &&
-                    it.itemsByTab.getValue(VaultTab.ALL).size == 2
+                        it.itemsByQuickFilter.getValue(VaultQuickFilter.ALL).size == 2
             }.first()
-            assertEquals(2, initial.itemsByTab.getValue(VaultTab.ALL).size)
+            assertEquals(2, initial.itemsByQuickFilter.getValue(VaultQuickFilter.ALL).size)
 
             searchFilter.updateSelectedCategory("work")
 
             val filtered = coordinator.state
-                .filter { it.itemsByTab.getValue(VaultTab.ALL).size == 1 }
+                .filter { it.itemsByQuickFilter.getValue(VaultQuickFilter.ALL).size == 1 }
                 .first()
-            assertEquals("Mail", filtered.itemsByTab.getValue(VaultTab.ALL).single().title)
+            assertEquals(
+                "Mail",
+                filtered.itemsByQuickFilter.getValue(VaultQuickFilter.ALL).single().title
+            )
         } finally {
             scope.cancel()
         }

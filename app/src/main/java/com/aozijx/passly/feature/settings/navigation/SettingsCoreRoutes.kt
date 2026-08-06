@@ -178,8 +178,8 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     onTopBarCollapsibleChange = {
                         viewModel.onAction(InterfaceSettingsAction.SetTopBarCollapsible(it))
                     },
-                    onTabBarCollapsibleChange = {
-                        viewModel.onAction(InterfaceSettingsAction.SetTabBarCollapsible(it))
+                    onQuickFilterBarCollapsibleChange = {
+                        viewModel.onAction(InterfaceSettingsAction.SetQuickFilterBarCollapsible(it))
                     },
                     onOuterCornerRadiusChange = {
                         viewModel.onAction(InterfaceSettingsAction.SetOuterCornerRadius(it))
@@ -193,8 +193,8 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
                     onGroupContentPaddingChange = {
                         viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(it))
                     },
-                    onVisibleVaultTabToggle = {
-                        viewModel.onAction(InterfaceSettingsAction.ToggleVisibleVaultTab(it))
+                    onVisibleVaultQuickFilterToggle = {
+                        viewModel.onAction(InterfaceSettingsAction.ToggleVisibleVaultQuickFilter(it))
                     },
                     onEntryHierarchyDisplayModeChange = {
                         viewModel.onAction(

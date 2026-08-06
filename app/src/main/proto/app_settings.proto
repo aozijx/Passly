@@ -53,7 +53,7 @@ enum FallbackPalette {
 message InterfacePreferences {
     optional bool hide_system_bars = 1 [default = false];
     optional bool collapse_top_bar_on_scroll = 2 [default = false];
-    optional bool collapse_tab_bar_on_scroll = 3 [default = false];
+    optional bool collapse_quick_filter_bar_on_scroll = 3 [default = false];
     // 首项顶部、末项底部以及单项四角；同时作为 Material Shapes 的圆角基准
     optional float outer_corner_radius_dp = 4 [default = 16];
     // RoundedGroup 相邻项目接缝处的圆角
@@ -101,15 +101,15 @@ message AutofillPreferences {
 // 保险库视图 / 条目卡片
 
 message VaultViewPreferences {
-    optional VisibleTabs visible_tabs = 1;
+    optional VisibleQuickFilters visible_quick_filters = 1;
     optional VaultSortPreference sort = 2;
     repeated EntryCardPresentation entry_card_presentations = 3;
     // "collapsed", "expanded", "separate"
     optional string entry_hierarchy_display_mode = 4 [default = "collapsed"];
 }
 
-message VisibleTabs {
-    repeated string tab_keys = 1;
+message VisibleQuickFilters {
+    repeated string filter_keys = 1;
     optional bool configured = 2 [default = false];
 }
 

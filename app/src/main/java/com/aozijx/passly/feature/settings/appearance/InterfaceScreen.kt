@@ -28,7 +28,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import kotlin.math.roundToInt
 
 @Composable
@@ -36,12 +36,12 @@ internal fun InterfaceDetail(
     state: InterfaceSettingsUiState,
     onStatusBarAutoHideChange: (Boolean) -> Unit,
     onTopBarCollapsibleChange: (Boolean) -> Unit,
-    onTabBarCollapsibleChange: (Boolean) -> Unit,
+    onQuickFilterBarCollapsibleChange: (Boolean) -> Unit,
     onOuterCornerRadiusChange: (Float) -> Unit,
     onInnerCornerRadiusChange: (Float) -> Unit,
     onGroupItemSpacingChange: (Float) -> Unit,
     onGroupContentPaddingChange: (Float) -> Unit,
-    onVisibleVaultTabToggle: (VaultTab) -> Unit,
+    onVisibleVaultQuickFilterToggle: (VaultQuickFilter) -> Unit,
     onEntryHierarchyDisplayModeChange: (EntryHierarchyDisplayMode) -> Unit
 ) {
     var outerRadius by remember(state.outerCornerRadiusDp) {
@@ -81,12 +81,12 @@ internal fun InterfaceDetail(
                     onCheckedChange = onTopBarCollapsibleChange
                 ),
                 switchSettingsGroupItem(
-                    key = "interface.tab_bar_collapsible",
+                    key = "interface.quick_filter_bar_collapsible",
                     icon = Icons.Default.SpaceDashboard,
-                    title = stringResource(R.string.settings_interface_tab_bar_collapsible),
-                    subtitle = stringResource(R.string.settings_interface_tab_bar_collapsible_description),
-                    checked = state.collapseTabBarOnScroll,
-                    onCheckedChange = onTabBarCollapsibleChange
+                    title = stringResource(R.string.settings_interface_quick_filter_bar_collapsible),
+                    subtitle = stringResource(R.string.settings_interface_quick_filter_bar_collapsible_description),
+                    checked = state.collapseQuickFilterBarOnScroll,
+                    onCheckedChange = onQuickFilterBarCollapsibleChange
                 )
             )
         )
@@ -220,9 +220,9 @@ internal fun InterfaceDetail(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        VaultTabsSettingsSection(
-            enabledVaultTabKeys = state.enabledVaultTabKeys,
-            onVaultTabToggle = onVisibleVaultTabToggle
+        VaultQuickFiltersSettingsSection(
+            enabledVaultQuickFilterKeys = state.enabledVaultQuickFilterKeys,
+            onVaultQuickFilterToggle = onVisibleVaultQuickFilterToggle
         )
     }
 }

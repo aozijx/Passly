@@ -36,7 +36,7 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.OtpUiState
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -62,15 +62,16 @@ fun VaultPagerContent(
         modifier = modifier,
         state = pagerState,
         beyondViewportPageCount = 1.coerceAtMost(
-            (uiState.visibleTabs.size - 1).coerceAtLeast(0)
+            (uiState.visibleQuickFilters.size - 1).coerceAtLeast(0)
         ),
         key = { pageIndex ->
-            uiState.visibleTabs.getOrNull(pageIndex)?.settingsKey ?: "vault-empty"
+            uiState.visibleQuickFilters.getOrNull(pageIndex)?.settingsKey ?: "vault-empty"
         }
     ) { pageIndex ->
-        val currentTab = uiState.visibleTabs.getOrNull(pageIndex) ?: VaultTab.ALL
+        val currentQuickFilter =
+            uiState.visibleQuickFilters.getOrNull(pageIndex) ?: VaultQuickFilter.ALL
         val displayItems = arrangeEntryHierarchy(
-            entries = uiState.vaultItemsByTab[currentTab].orEmpty(),
+            entries = uiState.vaultItemsByQuickFilter[currentQuickFilter].orEmpty(),
             mode = hierarchyDisplayMode
         )
 

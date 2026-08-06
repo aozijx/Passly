@@ -84,27 +84,28 @@ fun VaultContent(
         isFabVisible = { isFabVisible = it }
     )
 
-    val initialTabIndex = uiState.visibleTabs.indexOf(uiState.selectedTab).coerceAtLeast(0)
-    val pagerState = rememberPagerState(initialPage = initialTabIndex) {
-        uiState.visibleTabs.size.coerceAtLeast(1)
+    val initialQuickFilterIndex =
+        uiState.visibleQuickFilters.indexOf(uiState.selectedQuickFilter).coerceAtLeast(0)
+    val pagerState = rememberPagerState(initialPage = initialQuickFilterIndex) {
+        uiState.visibleQuickFilters.size.coerceAtLeast(1)
     }
 
-    LaunchedEffect(uiState.visibleTabs, uiState.selectedTab) {
-        if (uiState.visibleTabs.isEmpty()) return@LaunchedEffect
-        if (uiState.selectedTab !in uiState.visibleTabs) {
-            vaultViewModel.selectTab(uiState.visibleTabs.first())
+    LaunchedEffect(uiState.visibleQuickFilters, uiState.selectedQuickFilter) {
+        if (uiState.visibleQuickFilters.isEmpty()) return@LaunchedEffect
+        if (uiState.selectedQuickFilter !in uiState.visibleQuickFilters) {
+            vaultViewModel.selectQuickFilter(uiState.visibleQuickFilters.first())
             return@LaunchedEffect
         }
-        val targetIndex = uiState.visibleTabs.indexOf(uiState.selectedTab)
+        val targetIndex = uiState.visibleQuickFilters.indexOf(uiState.selectedQuickFilter)
         if (pagerState.settledPage != targetIndex && pagerState.pageCount > targetIndex) {
             pagerState.animateScrollToPage(targetIndex)
         }
     }
 
-    LaunchedEffect(pagerState, uiState.visibleTabs) {
+    LaunchedEffect(pagerState, uiState.visibleQuickFilters) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
-            val newTab = uiState.visibleTabs.getOrNull(page) ?: return@collect
-            vaultViewModel.selectTab(newTab)
+            val newQuickFilter = uiState.visibleQuickFilters.getOrNull(page) ?: return@collect
+            vaultViewModel.selectQuickFilter(newQuickFilter)
         }
     }
 
@@ -157,7 +158,7 @@ fun VaultContent(
             .fillMaxSize()
             .then(
                 if (vaultDisplayConfig.layout.collapseTopBarOnScroll
-                    || vaultDisplayConfig.layout.collapseTabBarOnScroll
+                    || vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll
                     || vaultDisplayConfig.layout.hideSystemBars
                 ) {
                     Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -168,19 +169,19 @@ fun VaultContent(
             Column {
                 VaultTopBar(
                     uiState = uiState,
-                    selectedTabIndex = pagerState.currentPage,
+                    selectedQuickFilterIndex = pagerState.currentPage,
                     scrollBehavior = scrollBehavior,
                     onSettingsClick = onSettingsClick,
                     isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
                     isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
-                    isTabBarCollapsible = vaultDisplayConfig.layout.collapseTabBarOnScroll,
+                    isQuickFilterBarCollapsible = vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
                     onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
                     onToggleSearch = { vaultViewModel.toggleSearch(it) },
                     onClearCategory = { vaultViewModel.clearSelectedCategory() },
                     onToggleTotpVisibility = { vaultViewModel.toggleShowTOTPCode() },
                     onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
                     onSortSelected = { vaultViewModel.selectSortOption(it) },
-                    onSelectTab = { vaultViewModel.selectTab(it) }
+                    onSelectQuickFilter = { vaultViewModel.selectQuickFilter(it) }
                 )
 
                 if (uiState.isVaultItemsLoading || isDatabaseInitializing) {

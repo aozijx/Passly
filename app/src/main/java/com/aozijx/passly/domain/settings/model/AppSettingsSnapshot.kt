@@ -70,7 +70,7 @@ enum class FontFamilyMode { SYSTEM, APP_BUNDLED }
 data class InterfaceSettings(
     val hideSystemBars: Boolean = false,
     val collapseTopBarOnScroll: Boolean = false,
-    val collapseTabBarOnScroll: Boolean = false,
+    val collapseQuickFilterBarOnScroll: Boolean = false,
     val outerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_OUTER_RADIUS_DP,
     val innerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP,
     val groupItemSpacingDp: Float = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP,
@@ -109,7 +109,7 @@ data class InteractionSettings(
 // ============================================================
 
 data class VaultViewSettings(
-    val visibleTabs: VisibleTabsConfig? = null,
+    val visibleQuickFilters: VisibleQuickFiltersConfig? = null,
     val sort: VaultSortSpec = VaultSortSpec.DEFAULT,
     val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
     val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
@@ -127,8 +127,8 @@ enum class EntryHierarchyDisplayMode(val key: String) {
     }
 }
 
-data class VisibleTabsConfig(
-    val tabKeys: Set<String>,
+data class VisibleQuickFiltersConfig(
+    val filterKeys: Set<String>,
     val configured: Boolean = false
 )
 

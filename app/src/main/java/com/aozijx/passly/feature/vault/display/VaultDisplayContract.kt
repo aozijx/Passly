@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 data class VaultLayoutConfig(
     val hideSystemBars: Boolean = false,
     val collapseTopBarOnScroll: Boolean = false,
-    val collapseTabBarOnScroll: Boolean = false,
+    val collapseQuickFilterBarOnScroll: Boolean = false,
 )
 
 data class VaultStyleConfig(

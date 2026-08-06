@@ -321,17 +321,17 @@ class MigrationBoundaryTest {
     }
 
     @Test
-    fun vaultTabModelDoesNotOwnUiPresentation() {
-        val vaultTab = File(
-            "src/main/java/com/aozijx/passly/feature/vault/model/VaultTab.kt"
+    fun vaultQuickFilterModelDoesNotOwnUiPresentation() {
+        val vaultQuickFilter = File(
+            "src/main/java/com/aozijx/passly/feature/vault/model/VaultQuickFilter.kt"
         ).readText()
 
         assertTrue(
-            "VaultTab must stay a pure filtering/settings model",
-            "androidx.compose" !in vaultTab &&
-                    "com.aozijx.passly.R" !in vaultTab &&
-                    "ImageVector" !in vaultTab &&
-                    "titleRes" !in vaultTab
+            "VaultQuickFilter must stay a pure filtering/settings model",
+            "androidx.compose" !in vaultQuickFilter &&
+                    "com.aozijx.passly.R" !in vaultQuickFilter &&
+                    "ImageVector" !in vaultQuickFilter &&
+                    "titleRes" !in vaultQuickFilter
         )
     }
 

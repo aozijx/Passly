@@ -28,10 +28,10 @@ sealed interface SettingsCommand {
     data class SetLanguage(val language: AppLanguage) : SettingsCommand
     data class SetFontFamily(val mode: FontFamilyMode) : SettingsCommand
 
-    // Interface (top bar, tab bar, status bar)
+    // Interface (top bar, quick-filter bar, status bar)
     data class SetHideSystemBars(val enabled: Boolean) : SettingsCommand
     data class SetTopBarCollapsible(val enabled: Boolean) : SettingsCommand
-    data class SetTabBarCollapsible(val enabled: Boolean) : SettingsCommand
+    data class SetQuickFilterBarCollapsible(val enabled: Boolean) : SettingsCommand
     data class SetOuterCornerRadius(val radiusDp: Float) : SettingsCommand
     data class SetInnerCornerRadius(val radiusDp: Float) : SettingsCommand
     data class SetGroupItemSpacing(val spacingDp: Float) : SettingsCommand
@@ -62,8 +62,8 @@ sealed interface SettingsCommand {
     data class SetFaviconDownloadWhitelist(val whitelist: Set<String>) : SettingsCommand
 
     // Vault
-    data class SetVisibleVaultTabs(val keys: Set<String>) : SettingsCommand
-    data object ClearVisibleVaultTabs : SettingsCommand
+    data class SetVisibleVaultQuickFilters(val keys: Set<String>) : SettingsCommand
+    data object ClearVisibleVaultQuickFilters : SettingsCommand
     data class SetVaultSortOption(val sort: VaultSortSpec) : SettingsCommand
     data class SetEntryCardPresentation(val presentation: EntryCardPresentation) : SettingsCommand
     data class RemoveEntryCardPresentation(val entryTypeKey: String) : SettingsCommand

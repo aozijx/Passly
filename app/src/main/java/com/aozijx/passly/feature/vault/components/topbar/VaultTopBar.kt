@@ -39,25 +39,25 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.feature.vault.contract.VaultUiState
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VaultTopBar(
     uiState: VaultUiState,
-    selectedTabIndex: Int,
+    selectedQuickFilterIndex: Int,
     scrollBehavior: TopAppBarScrollBehavior,
     onSettingsClick: () -> Unit = {},
     isStatusBarAutoHide: Boolean = false,
     isTopBarCollapsible: Boolean = true,
-    isTabBarCollapsible: Boolean = true,
+    isQuickFilterBarCollapsible: Boolean = true,
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: (Boolean) -> Unit,
     onClearCategory: () -> Unit,
     onToggleTotpVisibility: () -> Unit,
     onCategorySelected: (String?) -> Unit,
     onSortSelected: (VaultSortSpec) -> Unit,
-    onSelectTab: (VaultTab) -> Unit
+    onSelectQuickFilter: (VaultQuickFilter) -> Unit
 ) {
     val density = LocalDensity.current
     var isMoreMenuExpanded by remember { mutableStateOf(false) }
@@ -79,8 +79,8 @@ fun VaultTopBar(
         }
     }
 
-    LaunchedEffect(isTopBarCollapsible, isTabBarCollapsible, isStatusBarAutoHide) {
-        if (!isTopBarCollapsible && (isTabBarCollapsible || isStatusBarAutoHide)) {
+    LaunchedEffect(isTopBarCollapsible, isQuickFilterBarCollapsible, isStatusBarAutoHide) {
+        if (!isTopBarCollapsible && (isQuickFilterBarCollapsible || isStatusBarAutoHide)) {
             scrollBehavior.state.heightOffsetLimit = with(density) { -64.dp.toPx() }
         }
     }
@@ -109,7 +109,7 @@ fun VaultTopBar(
                             text = when {
                                 hasCategoryFilter -> stringResource(
                                     R.string.vault_title_category,
-                                    uiState.selectedCategory.orEmpty()
+                                    uiState.selectedCategory
                                 )
                                 else -> stringResource(R.string.vault_title_default)
                             },
@@ -164,18 +164,18 @@ fun VaultTopBar(
             })
 
         AnimatedVisibility(
-            visible = uiState.visibleTabs.size > 1 &&
+            visible = uiState.visibleQuickFilters.size > 1 &&
                 !uiState.isSearchActive &&
                 uiState.selectedCategory == null &&
-                (!isTabBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
+                    (!isQuickFilterBarCollapsible || scrollBehavior.state.collapsedFraction < 0.5f),
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            VaultCategoryBar(
-                tabs = uiState.visibleTabs,
-                selectedTabIndex = selectedTabIndex,
-                onTabSelected = { index ->
-                    uiState.visibleTabs.getOrNull(index)?.let { onSelectTab(it) }
+            VaultQuickFilterBar(
+                quickFilters = uiState.visibleQuickFilters,
+                selectedQuickFilterIndex = selectedQuickFilterIndex,
+                onQuickFilterSelected = { index ->
+                    uiState.visibleQuickFilters.getOrNull(index)?.let { onSelectQuickFilter(it) }
                 }
             )
         }

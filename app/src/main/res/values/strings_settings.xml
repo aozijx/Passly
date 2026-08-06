@@ -66,11 +66,11 @@
     <string name="settings_interface_outer_corner_radius">外圈圆角</string>
     <string name="settings_interface_outer_corner_radius_description">调整分组和全局组件的外圈圆角</string>
     <string name="settings_interface_style_title">圆角与间距</string>
-    <string name="settings_interface_tab_bar_collapsible">分类栏滚动</string>
-    <string name="settings_interface_tab_bar_collapsible_description">分类标签随列表滑动自动隐藏</string>
+    <string name="settings_interface_quick_filter_bar_collapsible">快捷筛选栏滚动</string>
+    <string name="settings_interface_quick_filter_bar_collapsible_description">快捷筛选栏随列表滑动自动隐藏</string>
     <string name="settings_interface_top_bar_collapsible">标题栏滚动</string>
     <string name="settings_interface_top_bar_collapsible_description">上滑时收缩标题以获得更多视野</string>
-    <string name="settings_interface_vault_tabs_section">保险箱分类栏</string>
+    <string name="settings_interface_vault_quick_filters_section">保险箱快捷筛选</string>
     <string name="settings_interface_entry_hierarchy_section">关联账户</string>
     <string name="settings_interface_entry_hierarchy_display_mode">关联条目展示</string>
     <string name="settings_interface_entry_hierarchy_collapsed">折叠</string>

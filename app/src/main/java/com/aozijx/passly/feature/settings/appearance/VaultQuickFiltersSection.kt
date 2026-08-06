@@ -20,35 +20,37 @@ import com.aozijx.passly.core.ui.components.group.GroupCard
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import com.aozijx.passly.feature.vault.presentation.titleRes
 
 @Composable
-fun VaultTabsSettingsSection(
-    enabledVaultTabKeys: Set<String>,
-    onVaultTabToggle: (VaultTab) -> Unit
+fun VaultQuickFiltersSettingsSection(
+    enabledVaultQuickFilterKeys: Set<String>,
+    onVaultQuickFilterToggle: (VaultQuickFilter) -> Unit
 ) {
-    val toggleableTabs = VaultTab.toggleableVisibleTabs
+    val toggleableQuickFilters = VaultQuickFilter.toggleableVisibleQuickFilters
 
-    SettingsSectionTitle(text = stringResource(R.string.settings_interface_vault_tabs_section))
+    SettingsSectionTitle(
+        text = stringResource(R.string.settings_interface_vault_quick_filters_section)
+    )
     RoundedGroup(
         items = listOf(
-            RoundedGroupItem(key = "interface.vault_tabs") { itemScope ->
+            RoundedGroupItem(key = "interface.vault_quick_filters") { itemScope ->
                 GroupCard(itemScope = itemScope, contentPadding = PaddingValues(0.dp)) {
                     FlowRow(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        toggleableTabs.forEach { tab ->
-                            val isChecked = tab.settingsKey in enabledVaultTabKeys
+                        toggleableQuickFilters.forEach { quickFilter ->
+                            val isChecked = quickFilter.settingsKey in enabledVaultQuickFilterKeys
                             FilterChip(
                                 selected = isChecked,
-                                onClick = { onVaultTabToggle(tab) },
-                                label = { Text(stringResource(tab.titleRes)) },
+                                onClick = { onVaultQuickFilterToggle(quickFilter) },
+                                label = { Text(stringResource(quickFilter.titleRes)) },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = tab.settingsIcon(),
+                                        imageVector = quickFilter.settingsIcon(),
                                         contentDescription = null
                                     )
                                 }
@@ -61,8 +63,8 @@ fun VaultTabsSettingsSection(
     )
 }
 
-private fun VaultTab.settingsIcon(): ImageVector = when (this) {
-    VaultTab.PASSWORDS -> Icons.Default.Key
-    VaultTab.TOTP -> Icons.Default.Pin
-    VaultTab.ALL -> Icons.Default.Key
+private fun VaultQuickFilter.settingsIcon(): ImageVector = when (this) {
+    VaultQuickFilter.PASSWORDS -> Icons.Default.Key
+    VaultQuickFilter.TOTP -> Icons.Default.Pin
+    VaultQuickFilter.ALL -> Icons.Default.Key
 }

@@ -19,42 +19,42 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import com.aozijx.passly.feature.vault.presentation.titleRes
 
 @Composable
-fun VaultCategoryBar(
+fun VaultQuickFilterBar(
     modifier: Modifier = Modifier,
-    tabs: List<VaultTab>,
-    selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit
+    quickFilters: List<VaultQuickFilter>,
+    selectedQuickFilterIndex: Int,
+    onQuickFilterSelected: (Int) -> Unit
 ) {
-    if (tabs.size <= 1) return
+    if (quickFilters.size <= 1) return
 
-    val safeIndex = selectedTabIndex.coerceIn(0, tabs.lastIndex)
+    val safeIndex = selectedQuickFilterIndex.coerceIn(0, quickFilters.lastIndex)
     LazyRow(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         itemsIndexed(
-            items = tabs,
-            key = { _, tab -> tab.settingsKey }
-        ) { index, tab ->
+            items = quickFilters,
+            key = { _, quickFilter -> quickFilter.settingsKey }
+        ) { index, quickFilter ->
             val selected = safeIndex == index
             FilterChip(
                 selected = selected,
-                onClick = { onTabSelected(index) },
+                onClick = { onQuickFilterSelected(index) },
                 label = {
                     Text(
-                        text = stringResource(tab.titleRes),
+                        text = stringResource(quickFilter.titleRes),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
                     )
                 },
                 leadingIcon = {
                     Icon(
-                        imageVector = tab.icon(),
+                        imageVector = quickFilter.icon(),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -64,8 +64,8 @@ fun VaultCategoryBar(
     }
 }
 
-private fun VaultTab.icon(): ImageVector = when (this) {
-    VaultTab.ALL -> Icons.Default.Apps
-    VaultTab.PASSWORDS -> Icons.Default.Key
-    VaultTab.TOTP -> Icons.Default.Pin
+private fun VaultQuickFilter.icon(): ImageVector = when (this) {
+    VaultQuickFilter.ALL -> Icons.Default.Apps
+    VaultQuickFilter.PASSWORDS -> Icons.Default.Key
+    VaultQuickFilter.TOTP -> Icons.Default.Pin
 }

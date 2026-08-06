@@ -66,11 +66,11 @@
     <string name="settings_interface_outer_corner_radius">外側の角丸</string>
     <string name="settings_interface_outer_corner_radius_description">グループとコンポーネントの外側の角丸を調整</string>
     <string name="settings_interface_style_title">角丸と間隔</string>
-    <string name="settings_interface_tab_bar_collapsible">タブバーを折りたたむ</string>
-    <string name="settings_interface_tab_bar_collapsible_description">スクロール時にタブを自動的に隠す</string>
+    <string name="settings_interface_quick_filter_bar_collapsible">クイックフィルターバーを折りたたむ</string>
+    <string name="settings_interface_quick_filter_bar_collapsible_description">スクロール時にクイックフィルターを自動的に隠す</string>
     <string name="settings_interface_top_bar_collapsible">トップバーを折りたたむ</string>
     <string name="settings_interface_top_bar_collapsible_description">スクロール時にトップバーを収縮</string>
-    <string name="settings_interface_vault_tabs_section">保管庫カテゴリ</string>
+    <string name="settings_interface_vault_quick_filters_section">保管庫クイックフィルター</string>
     <string name="settings_interface_entry_hierarchy_section">関連アカウント</string>
     <string name="settings_interface_entry_hierarchy_display_mode">関連エントリの表示</string>
     <string name="settings_interface_entry_hierarchy_collapsed">折りたたむ</string>

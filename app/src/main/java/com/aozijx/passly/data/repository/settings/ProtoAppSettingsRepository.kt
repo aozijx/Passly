@@ -12,7 +12,7 @@ import com.aozijx.passly.data.local.datastore.settings.NoticeLevelProto
 import com.aozijx.passly.data.local.datastore.settings.SecurityPreferences
 import com.aozijx.passly.data.local.datastore.settings.VaultSortPreference
 import com.aozijx.passly.data.local.datastore.settings.VaultViewPreferences
-import com.aozijx.passly.data.local.datastore.settings.VisibleTabs
+import com.aozijx.passly.data.local.datastore.settings.VisibleQuickFilters
 import com.aozijx.passly.domain.notice.model.AppMessageSettings
 import com.aozijx.passly.domain.notice.model.NoticeLevel
 import com.aozijx.passly.domain.notice.model.NoticeTopic
@@ -41,7 +41,7 @@ import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.model.VaultSortField
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.domain.settings.model.VaultViewSettings
-import com.aozijx.passly.domain.settings.model.VisibleTabsConfig
+import com.aozijx.passly.domain.settings.model.VisibleQuickFiltersConfig
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -343,7 +343,7 @@ class ProtoAppSettingsRepository @Inject constructor(
         InterfaceSettings(
             hideSystemBars = p.hideSystemBars,
             collapseTopBarOnScroll = p.collapseTopBarOnScroll,
-            collapseTabBarOnScroll = p.collapseTabBarOnScroll,
+            collapseQuickFilterBarOnScroll = p.collapseQuickFilterBarOnScroll,
             outerCornerRadiusDp = p.outerCornerRadiusDp.coerceIn(
                 InterfaceStyleConstraints.MIN_OUTER_RADIUS_DP,
                 InterfaceStyleConstraints.MAX_OUTER_RADIUS_DP
@@ -400,10 +400,10 @@ class ProtoAppSettingsRepository @Inject constructor(
 
     private fun readVault(p: VaultViewPreferences): VaultViewSettings {
         return VaultViewSettings(
-            visibleTabs = if (p.hasVisibleTabs()) {
-                VisibleTabsConfig(
-                    tabKeys = p.visibleTabs.tabKeysList.toSet(),
-                    configured = p.visibleTabs.configured
+            visibleQuickFilters = if (p.hasVisibleQuickFilters()) {
+                VisibleQuickFiltersConfig(
+                    filterKeys = p.visibleQuickFilters.filterKeysList.toSet(),
+                    configured = p.visibleQuickFilters.configured
                 )
             } else null,
             sort = if (p.hasSort()) p.sort.toDomain() else VaultSortSpec.DEFAULT,
@@ -500,9 +500,9 @@ class ProtoAppSettingsRepository @Inject constructor(
                     b.setInterfacePrefs(ib)
                 }
 
-                is SettingsCommand.SetTabBarCollapsible -> {
+                is SettingsCommand.SetQuickFilterBarCollapsible -> {
                     val ib = proto.interfacePrefs.toBuilder()
-                    ib.collapseTabBarOnScroll = command.enabled
+                    ib.collapseQuickFilterBarOnScroll = command.enabled
                     b.setInterfacePrefs(ib)
                 }
 
@@ -685,18 +685,18 @@ class ProtoAppSettingsRepository @Inject constructor(
                 }
 
                 // ==================== Vault ====================
-                is SettingsCommand.SetVisibleVaultTabs -> {
+                is SettingsCommand.SetVisibleVaultQuickFilters -> {
                     val vb = proto.vaultView.toBuilder()
-                    vb.visibleTabs = VisibleTabs.newBuilder()
-                        .addAllTabKeys(command.keys.sorted())
+                    vb.visibleQuickFilters = VisibleQuickFilters.newBuilder()
+                        .addAllFilterKeys(command.keys.sorted())
                         .setConfigured(true)
                         .build()
                     b.setVaultView(vb)
                 }
 
-                is SettingsCommand.ClearVisibleVaultTabs -> {
+                is SettingsCommand.ClearVisibleVaultQuickFilters -> {
                     val vb = proto.vaultView.toBuilder()
-                    vb.clearVisibleTabs()
+                    vb.clearVisibleQuickFilters()
                     b.setVaultView(vb)
                 }
 

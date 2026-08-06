@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,13 +24,14 @@ class InterfaceSettingsViewModel @Inject constructor(
             InterfaceSettingsUiState(
                 hideSystemBars = prefs.hideSystemBars,
                 collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
-                collapseTabBarOnScroll = prefs.collapseTabBarOnScroll,
+                collapseQuickFilterBarOnScroll = prefs.collapseQuickFilterBarOnScroll,
                 outerCornerRadiusDp = prefs.outerCornerRadiusDp,
                 innerCornerRadiusDp = prefs.innerCornerRadiusDp,
                 groupItemSpacingDp = prefs.groupItemSpacingDp,
                 groupContentPaddingDp = prefs.groupContentPaddingDp,
-                enabledVaultTabKeys =
-                    settings.vault.visibleTabs?.tabKeys ?: VaultTab.defaultVisibleKeys,
+                enabledVaultQuickFilterKeys =
+                    settings.vault.visibleQuickFilters?.filterKeys
+                        ?: VaultQuickFilter.defaultVisibleKeys,
                 entryHierarchyDisplayMode = settings.vault.entryHierarchyDisplayMode
             )
         }
@@ -50,8 +51,8 @@ class InterfaceSettingsViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetTopBarCollapsible(action.enabled))
             }
 
-            is InterfaceSettingsAction.SetTabBarCollapsible -> viewModelScope.launch {
-                settingsRepository.update(SettingsCommand.SetTabBarCollapsible(action.enabled))
+            is InterfaceSettingsAction.SetQuickFilterBarCollapsible -> viewModelScope.launch {
+                settingsRepository.update(SettingsCommand.SetQuickFilterBarCollapsible(action.enabled))
             }
 
             is InterfaceSettingsAction.SetOuterCornerRadius -> viewModelScope.launch {
@@ -70,12 +71,12 @@ class InterfaceSettingsViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetGroupContentPadding(action.paddingDp))
             }
 
-            is InterfaceSettingsAction.ToggleVisibleVaultTab -> viewModelScope.launch {
-                val nextKeys = VaultTab.toggleVisibleKey(
-                    enabledKeys = config.value.enabledVaultTabKeys,
-                    tab = action.tab
+            is InterfaceSettingsAction.ToggleVisibleVaultQuickFilter -> viewModelScope.launch {
+                val nextKeys = VaultQuickFilter.toggleVisibleKey(
+                    enabledKeys = config.value.enabledVaultQuickFilterKeys,
+                    quickFilter = action.quickFilter
                 )
-                settingsRepository.update(SettingsCommand.SetVisibleVaultTabs(nextKeys))
+                settingsRepository.update(SettingsCommand.SetVisibleVaultQuickFilters(nextKeys))
             }
 
             is InterfaceSettingsAction.SetEntryHierarchyDisplayMode -> viewModelScope.launch {

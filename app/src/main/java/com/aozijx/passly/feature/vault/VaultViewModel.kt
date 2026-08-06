@@ -33,7 +33,7 @@ import com.aozijx.passly.feature.vault.list.VaultListCoordinator
 import com.aozijx.passly.feature.vault.list.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpUiState
-import com.aozijx.passly.feature.vault.model.VaultTab
+import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -152,16 +152,16 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    private val visibleTabs: StateFlow<List<VaultTab>> =
-        settingsRepository.settings.map { it.vault.visibleTabs }
+    private val visibleQuickFilters: StateFlow<List<VaultQuickFilter>> =
+        settingsRepository.settings.map { it.vault.visibleQuickFilters }
             .map { config ->
-                val keys = config?.tabKeys ?: VaultTab.defaultVisibleKeys
-                VaultTab.resolveVisible(keys)
+                val keys = config?.filterKeys ?: VaultQuickFilter.defaultVisibleKeys
+                VaultQuickFilter.resolveVisible(keys)
             }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
-                VaultTab.resolveVisible(VaultTab.defaultVisibleKeys)
+                VaultQuickFilter.resolveVisible(VaultQuickFilter.defaultVisibleKeys)
             )
 
     /**
@@ -171,13 +171,13 @@ class VaultViewModel @Inject constructor(
     val totpStatesFlow: StateFlow<Map<String, OtpUiState>> = totp.states
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    private val settingsState: StateFlow<Pair<List<VaultTab>, Boolean>> =
-        combine(visibleTabs, _showTOTPCode) { tabs, show ->
-            tabs to show
+    private val settingsState: StateFlow<Pair<List<VaultQuickFilter>, Boolean>> =
+        combine(visibleQuickFilters, _showTOTPCode) { quickFilters, show ->
+            quickFilters to show
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5000),
-            VaultTab.resolveVisible(VaultTab.defaultVisibleKeys) to true
+            VaultQuickFilter.resolveVisible(VaultQuickFilter.defaultVisibleKeys) to true
         )
 
     val uiState: StateFlow<VaultUiState> = combine(
@@ -186,17 +186,17 @@ class VaultViewModel @Inject constructor(
         listCoordinator.state,
         _dialogState
     ) { search, settings, list, dialogs ->
-        val (tabs, showCode) = settings
+        val (quickFilters, showCode) = settings
         VaultUiState(
             searchQuery = search.searchQuery,
             selectedCategory = search.selectedCategory,
-            selectedTab = search.selectedTab,
+            selectedQuickFilter = search.selectedQuickFilter,
             selectedSort = search.selectedSort,
             isSearchActive = search.isSearchActive,
             isVaultItemsLoading = list.isLoading,
             availableCategories = list.categories,
-            visibleTabs = tabs,
-            vaultItemsByTab = list.itemsByTab,
+            visibleQuickFilters = quickFilters,
+            vaultItemsByQuickFilter = list.itemsByQuickFilter,
             showTOTPCode = showCode,
             addType = dialogs.addType,
             pendingDelete = dialogs.pendingDelete
@@ -216,7 +216,9 @@ class VaultViewModel @Inject constructor(
         searchFilter.updateSelectedSort(sort)
         viewModelScope.launch { settingsRepository.update(SettingsCommand.SetVaultSortOption(sort)) }
     }
-    fun selectTab(tab: VaultTab) = searchFilter.updateSelectedTab(tab)
+    fun selectQuickFilter(quickFilter: VaultQuickFilter) =
+        searchFilter.updateSelectedQuickFilter(quickFilter)
+
     fun toggleSearch(active: Boolean) = searchFilter.toggleSearch(active)
     fun toggleShowTOTPCode() {
         _showTOTPCode.value = !_showTOTPCode.value
