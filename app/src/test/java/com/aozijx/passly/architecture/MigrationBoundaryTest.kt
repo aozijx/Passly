@@ -921,6 +921,9 @@ class MigrationBoundaryTest {
         val backupViewModel = File(
             "src/main/java/com/aozijx/passly/feature/backup/BackupViewModel.kt"
         ).readText()
+        val backupSessionPolicy = File(
+            "src/main/java/com/aozijx/passly/feature/backup/BackupSessionPolicy.kt"
+        ).readText()
         val securityViewModel = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/SecuritySettingsViewModel.kt"
         ).readText()
@@ -1098,9 +1101,10 @@ class MigrationBoundaryTest {
         )
         assertTrue(
             "BackupViewModel must gate normal backup versus recovery export",
-            "VaultAccessState" in backupViewModel &&
-                    "hasFullVaultAccess()" in backupViewModel &&
-                    "isRecoveryMode()" in backupViewModel
+            "BackupSessionPolicy" in backupViewModel &&
+                    "VaultAccessState" !in backupViewModel &&
+                    "hasFullVaultAccess()" in backupSessionPolicy &&
+                    "isRecoveryMode()" in backupSessionPolicy
         )
         assertTrue(
             "DataManagementSettingsViewModel must gate trash operations",

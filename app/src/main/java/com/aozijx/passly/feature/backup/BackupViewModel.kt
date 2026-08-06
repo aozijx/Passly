@@ -12,7 +12,6 @@ import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.backup.model.BackupExportOptions
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
@@ -42,7 +41,7 @@ class BackupViewModel @Inject constructor(
     private val backupService: VaultBackupService,
     private val storageSupport: BackupExportStorageSupport,
     private val authenticationManager: AuthenticationManager,
-    private val vaultAccessState: VaultAccessState,
+    private val sessionPolicy: BackupSessionPolicy,
     private val noticePublisher: AppNoticePublisher
 ) : ViewModel() {
 
@@ -97,10 +96,7 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun prepareExport(format: BackupExportUiFormat) {
-        if (!vaultAccessState.hasFullVaultAccess()) {
-            fail(BackupFailed("当前会话不能导出普通备份"), BackupOperation.EXPORT)
-            return
-        }
+        if (!requireSession(sessionPolicy.canPrepareRegularExport(), BackupOperation.EXPORT)) return
         _uiState.update {
             it.copy(
                 isExporting = true,
@@ -121,10 +117,7 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun prepareRecoveryExport() {
-        if (!vaultAccessState.isRecoveryMode()) {
-            fail(BackupFailed("恢复导出只能在恢复模式中使用"), BackupOperation.EXPORT)
-            return
-        }
+        if (!requireSession(sessionPolicy.canPrepareRecoveryExport(), BackupOperation.EXPORT)) return
         _uiState.update {
             it.copy(
                 isExporting = true,
@@ -207,10 +200,7 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun startImport(uri: Uri) {
-        if (!vaultAccessState.hasFullVaultAccess()) {
-            fail(BackupFailed("当前会话不能导入备份"), BackupOperation.IMPORT)
-            return
-        }
+        if (!requireSession(sessionPolicy.canPrepareImport(), BackupOperation.IMPORT)) return
         _uiState.update {
             it.copy(
                 isExporting = false,
@@ -421,24 +411,20 @@ class BackupViewModel @Inject constructor(
         state: BackupUiState,
         operation: BackupOperation = state.toOperation()
     ): Boolean {
-        val allowed = if (state.isRecoveryExport) {
-            vaultAccessState.isRecoveryMode()
-        } else {
-            vaultAccessState.hasFullVaultAccess()
-        }
-        if (allowed) return true
-        fail(
-            BackupFailed(
-                if (state.isRecoveryExport) {
-                    "恢复导出只能在恢复模式中使用"
-                } else {
-                    "当前会话不能执行备份操作"
-                }
-            ),
-            operation
-        )
+        if (requireSession(sessionPolicy.canUsePendingOperation(state), operation)) return true
         clearPendingFields()
         return false
+    }
+
+    private fun requireSession(
+        check: BackupSessionCheck,
+        operation: BackupOperation
+    ): Boolean = when (check) {
+        BackupSessionCheck.Allowed -> true
+        is BackupSessionCheck.Denied -> {
+            fail(BackupFailed(check.message), operation)
+            false
+        }
     }
 
     private enum class BackupOperation {
