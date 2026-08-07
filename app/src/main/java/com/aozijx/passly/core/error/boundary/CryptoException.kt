@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.error.crypto
+package com.aozijx.passly.core.error.boundary
 
 /**
  * 加密相关异常。

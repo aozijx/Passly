@@ -4,7 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.aozijx.passly.BuildConfig
-import com.aozijx.passly.core.error.database.DatabaseException
+import com.aozijx.passly.core.error.boundary.DatabaseException
 import com.aozijx.passly.data.local.dao.activity.EntryActivityAnalyticsDao
 import com.aozijx.passly.data.local.dao.activity.EntryActivityCommandDao
 import com.aozijx.passly.data.local.dao.activity.EntryActivityQueryDao
@@ -71,13 +71,13 @@ abstract class AppDatabase : RoomDatabase() {
         fun wrapError(e: Throwable): DatabaseException {
             return when {
                 e.message?.contains("Migration", ignoreCase = true) == true ->
-                    DatabaseException.MigrationFailedException(e.message ?: "未知迁移错误", e)
+                    DatabaseException.MigrationFailedException(e)
 
                 e.message?.contains("passphrase", ignoreCase = true) == true ->
-                    DatabaseException.InvalidPassphraseException(e.message ?: "密钥错误")
+                    DatabaseException.InvalidPassphraseException(e)
 
                 else ->
-                    DatabaseException.InitializationException(e.message ?: "初始化失败", e)
+                    DatabaseException.InitializationException("数据库初始化失败", e)
             }
         }
     }

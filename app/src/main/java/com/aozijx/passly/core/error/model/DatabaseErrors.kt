@@ -3,13 +3,16 @@ package com.aozijx.passly.core.error
 // ===== 数据库领域错误 =====
 
 class DatabaseLocked(
-    trace: ErrorTrace = ErrorTrace(ErrorLayer.DATA)
+    message: String = "数据库已锁定，请先解锁",
+    trace: ErrorTrace = ErrorTrace(ErrorLayer.DATA),
+    cause: Throwable? = null
 ) : DataError(
     code = DATABASE_LOCKED,
-    message = "数据库已锁定，请先解锁",
+    message = message,
     recoverable = true,
     severity = ErrorSeverity.WARNING,
-    trace = trace
+    trace = trace,
+    cause = cause
 )
 
 class DatabaseInitFailed(

@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.error.ui
+package com.aozijx.passly.core.error.presentation
 
 import com.aozijx.passly.core.error.APP_LOCKED
 import com.aozijx.passly.core.error.APP_PASSWORD_INCORRECT

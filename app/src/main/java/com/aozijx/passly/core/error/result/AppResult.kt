@@ -116,7 +116,7 @@ sealed class AppResult<out T> {
                 success(block())
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Throwable) {
+            } catch (e: Exception) {
                 failure(AppError.fromThrowable(e, layer = layer, operation = operation))
             }
         }

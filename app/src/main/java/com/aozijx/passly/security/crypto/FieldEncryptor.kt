@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.crypto
 
-import com.aozijx.passly.core.error.crypto.CryptoException
+import com.aozijx.passly.core.error.boundary.CryptoException
 import com.aozijx.passly.security.MemoryCleaner
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
@@ -101,7 +101,7 @@ class FieldEncryptor @Inject constructor(
                 String(decrypted, Charsets.UTF_8)
             } catch (e: AEADBadTagException) {
                 throw CryptoException.TagVerificationFailed(
-                    "GCM 认证标签验证失败：数据可能已损坏或密钥不匹配（AAD 不一致也会触发）", e
+                    "加密字段验证失败", e
                 )
             }
         } finally {

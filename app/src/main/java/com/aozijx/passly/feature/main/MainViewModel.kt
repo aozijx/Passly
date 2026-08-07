@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.error.ui.toUiMessage
+import com.aozijx.passly.core.error.presentation.toUiMessage
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest

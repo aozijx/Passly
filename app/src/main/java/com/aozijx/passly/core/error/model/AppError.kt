@@ -2,22 +2,43 @@ package com.aozijx.passly.core.error
 
 import com.github.f4b6a3.uuid.UuidCreator
 
-// ─── 基础定义 ──────────────────────────────
 enum class ErrorLayer { DATA, DOMAIN, UI }
 
 enum class ErrorSeverity { WARNING, ERROR }
+
+sealed interface ErrorTraceValue {
+    data class Count(val value: Long) : ErrorTraceValue {
+        init {
+            require(value >= 0) { "Count must not be negative" }
+        }
+    }
+
+    data class Flag(val value: Boolean) : ErrorTraceValue
+
+    data class Code(val value: String) : ErrorTraceValue {
+        init {
+            require(value.matches(SAFE_CODE)) { "Invalid trace code" }
+        }
+    }
+
+    private companion object {
+        val SAFE_CODE = Regex("[a-z][a-z0-9_.-]{0,95}")
+    }
+}
 
 data class ErrorTrace(
     val originLayer: ErrorLayer,
     val operation: String? = null,
     val traceId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     val timestampMs: Long = System.currentTimeMillis(),
-    val extras: Map<String, String> = emptyMap()
+    val context: Map<String, ErrorTraceValue> = emptyMap()
 ) {
-    fun withExtras(vararg pairs: Pair<String, String>) = copy(extras = extras + pairs.toMap())
+    fun withContext(vararg pairs: Pair<String, ErrorTraceValue>) =
+        copy(context = context + pairs.toMap())
 }
 
-// ─── 基类 ──────────────────────────────
+private val ERROR_CODE = Regex("[A-Z][A-Z0-9_]{2,63}")
+
 sealed class AppError(
     open val code: String,
     override val message: String,
@@ -27,20 +48,23 @@ sealed class AppError(
     open val trace: ErrorTrace,
     override val cause: Throwable?
 ) : Exception(message, cause) {
+    init {
+        require(code.matches(ERROR_CODE)) { "Error code must be UPPER_SNAKE: $code" }
+        require(message.isNotBlank()) { "AppError message must not be blank" }
+    }
+
     companion object
 }
 
-// 数据层错误基类
 sealed class DataError(
     code: String,
     message: String,
     recoverable: Boolean,
     severity: ErrorSeverity,
-    trace: ErrorTrace = ErrorTrace(originLayer = ErrorLayer.DATA), // 默认值
+    trace: ErrorTrace = ErrorTrace(originLayer = ErrorLayer.DATA),
     cause: Throwable? = null
 ) : AppError(code, message, ErrorLayer.DATA, recoverable, severity, trace, cause)
 
-// 业务层错误基类
 sealed class DomainError(
     code: String,
     message: String,
@@ -50,7 +74,6 @@ sealed class DomainError(
     cause: Throwable? = null
 ) : AppError(code, message, ErrorLayer.DOMAIN, recoverable, severity, trace, cause)
 
-// ─── 兜底错误 ──────────────────────────────
 class Unexpected(
     message: String = "发生未知错误",
     trace: ErrorTrace = ErrorTrace(ErrorLayer.DATA),

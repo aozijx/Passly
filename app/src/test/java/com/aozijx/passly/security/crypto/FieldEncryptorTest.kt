@@ -1,6 +1,6 @@
 package com.aozijx.passly.security.crypto
 
-import com.aozijx.passly.core.error.crypto.CryptoException
+import com.aozijx.passly.core.error.boundary.CryptoException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
