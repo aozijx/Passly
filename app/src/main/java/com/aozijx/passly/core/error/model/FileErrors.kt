@@ -1,16 +1,16 @@
-package com.aozijx.passly.core.error
+package com.aozijx.passly.core.error.model
+
+import com.github.f4b6a3.uuid.UuidCreator
 
 // ===== 文件领域错误 =====
 
 class FileIOError(
-    message: String,
-    trace: ErrorTrace = ErrorTrace(ErrorLayer.DATA),
-    cause: Throwable? = null
+    errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
+    throwableType: String? = null,
 ) : DataError(
     code = FILE_IO_ERROR,
-    message = message,
     recoverable = false,
     severity = ErrorSeverity.ERROR,
-    trace = trace,
-    cause = cause
+    errorId = errorId,
+    throwableType = throwableType,
 )

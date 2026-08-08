@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.editor.common
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
@@ -74,12 +74,12 @@ abstract class CreateEntryViewModel<Form>(
                     )
                 ) {
                     is AppResult.Success -> _effects.send(CreateEntryEffect.Saved)
-                    is AppResult.Failure -> restoreAfterFailure(result.error.message)
+                    is AppResult.Failure -> restoreAfterFailure(result.error.code)
                 }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                restoreAfterFailure(error.message)
+                restoreAfterFailure("创建条目失败")
             }
         }
     }

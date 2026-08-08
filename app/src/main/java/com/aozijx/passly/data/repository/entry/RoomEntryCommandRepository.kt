@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.repository.entry
 
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.repository.entry.executor.CreateEntryExecutor
 import com.aozijx.passly.data.repository.entry.executor.DeleteEntryPermanentlyExecutor
 import com.aozijx.passly.data.repository.entry.executor.EmptyTrashExecutor

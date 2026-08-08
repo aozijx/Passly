@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.repository.entry.executor
 
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.NotFound
-import com.aozijx.passly.core.error.ValidationError
+import com.aozijx.passly.core.error.model.NotFound
+import com.aozijx.passly.core.error.model.ValidationError
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.DeletedEntryResources
@@ -23,8 +23,8 @@ class DeleteEntryPermanentlyExecutor @Inject constructor(
     suspend fun execute(id: String, expectedVersion: Int): AppResult<Unit> {
         val result = transactionRunner.write("entry.deletePermanently") {
             val entity = entryQueryDao().getById(id)
-                ?: throw NotFound("entry:$id not found")
-            if (entity.deletedAt == null) throw ValidationError("只能永久删除回收站中的条目")
+                ?: throw NotFound()
+            if (entity.deletedAt == null) throw ValidationError()
             transactionRunner.checkVersion(id, entity.version, expectedVersion)
 
             val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)

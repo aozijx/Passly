@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.entry.repository
 
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.VaultEntry
 
 /**

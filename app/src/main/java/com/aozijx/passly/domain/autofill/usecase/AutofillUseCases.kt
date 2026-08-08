@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.autofill.usecase
 
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.autofill.repository.AutofillStatusRepository
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
 import com.aozijx.passly.domain.entry.model.activity.ActivityType

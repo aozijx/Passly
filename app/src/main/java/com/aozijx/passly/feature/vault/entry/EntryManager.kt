@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.entry
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.model.AppError
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
@@ -60,7 +60,7 @@ internal class EntryManager(
                 }
 
                 is AppResult.Failure -> {
-                    onError(insertResult.error.message)
+                    onError(insertResult.error.code)
                 }
             }
         }
@@ -90,7 +90,7 @@ internal class EntryManager(
                 .onSuccess {
                     totp.onEntryUpdated(entry.id)
                 }.onFailure { error ->
-                    onError(error.message)
+                    onError(error.code)
                 }
         }
     }
@@ -128,11 +128,11 @@ internal class EntryManager(
                 }
 
                 is AppResult.Failure -> {
-                    onError(result.error.message)
+                    onError(result.error.code)
                 }
             }
         } catch (e: AppError) {
-            onError(e.message)
+            onError(e.code)
         } finally {
             deletingIdsMutex.withLock { deletingIds.remove(entryId) }
         }

@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.settings.datamanagement
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.presentation.toUiMessage
+import com.aozijx.passly.app.message.mapping.toUiMessage
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository

@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.session
 
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.error.DatabaseInitFailed
+import com.aozijx.passly.core.error.model.DatabaseInitFailed
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.domain.authentication.SessionStateProvider
 import com.aozijx.passly.security.crypto.DekManager

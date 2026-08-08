@@ -2,9 +2,10 @@ package com.aozijx.passly.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.authentication.AuthenticationManager
+import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
 import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
+import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
@@ -77,7 +78,7 @@ class SettingsViewModel @Inject constructor(
                 }
             }.onFailure { error ->
                 _uiState.update { it.copy(isLoading = false) }
-                _effects.tryEmit(SettingsEffect.ShowError(error.message ?: "加载设置失败"))
+                _effects.tryEmit(SettingsEffect.ShowError(error.toUiMessage("加载设置失败")))
             }
         }
     }
@@ -104,7 +105,7 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update(updateState)
                 _effects.tryEmit(SettingsEffect.SettingsSaved)
             }.onFailure { error ->
-                _effects.tryEmit(SettingsEffect.ShowError(error.message ?: "保存失败"))
+                _effects.tryEmit(SettingsEffect.ShowError(error.toUiMessage("保存失败")))
             }
         }
     }
@@ -130,7 +131,7 @@ class SettingsViewModel @Inject constructor(
                     } else {
                         _effects.emit(
                             SettingsEffect.ShowError(
-                                outcome.error?.message ?: "清除数据库失败"
+                                "清除数据库失败"
                             )
                         )
                     }

@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.entry.executor
 
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.NotFound
+import com.aozijx.passly.core.error.model.NotFound
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
@@ -47,7 +47,7 @@ class UpdateEntryExecutor @Inject constructor(
         changes: EntryChanges
     ): AppResult<Unit> = transactionRunner.write("entry.update") {
         val metaEntity = entryQueryDao().getById(id)
-            ?: throw NotFound("entry:$id not found")
+            ?: throw NotFound()
         val oldSummary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
         val credEntity = entrySecretQueryDao().getByEntryId(id)
         val oldSecret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }

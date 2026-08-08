@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.backup
 
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.security.KeyDerivation
 import com.aozijx.passly.data.backup.format.BackupFormatRegistry
 import com.aozijx.passly.data.backup.format.bitwarden.BitwardenJsonImportAdapter

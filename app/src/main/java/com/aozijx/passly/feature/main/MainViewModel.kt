@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.error.presentation.toUiMessage
+import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
@@ -276,7 +276,7 @@ class MainViewModel @Inject constructor(
             result.onSuccess { count ->
                 AppTelemetry.i("MainViewModel", "Blind index rebuild complete: $count entries")
             }.onFailure { error ->
-                AppTelemetry.w("MainViewModel", "Blind index rebuild skipped: ${error.message}")
+                AppTelemetry.w("MainViewModel", "Blind index rebuild skipped")
             }
         }
     }

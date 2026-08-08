@@ -3,11 +3,10 @@ package com.aozijx.passly.feature.backup
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.error.AppError
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.BackupFailed
-import com.aozijx.passly.core.error.ErrorLayer
-import com.aozijx.passly.core.error.fromThrowable
+import com.aozijx.passly.core.error.mapping.fromThrowable
+import com.aozijx.passly.core.error.model.AppError
+import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
@@ -180,7 +179,7 @@ class BackupViewModel @Inject constructor(
                 mimeType = snapshot.selectedExportFormat.mimeType
             ).getOrElse { error ->
                 fail(
-                    AppError.fromThrowable(error, ErrorLayer.UI),
+                    AppError.fromThrowable(error),
                     BackupOperation.EXPORT
                 )
                 clearPendingFields()
@@ -314,7 +313,7 @@ class BackupViewModel @Inject constructor(
                 storageSupport.deleteDocument(targetUri)
             }
             fail(
-                AppError.fromThrowable(error, ErrorLayer.UI),
+                AppError.fromThrowable(error),
                 state.toOperation()
             )
         } finally {

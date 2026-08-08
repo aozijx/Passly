@@ -1,29 +1,27 @@
-package com.aozijx.passly.core.error
+package com.aozijx.passly.core.error.model
+
+import com.github.f4b6a3.uuid.UuidCreator
 
 // ===== 数据库领域错误 =====
 
 class DatabaseLocked(
-    message: String = "数据库已锁定，请先解锁",
-    trace: ErrorTrace = ErrorTrace(ErrorLayer.DATA),
-    cause: Throwable? = null
+    errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
+    throwableType: String? = null,
 ) : DataError(
     code = DATABASE_LOCKED,
-    message = message,
     recoverable = true,
     severity = ErrorSeverity.WARNING,
-    trace = trace,
-    cause = cause
+    errorId = errorId,
+    throwableType = throwableType,
 )
 
 class DatabaseInitFailed(
-    message: String = "数据库初始化失败",
-    trace: ErrorTrace = ErrorTrace(ErrorLayer.DATA),
-    cause: Throwable? = null
+    errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
+    throwableType: String? = null,
 ) : DataError(
     code = DATABASE_INIT_FAILED,
-    message = message,
     recoverable = false,
     severity = ErrorSeverity.ERROR,
-    trace = trace,
-    cause = cause
+    errorId = errorId,
+    throwableType = throwableType,
 )

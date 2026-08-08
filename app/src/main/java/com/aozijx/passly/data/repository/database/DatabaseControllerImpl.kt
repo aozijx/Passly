@@ -2,7 +2,7 @@ package com.aozijx.passly.data.repository.database
 
 import android.content.Context
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.VaultDataRefreshNotifier
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.local.database.DatabaseSchema

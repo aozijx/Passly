@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.backup.service
 
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
 

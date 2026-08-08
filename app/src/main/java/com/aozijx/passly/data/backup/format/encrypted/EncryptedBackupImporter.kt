@@ -1,12 +1,11 @@
 package com.aozijx.passly.data.backup.format.encrypted
 
-import com.aozijx.passly.core.error.BackupFailed
-import com.aozijx.passly.data.backup.BackupJson
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.data.backup.BackupBundleValidator
+import com.aozijx.passly.data.backup.BackupJson
+import com.aozijx.passly.data.backup.io.decodeStrictUtf8
 import com.aozijx.passly.data.backup.model.BackupBundle
 import com.aozijx.passly.data.backup.model.BackupDocument
-import com.aozijx.passly.data.backup.io.decodeStrictUtf8
-import kotlinx.serialization.decodeFromString
 import javax.crypto.AEADBadTagException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -61,7 +60,7 @@ class EncryptedBackupImporter @Inject constructor() {
             } else {
                 "备份文件损坏或格式不正确"
             }
-            throw BackupFailed(message = message, cause = error)
+            throw BackupFailed()
         }
     }
 }

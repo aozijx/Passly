@@ -36,3 +36,81 @@ Android sink 有独立开关。
 
 禁止恢复旧 `core/diagnostics`、`AppLog`、Sanitizer、旧 Runtime/Sink/CrashHandler，也禁止直接
 `printStackTrace` 或在其他文件使用 `android.util.Log`。
+
+## 错误接入规范
+
+Telemetry 可以观察 Error，但 Error 不知道 Telemetry 的存在。依赖方向：
+
+```
+core/error -X-> core/telemetry
+core/error -X-> AppTelemetry
+```
+
+### AppErrorReporter
+
+```kotlin
+fun interface AppErrorReporter {
+    fun report(error: AppError, context: ErrorReportContext)
+}
+
+data class ErrorReportContext(
+    val operation: OperationCode,
+    val category: EventCategory,
+)
+```
+
+Reporter 属于 telemetry 层，不属 error 层。在 repository / use case 边界统一调用一次，避免重复记录。
+
+### 白名单字段
+
+实现只能写入以下字段，禁止自由文本：
+
+| 允许                    | 禁止                   |
+|-----------------------|----------------------|
+| error_code            | error.message        |
+| error_layer           | Throwable.message    |
+| severity              | entryId              |
+| recoverable           | 文件路径                 |
+| operation             | URL / 域名             |
+| correlation_id        | 包名                   |
+| throwable_type（白名单校验） | 用户名、备份 URI、密码、密钥、OTP |
+
+### 记录策略
+
+| 错误类型      | 日志策略             |
+|-----------|------------------|
+| 输入校验失败    | 通常不记录            |
+| 条目不存在     | 通常不记录            |
+| 乐观锁冲突     | WARN，可计数         |
+| 用户取消认证    | 不记录              |
+| 密码错误      | 匿名计数，不能记录密码或次数明细 |
+| 数据库初始化失败  | ERROR            |
+| 加密 Tag 失败 | ERROR            |
+| 备份格式错误    | WARN             |
+| 未知异常      | ERROR            |
+
+### 接入示例
+
+```kotlin
+// VaultTransactionRunner 在数据库操作失败后报告
+private fun report(error: AppError, operation: String) {
+    errorReporter.report(
+        error = error,
+        context = ErrorReportContext(
+            operation = OperationCode(operation),
+            category = EventCategory.DATABASE
+        )
+    )
+}
+
+// VaultBackupServiceImpl 在导入/导出失败后报告
+private fun report(error: AppError, operation: String) {
+    errorReporter.report(
+        error = error,
+        context = ErrorReportContext(
+            operation = OperationCode(operation),
+            category = EventCategory.BACKUP
+        )
+    )
+}
+```

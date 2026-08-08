@@ -911,6 +911,69 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun coreErrorDoesNotDependOnTelemetryOrMessageOrAppTelemetry() {
+        val errorRoot = File("src/main/java/com/aozijx/passly/core/error")
+        val forbidden = listOf(
+            "import com.aozijx.passly.core.telemetry",
+            "import com.aozijx.passly.app.diagnostics.AppTelemetry",
+            "import com.aozijx.passly.app.message",
+            "import com.aozijx.passly.domain.notice",
+        )
+        val offenders = errorRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filter { source -> forbidden.any { it in source.readText() } }
+            .map { it.relativeTo(errorRoot).path }
+            .toList()
+
+        assertTrue(
+            "core/error must not depend on telemetry, message, AppTelemetry: $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun coreErrorDoesNotDependOnAndroid() {
+        val errorRoot = File("src/main/java/com/aozijx/passly/core/error")
+        val forbidden = listOf(
+            "import android.",
+            "import androidx.",
+        )
+        // boundary exceptions are allowed to use Android types since they wrap platform exceptions
+        val exemptPaths = listOf("boundary" + File.separator)
+        val offenders = errorRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filter { source -> exemptPaths.none { it in source.relativeTo(errorRoot).path } }
+            .filter { source -> forbidden.any { it in source.readText() } }
+            .map { it.relativeTo(errorRoot).path }
+            .toList()
+
+        assertTrue(
+            "core/error model/result/mapping must not depend on Android: $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun errorMessagesLiveInAppMessageMappingNotCoreError() {
+        val oldPresentationDir = File(
+            "src/main/java/com/aozijx/passly/core/error/presentation"
+        )
+        val newMappingFile = File(
+            "src/main/java/com/aozijx/passly/app/message/mapping/ErrorMessages.kt"
+        )
+
+        assertTrue(
+            "ErrorMessages must not remain in core/error/presentation",
+            !oldPresentationDir.exists() || oldPresentationDir.walkTopDown()
+                .none { it.extension == "kt" }
+        )
+        assertTrue(
+            "ErrorMessages must live in app/message/mapping",
+            newMappingFile.exists()
+        )
+    }
+
+    @Test
     fun recoveryCodeCannotActAsEverydayUnlockMethod() {
         val authPolicy = File(
             "src/main/java/com/aozijx/passly/domain/authentication/AuthenticationMethodPolicy.kt"

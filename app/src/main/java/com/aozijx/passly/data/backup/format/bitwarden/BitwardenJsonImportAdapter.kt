@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.backup.format.bitwarden
 
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.BackupJson
 import com.aozijx.passly.data.backup.format.BackupImportAdapter
@@ -61,34 +61,30 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         } catch (error: BackupFailed) {
             throw error
         } catch (error: Exception) {
-            throw BackupFailed("Bitwarden JSON 损坏或包含不支持的数据", cause = error)
+            throw BackupFailed()
         }
 
     private fun decodeValidated(payload: ByteArray): BackupBundle {
         val rawRoot =
             BackupJson.parseToJsonElement(payload.decodeStrictUtf8("Bitwarden JSON")).jsonObject
         if (rawRoot["encrypted"]?.jsonPrimitive?.booleanOrNull == true) {
-            throw BackupFailed("暂不支持 Bitwarden 加密或账户绑定导出，请导出明文 JSON")
+            throw BackupFailed()
         }
         val export = BackupJson.decodeFromString<BitwardenExport>(rawRoot.toString())
         val folderNames = export.folders.associate { it.id to it.name }
         val now = System.currentTimeMillis()
         val entries = export.items.flatMapIndexed { index, item ->
             if (item.type !in 1..4) {
-                throw BackupFailed(
-                    "Bitwarden 条目类型 ${item.type} 暂不支持，已中止以避免数据丢失"
-                )
+                throw BackupFailed()
             }
             if (!item.login?.fido2Credentials.isNullOrEmpty()) {
-                throw BackupFailed(
-                    "Bitwarden 条目包含 Passkey/FIDO2 数据，已中止以避免数据丢失"
-                )
+                throw BackupFailed()
             }
             if (item.attachments.isNotEmpty()) {
-                throw BackupFailed("Bitwarden 导出包含附件，当前 JSON Adapter 不支持附件 ZIP")
+                throw BackupFailed()
             }
             if (item.passwordHistory.isNotEmpty()) {
-                throw BackupFailed("Bitwarden 条目包含密码历史，已中止以避免数据丢失")
+                throw BackupFailed()
             }
             item.toBackupRecords(index, folderNames, now)
         }
@@ -254,17 +250,17 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         val type = when (uri.host?.lowercase()) {
             "hotp" -> BackupOtpType.HOTP
             "totp" -> BackupOtpType.TOTP
-            else -> throw BackupFailed("Bitwarden OTP 类型不受支持: ${uri.host}")
+            else -> throw BackupFailed()
         }
         val secret = query["secret"]?.takeIf(String::isNotBlank)
-            ?: throw BackupFailed("Bitwarden OTP 缺少 secret")
+            ?: throw BackupFailed()
         return BackupOtpSecret(
             BackupOtpConfig(
                 type = type,
                 secret = secret,
                 algorithm = runCatching {
                     BackupOtpAlgorithm.valueOf(query["algorithm"]?.uppercase() ?: "SHA1")
-                }.getOrElse { throw BackupFailed("Bitwarden OTP 算法不受支持") },
+                }.getOrElse { throw BackupFailed() },
                 digits = query["digits"]?.toIntOrNull() ?: 6,
                 periodSeconds = if (type == BackupOtpType.HOTP) null
                 else query["period"]?.toIntOrNull() ?: 30,

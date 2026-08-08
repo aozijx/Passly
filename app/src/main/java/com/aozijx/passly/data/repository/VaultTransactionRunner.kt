@@ -1,9 +1,13 @@
 package com.aozijx.passly.data.repository
 
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.Conflict
-import com.aozijx.passly.core.error.SessionModeRestricted
+import com.aozijx.passly.core.error.model.Conflict
+import com.aozijx.passly.core.error.model.SessionModeRestricted
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.OperationCode
+import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
+import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.domain.authentication.VaultAccessState
 import javax.inject.Inject
@@ -25,7 +29,8 @@ import javax.inject.Singleton
 @Singleton
 class VaultTransactionRunner @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState
+    private val sessionState: VaultAccessState,
+    private val errorReporter: AppErrorReporter
 ) {
 
     /**
@@ -36,12 +41,13 @@ class VaultTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
-        return AppResult.runSuspendCatching(operation) {
+        val result = AppResult.runSuspendCatching(operation) {
             requireFullVaultAccess(operation)
             sessionManager.transaction {
                 block()
             }
         }
+        return result.onFailure { report(it, operation) }
     }
 
     /**
@@ -51,12 +57,13 @@ class VaultTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
-        return AppResult.runSuspendCatching(operation) {
+        val result = AppResult.runSuspendCatching(operation) {
             requireFullVaultAccess(operation)
             sessionManager.query {
                 block()
             }
         }
+        return result.onFailure { report(it, operation) }
     }
 
     /**
@@ -64,9 +71,7 @@ class VaultTransactionRunner @Inject constructor(
      */
     fun checkVersion(entryId: String, actualVersion: Int, expectedVersion: Int) {
         if (actualVersion != expectedVersion) {
-            throw Conflict(
-                "entry:$entryId version mismatch: expected=$expectedVersion, actual=$actualVersion"
-            )
+            throw Conflict()
         }
     }
 
@@ -75,15 +80,23 @@ class VaultTransactionRunner @Inject constructor(
      */
     fun checkAffectedRows(entryId: String, expectedVersion: Int, affectedRows: Int) {
         if (affectedRows == 0) {
-            throw Conflict(
-                "entry:$entryId optimistic lock failed: expected version=$expectedVersion"
-            )
+            throw Conflict()
         }
     }
 
     private fun requireFullVaultAccess(operation: String) {
         if (!sessionState.hasFullVaultAccess()) {
-            throw SessionModeRestricted("Vault operation requires a full authenticated session: $operation")
+            throw SessionModeRestricted()
         }
+    }
+
+    private fun report(error: com.aozijx.passly.core.error.model.AppError, operation: String) {
+        errorReporter.report(
+            error = error,
+            context = ErrorReportContext(
+                operation = OperationCode(operation),
+                category = EventCategory.DATABASE
+            )
+        )
     }
 }

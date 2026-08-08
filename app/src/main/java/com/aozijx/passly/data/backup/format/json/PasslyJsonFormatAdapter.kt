@@ -1,6 +1,6 @@
 package com.aozijx.passly.data.backup.format.json
 
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.data.backup.format.BackupExportAdapter
 import com.aozijx.passly.data.backup.format.BackupImportAdapter
 import com.aozijx.passly.data.backup.format.containsAscii
@@ -36,6 +36,6 @@ internal class PasslyJsonFormatAdapter @Inject constructor(
         } catch (error: BackupFailed) {
             throw error
         } catch (error: Exception) {
-            throw BackupFailed("Passly JSON 备份损坏或格式不正确", cause = error)
+            throw BackupFailed()
         }
 }

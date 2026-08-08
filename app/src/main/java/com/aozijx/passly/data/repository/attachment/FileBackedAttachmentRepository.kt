@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.attachment
 
 import android.content.Context
-import com.aozijx.passly.core.error.SessionModeRestricted
+import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
@@ -168,7 +168,7 @@ class FileBackedAttachmentRepository @Inject constructor(
 
     private fun requireFullVaultAccess(operation: String) {
         if (!sessionState.hasFullVaultAccess()) {
-            throw SessionModeRestricted("Vault operation requires a full authenticated session: $operation")
+            throw SessionModeRestricted()
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.activity
 
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.SessionModeRestricted
+import com.aozijx.passly.core.error.model.SessionModeRestricted
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.EntryActivityEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
@@ -41,7 +41,7 @@ class RoomActivityRecorder @Inject constructor(
 
     private fun requireFullVaultAccess(operation: String) {
         if (!sessionState.hasFullVaultAccess()) {
-            throw SessionModeRestricted("Vault operation requires a full authenticated session: $operation")
+            throw SessionModeRestricted()
         }
     }
 

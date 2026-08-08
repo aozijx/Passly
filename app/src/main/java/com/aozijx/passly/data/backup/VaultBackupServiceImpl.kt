@@ -1,8 +1,12 @@
 package com.aozijx.passly.data.backup
 
 import com.aozijx.passly.app.di.IoDispatcher
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.BackupFailed
+import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.telemetry.EventCategory
+import com.aozijx.passly.core.telemetry.OperationCode
+import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
+import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
 import com.aozijx.passly.data.backup.format.BackupFormatRegistry
 import com.aozijx.passly.data.backup.io.BackupFileStore
 import com.aozijx.passly.data.backup.source.VaultBackupReader
@@ -28,6 +32,7 @@ internal class VaultBackupServiceImpl @Inject constructor(
     private val backupRestorer: VaultBackupRestorer,
     private val formatRegistry: BackupFormatRegistry,
     private val fileStore: BackupFileStore,
+    private val errorReporter: AppErrorReporter,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : VaultBackupService {
 
@@ -54,7 +59,7 @@ internal class VaultBackupServiceImpl @Inject constructor(
             } finally {
                 bundle.clearResourceData()
             }
-        }
+        }.onFailure { report(it, "backup.export") }
     }
 
     override suspend fun import(
@@ -74,14 +79,24 @@ internal class VaultBackupServiceImpl @Inject constructor(
             } finally {
                 payload.fill(0)
             }
-        }
+        }.onFailure { report(it, "backup.import") }
     }
 
     override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
         fileStore.checkWritable(uri)
 
     private fun validatePassword(required: Boolean, password: CharArray?) {
-        if (required && (password == null || password.isEmpty())) throw BackupFailed("该备份格式需要密码")
+        if (required && (password == null || password.isEmpty())) throw BackupFailed()
+    }
+
+    private fun report(error: com.aozijx.passly.core.error.model.AppError, operation: String) {
+        errorReporter.report(
+            error = error,
+            context = ErrorReportContext(
+                operation = OperationCode(operation),
+                category = EventCategory.BACKUP
+            )
+        )
     }
 }
 

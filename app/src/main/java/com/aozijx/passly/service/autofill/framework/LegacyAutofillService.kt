@@ -9,7 +9,7 @@ import android.service.autofill.SaveRequest
 import com.aozijx.passly.app.di.Heuristic
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.dispatcher.FillRequestDispatcher
-import com.aozijx.passly.core.error.AppResult
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
 import com.aozijx.passly.service.autofill.framework.adapter.LegacyPlatformAdapter
 import com.aozijx.passly.service.autofill.framework.parser.AutofillStructureParser
@@ -96,8 +96,8 @@ class LegacyAutofillService : AutofillService() {
                 }
 
                 is AppResult.Failure -> {
-                    AppTelemetry.e("LegacyAutofill", "Save failed: ${result.error.message}")
-                    callback.onFailure(result.error.message)
+                    AppTelemetry.e("LegacyAutofill", "Save failed: ${result.error.code}")
+                    callback.onFailure(result.error.code)
                 }
             }
         }

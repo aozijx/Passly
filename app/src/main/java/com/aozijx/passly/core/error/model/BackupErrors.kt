@@ -1,16 +1,16 @@
-package com.aozijx.passly.core.error
+package com.aozijx.passly.core.error.model
+
+import com.github.f4b6a3.uuid.UuidCreator
 
 // ===== 备份领域错误 =====
 
 class BackupFailed(
-    message: String,
-    trace: ErrorTrace = ErrorTrace(ErrorLayer.DATA),
-    cause: Throwable? = null
+    errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
+    throwableType: String? = null,
 ) : DataError(
     code = BACKUP_FAILED,
-    message = message,
     recoverable = true,
     severity = ErrorSeverity.ERROR,
-    trace = trace,
-    cause = cause
+    errorId = errorId,
+    throwableType = throwableType,
 )

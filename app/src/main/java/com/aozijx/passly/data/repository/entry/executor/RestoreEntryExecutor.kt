@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.entry.executor
 
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.NotFound
+import com.aozijx.passly.core.error.model.NotFound
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.mapper.search.toLookupFields
@@ -32,7 +32,7 @@ class RestoreEntryExecutor @Inject constructor(
 
             // 重建盲索引
             val metaEntity = entryQueryDao().getById(id)
-                ?: throw NotFound("entry:$id not found")
+                ?: throw NotFound()
             val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
             val vaultEntry = EntryAggregateAssembler.assembleFromDatabase(
                 metaEntity, summary, null

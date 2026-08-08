@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.backup.contract
 
 import android.net.Uri
-import com.aozijx.passly.core.error.AppError
+import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.model.BackupExportUiFormat

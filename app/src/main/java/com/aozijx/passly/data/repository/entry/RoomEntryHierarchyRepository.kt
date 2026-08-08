@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.entry
 
-import com.aozijx.passly.core.error.AppResult
-import com.aozijx.passly.core.error.NotFound
+import com.aozijx.passly.core.error.model.NotFound
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
@@ -31,14 +31,14 @@ class RoomEntryHierarchyRepository @Inject constructor(
         accountEntryId: String?
     ): AppResult<Unit> = transactionRunner.write("entry.assign-account") {
         val entry = entryQueryDao().getById(entryId)
-            ?: throw NotFound("entry:$entryId not found")
+            ?: throw NotFound()
         require(entry.entryType != EntryType.ACCOUNT) {
             "An ACCOUNT entry cannot be assigned to another ACCOUNT"
         }
         accountEntryId?.let { parentId ->
             require(parentId != entryId) { "An entry cannot own itself" }
             val parent = entryQueryDao().getById(parentId)
-                ?: throw NotFound("entry:$parentId not found")
+                ?: throw NotFound()
             require(parent.entryType == EntryType.ACCOUNT) {
                 "Parent entry must be an ACCOUNT"
             }
@@ -64,7 +64,7 @@ class RoomEntryHierarchyRepository @Inject constructor(
         } else {
             sessionManager.query {
                 val parent = entryQueryDao().getById(accountEntryId)
-                    ?: throw NotFound("entry:$accountEntryId not found")
+                    ?: throw NotFound()
                 require(parent.entryType == EntryType.ACCOUNT) {
                     "Entry is not an ACCOUNT: $accountEntryId"
                 }
