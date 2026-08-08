@@ -23,7 +23,7 @@ class TrashEntryExecutor @Inject constructor(
         transactionRunner.write("entry.moveToTrash") {
             val now = clock.now()
             val affected = entryCommandDao().optimisticSoftDelete(id, expectedVersion, now, now)
-            transactionRunner.checkAffectedRows(id, expectedVersion, affected)
+            transactionRunner.checkAffectedRows(affected)
 
             blindIndexHelper.deleteForEntry(this, id)
             activityHelper.recordActivity(this, id, ActivityType.DELETE, now)

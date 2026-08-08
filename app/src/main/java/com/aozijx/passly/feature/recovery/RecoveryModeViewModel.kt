@@ -3,6 +3,9 @@ package com.aozijx.passly.feature.recovery
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.message.mapping.toUiMessage
+import com.aozijx.passly.core.error.mapping.fromThrowable
+import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
@@ -185,8 +188,7 @@ class RecoveryModeViewModel @Inject constructor(
                 val state = _uiState.value
                 val password = state.exportPassword.toCharArray()
                 try {
-                    val result = backupService.export(state.toExportRequest(uri, password))
-                    when (result) {
+                    when (val result = backupService.export(state.toExportRequest(uri, password))) {
                         is AppResult.Success -> {
                             _uiState.update {
                                 it.copy(
@@ -199,14 +201,24 @@ class RecoveryModeViewModel @Inject constructor(
                         }
 
                         is AppResult.Failure -> {
-                            markExportFailed()
+                            _uiState.update {
+                                it.copy(
+                                    isExporting = false,
+                                    exportError = result.error.toUiMessage("备份导出失败")
+                                )
+                            }
                         }
                     }
                 } finally {
                     password.fill('\u0000')
                 }
             } catch (e: Exception) {
-                markExportFailed()
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        exportError = AppError.fromThrowable(e).toUiMessage("备份导出失败")
+                    )
+                }
             }
         }
     }
@@ -225,10 +237,6 @@ class RecoveryModeViewModel @Inject constructor(
             includedEntryTypes = EntryType.entries.toSet()
         )
     )
-
-    private fun markExportFailed() {
-        _uiState.update { it.copy(isExporting = false, exportError = "备份导出失败") }
-    }
 
     private fun exitRecovery() {
         viewModelScope.launch {

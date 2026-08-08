@@ -95,7 +95,7 @@ internal class DatabaseControllerImpl @Inject constructor(
     }
 
     private suspend fun probe(): Throwable? =
-        AppResult.runSuspendCatching("db.warmUp") {
+        AppResult.runSuspendCatching {
             sessionManager.query { openHelper.writableDatabase }
         }.fold(
             onSuccess = { null },

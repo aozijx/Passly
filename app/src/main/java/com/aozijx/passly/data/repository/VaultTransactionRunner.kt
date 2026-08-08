@@ -41,8 +41,8 @@ class VaultTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
-        val result = AppResult.runSuspendCatching(operation) {
-            requireFullVaultAccess(operation)
+        val result = AppResult.runSuspendCatching {
+            requireFullVaultAccess()
             sessionManager.transaction {
                 block()
             }
@@ -57,8 +57,8 @@ class VaultTransactionRunner @Inject constructor(
         operation: String,
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
-        val result = AppResult.runSuspendCatching(operation) {
-            requireFullVaultAccess(operation)
+        val result = AppResult.runSuspendCatching {
+            requireFullVaultAccess()
             sessionManager.query {
                 block()
             }
@@ -69,7 +69,7 @@ class VaultTransactionRunner @Inject constructor(
     /**
      * 检查乐观锁版本是否匹配，不匹配时抛出 [Conflict]。
      */
-    fun checkVersion(entryId: String, actualVersion: Int, expectedVersion: Int) {
+    fun checkVersion(actualVersion: Int, expectedVersion: Int) {
         if (actualVersion != expectedVersion) {
             throw Conflict()
         }
@@ -78,13 +78,13 @@ class VaultTransactionRunner @Inject constructor(
     /**
      * 检查乐观锁影响行数，0 行表示版本冲突。
      */
-    fun checkAffectedRows(entryId: String, expectedVersion: Int, affectedRows: Int) {
+    fun checkAffectedRows(affectedRows: Int) {
         if (affectedRows == 0) {
             throw Conflict()
         }
     }
 
-    private fun requireFullVaultAccess(operation: String) {
+    private fun requireFullVaultAccess() {
         if (!sessionState.hasFullVaultAccess()) {
             throw SessionModeRestricted()
         }

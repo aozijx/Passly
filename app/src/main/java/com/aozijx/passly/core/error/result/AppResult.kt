@@ -71,7 +71,6 @@ sealed class AppResult<out T> {
         fun failure(error: AppError): AppResult<Nothing> = Failure(error)
 
         suspend inline fun <T> runSuspendCatching(
-            operation: String,
             crossinline block: suspend () -> T
         ): AppResult<T> {
             return try {

@@ -25,11 +25,11 @@ class DeleteEntryPermanentlyExecutor @Inject constructor(
             val entity = entryQueryDao().getById(id)
                 ?: throw NotFound()
             if (entity.deletedAt == null) throw ValidationError()
-            transactionRunner.checkVersion(id, entity.version, expectedVersion)
+            transactionRunner.checkVersion(entity.version, expectedVersion)
 
             val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)
             val affected = entryCommandDao().deleteDeletedOptimistic(id, expectedVersion)
-            transactionRunner.checkAffectedRows(id, expectedVersion, affected)
+            transactionRunner.checkAffectedRows(affected)
 
             DeletedEntryResources(
                 entryId = id,
@@ -38,6 +38,6 @@ class DeleteEntryPermanentlyExecutor @Inject constructor(
         }
 
         result.onSuccessSuspend { resourceCleaner.clean(listOf(it)) }
-        return result.map { Unit }
+        return result.map { }
     }
 }

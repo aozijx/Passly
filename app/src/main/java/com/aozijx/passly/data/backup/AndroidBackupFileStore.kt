@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.backup
 
 import android.content.Context
-import android.net.Uri
+import androidx.core.net.toUri
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.backup.io.BackupFileStore
@@ -18,7 +18,7 @@ class AndroidBackupFileStore @Inject constructor(
 ) : BackupFileStore {
 
     private fun openInputStream(uri: String): InputStream {
-        val parsed = Uri.parse(uri)
+        val parsed = uri.toUri()
         return try {
             context.contentResolver.openInputStream(parsed)
                 ?: throw BackupFailed()
@@ -30,7 +30,7 @@ class AndroidBackupFileStore @Inject constructor(
     }
 
     private fun openOutputStream(uri: String): OutputStream {
-        val parsed = Uri.parse(uri)
+        val parsed = uri.toUri()
         return try {
             context.contentResolver.openOutputStream(parsed, "rwt")
                 ?: throw BackupFailed()
@@ -54,8 +54,8 @@ class AndroidBackupFileStore @Inject constructor(
     }
 
     override suspend fun checkWritable(uri: String): AppResult<Unit> =
-        AppResult.runSuspendCatching("backup.checkWritable") {
-            val parsed = Uri.parse(uri)
+        AppResult.runSuspendCatching {
+            val parsed = uri.toUri()
             val persistedWritable = context.contentResolver.persistedUriPermissions.any {
                 it.uri == parsed && it.isWritePermission
             }

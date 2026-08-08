@@ -59,7 +59,7 @@ class SaveAutofillCredentialUseCase @Inject constructor(
         usernameValue: String,
         passwordValue: String
     ): AppResult<Unit> {
-        return AppResult.runSuspendCatching("save_autofill_credential") {
+        return AppResult.runSuspendCatching {
             val policy = settingsRepository.settings.first().interaction.autofill
             if (!policy.enabled || !policy.savePromptsEnabled) {
                 throw IllegalStateException("Autofill save prompts are disabled")

@@ -55,7 +55,7 @@ class RoomEntryHierarchyRepository @Inject constructor(
             parentEntryId = accountEntryId,
             updatedAt = clock.now()
         )
-        transactionRunner.checkAffectedRows(entryId, expectedVersion, affected)
+        transactionRunner.checkAffectedRows(affected)
     }
 
     override suspend fun getChildren(accountEntryId: String): List<VaultEntry> =

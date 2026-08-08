@@ -28,7 +28,7 @@ class RestoreEntryExecutor @Inject constructor(
         transactionRunner.write("entry.restore") {
             val now = clock.now()
             val affected = entryCommandDao().restoreOptimistic(id, expectedVersion, now)
-            transactionRunner.checkAffectedRows(id, expectedVersion, affected)
+            transactionRunner.checkAffectedRows(affected)
 
             // 重建盲索引
             val metaEntity = entryQueryDao().getById(id)

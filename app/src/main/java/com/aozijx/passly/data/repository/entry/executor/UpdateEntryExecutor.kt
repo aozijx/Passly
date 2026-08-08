@@ -83,7 +83,7 @@ class UpdateEntryExecutor @Inject constructor(
         val affected = entryCommandDao().optimisticUpdate(
             id, expectedVersion, metaBlob, capabilityFlags, otpType, now
         )
-        transactionRunner.checkAffectedRows(id, expectedVersion, affected)
+        transactionRunner.checkAffectedRows(affected)
 
         // 2. 写入 Secret（有变更或首次创建凭据时更新）
         if (changes.secret != null || changes.highSensitivitySecret != null || oldSecret == null) {

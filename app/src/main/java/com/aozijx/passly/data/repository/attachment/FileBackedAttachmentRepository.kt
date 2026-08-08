@@ -72,7 +72,7 @@ class FileBackedAttachmentRepository @Inject constructor(
         attachment: EntryAttachment,
         content: ByteArray
     ) {
-        requireFullVaultAccess("attachment.save")
+        requireFullVaultAccess()
         sessionManager.transaction {
             val now = System.currentTimeMillis()
             val attachmentId = attachment.attachmentId
@@ -118,7 +118,7 @@ class FileBackedAttachmentRepository @Inject constructor(
     }
 
     override suspend fun deleteAttachment(attachmentId: String) {
-        requireFullVaultAccess("attachment.delete")
+        requireFullVaultAccess()
         sessionManager.transaction {
             // 先查实体获取路径
             val entity = entryAttachmentQueryDao().getById(attachmentId) ?: return@transaction
@@ -166,7 +166,7 @@ class FileBackedAttachmentRepository @Inject constructor(
         return digest.digest(data).joinToString("") { "%02x".format(it) }
     }
 
-    private fun requireFullVaultAccess(operation: String) {
+    private fun requireFullVaultAccess() {
         if (!sessionState.hasFullVaultAccess()) {
             throw SessionModeRestricted()
         }

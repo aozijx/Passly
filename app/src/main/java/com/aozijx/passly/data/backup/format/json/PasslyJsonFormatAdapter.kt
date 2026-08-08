@@ -35,7 +35,7 @@ internal class PasslyJsonFormatAdapter @Inject constructor(
             importer.import(payload)
         } catch (error: BackupFailed) {
             throw error
-        } catch (error: Exception) {
+        } catch (_: Exception) {
             throw BackupFailed()
         }
 }

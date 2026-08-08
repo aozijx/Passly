@@ -39,7 +39,7 @@ internal class VaultBackupServiceImpl @Inject constructor(
     override suspend fun export(
         request: BackupExportRequest
     ): AppResult<Unit> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching("backup.export.${request.format.value}") {
+        AppResult.runSuspendCatching {
             val adapter = formatRegistry.exporter(request.format)
             validatePassword(adapter.requiresPassword, request.password)
             val bundle = backupReader.readBundle(
@@ -65,7 +65,7 @@ internal class VaultBackupServiceImpl @Inject constructor(
     override suspend fun import(
         request: BackupImportRequest
     ): AppResult<Unit> = withContext(ioDispatcher) {
-        AppResult.runSuspendCatching("backup.import") {
+        AppResult.runSuspendCatching {
             val payload = fileStore.readBytesSafely(request.sourceUri)
             try {
                 val adapter = formatRegistry.importer(request.format, payload)
@@ -83,7 +83,7 @@ internal class VaultBackupServiceImpl @Inject constructor(
     }
 
     override suspend fun checkDirectoryWritable(uri: String): AppResult<Unit> =
-        fileStore.checkWritable(uri)
+        fileStore.checkWritable(uri).onFailure { report(it, "backup.checkWritable") }
 
     private fun validatePassword(required: Boolean, password: CharArray?) {
         if (required && (password == null || password.isEmpty())) throw BackupFailed()
