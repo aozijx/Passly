@@ -2,6 +2,7 @@ package com.aozijx.passly.data.backup.source
 
 import android.content.Context
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
@@ -12,15 +13,16 @@ import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
+import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 import com.aozijx.passly.data.model.entity.EntryAttachmentEntity
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.extractHighSensitivity
 import com.aozijx.passly.domain.entry.model.withoutHighSensitivity
-import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -42,6 +44,7 @@ import javax.inject.Singleton
 class VaultBackupRestorer @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
+    private val databaseCleaner: VaultDatabaseCleaner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec,
@@ -61,14 +64,7 @@ class VaultBackupRestorer @Inject constructor(
         try {
             sessionManager.transaction {
                 if (mode == ImportMode.OVERWRITE) {
-                    val maintenance = vaultMaintenanceDao()
-                    maintenance.clearSearchTokens()
-                    maintenance.clearDrafts()
-                    maintenance.clearAttachments()
-                    maintenance.clearActivities()
-                    maintenance.clearRevisions()
-                    maintenance.clearSecrets()
-                    maintenance.clearEntries()
+                    databaseCleaner.clearVaultData()
                 }
 
                 val orderedRecords = bundle.document.entries.sortedBy {
@@ -113,7 +109,7 @@ class VaultBackupRestorer @Inject constructor(
                     }
                     val iconPath = iconRecord?.let { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])
-                        val iconDir = File(context.filesDir, "vault_images").apply { mkdirs() }
+                        val iconDir = VaultResourcePaths.vaultImagesDir(context).apply { mkdirs() }
                         val target = File(
                             iconDir,
                             "restored_${
@@ -170,7 +166,10 @@ class VaultBackupRestorer @Inject constructor(
                     attachmentResources.forEach { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])
                         val attachmentDir =
-                            File(context.filesDir, "attachments/$entryId").apply { mkdirs() }
+                            File(
+                                context.filesDir,
+                                "${VaultResourcePaths.ATTACHMENTS}/$entryId"
+                            ).apply { mkdirs() }
                         val target = File(attachmentDir, "${resource.id}.enc")
                         val encryptedContent = fieldEncryptor.encrypt(
                             Base64.getEncoder().encodeToString(content),
@@ -217,10 +216,7 @@ class VaultBackupRestorer @Inject constructor(
             if (mode == ImportMode.OVERWRITE) {
                 runCatching {
                     cleanupUnreferencedFiles(
-                        roots = listOf(
-                            File(context.filesDir, "attachments"),
-                            File(context.filesDir, "vault_images")
-                        ),
+                        roots = VaultResourcePaths.resourceDirectories(context),
                         retainedCanonicalPaths = restoredFiles
                     )
                 }.onFailure {

@@ -2,6 +2,7 @@ package com.aozijx.passly.data.backup.source
 
 import android.content.Context
 import com.aozijx.passly.BuildConfig
+import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
@@ -95,7 +96,7 @@ class VaultBackupReader @Inject constructor(
             val attachmentIdsByEntry = mutableMapOf<String, MutableList<String>>()
 
             if (includeIcons) {
-                val iconRoot = File(context.filesDir, "vault_images").canonicalFile
+                val iconRoot = VaultResourcePaths.vaultImagesDir(context).canonicalFile
                 entries.forEach { entry ->
                     entry.iconCustomPath?.let { iconPath ->
                         val iconFile = File(iconPath).canonicalFile
@@ -130,7 +131,7 @@ class VaultBackupReader @Inject constructor(
             }
 
             if (includeAttachments) {
-                val attachmentRoot = File(context.filesDir, "attachments").canonicalFile
+                val attachmentRoot = VaultResourcePaths.attachmentDir(context).canonicalFile
                 entryAttachmentQueryDao().getCommittedByEntryIds(entryIds).forEach { entity ->
                     val payload = AttachmentCipher.decrypt(
                         entity.encryptedBlob,
@@ -140,7 +141,7 @@ class VaultBackupReader @Inject constructor(
                     )
                     val encryptedFile = File(
                         context.filesDir,
-                        "attachments/${entity.entryId}/${entity.attachmentId}.enc"
+                        "${VaultResourcePaths.ATTACHMENTS}/${entity.entryId}/${entity.attachmentId}.enc"
                     ).canonicalFile
                     require(
                         encryptedFile.path.startsWith(

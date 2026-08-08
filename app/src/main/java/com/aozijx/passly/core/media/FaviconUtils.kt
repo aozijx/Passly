@@ -7,6 +7,7 @@ import coil.ImageLoader
 import coil.request.ImageRequest
 import com.aozijx.passly.BuildConfig
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -312,7 +313,7 @@ object FaviconUtils {
 
     private fun saveBitmapToInternalStorage(context: Context, bitmap: Bitmap): String? {
         return try {
-            val directory = File(context.filesDir, "vault_images").apply {
+            val directory = VaultResourcePaths.vaultImagesDir(context).apply {
                 if (!exists()) mkdirs()
             }
 

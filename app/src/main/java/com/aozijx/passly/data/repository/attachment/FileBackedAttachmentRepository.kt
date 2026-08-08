@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.attachment
 
 import android.content.Context
 import com.aozijx.passly.core.error.model.SessionModeRestricted
+import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
@@ -45,7 +46,7 @@ class FileBackedAttachmentRepository @Inject constructor(
 
     /** 附件文件根目录 */
     private val attachmentsDir: File
-        get() = File(context.filesDir, "attachments")
+        get() = VaultResourcePaths.attachmentDir(context)
 
     override suspend fun getAttachments(entryId: String): List<EntryAttachment> =
         if (!sessionState.hasFullVaultAccess()) {

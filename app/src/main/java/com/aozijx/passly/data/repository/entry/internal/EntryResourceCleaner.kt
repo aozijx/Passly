@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.entry.internal
 
 import android.content.Context
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.core.telemetry.EventCategory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -26,10 +27,10 @@ class EntryResourceCleaner @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
     private val attachmentRoot: File
-        get() = File(context.filesDir, ATTACHMENTS_DIRECTORY)
+        get() = VaultResourcePaths.attachmentDir(context)
 
     private val imageRoot: File
-        get() = File(context.filesDir, IMAGES_DIRECTORY)
+        get() = VaultResourcePaths.vaultImagesDir(context)
 
     suspend fun clean(resources: Collection<DeletedEntryResources>) = withContext(Dispatchers.IO) {
         resources
@@ -70,8 +71,6 @@ class EntryResourceCleaner @Inject constructor(
     }
 
     private companion object {
-        const val ATTACHMENTS_DIRECTORY = "attachments"
-        const val IMAGES_DIRECTORY = "vault_images"
         const val FILE_SCHEME = "file://"
     }
 }
