@@ -127,6 +127,7 @@ fun AuthenticationScreen(
 
             if (methods.biometric) {
                 ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Fingerprint,
                     text = stringResource(R.string.auth_biometric_unlock),
                     progress = activeMethod == AuthenticationMethod.BIOMETRIC,
@@ -168,6 +169,7 @@ fun AuthenticationScreen(
 
             if (!methods.biometric && !methods.appPassword && !methods.recoveryCode) {
                 ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Password,
                     text = stringResource(R.string.auth_set_app_password),
                     progress = uiState.isSettingAppPassword,

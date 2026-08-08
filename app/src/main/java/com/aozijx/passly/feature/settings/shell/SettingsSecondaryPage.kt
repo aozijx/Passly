@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.shell
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -38,6 +39,8 @@ internal fun SettingsSecondaryPage(
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
 
+    BackHandler(onBack = onBack)
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -52,13 +55,11 @@ internal fun SettingsSecondaryPage(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 navigationIcon = {
-                    if (!adaptiveLayout.isAtLeastMedium) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
-                            )
-                        }
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 }
             )

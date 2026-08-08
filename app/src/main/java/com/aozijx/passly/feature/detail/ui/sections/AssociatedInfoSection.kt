@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Button
@@ -46,8 +45,8 @@ import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.rememberAppIcon
 import com.aozijx.passly.core.ui.components.rememberAppMetadata
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
+import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun AssociatedInfoSection(
@@ -94,19 +93,10 @@ fun AssociatedInfoSection(
 
         AssociatedAppsCard(
             packageNames = entry.website?.packageNames.orEmpty().sorted(),
-            editing = editState.isEditingPackage,
-            editedValue = editState.editedPackage,
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                editState.editedPackage = entry.associatedAppPackage.orEmpty()
-                editState.isEditingPackage = true
-            },
-            onValueChange = { editState.editedPackage = it },
-            onSave = {
-                saveAssociated(entry, editState, onEntryUpdated)
-                editState.isEditingPackage = false
-            },
-            onPickPackage = { showPackagePicker = true }
+                showPackagePicker = true
+            }
         )
     }
 
@@ -167,43 +157,17 @@ private fun AssociatedDomainCard(
 @Composable
 private fun AssociatedAppsCard(
     packageNames: List<String>,
-    editing: Boolean,
-    editedValue: String,
     onLongClick: () -> Unit,
-    onValueChange: (String) -> Unit,
-    onSave: () -> Unit,
-    onPickPackage: () -> Unit
 ) {
     InfoGroupCard(title = stringResource(R.string.vault_detail_associated_package)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(
-                    if (editing) Modifier
-                    else Modifier.combinedClickable(onLongClick = onLongClick, onClick = {})
-                )
+                .combinedClickable(onLongClick = onLongClick, onClick = {})
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (editing) {
-                PasslyOutlinedTextField(
-                    value = editedValue,
-                    onValueChange = onValueChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = stringResource(R.string.vault_detail_associated_package),
-                    singleLine = true
-                )
-                TextButton(onClick = onPickPackage) {
-                    Icon(Icons.Default.Apps, null)
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.app_package_picker_action))
-                }
-                TextButton(onClick = onSave, modifier = Modifier.align(Alignment.End)) {
-                    Icon(Icons.Default.Check, null)
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.save))
-                }
-            } else if (packageNames.isEmpty()) {
+            if (packageNames.isEmpty()) {
                 Text(
                     text = stringResource(R.string.not_set),
                     style = MaterialTheme.typography.bodyLarge,

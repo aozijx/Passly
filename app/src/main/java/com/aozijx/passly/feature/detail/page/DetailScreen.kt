@@ -14,11 +14,11 @@ import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.ui.DetailScrollableContent
-import com.aozijx.passly.feature.detail.ui.DetailTopBar
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
+import com.aozijx.passly.feature.detail.ui.DetailScrollableContent
+import com.aozijx.passly.feature.detail.ui.DetailTopBar
 import com.aozijx.passly.feature.vault.model.OtpUiState
 
 /**
@@ -33,7 +33,6 @@ fun DetailScreen(
     uiState: DetailUiState,
     otpUiState: OtpUiState?,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
-    onBack: () -> Unit,
     onEvent: (DetailIntent) -> Unit,
     onUpdateInteraction: () -> Unit,
     onAutoUnlockTotp: (VaultEntry) -> Unit,
@@ -86,7 +85,6 @@ fun DetailScreen(
                 uiState = uiState,
                 scrollBehavior = scrollBehavior,
                 onEvent = onEvent,
-                onBack = onBack,
                 onInteraction = onUpdateInteraction
             )
         }

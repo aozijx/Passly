@@ -19,11 +19,11 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
-import com.aozijx.passly.feature.detail.DetailViewModel
+import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
+import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.page.DetailScreen
@@ -182,7 +182,6 @@ fun PasslyNavHost(
                     initialEntry = entry,
                     uiState = detailUiState,
                     otpUiState = currentOtpState,
-                    onBack = { navController.popBackStack() },
                     onEvent = detailViewModel::handleIntent,
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
                     onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
