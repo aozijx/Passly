@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.settings.appearance.Pickers
+package com.aozijx.passly.feature.settings.appearance.pickers
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

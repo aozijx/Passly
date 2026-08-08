@@ -31,8 +31,8 @@ import com.aozijx.passly.core.ui.theme.themePresetByColor
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.feature.settings.appearance.Pickers.LanguagePicker
-import com.aozijx.passly.feature.settings.appearance.Pickers.ThemePicker
+import com.aozijx.passly.feature.settings.appearance.pickers.LanguagePicker
+import com.aozijx.passly.feature.settings.appearance.pickers.ThemePicker
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
