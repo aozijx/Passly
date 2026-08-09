@@ -28,7 +28,10 @@ internal object PasswordEntryFactory {
             username = state.username.trim(),
             website = state.website.trim()
                 .takeIf(String::isNotEmpty)
-                ?.let { WebsiteInfo(primaryUrl = it) }
+                ?.let { WebsiteInfo(primaryUrl = it) },
+            tags = state.tags.split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
         ),
         secret = EntrySecret(
             login = LoginSecret(password = state.password),

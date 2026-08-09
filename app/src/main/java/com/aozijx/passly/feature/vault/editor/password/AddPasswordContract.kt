@@ -6,6 +6,7 @@ data class AddPasswordFormState(
     val password: String = "",
     val website: String = "",
     val notes: String = "",
+    val tags: String = "",
     val isPasswordVisible: Boolean = false
 ) {
     val isValid: Boolean

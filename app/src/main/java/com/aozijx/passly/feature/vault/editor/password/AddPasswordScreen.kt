@@ -18,6 +18,7 @@ import com.aozijx.passly.feature.vault.editor.common.CreateEntryEffect
 import com.aozijx.passly.feature.vault.editor.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.editor.common.EntryNotesField
 import com.aozijx.passly.feature.vault.editor.common.EntryPasswordField
+import com.aozijx.passly.feature.vault.editor.common.EntryTagsField
 import com.aozijx.passly.feature.vault.editor.common.EntryTitleField
 import com.aozijx.passly.feature.vault.editor.common.EntryUsernameField
 import com.aozijx.passly.feature.vault.editor.common.EntryWebsiteField
@@ -84,6 +85,10 @@ fun AddPasswordScreen(
                 onUserInteraction()
                 viewModel.updateNotes(it)
             },
+            onTagsChange = {
+                onUserInteraction()
+                viewModel.updateTags(it)
+            },
             onSave = {
                 keyboardController?.hide()
                 viewModel.save()
@@ -101,6 +106,7 @@ private fun PasswordForm(
     onPasswordVisibilityChange: (Boolean) -> Unit,
     onWebsiteChange: (String) -> Unit,
     onNotesChange: (String) -> Unit,
+    onTagsChange: (String) -> Unit,
     onSave: () -> Unit
 ) {
     EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
@@ -126,6 +132,11 @@ private fun PasswordForm(
     }
 
     EntryEditorSection(title = stringResource(R.string.vault_editor_section_details)) {
+        EntryTagsField(
+            value = state.tags,
+            onValueChange = onTagsChange,
+            label = stringResource(R.string.entry_category)
+        )
         EntryWebsiteField(
             value = state.website,
             onValueChange = onWebsiteChange,

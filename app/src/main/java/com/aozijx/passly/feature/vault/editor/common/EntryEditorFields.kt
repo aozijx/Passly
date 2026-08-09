@@ -203,3 +203,19 @@ fun EntryNotesField(
         maxLines = 8
     )
 }
+
+@Composable
+fun EntryTagsField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    EntryEditorTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = label,
+        modifier = modifier,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+    )
+}

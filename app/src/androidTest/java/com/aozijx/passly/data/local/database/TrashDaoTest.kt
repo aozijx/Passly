@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -83,6 +84,8 @@ class TrashDaoTest {
 
     private fun entry(id: String) = EntryEntity(
         entryId = id,
+        vaultId = "default",
+        entryType = EntryType.LOGIN,
         summaryBlob = byteArrayOf(1, 2, 3)
     )
 }

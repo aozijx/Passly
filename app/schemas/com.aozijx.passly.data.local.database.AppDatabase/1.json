@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "c5e3738d60e560cf79c1cde320fbeabb",
+    "identityHash": "83dfd8539d2ef729d139401edc8184d6",
     "entities": [
       {
         "tableName": "vault_entries",
@@ -161,8 +161,7 @@
           {
             "fieldPath": "highSensitivityBlob",
             "columnName": "highSensitivityBlob",
-            "affinity": "BLOB",
-            "notNull": false
+            "affinity": "BLOB"
           }
         ],
         "primaryKey": {
@@ -622,7 +621,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c5e3738d60e560cf79c1cde320fbeabb')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '83dfd8539d2ef729d139401edc8184d6')"
     ]
   }
 }

@@ -23,6 +23,7 @@ enum class EntryType {
 
     companion object {
         fun fromName(name: String): EntryType =
-            entries.find { it.name == name } ?: LOGIN
+            entries.find { it.name == name }
+                ?: throw IllegalArgumentException("Unknown EntryType: $name")
     }
 }

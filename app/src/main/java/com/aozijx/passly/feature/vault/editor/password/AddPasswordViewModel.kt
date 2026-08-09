@@ -23,6 +23,7 @@ class AddPasswordViewModel @Inject constructor(
     fun updatePassword(value: String) = mutateForm { it.copy(password = value) }
     fun updateWebsite(value: String) = mutateForm { it.copy(website = value) }
     fun updateNotes(value: String) = mutateForm { it.copy(notes = value) }
+    fun updateTags(value: String) = mutateForm { it.copy(tags = value) }
     fun setPasswordVisible(visible: Boolean) =
         mutateForm { it.copy(isPasswordVisible = visible) }
 }
