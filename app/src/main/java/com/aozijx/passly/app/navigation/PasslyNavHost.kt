@@ -34,6 +34,7 @@ import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardScreen
 import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.feature.vault.editor.otp.AddOtpScreen
@@ -184,7 +185,11 @@ fun PasslyNavHost(
             LaunchedEffect(detailViewModel) {
                 detailViewModel.effects.collectLatest { effect ->
                     when (effect) {
-                        is DetailEffect.EntryUpdated -> vaultViewModel.updateVaultEntry(effect.entry)
+                        is DetailEffect.EntryUpdated -> vaultViewModel.onIntent(
+                            VaultIntent.UpdateVaultEntry(
+                                effect.entry
+                            )
+                        )
                     }
                 }
             }
@@ -206,7 +211,7 @@ fun PasslyNavHost(
                     otpUiState = currentOtpState,
                     onEvent = detailViewModel::handleIntent,
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
-                    onAutoUnlockTotp = { vaultViewModel.autoUnlockTotp(it.id) },
+                    onAutoUnlockTotp = { vaultViewModel.onIntent(VaultIntent.AutoUnlockTotp(it.id)) },
                     onOpenRelatedEntry = {
                         navController.navigate(AppRoute.Detail.createRoute(it.id))
                     },

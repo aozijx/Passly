@@ -50,7 +50,7 @@ internal fun NotificationDetail(
         when (result) {
             PermissionRequestOutcome.Granted -> {
                 if (viewModel.systemNotificationsAvailableNow()) {
-                    viewModel.onIntent(NotificationSettingsIntent.SetSystemNotificationsEnabled(true))
+                    viewModel.setSystemNotificationsEnabled(true)
                 } else {
                     publishPermissionDeniedNotice()
                     openSystemNotificationSettings()
@@ -64,7 +64,7 @@ internal fun NotificationDetail(
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onIntent(NotificationSettingsIntent.RefreshSystemNotificationState)
+                viewModel.refreshSystemNotificationState()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -79,22 +79,14 @@ internal fun NotificationDetail(
             state = state,
             onSystemNotificationsEnabledChange = { enabled ->
                 if (!enabled) {
-                    viewModel.onIntent(
-                        NotificationSettingsIntent.SetSystemNotificationsEnabled(
-                            false
-                        )
-                    )
+                    viewModel.setSystemNotificationsEnabled(false)
                     return@NotificationSettingsSection
                 }
                 when (permissionHost.status(RuntimePermission.POST_NOTIFICATIONS)) {
                     PermissionStatus.GRANTED,
                     PermissionStatus.NOT_APPLICABLE -> {
                         if (viewModel.systemNotificationsAvailableNow()) {
-                            viewModel.onIntent(
-                                NotificationSettingsIntent.SetSystemNotificationsEnabled(
-                                    true
-                                )
-                            )
+                            viewModel.setSystemNotificationsEnabled(true)
                         } else {
                             publishPermissionDeniedNotice()
                             openSystemNotificationSettings()
@@ -107,11 +99,7 @@ internal fun NotificationDetail(
                             PermissionRequestStart.AlreadyGranted,
                             PermissionRequestStart.NotApplicable -> {
                                 if (viewModel.systemNotificationsAvailableNow()) {
-                                    viewModel.onIntent(
-                                        NotificationSettingsIntent.SetSystemNotificationsEnabled(
-                                            true
-                                        )
-                                    )
+                                    viewModel.setSystemNotificationsEnabled(true)
                                 } else {
                                     publishPermissionDeniedNotice()
                                     openSystemNotificationSettings()
@@ -125,17 +113,8 @@ internal fun NotificationDetail(
                 }
             },
             onOpenSystemNotificationSettings = ::openSystemNotificationSettings,
-            onOptionalMessagesEnabledChange = { enabled ->
-                viewModel.onIntent(NotificationSettingsIntent.SetOptionalMessagesEnabled(enabled))
-            },
-            onTopicEnabledChange = { topic, enabled ->
-                viewModel.onIntent(
-                    NotificationSettingsIntent.SetMessageTopicEnabled(
-                        topic,
-                        enabled
-                    )
-                )
-            }
+            onOptionalMessagesEnabledChange = viewModel::setOptionalMessagesEnabled,
+            onTopicEnabledChange = viewModel::setMessageTopicEnabled
         )
     }
 }

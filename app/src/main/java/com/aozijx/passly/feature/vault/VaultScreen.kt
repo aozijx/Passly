@@ -38,6 +38,7 @@ import com.aozijx.passly.feature.vault.components.fab.VaultFab
 import com.aozijx.passly.feature.vault.components.list.VaultPagerContent
 import com.aozijx.passly.feature.vault.components.topbar.VaultTopBar
 import com.aozijx.passly.feature.vault.contract.VaultEffect
+import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.display.VaultDisplayViewModel
 import com.aozijx.passly.feature.vault.model.AddType
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -71,7 +72,7 @@ fun VaultContent(
     var isFabVisible by remember { mutableStateOf(true) }
 
     BackHandler(enabled = uiState.isSearchActive) {
-        vaultViewModel.toggleSearch(false)
+        vaultViewModel.onIntent(VaultIntent.SearchToggled(false))
     }
 
     val actionProvider = rememberVaultActionProvider(
@@ -94,7 +95,7 @@ fun VaultContent(
     LaunchedEffect(uiState.visibleQuickFilters, uiState.selectedQuickFilter) {
         if (uiState.visibleQuickFilters.isEmpty()) return@LaunchedEffect
         if (uiState.selectedQuickFilter !in uiState.visibleQuickFilters) {
-            vaultViewModel.selectQuickFilter(uiState.visibleQuickFilters.first())
+            vaultViewModel.onIntent(VaultIntent.QuickFilterSelected(uiState.visibleQuickFilters.first()))
             return@LaunchedEffect
         }
         val targetIndex = uiState.visibleQuickFilters.indexOf(uiState.selectedQuickFilter)
@@ -106,7 +107,7 @@ fun VaultContent(
     LaunchedEffect(pagerState, uiState.visibleQuickFilters) {
         snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { page ->
             val newQuickFilter = uiState.visibleQuickFilters.getOrNull(page) ?: return@collect
-            vaultViewModel.selectQuickFilter(newQuickFilter)
+            vaultViewModel.onIntent(VaultIntent.QuickFilterSelected(newQuickFilter))
         }
     }
 
@@ -176,13 +177,25 @@ fun VaultContent(
                     isStatusBarAutoHide = vaultDisplayConfig.layout.hideSystemBars,
                     isTopBarCollapsible = vaultDisplayConfig.layout.collapseTopBarOnScroll,
                     isQuickFilterBarCollapsible = vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
-                    onSearchQueryChange = { vaultViewModel.onSearchQueryChange(it) },
-                    onToggleSearch = { vaultViewModel.toggleSearch(it) },
-                    onClearCategory = { vaultViewModel.clearSelectedCategory() },
-                    onToggleTotpVisibility = { vaultViewModel.toggleShowTOTPCode() },
-                    onCategorySelected = { vaultViewModel.setSelectedCategory(it) },
-                    onSortSelected = { vaultViewModel.selectSortOption(it) },
-                    onSelectQuickFilter = { vaultViewModel.selectQuickFilter(it) }
+                    onSearchQueryChange = {
+                        vaultViewModel.onIntent(
+                            VaultIntent.SearchQueryChanged(
+                                it
+                            )
+                        )
+                    },
+                    onToggleSearch = { vaultViewModel.onIntent(VaultIntent.SearchToggled(it)) },
+                    onClearCategory = { vaultViewModel.onIntent(VaultIntent.ClearCategory) },
+                    onToggleTotpVisibility = { vaultViewModel.onIntent(VaultIntent.ToggleShowTotpCode) },
+                    onCategorySelected = { vaultViewModel.onIntent(VaultIntent.CategorySelected(it)) },
+                    onSortSelected = { vaultViewModel.onIntent(VaultIntent.SortOptionSelected(it)) },
+                    onSelectQuickFilter = {
+                        vaultViewModel.onIntent(
+                            VaultIntent.QuickFilterSelected(
+                                it
+                            )
+                        )
+                    }
                 )
 
                 if (uiState.isVaultItemsLoading || isDatabaseInitializing) {
@@ -201,7 +214,7 @@ fun VaultContent(
                         AddType.PASSWORD -> onAddPassword()
                         AddType.TOTP -> onAddOtp()
                         AddType.BANK_CARD -> onAddBankCard()
-                        else -> vaultViewModel.setAddType(type)
+                        else -> vaultViewModel.onIntent(VaultIntent.AddTypeSelected(type))
                     }
                 },
                 sharedTransitionScope = sharedTransitionScope,

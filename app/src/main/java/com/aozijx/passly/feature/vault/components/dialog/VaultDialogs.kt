@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.components.dialog
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.components.editor.AddEntryDialog
+import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -46,8 +47,8 @@ fun DeleteDialogHost(
         DeleteConfirmDialog(
             item = item,
             requestAuthentication = requestAuthentication,
-            onConfirm = { vaultViewModel.confirmDelete() },
-            onDismiss = { vaultViewModel.setItemToDelete(null) }
+            onConfirm = { vaultViewModel.onIntent(VaultIntent.ConfirmDelete) },
+            onDismiss = { vaultViewModel.onIntent(VaultIntent.ItemToDeleteSelected(null)) }
         )
     }
 }

@@ -26,6 +26,7 @@ import com.aozijx.passly.domain.settings.command.SettingsCommand
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.vault.contract.VaultEffect
+import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.entry.EntryManager
 import com.aozijx.passly.feature.vault.list.SearchFilterState
@@ -119,7 +120,7 @@ class VaultViewModel @Inject constructor(
 
     private val _showTOTPCode = MutableStateFlow(true)
 
-    fun addScannedOtp(config: OtpConfig) {
+    private fun addScannedOtp(config: OtpConfig) {
         if (!ensureFullVaultAccess("恢复模式不能保存 OTP")) return
         try {
             val title = buildString {
@@ -207,35 +208,79 @@ class VaultViewModel @Inject constructor(
         VaultUiState()
     )
 
-    // --- 操作方法 ---
-    fun onSearchQueryChange(q: String) = searchFilter.updateSearchQuery(q)
-    fun setSelectedCategory(category: String?) =
-        searchFilter.updateSelectedCategory(category)
-    fun clearSelectedCategory() = setSelectedCategory(null)
-    fun selectSortOption(sort: VaultSortSpec) {
+    // --- onIntent 统一入口 ---
+    fun onIntent(intent: VaultIntent) {
+        when (intent) {
+            is VaultIntent.SearchQueryChanged -> searchFilter.updateSearchQuery(intent.query)
+            is VaultIntent.CategorySelected -> searchFilter.updateSelectedCategory(intent.category)
+            VaultIntent.ClearCategory -> searchFilter.updateSelectedCategory(null)
+            is VaultIntent.SortOptionSelected -> selectSortOption(intent.sort)
+            is VaultIntent.QuickFilterSelected -> searchFilter.updateSelectedQuickFilter(intent.filter)
+            is VaultIntent.SearchToggled -> searchFilter.toggleSearch(intent.active)
+            VaultIntent.ToggleShowTotpCode -> toggleShowTOTPCode()
+            is VaultIntent.AddTypeSelected -> setAddType(intent.type)
+            is VaultIntent.ItemToDeleteSelected -> setItemToDelete(intent.item)
+            VaultIntent.ConfirmDelete -> confirmDelete()
+            is VaultIntent.QuickDelete -> quickDelete(intent.item)
+            is VaultIntent.AddItem -> addItem(intent.entry)
+            is VaultIntent.UpdateVaultEntry -> updateVaultEntry(intent.entry)
+            is VaultIntent.AddScannedOtp -> addScannedOtp(intent.config)
+            is VaultIntent.AutoUnlockTotp -> autoUnlockTotp(intent.entryId)
+        }
+    }
+
+    private fun selectSortOption(sort: VaultSortSpec) {
         searchFilter.updateSelectedSort(sort)
         viewModelScope.launch { settingsRepository.update(SettingsCommand.SetVaultSortOption(sort)) }
     }
-    fun selectQuickFilter(quickFilter: VaultQuickFilter) =
-        searchFilter.updateSelectedQuickFilter(quickFilter)
 
-    fun toggleSearch(active: Boolean) = searchFilter.toggleSearch(active)
-    fun toggleShowTOTPCode() {
+    private fun toggleShowTOTPCode() {
         _showTOTPCode.value = !_showTOTPCode.value
     }
 
-    fun setAddType(type: AddType?) {
+    private fun setAddType(type: AddType?) {
         if (type != null && !ensureFullVaultAccess("当前会话不能新建条目")) return
         _dialogState.value = _dialogState.value.copy(addType = type)
     }
 
-    fun setItemToDelete(item: EntryListItem?) {
+    private fun setItemToDelete(item: EntryListItem?) {
         _dialogState.value = _dialogState.value.copy(pendingDelete = item)
     }
 
-    fun autoUnlockTotp(entryId: String) {
+    private fun autoUnlockTotp(entryId: String) {
         if (accessPolicy.hasFullAccess()) {
             totp.autoUnlock(entryId)
+        }
+    }
+
+    fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) =
+        viewModelScope.launch {
+            if (!accessPolicy.hasFullAccess()) return@launch
+            entryQueryRepository.getByIdWithoutHighSensitivity(entryId)?.let(onLoaded)
+        }
+
+    private fun addItem(entry: VaultEntry) {
+        if (!ensureFullVaultAccess("当前会话不能新建条目")) return
+        entryManager.addItem(entry, onComplete = { setAddType(null) })
+    }
+
+    private fun updateVaultEntry(entry: VaultEntry) {
+        if (!ensureFullVaultAccess("当前会话不能修改条目")) return
+        entryManager.updateEntry(entry)
+    }
+
+    private fun quickDelete(item: EntryListItem) {
+        if (!ensureFullVaultAccess("当前会话不能删除条目")) return
+        entryManager.deleteEntryById(item.id)
+    }
+
+    private fun confirmDelete() {
+        if (!ensureFullVaultAccess("当前会话不能删除条目")) return
+        val item = _dialogState.value.pendingDelete ?: return
+        viewModelScope.launch {
+            if (!accessPolicy.hasFullAccess()) return@launch
+            val entry = entryQueryRepository.getByIdWithoutHighSensitivity(item.id) ?: return@launch
+            entryManager.deleteEntry(entry)
         }
     }
 
@@ -260,38 +305,6 @@ class VaultViewModel @Inject constructor(
             vaultDataRefreshNotifier.events.collect {
                 requestFullReload()
             }
-        }
-    }
-
-    fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) =
-        viewModelScope.launch {
-            if (!accessPolicy.hasFullAccess()) return@launch
-            entryQueryRepository.getByIdWithoutHighSensitivity(entryId)?.let(onLoaded)
-        }
-
-    // --- 条目操作委托 ---
-    fun addItem(entry: VaultEntry) {
-        if (!ensureFullVaultAccess("当前会话不能新建条目")) return
-        entryManager.addItem(entry, onComplete = { setAddType(null) })
-    }
-
-    fun updateVaultEntry(entry: VaultEntry) {
-        if (!ensureFullVaultAccess("当前会话不能修改条目")) return
-        entryManager.updateEntry(entry)
-    }
-
-    fun quickDelete(item: EntryListItem) {
-        if (!ensureFullVaultAccess("当前会话不能删除条目")) return
-        entryManager.deleteEntryById(item.id)
-    }
-
-    fun confirmDelete() {
-        if (!ensureFullVaultAccess("当前会话不能删除条目")) return
-        val item = _dialogState.value.pendingDelete ?: return
-        viewModelScope.launch {
-            if (!accessPolicy.hasFullAccess()) return@launch
-            val entry = entryQueryRepository.getByIdWithoutHighSensitivity(item.id) ?: return@launch
-            entryManager.deleteEntry(entry)
         }
     }
 

@@ -9,6 +9,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.ui.components.AppDialog
 import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.model.AddType
 
 @Composable
@@ -25,12 +26,12 @@ fun AddEntryDialog(
 
     AppDialog(
         title = stringResource(R.string.vault_add_generic_title, typeLabel),
-        onDismiss = { viewModel.setAddType(null) },
+        onDismiss = { viewModel.onIntent(VaultIntent.AddTypeSelected(null)) },
         confirmEnabled = state.canSave,
         onConfirm = {
             try {
-                viewModel.addItem(schema.toVaultEntry(state))
-                viewModel.setAddType(null)
+                viewModel.onIntent(VaultIntent.AddItem(schema.toVaultEntry(state)))
+                viewModel.onIntent(VaultIntent.AddTypeSelected(null))
             } catch (e: Exception) {
                 AppTelemetry.e("AddEntryDialog", "Failed to save", e)
                 Toast.makeText(context, saveFailedMessage, Toast.LENGTH_SHORT).show()

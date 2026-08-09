@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.model.OtpUiState
 import kotlinx.coroutines.flow.StateFlow
 
@@ -90,7 +91,7 @@ fun rememberVaultActionProvider(
                     latestReauthentication(ok)
                 },
                 onCopyAuthRequired = { ok -> latestSensitiveCopy(ok) },
-                onQuickDelete = { vaultViewModel.quickDelete(it) },
+                onQuickDelete = { vaultViewModel.onIntent(VaultIntent.QuickDelete(it)) },
                 onCopy = { fieldKey -> performCopy(fieldKey, item) },
                 onShowDetail = onShowDetail
             )

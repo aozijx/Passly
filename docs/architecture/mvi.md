@@ -1,25 +1,69 @@
 # MVI 架构与命名
 
-本文档定义 Passly 页面层的 MVI 分级、命名和边界。目标是让页面代码可以按同一模式扩展，而不是把状态、事件、UI 组件和业务编排混在一个文件里。
+本文档定义 Passly 页面层的单向数据流分级、命名和边界。目标是让页面代码可以按复杂度选择合适的模式，而不是强制所有页面使用同一套模板。
 
-## 标准目录
+## 核心原则
 
-具备业务状态的功能优先使用以下目录：
+MVI 真正有价值的部分是：**单一状态源 + 单向数据流 + 明确的异步结果处理 + 副作用归属**。不是必须有
+Intent.kt、Effect.kt、Reducer.kt 四件套。
+
+## 分级架构
+
+| 页面类型                 | 建议模式                                | 示例                                         |
+|----------------------|-------------------------------------|--------------------------------------------|
+| 纯展示页面                | Stateless Compose                   | 关于页面、静态说明                                  |
+| Repository Flow 直接投影 | 简单 UDF（UiState + 语义化方法）             | Appearance、Interface、Notification Settings |
+| 有少量操作但无状态机           | UiState + 语义化方法                     | 开关、排序、单项设置                                 |
+| 多异步来源、复杂交互           | 完整 MVI（UiState + UiAction + Effect） | Auth、Vault、Backup、Recovery                 |
+| 复杂状态转换               | MVI + Mutation + Reducer            | Vault 列表、备份流程、认证流程                         |
+
+判断标准是**状态复杂度**，而不是事件数量。两个事件但每个都是简单的 Repository 投影，不需要完整 MVI。
+
+## 简单 UDF 模式（推荐用于大多数 Settings 页面）
+
+每个 ViewModel 方法直接对应一个 Repository 命令：
+
+```kotlin
+@HiltViewModel
+class AppearanceSettingsViewModel @Inject constructor(
+    private val settingsRepository: AppSettingsRepository,
+) : ViewModel() {
+    val uiState: StateFlow<AppearanceUiState> = settingsRepository.settings
+        .map { it.toUiState() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppearanceUiState())
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch {
+            settingsRepository.update(SettingsCommand.SetThemeMode(mode))
+        }
+    }
+}
+```
+
+数据流：UI 调用命令 -> Repository 更新 -> Flow 发出新状态 -> UI 重绘。这不违反单向数据流。
+
+## 完整 MVI 模式（用于复杂页面）
+
+当页面有输入状态、敏感数据清理、异步认证、并发限制、失败状态和多种交互路径时，使用完整 MVI。
+
+### 标准目录
 
 ```text
 feature/<feature>/
   contract/
     <Feature>UiState.kt
-    <Feature>Intent.kt
-    <Feature>Effect.kt
+    <Feature>UiAction.kt       # 复杂页面才有
+    <Feature>Effect.kt         # 有一次性副作用时才有
   presentation/
     <Feature>ViewModel.kt
+    <Feature>Reducer.kt        # 复杂状态机才有
   ui/
     <Feature>Screen.kt
+    <Feature>Content.kt
     components/
 ```
 
-职责划分：
+### 职责划分
 
 | 目录 | 职责 | 不应该包含 |
 | --- | --- | --- |
@@ -29,97 +73,97 @@ feature/<feature>/
 | `ui/components` | 只服务当前 feature 的小组件 | 全局通用 UI token |
 | `core/ui/components` | 跨 feature 复用组件 | feature 专属文案和业务判断 |
 
-简单页面可以暂时保留扁平文件，但只要出现以下任一情况，就应拆成标准目录：
-
-- 状态字段超过一个纯展示值；
-- 有两个以上用户事件；
-- 需要收集一次性导航、Toast、Snackbar、文件选择或权限结果；
-- 页面里开始出现业务判断、认证边界或数据提交逻辑。
-
-## 命名规则
+### 命名规则
 
 - 页面状态命名为 `<Feature>UiState`。
-- 用户事件命名为 `<Feature>Intent`，事件名使用用户动作或系统输入，例如 `PasswordChanged`、`SubmitClicked`、`BackPressed`。
-- 一次性副作用命名为 `<Feature>Effect`，例如 `NavigateBack`、`ShowSnackbar`、`LaunchFilePicker`。
+- 用户事件命名为 `<Feature>UiAction`（避免与 Android Intent 混淆），事件名使用用户动作或系统输入。
+- 一次性副作用命名为 `<Feature>Effect`。
 - ViewModel 命名为 `<Feature>ViewModel`，只暴露不可变 `StateFlow` / `SharedFlow`。
 - Screen 命名为 `<Feature>Screen`，Content 命名为 `<Feature>Content`。
 
-## Contract 边界
+### Contract 边界
 
-`UiState` 只能表达“当前 UI 如何渲染”：
+`UiState` 只能表达"当前 UI 如何渲染"：
 
 - 可以包含页面 loading、展开项、错误类型、当前输入值和选择项；
 - 不包含 `Context`、`NavController`、`ViewModel`、DAO、Repository；
-- 不保存长期敏感明文。确实需要临时密码输入时，使用项目已有安全字符串类型，并在 ViewModel 清理。
+- 不保存长期敏感明文。
 
-`Intent` 只能表达“UI 或宿主告诉 ViewModel 发生了什么”：
+`UiAction` 只能表达"UI 或宿主告诉 ViewModel 发生了什么"：
 
 - 不传 lambda；
 - 不传 Compose 类型；
 - 不传已经格式化的 UI 文案；
 - 可以传用户输入原始值、选中的枚举、返回手势等事件。
 
-`Effect` 只能表达“一次性外部动作”：
+`Effect` 只能表达"一次性外部动作"：
 
 - 导航、Toast、Snackbar、打开文件选择器、请求权限属于 effect；
 - 可枚举结果必须使用 typed effect，不用裸字符串；
 - 固定 UI 文案在 UI 层用资源映射，ViewModel 不硬编码中文。
 
-## ViewModel 边界
+### ViewModel 边界
 
 ViewModel 是页面状态机，不是 UI 容器，也不是数据库编排层：
 
-- 统一入口使用 `onIntent(intent)`；
+- 统一入口使用 `onAction(action)`；
 - 持有私有 `MutableStateFlow`，向外暴露 `StateFlow`；
 - 有一次性事件时，持有私有 `MutableSharedFlow`，向外暴露 `SharedFlow`；
 - 只依赖 domain usecase、repository 接口、policy、service；
 - 不直接依赖 DAO、Room entity、Compose、`NavController`；
 - 不把认证、恢复模式、敏感字段读取的判断散落在 UI 中，优先进入 policy / usecase。
 
-## Reducer（纯函数状态转换）
+### Reducer（可选，复杂状态机才创建）
 
-当状态转换逻辑足够简单且可测试时，可以提取为纯函数 Reducer：
+当状态转换满足以下条件时，提取为 Reducer：
+
+- 状态分支较多（5+ 个 UiState 字段）；
+- 多种异步结果汇入同一状态；
+- 有非法状态转换需要阻止；
+- 需要大量 reducer 单测；
+- ViewModel 已经被状态转换代码淹没。
+
+否则放在 ViewModel 文件底部即可，甚至不需要 reducer。
 
 ```kotlin
-// core/architecture/Reducer.kt
-fun interface Reducer<S, I> {
-    fun reduce(state: S, intent: I): S
+// 放在 ViewModel 文件底部或独立 Reducer.kt
+private fun reduce(
+    state: ExampleUiState,
+    mutation: ExampleMutation,
+): ExampleUiState = when (mutation) {
+    ExampleMutation.Loading -> state.copy(isLoading = true)
+    is ExampleMutation.Loaded -> state.copy(
+        isLoading = false,
+        items = mutation.items,
+    )
+    is ExampleMutation.Failed -> state.copy(
+        isLoading = false,
+        error = mutation.error,
+    )
 }
 ```
 
-使用场景：
+Reducer 消费 Mutation/Result，不直接消费 UiAction。UiAction 可能触发数据库、认证、加密等异步操作，不一定能直接产生新状态。
 
-- 状态字段都是简单值类型（Boolean、String、枚举），无异步操作；
-- 需要单元测试验证状态转换正确性；
-- 多个 Intent 共享相同的状态转换模式。
+### 完整 MVI 数据流
 
-使用方式：
-
-```kotlin
-class ExampleViewModel : ViewModel() {
-    private val reducer = Reducer<ExampleUiState, ExampleIntent> { state, intent ->
-        when (intent) {
-            is ExampleIntent.SearchQueryChanged -> state.copy(searchQuery = intent.query)
-            is ExampleIntent.FilterSelected -> state.copy(activeFilter = intent.filter)
-        }
-    }
-
-    private val _uiState = MutableStateFlow(ExampleUiState())
-    val uiState: StateFlow<ExampleUiState> = _uiState.asStateFlow()
-
-    fun onIntent(intent: ExampleIntent) {
-        _uiState.update { reducer.reduce(it, intent) }
-    }
-}
+```
+UiAction
+   |
+ViewModel / ActionHandler
+   |
+UseCase / Repository
+   |
+Mutation / Result
+   |
+Reducer
+   |
+UiState
 ```
 
-何时不需要 Reducer：
+Effect 处理导航、文件选择、权限等一次性平台动作，不经过 Reducer。
 
-- 意图需要异步操作（数据库、网络、加密）—— 在 ViewModel.onIntent 中直接处理；
-- 状态转换依赖外部 Flow（如 repository 订阅）—— 使用 combine/flatMapLatest；
-- 状态字段包含敏感数据需要生命周期管理 —— ViewModel 需要手动清理。
-
-## Compose 边界
+### Compose 边界
 
 页面级 `Screen` 可以拿 ViewModel 并收集状态：
 
@@ -134,7 +178,7 @@ fun ExampleScreen(
 
     ExampleContent(
         state = state,
-        onIntent = viewModel::onIntent,
+        onAction = viewModel::onAction,
         modifier = modifier,
     )
 }
@@ -146,22 +190,16 @@ fun ExampleScreen(
 @Composable
 fun ExampleContent(
     state: ExampleUiState,
-    onIntent: (ExampleIntent) -> Unit,
+    onAction: (ExampleUiAction) -> Unit,
     modifier: Modifier = Modifier,
 )
 ```
 
 可复用组件不读取 ViewModel。组件参数应该是稳定、明确、可预览的 UI 输入。
 
-## 当前迁移方向
+## 当前迁移状态
 
-新代码按标准目录创建。旧代码按以下优先级逐步收拢：
-
-1. 先把 `UiState`、`Intent`、`Effect` 从 `presentation` 或 Screen 文件中移到 `contract`。
-2. 再把 ViewModel 留在 `presentation`，屏幕和组件留在 `ui`。
-3. 最后把跨页面通用组件上移到 `core/ui/components`，把 feature 私有组件留在 `feature/<feature>/ui/components`。
-
-认证页已经按此规则整理为：
+认证页已按完整 MVI 整理：
 
 ```text
 feature/auth/
@@ -175,13 +213,24 @@ feature/auth/
     host/
 ```
 
-通知设置作为 MVI 样板页面：
+Vault 已迁移到 onIntent 统一入口：
+
+```text
+feature/vault/
+  contract/
+    VaultIntent.kt
+    VaultUiState.kt
+    VaultEffect.kt
+  VaultViewModel.kt        # onIntent 统一入口
+  VaultScreen.kt
+```
+
+Settings 简单页面使用 UDF 模式（语义化方法 + UiState）：
 
 ```text
 feature/settings/general/
-  NotificationSettingsIntent.kt       (contract)
-  NotificationSettingsUiState.kt      (contract, 即 NotificationSettingsContract.kt)
-  NotificationSettingsViewModel.kt    (presentation)
-  NotificationDetail.kt               (ui)
-  NotificationSettingsSection.kt      (ui/components)
+  NotificationSettingsContract.kt      # UiState
+  NotificationSettingsViewModel.kt     # 语义化方法
+  NotificationDetail.kt                # UI
+  NotificationSettingsSection.kt       # UI 组件
 ```

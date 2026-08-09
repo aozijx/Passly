@@ -21,7 +21,6 @@ class NotificationSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val systemNotificationStateProvider: SystemNotificationStateProvider
 ) : ViewModel() {
-
     private val systemNotificationState = MutableStateFlow(systemNotificationStateProvider.current())
 
     val uiState: StateFlow<NotificationSettingsUiState> = settingsRepository.settings
@@ -41,27 +40,8 @@ class NotificationSettingsViewModel @Inject constructor(
             initialValue = NotificationSettingsUiState()
         )
 
-    fun onIntent(intent: NotificationSettingsIntent) {
-        when (intent) {
-            NotificationSettingsIntent.RefreshSystemNotificationState -> refreshSystemNotificationState()
-            is NotificationSettingsIntent.SetOptionalMessagesEnabled -> setOptionalMessagesEnabled(
-                intent.enabled
-            )
-
-            is NotificationSettingsIntent.SetSystemNotificationsEnabled -> setSystemNotificationsEnabled(
-                intent.enabled
-            )
-
-            is NotificationSettingsIntent.SetMessageTopicEnabled -> setMessageTopicEnabled(
-                intent.topic,
-                intent.enabled
-            )
-
-            is NotificationSettingsIntent.SetMessageTopicMinimumLevel -> setMessageTopicMinimumLevel(
-                intent.topic,
-                intent.level
-            )
-        }
+    fun refreshSystemNotificationState() {
+        readSystemNotificationState()
     }
 
     fun systemNotificationsAvailableNow(): Boolean {
@@ -71,24 +51,19 @@ class NotificationSettingsViewModel @Inject constructor(
             system.channelEnabled
     }
 
-    private fun refreshSystemNotificationState() {
-        readSystemNotificationState()
-    }
-
-    private fun setOptionalMessagesEnabled(enabled: Boolean) = viewModelScope.launch {
+    fun setOptionalMessagesEnabled(enabled: Boolean) = viewModelScope.launch {
         settingsRepository.update(SettingsCommand.SetOptionalMessagesEnabled(enabled))
     }
 
-    private fun setSystemNotificationsEnabled(enabled: Boolean) = viewModelScope.launch {
+    fun setSystemNotificationsEnabled(enabled: Boolean) = viewModelScope.launch {
         settingsRepository.update(SettingsCommand.SetSystemNotificationsEnabled(enabled))
     }
 
-    private fun setMessageTopicEnabled(topic: NoticeTopic, enabled: Boolean) =
-        viewModelScope.launch {
+    fun setMessageTopicEnabled(topic: NoticeTopic, enabled: Boolean) = viewModelScope.launch {
         settingsRepository.update(SettingsCommand.SetMessageTopicEnabled(topic, enabled))
     }
 
-    private fun setMessageTopicMinimumLevel(topic: NoticeTopic, level: NoticeLevel) =
+    fun setMessageTopicMinimumLevel(topic: NoticeTopic, level: NoticeLevel) =
         viewModelScope.launch {
             settingsRepository.update(SettingsCommand.SetMessageTopicMinimumLevel(topic, level))
         }
