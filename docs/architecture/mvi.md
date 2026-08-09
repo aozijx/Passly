@@ -76,6 +76,49 @@ ViewModel 是页面状态机，不是 UI 容器，也不是数据库编排层：
 - 不直接依赖 DAO、Room entity、Compose、`NavController`；
 - 不把认证、恢复模式、敏感字段读取的判断散落在 UI 中，优先进入 policy / usecase。
 
+## Reducer（纯函数状态转换）
+
+当状态转换逻辑足够简单且可测试时，可以提取为纯函数 Reducer：
+
+```kotlin
+// core/architecture/Reducer.kt
+fun interface Reducer<S, I> {
+    fun reduce(state: S, intent: I): S
+}
+```
+
+使用场景：
+
+- 状态字段都是简单值类型（Boolean、String、枚举），无异步操作；
+- 需要单元测试验证状态转换正确性；
+- 多个 Intent 共享相同的状态转换模式。
+
+使用方式：
+
+```kotlin
+class ExampleViewModel : ViewModel() {
+    private val reducer = Reducer<ExampleUiState, ExampleIntent> { state, intent ->
+        when (intent) {
+            is ExampleIntent.SearchQueryChanged -> state.copy(searchQuery = intent.query)
+            is ExampleIntent.FilterSelected -> state.copy(activeFilter = intent.filter)
+        }
+    }
+
+    private val _uiState = MutableStateFlow(ExampleUiState())
+    val uiState: StateFlow<ExampleUiState> = _uiState.asStateFlow()
+
+    fun onIntent(intent: ExampleIntent) {
+        _uiState.update { reducer.reduce(it, intent) }
+    }
+}
+```
+
+何时不需要 Reducer：
+
+- 意图需要异步操作（数据库、网络、加密）—— 在 ViewModel.onIntent 中直接处理；
+- 状态转换依赖外部 Flow（如 repository 订阅）—— 使用 combine/flatMapLatest；
+- 状态字段包含敏感数据需要生命周期管理 —— ViewModel 需要手动清理。
+
 ## Compose 边界
 
 页面级 `Screen` 可以拿 ViewModel 并收集状态：
@@ -130,4 +173,15 @@ feature/auth/
   ui/
     AuthenticationScreen.kt
     host/
+```
+
+通知设置作为 MVI 样板页面：
+
+```text
+feature/settings/general/
+  NotificationSettingsIntent.kt       (contract)
+  NotificationSettingsUiState.kt      (contract, 即 NotificationSettingsContract.kt)
+  NotificationSettingsViewModel.kt    (presentation)
+  NotificationDetail.kt               (ui)
+  NotificationSettingsSection.kt      (ui/components)
 ```

@@ -13,8 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.core.permission.compose.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
@@ -50,7 +50,7 @@ internal fun NotificationDetail(
         when (result) {
             PermissionRequestOutcome.Granted -> {
                 if (viewModel.systemNotificationsAvailableNow()) {
-                    viewModel.setSystemNotificationsEnabled(true)
+                    viewModel.onIntent(NotificationSettingsIntent.SetSystemNotificationsEnabled(true))
                 } else {
                     publishPermissionDeniedNotice()
                     openSystemNotificationSettings()
@@ -64,7 +64,7 @@ internal fun NotificationDetail(
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshSystemNotificationState()
+                viewModel.onIntent(NotificationSettingsIntent.RefreshSystemNotificationState)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -79,14 +79,22 @@ internal fun NotificationDetail(
             state = state,
             onSystemNotificationsEnabledChange = { enabled ->
                 if (!enabled) {
-                    viewModel.setSystemNotificationsEnabled(false)
+                    viewModel.onIntent(
+                        NotificationSettingsIntent.SetSystemNotificationsEnabled(
+                            false
+                        )
+                    )
                     return@NotificationSettingsSection
                 }
                 when (permissionHost.status(RuntimePermission.POST_NOTIFICATIONS)) {
                     PermissionStatus.GRANTED,
                     PermissionStatus.NOT_APPLICABLE -> {
                         if (viewModel.systemNotificationsAvailableNow()) {
-                            viewModel.setSystemNotificationsEnabled(true)
+                            viewModel.onIntent(
+                                NotificationSettingsIntent.SetSystemNotificationsEnabled(
+                                    true
+                                )
+                            )
                         } else {
                             publishPermissionDeniedNotice()
                             openSystemNotificationSettings()
@@ -99,7 +107,11 @@ internal fun NotificationDetail(
                             PermissionRequestStart.AlreadyGranted,
                             PermissionRequestStart.NotApplicable -> {
                                 if (viewModel.systemNotificationsAvailableNow()) {
-                                    viewModel.setSystemNotificationsEnabled(true)
+                                    viewModel.onIntent(
+                                        NotificationSettingsIntent.SetSystemNotificationsEnabled(
+                                            true
+                                        )
+                                    )
                                 } else {
                                     publishPermissionDeniedNotice()
                                     openSystemNotificationSettings()
@@ -113,8 +125,17 @@ internal fun NotificationDetail(
                 }
             },
             onOpenSystemNotificationSettings = ::openSystemNotificationSettings,
-            onOptionalMessagesEnabledChange = viewModel::setOptionalMessagesEnabled,
-            onTopicEnabledChange = viewModel::setMessageTopicEnabled
+            onOptionalMessagesEnabledChange = { enabled ->
+                viewModel.onIntent(NotificationSettingsIntent.SetOptionalMessagesEnabled(enabled))
+            },
+            onTopicEnabledChange = { topic, enabled ->
+                viewModel.onIntent(
+                    NotificationSettingsIntent.SetMessageTopicEnabled(
+                        topic,
+                        enabled
+                    )
+                )
+            }
         )
     }
 }

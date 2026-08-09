@@ -1232,4 +1232,161 @@ class MigrationBoundaryTest {
             "AuthenticationState.Authenticated" in diagnosticsViewModel
         )
     }
+
+    // ============================================================
+    // 阶段 0 — 护栏扩展：跨 Feature 依赖、MVI 入口、文件大小
+    // ============================================================
+
+    @Test
+    fun featuresDoNotImportEachOtherDirectly() {
+        val featureRoots = File("src/main/java/com/aozijx/passly/feature")
+            .listFiles(File::isDirectory) ?: emptyArray()
+        val featureNames = featureRoots.map { it.name }.toSet()
+        val offenders = mutableListOf<String>()
+
+        for (featureDir in featureRoots) {
+            val featureName = featureDir.name
+            val siblingPattern = Regex(
+                """import com\.aozijx\.passly\.feature\.(?!${Regex.escape(featureName)}(?:\.|$))"""
+            )
+            featureDir.walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .filter { siblingPattern.containsMatchIn(it.readText()) }
+                .forEach { offenders.add(it.relativeTo(featureDir).path) }
+        }
+
+        assertTrue(
+            "Feature cross-imports detected (features must not depend on each other): $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun mviViewModelsHaveOnIntentAsSingleEntryPoint() {
+        // ViewModels that have a matching contract (UiState or Intent) must use onIntent
+        val contractDir = File("src/main/java/com/aozijx/passly/feature")
+        val offenders = productionKotlinFiles
+            .filter { "/feature/" in it.invariantSeparatorsPath }
+            .filter { it.name.endsWith("ViewModel.kt") }
+            .filter { viewModelFile ->
+                val featurePath = viewModelFile.parentFile!!
+                val hasContract = featurePath.walkTopDown()
+                    .any { f ->
+                        f.isFile && f.extension == "kt" &&
+                                (f.name.endsWith("Intent.kt") || f.name.endsWith("UiState.kt"))
+                    }
+                hasContract
+            }
+            .filter { viewModelFile ->
+                val text = viewModelFile.readText()
+                "fun onIntent(" !in text && "fun handleIntent(" !in text
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue(
+            "ViewModels with MVI contracts must have onIntent/handleIntent as single entry point: $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun featureViewModelsWithContractDoNotExposePublicStateMutationMethods() {
+        // ViewModels with MVI contracts should only expose onIntent, not individual setter methods
+        val publicMethodPattern =
+            Regex("""(?m)^\s+(fun\s+(set|update|toggle|on|refresh|clear)\w+)""")
+        val offenders = productionKotlinFiles
+            .filter { "/feature/" in it.invariantSeparatorsPath }
+            .filter { it.name.endsWith("ViewModel.kt") }
+            .filter { viewModelFile ->
+                val featurePath = viewModelFile.parentFile!!
+                val hasIntentContract = featurePath.walkTopDown()
+                    .any { f -> f.isFile && f.extension == "kt" && f.name.endsWith("Intent.kt") }
+                hasIntentContract
+            }
+            .filter { viewModelFile ->
+                val text = viewModelFile.readText()
+                val hasOnIntent = "fun onIntent(" in text || "fun handleIntent(" in text
+                hasOnIntent
+            }
+            .filter { viewModelFile ->
+                val text = viewModelFile.readText()
+                val publicMethods = text.lines()
+                    .filter {
+                        it.trimStart()
+                            .startsWith("fun ") && !it.contains("private ") && !it.contains("fun onIntent") && !it.contains(
+                            "fun handleIntent"
+                        ) && !it.contains("override fun")
+                    }
+                publicMethods.isNotEmpty()
+            }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue(
+            "ViewModels with MVI Intent contracts must not expose public mutation methods (use onIntent only): $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun productionFilesDoNotExceedReasonableSize() {
+        val maxLines = 500
+        val offenders = productionKotlinFiles
+            .mapNotNull { file ->
+                val lineCount = file.useLines { it.count() }
+                if (lineCount > maxLines) {
+                    "${file.relativeTo(File("src/main/java")).path} ($lineCount lines)"
+                } else {
+                    null
+                }
+            }
+            .toList()
+
+        assertTrue(
+            "Files exceeding $maxLines lines (should be split by responsibility): $offenders",
+            offenders.isEmpty()
+        )
+    }
+
+    @Test
+    fun vaultFeatureHasExplicitIntentContract() {
+        val vaultIntentFile = File(
+            "src/main/java/com/aozijx/passly/feature/vault/contract/VaultIntent.kt"
+        )
+        val vaultViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/vault/VaultViewModel.kt"
+        ).readText()
+
+        assertTrue(
+            "Vault feature must have VaultIntent.kt contract",
+            vaultIntentFile.exists()
+        )
+        assertTrue(
+            "VaultViewModel must use onIntent as single entry point",
+            "fun onIntent(" in vaultViewModel
+        )
+    }
+
+    @Test
+    fun settingsViewModelHasExplicitIntentContract() {
+        val settingsViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/SettingsViewModel.kt"
+        )
+        if (settingsViewModel.exists()) {
+            val text = settingsViewModel.readText()
+            val hasIntentContract = File(
+                "src/main/java/com/aozijx/passly/feature/settings/contract/SettingsIntent.kt"
+            ).exists()
+
+            assertTrue(
+                "Settings feature must have SettingsIntent.kt contract",
+                hasIntentContract
+            )
+            assertTrue(
+                "SettingsViewModel must use onIntent as single entry point",
+                "fun onIntent(" in text
+            )
+        }
+    }
 }
