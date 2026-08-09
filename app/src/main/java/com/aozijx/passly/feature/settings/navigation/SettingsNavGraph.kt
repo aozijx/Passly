@@ -25,7 +25,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
-import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordAction
@@ -59,7 +58,6 @@ fun SettingsNavGraph(
     val interactionState by interactionViewModel.config.collectAsStateWithLifecycle()
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
-    val backupViewModel: BackupViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
@@ -115,7 +113,6 @@ fun SettingsNavGraph(
             setAppPasswordSubtitle = setAppPasswordSubtitle,
             interactionViewModel = interactionViewModel,
             dataViewModel = dataViewModel,
-            backupViewModel = backupViewModel,
             settingsState = settingsState,
             modifier = modifier
         )
@@ -185,7 +182,6 @@ private fun SettingsNavHost(
     setAppPasswordSubtitle: String,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    backupViewModel: BackupViewModel,
     settingsState: SettingsUiState,
     modifier: Modifier = Modifier
 ) {
@@ -235,7 +231,6 @@ private fun SettingsNavHost(
             localState = localState,
             interactionViewModel = interactionViewModel,
             dataViewModel = dataViewModel,
-            backupViewModel = backupViewModel,
             settingsViewModel = settingsViewModel,
             settingsState = settingsState
         )

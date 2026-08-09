@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.backup.ui
+package com.aozijx.passly.feature.backup.internal.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -49,9 +49,9 @@ import com.aozijx.passly.core.ui.text.localizedName
 import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.contract.BackupUiState
+import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 
-enum class BackupSheet {
+internal enum class BackupSheet {
     FORMAT_PICKER,
     EXPORT_OPTIONS,
     IMPORT_OPTIONS
@@ -59,7 +59,7 @@ enum class BackupSheet {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BackupRestoreSheetHost(
+internal fun BackupRestoreSheetHost(
     sheet: BackupSheet?,
     state: BackupUiState,
     configuredDirectoryLabel: String?,

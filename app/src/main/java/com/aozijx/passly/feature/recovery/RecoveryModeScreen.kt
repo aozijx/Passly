@@ -25,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,11 +39,7 @@ import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
-import com.aozijx.passly.domain.backup.model.BackupOperationStatus
-import com.aozijx.passly.feature.backup.contract.BackupUiState
-import com.aozijx.passly.feature.backup.ui.BackupRestoreSheetHost
-import com.aozijx.passly.feature.backup.ui.BackupSheet
+import com.aozijx.passly.feature.backup.api.RecoveryBackupExportSheet
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 
@@ -195,28 +190,13 @@ fun RecoveryModeScreen(
         )
     }
 
-    // Map RecoveryModeUiState to BackupUiState for the export sheet
-    val backupUiState = remember(state) {
-        BackupUiState(
-            status = if (state.isExporting) BackupOperationStatus.Loading
-            else if (state.exportError != null) BackupOperationStatus.Failure
-            else BackupOperationStatus.Idle,
-            isExporting = true,
-            isRecoveryExport = true,
-            backupPassword = state.exportPassword,
-            selectedExportFormat = BackupExportUiFormat.ENCRYPTED,
-            includeIcons = state.includeIcons,
-            includeAttachments = state.includeAttachments,
-            includeDeleted = state.includeDeleted
-        )
-    }
-
-    BackupRestoreSheetHost(
-        sheet = if (state.showExportOptions) BackupSheet.EXPORT_OPTIONS else null,
-        state = backupUiState,
-        configuredDirectoryLabel = null,
+    RecoveryBackupExportSheet(
+        visible = state.showExportOptions,
+        password = state.exportPassword,
+        includeIcons = state.includeIcons,
+        includeAttachments = state.includeAttachments,
+        includeDeleted = state.includeDeleted,
         onDismiss = { viewModel.onIntent(RecoveryModeIntent.DismissSheet) },
-        onFormatSelected = {},
         onPasswordChange = {
             viewModel.onIntent(RecoveryModeIntent.ExportPasswordChanged(it))
         },
@@ -229,11 +209,8 @@ fun RecoveryModeScreen(
         onIncludeDeletedChange = {
             viewModel.onIntent(RecoveryModeIntent.IncludeDeletedChanged(it))
         },
-        onIncludedEntryTypesChange = {},
-        onImportModeChange = {},
         onExport = {
             viewModel.onIntent(RecoveryModeIntent.SubmitExport)
-        },
-        onImport = {}
+        }
     )
 }

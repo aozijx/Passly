@@ -453,7 +453,7 @@ class MigrationBoundaryTest {
     }
 
     @Test
-    fun backupUiLivesInSettingsAndUsesBottomSheets() {
+    fun backupFeatureOwnsItsUiAndUsesBottomSheets() {
         val vaultRoot = File("src/main/java/com/aozijx/passly/feature/vault")
         val vaultOffenders = vaultRoot.walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
@@ -467,7 +467,7 @@ class MigrationBoundaryTest {
             .map { it.relativeTo(vaultRoot).path }
             .toList()
         val sheetSource = File(
-            "src/main/java/com/aozijx/passly/feature/settings/datamanagement/BackupRestoreSheets.kt"
+            "src/main/java/com/aozijx/passly/feature/backup/internal/ui/BackupRestoreSheets.kt"
         ).readText()
 
         assertTrue("Vault must not own backup actions: $vaultOffenders", vaultOffenders.isEmpty())
@@ -1012,10 +1012,10 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeScreen.kt"
         ).readText()
         val backupViewModel = File(
-            "src/main/java/com/aozijx/passly/feature/backup/BackupViewModel.kt"
+            "src/main/java/com/aozijx/passly/feature/backup/internal/presentation/BackupViewModel.kt"
         ).readText()
         val backupSessionPolicy = File(
-            "src/main/java/com/aozijx/passly/feature/backup/BackupSessionPolicy.kt"
+            "src/main/java/com/aozijx/passly/feature/backup/internal/presentation/BackupSessionPolicy.kt"
         ).readText()
         val securityViewModel = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/SecuritySettingsViewModel.kt"
@@ -1238,28 +1238,98 @@ class MigrationBoundaryTest {
     // ============================================================
 
     @Test
-    fun featuresDoNotImportEachOtherDirectly() {
-        // main 是 App 导航组合根，允许导入其他 feature 进行组装
+    fun featureDependenciesUseApprovedPublicApisAndStayAcyclic() {
+        // main 是当前 App 导航组合根，允许导入其他 feature 进行组装。
+        // 其他 feature 只能通过目标 feature 的 api 包形成显式、有向依赖。
         val compositionRoot = setOf("main")
+        val allowedDependencies = setOf(
+            "settings" to "backup",
+            "recovery" to "backup",
+        )
         val featureRoots = File("src/main/java/com/aozijx/passly/feature")
             .listFiles(File::isDirectory) ?: emptyArray()
         val offenders = mutableListOf<String>()
+        val dependencies = mutableMapOf<String, MutableSet<String>>()
+        val featureImport = Regex(
+            """import com\.aozijx\.passly\.feature\.([^.\s]+)\.([\w.]+)"""
+        )
 
         for (featureDir in featureRoots) {
             if (featureDir.name in compositionRoot) continue
-            val featureName = featureDir.name
-            val siblingPattern = Regex(
-                """import com\.aozijx\.passly\.feature\.(?!${Regex.escape(featureName)}(?:\.|$))"""
-            )
             featureDir.walkTopDown()
                 .filter { it.isFile && it.extension == "kt" }
-                .filter { siblingPattern.containsMatchIn(it.readText()) }
-                .forEach { offenders.add(it.relativeTo(featureDir).path) }
+                .forEach { source ->
+                    featureImport.findAll(source.readText()).forEach { match ->
+                        val targetFeature = match.groupValues[1]
+                        if (targetFeature != featureDir.name) {
+                            dependencies.getOrPut(featureDir.name) { mutableSetOf() }
+                                .add(targetFeature)
+                            val importedMember = match.groupValues[2]
+                            val throughPublicApi =
+                                importedMember == "api" || importedMember.startsWith("api.")
+                            val allowedEdge =
+                                featureDir.name to targetFeature in allowedDependencies
+                            if (!throughPublicApi || !allowedEdge) {
+                                offenders += buildString {
+                                    append(source.relativeTo(featureDir).path)
+                                    append(": ")
+                                    append(match.value)
+                                }
+                            }
+                        }
+                    }
+                }
         }
 
         assertTrue(
-            "Feature cross-imports detected (features must not depend on each other): $offenders",
+            "Feature cross-imports must use an explicitly allowed api edge: $offenders",
             offenders.isEmpty()
+        )
+
+        val visiting = mutableSetOf<String>()
+        val visited = mutableSetOf<String>()
+        fun containsCycle(feature: String): Boolean {
+            if (feature in visiting) return true
+            if (!visited.add(feature)) return false
+            visiting += feature
+            val cyclic = dependencies[feature].orEmpty().any(::containsCycle)
+            visiting -= feature
+            return cyclic
+        }
+
+        val cyclicRoots = featureRoots
+            .map(File::getName)
+            .filter(::containsCycle)
+
+        assertTrue(
+            "Feature dependency graph must stay acyclic: $dependencies",
+            cyclicRoots.isEmpty()
+        )
+    }
+
+    @Test
+    fun coreDoesNotOwnBackupFeaturePresentation() {
+        val leakedPresentationFiles = listOf(
+            "BackupViewModel.kt",
+            "BackupIntent.kt",
+            "BackupUiState.kt",
+            "BackupSessionPolicy.kt",
+        ).map { name ->
+            File("src/main/java/com/aozijx/passly/core/backup/$name")
+        }
+        val leakedBackupUi = File(
+            "src/main/java/com/aozijx/passly/core/ui/components/backup"
+        )
+
+        assertTrue(
+            "Core must not own Backup feature presentation/contracts",
+            leakedPresentationFiles.none(File::exists)
+        )
+        assertTrue(
+            "Backup-specific UI belongs to feature/backup, not core/ui",
+            !leakedBackupUi.exists() || leakedBackupUi.walkTopDown().none {
+                it.isFile && it.extension == "kt"
+            }
         )
     }
 

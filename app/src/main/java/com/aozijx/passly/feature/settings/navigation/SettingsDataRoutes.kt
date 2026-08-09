@@ -1,18 +1,14 @@
 package com.aozijx.passly.feature.settings.navigation
 
 import android.content.Context
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,15 +18,10 @@ import androidx.navigation.compose.composable
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupStorageSupport
 import com.aozijx.passly.core.util.PathDisplayFormatter
-import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
-import com.aozijx.passly.feature.backup.BackupViewModel
-import com.aozijx.passly.feature.backup.contract.BackupIntent
-import com.aozijx.passly.feature.backup.ui.BackupRestoreSheetHost
-import com.aozijx.passly.feature.backup.ui.BackupSheet
+import com.aozijx.passly.feature.backup.api.BackupSettingsFeature
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
-import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreDetail
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
@@ -58,7 +49,6 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    backupViewModel: BackupViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState
 ) {
@@ -130,46 +120,9 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
 
     composable(SettingsRoute.BackupRestore.route) {
         val state by dataViewModel.config.collectAsStateWithLifecycle()
-        val backupState by backupViewModel.uiState.collectAsStateWithLifecycle()
         val notSetText = stringResource(R.string.not_set)
         val pathLabel = remember(state.directoryUri) {
             PathDisplayFormatter.format(state.directoryUri) ?: notSetText
-        }
-        var activeSheet by remember { mutableStateOf<BackupSheet?>(null) }
-
-        fun startManualExport(uri: Uri?) {
-            if (uri == null) {
-                backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
-                return
-            }
-            backupViewModel.onIntent(
-                BackupIntent.StartExport(
-                    uri = uri,
-                    fileNameHint = backupViewModel.buildExportFileName()
-                )
-            )
-            backupViewModel.onIntent(BackupIntent.ProcessBackupAction)
-        }
-
-        val encryptedExportPicker = rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/octet-stream"),
-            ::startManualExport
-        )
-        val jsonExportPicker = rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/json"),
-            ::startManualExport
-        )
-        val textExportPicker = rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("text/plain"),
-            ::startManualExport
-        )
-        val importPicker = rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocument()
-        ) { uri ->
-            if (uri != null) {
-                backupViewModel.onIntent(BackupIntent.StartImport(uri))
-                activeSheet = BackupSheet.IMPORT_OPTIONS
-            }
         }
         val backupPathPicker = rememberLauncherForActivityResult(
             ActivityResultContracts.OpenDocumentTree()
@@ -181,39 +134,18 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
             }
         }
 
-        DisposableEffect(backupViewModel) {
-            onDispose {
-                backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
-            }
-        }
-
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.BACKUP_RESTORE.titleRes),
             onBack = { navController.popBackStack() }
         ) {
             item {
-                BackupRestoreDetail(
-                    backupPathLabel = pathLabel,
+                BackupSettingsFeature(
+                    directoryUri = state.directoryUri,
+                    directoryLabel = pathLabel,
                     lastExportFileLabel = notSetText,
-                    onExport = { activeSheet = BackupSheet.FORMAT_PICKER },
-                    onImport = {
-                        importPicker.launch(
-                            arrayOf(
-                                "application/octet-stream",
-                                "application/json",
-                                "text/json",
-                                "*/*"
-                            )
-                        )
-                    },
                     onPickBackupPath = {
                         backupPathPicker.launch(
                             BackupStorageSupport.defaultDocumentsTreeUri()
-                        )
-                    },
-                    onTestBackupWrite = {
-                        backupViewModel.onIntent(
-                            BackupIntent.CheckDirectoryPermission(state.directoryUri)
                         )
                     },
                     onClearBackupPath = if (state.directoryUri.isNullOrBlank()) null
@@ -221,56 +153,6 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                 )
             }
         }
-
-        BackupRestoreSheetHost(
-            sheet = activeSheet,
-            state = backupState,
-            configuredDirectoryLabel = pathLabel.takeIf { !state.directoryUri.isNullOrBlank() },
-            onDismiss = {
-                activeSheet = null
-                backupViewModel.onIntent(BackupIntent.CancelPendingOperation)
-            },
-            onFormatSelected = { format ->
-                backupViewModel.onIntent(BackupIntent.PrepareExport(format))
-                activeSheet = BackupSheet.EXPORT_OPTIONS
-            },
-            onPasswordChange = {
-                backupViewModel.onIntent(BackupIntent.UpdatePassword(it))
-            },
-            onIncludeIconsChange = {
-                backupViewModel.onIntent(BackupIntent.UpdateIncludeIcons(it))
-            },
-            onIncludeAttachmentsChange = {
-                backupViewModel.onIntent(BackupIntent.UpdateIncludeAttachments(it))
-            },
-            onIncludeDeletedChange = {
-                backupViewModel.onIntent(BackupIntent.UpdateIncludeDeleted(it))
-            },
-            onIncludedEntryTypesChange = {
-                backupViewModel.onIntent(BackupIntent.UpdateIncludedEntryTypes(it))
-            },
-            onImportModeChange = {
-                backupViewModel.onIntent(BackupIntent.UpdateImportMode(it))
-            },
-            onExport = {
-                activeSheet = null
-                val directoryUri = state.directoryUri
-                if (!directoryUri.isNullOrBlank()) {
-                    backupViewModel.onIntent(BackupIntent.StartExportInConfiguredDirectory)
-                } else {
-                    val fileName = backupViewModel.buildExportFileName()
-                    when (backupState.selectedExportFormat) {
-                        BackupExportUiFormat.ENCRYPTED -> encryptedExportPicker.launch(fileName)
-                        BackupExportUiFormat.JSON -> jsonExportPicker.launch(fileName)
-                        BackupExportUiFormat.TEXT -> textExportPicker.launch(fileName)
-                    }
-                }
-            },
-            onImport = {
-                activeSheet = null
-                backupViewModel.onIntent(BackupIntent.ProcessBackupAction)
-            }
-        )
     }
 
     composable(SettingsRoute.RecoveryCode.route) {

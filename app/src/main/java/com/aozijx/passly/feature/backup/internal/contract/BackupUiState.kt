@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.backup.contract
+package com.aozijx.passly.feature.backup.internal.contract
 
 import android.net.Uri
 import com.aozijx.passly.core.error.model.AppError

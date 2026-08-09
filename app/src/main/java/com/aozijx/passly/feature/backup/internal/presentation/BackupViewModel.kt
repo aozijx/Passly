@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.backup
+package com.aozijx.passly.feature.backup.internal.presentation
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -24,8 +24,8 @@ import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
-import com.aozijx.passly.feature.backup.contract.BackupIntent
-import com.aozijx.passly.feature.backup.contract.BackupUiState
+import com.aozijx.passly.feature.backup.internal.contract.BackupIntent
+import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,20 +58,27 @@ class BackupViewModel @Inject constructor(
                 fileNameHint = intent.fileNameHint,
                 deleteOnFailure = intent.deleteOnFailure
             )
+
             BackupIntent.StartExportInConfiguredDirectory -> startExportInConfiguredDirectory()
             is BackupIntent.StartImport -> startImport(intent.uri)
             is BackupIntent.UpdatePassword ->
                 _uiState.update { it.copy(backupPassword = intent.password) }
+
             is BackupIntent.UpdateImportMode ->
                 _uiState.update { it.copy(importMode = intent.mode) }
+
             is BackupIntent.UpdateIncludeIcons ->
                 _uiState.update { it.copy(includeIcons = intent.include) }
+
             is BackupIntent.UpdateIncludeAttachments ->
                 _uiState.update { it.copy(includeAttachments = intent.include) }
+
             is BackupIntent.UpdateIncludeDeleted ->
                 _uiState.update { it.copy(includeDeleted = intent.include) }
+
             is BackupIntent.UpdateIncludedEntryTypes ->
                 _uiState.update { it.copy(includedEntryTypes = intent.types) }
+
             BackupIntent.CancelPendingOperation -> clearPendingOperation()
             BackupIntent.ProcessBackupAction -> processBackupAction()
         }
@@ -283,7 +290,7 @@ class BackupViewModel @Inject constructor(
                                 state.includeIcons && state.selectedExportFormat.supportsResources,
                             includeAttachments =
                                 state.includeAttachments &&
-                                    state.selectedExportFormat.supportsResources,
+                                        state.selectedExportFormat.supportsResources,
                             includeDeleted = state.includeDeleted,
                             includedEntryTypes = state.includedEntryTypes
                         )

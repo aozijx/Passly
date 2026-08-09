@@ -1,7 +1,7 @@
-package com.aozijx.passly.feature.backup
+package com.aozijx.passly.feature.backup.internal.presentation
 
 import com.aozijx.passly.domain.authentication.VaultAccessState
-import com.aozijx.passly.feature.backup.contract.BackupUiState
+import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 import javax.inject.Inject
 
 class BackupSessionPolicy @Inject constructor(
