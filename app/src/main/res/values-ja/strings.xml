@@ -62,15 +62,14 @@
     <!-- 自動入力タイトル生成 -->
 
     <!-- 金庫関連 -->
-    <string name="vault_auth_subtitle">本人確認して金庫にアクセス</string>
+    <string name="vault_auth_subtitle">本人確認してPasslyにアクセス</string>
     <string name="main_notification_permission_denied">通知権限が無効のため、バックグラウンド同期の進捗は表示されません。</string>
-    <string name="vault_locked_title">金庫がロックされています</string>
+    <string name="vault_locked_title">Passlyがロックされています</string>
     <string name="credential_create_password_description">パスワードを Passly に安全に保存します</string>
     <string name="vault_auth_decrypt_subtitle_generic">操作を続けるため確認</string>
 
     <!-- 金庫 - その他 -->
     <string name="vault_search_placeholder">項目を検索…</string>
-    <string name="vault_title_default">安全な金庫</string>
     <string name="vault_clear_filter">フィルター解除</string>
     <string name="vault_menu_filter">分類フィルター</string>
     <string name="vault_menu_hide_totp">コードを隠す</string>
@@ -80,7 +79,7 @@
 
     <string name="vault_scan">スキャン</string>
     <string name="vault_add_entry_save_failed">項目を保存できませんでした</string>
-    <string name="vault_empty_placeholder">金庫は空です</string>
+    <string name="vault_empty_placeholder">アイテムがありません。+ をタップして追加</string>
     <string name="vault_scanner_error_not_otp">スキャン成功しましたが、有効な QRコードではありません</string>
     <string name="vault_scanner_action_album">アルバムから選択</string>
     <string name="vault_scanner_result_title">秘密鍵を検出</string>
@@ -260,7 +259,7 @@
 
     <string name="notice_clipboard_cleared">クリップボードの機密データを消去しました</string>
     <string name="notice_clipboard_clear_failed">クリップボードの機密データを消去できませんでした</string>
-    <string name="notice_app_locked">保管庫をロックしました</string>
+    <string name="notice_app_locked">Passlyをロックしました</string>
     <string name="notice_app_close_reminder">アプリを終了します</string>
     <string name="notice_security_key_invalidated">セキュリティキーが無効です。認証を再設定してください。</string>
     <string name="notice_security_recovery_required">復旧方法を使って本人確認を行ってください。</string>
@@ -288,7 +287,7 @@
     <string name="auth_method_biometric">生体認証</string>
     <string name="auth_method_recovery_code">アクセスを復旧</string>
     <string name="auth_biometric_subtitle">続行するには本人確認を行ってください</string>
-    <string name="auth_purpose_unlock_vault">金庫をロック解除</string>
+    <string name="auth_purpose_unlock_vault">Passlyをロック解除</string>
     <string name="auth_purpose_autofill">認証して自動入力</string>
     <string name="auth_purpose_backup_export">認証してバックアップをエクスポート</string>
     <string name="auth_purpose_recovery_export">復旧コードで暗号化バックアップをエクスポート</string>
@@ -296,7 +295,7 @@
     <string name="auth_purpose_export_diagnostics">認証して診断情報をエクスポート</string>
     <string name="auth_purpose_recover_database">認証して障害データベースを保持し、新規作成</string>
     <string name="auth_purpose_recover_auth_methods">復旧コードで認証方法を復旧</string>
-    <string name="auth_purpose_clear_database">認証して金庫データを消去</string>
+    <string name="auth_purpose_clear_database">認証してPasslyデータを消去</string>
     <string name="related_entries">関連エントリ</string>
     <string name="app_package_picker_title">関連アプリを選択</string>
     <string name="app_package_picker_search">アプリまたはパッケージ名を検索</string>

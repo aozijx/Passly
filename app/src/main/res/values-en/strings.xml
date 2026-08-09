@@ -63,15 +63,14 @@
     <!-- Autofill title generation -->
 
     <!-- Vault - adjusted for clearer distinction -->
-    <string name="vault_auth_subtitle">Verify your identity to access the vault</string>
+    <string name="vault_auth_subtitle">Verify your identity to access Passly</string>
     <string name="main_notification_permission_denied">Notification permission is disabled, so background sync progress will be hidden.</string>
-    <string name="vault_locked_title">Vault is locked</string>
+    <string name="vault_locked_title">Passly is locked</string>
     <string name="credential_create_password_description">Save the password securely in Passly</string>
     <string name="vault_auth_decrypt_subtitle_generic">Please verify to continue</string>
 
     <!-- Vault - other strings -->
-    <string name="vault_search_placeholder">Search vault items…</string>
-    <string name="vault_title_default">Secure Vault</string>
+    <string name="vault_search_placeholder">Search items…</string>
     <string name="vault_clear_filter">Clear filter</string>
     <string name="vault_menu_filter">Filter by category</string>
     <string name="vault_menu_hide_totp">Hide codes</string>
@@ -81,7 +80,7 @@
 
     <string name="vault_scan">Scan</string>
     <string name="vault_add_entry_save_failed">Couldn\'t save entry</string>
-    <string name="vault_empty_placeholder">Your vault is empty</string>
+    <string name="vault_empty_placeholder">No items yet, tap + to add one</string>
     <string name="vault_scanner_error_not_otp">Scanned successfully, but not a valid QR code</string>
     <string name="vault_scanner_action_album">Import from album</string>
     <string name="vault_scanner_result_title">Secret Found</string>
@@ -263,7 +262,7 @@
 
     <string name="notice_clipboard_cleared">Sensitive clipboard content was cleared</string>
     <string name="notice_clipboard_clear_failed">Could not clear sensitive clipboard content</string>
-    <string name="notice_app_locked">Vault locked</string>
+    <string name="notice_app_locked">Passly locked</string>
     <string name="notice_app_close_reminder">The app is about to close</string>
     <string name="notice_security_key_invalidated">The security key is invalid. Configure authentication again.</string>
     <string name="notice_security_recovery_required">Use a recovery method to verify your identity again.</string>
@@ -291,7 +290,7 @@
     <string name="auth_method_biometric">Biometrics</string>
     <string name="auth_method_recovery_code">Restore access</string>
     <string name="auth_biometric_subtitle">Verify your identity to continue</string>
-    <string name="auth_purpose_unlock_vault">Unlock vault</string>
+    <string name="auth_purpose_unlock_vault">Unlock Passly</string>
     <string name="auth_purpose_autofill">Verify to autofill</string>
     <string name="auth_purpose_backup_export">Verify to export backup</string>
     <string name="auth_purpose_recovery_export">Use recovery code to export encrypted backup</string>
@@ -299,14 +298,14 @@
     <string name="auth_purpose_export_diagnostics">Verify to export diagnostics</string>
     <string name="auth_purpose_recover_database">Verify to preserve the failed database and create a new one</string>
     <string name="auth_purpose_recover_auth_methods">Use recovery code to recover authentication methods</string>
-    <string name="auth_purpose_clear_database">Verify to clear vault data</string>
+    <string name="auth_purpose_clear_database">Verify to clear Passly data</string>
     <string name="related_entries">Related entries</string>
     <string name="app_package_picker_title">Choose associated app</string>
     <string name="app_package_picker_search">Search apps or package names</string>
     <string name="app_package_picker_action">Choose app</string>
     <string name="entry_type">Entry type</string>
     <string name="recovery_mode_title">Recovery mode</string>
-    <string name="recovery_mode_description">A recovery code does not create a normal Vault session. You can only rebuild primary authentication or export an encrypted backup protected by a new backup password.</string>
+    <string name="recovery_mode_description">A recovery code does not create a normal Passly session. You can only rebuild primary authentication or export an encrypted backup protected by a new backup password.</string>
     <string name="recovery_mode_set_password">Set a new app password</string>
     <string name="recovery_mode_reconfigure_biometric">Reconfigure biometrics</string>
     <string name="recovery_mode_biometric_success">Biometrics reconfigured. Set a new app password to return to a normal session.</string>

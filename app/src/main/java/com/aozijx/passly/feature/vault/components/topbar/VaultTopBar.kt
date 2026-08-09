@@ -111,7 +111,7 @@ fun VaultTopBar(
                                     R.string.vault_title_category,
                                     uiState.selectedCategory
                                 )
-                                else -> stringResource(R.string.vault_title_default)
+                                else -> stringResource(R.string.app_name)
                             },
                             fontWeight = FontWeight.Bold
                         )

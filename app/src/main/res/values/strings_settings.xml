@@ -19,7 +19,7 @@
     <string name="settings_page_privacy">隐私保护</string>
     <string name="settings_page_privacy_summary">防截屏、翻转锁定</string>
     <string name="settings_page_recovery_code">恢复码</string>
-    <string name="settings_page_recovery_code_summary">紧急解锁保险库</string>
+    <string name="settings_page_recovery_code_summary">紧急解锁Passly</string>
     <string name="settings_page_security">解锁与锁定</string>
     <string name="settings_page_security_summary">密码、生物识别、自动锁定</string>
     <string name="settings_section_appearance">外观</string>
@@ -70,7 +70,7 @@
     <string name="settings_interface_quick_filter_bar_collapsible_description">快捷筛选栏随列表滑动自动隐藏</string>
     <string name="settings_interface_top_bar_collapsible">标题栏滚动</string>
     <string name="settings_interface_top_bar_collapsible_description">上滑时收缩标题以获得更多视野</string>
-    <string name="settings_interface_vault_quick_filters_section">保险箱快捷筛选</string>
+    <string name="settings_interface_vault_quick_filters_section">快捷筛选</string>
     <string name="settings_interface_entry_hierarchy_section">关联账户</string>
     <string name="settings_interface_entry_hierarchy_display_mode">关联条目展示</string>
     <string name="settings_interface_entry_hierarchy_collapsed">折叠</string>
@@ -123,7 +123,7 @@
     <string name="settings_security_auto_lock">自动锁定</string>
     <string name="settings_security_auto_lock_delay">自动锁定时间</string>
     <string name="settings_security_biometric_disabled_description">需要先验证现有凭据</string>
-    <string name="settings_security_biometric_enabled_description">使用强生物识别解锁保险库</string>
+    <string name="settings_security_biometric_enabled_description">使用强生物识别解锁Passly</string>
     <string name="settings_security_biometric_unlock">生物识别解锁</string>
     <string name="settings_security_flip_exit">退出应用</string>
     <string name="settings_security_flip_exit_description">退出应用并清除任务栈</string>
@@ -196,10 +196,10 @@
     <string name="settings_trash_loading">正在读取…</string>
     <string name="settings_trash_restore">恢复</string>
     <string name="settings_trash_title">回收站</string>
-    <string name="settings_database_recovery_clear_action">永久清除保险库数据库</string>
+    <string name="settings_database_recovery_clear_action">永久清除Passly数据库</string>
     <string name="settings_database_recovery_clear_confirm">验证并清除</string>
     <string name="settings_database_recovery_clear_confirm_message">此操作会永久删除数据库、附件和自定义图片，无法撤销。应用设置和认证方式会保留；确认后还需要重新验证身份。</string>
-    <string name="settings_database_recovery_clear_confirm_title">确定清除保险库数据？</string>
+    <string name="settings_database_recovery_clear_confirm_title">确定清除Passly数据？</string>
 
     <!-- Backup and restore -->
     <string name="settings_backup_choose_destination_after_confirm">确认后选择保存位置</string>
@@ -233,7 +233,7 @@
     <string name="settings_backup_import_mode">导入方式</string>
     <string name="settings_backup_import_options_title">导入与恢复</string>
     <string name="settings_backup_import_overwrite">覆盖</string>
-    <string name="settings_backup_import_overwrite_description">清空现有保险库后恢复备份，风险较高</string>
+    <string name="settings_backup_import_overwrite_description">清空现有数据后恢复备份，风险较高</string>
     <string name="settings_backup_import_password_label">备份密码（如需要）</string>
     <string name="settings_backup_include_attachments">附件与图片</string>
     <string name="settings_backup_include_attachments_description">包含已保存附件；文件可能明显增大</string>

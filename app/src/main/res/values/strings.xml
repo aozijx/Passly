@@ -70,9 +70,9 @@
     <!-- 自动填充标题生成相关 -->
 
     <!-- Vault 相关 -->
-    <string name="vault_auth_subtitle">验证以访问保险箱</string>
+    <string name="vault_auth_subtitle">验证以访问Passly</string>
     <string name="main_notification_permission_denied">通知权限未开启，同步进度不可见</string>
-    <string name="vault_locked_title">保险箱已锁定</string>
+    <string name="vault_locked_title">Passly已锁定</string>
     <string name="credential_create_password_description">将密码安全地保存到 Passly</string>
     <string name="vault_auth_decrypt_subtitle_generic">验证以继续操作</string>
 
@@ -81,7 +81,6 @@
     <string name="vault_title_category">分类：%s</string>
     <string name="vault_search_category">搜索分类</string>
     <string name="vault_search_category_hint">搜索分类…</string>
-    <string name="vault_title_default">安全保险箱</string>
     <string name="vault_clear_filter">清除筛选</string>
     <string name="vault_menu_filter">分类筛选</string>
     <string name="vault_menu_sort">排序方式</string>
@@ -362,7 +361,7 @@
 
     <string name="notice_clipboard_cleared">剪贴板中的敏感内容已清除</string>
     <string name="notice_clipboard_clear_failed">无法清除剪贴板中的敏感内容</string>
-    <string name="notice_app_locked">保险库已锁定</string>
+    <string name="notice_app_locked">Passly已锁定</string>
     <string name="notice_app_close_reminder">应用即将关闭</string>
     <string name="notice_security_key_invalidated">安全密钥已失效，请重新配置认证</string>
     <string name="notice_security_recovery_required">需要使用恢复方式重新验证身份</string>
@@ -375,7 +374,7 @@
     <string name="auth_method_biometric">生物识别</string>
     <string name="auth_method_recovery_code">恢复访问权限</string>
     <string name="auth_biometric_subtitle">请验证身份以继续</string>
-    <string name="auth_purpose_unlock_vault">解锁保险库</string>
+    <string name="auth_purpose_unlock_vault">解锁Passly</string>
     <string name="auth_purpose_autofill">验证后自动填充</string>
     <string name="auth_purpose_backup_export">验证后导出备份</string>
     <string name="auth_purpose_recovery_export">使用恢复码导出加密备份</string>
@@ -383,14 +382,14 @@
     <string name="auth_purpose_export_diagnostics">验证后导出诊断</string>
     <string name="auth_purpose_recover_database">验证后保留故障库并创建新库</string>
     <string name="auth_purpose_recover_auth_methods">使用恢复码恢复认证方式</string>
-    <string name="auth_purpose_clear_database">验证后清除保险库数据</string>
+    <string name="auth_purpose_clear_database">验证后清除Passly数据</string>
     <string name="related_entries">关联条目</string>
     <string name="app_package_picker_title">选择关联应用</string>
     <string name="app_package_picker_search">搜索应用或包名</string>
     <string name="app_package_picker_action">选择应用</string>
     <string name="entry_type">条目类型</string>
     <string name="recovery_mode_title">恢复模式</string>
-    <string name="recovery_mode_description">恢复码不会创建普通保险库会话。你只能重建主认证方式，或使用新的备份密码导出加密备份。重设密码后应用会锁定，请使用新密码重新解锁。</string>
+    <string name="recovery_mode_description">恢复码不会创建普通Passly会话。你只能重建主认证方式，或使用新的备份密码导出加密备份。重设密码后应用会锁定，请使用新密码重新解锁。</string>
     <string name="recovery_mode_set_password">重设应用密码</string>
     <string name="recovery_mode_password_reset_success">应用密码已重设，请使用新密码重新解锁。</string>
     <string name="recovery_mode_reconfigure_biometric">重新配置生物识别</string>

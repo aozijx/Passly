@@ -19,7 +19,7 @@
     <string name="settings_page_privacy">プライバシー</string>
     <string name="settings_page_privacy_summary">画面保護、反転ロック</string>
     <string name="settings_page_recovery_code">復旧コード</string>
-    <string name="settings_page_recovery_code_summary">緊急時の保管庫解除</string>
+    <string name="settings_page_recovery_code_summary">緊急時のPasslyロック解除</string>
     <string name="settings_page_security">ロック解除とロック</string>
     <string name="settings_page_security_summary">パスワード、生体認証、自動ロック</string>
     <string name="settings_section_appearance">外観</string>
@@ -70,7 +70,7 @@
     <string name="settings_interface_quick_filter_bar_collapsible_description">スクロール時にクイックフィルターを自動的に隠す</string>
     <string name="settings_interface_top_bar_collapsible">トップバーを折りたたむ</string>
     <string name="settings_interface_top_bar_collapsible_description">スクロール時にトップバーを収縮</string>
-    <string name="settings_interface_vault_quick_filters_section">保管庫クイックフィルター</string>
+    <string name="settings_interface_vault_quick_filters_section">クイックフィルター</string>
     <string name="settings_interface_entry_hierarchy_section">関連アカウント</string>
     <string name="settings_interface_entry_hierarchy_display_mode">関連エントリの表示</string>
     <string name="settings_interface_entry_hierarchy_collapsed">折りたたむ</string>
@@ -123,7 +123,7 @@
     <string name="settings_security_auto_lock">自動ロック</string>
     <string name="settings_security_auto_lock_delay">自動ロックまでの時間</string>
     <string name="settings_security_biometric_disabled_description">先に現在の資格情報を確認する必要があります</string>
-    <string name="settings_security_biometric_enabled_description">強力な生体認証で金庫をロック解除します</string>
+    <string name="settings_security_biometric_enabled_description">強力な生体認証でPasslyをロック解除します</string>
     <string name="settings_security_biometric_unlock">生体認証でロック解除</string>
     <string name="settings_security_flip_exit">アプリを終了</string>
     <string name="settings_security_flip_exit_description">アプリを終了して履歴から削除</string>
@@ -196,10 +196,10 @@
     <string name="settings_trash_loading">読み込み中…</string>
     <string name="settings_trash_restore">復元</string>
     <string name="settings_trash_title">ゴミ箱</string>
-    <string name="settings_database_recovery_clear_action">保管庫データベースを完全に消去</string>
+    <string name="settings_database_recovery_clear_action">Passlyデータベースを完全に消去</string>
     <string name="settings_database_recovery_clear_confirm">確認して消去</string>
     <string name="settings_database_recovery_clear_confirm_message">データベース、添付ファイル、カスタム画像が完全に削除され、元に戻せません。アプリ設定と認証方法は保持されます。確定後にもう一度本人確認が必要です。</string>
-    <string name="settings_database_recovery_clear_confirm_title">保管庫データを消去しますか？</string>
+    <string name="settings_database_recovery_clear_confirm_title">Passlyデータを消去しますか？</string>
 
     <!-- Backup and restore -->
     <string name="settings_backup_choose_destination_after_confirm">確認後に保存先を選択します</string>
@@ -233,7 +233,7 @@
     <string name="settings_backup_import_mode">インポート方式</string>
     <string name="settings_backup_import_options_title">インポートと復元</string>
     <string name="settings_backup_import_overwrite">上書き</string>
-    <string name="settings_backup_import_overwrite_description">既存の金庫を消去してから復元します。危険性の高い操作です</string>
+    <string name="settings_backup_import_overwrite_description">既存のデータを消去してから復元します。危険性の高い操作です</string>
     <string name="settings_backup_import_password_label">バックアップパスワード（必要な場合）</string>
     <string name="settings_backup_include_attachments">添付ファイルと画像</string>
     <string name="settings_backup_include_attachments_description">保存済み添付を含めます。ファイルが大きくなる場合があります</string>
