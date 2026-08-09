@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.settings.apppassword.ui
+package com.aozijx.passly.core.ui.components.apppassword
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +31,7 @@ import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
 import com.aozijx.passly.core.ui.components.settings.rememberPasswordStrength
 
 @Composable
-internal fun PasswordFields(
+fun PasswordFields(
     newPassword: String,
     confirmPassword: String,
     onNewPasswordChange: (String) -> Unit,

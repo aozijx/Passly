@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.core.ui.components.common.ActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.domain.authentication.AuthenticationFailure
@@ -39,7 +40,6 @@ import com.aozijx.passly.domain.authentication.AuthenticationFailureCode
 import com.aozijx.passly.domain.authentication.AuthenticationMethod
 import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
-import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
 
 @Composable
 fun AuthenticationScreen(

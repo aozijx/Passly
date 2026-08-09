@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.settings.apppassword.ui
+package com.aozijx.passly.core.ui.components.apppassword
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

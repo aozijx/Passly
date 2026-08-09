@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.settings.datamanagement
+package com.aozijx.passly.feature.backup.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -46,12 +46,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.text.localizedName
+import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.contract.BackupUiState
-import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
 
-internal enum class BackupSheet {
+enum class BackupSheet {
     FORMAT_PICKER,
     EXPORT_OPTIONS,
     IMPORT_OPTIONS
@@ -59,7 +59,7 @@ internal enum class BackupSheet {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun BackupRestoreSheetHost(
+fun BackupRestoreSheetHost(
     sheet: BackupSheet?,
     state: BackupUiState,
     configuredDirectoryLabel: String?,
@@ -83,6 +83,7 @@ internal fun BackupRestoreSheetHost(
             BackupSheet.FORMAT_PICKER -> BackupFormatPicker(
                 onFormatSelected = onFormatSelected
             )
+
             BackupSheet.EXPORT_OPTIONS -> BackupExportOptionsContent(
                 state = state,
                 configuredDirectoryLabel = configuredDirectoryLabel,
@@ -93,6 +94,7 @@ internal fun BackupRestoreSheetHost(
                 onIncludedEntryTypesChange = onIncludedEntryTypesChange,
                 onExport = onExport
             )
+
             BackupSheet.IMPORT_OPTIONS -> BackupImportOptionsContent(
                 state = state,
                 onPasswordChange = onPasswordChange,
@@ -315,8 +317,10 @@ private fun ExportSecurityNotice(format: BackupExportUiFormat) {
     val text = when (format) {
         BackupExportUiFormat.ENCRYPTED ->
             stringResource(R.string.settings_backup_encrypted_security_notice)
+
         BackupExportUiFormat.JSON ->
             stringResource(R.string.settings_backup_json_security_notice)
+
         BackupExportUiFormat.TEXT ->
             stringResource(R.string.settings_backup_text_security_notice)
     }

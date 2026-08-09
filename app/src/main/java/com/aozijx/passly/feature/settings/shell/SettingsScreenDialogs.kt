@@ -8,9 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordActionDialog
 import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordChangeDialog
-import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
 import com.aozijx.passly.feature.settings.interaction.SwipeActionSelectDialog
 import com.aozijx.passly.feature.settings.internal.AppPasswordDialogEvent
 import com.aozijx.passly.feature.settings.internal.AppPasswordDialogState
