@@ -24,6 +24,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -130,8 +131,8 @@ fun EditTextField(
     value: String, onValueChange: (String) -> Unit, label: String, onSave: () -> Unit
 ) {
     PasslyOutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
+        value = TextFieldValue(value),
+        onValueChange = { onValueChange(it.text) },
         label = label,
         modifier = Modifier.fillMaxWidth(),
         trailingIcon = {

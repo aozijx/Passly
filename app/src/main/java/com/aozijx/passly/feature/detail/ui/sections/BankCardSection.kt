@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
@@ -28,7 +29,6 @@ import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
-import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
@@ -37,6 +37,7 @@ import com.aozijx.passly.feature.detail.internal.copySensitiveField
 import com.aozijx.passly.feature.detail.internal.withCardCvv
 import com.aozijx.passly.feature.detail.internal.withCardNumber
 import com.aozijx.passly.feature.detail.internal.withDetailUsername
+import com.aozijx.passly.feature.detail.ui.components.DetailItem
 
 @Composable
 fun BankCardSection(
@@ -73,8 +74,8 @@ fun BankCardSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (editState.isEditingUsername) {
             PasslyOutlinedTextField(
-                value = editState.editedUsername,
-                onValueChange = { editState.editedUsername = it },
+                value = TextFieldValue(editState.editedUsername),
+                onValueChange = { editState.editedUsername = it.text },
                 label = stringResource(
                     R.string.edit_field,
                     stringResource(R.string.cardholder)
@@ -118,8 +119,8 @@ fun BankCardSection(
 
         if (editState.isEditingPassword) {
             PasslyOutlinedTextField(
-                value = editState.editedPassword,
-                onValueChange = { editState.editedPassword = it },
+                value = TextFieldValue(editState.editedPassword),
+                onValueChange = { editState.editedPassword = it.text },
                 label = stringResource(
                     R.string.edit_field,
                     stringResource(R.string.card_number)
@@ -172,8 +173,8 @@ fun BankCardSection(
 
         if (editState.isEditingTotp) {
             PasslyOutlinedTextField(
-                value = editState.editedTotp,
-                onValueChange = { editState.editedTotp = it },
+                value = TextFieldValue(editState.editedTotp),
+                onValueChange = { editState.editedTotp = it.text },
                 label = stringResource(
                     R.string.edit_field,
                     stringResource(R.string.card_cvv)

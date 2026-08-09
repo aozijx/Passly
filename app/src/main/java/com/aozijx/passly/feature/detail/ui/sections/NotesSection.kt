@@ -19,13 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
 import com.aozijx.passly.domain.entry.model.VaultEntry
-import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.internal.EntryEditState
+import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun NotesSection(
@@ -45,8 +46,8 @@ fun NotesSection(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PasslyOutlinedTextField(
-                    value = editState.editedNotes,
-                    onValueChange = { editState.editedNotes = it },
+                    value = TextFieldValue(editState.editedNotes),
+                    onValueChange = { editState.editedNotes = it.text },
                     label = notesLabel,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,

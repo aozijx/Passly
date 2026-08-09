@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
@@ -63,8 +64,8 @@ fun EntryEditorTextField(
     readOnly: Boolean = false
 ) {
     PasslyOutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
+        value = TextFieldValue(value),
+        onValueChange = { onValueChange(it.text) },
         label = label,
         enabled = enabled,
         readOnly = readOnly,
