@@ -7,6 +7,7 @@
 - [开发与构建](getting-started/development.md)
 - [测试与质量门禁](development/testing.md)
 - [Kotlin 与 Compose 风格规范](development/kotlin-compose-style.md)
+- [Compose 共享元素与阴影裁剪](development/shared-element-transitions.md)
 - [文档维护约定](development/documentation.md)
 
 ## 架构

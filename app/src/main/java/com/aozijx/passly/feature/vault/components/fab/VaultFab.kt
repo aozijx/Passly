@@ -10,8 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,11 +20,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,16 +33,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
+import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
 import com.aozijx.passly.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
+import com.aozijx.passly.feature.vault.editor.common.AddEntryFabVisualOverflow
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.labelRes
 
@@ -57,13 +57,10 @@ fun VaultFab(
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntryBottomSheet by remember { mutableStateOf(false) }
     var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
-    val motionScheme = MaterialTheme.motionScheme
-    val fabShape = MaterialTheme.shapes.large
-    val fabInteractionSource = remember { MutableInteractionSource() }
+    val fabShape = MaterialTheme.shapes.extraLarge
 
     val rotation by animateFloatAsState(
         targetValue = if (showFabMenu) 45f else 0f,
-        animationSpec = motionScheme.defaultSpatialSpec(),
         label = "fabRotation"
     )
 
@@ -72,7 +69,8 @@ fun VaultFab(
         Modifier.sharedBounds(
             sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
             animatedVisibilityScope = animatedVisibilityScope,
-            resizeMode = RemeasureToBounds
+            resizeMode = RemeasureToBounds,
+            clipInOverlayDuringTransition = SharedTransitionOverlayClip.None
         )
     }
 
@@ -90,16 +88,8 @@ fun VaultFab(
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
-                scaleIn(
-                    animationSpec = motionScheme.defaultSpatialSpec(),
-                    transformOrigin = TransformOrigin(1f, 1f)
-                ),
-        exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
-                scaleOut(
-                    animationSpec = motionScheme.defaultSpatialSpec(),
-                    transformOrigin = TransformOrigin(1f, 1f)
-                )
+        enter = fadeIn() + scaleIn(transformOrigin = TransformOrigin(1f, 1f)),
+        exit = fadeOut() + scaleOut(transformOrigin = TransformOrigin(1f, 1f))
     ) {
         Column(
             horizontalAlignment = Alignment.End,
@@ -112,6 +102,16 @@ fun VaultFab(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                FabMenuItemWithSpring(
+                    visible = showFabMenu,
+                    label = stringResource(R.string.more),
+                    icon = Icons.Default.MoreHoriz,
+                    onClick = {
+                        showFabMenu = false
+                        showAddEntryBottomSheet = true
+                    }
+                )
+
                 fabMenuOptions.forEach { type ->
                     FabMenuItemWithSpring(
                         visible = showFabMenu,
@@ -126,20 +126,17 @@ fun VaultFab(
             }
 
             Surface(
-                modifier = sharedFabModifier
-                    .size(56.dp)
-                    .clip(fabShape)
-                    .combinedClickable(
-                        interactionSource = fabInteractionSource,
-                        indication = ripple(bounded = true),
-                        role = Role.Button,
-                        onClick = { showFabMenu = !showFabMenu },
-                        onLongClick = { showAddEntryBottomSheet = true }
-                    ),
+                onClick = { showFabMenu = !showFabMenu },
+                modifier = Modifier
+                    .withSharedTransitionVisualOverflow(
+                        sharedModifier = sharedFabModifier,
+                        visualOverflow = AddEntryFabVisualOverflow
+                    )
+                    .size(56.dp),
                 shape = fabShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shadowElevation = 4.dp
+                shadowElevation = 6.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -173,22 +170,10 @@ fun FabMenuItemWithSpring(
     icon: ImageVector,
     onClick: () -> Unit
 ) {
-    val motionScheme = MaterialTheme.motionScheme
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
-                slideInHorizontally(
-                    animationSpec = motionScheme.defaultSpatialSpec()
-                ) { it / 2 } +
-                scaleIn(
-                    initialScale = 0.8f,
-                    animationSpec = motionScheme.defaultSpatialSpec()
-                ),
-        exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
-                scaleOut(
-                    targetScale = 0.8f,
-                    animationSpec = motionScheme.defaultSpatialSpec()
-                )
+        enter = fadeIn() + slideInHorizontally { it / 2 } + scaleIn(initialScale = 0.8f),
+        exit = fadeOut() + slideOutHorizontally { it / 2 } + scaleOut(targetScale = 0.8f)
     ) {
         FabMenuItem(label = label, icon = icon, onClick = onClick)
     }
@@ -205,7 +190,7 @@ fun FabMenuItem(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        shadowElevation = 3.dp
+        shadowElevation = 4.dp
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),

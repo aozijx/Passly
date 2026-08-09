@@ -34,6 +34,8 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
+import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
 
 /**
  * 新建条目页面的公共外壳。
@@ -112,7 +114,8 @@ private fun SaveEntryFab(
         Modifier.sharedBounds(
             sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
             animatedVisibilityScope = animatedVisibilityScope,
-            resizeMode = RemeasureToBounds
+            resizeMode = RemeasureToBounds,
+            clipInOverlayDuringTransition = SharedTransitionOverlayClip.None
         )
     }
 
@@ -133,7 +136,11 @@ private fun SaveEntryFab(
         expanded = !isSaving,
         enabled = enabled,
         labelVisible = labelVisible,
-        modifier = sharedModifier
+        modifier = Modifier
+            .withSharedTransitionVisualOverflow(
+                sharedModifier = sharedModifier,
+                visualOverflow = AddEntryFabVisualOverflow
+            )
             .then(if (enabled) Modifier else Modifier.semantics { disabled() })
     )
 }

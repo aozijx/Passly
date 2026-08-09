@@ -25,6 +25,9 @@ Rail、全局 Snackbar 和认证遮罩属于 App Shell，不进入共享元素�
 没有跨越固定底栏。以后增加底栏时，应把底栏提升到 `AppMainContent` 的 App Shell，并将
 `PasslyNavHost` 放进 Scaffold 的 `content`，而不是把整个 Scaffold 放进 `SharedTransitionLayout`。
 
+共享元素的阴影、overlay 裁剪与 visual overflow 处理见
+[Compose 共享元素与阴影裁剪](../development/shared-element-transitions.md)。
+
 每个目的地仍可使用自己的 Scaffold。目的地必须消费 App Shell 传入的 `PaddingValues`，并自行处理 IME；
 共享元素使用内容坐标，不负责窗口 Insets。
 
