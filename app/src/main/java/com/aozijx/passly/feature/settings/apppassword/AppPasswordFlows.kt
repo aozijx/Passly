@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.feature.settings.SettingsViewModel
+import com.aozijx.passly.feature.settings.contract.SettingsIntent
 
 enum class AppPasswordAction {
     SET,
@@ -16,72 +17,55 @@ enum class AppPasswordAction {
     DISABLE
 }
 
-internal fun handleAppPasswordAction(
+internal fun validateAndSendAppPasswordAction(
     context: Context,
     action: AppPasswordAction,
     currentPassword: String,
     newPassword: String,
     confirmPassword: String,
-    settingsViewModel: SettingsViewModel,
-    onSuccess: (AppPasswordAction) -> Unit
-) {
+    settingsViewModel: SettingsViewModel
+): Boolean {
     when (action) {
         AppPasswordAction.SET -> {
             if (!AppPasswordPolicy.acceptsLength(newPassword.length)) {
                 context.showToast(R.string.settings_auth_password_too_short)
-                return
+                return false
             }
             if (newPassword != confirmPassword) {
                 context.showToast(R.string.settings_auth_password_mismatch)
-                return
+                return false
             }
-            settingsViewModel.setAppPassword(newPassword.toCharArray()) { result ->
-                if (result is AuthenticationResult.Success) {
-                    context.showToast(R.string.settings_auth_password_set_success)
-                    onSuccess(action)
-                } else {
-                    context.showFailure(result)
-                }
-            }
+            settingsViewModel.handleIntent(
+                SettingsIntent.SetAppPassword(newPassword.toCharArray())
+            )
         }
 
         AppPasswordAction.CHANGE -> {
             if (currentPassword.isEmpty() || newPassword.isEmpty()) {
                 context.showToast(R.string.settings_auth_password_fields_required)
-                return
+                return false
             }
             if (!AppPasswordPolicy.acceptsLength(newPassword.length)) {
                 context.showToast(R.string.settings_auth_password_too_short)
-                return
+                return false
             }
             if (newPassword != confirmPassword) {
                 context.showToast(R.string.settings_auth_password_mismatch)
-                return
+                return false
             }
-            settingsViewModel.changeAppPassword(
-                currentPassword.toCharArray(),
-                newPassword.toCharArray()
-            ) { result ->
-                if (result is AuthenticationResult.Success) {
-                    context.showToast(R.string.settings_auth_password_change_success)
-                    onSuccess(action)
-                } else {
-                    context.showFailure(result)
-                }
-            }
+            settingsViewModel.handleIntent(
+                SettingsIntent.ChangeAppPassword(
+                    currentPassword.toCharArray(),
+                    newPassword.toCharArray()
+                )
+            )
         }
 
         AppPasswordAction.DISABLE -> {
-            settingsViewModel.disableAppPassword { result ->
-                if (result is AuthenticationResult.Success) {
-                    context.showToast(R.string.settings_auth_password_disabled)
-                    onSuccess(action)
-                } else {
-                    context.showFailure(result)
-                }
-            }
+            settingsViewModel.handleIntent(SettingsIntent.DisableAppPassword)
         }
     }
+    return true
 }
 
 private fun Context.showToast(messageResource: Int) {

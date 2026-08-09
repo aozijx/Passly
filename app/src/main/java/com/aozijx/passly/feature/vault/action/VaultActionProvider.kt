@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -19,6 +20,7 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.VaultViewModel
 import com.aozijx.passly.feature.vault.contract.VaultIntent
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 class VaultActionProvider(
     val onSwipeTriggered: (SwipeActionType, EntryListItem) -> Unit,
@@ -38,6 +40,7 @@ fun rememberVaultActionProvider(
     isFabVisible: (Boolean) -> Unit
 ): VaultActionProvider {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
     val fieldCopiedFormat = stringResource(R.string.msg_copy_success)
 
@@ -64,10 +67,12 @@ fun rememberVaultActionProvider(
                 } ?: Unit
             } else {
                 latestAuthentication {
-                    vaultViewModel.loadEntryById(item.id) { fullEntry ->
+                    scope.launch {
+                        val fullEntry = vaultViewModel.loadEntryById(item.id)
+                            ?: return@launch
                         val rawValue =
                             vaultViewModel.entryFieldReader.getFieldValue(fullEntry, fieldKey)
-                                ?: return@loadEntryById
+                                ?: return@launch
                         ClipboardUtils.copy(context, rawValue)
                         Toast.makeText(
                             context,

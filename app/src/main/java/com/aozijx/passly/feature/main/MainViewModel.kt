@@ -20,14 +20,13 @@ import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.main.contract.MainUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -43,8 +42,8 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
-    private val _effects = MutableSharedFlow<MainEffect>(extraBufferCapacity = 1)
-    val effects: SharedFlow<MainEffect> = _effects.asSharedFlow()
+    private val _effects = Channel<MainEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     init {
         observeSettings()
@@ -59,51 +58,48 @@ class MainViewModel @Inject constructor(
             MainIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
             MainIntent.RetryDatabaseInitialization -> initializeDatabase()
             MainIntent.RecoverDatabase -> recoverDatabase()
+            MainIntent.RequestAuth -> requestAuth()
+            MainIntent.RequestReauth -> requestReauth()
+            is MainIntent.RequestSensitiveAccess -> requestSensitiveAccess(
+                intent.action,
+                intent.accessLevel
+            )
         }
     }
 
-    fun isAuthorizedNow(): Boolean =
-        authenticationManager.state.value is AuthenticationState.Authenticated
+    val isAuthorizedNow: Boolean
+        get() = authenticationManager.state.value is AuthenticationState.Authenticated
 
-    fun requestAuth(
-        onSuccess: () -> Unit = {},
-        onError: ((String) -> Unit)? = null
-    ) {
-        requestAuthentication(AuthenticationPurpose.UNLOCK_VAULT, onSuccess, onError)
+    private fun requestAuth() {
+        requestAuthentication(AuthenticationPurpose.UNLOCK_VAULT)
     }
 
-    fun requestReauth(
-        onSuccess: () -> Unit = {},
-        onError: ((String) -> Unit)? = null
-    ) {
-        requestAuthentication(AuthenticationPurpose.REAUTHENTICATE, onSuccess, onError)
+    private fun requestReauth() {
+        requestAuthentication(AuthenticationPurpose.REAUTHENTICATE)
     }
 
-    fun requestSensitiveAccess(
+    private fun requestSensitiveAccess(
         action: SensitiveAccessAction,
-        accessLevel: SensitiveAccessLevel,
-        onSuccess: () -> Unit = {},
-        onError: ((String) -> Unit)? = null
+        accessLevel: SensitiveAccessLevel
     ) {
         val purpose = when (action) {
             SensitiveAccessAction.COPY -> AuthenticationPurpose.COPY_SECRET
             SensitiveAccessAction.REVEAL -> when (accessLevel) {
                 SensitiveAccessLevel.STANDARD -> AuthenticationPurpose.REVEAL_SECRET
                 SensitiveAccessLevel.HIGH ->
-                AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET
+                    AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET
             }
         }
-        requestAuthentication(purpose, onSuccess, onError)
+        requestAuthentication(purpose)
     }
 
-    private fun requestAuthentication(
-        purpose: AuthenticationPurpose,
-        onSuccess: () -> Unit,
-        onError: ((String) -> Unit)?
-    ) {
+    private fun requestAuthentication(purpose: AuthenticationPurpose) {
         authenticationManager.authenticate(AuthenticationRequest(purpose)) { result ->
-            if (result is AuthenticationResult.Success) onSuccess()
-            else if (result is AuthenticationResult.Failure) onError?.invoke("认证失败")
+            if (result is AuthenticationResult.Success) {
+                emitEffect(MainEffect.AuthSuccess)
+            } else if (result is AuthenticationResult.Failure) {
+                emitEffect(MainEffect.AuthError("认证失败"))
+            }
         }
     }
 
@@ -263,7 +259,7 @@ class MainViewModel @Inject constructor(
     }
 
     private fun emitEffect(effect: MainEffect) {
-        _effects.tryEmit(effect)
+        _effects.trySend(effect)
     }
 
     /**

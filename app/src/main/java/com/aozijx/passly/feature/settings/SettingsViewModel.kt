@@ -19,15 +19,14 @@ import com.aozijx.passly.feature.settings.contract.SettingsEffect
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -48,8 +47,8 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _effects = MutableSharedFlow<SettingsEffect>(extraBufferCapacity = 1)
-    val effects: SharedFlow<SettingsEffect> = _effects.asSharedFlow()
+    private val _effects = Channel<SettingsEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     init {
         loadSettings()
@@ -61,6 +60,13 @@ class SettingsViewModel @Inject constructor(
             is SettingsIntent.SetSwipeRightAction -> setSwipeRightAction(intent.action)
             is SettingsIntent.LoadSettings -> loadSettings()
             SettingsIntent.ClearDatabase -> clearDatabase()
+            is SettingsIntent.SetAppPassword -> setAppPassword(intent.password)
+            is SettingsIntent.ChangeAppPassword -> changeAppPassword(
+                intent.currentPassword,
+                intent.newPassword
+            )
+
+            SettingsIntent.DisableAppPassword -> disableAppPassword()
         }
     }
 
@@ -78,7 +84,7 @@ class SettingsViewModel @Inject constructor(
                 }
             }.onFailure { error ->
                 _uiState.update { it.copy(isLoading = false) }
-                _effects.tryEmit(SettingsEffect.ShowError(error.toUiMessage("加载设置失败")))
+                _effects.trySend(SettingsEffect.ShowError(error.toUiMessage("加载设置失败")))
             }
         }
     }
@@ -103,9 +109,9 @@ class SettingsViewModel @Inject constructor(
             runCatching {
                 settingsRepository.update(command)
                 _uiState.update(updateState)
-                _effects.tryEmit(SettingsEffect.SettingsSaved)
+                _effects.trySend(SettingsEffect.SettingsSaved)
             }.onFailure { error ->
-                _effects.tryEmit(SettingsEffect.ShowError(error.toUiMessage("保存失败")))
+                _effects.trySend(SettingsEffect.ShowError(error.toUiMessage("保存失败")))
             }
         }
     }
@@ -113,7 +119,7 @@ class SettingsViewModel @Inject constructor(
     private fun clearDatabase() {
         if (_uiState.value.isClearingDatabase) return
         if (authenticationManager.state.value is AuthenticationState.RecoveryMode) {
-            _effects.tryEmit(SettingsEffect.ShowError("恢复模式不能清除数据库"))
+            _effects.trySend(SettingsEffect.ShowError("恢复模式不能清除数据库"))
             return
         }
         viewModelScope.launch {
@@ -127,9 +133,9 @@ class SettingsViewModel @Inject constructor(
                     val outcome = databaseLifecycleUseCases.clearAndReinitialize()
                     _uiState.update { it.copy(isClearingDatabase = false) }
                     if (outcome.success) {
-                        _effects.emit(SettingsEffect.DatabaseCleared)
+                        _effects.send(SettingsEffect.DatabaseCleared)
                     } else {
-                        _effects.emit(
+                        _effects.send(
                             SettingsEffect.ShowError(
                                 "清除数据库失败"
                             )
@@ -141,46 +147,68 @@ class SettingsViewModel @Inject constructor(
                     _uiState.update { it.copy(isClearingDatabase = false) }
                 is AuthenticationResult.Failure -> {
                     _uiState.update { it.copy(isClearingDatabase = false) }
-                    _effects.emit(SettingsEffect.ShowError("身份验证失败，数据库未清除"))
+                    _effects.send(SettingsEffect.ShowError("身份验证失败，数据库未清除"))
                 }
             }
         }
     }
 
-    fun setAppPassword(
-        password: CharArray,
-        onResult: (AuthenticationResult) -> Unit
-    ) {
-        runPrimaryAuthMethodChange(onResult) {
-            authenticationMethodProvisioner.setAppPassword(password)
-        }
+    private fun setAppPassword(password: CharArray) {
+        runPrimaryAuthMethodChange(
+            successEffect = SettingsEffect.AppPasswordSet,
+            operation = { authenticationMethodProvisioner.setAppPassword(password) }
+        )
     }
 
-    fun changeAppPassword(
+    private fun changeAppPassword(
         currentPassword: CharArray,
-        newPassword: CharArray,
-        onResult: (AuthenticationResult) -> Unit
+        newPassword: CharArray
     ) {
-        runPrimaryAuthMethodChange(onResult) {
-            authenticationMethodProvisioner.changeAppPassword(currentPassword, newPassword)
-        }
+        runPrimaryAuthMethodChange(
+            successEffect = SettingsEffect.AppPasswordChanged,
+            operation = {
+                authenticationMethodProvisioner.changeAppPassword(
+                    currentPassword,
+                    newPassword
+                )
+            }
+        )
     }
 
-    fun disableAppPassword(onResult: (AuthenticationResult) -> Unit) {
-        runPrimaryAuthMethodChange(onResult) {
-            authenticationMethodProvisioner.disableAppPassword()
-        }
+    private fun disableAppPassword() {
+        runPrimaryAuthMethodChange(
+            successEffect = SettingsEffect.AppPasswordDisabled,
+            operation = { authenticationMethodProvisioner.disableAppPassword() }
+        )
     }
 
     private fun runPrimaryAuthMethodChange(
-        onResult: (AuthenticationResult) -> Unit,
+        successEffect: SettingsEffect,
         operation: suspend () -> AuthenticationResult
     ) {
         if (isRecoveryMode()) {
-            onResult(sessionModeRestrictedResult())
+            _effects.trySend(
+                SettingsEffect.AppPasswordError(
+                    "恢复模式不能修改应用密码"
+                )
+            )
             return
         }
-        viewModelScope.launch { onResult(operation()) }
+        viewModelScope.launch {
+            when (val result = operation()) {
+                is AuthenticationResult.Success -> _effects.trySend(successEffect)
+                is AuthenticationResult.Failure -> {
+                    _effects.trySend(
+                        SettingsEffect.AppPasswordError(
+                            "操作失败"
+                        )
+                    )
+                }
+
+                is AuthenticationResult.Cancelled -> { /* no-op */
+                }
+            }
+        }
     }
 
     private fun isRecoveryMode(): Boolean =

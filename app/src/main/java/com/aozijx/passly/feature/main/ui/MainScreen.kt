@@ -74,6 +74,7 @@ internal fun MainScreen(
                     showLocalMessage(effect.error, longDuration = true)
 
                 MainEffect.LockedByTimeout, MainEffect.NavigateToVault -> Unit
+                is MainEffect.AuthSuccess, is MainEffect.AuthError -> Unit
             }
         }
     }

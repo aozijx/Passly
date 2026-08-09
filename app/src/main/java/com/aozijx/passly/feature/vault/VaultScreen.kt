@@ -243,7 +243,10 @@ fun VaultContent(
 
     VaultDialogs(
         uiState = uiState,
-        vaultViewModel = vaultViewModel,
+        onAddItem = { vaultViewModel.onIntent(VaultIntent.AddItem(it)) },
+        onDismissAddType = { vaultViewModel.onIntent(VaultIntent.AddTypeSelected(null)) },
+        onConfirmDelete = { vaultViewModel.onIntent(VaultIntent.ConfirmDelete) },
+        onDismissDelete = { vaultViewModel.onIntent(VaultIntent.ItemToDeleteSelected(null)) },
         requestAuthentication = requestAuthentication,
         onUpdateInteraction = actionProvider.onUpdateInteraction
     )

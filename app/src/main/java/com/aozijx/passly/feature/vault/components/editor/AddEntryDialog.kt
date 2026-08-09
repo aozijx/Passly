@@ -8,14 +8,14 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.ui.components.AppDialog
-import com.aozijx.passly.feature.vault.VaultViewModel
-import com.aozijx.passly.feature.vault.contract.VaultIntent
+import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.vault.model.AddType
 
 @Composable
 fun AddEntryDialog(
-    viewModel: VaultViewModel,
     addType: AddType,
+    onAddItem: (VaultEntry) -> Unit,
+    onDismiss: () -> Unit,
     onUpdateInteraction: () -> Unit
 ) {
     val context = LocalContext.current
@@ -26,12 +26,12 @@ fun AddEntryDialog(
 
     AppDialog(
         title = stringResource(R.string.vault_add_generic_title, typeLabel),
-        onDismiss = { viewModel.onIntent(VaultIntent.AddTypeSelected(null)) },
+        onDismiss = onDismiss,
         confirmEnabled = state.canSave,
         onConfirm = {
             try {
-                viewModel.onIntent(VaultIntent.AddItem(schema.toVaultEntry(state)))
-                viewModel.onIntent(VaultIntent.AddTypeSelected(null))
+                onAddItem(schema.toVaultEntry(state))
+                onDismiss()
             } catch (e: Exception) {
                 AppTelemetry.e("AddEntryDialog", "Failed to save", e)
                 Toast.makeText(context, saveFailedMessage, Toast.LENGTH_SHORT).show()

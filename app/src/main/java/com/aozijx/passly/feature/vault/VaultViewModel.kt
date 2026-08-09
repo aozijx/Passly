@@ -37,14 +37,14 @@ import com.aozijx.passly.feature.vault.list.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -63,11 +63,11 @@ class VaultViewModel @Inject constructor(
     private val accessPolicy: VaultAccessPolicy
 ) : ViewModel() {
 
-    private val _effects = MutableSharedFlow<VaultEffect>(extraBufferCapacity = 1)
-    val effects = _effects.asSharedFlow()
+    private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     private fun emitError(message: String) {
-        _effects.tryEmit(VaultEffect.ShowError(message))
+        _effects.trySend(VaultEffect.ShowError(message))
     }
 
     private val _refreshTrigger = MutableStateFlow(0L)
@@ -253,11 +253,10 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    fun loadEntryById(entryId: String, onLoaded: (VaultEntry) -> Unit) =
-        viewModelScope.launch {
-            if (!accessPolicy.hasFullAccess()) return@launch
-            entryQueryRepository.getByIdWithoutHighSensitivity(entryId)?.let(onLoaded)
-        }
+    suspend fun loadEntryById(entryId: String): VaultEntry? {
+        if (!accessPolicy.hasFullAccess()) return null
+        return entryQueryRepository.getByIdWithoutHighSensitivity(entryId)
+    }
 
     private fun addItem(entry: VaultEntry) {
         if (!ensureFullVaultAccess("当前会话不能新建条目")) return

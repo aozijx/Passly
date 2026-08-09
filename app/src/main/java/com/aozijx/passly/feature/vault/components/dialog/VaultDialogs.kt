@@ -1,9 +1,8 @@
 package com.aozijx.passly.feature.vault.components.dialog
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.vault.components.editor.AddEntryDialog
-import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -11,7 +10,8 @@ import com.aozijx.passly.feature.vault.model.AddType
 @Composable
 fun AddDialogHost(
     uiState: VaultUiState,
-    vaultViewModel: VaultViewModel,
+    onAddItem: (VaultEntry) -> Unit,
+    onDismissAddType: () -> Unit,
     onUpdateInteraction: () -> Unit
 ) {
     when (uiState.addType) {
@@ -24,8 +24,9 @@ fun AddDialogHost(
         AddType.RECOVERY_CODE -> {
             val type = uiState.addType
             AddEntryDialog(
-                viewModel = vaultViewModel,
                 addType = type,
+                onAddItem = onAddItem,
+                onDismiss = onDismissAddType,
                 onUpdateInteraction = onUpdateInteraction
             )
         }
@@ -40,15 +41,16 @@ fun AddDialogHost(
 @Composable
 fun DeleteDialogHost(
     uiState: VaultUiState,
-    vaultViewModel: VaultViewModel,
-    requestAuthentication: (onSuccess: () -> Unit) -> Unit
+    requestAuthentication: (onSuccess: () -> Unit) -> Unit,
+    onConfirmDelete: () -> Unit,
+    onDismissDelete: () -> Unit
 ) {
     uiState.pendingDelete?.let { item ->
         DeleteConfirmDialog(
             item = item,
             requestAuthentication = requestAuthentication,
-            onConfirm = { vaultViewModel.onIntent(VaultIntent.ConfirmDelete) },
-            onDismiss = { vaultViewModel.onIntent(VaultIntent.ItemToDeleteSelected(null)) }
+            onConfirm = onConfirmDelete,
+            onDismiss = onDismissDelete
         )
     }
 }
@@ -56,19 +58,24 @@ fun DeleteDialogHost(
 @Composable
 fun VaultDialogs(
     uiState: VaultUiState,
-    vaultViewModel: VaultViewModel,
+    onAddItem: (VaultEntry) -> Unit,
+    onDismissAddType: () -> Unit,
+    onConfirmDelete: () -> Unit,
+    onDismissDelete: () -> Unit,
     requestAuthentication: (onSuccess: () -> Unit) -> Unit,
     onUpdateInteraction: () -> Unit
 ) {
     AddDialogHost(
         uiState = uiState,
-        vaultViewModel = vaultViewModel,
+        onAddItem = onAddItem,
+        onDismissAddType = onDismissAddType,
         onUpdateInteraction = onUpdateInteraction
     )
 
     DeleteDialogHost(
         uiState = uiState,
-        vaultViewModel = vaultViewModel,
-        requestAuthentication = requestAuthentication
+        requestAuthentication = requestAuthentication,
+        onConfirmDelete = onConfirmDelete,
+        onDismissDelete = onDismissDelete
     )
 }

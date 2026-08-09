@@ -27,7 +27,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.apppassword.AppPasswordAction
-import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordAction
+import com.aozijx.passly.feature.settings.apppassword.validateAndSendAppPasswordAction
 import com.aozijx.passly.feature.settings.contract.SettingsEffect
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
@@ -70,14 +70,13 @@ fun SettingsNavGraph(
         stringResource(R.string.settings_auth_before_set_app_password)
 
     fun submitAppPasswordAction(action: AppPasswordAction) {
-        handleAppPasswordAction(
+        validateAndSendAppPasswordAction(
             context = context,
             action = action,
             currentPassword = localState.appPasswordCurrent,
             newPassword = localState.appPasswordNew,
             confirmPassword = localState.appPasswordConfirm,
-            settingsViewModel = settingsViewModel,
-            onSuccess = localState::onAppPasswordSuccess
+            settingsViewModel = settingsViewModel
         )
     }
 
@@ -95,6 +94,22 @@ fun SettingsNavGraph(
                 is SettingsEffect.ShowError -> effect.message
                 is SettingsEffect.SettingsSaved -> "设置已保存"
                 is SettingsEffect.DatabaseCleared -> "保险库数据库已永久清除"
+                is SettingsEffect.AppPasswordSet -> {
+                    localState.onAppPasswordSuccess(AppPasswordAction.SET)
+                    context.getString(R.string.settings_auth_password_set_success)
+                }
+
+                is SettingsEffect.AppPasswordChanged -> {
+                    localState.onAppPasswordSuccess(AppPasswordAction.CHANGE)
+                    context.getString(R.string.settings_auth_password_change_success)
+                }
+
+                is SettingsEffect.AppPasswordDisabled -> {
+                    localState.onAppPasswordSuccess(AppPasswordAction.DISABLE)
+                    context.getString(R.string.settings_auth_password_disabled)
+                }
+
+                is SettingsEffect.AppPasswordError -> effect.message
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }

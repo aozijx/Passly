@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.general
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,9 +33,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.widget.Toast
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
@@ -42,7 +41,7 @@ import com.aozijx.passly.core.ui.components.group.switchSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
-fun LogSettingsSection(viewModel: DiagnosticsSettingsViewModel = hiltViewModel()) {
+fun LogSettingsSection(viewModel: DiagnosticsSettingsViewModel) {
     val context = LocalContext.current
     val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsStateWithLifecycle()
     var showViewerDialog by remember { mutableStateOf(false) }

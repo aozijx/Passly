@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     private val sensorController: MainSensorController by lazy {
         MainSensorController(this) {
-            if (viewModel.isAuthorizedNow()) {
+            if (viewModel.isAuthorizedNow) {
                 viewModel.handleIntent(MainIntent.Lock)
                 if (sensorController.isFlipExitAndClearStackEnabled) {
                     noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))

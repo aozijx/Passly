@@ -12,8 +12,8 @@ import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
-import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
 import com.aozijx.passly.domain.entry.repository.EntryHierarchyRepository
+import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import com.aozijx.passly.domain.entry.repository.FaviconRepository
 import com.aozijx.passly.domain.entry.service.EntryTypePolicy
@@ -24,12 +24,11 @@ import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.page.internal.DetailEntryAnalyzer
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -57,8 +56,8 @@ class DetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
-    private val _effects = MutableSharedFlow<DetailEffect>(extraBufferCapacity = 1)
-    val effects: SharedFlow<DetailEffect> = _effects.asSharedFlow()
+    private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -250,7 +249,7 @@ class DetailViewModel @Inject constructor(
     }
 
     private fun emitEntryUpdated(entry: VaultEntry) {
-        _effects.tryEmit(DetailEffect.EntryUpdated(entry))
+        _effects.trySend(DetailEffect.EntryUpdated(entry))
     }
 
     private fun autoDownloadFavicon(entry: VaultEntry) {

@@ -24,11 +24,11 @@ import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
 import com.aozijx.passly.security.MemoryCleaner
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -44,8 +44,8 @@ class RecoveryModeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecoveryModeUiState())
     val uiState: StateFlow<RecoveryModeUiState> = _uiState.asStateFlow()
 
-    private val _effect = MutableSharedFlow<RecoveryModeEffect>()
-    val effect = _effect.asSharedFlow()
+    private val _effect = Channel<RecoveryModeEffect>(Channel.BUFFERED)
+    val effect = _effect.receiveAsFlow()
 
     fun onIntent(intent: RecoveryModeIntent) {
         when (intent) {
@@ -110,7 +110,7 @@ class RecoveryModeViewModel @Inject constructor(
                                 passwordSetupError = null
                             )
                         }.also {
-                            _effect.emit(RecoveryModeEffect.PasswordResetCompleted)
+                            _effect.send(RecoveryModeEffect.PasswordResetCompleted)
                         }
 
                     is AuthenticationResult.Cancelled ->
@@ -164,7 +164,7 @@ class RecoveryModeViewModel @Inject constructor(
         if (!ensureRecoveryMode()) return
         if (!state.canSubmitExport) return
         viewModelScope.launch {
-            _effect.emit(RecoveryModeEffect.PickExportTarget(buildExportFileName()))
+            _effect.send(RecoveryModeEffect.PickExportTarget(buildExportFileName()))
         }
     }
 
@@ -197,7 +197,7 @@ class RecoveryModeViewModel @Inject constructor(
                                     exportError = null
                                 )
                             }
-                            _effect.emit(RecoveryModeEffect.ExportCompleted)
+                            _effect.send(RecoveryModeEffect.ExportCompleted)
                         }
 
                         is AppResult.Failure -> {
@@ -240,7 +240,7 @@ class RecoveryModeViewModel @Inject constructor(
 
     private fun exitRecovery() {
         viewModelScope.launch {
-            _effect.emit(RecoveryModeEffect.ExitRecovery)
+            _effect.send(RecoveryModeEffect.ExitRecovery)
         }
     }
 

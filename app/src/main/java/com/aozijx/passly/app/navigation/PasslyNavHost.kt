@@ -28,6 +28,7 @@ import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.page.DetailScreen
 import com.aozijx.passly.feature.main.MainViewModel
+import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.settings.SettingsScreen
@@ -53,6 +54,8 @@ fun PasslyNavHost(
     vaultViewModel: VaultViewModel,
     isDatabaseInitializing: Boolean = false
 ) {
+    var pendingAuthCallback by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -70,19 +73,41 @@ fun PasslyNavHost(
             ) {
         composable(AppRoute.Vault.route) {
             val animatedVisibilityScope = this
+
+            LaunchedEffect(mainViewModel) {
+                mainViewModel.effects.collect { effect ->
+                    when (effect) {
+                        is MainEffect.AuthSuccess -> {
+                            pendingAuthCallback?.invoke()
+                            pendingAuthCallback = null
+                        }
+
+                        is MainEffect.AuthError -> {
+                            pendingAuthCallback = null
+                        }
+
+                        else -> {}
+                    }
+                }
+            }
+
             VaultContent(
                 vaultViewModel = vaultViewModel,
                 requestAuthentication = { onSuccess ->
-                    mainViewModel.requestAuth(onSuccess = onSuccess)
+                    pendingAuthCallback = onSuccess
+                    mainViewModel.handleIntent(MainIntent.RequestAuth)
                 },
                 requestReauthentication = { onSuccess ->
-                    mainViewModel.requestReauth(onSuccess = onSuccess)
+                    pendingAuthCallback = onSuccess
+                    mainViewModel.handleIntent(MainIntent.RequestReauth)
                 },
                 requestSensitiveCopy = { onSuccess ->
-                    mainViewModel.requestSensitiveAccess(
-                        action = SensitiveAccessAction.COPY,
-                        accessLevel = SensitiveAccessLevel.STANDARD,
-                        onSuccess = onSuccess
+                    pendingAuthCallback = onSuccess
+                    mainViewModel.handleIntent(
+                        MainIntent.RequestSensitiveAccess(
+                            action = SensitiveAccessAction.COPY,
+                            accessLevel = SensitiveAccessLevel.STANDARD
+                        )
                     )
                 },
                 onUserInteraction = {
@@ -195,10 +220,11 @@ fun PasslyNavHost(
             }
 
             var initialEntry by remember { mutableStateOf<VaultEntry?>(null) }
-            DisposableEffect(entryId, detailViewModel, vaultViewModel) {
-                val loadJob = vaultViewModel.loadEntryById(entryId) { initialEntry = it }
+            LaunchedEffect(entryId) {
+                initialEntry = vaultViewModel.loadEntryById(entryId)
+            }
+            DisposableEffect(entryId) {
                 onDispose {
-                    loadJob.cancel()
                     initialEntry = null
                     detailViewModel.handleIntent(DetailIntent.ClearSensitiveState)
                 }
@@ -216,10 +242,12 @@ fun PasslyNavHost(
                         navController.navigate(AppRoute.Detail.createRoute(it.id))
                     },
                     onAuthenticate = DetailAuthenticate { action, accessLevel, success ->
-                        mainViewModel.requestSensitiveAccess(
-                            action = action,
-                            accessLevel = accessLevel,
-                            onSuccess = success
+                        pendingAuthCallback = success
+                        mainViewModel.handleIntent(
+                            MainIntent.RequestSensitiveAccess(
+                                action = action,
+                                accessLevel = accessLevel
+                            )
                         )
                     }
                 )
