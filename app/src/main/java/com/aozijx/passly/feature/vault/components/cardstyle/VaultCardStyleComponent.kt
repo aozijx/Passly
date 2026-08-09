@@ -3,9 +3,9 @@ package com.aozijx.passly.feature.vault.components.cardstyle
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.feature.vault.model.OtpUiState
 
 /**
  * One selectable appearance for a vault list card.

@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.auth.ui.host
+package com.aozijx.passly.core.ui.components.auth
 
 import androidx.lifecycle.ViewModel
 import com.github.f4b6a3.uuid.UuidCreator

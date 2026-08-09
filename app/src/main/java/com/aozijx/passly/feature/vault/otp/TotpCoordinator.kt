@@ -4,9 +4,9 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.otp.OtpError
 import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.authentication.SessionLockedException
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.feature.vault.model.OtpUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay

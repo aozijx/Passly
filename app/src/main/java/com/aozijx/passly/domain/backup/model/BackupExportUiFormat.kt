@@ -1,7 +1,4 @@
-package com.aozijx.passly.feature.backup.model
-
-import com.aozijx.passly.domain.backup.model.BackupFormatId
-import com.aozijx.passly.domain.backup.model.BackupFormats
+package com.aozijx.passly.domain.backup.model
 
 enum class BackupExportUiFormat(
     val formatId: BackupFormatId,

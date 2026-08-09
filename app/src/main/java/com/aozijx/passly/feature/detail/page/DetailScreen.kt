@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -19,7 +20,6 @@ import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.ui.DetailScrollableContent
 import com.aozijx.passly.feature.detail.ui.DetailTopBar
-import com.aozijx.passly.feature.vault.model.OtpUiState
 
 /**
  * 详情页 UI 组件 (Stateless)

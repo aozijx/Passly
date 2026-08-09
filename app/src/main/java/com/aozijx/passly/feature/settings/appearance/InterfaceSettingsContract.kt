@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.settings.appearance
 
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 
 data class InterfaceSettingsUiState(
     val hideSystemBars: Boolean = false,

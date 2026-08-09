@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.list
 
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.service.VaultListSorter
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

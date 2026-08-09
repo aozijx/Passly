@@ -192,11 +192,11 @@ class MigrationBoundaryTest {
     @Test
     fun appPasswordFeedbackAndEntryAuthenticationStaySeparated() {
         val passwordFields = File(
-            "src/main/java/com/aozijx/passly/feature/settings/apppassword/ui/" +
+            "src/main/java/com/aozijx/passly/core/ui/components/apppassword/" +
                     "PasswordFields.kt"
         ).readText()
         val authenticationHost = File(
-            "src/main/java/com/aozijx/passly/feature/auth/ui/host/AuthenticationHost.kt"
+            "src/main/java/com/aozijx/passly/core/ui/components/auth/AuthenticationHost.kt"
         ).readText()
         val authenticationScreen = File(
             "src/main/java/com/aozijx/passly/feature/auth/ui/AuthenticationScreen.kt"
@@ -323,7 +323,7 @@ class MigrationBoundaryTest {
     @Test
     fun vaultQuickFilterModelDoesNotOwnUiPresentation() {
         val vaultQuickFilter = File(
-            "src/main/java/com/aozijx/passly/feature/vault/model/VaultQuickFilter.kt"
+            "src/main/java/com/aozijx/passly/domain/settings/model/VaultQuickFilter.kt"
         ).readText()
 
         assertTrue(

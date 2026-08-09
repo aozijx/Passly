@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -37,7 +38,6 @@ import com.aozijx.passly.feature.detail.ui.sections.SeedPhraseSection
 import com.aozijx.passly.feature.detail.ui.sections.SshKeySection
 import com.aozijx.passly.feature.detail.ui.sections.TotpSection
 import com.aozijx.passly.feature.detail.ui.sections.WifiSection
-import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
 fun DetailScrollableContent(

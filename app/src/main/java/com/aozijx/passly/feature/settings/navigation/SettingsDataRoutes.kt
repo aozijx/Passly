@@ -20,17 +20,17 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
+import com.aozijx.passly.core.backup.BackupStorageSupport
 import com.aozijx.passly.core.util.PathDisplayFormatter
+import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.feature.backup.BackupViewModel
 import com.aozijx.passly.feature.backup.contract.BackupIntent
-import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
-import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
+import com.aozijx.passly.feature.backup.ui.BackupRestoreSheetHost
+import com.aozijx.passly.feature.backup.ui.BackupSheet
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.contract.SettingsUiState
 import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreDetail
-import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreSheetHost
-import com.aozijx.passly.feature.settings.datamanagement.BackupSheet
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementDetail
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsAction
 import com.aozijx.passly.feature.settings.datamanagement.DataManagementSettingsViewModel
@@ -208,7 +208,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
                     },
                     onPickBackupPath = {
                         backupPathPicker.launch(
-                            BackupExportStorageSupport.defaultDocumentsTreeUri()
+                            BackupStorageSupport.defaultDocumentsTreeUri()
                         )
                     },
                     onTestBackupWrite = {

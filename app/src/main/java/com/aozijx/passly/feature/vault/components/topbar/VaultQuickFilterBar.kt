@@ -19,8 +19,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
-import com.aozijx.passly.feature.vault.presentation.titleRes
+import com.aozijx.passly.core.ui.components.vaultfilter.titleRes
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 
 @Composable
 fun VaultQuickFilterBar(

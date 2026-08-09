@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.auth.ui.host
+package com.aozijx.passly.core.ui.components.auth
 
 import android.content.Context
 import androidx.biometric.BiometricManager

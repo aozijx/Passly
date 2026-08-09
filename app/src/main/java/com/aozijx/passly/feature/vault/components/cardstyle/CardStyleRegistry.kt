@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.vault.components.cardstyle
 
 import androidx.compose.runtime.Composable
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.feature.vault.model.OtpUiState
 
 object CardStyleRegistry {
     /*

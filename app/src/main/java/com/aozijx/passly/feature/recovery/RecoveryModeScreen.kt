@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.recovery
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -34,19 +34,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
+import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
+import com.aozijx.passly.domain.backup.model.BackupOperationStatus
 import com.aozijx.passly.feature.backup.contract.BackupUiState
-import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
+import com.aozijx.passly.feature.backup.ui.BackupRestoreSheetHost
+import com.aozijx.passly.feature.backup.ui.BackupSheet
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
-import com.aozijx.passly.feature.settings.apppassword.ui.AppPasswordSetDialog
-import com.aozijx.passly.feature.settings.datamanagement.BackupRestoreSheetHost
-import com.aozijx.passly.feature.settings.datamanagement.BackupSheet
 
 /** Restricted UI shown after recovery-code verification. No Vault content is mounted here. */
 @Composable

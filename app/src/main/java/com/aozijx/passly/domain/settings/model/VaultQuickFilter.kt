@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.model
+package com.aozijx.passly.domain.settings.model
 
 import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
 

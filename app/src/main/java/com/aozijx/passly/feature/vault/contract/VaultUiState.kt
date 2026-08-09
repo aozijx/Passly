@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.vault.contract
 
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 
 data class VaultUiState(
     val searchQuery: String = "",

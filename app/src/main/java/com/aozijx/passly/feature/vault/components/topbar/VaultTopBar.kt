@@ -37,9 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.feature.vault.contract.VaultUiState
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
@@ -23,6 +24,7 @@ import com.aozijx.passly.domain.entry.repository.FaviconRepository
 import com.aozijx.passly.domain.entry.repository.OtpConfigRepository
 import com.aozijx.passly.domain.entry.service.EntryFieldReader
 import com.aozijx.passly.domain.settings.command.SettingsCommand
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.vault.contract.VaultEffect
@@ -33,8 +35,6 @@ import com.aozijx.passly.feature.vault.list.SearchFilterState
 import com.aozijx.passly.feature.vault.list.VaultListCoordinator
 import com.aozijx.passly.feature.vault.list.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.feature.vault.model.OtpUiState
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow

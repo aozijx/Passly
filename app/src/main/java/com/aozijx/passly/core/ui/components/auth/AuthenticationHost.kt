@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.auth.ui.host
+package com.aozijx.passly.core.ui.components.auth
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

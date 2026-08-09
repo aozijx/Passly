@@ -19,11 +19,11 @@ import com.aozijx.passly.core.permission.compose.ProvidePermissionServices
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
+import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
-import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
 import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainIntent

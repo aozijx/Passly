@@ -1,5 +1,6 @@
 package com.aozijx.passly.app.di
 
+import com.aozijx.passly.core.backup.BackupStorageSupport
 import com.aozijx.passly.data.backup.AndroidBackupFileStore
 import com.aozijx.passly.data.backup.VaultBackupServiceImpl
 import com.aozijx.passly.data.backup.format.BackupExportAdapter
@@ -10,6 +11,7 @@ import com.aozijx.passly.data.backup.format.json.PasslyJsonFormatAdapter
 import com.aozijx.passly.data.backup.format.text.ReadableTextFormatAdapter
 import com.aozijx.passly.data.backup.io.BackupFileStore
 import com.aozijx.passly.domain.backup.service.VaultBackupService
+import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -26,6 +28,12 @@ abstract class BackupModule {
     internal abstract fun bindVaultBackupService(
         impl: VaultBackupServiceImpl
     ): VaultBackupService
+
+    @Binds
+    @Singleton
+    internal abstract fun bindBackupStorageSupport(
+        impl: BackupExportStorageSupport
+    ): BackupStorageSupport
 
     @Binds
     @Singleton

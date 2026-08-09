@@ -12,9 +12,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
+import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
 import com.aozijx.passly.feature.autofill.AutofillCandidateBottomSheet
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint

@@ -35,8 +35,8 @@ import coil.compose.AsyncImage
 import com.aozijx.passly.core.media.rememberImagePaletteColors
 import com.aozijx.passly.core.media.toLocalIconImageModel
 import com.aozijx.passly.core.ui.components.VaultItemIcon
+import com.aozijx.passly.domain.entry.model.OtpUiState
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.feature.vault.model.OtpUiState
 
 @Composable
 fun PasswordStyleVaultItem(

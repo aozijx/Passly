@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.list
 
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 import com.aozijx.passly.domain.settings.model.VaultSortSpec
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow

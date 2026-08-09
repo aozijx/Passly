@@ -28,7 +28,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 import kotlin.math.roundToInt
 
 @Composable

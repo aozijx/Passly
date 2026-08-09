@@ -20,8 +20,8 @@ import com.aozijx.passly.core.ui.components.group.GroupCard
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
-import com.aozijx.passly.feature.vault.presentation.titleRes
+import com.aozijx.passly.core.ui.components.vaultfilter.titleRes
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 
 @Composable
 fun VaultQuickFiltersSettingsSection(

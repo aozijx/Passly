@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
+import com.aozijx.passly.core.backup.BackupStorageSupport
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.result.AppResult
@@ -18,7 +19,6 @@ import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupFormats
 import com.aozijx.passly.domain.backup.service.VaultBackupService
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
@@ -38,7 +38,7 @@ class RecoveryModeViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val methodProvisioner: AuthenticationMethodProvisioner,
     private val backupService: VaultBackupService,
-    private val storageSupport: BackupExportStorageSupport,
+    private val storageSupport: BackupStorageSupport,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecoveryModeUiState())

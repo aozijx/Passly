@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
-import com.aozijx.passly.feature.vault.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.VaultQuickFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel

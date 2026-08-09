@@ -10,8 +10,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.app.diagnostics.AppTelemetry
+import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
-import com.aozijx.passly.feature.auth.ui.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.service.autofill.credential.ModernCredentialService
 import dagger.hilt.android.AndroidEntryPoint

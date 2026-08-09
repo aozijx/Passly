@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.backup
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.backup.BackupStorageSupport
 import com.aozijx.passly.core.error.mapping.fromThrowable
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
@@ -13,7 +14,9 @@ import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.backup.model.BackupExportOptions
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
+import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
+import com.aozijx.passly.domain.backup.model.BackupOperationStatus
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.backup.service.VaultBackupService
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -22,10 +25,7 @@ import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.backup.contract.BackupIntent
-import com.aozijx.passly.feature.backup.contract.BackupOperationStatus
 import com.aozijx.passly.feature.backup.contract.BackupUiState
-import com.aozijx.passly.feature.backup.model.BackupExportUiFormat
-import com.aozijx.passly.feature.backup.storage.BackupExportStorageSupport
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +39,7 @@ import javax.inject.Inject
 class BackupViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val backupService: VaultBackupService,
-    private val storageSupport: BackupExportStorageSupport,
+    private val storageSupport: BackupStorageSupport,
     private val authenticationManager: AuthenticationManager,
     private val sessionPolicy: BackupSessionPolicy,
     private val noticePublisher: AppNoticePublisher
