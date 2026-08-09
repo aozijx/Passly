@@ -107,6 +107,8 @@
     <string name="vault_add_password_title">Add Password</string>
     <string name="vault_add_password_website">Website or app address</string>
     <string name="vault_add_password_save_failed">Couldn\'t save password</string>
+    <string name="vault_add_bank_card_title">Add Bank Card</string>
+    <string name="vault_add_bank_card_save_failed">Couldn\'t save bank card</string>
     <string name="vault_reveal_info">Verify and reveal details</string>
     <string name="vault_edit_modified_hint">Modified, don\'t forget to save</string>
     <string name="vault_detail_associated_domain">Associated Domain</string>

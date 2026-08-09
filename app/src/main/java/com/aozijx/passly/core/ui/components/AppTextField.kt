@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -24,7 +25,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.material3.LocalTextStyle
 import com.aozijx.passly.R
 
 @Composable
@@ -46,7 +46,9 @@ fun PasslyOutlinedTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     shape: Shape = passlyTextFieldShape(),
-    colors: TextFieldColors = passlyTextFieldColors()
+    colors: TextFieldColors = passlyTextFieldColors(),
+    isError: Boolean = false,
+    supportingText: @Composable (() -> Unit)? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -54,6 +56,8 @@ fun PasslyOutlinedTextField(
         label = { Text(label) },
         enabled = enabled,
         readOnly = readOnly,
+        isError = isError,
+        supportingText = supportingText,
         singleLine = singleLine,
         modifier = modifier.fillMaxWidth(),
         minLines = minLines,
@@ -89,7 +93,9 @@ fun PasslyOutlinedTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     shape: Shape = passlyTextFieldShape(),
-    colors: TextFieldColors = passlyTextFieldColors()
+    colors: TextFieldColors = passlyTextFieldColors(),
+    isError: Boolean = false,
+    supportingText: @Composable (() -> Unit)? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -97,6 +103,8 @@ fun PasslyOutlinedTextField(
         label = { Text(label) },
         enabled = enabled,
         readOnly = readOnly,
+        isError = isError,
+        supportingText = supportingText,
         singleLine = singleLine,
         modifier = modifier.fillMaxWidth(),
         minLines = minLines,
@@ -154,7 +162,9 @@ fun PasswordInput(
     label: String = stringResource(R.string.password),
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-    keyboardActions: KeyboardActions = KeyboardActions.Default
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    isError: Boolean = false,
+    supportingText: @Composable (() -> Unit)? = null
 ) {
     PasslyOutlinedTextField(
         value = password,
@@ -162,6 +172,8 @@ fun PasswordInput(
         label = label,
         modifier = modifier,
         enabled = enabled,
+        isError = isError,
+        supportingText = supportingText,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         visualTransformation = if (isVisible) VisualTransformation.None else PasswordVisualTransformation(),

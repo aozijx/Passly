@@ -53,6 +53,7 @@ fun VaultContent(
     onUserInteraction: () -> Unit,
     onAddPassword: () -> Unit,
     onAddOtp: () -> Unit,
+    onAddBankCard: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onSettingsClick: () -> Unit = {},
@@ -199,6 +200,7 @@ fun VaultContent(
                     when (type) {
                         AddType.PASSWORD -> onAddPassword()
                         AddType.TOTP -> onAddOtp()
+                        AddType.BANK_CARD -> onAddBankCard()
                         else -> vaultViewModel.setAddType(type)
                     }
                 },

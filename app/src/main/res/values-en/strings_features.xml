@@ -43,9 +43,15 @@
     <string name="wifi_settings">WiFi settings</string>
     <string name="cardholder">Cardholder</string>
     <string name="card_number">Card number</string>
-    <string name="card_cvv">Security code</string>
+    <string name="card_cvv">CVV</string>
     <string name="card_expiration">Expiry date</string>
+    <string name="card_expiry_month">MM</string>
+    <string name="card_expiry_year">YY</string>
+    <string name="card_type">Card Type</string>
+    <string name="card_type_debit">Debit</string>
+    <string name="card_type_credit">Credit</string>
     <string name="payment_pin">Payment PIN</string>
+    <string name="billing_address">Billing Address</string>
     <string name="seed_phrase">Seed phrase</string>
     <string name="seed_phrase_title">Crypto seed phrase</string>
     <string name="seed_phrase_revealed">Seed phrase revealed</string>

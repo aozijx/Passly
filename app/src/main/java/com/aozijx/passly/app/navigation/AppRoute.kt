@@ -18,6 +18,8 @@ sealed class AppRoute(val route: String) {
 
     data object AddOtp : AppRoute("vault/add/otp")
 
+    data object AddBankCard : AppRoute("vault/add/bankcard")
+
     data object Settings : AppRoute("settings")
 
     data object Detail : AppRoute("detail/{entryId}") {

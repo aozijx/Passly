@@ -34,6 +34,8 @@ import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.vault.VaultContent
 import com.aozijx.passly.feature.vault.VaultViewModel
+import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardScreen
+import com.aozijx.passly.feature.vault.editor.bankcard.AddBankCardViewModel
 import com.aozijx.passly.feature.vault.editor.otp.AddOtpScreen
 import com.aozijx.passly.feature.vault.editor.otp.AddOtpViewModel
 import com.aozijx.passly.feature.vault.editor.password.AddPasswordScreen
@@ -95,6 +97,11 @@ fun PasslyNavHost(
                         launchSingleTop = true
                     }
                 },
+                onAddBankCard = {
+                    navController.navigate(AppRoute.AddBankCard.route) {
+                        launchSingleTop = true
+                    }
+                },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 onSettingsClick = {
@@ -142,6 +149,21 @@ fun PasslyNavHost(
                         }
                 )
             }
+
+                composable(AppRoute.AddBankCard.route) {
+                    val animatedVisibilityScope = this
+                    val addBankCardViewModel: AddBankCardViewModel = hiltViewModel()
+                    AddBankCardScreen(
+                        viewModel = addBankCardViewModel,
+                        onBack = { navController.popBackStack() },
+                        onSaved = { navController.popBackStack() },
+                        onUserInteraction = {
+                            mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
+                }
 
         composable(
             route = AppRoute.Detail.route,

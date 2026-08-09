@@ -59,13 +59,15 @@ fun EntryEditorTextField(
     minLines: Int = 1,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     trailingIcon: @Composable (() -> Unit)? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    readOnly: Boolean = false
 ) {
     PasslyOutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = label,
         enabled = enabled,
+        readOnly = readOnly,
         modifier = modifier.fillMaxWidth(),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
@@ -139,7 +141,9 @@ fun EntryPasswordField(
     onVisibilityChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     label: String = stringResource(R.string.password),
-    imeAction: ImeAction = ImeAction.Next
+    imeAction: ImeAction = ImeAction.Next,
+    isError: Boolean = false,
+    supportingText: String? = null
 ) {
     PasswordInput(
         password = password,
@@ -148,6 +152,8 @@ fun EntryPasswordField(
         onVisibilityChange = onVisibilityChange,
         modifier = modifier,
         label = label,
+        isError = isError,
+        supportingText = supportingText?.let { { Text(it) } },
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password,
             imeAction = imeAction
