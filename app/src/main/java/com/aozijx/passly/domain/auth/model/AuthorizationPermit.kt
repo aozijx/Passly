@@ -14,5 +14,5 @@ package com.aozijx.passly.domain.auth.model
  * 调用者只能读取 [purpose]，不能检查或消费内部 token。
  */
 interface AuthorizationPermit {
-    val purpose: AuthPurpose
+    val purpose: com.aozijx.passly.domain.authentication.AuthenticationPurpose
 }

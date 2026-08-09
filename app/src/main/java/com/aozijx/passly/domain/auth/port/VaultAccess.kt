@@ -1,10 +1,10 @@
 package com.aozijx.passly.domain.auth.port
 
 import com.aozijx.passly.domain.auth.model.AuthInput
-import com.aozijx.passly.domain.auth.model.AuthPurpose
 import com.aozijx.passly.domain.auth.model.AuthorizationResult
 import com.aozijx.passly.domain.auth.model.UnlockResult
 import com.aozijx.passly.domain.auth.model.VaultLockState
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.LockReason
 import kotlinx.coroutines.flow.StateFlow
 
@@ -41,7 +41,7 @@ interface VaultAccess {
      * 如果会话已过期或已锁定，会触发重新认证。
      */
     suspend fun <T> authorize(
-        purpose: AuthPurpose,
+        purpose: AuthenticationPurpose,
         operation: suspend () -> T
     ): AuthorizationResult<T>
 

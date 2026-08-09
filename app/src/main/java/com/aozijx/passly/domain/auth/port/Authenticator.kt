@@ -1,8 +1,8 @@
 package com.aozijx.passly.domain.auth.port
 
 import com.aozijx.passly.domain.auth.model.AuthInput
-import com.aozijx.passly.domain.auth.model.AuthPurpose
 import com.aozijx.passly.domain.auth.policy.AuthMethodType
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 
 /**
  * 认证器接口。
@@ -28,7 +28,7 @@ interface Authenticator {
      * @return 仅含身份验证结果，不含授权凭据
      */
     suspend fun authenticate(
-        purpose: AuthPurpose,
+        purpose: AuthenticationPurpose,
         input: AuthInput = AuthInput.Interactive
     ): AuthenticatorResult
 

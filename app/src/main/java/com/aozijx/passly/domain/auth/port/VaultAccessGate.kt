@@ -1,16 +1,16 @@
 package com.aozijx.passly.domain.auth.port
 
 import com.aozijx.passly.domain.auth.model.AuthInput
-import com.aozijx.passly.domain.auth.model.AuthPurpose
 import com.aozijx.passly.domain.auth.model.AuthorizationPermit
 import com.aozijx.passly.domain.auth.model.AuthorizationResult
+import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 
 /**
  * Vault 访问闸门。
  *
  * 提供 [authorize] 模式，保证调用闭包前已完成必要认证：
  * ```
- * val result = accessGate.authorize(AuthPurpose.BackupExport) { permit ->
+ * val result = accessGate.authorize(AuthenticationPurpose.BACKUP_EXPORT) { permit ->
  *     backupService.export(request, permit)
  * }
  * when (result) {
@@ -39,7 +39,7 @@ interface VaultAccessGate {
      * @return 授权结果（成功 / 拒绝 / 取消）
      */
     suspend fun <T> authorize(
-        purpose: AuthPurpose,
+        purpose: AuthenticationPurpose,
         input: AuthInput = AuthInput.Interactive,
         block: suspend (AuthorizationPermit) -> T
     ): AuthorizationResult<T>
