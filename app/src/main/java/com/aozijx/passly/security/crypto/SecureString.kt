@@ -1,17 +1,19 @@
 package com.aozijx.passly.security.crypto
 
+import com.aozijx.passly.domain.sensitive.SensitiveValue
+
 @JvmInline
-value class SecureString(private val value: CharArray) {
+value class SecureString(private val value: CharArray) : SensitiveValue {
 
     val length: Int get() = value.size
 
-    val isEmpty: Boolean get() = value.isEmpty()
+    override val isEmpty: Boolean get() = value.isEmpty()
 
-    fun toCharArray(): CharArray = value.copyOf()
+    override fun toCharArray(): CharArray = value.copyOf()
 
     fun toPlainString(): String = String(value)
 
-    fun wipe() {
+    override fun wipe() {
         value.fill('\u0000')
     }
 

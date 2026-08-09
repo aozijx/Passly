@@ -1,7 +1,5 @@
 package com.aozijx.passly.feature.recovery.contract
 
-import android.net.Uri
-
 sealed interface RecoveryModeIntent {
     data object SetPasswordClicked : RecoveryModeIntent
     data class NewPasswordChanged(val value: String) : RecoveryModeIntent
@@ -16,7 +14,7 @@ sealed interface RecoveryModeIntent {
     data class IncludeAttachmentsChanged(val include: Boolean) : RecoveryModeIntent
     data class IncludeDeletedChanged(val include: Boolean) : RecoveryModeIntent
     data object SubmitExport : RecoveryModeIntent
-    data class ExportTargetPicked(val uri: Uri?) : RecoveryModeIntent
+    data class ExportTargetPicked(val target: DocumentRef?) : RecoveryModeIntent
 
     data object ExitClicked : RecoveryModeIntent
     data object DismissSheet : RecoveryModeIntent

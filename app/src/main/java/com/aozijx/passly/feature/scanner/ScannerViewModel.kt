@@ -7,6 +7,7 @@ import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
 import com.aozijx.passly.core.otp.OtpAuthUriCodec
 import com.aozijx.passly.core.util.QrCodeUtils
+import com.aozijx.passly.feature.scanner.contract.ImageRef
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent
 import com.aozijx.passly.feature.scanner.contract.ScannerUiState
@@ -37,7 +38,7 @@ class ScannerViewModel @Inject constructor(
     fun handleIntent(intent: ScannerIntent) {
         when (intent) {
             is ScannerIntent.BarcodeDetected -> onBarcodeDetected(intent.barcode)
-            is ScannerIntent.DecodeImage -> decodeImage(intent.uri)
+            is ScannerIntent.DecodeImage -> decodeImage(intent.image)
             is ScannerIntent.StartScanning -> resetAndStart()
             is ScannerIntent.StopScanning -> stopScanning()
         }
@@ -71,7 +72,8 @@ class ScannerViewModel @Inject constructor(
             .vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
     }
 
-    private fun decodeImage(uri: Uri) {
+    private fun decodeImage(image: ImageRef) {
+        val uri = Uri.parse(image.value)
         QrCodeUtils.decodeFromUri(
             context = appContext,
             uri = uri,

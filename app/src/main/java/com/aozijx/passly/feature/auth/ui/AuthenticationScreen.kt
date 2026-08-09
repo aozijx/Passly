@@ -220,8 +220,8 @@ fun AuthenticationScreen(
 
     if (uiState.showSetPasswordDialog) {
         AppPasswordSetDialog(
-            newPassword = uiState.newAppPassword.toPlainString(),
-            confirmPassword = uiState.confirmAppPassword.toPlainString(),
+            newPassword = String(uiState.newAppPassword.toCharArray()),
+            confirmPassword = String(uiState.confirmAppPassword.toCharArray()),
             onNewPasswordChange = {
                 viewModel.onIntent(AuthenticationIntent.NewAppPasswordChanged(it))
             },

@@ -35,7 +35,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.security.crypto.SecureString
+import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import kotlinx.coroutines.delay
 
 /**
@@ -98,7 +99,7 @@ fun InputActionButton(
         ) {
             Column {
                 OutlinedTextField(
-                    value = state.value.toPlainString(),
+                    value = String(state.value.toCharArray()),
                     onValueChange = onValueChange,
                     singleLine = true,
                     label = { Text(config.inputLabel) },
@@ -144,7 +145,7 @@ fun InputActionButton(
  */
 @Composable
 fun InputActionButton(
-    value: SecureString,
+    value: SensitiveValue,
     expanded: Boolean,
     progress: Boolean,
     collapsedText: String,
@@ -183,7 +184,7 @@ fun InputActionButton(
 }
 
 data class InputActionButtonState(
-    val value: SecureString = SecureString.EMPTY,
+    val value: SensitiveValue = EmptySensitiveValue,
     val expanded: Boolean = false,
     val progress: Boolean = false,
     val result: Boolean? = null

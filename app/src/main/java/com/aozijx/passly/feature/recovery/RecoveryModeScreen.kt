@@ -40,6 +40,7 @@ import com.aozijx.passly.core.ui.components.group.settingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.feature.backup.api.RecoveryBackupExportSheet
+import com.aozijx.passly.feature.recovery.contract.DocumentRef
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 
@@ -55,7 +56,7 @@ fun RecoveryModeScreen(
     val exportPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri ->
-        viewModel.onIntent(RecoveryModeIntent.ExportTargetPicked(uri))
+        viewModel.onIntent(RecoveryModeIntent.ExportTargetPicked(uri?.let { DocumentRef(it.toString()) }))
     }
 
     LaunchedEffect(Unit) {

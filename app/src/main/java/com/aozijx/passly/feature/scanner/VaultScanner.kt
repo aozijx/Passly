@@ -57,6 +57,7 @@ import com.aozijx.passly.core.media.rememberImagePicker
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.scanner.components.ScannerView
+import com.aozijx.passly.feature.scanner.contract.ImageRef
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent
 
@@ -100,7 +101,7 @@ fun VaultScanner(
     }
 
     val pickPhoto = rememberImagePicker { uri, _ ->
-        scannerViewModel.handleIntent(ScannerIntent.DecodeImage(uri))
+        scannerViewModel.handleIntent(ScannerIntent.DecodeImage(ImageRef(uri.toString())))
     }
 
     DisposableEffect(scannerViewModel) {

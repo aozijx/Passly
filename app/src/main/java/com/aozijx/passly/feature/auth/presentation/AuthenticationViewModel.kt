@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
+import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.feature.auth.contract.AuthenticationIntent
 import com.aozijx.passly.feature.auth.contract.AuthenticationUiState
 import com.aozijx.passly.feature.auth.contract.AuthenticationVerificationFailure
@@ -158,8 +159,8 @@ class AuthenticationViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 showSetPasswordDialog = false,
-                newAppPassword = SecureString.EMPTY,
-                confirmAppPassword = SecureString.EMPTY,
+                newAppPassword = EmptySensitiveValue,
+                confirmAppPassword = EmptySensitiveValue,
                 setupFailure = null
             )
         }
@@ -187,8 +188,8 @@ class AuthenticationViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 showSetPasswordDialog = false,
-                                newAppPassword = SecureString.EMPTY,
-                                confirmAppPassword = SecureString.EMPTY,
+                                newAppPassword = EmptySensitiveValue,
+                                confirmAppPassword = EmptySensitiveValue,
                                 setupFailure = null
                             )
                         }
@@ -258,12 +259,12 @@ class AuthenticationViewModel @Inject constructor(
         when (method) {
             AuthenticationMethod.APP_PASSWORD -> {
                 _uiState.value.appPassword.wipe()
-                _uiState.update { it.copy(appPassword = SecureString.EMPTY) }
+                _uiState.update { it.copy(appPassword = EmptySensitiveValue) }
             }
 
             AuthenticationMethod.RECOVERY_CODE -> {
                 _uiState.value.recoveryCode.wipe()
-                _uiState.update { it.copy(recoveryCode = SecureString.EMPTY) }
+                _uiState.update { it.copy(recoveryCode = EmptySensitiveValue) }
             }
 
             AuthenticationMethod.BIOMETRIC -> Unit
@@ -275,8 +276,8 @@ class AuthenticationViewModel @Inject constructor(
         wipeUnlockInputs()
         _uiState.update {
             it.copy(
-                appPassword = SecureString.EMPTY,
-                recoveryCode = SecureString.EMPTY,
+                appPassword = EmptySensitiveValue,
+                recoveryCode = EmptySensitiveValue,
                 recoveryUnlockVisible = false,
                 expandedMethod = null,
                 verificationFailure = null
