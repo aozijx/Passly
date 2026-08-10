@@ -8,10 +8,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,19 +31,20 @@ import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DetailTopBar(
     entry: VaultEntry,
     uiState: DetailUiState,
     scrollBehavior: TopAppBarScrollBehavior,
     onEvent: (DetailIntent) -> Unit,
+    onBack: () -> Unit,
     onInteraction: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
     val titleInteractionSource = remember { MutableInteractionSource() }
 
-    LargeTopAppBar(
+    LargeFlexibleTopAppBar(
         title = {
             if (uiState.isEditingTitle) {
                 PasslyOutlinedTextField(
@@ -85,10 +86,12 @@ fun DetailTopBar(
             }
         },
         navigationIcon = {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "返回"
-            )
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back)
+                )
+            }
         },
         actions = {
             IconButton(onClick = {

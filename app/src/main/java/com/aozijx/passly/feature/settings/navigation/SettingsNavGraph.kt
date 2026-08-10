@@ -62,6 +62,10 @@ fun SettingsNavGraph(
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val navigateBackToList: () -> Unit = {
+        navController.popBackStack(SettingsRoute.Main.route, inclusive = false)
+        scope.launch { navigator.navigateBack() }
+    }
 
     fun submitAppPasswordAction(action: AppPasswordAction) {
         validateAndSendAppPasswordAction(
@@ -74,9 +78,9 @@ fun SettingsNavGraph(
         )
     }
 
-    // 单栏模式下，详情页返回列表
+    // 单栏模式下，详情页返回列表：同步重置 NavHost 返回栈
     BackHandler(enabled = navigator.canNavigateBack()) {
-        scope.launch { navigator.navigateBack() }
+        navigateBackToList()
     }
 
     LaunchedEffect(Unit) {
@@ -114,7 +118,7 @@ fun SettingsNavGraph(
                 onBack = onOuterBack,
                 onGroupClick = { route ->
                     navController.navigate(route.route) {
-                        popUpTo(SettingsRoute.Main.route) { inclusive = true }
+                        popUpTo(SettingsRoute.Main.route) { inclusive = false }
                         launchSingleTop = true
                     }
                     scope.launch { navigator.navigateTo(ListDetailPaneScaffoldRole.Detail) }
@@ -130,7 +134,8 @@ fun SettingsNavGraph(
                 settingsViewModel = settingsViewModel,
                 interactionViewModel = interactionViewModel,
                 dataViewModel = dataViewModel,
-                settingsState = settingsState
+                settingsState = settingsState,
+                onBack = navigateBackToList
             )
         }
     )
@@ -167,26 +172,27 @@ private fun SettingsNavHost(
     settingsViewModel: SettingsViewModel,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    settingsState: SettingsUiState
+    settingsState: SettingsUiState,
+    onBack: () -> Unit
 ) {
     NavHost(
         navController = navController,
         startDestination = SettingsRoute.Main.route
     ) {
         registerCoreSettingsRoutes(
-            navController = navController,
             context = context,
             localState = localState,
-            settingsViewModel = settingsViewModel
+            settingsViewModel = settingsViewModel,
+            onBack = onBack
         )
         registerDataSettingsRoutes(
-            navController = navController,
             context = context,
             localState = localState,
             interactionViewModel = interactionViewModel,
             dataViewModel = dataViewModel,
             settingsViewModel = settingsViewModel,
-            settingsState = settingsState
+            settingsState = settingsState,
+            onBack = onBack
         )
     }
 }

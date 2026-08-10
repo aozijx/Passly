@@ -13,7 +13,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupStorageSupport
@@ -44,19 +43,19 @@ import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 internal fun NavGraphBuilder.registerDataSettingsRoutes(
-    navController: NavHostController,
     context: Context,
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
     settingsViewModel: SettingsViewModel,
-    settingsState: SettingsUiState
+    settingsState: SettingsUiState,
+    onBack: () -> Unit
 ) {
     composable(SettingsRoute.Interaction.route) {
         val state by interactionViewModel.config.collectAsStateWithLifecycle()
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.INTERACTION.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item {
                 InteractionDetail(
@@ -79,7 +78,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
         val state by dataViewModel.config.collectAsStateWithLifecycle()
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item {
                 DataManagementDetail(
@@ -136,7 +135,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
 
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.BACKUP_RESTORE.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item {
                 BackupSettingsFeature(
@@ -191,7 +190,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
 
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.RECOVERY_CODE.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             draftState.messageOrNull()?.let { message ->
                 item {
@@ -226,7 +225,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     composable(SettingsRoute.General.route) {
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.GENERAL.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item { GeneralDetail() }
         }
@@ -235,7 +234,7 @@ internal fun NavGraphBuilder.registerDataSettingsRoutes(
     composable(SettingsRoute.Notifications.route) {
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.NOTIFICATIONS.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item { NotificationDetail() }
         }

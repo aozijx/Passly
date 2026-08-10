@@ -34,6 +34,7 @@ fun DetailScreen(
     otpUiState: OtpUiState?,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onEvent: (DetailIntent) -> Unit,
+    onBack: () -> Unit,
     onUpdateInteraction: () -> Unit,
     onAutoUnlockTotp: (VaultEntry) -> Unit,
     onAuthenticate: DetailAuthenticate,
@@ -85,6 +86,7 @@ fun DetailScreen(
                 uiState = uiState,
                 scrollBehavior = scrollBehavior,
                 onEvent = onEvent,
+                onBack = onBack,
                 onInteraction = onUpdateInteraction
             )
         }

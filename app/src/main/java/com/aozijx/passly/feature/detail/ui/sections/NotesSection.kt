@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
@@ -46,8 +45,8 @@ fun NotesSection(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PasslyOutlinedTextField(
-                    value = TextFieldValue(editState.editedNotes),
-                    onValueChange = { editState.editedNotes = it.text },
+                    value = editState.editedNotes,
+                    onValueChange = { editState.editedNotes = it },
                     label = notesLabel,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
@@ -75,8 +74,7 @@ fun NotesSection(
                     .combinedClickable(
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            editState.editedNotes = entry.resolveNotes() ?: ""
-                            editState.isEditingNotes = true
+                            editState.startNotesEditing(entry.resolveNotes())
                         },
                         onClick = { /* 不做任何事，只有长按触发 */ }
                     )

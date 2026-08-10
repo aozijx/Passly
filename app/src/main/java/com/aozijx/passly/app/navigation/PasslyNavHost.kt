@@ -56,6 +56,25 @@ fun PasslyNavHost(
 ) {
     var pendingAuthCallback by remember { mutableStateOf<(() -> Unit)?>(null) }
 
+    // 认证请求可能来自任意导航目的地。监听器必须位于 NavHost 外层，
+    // 否则离开保险库首页后，对应 composable 被移除，成功回调也会丢失。
+    LaunchedEffect(mainViewModel) {
+        mainViewModel.effects.collect { effect ->
+            when (effect) {
+                is MainEffect.AuthSuccess -> {
+                    pendingAuthCallback?.invoke()
+                    pendingAuthCallback = null
+                }
+
+                is MainEffect.AuthError -> {
+                    pendingAuthCallback = null
+                }
+
+                else -> Unit
+            }
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -73,23 +92,6 @@ fun PasslyNavHost(
             ) {
         composable(AppRoute.Vault.route) {
             val animatedVisibilityScope = this
-
-            LaunchedEffect(mainViewModel) {
-                mainViewModel.effects.collect { effect ->
-                    when (effect) {
-                        is MainEffect.AuthSuccess -> {
-                            pendingAuthCallback?.invoke()
-                            pendingAuthCallback = null
-                        }
-
-                        is MainEffect.AuthError -> {
-                            pendingAuthCallback = null
-                        }
-
-                        else -> {}
-                    }
-                }
-            }
 
             VaultContent(
                 vaultViewModel = vaultViewModel,
@@ -236,6 +238,7 @@ fun PasslyNavHost(
                     uiState = detailUiState,
                     otpUiState = currentOtpState,
                     onEvent = detailViewModel::handleIntent,
+                    onBack = { navController.popBackStack() },
                     onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
                     onAutoUnlockTotp = { vaultViewModel.onIntent(VaultIntent.AutoUnlockTotp(it.id)) },
                     onOpenRelatedEntry = {

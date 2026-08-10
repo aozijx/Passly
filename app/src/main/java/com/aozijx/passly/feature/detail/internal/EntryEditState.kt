@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.detail.internal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.VaultEntry
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
@@ -16,9 +18,7 @@ class EntryEditState(initialEntry: VaultEntry) {
     var editedTitle by mutableStateOf(initialEntry.title)
     var editedUsername by mutableStateOf("")
     var editedPassword by mutableStateOf("")
-    var editedNotes by mutableStateOf(
-        initialEntry.secret.notes ?: ""
-    )
+    var editedNotes by mutableStateOf(initialEntry.secret.notes.toTextFieldValue())
     var editedDomain by mutableStateOf(initialEntry.associatedDomain ?: "")
     var editedPackage by mutableStateOf(initialEntry.associatedAppPackage ?: "")
     var editedTotpSecret by mutableStateOf(
@@ -58,6 +58,11 @@ class EntryEditState(initialEntry: VaultEntry) {
         summary = entry.summary.copy(website = buildWebsite(entry.summary.website))
     )
 
+    fun startNotesEditing(notes: String?) {
+        editedNotes = notes.toTextFieldValue()
+        isEditingNotes = true
+    }
+
     private fun buildWebsite(existing: WebsiteInfo?): WebsiteInfo? {
         val domain = editedDomain.ifBlank { null }
         val pkg = editedPackage.ifBlank { null }
@@ -69,7 +74,7 @@ class EntryEditState(initialEntry: VaultEntry) {
     }
 
     private fun updateSecret(secret: EntrySecret): EntrySecret {
-        val notes = editedNotes.ifBlank { null }
+        val notes = editedNotes.text.ifBlank { null }
         val totpSecret = editedTotpSecret.ifBlank { null }
         val currentOtpData = secret.otp
         return if (totpSecret != null || currentOtpData != null) {
@@ -88,7 +93,15 @@ class EntryEditState(initialEntry: VaultEntry) {
     }
 
     private fun updateSecretNotes(secret: EntrySecret): EntrySecret {
-        val notes = editedNotes.ifBlank { null }
+        val notes = editedNotes.text.ifBlank { null }
         return secret.copy(notes = notes)
+    }
+
+    private fun String?.toTextFieldValue(): TextFieldValue {
+        val value = orEmpty()
+        return TextFieldValue(
+            text = value,
+            selection = TextRange(value.length)
+        )
     }
 }

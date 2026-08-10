@@ -6,7 +6,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.AppearanceDetail
@@ -30,10 +29,10 @@ import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
 
 internal fun NavGraphBuilder.registerCoreSettingsRoutes(
-    navController: NavHostController,
     context: Context,
     localState: SettingsScreenLocalState,
-    settingsViewModel: SettingsViewModel
+    settingsViewModel: SettingsViewModel,
+    onBack: () -> Unit
 ) {
     composable(
         route = SettingsRoute.Main.route,
@@ -53,7 +52,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
 
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.SECURITY.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item {
                 SecurityDetail(
@@ -94,7 +93,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
         val state by viewModel.config.collectAsStateWithLifecycle()
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.PRIVACY.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item {
                 PrivacyDetail(
@@ -125,7 +124,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
         val state by viewModel.config.collectAsStateWithLifecycle()
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.APPEARANCE.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item {
                 AppearanceDetail(
@@ -156,7 +155,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
 
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.INTERFACE.titleRes),
-            onBack = { navController.popBackStack() }
+            onBack = onBack
         ) {
             item {
                 InterfaceDetail(
