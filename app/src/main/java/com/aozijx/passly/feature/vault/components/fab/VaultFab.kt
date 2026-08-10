@@ -12,7 +12,6 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -21,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -57,7 +58,6 @@ fun VaultFab(
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntryBottomSheet by remember { mutableStateOf(false) }
     var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
-    val fabShape = MaterialTheme.shapes.extraLarge
 
     val rotation by animateFloatAsState(
         targetValue = if (showFabMenu) 45f else 0f,
@@ -98,34 +98,37 @@ fun VaultFab(
                 .navigationBarsPadding()
                 .padding(bottom = 16.dp, end = 8.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            AnimatedVisibility(
+                visible = showFabMenu,
+                enter = fadeIn() + slideInHorizontally { it / 2 } + scaleIn(initialScale = 0.8f),
+                exit = fadeOut() + slideOutHorizontally { it / 2 } + scaleOut(targetScale = 0.8f)
             ) {
-                FabMenuItemWithSpring(
-                    visible = showFabMenu,
-                    label = stringResource(R.string.more),
-                    icon = Icons.Default.MoreHoriz,
-                    onClick = {
-                        showFabMenu = false
-                        showAddEntryBottomSheet = true
-                    }
-                )
-
-                fabMenuOptions.forEach { type ->
-                    FabMenuItemWithSpring(
-                        visible = showFabMenu,
-                        label = stringResource(type.labelRes),
-                        icon = type.icon(),
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FabMenuChip(
+                        label = stringResource(R.string.more),
+                        icon = Icons.Default.MoreHoriz,
                         onClick = {
                             showFabMenu = false
-                            onAddTypeSelected(type)
+                            showAddEntryBottomSheet = true
                         }
                     )
+                    fabMenuOptions.forEach { type ->
+                        FabMenuChip(
+                            label = stringResource(type.labelRes),
+                            icon = type.icon(),
+                            onClick = {
+                                showFabMenu = false
+                                onAddTypeSelected(type)
+                            }
+                        )
+                    }
                 }
             }
 
-            Surface(
+            FloatingActionButton(
                 onClick = { showFabMenu = !showFabMenu },
                 modifier = Modifier
                     .withSharedTransitionVisualOverflow(
@@ -133,20 +136,16 @@ fun VaultFab(
                         visualOverflow = AddEntryFabVisualOverflow
                     )
                     .size(56.dp),
-                shape = fabShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.extraLarge,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shadowElevation = 6.dp
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add),
-                        modifier = Modifier
-                            .size(24.dp)
-                            .rotate(rotation)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.add),
+                    modifier = Modifier.rotate(rotation)
+                )
             }
         }
     }
@@ -164,23 +163,7 @@ fun VaultFab(
 }
 
 @Composable
-fun FabMenuItemWithSpring(
-    visible: Boolean,
-    label: String,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn() + slideInHorizontally { it / 2 } + scaleIn(initialScale = 0.8f),
-        exit = fadeOut() + slideOutHorizontally { it / 2 } + scaleOut(targetScale = 0.8f)
-    ) {
-        FabMenuItem(label = label, icon = icon, onClick = onClick)
-    }
-}
-
-@Composable
-fun FabMenuItem(
+private fun FabMenuChip(
     label: String,
     icon: ImageVector,
     onClick: () -> Unit
