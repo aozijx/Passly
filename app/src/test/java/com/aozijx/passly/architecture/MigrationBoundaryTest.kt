@@ -1480,4 +1480,59 @@ class MigrationBoundaryTest {
             )
         }
     }
+
+    @Test
+    fun settingsUsesOneAnimatedAdaptiveNavigationOwner() {
+        val settingsNavigation = File(
+            "src/main/java/com/aozijx/passly/feature/settings/navigation/SettingsNavGraph.kt"
+        ).readText()
+
+        assertTrue(
+            "Settings must use the navigable adaptive scaffold",
+            "NavigableListDetailPaneScaffold(" in settingsNavigation
+        )
+        assertTrue(
+            "Both settings panes must opt into adaptive pane transitions",
+            Regex("AnimatedPane\\s*[({]").findAll(settingsNavigation).count() >= 2
+        )
+        assertTrue(
+            "Settings must not keep a second Navigation Compose owner inside the adaptive scaffold",
+            "rememberNavController(" !in settingsNavigation && "NavHost(" !in settingsNavigation
+        )
+        assertTrue(
+            "Settings back navigation must only consume actual pane changes",
+            "BackNavigationBehavior.PopUntilScaffoldValueChange" in settingsNavigation
+        )
+        assertTrue(
+            "Phone transitions must be selected from the adaptive partition count",
+            "scaffoldDirective.maxHorizontalPartitions == 1" in settingsNavigation
+        )
+        assertTrue(
+            "Phone push transitions belong to pane visibility, not expanded detail content",
+            "AnimatedContent(" !in settingsNavigation
+        )
+        assertTrue(
+            "Selection state must be independent from pane navigation history",
+            "var selectedRoute by rememberSaveable" in settingsNavigation &&
+                    "lastDetailRoute" !in settingsNavigation
+        )
+        assertTrue(
+            "The detail pane must remain above the list while either pane is moving",
+            "modifier = Modifier.zIndex(1f)" in settingsNavigation
+        )
+    }
+
+    @Test
+    fun stringTextFieldsDoNotRecreateTextFieldValueAndLoseSelection() {
+        val offenders = productionKotlinFiles
+            .filter { "value = TextFieldValue(" in it.readText() }
+            .map { it.relativeTo(File("src/main/java")).path }
+            .toList()
+
+        assertTrue(
+            "String-backed text fields must use the String overload to preserve cursor selection: " +
+                    offenders,
+            offenders.isEmpty()
+        )
+    }
 }

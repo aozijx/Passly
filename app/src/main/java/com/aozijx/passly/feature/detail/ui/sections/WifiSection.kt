@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
@@ -76,8 +75,8 @@ fun WifiSection(
 
         if (editState.isEditingPassword) {
             PasslyOutlinedTextField(
-                value = TextFieldValue(editState.editedPassword),
-                onValueChange = { editState.editedPassword = it.text },
+                value = editState.editedPassword,
+                onValueChange = { editState.editedPassword = it },
                 label = stringResource(R.string.edit_field, wifiPasswordLabel),
                 modifier = Modifier.fillMaxWidth(),
                 trailingIcon = {

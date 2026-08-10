@@ -6,14 +6,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
 import com.aozijx.passly.R
 import com.aozijx.passly.core.backup.BackupStorageSupport
 import com.aozijx.passly.core.util.PathDisplayFormatter
@@ -42,201 +41,212 @@ import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
 
 @OptIn(ExperimentalMaterial3Api::class)
-internal fun NavGraphBuilder.registerDataSettingsRoutes(
+@Composable
+internal fun DataSettingsRouteContent(
+    route: SettingsRoute,
     context: Context,
     localState: SettingsScreenLocalState,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
-    onBack: () -> Unit
+    onBack: (() -> Unit)?
 ) {
-    composable(SettingsRoute.Interaction.route) {
-        val state by interactionViewModel.config.collectAsStateWithLifecycle()
-        SettingsSecondaryPage(
-            title = stringResource(SettingsGroup.INTERACTION.titleRes),
-            onBack = onBack
-        ) {
-            item {
-                InteractionDetail(
-                    state = state,
-                    onSwipeEnabledChange = {
-                        interactionViewModel.onAction(InteractionSettingsAction.SetSwipeEnabled(it))
-                    },
-                    onLeftSwipeActionClick = localState::openLeftActionDialog,
-                    onRightSwipeActionClick = localState::openRightActionDialog,
-                    onAutofillAction = interactionViewModel::onAction,
-                    onOpenAutofillSettings = {
-                        interactionViewModel.openAutofillSettings()
-                    }
-                )
-            }
-        }
-    }
-
-    composable(SettingsRoute.DataManagement.route) {
-        val state by dataViewModel.config.collectAsStateWithLifecycle()
-        SettingsSecondaryPage(
-            title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
-            onBack = onBack
-        ) {
-            item {
-                DataManagementDetail(
-                    state = state,
-                    isClearingDatabase = settingsState.isClearingDatabase,
-                    onAutoDownloadIconsChange = {
-                        dataViewModel.onAction(DataManagementSettingsAction.SetAutoDownloadIcons(it))
-                    },
-                    onRestoreTrashEntry = { entryId, expectedVersion ->
-                        dataViewModel.onAction(
-                            DataManagementSettingsAction.RestoreTrashEntry(
-                                entryId,
-                                expectedVersion
-                            )
-                        )
-                    },
-                    onDeleteTrashEntry = { entryId, expectedVersion ->
-                        dataViewModel.onAction(
-                            DataManagementSettingsAction.DeleteTrashEntry(
-                                entryId,
-                                expectedVersion
-                            )
-                        )
-                    },
-                    onEmptyTrash = {
-                        dataViewModel.onAction(DataManagementSettingsAction.EmptyTrash)
-                    },
-                    onClearTrashError = {
-                        dataViewModel.onAction(DataManagementSettingsAction.ClearTrashError)
-                    },
-                    onClearDatabase = {
-                        settingsViewModel.handleIntent(SettingsIntent.ClearDatabase)
-                    }
-                )
-            }
-        }
-    }
-
-    composable(SettingsRoute.BackupRestore.route) {
-        val state by dataViewModel.config.collectAsStateWithLifecycle()
-        val notSetText = stringResource(R.string.not_set)
-        val pathLabel = remember(state.directoryUri) {
-            PathDisplayFormatter.format(state.directoryUri) ?: notSetText
-        }
-        val backupPathPicker = rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocumentTree()
-        ) { uri ->
-            handleBackupPathPicked(context, uri) { resolvedUri ->
-                dataViewModel.onAction(
-                    DataManagementSettingsAction.SetBackupDirectoryUri(resolvedUri)
-                )
-            }
-        }
-
-        SettingsSecondaryPage(
-            title = stringResource(SettingsGroup.BACKUP_RESTORE.titleRes),
-            onBack = onBack
-        ) {
-            item {
-                BackupSettingsFeature(
-                    directoryUri = state.directoryUri,
-                    directoryLabel = pathLabel,
-                    lastExportFileLabel = notSetText,
-                    onPickBackupPath = {
-                        backupPathPicker.launch(
-                            BackupStorageSupport.defaultDocumentsTreeUri()
-                        )
-                    },
-                    onClearBackupPath = if (state.directoryUri.isNullOrBlank()) null
-                    else localState::openClearBackupDirConfirmDialog
-                )
-            }
-        }
-    }
-
-    composable(SettingsRoute.RecoveryCode.route) {
-        val viewModel: SecuritySettingsViewModel = hiltViewModel()
-        val draftViewModel: RecoveryDraftViewModel = hiltViewModel()
-        val draftState by draftViewModel.state.collectAsStateWithLifecycle()
-        val recoveryCode = remember(draftState) {
-            if (draftState is RecoveryDraftState.Ready) {
-                draftViewModel.revealCode()?.concatToString()
-            } else {
-                null
-            }
-        }
-        val hasEnvelope by viewModel.hasRecoveryEnvelope.collectAsStateWithLifecycle()
-        val verifyResult by viewModel.verifyResult.collectAsStateWithLifecycle()
-
-        LaunchedEffect(recoveryCode) {
-            if (recoveryCode != null) localState.showRecoveryCodeSheet = true
-        }
-        recoveryCode?.let { code ->
-            if (localState.showRecoveryCodeSheet) {
-                RecoveryCodeSheet(
-                    recoveryCode = code,
-                    sheetState = localState.recoveryCodeSheetState,
-                    onConfirm = {
-                        localState.showRecoveryCodeSheet = false
-                        draftViewModel.confirmAndEnable()
-                    },
-                    onDismiss = {
-                        localState.showRecoveryCodeSheet = false
-                        draftViewModel.dismiss()
-                    }
-                )
-            }
-        }
-
-        SettingsSecondaryPage(
-            title = stringResource(SettingsGroup.RECOVERY_CODE.titleRes),
-            onBack = onBack
-        ) {
-            draftState.messageOrNull()?.let { message ->
+    when (route) {
+        SettingsRoute.Interaction -> {
+            val state by interactionViewModel.config.collectAsStateWithLifecycle()
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.INTERACTION.titleRes),
+                onBack = onBack
+            ) {
                 item {
-                    Text(
-                        text = message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
+                    InteractionDetail(
+                        state = state,
+                        onSwipeEnabledChange = {
+                            interactionViewModel.onAction(
+                                InteractionSettingsAction.SetSwipeEnabled(it)
+                            )
+                        },
+                        onLeftSwipeActionClick = localState::openLeftActionDialog,
+                        onRightSwipeActionClick = localState::openRightActionDialog,
+                        onAutofillAction = interactionViewModel::onAction,
+                        onOpenAutofillSettings = {
+                            interactionViewModel.openAutofillSettings()
+                        }
                     )
                 }
             }
-            item {
-                RecoveryCodeDetail(
-                    hasRecoveryEnvelope = hasEnvelope || draftState is RecoveryDraftState.Committed,
-                    verifyResult = verifyResult,
-                    onCreateRecoveryCode = {
-                        draftViewModel.generate()
-                    },
-                    onRegenerate = {
-                        draftViewModel.generate()
-                    },
-                    onVerifyCode = {
-                        viewModel.onAction(SecuritySettingsAction.VerifyRecoveryCode(it))
-                    },
-                    onClearVerifyResult = {
-                        viewModel.onAction(SecuritySettingsAction.ClearVerifyResult)
-                    }
-                )
+        }
+
+        SettingsRoute.DataManagement -> {
+            val state by dataViewModel.config.collectAsStateWithLifecycle()
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
+                onBack = onBack
+            ) {
+                item {
+                    DataManagementDetail(
+                        state = state,
+                        isClearingDatabase = settingsState.isClearingDatabase,
+                        onAutoDownloadIconsChange = {
+                            dataViewModel.onAction(
+                                DataManagementSettingsAction.SetAutoDownloadIcons(it)
+                            )
+                        },
+                        onRestoreTrashEntry = { entryId, expectedVersion ->
+                            dataViewModel.onAction(
+                                DataManagementSettingsAction.RestoreTrashEntry(
+                                    entryId,
+                                    expectedVersion
+                                )
+                            )
+                        },
+                        onDeleteTrashEntry = { entryId, expectedVersion ->
+                            dataViewModel.onAction(
+                                DataManagementSettingsAction.DeleteTrashEntry(
+                                    entryId,
+                                    expectedVersion
+                                )
+                            )
+                        },
+                        onEmptyTrash = {
+                            dataViewModel.onAction(DataManagementSettingsAction.EmptyTrash)
+                        },
+                        onClearTrashError = {
+                            dataViewModel.onAction(DataManagementSettingsAction.ClearTrashError)
+                        },
+                        onClearDatabase = {
+                            settingsViewModel.handleIntent(SettingsIntent.ClearDatabase)
+                        }
+                    )
+                }
             }
         }
-    }
 
-    composable(SettingsRoute.General.route) {
-        SettingsSecondaryPage(
-            title = stringResource(SettingsGroup.GENERAL.titleRes),
-            onBack = onBack
-        ) {
-            item { GeneralDetail() }
-        }
-    }
+        SettingsRoute.BackupRestore -> {
+            val state by dataViewModel.config.collectAsStateWithLifecycle()
+            val notSetText = stringResource(R.string.not_set)
+            val pathLabel = remember(state.directoryUri) {
+                PathDisplayFormatter.format(state.directoryUri) ?: notSetText
+            }
+            val backupPathPicker = rememberLauncherForActivityResult(
+                ActivityResultContracts.OpenDocumentTree()
+            ) { uri ->
+                handleBackupPathPicked(context, uri) { resolvedUri ->
+                    dataViewModel.onAction(
+                        DataManagementSettingsAction.SetBackupDirectoryUri(resolvedUri)
+                    )
+                }
+            }
 
-    composable(SettingsRoute.Notifications.route) {
-        SettingsSecondaryPage(
-            title = stringResource(SettingsGroup.NOTIFICATIONS.titleRes),
-            onBack = onBack
-        ) {
-            item { NotificationDetail() }
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.BACKUP_RESTORE.titleRes),
+                onBack = onBack
+            ) {
+                item {
+                    BackupSettingsFeature(
+                        directoryUri = state.directoryUri,
+                        directoryLabel = pathLabel,
+                        lastExportFileLabel = notSetText,
+                        onPickBackupPath = {
+                            backupPathPicker.launch(
+                                BackupStorageSupport.defaultDocumentsTreeUri()
+                            )
+                        },
+                        onClearBackupPath = if (state.directoryUri.isNullOrBlank()) null
+                        else localState::openClearBackupDirConfirmDialog
+                    )
+                }
+            }
         }
+
+        SettingsRoute.RecoveryCode -> {
+            val viewModel: SecuritySettingsViewModel = hiltViewModel()
+            val draftViewModel: RecoveryDraftViewModel = hiltViewModel()
+            val draftState by draftViewModel.state.collectAsStateWithLifecycle()
+            val recoveryCode = remember(draftState) {
+                if (draftState is RecoveryDraftState.Ready) {
+                    draftViewModel.revealCode()?.concatToString()
+                } else {
+                    null
+                }
+            }
+            val hasEnvelope by viewModel.hasRecoveryEnvelope.collectAsStateWithLifecycle()
+            val verifyResult by viewModel.verifyResult.collectAsStateWithLifecycle()
+
+            LaunchedEffect(recoveryCode) {
+                if (recoveryCode != null) localState.showRecoveryCodeSheet = true
+            }
+            recoveryCode?.let { code ->
+                if (localState.showRecoveryCodeSheet) {
+                    RecoveryCodeSheet(
+                        recoveryCode = code,
+                        sheetState = localState.recoveryCodeSheetState,
+                        onConfirm = {
+                            localState.showRecoveryCodeSheet = false
+                            draftViewModel.confirmAndEnable()
+                        },
+                        onDismiss = {
+                            localState.showRecoveryCodeSheet = false
+                            draftViewModel.dismiss()
+                        }
+                    )
+                }
+            }
+
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.RECOVERY_CODE.titleRes),
+                onBack = onBack
+            ) {
+                draftState.messageOrNull()?.let { message ->
+                    item {
+                        Text(
+                            text = message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+                item {
+                    RecoveryCodeDetail(
+                        hasRecoveryEnvelope = hasEnvelope ||
+                                draftState is RecoveryDraftState.Committed,
+                        verifyResult = verifyResult,
+                        onCreateRecoveryCode = {
+                            draftViewModel.generate()
+                        },
+                        onRegenerate = {
+                            draftViewModel.generate()
+                        },
+                        onVerifyCode = {
+                            viewModel.onAction(SecuritySettingsAction.VerifyRecoveryCode(it))
+                        },
+                        onClearVerifyResult = {
+                            viewModel.onAction(SecuritySettingsAction.ClearVerifyResult)
+                        }
+                    )
+                }
+            }
+        }
+
+        SettingsRoute.General -> {
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.GENERAL.titleRes),
+                onBack = onBack
+            ) {
+                item { GeneralDetail() }
+            }
+        }
+
+        SettingsRoute.Notifications -> {
+            SettingsSecondaryPage(
+                title = stringResource(SettingsGroup.NOTIFICATIONS.titleRes),
+                onBack = onBack
+            ) {
+                item { NotificationDetail() }
+            }
+        }
+
+        else -> error("Unsupported data settings route: ${route.route}")
     }
 }

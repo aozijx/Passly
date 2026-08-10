@@ -26,6 +26,51 @@ import com.aozijx.passly.R
 
 @Composable
 fun PasslyOutlinedTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    readOnly: Boolean = false,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    textStyle: TextStyle = LocalTextStyle.current,
+    placeholder: @Composable (() -> Unit)? = null,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    isError: Boolean = false,
+    supportingText: @Composable (() -> Unit)? = null,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        enabled = enabled,
+        readOnly = readOnly,
+        isError = isError,
+        supportingText = supportingText,
+        singleLine = singleLine,
+        modifier = modifier.fillMaxWidth(),
+        minLines = minLines,
+        maxLines = maxLines,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        visualTransformation = visualTransformation,
+        textStyle = textStyle,
+        placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        shape = passlyTextFieldShape(),
+        colors = passlyTextFieldColors(),
+    )
+}
+
+@Composable
+fun PasslyOutlinedTextField(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     label: String,
@@ -84,8 +129,8 @@ fun PasswordInput(
     supportingText: @Composable (() -> Unit)? = null,
 ) {
     PasslyOutlinedTextField(
-        value = TextFieldValue(password),
-        onValueChange = { onPasswordChange(it.text) },
+        value = password,
+        onValueChange = onPasswordChange,
         label = label,
         modifier = modifier,
         enabled = enabled,

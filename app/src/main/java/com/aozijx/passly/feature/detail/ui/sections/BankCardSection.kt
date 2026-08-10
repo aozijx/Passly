@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
@@ -74,8 +73,8 @@ fun BankCardSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (editState.isEditingUsername) {
             PasslyOutlinedTextField(
-                value = TextFieldValue(editState.editedUsername),
-                onValueChange = { editState.editedUsername = it.text },
+                value = editState.editedUsername,
+                onValueChange = { editState.editedUsername = it },
                 label = stringResource(
                     R.string.edit_field,
                     stringResource(R.string.cardholder)
@@ -119,8 +118,8 @@ fun BankCardSection(
 
         if (editState.isEditingPassword) {
             PasslyOutlinedTextField(
-                value = TextFieldValue(editState.editedPassword),
-                onValueChange = { editState.editedPassword = it.text },
+                value = editState.editedPassword,
+                onValueChange = { editState.editedPassword = it },
                 label = stringResource(
                     R.string.edit_field,
                     stringResource(R.string.card_number)
@@ -173,8 +172,8 @@ fun BankCardSection(
 
         if (editState.isEditingTotp) {
             PasslyOutlinedTextField(
-                value = TextFieldValue(editState.editedTotp),
-                onValueChange = { editState.editedTotp = it.text },
+                value = editState.editedTotp,
+                onValueChange = { editState.editedTotp = it },
                 label = stringResource(
                     R.string.edit_field,
                     stringResource(R.string.card_cvv)

@@ -24,7 +24,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.domain.entry.model.VaultEntry
@@ -48,9 +47,9 @@ fun DetailTopBar(
         title = {
             if (uiState.isEditingTitle) {
                 PasslyOutlinedTextField(
-                    value = TextFieldValue(uiState.editedTitle),
+                    value = uiState.editedTitle,
                     onValueChange = {
-                        onEvent(DetailIntent.UpdateEditedTitle(it.text))
+                        onEvent(DetailIntent.UpdateEditedTitle(it))
                     },
                     label = "",
                     modifier = Modifier.fillMaxWidth(),
