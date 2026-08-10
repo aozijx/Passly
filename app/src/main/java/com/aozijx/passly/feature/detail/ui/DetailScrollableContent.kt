@@ -29,7 +29,6 @@ import com.aozijx.passly.feature.detail.ui.sections.CredentialSection
 import com.aozijx.passly.feature.detail.ui.sections.DetailSectionKey
 import com.aozijx.passly.feature.detail.ui.sections.DetailSectionResolver
 import com.aozijx.passly.feature.detail.ui.sections.EntryCategoryItem
-import com.aozijx.passly.feature.detail.ui.sections.EntryTypeItem
 import com.aozijx.passly.feature.detail.ui.sections.IdCardSection
 import com.aozijx.passly.feature.detail.ui.sections.NotesSection
 import com.aozijx.passly.feature.detail.ui.sections.PasskeySection
@@ -203,12 +202,11 @@ fun DetailScrollableContent(
             }
         }
 
-        item {
-            InfoGroupCard(title = stringResource(R.string.entry_category)) {
-                entry.tags.firstOrNull { it.isNotBlank() }?.let { category ->
-                    EntryCategoryItem(category.trim())
+        entry.tags.firstOrNull { it.isNotBlank() }?.trim()?.let { category ->
+            item {
+                InfoGroupCard(title = stringResource(R.string.entry_category)) {
+                    EntryCategoryItem(category)
                 }
-                EntryTypeItem(entry.entryType)
             }
         }
 

@@ -23,7 +23,6 @@
     <string name="hide_password">パスワード非表示</string>
     <string name="username_hint">ユーザー名／メールアドレス</string>
     <string name="entry_category">カテゴリ</string>
-    <string name="entry_template_type">項目タイプ</string>
 
     <!-- エントリ種別名称 -->
     <string name="entry_type_account">アカウント</string>

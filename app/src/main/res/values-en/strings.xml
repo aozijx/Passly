@@ -23,7 +23,6 @@
     <string name="hide_password">Hide password</string>
     <string name="username_hint">Username / Email</string>
     <string name="entry_category">Category</string>
-    <string name="entry_template_type">Entry Type</string>
 
     <!-- Entry Type Names -->
     <string name="entry_type_account">Account</string>
