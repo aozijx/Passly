@@ -460,7 +460,7 @@ class MigrationBoundaryTest {
             .filter {
                 val text = it.readText()
                 "BackupViewModel" in text ||
-                    "BackupIntent" in text ||
+                        "BackupAction" in text ||
                     "BackupPasswordDialog" in text ||
                     "CustomExportMenuItem" in text
             }
@@ -1017,6 +1017,9 @@ class MigrationBoundaryTest {
         val backupSessionPolicy = File(
             "src/main/java/com/aozijx/passly/feature/backup/internal/presentation/BackupSessionPolicy.kt"
         ).readText()
+        val backupCoordinator = File(
+            "src/main/java/com/aozijx/passly/feature/backup/internal/presentation/BackupOperationCoordinator.kt"
+        ).readText()
         val securityViewModel = File(
             "src/main/java/com/aozijx/passly/feature/settings/security/SecuritySettingsViewModel.kt"
         ).readText()
@@ -1147,14 +1150,14 @@ class MigrationBoundaryTest {
             "LockReason.RECOVERY_EXIT" in mainViewModel
         )
 
-        // 10. BackupViewModel must support recovery export
+        // 10. Backup flow must support recovery export
         assertTrue(
-            "BackupViewModel must use RECOVERY_EXPORT purpose",
-            "AuthenticationPurpose.RECOVERY_EXPORT" in backupViewModel
+            "Backup coordinator must use RECOVERY_EXPORT purpose",
+            "AuthenticationPurpose.RECOVERY_EXPORT" in backupCoordinator
         )
         assertTrue(
-            "BackupViewModel must have isRecoveryExport flag",
-            "isRecoveryExport" in backupViewModel
+            "Backup coordinator must preserve the recovery export boundary",
+            "isRecoveryExport" in backupCoordinator
         )
 
         // 11. Plain Vault repositories must not treat an open recovery database as full access.
@@ -1311,9 +1314,11 @@ class MigrationBoundaryTest {
     fun coreDoesNotOwnBackupFeaturePresentation() {
         val leakedPresentationFiles = listOf(
             "BackupViewModel.kt",
-            "BackupIntent.kt",
+            "BackupAction.kt",
             "BackupUiState.kt",
             "BackupSessionPolicy.kt",
+            "BackupReducer.kt",
+            "BackupOperationCoordinator.kt",
         ).map { name ->
             File("src/main/java/com/aozijx/passly/core/backup/$name")
         }
@@ -1334,33 +1339,67 @@ class MigrationBoundaryTest {
     }
 
     @Test
-    fun mviViewModelsHaveOnIntentAsSingleEntryPoint() {
-        // 只检查有对应 Intent/UiAction 合约的 ViewModel（完整 MVI 页面）。
-        // 简单 UDF 页面（仅有 UiState，无 Intent）不强制 onIntent。
-        // 匹配规则：XxxViewModel.kt 对应 contract/XxxIntent.kt 或 contract/XxxUiAction.kt
+    fun backupMviSeparatesStateReductionFromSideEffects() {
+        val presentationRoot = File(
+            "src/main/java/com/aozijx/passly/feature/backup/internal/presentation"
+        )
+        val viewModel = File(presentationRoot, "BackupViewModel.kt").readText()
+        val reducer = File(presentationRoot, "BackupReducer.kt")
+        val coordinator = File(presentationRoot, "BackupOperationCoordinator.kt")
+        val forbiddenViewModelDependencies = listOf(
+            "AppSettingsRepository",
+            "AuthenticationManager",
+            "BackupStorageSupport",
+            "VaultBackupService",
+        ).filter { dependency -> dependency in viewModel }
+
+        assertTrue("Backup must have a dedicated pure reducer", reducer.exists())
+        assertTrue("Backup must isolate side effects in a coordinator", coordinator.exists())
+        assertTrue(
+            "BackupViewModel must not directly orchestrate infrastructure: " +
+                    forbiddenViewModelDependencies,
+            forbiddenViewModelDependencies.isEmpty(),
+        )
+        assertTrue(
+            "BackupViewModel must reduce mutations through BackupReducer",
+            "BackupReducer.reduce" in viewModel,
+        )
+    }
+
+    @Test
+    fun mviViewModelsHaveOneActionEntryPoint() {
+        // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
+        // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。
+        // 兼容迁移中的 onIntent/handleIntent，新代码使用 onAction。
         val offenders = productionKotlinFiles
             .filter { "/feature/" in it.invariantSeparatorsPath }
             .filter { it.name.endsWith("ViewModel.kt") }
             .filter { viewModelFile ->
-                // 在 feature 目录树中查找对应的 Intent 文件
+                // 在 feature 目录树中查找对应的事件合约文件
                 // 从 feature 根目录开始搜索，确保找到 contract/ 子目录下的文件
                 val vmName = viewModelFile.name.removeSuffix("ViewModel.kt")
                 val featureRoot = findFeatureRoot(viewModelFile)
                 featureRoot != null && featureRoot.walkTopDown()
                     .any { f ->
                         f.isFile && f.extension == "kt" &&
-                                (f.name == "${vmName}Intent.kt" || f.name == "${vmName}UiAction.kt")
+                                (
+                                        f.name == "${vmName}Intent.kt" ||
+                                                f.name == "${vmName}Action.kt" ||
+                                                f.name == "${vmName}UiAction.kt"
+                                        )
                     }
             }
             .filter { viewModelFile ->
                 val text = viewModelFile.readText()
-                "fun onIntent(" !in text && "fun handleIntent(" !in text
+                "fun onAction(" !in text &&
+                        "fun onIntent(" !in text &&
+                        "fun handleIntent(" !in text
             }
             .map { it.relativeTo(File("src/main/java")).path }
             .toList()
 
         assertTrue(
-            "ViewModels with matching Intent/UiAction contracts must have onIntent/handleIntent as entry point: $offenders",
+            "MVI ViewModels must expose one action/intent entry point: $offenders",
             offenders.isEmpty()
         )
     }
