@@ -26,7 +26,6 @@ import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
 import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
 import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
 import com.aozijx.passly.feature.settings.shell.SettingsDetailPlaceholder
-import com.aozijx.passly.feature.settings.shell.SettingsMainPage
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
 
@@ -34,10 +33,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
     navController: NavHostController,
     context: Context,
     localState: SettingsScreenLocalState,
-    settingsViewModel: SettingsViewModel,
-    onOuterBack: () -> Unit,
-    onGroupClick: (SettingsRoute) -> Unit,
-    isTwoPane: Boolean
+    settingsViewModel: SettingsViewModel
 ) {
     composable(
         route = SettingsRoute.Main.route,
@@ -46,14 +42,7 @@ internal fun NavGraphBuilder.registerCoreSettingsRoutes(
         popEnterTransition = { null },
         popExitTransition = { null }
     ) {
-        if (isTwoPane) {
-            SettingsDetailPlaceholder()
-        } else {
-            SettingsMainPage(
-                onBack = onOuterBack,
-                onGroupClick = onGroupClick
-            )
-        }
+        SettingsDetailPlaceholder()
     }
 
     composable(SettingsRoute.Security.route) {

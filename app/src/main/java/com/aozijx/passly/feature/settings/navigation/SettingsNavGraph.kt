@@ -2,29 +2,23 @@ package com.aozijx.passly.feature.settings.navigation
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.VerticalDivider
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.feature.settings.SettingsViewModel
 import com.aozijx.passly.feature.settings.apppassword.AppPasswordAction
 import com.aozijx.passly.feature.settings.apppassword.validateAndSendAppPasswordAction
@@ -40,18 +34,24 @@ import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
 import com.aozijx.passly.feature.settings.shell.buildSettingsDialogsActions
 import com.aozijx.passly.feature.settings.shell.buildSettingsDialogsState
 import com.aozijx.passly.feature.settings.shell.rememberSettingsScreenLocalState
+import kotlinx.coroutines.launch
 
 /**
- * 宽屏（MEDIUM 及以上）时使用左右两栏布局：左侧为设置列表，右侧显示选中的设置页；
- * 窄屏保持原有单栏推入式导航。
+ * 使用 Material3 [ListDetailPaneScaffold] 实现自适应双栏设置页。
+ *
+ * - 窄屏：单栏模式，列表与详情通过 pane 切换展示
+ * - 宽屏（MEDIUM 及以上）：双栏模式，左侧列表 + 右侧详情
+ * - 自动处理窗口大小变化、预测返回手势和 pane 动画
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun SettingsNavGraph(
-    navController: NavHostController,
     settingsViewModel: SettingsViewModel,
     onOuterBack: () -> Unit
 ) {
+    val navigator = rememberListDetailPaneScaffoldNavigator()
+    val navController = rememberNavController()
+    val scope = rememberCoroutineScope()
     val localState = rememberSettingsScreenLocalState()
     val context = LocalContext.current
     val interactionViewModel: InteractionSettingsViewModel = hiltViewModel()
@@ -60,14 +60,8 @@ fun SettingsNavGraph(
     val dataState by dataViewModel.config.collectAsStateWithLifecycle()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
-    val adaptiveLayout = LocalPasslyAdaptiveLayout.current
-    val isTwoPane = adaptiveLayout.isAtLeastMedium
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-
-    val authDecryptTitle = stringResource(R.string.auth_title)
-    val setAppPasswordSubtitle =
-        stringResource(R.string.settings_auth_before_set_app_password)
 
     fun submitAppPasswordAction(action: AppPasswordAction) {
         validateAndSendAppPasswordAction(
@@ -80,12 +74,9 @@ fun SettingsNavGraph(
         )
     }
 
-    fun navigateToGroup(route: SettingsRoute) {
-        if (currentRoute == route.route) return
-        navController.navigate(route.route) {
-            popUpTo(SettingsRoute.Main.route)
-            launchSingleTop = true
-        }
+    // 单栏模式下，详情页返回列表
+    BackHandler(enabled = navigator.canNavigateBack()) {
+        scope.launch { navigator.navigateBack() }
     }
 
     LaunchedEffect(Unit) {
@@ -115,49 +106,34 @@ fun SettingsNavGraph(
         }
     }
 
-    val navHostContent: @Composable (Modifier) -> Unit = { modifier ->
-        SettingsNavHost(
-            navController = navController,
-            isTwoPane = isTwoPane,
-            context = context,
-            localState = localState,
-            settingsViewModel = settingsViewModel,
-            onOuterBack = onOuterBack,
-            onGroupClick = ::navigateToGroup,
-            authDecryptTitle = authDecryptTitle,
-            setAppPasswordSubtitle = setAppPasswordSubtitle,
-            interactionViewModel = interactionViewModel,
-            dataViewModel = dataViewModel,
-            settingsState = settingsState,
-            modifier = modifier
-        )
-    }
-
-    if (isTwoPane) {
-        Row(modifier = Modifier.fillMaxSize()) {
+    ListDetailPaneScaffold(
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
+        listPane = {
             SettingsMainPage(
                 onBack = onOuterBack,
-                onGroupClick = ::navigateToGroup,
-                selectedRouteKey = currentRoute,
-                modifier = Modifier
-                    .width(320.dp)
-                    .fillMaxHeight()
+                onGroupClick = { route ->
+                    navController.navigate(route.route) {
+                        popUpTo(SettingsRoute.Main.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                    scope.launch { navigator.navigateTo(ListDetailPaneScaffoldRole.Detail) }
+                },
+                selectedRouteKey = currentRoute
             )
-            VerticalDivider(
-                modifier = Modifier
-                    .width(1.dp)
-                    .fillMaxHeight(),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-            navHostContent(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
+        },
+        detailPane = {
+            SettingsNavHost(
+                navController = navController,
+                context = context,
+                localState = localState,
+                settingsViewModel = settingsViewModel,
+                interactionViewModel = interactionViewModel,
+                dataViewModel = dataViewModel,
+                settingsState = settingsState
             )
         }
-    } else {
-        navHostContent(Modifier.fillMaxSize())
-    }
+    )
 
     SettingsScreenDialogsHost(
         state = buildSettingsDialogsState(
@@ -183,62 +159,25 @@ fun SettingsNavGraph(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsNavHost(
     navController: NavHostController,
-    isTwoPane: Boolean,
     context: Context,
     localState: SettingsScreenLocalState,
     settingsViewModel: SettingsViewModel,
-    onOuterBack: () -> Unit,
-    onGroupClick: (SettingsRoute) -> Unit,
-    authDecryptTitle: String,
-    setAppPasswordSubtitle: String,
     interactionViewModel: InteractionSettingsViewModel,
     dataViewModel: DataManagementSettingsViewModel,
-    settingsState: SettingsUiState,
-    modifier: Modifier = Modifier
+    settingsState: SettingsUiState
 ) {
-    val motionScheme = MaterialTheme.motionScheme
-
     NavHost(
         navController = navController,
-        startDestination = SettingsRoute.Main.route,
-        modifier = modifier,
-        enterTransition = {
-            slideInHorizontally(
-                initialOffsetX = { it },
-                animationSpec = motionScheme.defaultSpatialSpec()
-            )
-        },
-        exitTransition = {
-            slideOutHorizontally(
-                targetOffsetX = { -it / 4 },
-                animationSpec = motionScheme.defaultSpatialSpec()
-            )
-        },
-        popEnterTransition = {
-            slideInHorizontally(
-                initialOffsetX = { -it / 4 },
-                animationSpec = motionScheme.defaultSpatialSpec()
-            )
-        },
-        popExitTransition = {
-            slideOutHorizontally(
-                targetOffsetX = { it },
-                animationSpec = motionScheme.defaultSpatialSpec()
-            )
-        }
+        startDestination = SettingsRoute.Main.route
     ) {
         registerCoreSettingsRoutes(
             navController = navController,
             context = context,
             localState = localState,
-            settingsViewModel = settingsViewModel,
-            onOuterBack = onOuterBack,
-            onGroupClick = onGroupClick,
-            isTwoPane = isTwoPane
+            settingsViewModel = settingsViewModel
         )
         registerDataSettingsRoutes(
             navController = navController,
