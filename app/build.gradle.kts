@@ -132,6 +132,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:telemetry"))
     implementation(project(":domain"))
+    implementation(project(":feature:auth:api"))
     implementation(project(":runtime:session"))
 
     // Android Core
