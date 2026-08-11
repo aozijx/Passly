@@ -25,6 +25,8 @@ class EmptyTrashExecutor @Inject constructor(
                     customIconPath = summary.iconCustomPath
                 )
             }
+            // 与父记录删除处于同一事务；活动、附件等仍由外键级联负责。
+            entryRevisionCommandDao().deleteForDeletedEntries()
             val deletedCount = entryCommandDao().deleteAllDeleted()
             PurgedTrash(resources = resources, deletedCount = deletedCount)
         }

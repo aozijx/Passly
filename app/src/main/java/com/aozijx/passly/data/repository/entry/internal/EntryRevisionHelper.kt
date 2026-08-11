@@ -75,6 +75,7 @@ class EntryRevisionHelper @Inject constructor(
                 )
             )
             entryRevisionCommandDao().deleteOldVersions(entryId, REVISION_LIMIT)
+            entryRevisionCommandDao().deleteOldestBeyondGlobalLimit(GLOBAL_REVISION_LIMIT)
         }
     }
 
@@ -105,5 +106,6 @@ class EntryRevisionHelper @Inject constructor(
 
     private companion object {
         const val REVISION_LIMIT = 50
+        const val GLOBAL_REVISION_LIMIT = 1_000
     }
 }

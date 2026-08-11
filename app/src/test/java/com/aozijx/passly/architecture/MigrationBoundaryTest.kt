@@ -1319,6 +1319,43 @@ class MigrationBoundaryTest {
         )
     }
 
+    @Test
+    fun entryRevisionLifecycleHasPerEntryGlobalAndDeletionPolicies() {
+        val revisionDao = File(
+            "src/main/java/com/aozijx/passly/data/local/dao/revision/" +
+                    "EntryRevisionCommandDao.kt"
+        ).readText()
+        val revisionHelper = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/internal/" +
+                    "EntryRevisionHelper.kt"
+        ).readText()
+        val permanentDelete = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/executor/" +
+                    "DeleteEntryPermanentlyExecutor.kt"
+        ).readText()
+        val emptyTrash = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/executor/" +
+                    "EmptyTrashExecutor.kt"
+        ).readText()
+
+        assertTrue(
+            "Revision writes must enforce both per-entry and global retention",
+            "REVISION_LIMIT = 50" in revisionHelper &&
+                    "GLOBAL_REVISION_LIMIT = 1_000" in revisionHelper &&
+                    "deleteOldVersions(entryId, REVISION_LIMIT)" in revisionHelper &&
+                    "deleteOldestBeyondGlobalLimit(GLOBAL_REVISION_LIMIT)" in revisionHelper,
+        )
+        assertTrue(
+            "Global pruning must have deterministic newest-first ordering",
+            "ORDER BY createdAt DESC, revisionId DESC" in revisionDao,
+        )
+        assertTrue(
+            "Permanent deletion paths must explicitly remove revision history",
+            "entryRevisionCommandDao().deleteByEntryId(id)" in permanentDelete &&
+                    "entryRevisionCommandDao().deleteForDeletedEntries()" in emptyTrash,
+        )
+    }
+
     // ============================================================
     // 阶段 0 — 护栏扩展：跨 Feature 依赖、MVI 入口、文件大小
     // ============================================================

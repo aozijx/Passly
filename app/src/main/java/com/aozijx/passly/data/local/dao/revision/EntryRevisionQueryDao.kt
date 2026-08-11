@@ -19,4 +19,7 @@ interface EntryRevisionQueryDao {
 
     @Query("SELECT * FROM entry_revisions WHERE entryId = :entryId ORDER BY version DESC LIMIT 1")
     suspend fun getLatest(entryId: String): EntryRevisionEntity?
+
+    @Query("SELECT COUNT(*) FROM entry_revisions")
+    suspend fun countAll(): Int
 }

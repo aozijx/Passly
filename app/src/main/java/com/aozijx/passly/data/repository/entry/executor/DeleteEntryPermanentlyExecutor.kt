@@ -28,6 +28,9 @@ class DeleteEntryPermanentlyExecutor @Inject constructor(
             transactionRunner.checkVersion(entity.version, expectedVersion)
 
             val summary = summaryCodec.decrypt(entity.summaryBlob, entity.entryId)
+            // 显式清理历史，使生命周期语义不只依赖 Room 外键的隐式级联。
+            // 若随后的乐观删除失败，VaultTransactionRunner 会回滚本次历史删除。
+            entryRevisionCommandDao().deleteByEntryId(id)
             val affected = entryCommandDao().deleteDeletedOptimistic(id, expectedVersion)
             transactionRunner.checkAffectedRows(affected)
 
