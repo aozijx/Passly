@@ -19,6 +19,7 @@ import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 import com.aozijx.passly.feature.detail.ui.components.MetadataSection
@@ -129,6 +130,7 @@ fun DetailScrollableContent(
             item {
                 IdCardSection(
                     entry = entry,
+                    hasIdNumber = SensitiveFieldKey.IDENTITY_NUMBER in uiState.sensitiveFieldKeys,
                     revealedIdNumber = uiState.revealed(RevealedFieldKey.ID_NUMBER),
                     onIdNumberRevealed = { revealField(RevealedFieldKey.ID_NUMBER, it) },
                     onAuthenticate = onAuthenticate,
@@ -156,10 +158,11 @@ fun DetailScrollableContent(
                 SshKeySection(
                     entry = entry,
                     editState = editState,
-                    revealedPassword = uiState.revealed(RevealedFieldKey.PASSWORD),
+                    hasPassphrase = SensitiveFieldKey.SSH_PASSPHRASE in uiState.sensitiveFieldKeys,
+                    hasPrivateKey = SensitiveFieldKey.SSH_PRIVATE_KEY in uiState.sensitiveFieldKeys,
+                    revealedPassword = uiState.revealed(RevealedFieldKey.SSH_PASSPHRASE),
                     revealedSshPrivateKey = uiState.revealed(RevealedFieldKey.SSH_PRIVATE_KEY),
-                    onPasswordRevealed = { revealField(RevealedFieldKey.PASSWORD, it) },
-                    onSshPrivateKeyRevealed = { revealField(RevealedFieldKey.SSH_PRIVATE_KEY, it) },
+                    onPasswordRevealed = { revealField(RevealedFieldKey.SSH_PASSPHRASE, it) },
                     onAuthenticate = onAuthenticate,
                     onEntryUpdated = { onEvent(DetailIntent.CommitEntryUpdate(it)) },
                     onEvent = onEvent
@@ -171,6 +174,7 @@ fun DetailScrollableContent(
             item {
                 SeedPhraseSection(
                     entry = entry,
+                    hasSeedPhrase = SensitiveFieldKey.SEED_PHRASE in uiState.sensitiveFieldKeys,
                     revealedSeedPhrase = uiState.revealed(RevealedFieldKey.SEED_PHRASE),
                     onSeedPhraseRevealed = {
                         revealField(RevealedFieldKey.SEED_PHRASE, it)
@@ -185,6 +189,7 @@ fun DetailScrollableContent(
             item {
                 PasskeySection(
                     entry = entry,
+                    hasPasskeyData = SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE in uiState.sensitiveFieldKeys,
                     revealedPasskeyData = uiState.revealed(RevealedFieldKey.PASSKEY_DATA),
                     onRevealField = revealField,
                     onAuthenticate = onAuthenticate,

@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -20,11 +19,11 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
-import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun PasskeySection(
     entry: EntryAggregate,
+    hasPasskeyData: Boolean,
     revealedPasskeyData: String?,
     onRevealField: (String, String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
@@ -45,7 +44,7 @@ fun PasskeySection(
         DetailItem(
             label = passkeyDataLabel,
             value = when {
-                entry.secret.passkey?.privateKeyReference.isNullOrBlank() -> notSet
+                !hasPasskeyData -> notSet
                 revealedPasskeyData != null -> revealedPasskeyData
                 else -> HiddenMask.DEFAULT
             },
@@ -56,7 +55,7 @@ fun PasskeySection(
                     handler = actionHandler,
                     fieldName = "passkey data",
                     revealedValue = revealedPasskeyData,
-                    sourceValue = entry.secret.passkey?.privateKeyReference,
+                    sourceValue = null,
                     afterCopy = {
                         Toast.makeText(
                             context,
@@ -68,14 +67,13 @@ fun PasskeySection(
             },
             onEdit = null,
             onReveal = {
-                toggleRevealSensitiveField(
-                    handler = actionHandler,
-                    fieldName = "passkey data",
-                    revealedValue = revealedPasskeyData,
-                    sourceValue = entry.secret.passkey?.privateKeyReference,
-                    accessLevel = SensitiveAccessLevel.HIGH,
-                    onReveal = { onRevealField(RevealedFieldKey.PASSKEY_DATA, it) }
-                )
+                if (revealedPasskeyData != null) {
+                    onRevealField(RevealedFieldKey.PASSKEY_DATA, null)
+                } else {
+                    onEvent(
+                        DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PASSKEY_DATA)
+                    )
+                }
             }
         )
 

@@ -209,6 +209,8 @@ class DetailViewModel @Inject constructor(
             val latest = entryQueryRepository.getByIdWithoutHighSensitivity(initialEntry.id)
                 ?: initialEntry
             refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
+            val presence = sensitiveFieldRepository.getPresence(EntryId(latest.id))
+            _uiState.update { it.copy(sensitiveFieldKeys = presence.keys) }
             loadRelatedEntries(latest)
             autoDownloadFavicon(latest)
         }
@@ -282,6 +284,7 @@ class DetailViewModel @Inject constructor(
         RevealedFieldKey.CVV -> SensitiveFieldKey.CARD_CVV
         RevealedFieldKey.PAYMENT_PIN -> SensitiveFieldKey.CARD_PAYMENT_PIN
         RevealedFieldKey.SSH_PRIVATE_KEY -> SensitiveFieldKey.SSH_PRIVATE_KEY
+        RevealedFieldKey.SSH_PASSPHRASE -> SensitiveFieldKey.SSH_PASSPHRASE
         RevealedFieldKey.SEED_PHRASE -> SensitiveFieldKey.SEED_PHRASE
         RevealedFieldKey.PASSKEY_DATA -> SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE
         RevealedFieldKey.ID_NUMBER -> SensitiveFieldKey.IDENTITY_NUMBER

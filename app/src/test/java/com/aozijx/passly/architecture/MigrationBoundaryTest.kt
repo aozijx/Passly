@@ -1600,5 +1600,18 @@ class MigrationBoundaryTest {
             "Every lock path must revoke outstanding authorization permits",
             "authorizationPermitRevoker.revokeAll()" in sessionController
         )
+
+        val detailSections = File(
+            "src/main/java/com/aozijx/passly/feature/detail/ui/sections"
+        ).walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+        assertTrue(
+            "High-sensitivity UI must dispatch typed intents instead of authenticating around plaintext",
+            detailSections.none { "SensitiveAccessLevel.HIGH" in it.readText() }
+        )
+        assertTrue(
+            "Detail must load non-secret field presence before rendering protected values",
+            "sensitiveFieldRepository.getPresence" in detailViewModel &&
+                    "sensitiveFieldKeys" in detailViewModel
+        )
     }
 }

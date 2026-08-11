@@ -29,18 +29,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
-import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 
 @Composable
 fun SeedPhraseSection(
     entry: EntryAggregate,
+    hasSeedPhrase: Boolean,
     revealedSeedPhrase: String?,
     onSeedPhraseRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
@@ -58,7 +58,6 @@ fun SeedPhraseSection(
         revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
     }
 
-    val seedPhrase = entry.secret.identity?.seedPhrase
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.seed_phrase_title),
@@ -74,7 +73,7 @@ fun SeedPhraseSection(
                     handler = actionHandler,
                     fieldName = "seed phrase",
                     revealedValue = revealedSeedPhrase,
-                    sourceValue = seedPhrase,
+                    sourceValue = null,
                     afterCopy = {
                         Toast.makeText(
                             context,
@@ -86,14 +85,8 @@ fun SeedPhraseSection(
             },
             onEdit = null,
             onReveal = {
-                toggleRevealSensitiveField(
-                    handler = actionHandler,
-                    fieldName = "seed phrase",
-                    revealedValue = revealedSeedPhrase,
-                    sourceValue = seedPhrase,
-                    accessLevel = SensitiveAccessLevel.HIGH,
-                    onReveal = onSeedPhraseRevealed
-                )
+                if (revealedSeedPhrase != null) onSeedPhraseRevealed(null)
+                else onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
             }
         )
 
@@ -122,17 +115,10 @@ fun SeedPhraseSection(
             }
         }
 
-        if (revealedSeedPhrase == null) {
+        if (hasSeedPhrase && revealedSeedPhrase == null) {
             Button(
                 onClick = {
-                    toggleRevealSensitiveField(
-                        handler = actionHandler,
-                        fieldName = "seed phrase",
-                        revealedValue = revealedSeedPhrase,
-                        sourceValue = seedPhrase,
-                        accessLevel = SensitiveAccessLevel.HIGH,
-                        onReveal = onSeedPhraseRevealed
-                    )
+                    onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SEED_PHRASE))
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)

@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
 data class DetailUiState(
     val entry: EntryAggregate? = null,
@@ -15,6 +16,7 @@ data class DetailUiState(
     val strategyReady: Boolean = false,
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<String, String> = emptyMap(),
+    val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
     val history: List<EntryActivity> = emptyList(),
     val relatedEntries: List<EntryAggregate> = emptyList(),
     val isFaviconDownloading: Boolean = false
@@ -26,6 +28,7 @@ object RevealedFieldKey {
     const val USERNAME = "username"
     const val PASSWORD = "password"
     const val SSH_PRIVATE_KEY = "sshPrivateKey"
+    const val SSH_PASSPHRASE = "sshPassphrase"
     const val CARDHOLDER = "cardholder"
     const val CARD_NUMBER = "cardNumber"
     const val CVV = "cvv"

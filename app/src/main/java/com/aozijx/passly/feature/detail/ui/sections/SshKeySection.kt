@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -38,17 +37,18 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
-import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.internal.withSshPassphrase
 
 @Composable
 fun SshKeySection(
     entry: EntryAggregate,
     editState: EntryEditState,
+    hasPassphrase: Boolean,
+    hasPrivateKey: Boolean,
     revealedPassword: String?,
     revealedSshPrivateKey: String?,
     onPasswordRevealed: (String?) -> Unit,
-    onSshPrivateKeyRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
     onEntryUpdated: (EntryAggregate) -> Unit,
     onEvent: (DetailIntent) -> Unit
@@ -98,7 +98,7 @@ fun SshKeySection(
                         handler = actionHandler,
                         fieldName = "passphrase",
                         revealedValue = revealedPassword,
-                        sourceValue = entry.secret.ssh?.passphrase,
+                        sourceValue = null,
                         afterCopy = {
                             Toast.makeText(
                                 context,
@@ -113,13 +113,9 @@ fun SshKeySection(
                     editState.isEditingPassword = true
                 },
                 onReveal = {
-                    toggleRevealSensitiveField(
-                        handler = actionHandler,
-                        fieldName = "passphrase",
-                        revealedValue = revealedPassword,
-                        sourceValue = entry.secret.ssh?.passphrase,
-                        accessLevel = SensitiveAccessLevel.HIGH,
-                        onReveal = onPasswordRevealed
+                    if (revealedPassword != null) onPasswordRevealed(null)
+                    else onEvent(
+                        DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SSH_PASSPHRASE)
                     )
                 }
             )
@@ -127,20 +123,26 @@ fun SshKeySection(
 
         Surface(
             onClick = {
-                copySensitiveField(
-                    context = context,
-                    handler = actionHandler,
-                    fieldName = "private key",
-                    revealedValue = revealedSshPrivateKey,
-                    sourceValue = entry.secret.ssh?.privateKey,
-                    afterCopy = {
-                        Toast.makeText(
-                            context,
-                            msgCopySuccess.format(sshPrivateKeyLabel),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                )
+                if (revealedSshPrivateKey == null) {
+                    onEvent(
+                        DetailIntent.RevealHighSensitivityField(RevealedFieldKey.SSH_PRIVATE_KEY)
+                    )
+                } else {
+                    copySensitiveField(
+                        context = context,
+                        handler = actionHandler,
+                        fieldName = "private key",
+                        revealedValue = revealedSshPrivateKey,
+                        sourceValue = null,
+                        afterCopy = {
+                            Toast.makeText(
+                                context,
+                                msgCopySuccess.format(sshPrivateKeyLabel),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    )
+                }
             },
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
@@ -195,26 +197,21 @@ fun SshKeySection(
             }
         }
 
-        if (revealedSshPrivateKey == null && revealedPassword == null) {
+        if ((hasPrivateKey && revealedSshPrivateKey == null) ||
+            (hasPassphrase && revealedPassword == null)
+        ) {
             Button(
                 onClick = {
-                    val sshSecret = entry.secret.ssh
-                    val sshKey = sshSecret?.privateKey
-                    if (!sshKey.isNullOrBlank()) {
-                        onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
-                            onSshPrivateKeyRevealed(sshKey)
-                            onEvent(
-                                DetailIntent.RecordAction(
-                                    "private key",
-                                    ActivityType.VIEW
-                                )
-                            )
-                            val passphrase = sshSecret.passphrase
-                            if (!passphrase.isNullOrEmpty()) {
-                                onPasswordRevealed(passphrase)
-                                actionHandler.record("passphrase", ActivityType.VIEW)
-                            }
+                    val keys = buildSet {
+                        if (hasPrivateKey && revealedSshPrivateKey == null) {
+                            add(RevealedFieldKey.SSH_PRIVATE_KEY)
                         }
+                        if (hasPassphrase && revealedPassword == null) {
+                            add(RevealedFieldKey.SSH_PASSPHRASE)
+                        }
+                    }
+                    if (keys.isNotEmpty()) {
+                        onEvent(DetailIntent.RevealHighSensitivityFields(keys))
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

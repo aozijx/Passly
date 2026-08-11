@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -19,11 +18,12 @@ import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.internal.DetailSectionActionHandler
 import com.aozijx.passly.feature.detail.internal.copySensitiveField
-import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
+import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 
 @Composable
 fun IdCardSection(
     entry: EntryAggregate,
+    hasIdNumber: Boolean,
     revealedIdNumber: String?,
     onIdNumberRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
@@ -44,7 +44,7 @@ fun IdCardSection(
         DetailItem(
             label = idNumberLabel,
             value = when {
-                entry.secret.identity?.idNumber.isNullOrBlank() -> notSet
+                !hasIdNumber -> notSet
                 revealedIdNumber != null -> revealedIdNumber
                 else -> HiddenMask.DEFAULT
             },
@@ -55,7 +55,7 @@ fun IdCardSection(
                     handler = actionHandler,
                     fieldName = "ID number",
                     revealedValue = revealedIdNumber,
-                    sourceValue = entry.secret.identity?.idNumber,
+                    sourceValue = null,
                     afterCopy = {
                         Toast.makeText(
                             context,
@@ -67,14 +67,8 @@ fun IdCardSection(
             },
             onEdit = null,
             onReveal = {
-                toggleRevealSensitiveField(
-                    handler = actionHandler,
-                    fieldName = "ID number",
-                    revealedValue = revealedIdNumber,
-                    sourceValue = entry.secret.identity?.idNumber,
-                    accessLevel = SensitiveAccessLevel.HIGH,
-                    onReveal = onIdNumberRevealed
-                )
+                if (revealedIdNumber != null) onIdNumberRevealed(null)
+                else onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.ID_NUMBER))
             }
         )
 
