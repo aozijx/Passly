@@ -21,3 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Passly"
 include(":app")
+include(":core:common")
+include(":core:telemetry")
+include(":domain")
