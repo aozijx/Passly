@@ -104,9 +104,19 @@ fun SettingsNavGraph(
                     AppPasswordAction.DISABLE
                 )
 
+                is SettingsEffect.AppPasswordEntryAuthorized -> {
+                    if (effect.alreadyEnabled) {
+                        localState.openAppPasswordActionDialog()
+                    } else {
+                        localState.openSetAppPasswordDialog()
+                    }
+                }
+
                 else -> {}
             }
-            Toast.makeText(context, effect.toMessage(context), Toast.LENGTH_SHORT).show()
+            effect.toMessage(context)?.let { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -234,7 +244,6 @@ private fun SettingsDetailContent(
         SettingsRoute.Interface -> {
             CoreSettingsRouteContent(
                 route = route,
-                context = context,
                 localState = localState,
                 settingsViewModel = settingsViewModel,
                 onBack = onBack

@@ -1527,6 +1527,41 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun settingsMviDoesNotExposeAuthenticationInfrastructureToUi() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/SettingsViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/settings/presentation/SettingsReducer.kt"
+        ).readText()
+        val appPasswordFlows = File(
+            "src/main/java/com/aozijx/passly/feature/settings/apppassword/" +
+                    "AppPasswordFlows.kt"
+        ).readText()
+        val reducerDependencies = listOf(
+            "AuthenticationManager",
+            "DatabaseLifecycleUseCases",
+            "AppSettingsRepository",
+            "viewModelScope",
+            "MutableStateFlow",
+        ).filter(reducer::contains)
+
+        assertTrue(
+            "SettingsViewModel must route UI state through SettingsReducer",
+            "SettingsReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
+        )
+        assertTrue(
+            "Settings authentication manager must remain private to its ViewModel",
+            "private val authenticationManager" in viewModel &&
+                    "settingsViewModel.authenticationManager" !in appPasswordFlows,
+        )
+        assertTrue(
+            "SettingsReducer must remain pure: $reducerDependencies",
+            "internal object SettingsReducer" in reducer && reducerDependencies.isEmpty(),
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

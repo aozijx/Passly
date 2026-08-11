@@ -38,10 +38,6 @@ class SecuritySettingsViewModel @Inject constructor(
         SecuritySettingsUiState()
     )
 
-    val isAppPasswordEnabled: StateFlow<Boolean> = authenticationManager.methods
-        .map { it.appPassword }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
     val isBiometricEnabled: StateFlow<Boolean> = authenticationManager.methods
         .map { it.biometric }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)

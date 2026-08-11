@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.settings.navigation
 
-import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
@@ -13,7 +12,7 @@ import com.aozijx.passly.feature.settings.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.feature.settings.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.appearance.InterfaceSettingsViewModel
-import com.aozijx.passly.feature.settings.apppassword.handleAppPasswordEntryClick
+import com.aozijx.passly.feature.settings.contract.SettingsIntent
 import com.aozijx.passly.feature.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.feature.settings.security.PrivacySettingsViewModel
@@ -29,7 +28,6 @@ import com.aozijx.passly.feature.settings.shell.SettingsSecondaryPage
 @Composable
 internal fun CoreSettingsRouteContent(
     route: SettingsRoute,
-    context: Context,
     localState: SettingsScreenLocalState,
     settingsViewModel: SettingsViewModel,
     onBack: (() -> Unit)?
@@ -38,7 +36,7 @@ internal fun CoreSettingsRouteContent(
         SettingsRoute.Security -> {
             val viewModel: SecuritySettingsViewModel = hiltViewModel()
             val state by viewModel.config.collectAsStateWithLifecycle()
-            val appPasswordEnabled by viewModel.isAppPasswordEnabled.collectAsStateWithLifecycle()
+            val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
             val biometricEnabled by viewModel.isBiometricEnabled.collectAsStateWithLifecycle()
 
             SettingsSecondaryPage(
@@ -48,19 +46,13 @@ internal fun CoreSettingsRouteContent(
                 item {
                     SecurityDetail(
                         state = state,
-                        isAppPasswordEnabled = appPasswordEnabled,
+                        isAppPasswordEnabled = settingsState.isAppPasswordEnabled,
                         isBiometricEnabled = biometricEnabled,
                         onLockTimeoutChange = {
                             viewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
                         },
                         onAppPasswordClick = {
-                            handleAppPasswordEntryClick(
-                                context = context,
-                                isAppPasswordEnabled = appPasswordEnabled,
-                                settingsViewModel = settingsViewModel,
-                                onAlreadyEnabled = localState::openAppPasswordActionDialog,
-                                onVerified = localState::openSetAppPasswordDialog
-                            )
+                            settingsViewModel.handleIntent(SettingsIntent.RequestAppPasswordEntry)
                         },
                         onBiometricEnabledChange = { enabled ->
                             handleBiometricToggle(enabled, viewModel::setBiometricEnabled)
