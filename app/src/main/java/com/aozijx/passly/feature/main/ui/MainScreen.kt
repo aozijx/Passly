@@ -26,7 +26,7 @@ import com.aozijx.passly.feature.main.MainSensorController
 import com.aozijx.passly.feature.main.MainViewModel
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
-import com.aozijx.passly.feature.message.AppNoticeHostViewModel
+import com.aozijx.passly.app.message.presentation.AppNoticeHostViewModel
 import com.aozijx.passly.feature.recovery.RecoveryModeScreen
 import com.aozijx.passly.feature.recovery.RecoveryModeViewModel
 

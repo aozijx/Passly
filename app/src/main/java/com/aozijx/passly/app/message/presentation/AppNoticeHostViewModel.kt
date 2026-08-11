@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.message
+package com.aozijx.passly.app.message.presentation
 
 import androidx.lifecycle.ViewModel
 import com.aozijx.passly.domain.notice.model.NoticeLevel

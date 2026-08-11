@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.message
+package com.aozijx.passly.app.message.presentation
 
 data class RenderedNotice(
     val text: String,
