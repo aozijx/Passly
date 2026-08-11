@@ -13,14 +13,14 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.receiveAsFlow
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 
 @HiltViewModel
@@ -33,28 +33,70 @@ class DiagnosticsSettingsViewModel @Inject constructor(
     private val eventChannel = Channel<DiagnosticsSettingsEffect>(Channel.BUFFERED)
     val events = eventChannel.receiveAsFlow()
 
-    val fileLoggingEnabled: StateFlow<Boolean> = policies.policies
-        .map { it.isEncryptedFileEnabled() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), false)
+    private val _uiState = MutableStateFlow(DiagnosticsSettingsUiState())
+    val uiState: StateFlow<DiagnosticsSettingsUiState> = _uiState.asStateFlow()
 
-    fun setFileLoggingEnabled(enabled: Boolean) = viewModelScope.launch {
+    init {
+        viewModelScope.launch {
+            policies.policies.collect { policy ->
+                mutate(
+                    DiagnosticsSettingsMutation.FileLoggingChanged(
+                        policy.isEncryptedFileEnabled()
+                    )
+                )
+            }
+        }
+    }
+
+    fun onAction(action: DiagnosticsSettingsAction) {
+        when (action) {
+            is DiagnosticsSettingsAction.SetFileLoggingEnabled ->
+                setFileLoggingEnabled(action.enabled)
+            DiagnosticsSettingsAction.OpenViewer -> openViewer()
+            DiagnosticsSettingsAction.CloseViewer ->
+                mutate(DiagnosticsSettingsMutation.ViewerClosed)
+            DiagnosticsSettingsAction.RequestClear ->
+                mutate(DiagnosticsSettingsMutation.ClearRequested)
+            DiagnosticsSettingsAction.DismissClear ->
+                mutate(DiagnosticsSettingsMutation.ClearDismissed)
+            DiagnosticsSettingsAction.ConfirmClear -> clearLogs()
+            DiagnosticsSettingsAction.Export -> authenticateAndExport()
+        }
+    }
+
+    private fun setFileLoggingEnabled(enabled: Boolean) = viewModelScope.launch {
         if (enabled) policies.enableEncryptedFile() else policies.disableEncryptedFile()
     }
 
-    suspend fun readPage(): String = if (authenticationManager.state.value is AuthenticationState.Authenticated) {
-        withContext(Dispatchers.IO) {
-        runtime.readLines(MAX_VIEW_LINES).joinToString("\n")
+    private fun openViewer() {
+        mutate(DiagnosticsSettingsMutation.ViewerOpened)
+        viewModelScope.launch {
+            val content = readPage()
+            mutate(
+                DiagnosticsSettingsMutation.LogPageLoaded(
+                    content = content,
+                    byteCount = content.toByteArray(Charsets.UTF_8).size,
+                )
+            )
         }
-    } else {
-        ""
     }
 
-    fun clear() = viewModelScope.launch(Dispatchers.IO) {
+    private suspend fun readPage(): String =
+        if (authenticationManager.state.value is AuthenticationState.Authenticated) {
+            withContext(Dispatchers.IO) {
+                runtime.readLines(MAX_VIEW_LINES).joinToString("\n")
+            }
+        } else {
+            ""
+        }
+
+    private fun clearLogs() = viewModelScope.launch(Dispatchers.IO) {
         if (authenticationManager.state.value !is AuthenticationState.Authenticated) return@launch
         runtime.clear()
+        mutate(DiagnosticsSettingsMutation.LogsCleared)
     }
 
-    fun authenticateAndExport() = viewModelScope.launch {
+    private fun authenticateAndExport() = viewModelScope.launch {
         if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
             eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
             return@launch
@@ -73,6 +115,10 @@ class DiagnosticsSettingsViewModel @Inject constructor(
             AppTelemetry.e("DiagnosticsExport", "Plaintext diagnostics export failed", error)
             eventChannel.trySend(DiagnosticsSettingsEffect.ExportFailed)
         }
+    }
+
+    private fun mutate(mutation: DiagnosticsSettingsMutation) {
+        _uiState.update { state -> DiagnosticsSettingsReducer.reduce(state, mutation) }
     }
 
     private companion object {

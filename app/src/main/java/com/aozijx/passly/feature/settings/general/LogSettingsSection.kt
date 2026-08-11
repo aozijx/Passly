@@ -20,12 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -43,11 +39,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 @Composable
 fun LogSettingsSection(viewModel: DiagnosticsSettingsViewModel) {
     val context = LocalContext.current
-    val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsStateWithLifecycle()
-    var showViewerDialog by remember { mutableStateOf(false) }
-    var showClearConfirmDialog by remember { mutableStateOf(false) }
-    var logContent by remember { mutableStateOf<String?>(null) }
-    var logSize by remember { mutableStateOf("0 B") }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     val logManagementTitle = stringResource(R.string.settings_log_management_title)
     val encryptedLogTitle = stringResource(R.string.settings_log_encrypted_title)
@@ -67,21 +59,6 @@ fun LogSettingsSection(viewModel: DiagnosticsSettingsViewModel) {
         }
     }
 
-    LaunchedEffect(showViewerDialog) {
-        if (showViewerDialog) {
-            logContent = null
-            val content = viewModel.readPage()
-            logContent = content
-            logSize = formatLogSize(content.toByteArray(Charsets.UTF_8).size)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            logContent = null
-        }
-    }
-
     SettingsSectionTitle(text = logManagementTitle)
     RoundedGroup(
         items = listOf(
@@ -90,15 +67,17 @@ fun LogSettingsSection(viewModel: DiagnosticsSettingsViewModel) {
                 icon = Icons.Default.BugReport,
                 title = encryptedLogTitle,
                 subtitle = encryptedLogSubtitle,
-                checked = fileLoggingEnabled,
-                onCheckedChange = viewModel::setFileLoggingEnabled
+                checked = state.fileLoggingEnabled,
+                onCheckedChange = {
+                    viewModel.onAction(DiagnosticsSettingsAction.SetFileLoggingEnabled(it))
+                }
             ),
             navigationSettingsGroupItem(
                 key = "logs.view",
                 iconPlaceholder = true,
                 title = viewLogsTitle,
                 onClick = {
-                    showViewerDialog = true
+                    viewModel.onAction(DiagnosticsSettingsAction.OpenViewer)
                 }
             ),
             navigationSettingsGroupItem(
@@ -106,37 +85,33 @@ fun LogSettingsSection(viewModel: DiagnosticsSettingsViewModel) {
                 icon = Icons.Default.SaveAlt,
                 title = exportLogsTitle,
                 subtitle = exportLogsSubtitle,
-                onClick = viewModel::authenticateAndExport
+                onClick = { viewModel.onAction(DiagnosticsSettingsAction.Export) }
             ),
             navigationSettingsGroupItem(
                 key = "logs.clear",
                 icon = Icons.Default.DeleteSweep,
                 title = clearLogsTitle,
-                value = logSize,
-                onClick = { showClearConfirmDialog = true }
+                value = formatLogSize(state.logByteCount),
+                onClick = { viewModel.onAction(DiagnosticsSettingsAction.RequestClear) }
             )
         )
     )
 
-    if (showViewerDialog) {
+    if (state.isViewerOpen) {
         LogViewerSheet(
-            content = logContent,
+            content = state.logContent,
             onDismiss = {
-                showViewerDialog = false
-                logContent = null
+                viewModel.onAction(DiagnosticsSettingsAction.CloseViewer)
             }
         )
     }
 
-    if (showClearConfirmDialog) {
+    if (state.isClearConfirmationOpen) {
         ClearLogsConfirmDialog(
             onConfirm = {
-                viewModel.clear()
-                logContent = null
-                logSize = "0 B"
-                showClearConfirmDialog = false
+                viewModel.onAction(DiagnosticsSettingsAction.ConfirmClear)
             },
-            onDismiss = { showClearConfirmDialog = false }
+            onDismiss = { viewModel.onAction(DiagnosticsSettingsAction.DismissClear) }
         )
     }
 }

@@ -1921,6 +1921,42 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun diagnosticsWorkflowIsOwnedByOneMviState() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/general/" +
+                    "DiagnosticsSettingsViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/settings/general/" +
+                    "DiagnosticsSettingsReducer.kt"
+        ).readText()
+        val ui = File(
+            "src/main/java/com/aozijx/passly/feature/settings/general/LogSettingsSection.kt"
+        ).readText()
+
+        assertTrue(
+            "Diagnostics state must transition through its reducer",
+            "DiagnosticsSettingsReducer.reduce" in viewModel &&
+                    "val uiState:" in viewModel &&
+                    "fun onAction(action: DiagnosticsSettingsAction)" in viewModel,
+        )
+        assertTrue(
+            "Diagnostics UI must not own workflow state or call imperative ViewModel methods",
+            "mutableStateOf" !in ui &&
+                    "viewModel.readPage" !in ui &&
+                    "viewModel.clear" !in ui &&
+                    "viewModel.authenticateAndExport" !in ui &&
+                    "viewModel.setFileLoggingEnabled" !in ui,
+        )
+        assertTrue(
+            "Diagnostics reducer must stay free of runtime, authentication and export effects",
+            "DiagnosticsRuntimeController" !in reducer &&
+                    "AuthenticationManager" !in reducer &&
+                    "DiagnosticsExportService" !in reducer,
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。
