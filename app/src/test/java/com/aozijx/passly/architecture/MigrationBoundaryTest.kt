@@ -1728,7 +1728,7 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
         ).readText()
         val uiState = File(
-            "src/main/java/com/aozijx/passly/feature/recovery/contract/" +
+            "../feature/recovery/api/src/main/kotlin/com/aozijx/passly/feature/recovery/contract/" +
                     "RecoveryModeUiState.kt"
         ).readText()
         val reducer = File(

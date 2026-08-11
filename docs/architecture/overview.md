@@ -13,6 +13,7 @@ Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约与�
 - `:core:ui`：不依赖业务 feature 和 app 资源的共享 Compose UI；
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
 - `:feature:auth:api`：认证 feature 的稳定 Intent/UI state 集成契约；
+- `:feature:recovery:api`：恢复模式 feature 的稳定 Intent/UI state/effect 契约；
 - `:app`：应用壳、导航和 DI 组装，以及尚待拆分的 data/security/feature 实现。
 
 ## 依赖方向

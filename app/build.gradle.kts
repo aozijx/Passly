@@ -133,6 +133,7 @@ dependencies {
     implementation(project(":core:telemetry"))
     implementation(project(":domain"))
     implementation(project(":feature:auth:api"))
+    implementation(project(":feature:recovery:api"))
     implementation(project(":runtime:session"))
 
     // Android Core
