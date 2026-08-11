@@ -1957,6 +1957,29 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun interactionSettingsHasNoImperativeUiBypass() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/interaction/" +
+                    "InteractionSettingsViewModel.kt"
+        ).readText()
+        val routes = File(
+            "src/main/java/com/aozijx/passly/feature/settings/navigation/" +
+                    "SettingsDataRoutes.kt"
+        ).readText()
+
+        assertTrue(
+            "Interaction settings must expose uiState and dispatch platform actions",
+            "val uiState:" in viewModel &&
+                    "val config:" !in viewModel &&
+                    "InteractionSettingsAction.OpenSystemAutofillSettings" in viewModel,
+        )
+        assertTrue(
+            "Settings UI must not call an imperative autofill-settings method",
+            "interactionViewModel.openAutofillSettings" !in routes,
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

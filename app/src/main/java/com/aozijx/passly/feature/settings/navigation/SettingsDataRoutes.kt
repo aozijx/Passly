@@ -55,7 +55,7 @@ internal fun DataSettingsRouteContent(
 ) {
     when (route) {
         SettingsRoute.Interaction -> {
-            val state by interactionViewModel.config.collectAsStateWithLifecycle()
+            val state by interactionViewModel.uiState.collectAsStateWithLifecycle()
             SettingsSecondaryPage(
                 title = stringResource(SettingsGroup.INTERACTION.titleRes),
                 onBack = onBack
@@ -72,7 +72,9 @@ internal fun DataSettingsRouteContent(
                         onRightSwipeActionClick = localState::openRightActionDialog,
                         onAutofillAction = interactionViewModel::onAction,
                         onOpenAutofillSettings = {
-                            interactionViewModel.openAutofillSettings()
+                            interactionViewModel.onAction(
+                                InteractionSettingsAction.OpenSystemAutofillSettings
+                            )
                         }
                     )
                 }

@@ -61,7 +61,7 @@ fun SettingsNavGraph(
     val localState = rememberSettingsScreenLocalState()
     val context = LocalContext.current
     val interactionViewModel: InteractionSettingsViewModel = hiltViewModel()
-    val interactionState by interactionViewModel.config.collectAsStateWithLifecycle()
+    val interactionState by interactionViewModel.uiState.collectAsStateWithLifecycle()
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
     val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()

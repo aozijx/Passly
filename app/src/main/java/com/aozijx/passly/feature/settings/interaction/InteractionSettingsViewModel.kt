@@ -21,7 +21,7 @@ class InteractionSettingsViewModel @Inject constructor(
     private val autofillUseCases: AutofillUseCases,
 ) : AndroidViewModel(application) {
 
-    val config: StateFlow<InteractionSettingsUiState> = combine(
+    val uiState: StateFlow<InteractionSettingsUiState> = combine(
         settingsRepository.settings,
         autofillUseCases.observeStatus(),
     ) { settings, systemAutofillEnabled ->
@@ -73,11 +73,13 @@ class InteractionSettingsViewModel @Inject constructor(
 
             is InteractionSettingsAction.SetAutofillMaxSuggestions ->
                 SettingsCommand.SetAutofillMaxSuggestions(action.count)
-        }
-        viewModelScope.launch { settingsRepository.update(command) }
-    }
 
-    fun openAutofillSettings() {
-        autofillUseCases.openSettings()
+            InteractionSettingsAction.OpenSystemAutofillSettings -> null
+        }
+        if (command == null) {
+            autofillUseCases.openSettings()
+        } else {
+            viewModelScope.launch { settingsRepository.update(command) }
+        }
     }
 }

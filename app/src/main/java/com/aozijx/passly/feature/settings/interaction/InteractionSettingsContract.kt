@@ -33,4 +33,5 @@ sealed interface InteractionSettingsAction {
     ) : InteractionSettingsAction
 
     data class SetAutofillMaxSuggestions(val count: Int) : InteractionSettingsAction
+    data object OpenSystemAutofillSettings : InteractionSettingsAction
 }
