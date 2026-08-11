@@ -14,16 +14,22 @@ import com.aozijx.passly.data.local.dao.entry.EntryCommandDao
 import com.aozijx.passly.data.local.dao.entry.EntryQueryDao
 import com.aozijx.passly.data.local.dao.entry.EntrySecretCommandDao
 import com.aozijx.passly.data.local.dao.entry.EntrySecretQueryDao
+import com.aozijx.passly.data.local.dao.link.EntryLinkCommandDao
+import com.aozijx.passly.data.local.dao.link.EntryLinkQueryDao
 import com.aozijx.passly.data.local.dao.maintenance.VaultMaintenanceDao
 import com.aozijx.passly.data.local.dao.revision.EntryRevisionCommandDao
 import com.aozijx.passly.data.local.dao.revision.EntryRevisionQueryDao
 import com.aozijx.passly.data.local.dao.search.SearchTokenCommandDao
 import com.aozijx.passly.data.local.dao.search.SearchTokenQueryDao
+import com.aozijx.passly.data.local.dao.sensitive.SensitiveFieldCommandDao
+import com.aozijx.passly.data.local.dao.sensitive.SensitiveFieldQueryDao
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
 import com.aozijx.passly.data.model.entity.EntryActivityEntity
 import com.aozijx.passly.data.model.entity.EntryAttachmentEntity
+import com.aozijx.passly.data.model.entity.EntryLinkEntity
+import com.aozijx.passly.data.model.entity.EntrySensitiveFieldEntity
 import com.aozijx.passly.data.model.entity.EntryDraftEntity
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntryRevisionEntity
@@ -34,6 +40,8 @@ import com.aozijx.passly.data.model.entity.SearchTokenEntity
     entities = [
         EntryEntity::class,
         EntrySecretEntity::class,
+        EntrySensitiveFieldEntity::class,
+        EntryLinkEntity::class,
         EntryRevisionEntity::class,
         EntryActivityEntity::class,
         EntryAttachmentEntity::class,
@@ -54,6 +62,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun entryCommandDao(): EntryCommandDao
     abstract fun entrySecretQueryDao(): EntrySecretQueryDao
     abstract fun entrySecretCommandDao(): EntrySecretCommandDao
+    abstract fun sensitiveFieldQueryDao(): SensitiveFieldQueryDao
+    abstract fun sensitiveFieldCommandDao(): SensitiveFieldCommandDao
+    abstract fun entryLinkQueryDao(): EntryLinkQueryDao
+    abstract fun entryLinkCommandDao(): EntryLinkCommandDao
     abstract fun entryRevisionQueryDao(): EntryRevisionQueryDao
     abstract fun entryRevisionCommandDao(): EntryRevisionCommandDao
     abstract fun entryActivityQueryDao(): EntryActivityQueryDao

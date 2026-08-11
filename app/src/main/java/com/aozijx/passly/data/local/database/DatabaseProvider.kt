@@ -37,6 +37,8 @@ class DatabaseProvider @Inject constructor(
             DatabaseSchema.DATABASE_NAME
         )
             .openHelperFactory(factory)
+            // Architecture resets are intentionally destructive until the new schema stabilizes.
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
 
         runCatching { db.openHelper.writableDatabase }
