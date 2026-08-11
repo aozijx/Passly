@@ -110,7 +110,7 @@ class UpdateEntryExecutor @Inject constructor(
             entryId = id,
             entryVersion = metaEntity.version + 1,
             summary = newSummary,
-            secret = newFullSecret,
+            secret = newPersistedSecret,
             now = now
         )
 

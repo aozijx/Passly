@@ -15,7 +15,7 @@ object AadProvider {
             .toByteArray(Charsets.UTF_8)
 
     fun revision(entryId: String): ByteArray =
-        "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:entryBlob".toByteArray(Charsets.UTF_8)
+        "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:regularSnapshotBlob".toByteArray(Charsets.UTF_8)
 
     fun history(entryId: String): ByteArray =
         "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:historyBlob".toByteArray(Charsets.UTF_8)

@@ -1614,4 +1614,35 @@ class MigrationBoundaryTest {
                     "sensitiveFieldKeys" in detailViewModel
         )
     }
+
+    @Test
+    fun entryRevisionsStoreCompleteSnapshotsWithoutHighSensitivityPlaintext() {
+        val helper = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/internal/EntryRevisionHelper.kt"
+        ).readText()
+        val updateExecutor = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/executor/UpdateEntryExecutor.kt"
+        ).readText()
+        val revisionEntity = File(
+            "src/main/java/com/aozijx/passly/data/model/entity/EntryRevisionEntity.kt"
+        ).readText()
+
+        assertTrue(
+            "Revision helper must capture links, attachment refs and existing high-field ciphertext",
+            "entryLinkQueryDao().getByEntryId" in helper &&
+                    "entryAttachmentQueryDao().getByEntryId" in helper &&
+                    "sensitiveFieldQueryDao().getFields" in helper
+        )
+        assertTrue(
+            "Regular revision codec must never receive the reconstructed high-sensitivity secret",
+            "secret = newPersistedSecret" in updateExecutor &&
+                    "secret = newFullSecret" !in updateExecutor.substringAfter("snapshotChanges(")
+        )
+        assertTrue(
+            "Revision storage must separate regular encrypted snapshot from high-field ciphertexts",
+            "regularSnapshotBlob" in revisionEntity &&
+                    "sensitiveFieldsSnapshotBlob" in revisionEntity
+        )
+        assertTrue("Each entry must retain at most 50 revisions", "REVISION_LIMIT = 50" in helper)
+    }
 }

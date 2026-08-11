@@ -2,6 +2,10 @@ package com.aozijx.passly.data.codec.revision
 
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.link.EntryLink
+import com.aozijx.passly.domain.entry.model.link.EntryLinkId
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import com.aozijx.passly.domain.entry.model.secret.LoginSecret
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import com.aozijx.passly.security.crypto.SessionKeyManager
@@ -20,11 +24,26 @@ class EntryRevisionCodecTest {
                 notes = "repeated ".repeat(2_000),
             )
 
-            val encrypted = codec.encrypt(summary, secret, ENTRY_ID)
-            val (decodedSummary, decodedSecret) = codec.decrypt(encrypted, ENTRY_ID)
+            val link = EntryLink.create(
+                id = EntryLinkId("link-1"),
+                sourceEntryId = EntryId(ENTRY_ID),
+                targetEntryId = EntryId("target-entry"),
+                relationType = EntryRelationType.OTP_FOR,
+                createdAt = 100L,
+            )
+            val encrypted = codec.encrypt(
+                summary = summary,
+                secret = secret,
+                entryId = ENTRY_ID,
+                links = listOf(link),
+                attachmentIds = listOf("attachment-2", "attachment-1"),
+            )
+            val decoded = codec.decrypt(encrypted, ENTRY_ID)
 
-            assertEquals(summary, decodedSummary)
-            assertEquals(secret, decodedSecret)
+            assertEquals(summary, decoded.summary)
+            assertEquals(secret, decoded.secret)
+            assertEquals(listOf(link), decoded.links)
+            assertEquals(listOf("attachment-1", "attachment-2"), decoded.attachmentIds)
         }
     }
 
