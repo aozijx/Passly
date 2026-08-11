@@ -2,28 +2,17 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "83dfd8539d2ef729d139401edc8184d6",
+    "identityHash": "1808a5076c3d675c6206e7986481a1d7",
     "entities": [
       {
-        "tableName": "vault_entries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `vaultId` TEXT NOT NULL, `parentEntryId` TEXT, `entryType` TEXT NOT NULL, `version` INTEGER NOT NULL, `capabilityFlags` INTEGER NOT NULL, `otpType` TEXT, `searchIndexVersion` INTEGER NOT NULL, `summaryBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`), FOREIGN KEY(`parentEntryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "tableName": "entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `entryType` TEXT NOT NULL, `version` INTEGER NOT NULL, `capabilityFlags` INTEGER NOT NULL, `otpType` TEXT, `searchIndexVersion` INTEGER NOT NULL, `summaryBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, PRIMARY KEY(`entryId`))",
         "fields": [
           {
             "fieldPath": "entryId",
             "columnName": "entryId",
             "affinity": "TEXT",
             "notNull": true
-          },
-          {
-            "fieldPath": "vaultId",
-            "columnName": "vaultId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "parentEntryId",
-            "columnName": "parentEntryId",
-            "affinity": "TEXT"
           },
           {
             "fieldPath": "entryType",
@@ -86,17 +75,17 @@
         },
         "indices": [
           {
-            "name": "index_vault_entries_deletedAt_updatedAt",
+            "name": "index_entries_deletedAt_updatedAt",
             "unique": false,
             "columnNames": [
               "deletedAt",
               "updatedAt"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_deletedAt_updatedAt` ON `${TABLE_NAME}` (`deletedAt`, `updatedAt`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entries_deletedAt_updatedAt` ON `${TABLE_NAME}` (`deletedAt`, `updatedAt`)"
           },
           {
-            "name": "index_vault_entries_entryType_deletedAt_updatedAt",
+            "name": "index_entries_entryType_deletedAt_updatedAt",
             "unique": false,
             "columnNames": [
               "entryType",
@@ -104,47 +93,23 @@
               "updatedAt"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_entryType_deletedAt_updatedAt` ON `${TABLE_NAME}` (`entryType`, `deletedAt`, `updatedAt`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entries_entryType_deletedAt_updatedAt` ON `${TABLE_NAME}` (`entryType`, `deletedAt`, `updatedAt`)"
           },
           {
-            "name": "index_vault_entries_deletedAt_createdAt",
+            "name": "index_entries_deletedAt_createdAt",
             "unique": false,
             "columnNames": [
               "deletedAt",
               "createdAt"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_deletedAt_createdAt` ON `${TABLE_NAME}` (`deletedAt`, `createdAt`)"
-          },
-          {
-            "name": "index_vault_entries_parentEntryId_deletedAt_updatedAt",
-            "unique": false,
-            "columnNames": [
-              "parentEntryId",
-              "deletedAt",
-              "updatedAt"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_vault_entries_parentEntryId_deletedAt_updatedAt` ON `${TABLE_NAME}` (`parentEntryId`, `deletedAt`, `updatedAt`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "vault_entries",
-            "onDelete": "SET NULL",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "parentEntryId"
-            ],
-            "referencedColumns": [
-              "entryId"
-            ]
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entries_deletedAt_createdAt` ON `${TABLE_NAME}` (`deletedAt`, `createdAt`)"
           }
         ]
       },
       {
         "tableName": "entry_secrets",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `secretBlob` BLOB NOT NULL, `highSensitivityBlob` BLOB, PRIMARY KEY(`entryId`), FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `secretBlob` BLOB NOT NULL, PRIMARY KEY(`entryId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "entryId",
@@ -157,11 +122,6 @@
             "columnName": "secretBlob",
             "affinity": "BLOB",
             "notNull": true
-          },
-          {
-            "fieldPath": "highSensitivityBlob",
-            "columnName": "highSensitivityBlob",
-            "affinity": "BLOB"
           }
         ],
         "primaryKey": {
@@ -172,7 +132,7 @@
         },
         "foreignKeys": [
           {
-            "table": "vault_entries",
+            "table": "entries",
             "onDelete": "CASCADE",
             "onUpdate": "NO ACTION",
             "columns": [
@@ -185,8 +145,178 @@
         ]
       },
       {
+        "tableName": "entry_sensitive_fields",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `fieldKey` TEXT NOT NULL, `valueCipher` BLOB NOT NULL, `keyVersion` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `fieldKey`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "entryId",
+            "columnName": "entryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fieldKey",
+            "columnName": "fieldKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valueCipher",
+            "columnName": "valueCipher",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keyVersion",
+            "columnName": "keyVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "entryId",
+            "fieldKey"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_entry_sensitive_fields_entryId",
+            "unique": false,
+            "columnNames": [
+              "entryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_sensitive_fields_entryId` ON `${TABLE_NAME}` (`entryId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "entries",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "entryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "entry_links",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`linkId` TEXT NOT NULL, `sourceEntryId` TEXT NOT NULL, `targetEntryId` TEXT NOT NULL, `relationType` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`linkId`), FOREIGN KEY(`sourceEntryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`targetEntryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "linkId",
+            "columnName": "linkId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceEntryId",
+            "columnName": "sourceEntryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetEntryId",
+            "columnName": "targetEntryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "relationType",
+            "columnName": "relationType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "linkId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_entry_links_sourceEntryId",
+            "unique": false,
+            "columnNames": [
+              "sourceEntryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_links_sourceEntryId` ON `${TABLE_NAME}` (`sourceEntryId`)"
+          },
+          {
+            "name": "index_entry_links_targetEntryId",
+            "unique": false,
+            "columnNames": [
+              "targetEntryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entry_links_targetEntryId` ON `${TABLE_NAME}` (`targetEntryId`)"
+          },
+          {
+            "name": "index_entry_links_sourceEntryId_targetEntryId_relationType",
+            "unique": true,
+            "columnNames": [
+              "sourceEntryId",
+              "targetEntryId",
+              "relationType"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_entry_links_sourceEntryId_targetEntryId_relationType` ON `${TABLE_NAME}` (`sourceEntryId`, `targetEntryId`, `relationType`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "entries",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "sourceEntryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
+          },
+          {
+            "table": "entries",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "targetEntryId"
+            ],
+            "referencedColumns": [
+              "entryId"
+            ]
+          }
+        ]
+      },
+      {
         "tableName": "entry_revisions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`revisionId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `version` INTEGER NOT NULL, `entryBlob` BLOB NOT NULL, `changeType` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`revisionId`), FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`revisionId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `version` INTEGER NOT NULL, `regularSnapshotBlob` BLOB NOT NULL, `sensitiveFieldsSnapshotBlob` BLOB NOT NULL, `changeType` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`revisionId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "revisionId",
@@ -207,8 +337,14 @@
             "notNull": true
           },
           {
-            "fieldPath": "entryBlob",
-            "columnName": "entryBlob",
+            "fieldPath": "regularSnapshotBlob",
+            "columnName": "regularSnapshotBlob",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sensitiveFieldsSnapshotBlob",
+            "columnName": "sensitiveFieldsSnapshotBlob",
             "affinity": "BLOB",
             "notNull": true
           },
@@ -254,7 +390,7 @@
         ],
         "foreignKeys": [
           {
-            "table": "vault_entries",
+            "table": "entries",
             "onDelete": "CASCADE",
             "onUpdate": "NO ACTION",
             "columns": [
@@ -268,7 +404,7 @@
       },
       {
         "tableName": "entry_activities",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`activityId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `activityType` TEXT NOT NULL, `source` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`activityId`), FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`activityId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `activityType` TEXT NOT NULL, `source` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`activityId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "activityId",
@@ -340,7 +476,7 @@
         ],
         "foreignKeys": [
           {
-            "table": "vault_entries",
+            "table": "entries",
             "onDelete": "CASCADE",
             "onUpdate": "NO ACTION",
             "columns": [
@@ -354,7 +490,7 @@
       },
       {
         "tableName": "entry_attachments",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `fileName` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `mimeType` TEXT, `status` TEXT NOT NULL, `owner` TEXT NOT NULL, `encryptedBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `fileName` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `mimeType` TEXT, `status` TEXT NOT NULL, `owner` TEXT NOT NULL, `encryptedBlob` BLOB NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "attachmentId",
@@ -438,7 +574,7 @@
         ],
         "foreignKeys": [
           {
-            "table": "vault_entries",
+            "table": "entries",
             "onDelete": "CASCADE",
             "onUpdate": "NO ACTION",
             "columns": [
@@ -452,7 +588,7 @@
       },
       {
         "tableName": "entry_search_tokens",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `field` TEXT NOT NULL, `keywordHash` BLOB NOT NULL, `gramLength` INTEGER NOT NULL, `weight` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `field`, `keywordHash`, `gramLength`), FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryId` TEXT NOT NULL, `field` TEXT NOT NULL, `keywordHash` BLOB NOT NULL, `gramLength` INTEGER NOT NULL, `weight` INTEGER NOT NULL, PRIMARY KEY(`entryId`, `field`, `keywordHash`, `gramLength`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "entryId",
@@ -517,7 +653,7 @@
         ],
         "foreignKeys": [
           {
-            "table": "vault_entries",
+            "table": "entries",
             "onDelete": "CASCADE",
             "onUpdate": "NO ACTION",
             "columns": [
@@ -531,7 +667,7 @@
       },
       {
         "tableName": "entry_drafts",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`draftId` TEXT NOT NULL, `entryId` TEXT, `draftBlob` BLOB NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`draftId`), FOREIGN KEY(`entryId`) REFERENCES `vault_entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`draftId` TEXT NOT NULL, `entryId` TEXT, `draftBlob` BLOB NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`draftId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "draftId",
@@ -606,7 +742,7 @@
         ],
         "foreignKeys": [
           {
-            "table": "vault_entries",
+            "table": "entries",
             "onDelete": "CASCADE",
             "onUpdate": "NO ACTION",
             "columns": [
@@ -621,7 +757,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '83dfd8539d2ef729d139401edc8184d6')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1808a5076c3d675c6206e7986481a1d7')"
     ]
   }
 }
