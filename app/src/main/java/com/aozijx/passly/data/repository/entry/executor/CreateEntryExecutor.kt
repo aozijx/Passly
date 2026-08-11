@@ -56,30 +56,8 @@ class CreateEntryExecutor @Inject constructor(
             val capabilityFlags = EntryCapabilityFlags.computeFrom(fullSecret)
             val otpType = EntryCapabilityFlags.otpTypeFrom(fullSecret)
 
-            if (entry.entryType == com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT) {
-                require(entry.parentEntryId == null) {
-                    "An ACCOUNT entry cannot have a parent"
-                }
-            }
-            entry.parentEntryId?.let { parentEntryId ->
-                val parent = requireNotNull(entryQueryDao().getById(parentEntryId)) {
-                    "Parent account entry does not exist: $parentEntryId"
-                }
-                require(parent.entryType == com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT) {
-                    "Parent entry must be an ACCOUNT"
-                }
-                require(parent.parentEntryId == null) {
-                    "An ACCOUNT parent cannot itself be a child"
-                }
-                require(parent.vaultId == entry.vaultId) {
-                    "Child and parent must belong to the same vault"
-                }
-            }
-
             val metaEntity = EntryEntity(
                 entryId = entryId,
-                vaultId = entry.vaultId,
-                parentEntryId = entry.parentEntryId,
                 entryType = entry.entryType,
                 capabilityFlags = capabilityFlags,
                 otpType = otpType,

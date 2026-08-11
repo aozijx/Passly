@@ -26,6 +26,19 @@ class RoomEntryLinkRepository @Inject constructor(
 ) : EntryLinkRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeAll(): Flow<List<EntryLink>> =
+        sessionState.isAuthorized.flatMapLatest { authorized ->
+            if (!authorized) {
+                flowOf(emptyList())
+            } else {
+                sessionManager.observeFlow {
+                    entryLinkQueryDao().observeAll()
+                        .map { links -> links.map { it.toDomain() } }
+                }
+            }
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> =
         sessionState.isAuthorized.flatMapLatest { authorized ->
             if (!authorized) {
@@ -44,6 +57,15 @@ class RoomEntryLinkRepository @Inject constructor(
         } else {
             sessionManager.query {
                 entryLinkQueryDao().getByEntryId(entryId.value).map { it.toDomain() }
+            }
+        }
+
+    override suspend fun getAll(): List<EntryLink> =
+        if (!sessionState.hasFullSecureSessionAccess()) {
+            emptyList()
+        } else {
+            sessionManager.query {
+                entryLinkQueryDao().getAll().map { it.toDomain() }
             }
         }
 

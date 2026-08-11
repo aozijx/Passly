@@ -27,8 +27,8 @@ data class EntryListItem(
     val capabilityFlags: Int,
     /** OTP 类型名（TOTP/HOTP/STEAM），仅 [hasOtp] 为 true 时有意义。 */
     val otpTypeName: String = "",
-    val vaultId: String = "default",
-    val parentEntryId: String? = null
+    /** Derived from EntryLink; never persisted on the entry row. */
+    val accountEntryId: String? = null
 ) : EntryIconSource {
     val hasPassword: Boolean
         get() = EntryCapabilityFlags.has(capabilityFlags, EntryCapabilityFlags.HAS_PASSWORD)

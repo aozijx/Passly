@@ -9,8 +9,8 @@ import org.junit.Test
 class EntryHierarchyPresentationTest {
 
     private val account = item("account", EntryType.ACCOUNT)
-    private val login = item("login", EntryType.LOGIN, parentEntryId = account.id)
-    private val otp = item("otp", EntryType.OTP, parentEntryId = account.id)
+    private val login = item("login", EntryType.LOGIN, accountEntryId = account.id)
+    private val otp = item("otp", EntryType.OTP, accountEntryId = account.id)
     private val standalone = item("standalone", EntryType.LOGIN)
     private val entries = listOf(login, account, otp, standalone)
 
@@ -41,7 +41,7 @@ class EntryHierarchyPresentationTest {
     private fun item(
         id: String,
         type: EntryType,
-        parentEntryId: String? = null
+        accountEntryId: String? = null
     ) = EntryListItem(
         id = id,
         entryType = type,
@@ -61,6 +61,6 @@ class EntryHierarchyPresentationTest {
         usageCount = 0,
         entryVersion = 1,
         capabilityFlags = 0,
-        parentEntryId = parentEntryId
+        accountEntryId = accountEntryId
     )
 }

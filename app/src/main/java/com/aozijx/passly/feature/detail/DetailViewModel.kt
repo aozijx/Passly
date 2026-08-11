@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.entry.model.EntryChanges
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryAggregate
@@ -12,11 +13,12 @@ import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
 import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
-import com.aozijx.passly.domain.entry.repository.EntryHierarchyRepository
+import com.aozijx.passly.domain.entry.repository.EntryLinkRepository
 import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import com.aozijx.passly.domain.entry.repository.FaviconRepository
 import com.aozijx.passly.domain.entry.service.EntryTypePolicy
+import com.aozijx.passly.domain.entry.service.EntryAccountGraph
 import com.aozijx.passly.domain.entry.service.EntryValidatorProvider
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -39,7 +41,7 @@ class DetailViewModel @Inject constructor(
     private val entryHighSensitivityRepository: EntryHighSensitivityRepository,
     private val activityQueryRepository: ActivityQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
-    private val entryHierarchyRepository: EntryHierarchyRepository,
+    private val entryLinkRepository: EntryLinkRepository,
     private val activityRecorder: ActivityRecorder,
     private val faviconRepository: FaviconRepository,
     private val entryTypePolicy: EntryTypePolicy,
@@ -260,20 +262,23 @@ class DetailViewModel @Inject constructor(
     }
 
     private suspend fun loadRelatedEntries(entry: EntryAggregate) {
+        val graph = EntryAccountGraph(entryLinkRepository.getAll())
         val accountId = if (entry.entryType == EntryType.ACCOUNT) {
-            entry.id
+            EntryId(entry.id)
         } else {
-            entry.parentEntryId
+            graph.accountFor(EntryId(entry.id))
         }
         if (accountId == null) {
             _uiState.update { it.copy(relatedEntries = emptyList()) }
             return
         }
-        val account = entryQueryRepository.getByIdWithoutHighSensitivity(accountId)
-        val children = entryHierarchyRepository.getChildren(accountId)
-        val related = buildList {
-            if (account != null && account.id != entry.id) add(account)
-            children.filterTo(this) { it.id != entry.id }
+        val relatedIds = buildSet {
+            add(accountId)
+            addAll(graph.membersOf(accountId))
+            remove(EntryId(entry.id))
+        }
+        val related = relatedIds.mapNotNull { relatedId ->
+            entryQueryRepository.getByIdWithoutHighSensitivity(relatedId.value)
         }
         _uiState.update { it.copy(relatedEntries = related) }
     }

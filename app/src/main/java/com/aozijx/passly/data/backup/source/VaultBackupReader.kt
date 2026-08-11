@@ -8,6 +8,7 @@ import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
 import com.aozijx.passly.data.backup.model.BackupBundle
 import com.aozijx.passly.data.backup.model.BackupDocument
+import com.aozijx.passly.data.backup.model.BackupLinkRecord
 import com.aozijx.passly.data.backup.model.BackupResourceKind
 import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
@@ -65,12 +66,7 @@ class VaultBackupReader @Inject constructor(
             val selectedEntities = eligibleEntities.filter {
                 it.entryType in includedEntryTypes
             }
-            val requiredParentIds = selectedEntities.mapNotNullTo(hashSetOf()) {
-                it.parentEntryId
-            }
-            val metadataEntities = eligibleEntities.filter {
-                it in selectedEntities || it.entryId in requiredParentIds
-            }
+            val metadataEntities = selectedEntities
             val entryIds = metadataEntities.map { it.entryId }
             val credentialEntities = entrySecretQueryDao().getByEntryIds(entryIds)
             val credentialMap = credentialEntities.associateBy { it.entryId }
@@ -197,20 +193,27 @@ class VaultBackupReader @Inject constructor(
                 documentMapper.toRecord(
                     entry = entry,
                     attachmentIds = attachmentIdsByEntry[entry.id].orEmpty()
-                ).let { record ->
-                    if (record.parentEntryId in exportedEntryIds) {
-                        record
-                    } else {
-                        record.copy(parentEntryId = null)
-                    }
-                }
+                )
             }
+            val linkRecords = entryLinkQueryDao().getAll()
+                .filter { it.sourceEntryId in exportedEntryIds && it.targetEntryId in exportedEntryIds }
+                .map { link ->
+                    BackupLinkRecord(
+                        id = link.linkId,
+                        sourceEntryId = link.sourceEntryId,
+                        targetEntryId = link.targetEntryId,
+                        relationType = link.relationType,
+                        createdAt = link.createdAt,
+                        updatedAt = link.updatedAt
+                    )
+                }
             val document = BackupDocument(
                 format = BackupDocument.FORMAT,
                 version = BackupDocument.CURRENT_VERSION,
                 exportedAt = now,
                 appVersion = BuildConfig.VERSION_NAME,
                 entries = entryRecords,
+                links = linkRecords,
                 resources = resourceRecords
             )
 

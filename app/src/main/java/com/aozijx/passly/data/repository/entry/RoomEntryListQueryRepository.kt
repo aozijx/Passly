@@ -8,11 +8,13 @@ import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.lookup.LookupField
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.service.EntryAccountGraph
 import com.aozijx.passly.security.search.BlindIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -71,8 +73,23 @@ class RoomEntryListQueryRepository @Inject constructor(
                 }
                 val statsFlow =
                     entryActivityAnalyticsDao().observeUsageStats(ActivityType.USAGE_TYPES)
-                combine(entryFlow, statsFlow) { metaEntities, statsList ->
+                val linksFlow = entryLinkQueryDao().observeAll()
+                combine(entryFlow, statsFlow, linksFlow) { metaEntities, statsList, linkEntities ->
                     val statsMap = statsList.associateBy { it.entryId }
+                    val accountGraph = EntryAccountGraph(
+                        linkEntities.map { link ->
+                            com.aozijx.passly.domain.entry.model.link.EntryLink.create(
+                                id = com.aozijx.passly.domain.entry.model.link.EntryLinkId(link.linkId),
+                                sourceEntryId = EntryId(link.sourceEntryId),
+                                targetEntryId = EntryId(link.targetEntryId),
+                                relationType = com.aozijx.passly.domain.entry.model.link.EntryRelationType.valueOf(
+                                    link.relationType
+                                ),
+                                createdAt = link.createdAt,
+                                updatedAt = link.updatedAt
+                            )
+                        }
+                    )
                     // 使用盲索引预过滤：仅解密匹配的条目
                     val filteredMetaEntities = if (query.isNotEmpty()) {
                         filterByBlindIndex(this, metaEntities, query)
@@ -86,10 +103,13 @@ class RoomEntryListQueryRepository @Inject constructor(
                     }
                         .map { item ->
                             val stats = statsMap[item.id]
-                            if (stats != null) item.copy(
+                            val groupedItem = item.copy(
+                                accountEntryId = accountGraph.accountFor(EntryId(item.id))?.value
+                            )
+                            if (stats != null) groupedItem.copy(
                                 usageCount = stats.usageCount,
                                 lastUsedAt = stats.lastUsedAt
-                            ) else item
+                            ) else groupedItem
                         }
                         .filter { item ->
                             when (filter) {

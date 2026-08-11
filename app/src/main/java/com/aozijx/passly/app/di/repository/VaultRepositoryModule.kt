@@ -6,7 +6,6 @@ import com.aozijx.passly.data.repository.activity.RoomActivityQueryRepository
 import com.aozijx.passly.data.repository.activity.RoomActivityRecorder
 import com.aozijx.passly.data.repository.autofill.CredentialServiceRepositoryImpl
 import com.aozijx.passly.data.repository.entry.RoomEntryCommandRepository
-import com.aozijx.passly.data.repository.entry.RoomEntryHierarchyRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryListQueryRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryLinkRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository
@@ -18,7 +17,6 @@ import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
-import com.aozijx.passly.domain.entry.repository.EntryHierarchyRepository
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.repository.EntryLinkRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
@@ -48,12 +46,6 @@ abstract class VaultRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindEntryCommandRepository(impl: RoomEntryCommandRepository): EntryCommandRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindEntryHierarchyRepository(
-        impl: RoomEntryHierarchyRepository
-    ): EntryHierarchyRepository
 
     @Binds
     @Singleton

@@ -24,8 +24,6 @@ data class EntryAggregate(
     val id: String get() = header.entryId
     val title: String get() = summary.title
     val username: String get() = summary.username
-    val vaultId: String get() = header.vaultId
-    val parentEntryId: String? get() = header.parentEntryId
     val favorite: Boolean get() = summary.favorite
     val tags: List<String> get() = summary.tags
     val website: WebsiteInfo? get() = summary.website

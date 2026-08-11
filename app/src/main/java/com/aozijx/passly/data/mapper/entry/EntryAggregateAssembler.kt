@@ -24,9 +24,7 @@ object EntryAggregateAssembler {
                 version = EntryVersion.fromInt(entity.version),
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt,
-                deletedAt = entity.deletedAt,
-                vaultId = entity.vaultId,
-                parentEntryId = entity.parentEntryId
+                deletedAt = entity.deletedAt
             ),
             summary = summary,
             secret = secret ?: EntrySecret(),

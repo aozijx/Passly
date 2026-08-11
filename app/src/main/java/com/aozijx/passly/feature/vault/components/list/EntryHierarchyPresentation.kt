@@ -12,7 +12,7 @@ internal fun arrangeEntryHierarchy(
     val ids = entries.mapTo(hashSetOf()) { it.id }
     return when (mode) {
         EntryHierarchyDisplayMode.COLLAPSED -> entries.filter {
-            it.parentEntryId == null || it.parentEntryId !in ids
+            it.accountEntryId == null || it.accountEntryId !in ids
         }
 
         EntryHierarchyDisplayMode.SEPARATE -> entries.filter {
@@ -21,12 +21,12 @@ internal fun arrangeEntryHierarchy(
 
         EntryHierarchyDisplayMode.EXPANDED -> {
             val children = entries
-                .filter { it.parentEntryId != null }
-                .groupBy { it.parentEntryId }
+                .filter { it.accountEntryId != null }
+                .groupBy { it.accountEntryId }
             buildList(entries.size) {
                 val added = hashSetOf<String>()
                 entries.filter {
-                    it.parentEntryId == null || it.parentEntryId !in ids
+                    it.accountEntryId == null || it.accountEntryId !in ids
                 }.forEach { root ->
                     if (added.add(root.id)) add(root)
                     children[root.id].orEmpty().forEach { child ->

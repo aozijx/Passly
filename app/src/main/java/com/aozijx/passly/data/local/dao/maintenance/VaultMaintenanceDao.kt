@@ -25,7 +25,7 @@ interface VaultMaintenanceDao {
     @Query("DELETE FROM entry_secrets")
     suspend fun clearSecrets(): Int
 
-    @Query("DELETE FROM vault_entries")
+    @Query("DELETE FROM entries")
     suspend fun clearEntries(): Int
 
     @Query("DELETE FROM entry_drafts")

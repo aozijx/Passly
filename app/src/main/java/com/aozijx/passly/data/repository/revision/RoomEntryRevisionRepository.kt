@@ -42,9 +42,7 @@ class RoomEntryRevisionRepository @Inject constructor(
                     version = EntryVersion(entity.version),
                     createdAt = metadata.createdAt,
                     updatedAt = entity.createdAt,
-                    deletedAt = metadata.deletedAt,
-                    vaultId = metadata.vaultId,
-                    parentEntryId = metadata.parentEntryId
+                    deletedAt = metadata.deletedAt
                 ),
                 summary = summary,
                 secret = secret

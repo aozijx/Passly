@@ -12,6 +12,7 @@ import com.aozijx.passly.data.backup.model.BackupCustomField
 import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupEntryRecord
 import com.aozijx.passly.data.backup.model.BackupIdentitySecret
+import com.aozijx.passly.data.backup.model.BackupLinkRecord
 import com.aozijx.passly.data.backup.model.BackupLoginSecret
 import com.aozijx.passly.data.backup.model.BackupOtpAlgorithm
 import com.aozijx.passly.data.backup.model.BackupOtpConfig
@@ -22,6 +23,7 @@ import com.aozijx.passly.data.backup.model.BackupSummaryRecord
 import com.aozijx.passly.data.backup.model.BackupWebsiteRecord
 import com.aozijx.passly.domain.backup.model.BackupFormatId
 import com.aozijx.passly.domain.backup.model.BackupFormats
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
@@ -73,7 +75,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         val export = BackupJson.decodeFromString<BitwardenExport>(rawRoot.toString())
         val folderNames = export.folders.associate { it.id to it.name }
         val now = System.currentTimeMillis()
-        val entries = export.items.flatMapIndexed { index, item ->
+        val importedRecords = export.items.mapIndexed { index, item ->
             if (item.type !in 1..4) {
                 throw BackupFailed()
             }
@@ -94,7 +96,8 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                 version = BackupDocument.CURRENT_VERSION,
                 exportedAt = now,
                 appVersion = "Bitwarden plaintext JSON",
-                entries = entries
+                entries = importedRecords.flatMap(BitwardenRecords::entries),
+                links = importedRecords.flatMap(BitwardenRecords::links)
             )
         )
         BackupBundleValidator.validate(bundle, requireResourceData = false)
@@ -105,7 +108,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         index: Int,
         folderNames: Map<String, String>,
         fallbackTime: Long
-    ): List<BackupEntryRecord> {
+    ): BitwardenRecords {
         val updatedAt = parseTime(revisionDate) ?: fallbackTime
         val createdAt = (parseTime(creationDate) ?: updatedAt).coerceAtMost(updatedAt)
         val tags = folderId?.let(folderNames::get)?.let(::listOf).orEmpty()
@@ -198,7 +201,7 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
                 customFields = customFields
             )
         )
-        val otp = record.secret.otp ?: return listOf(record)
+        val otp = record.secret.otp ?: return BitwardenRecords(entries = listOf(record))
         val accountId = relatedId(record.id, "account")
         val otpId = relatedId(record.id, "otp")
         val account = record.copy(
@@ -207,12 +210,10 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             secret = BackupSecretRecord()
         )
         val login = record.copy(
-            parentEntryId = accountId,
             secret = record.secret.copy(otp = null)
         )
         val otpEntry = record.copy(
             id = otpId,
-            parentEntryId = accountId,
             type = "OTP",
             summary = record.summary.copy(
                 title = "${record.summary.title} OTP",
@@ -220,7 +221,27 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
             ),
             secret = BackupSecretRecord(otp = otp)
         )
-        return listOf(account, login, otpEntry)
+        return BitwardenRecords(
+            entries = listOf(account, login, otpEntry),
+            links = listOf(
+                BackupLinkRecord(
+                    id = relatedId(record.id, "member-link"),
+                    sourceEntryId = login.id,
+                    targetEntryId = account.id,
+                    relationType = EntryRelationType.MEMBER_OF_ACCOUNT.name,
+                    createdAt = createdAt,
+                    updatedAt = updatedAt
+                ),
+                BackupLinkRecord(
+                    id = relatedId(record.id, "otp-link"),
+                    sourceEntryId = otpEntry.id,
+                    targetEntryId = login.id,
+                    relationType = EntryRelationType.OTP_FOR.name,
+                    createdAt = createdAt,
+                    updatedAt = updatedAt
+                )
+            )
+        )
     }
 
     private fun parseOtp(value: String): BackupOtpSecret {
@@ -295,6 +316,11 @@ internal class BitwardenJsonImportAdapter @Inject constructor() : BackupImportAd
         ).toString()
 
 }
+
+private data class BitwardenRecords(
+    val entries: List<BackupEntryRecord>,
+    val links: List<BackupLinkRecord> = emptyList()
+)
 
 @Serializable
 private data class BitwardenExport(

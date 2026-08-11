@@ -46,7 +46,7 @@ Payload 是为了方便序列化（JSON）和加密（AES-GCM）设计的。
 
 负责将领域模型转化为 Room 能够存储的格式。
 
-* **MetadataEntity**: 包含 `entryId`、`vaultId`、版本号及加密后的 `metadataBlob`。
+* **EntryEntity**: 包含 `entryId`、条目类型、版本号及加密后的摘要；账户归组由 `entry_links` 表达。
 * **CredentialEntity**: 仅包含 `entryId` 和加密后的 `credentialBlob`。
 
 ---

@@ -5,6 +5,7 @@ import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupOtpType
 import com.aozijx.passly.data.backup.model.BackupResourceKind
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import java.security.MessageDigest
 
 internal object BackupBundleValidator {
@@ -34,7 +35,6 @@ internal object BackupBundleValidator {
         }
 
         val entryIds = document.entries.mapTo(hashSetOf()) { it.id }
-        val entriesById = document.entries.associateBy { it.id }
         val resourceIds = document.resources.mapTo(hashSetOf()) { it.id }
         require(
             entryIds.all(SAFE_ID::matches) &&
@@ -47,25 +47,8 @@ internal object BackupBundleValidator {
         }
         val validTypes = EntryType.entries.mapTo(hashSetOf()) { it.name }
         document.entries.forEach { entry ->
-            require(SAFE_ID.matches(entry.vaultId)) { "条目保险库 ID 无效: ${entry.id}" }
             require(entry.type in validTypes) { "未知条目类型: ${entry.type}" }
-            entry.parentEntryId?.let { parentEntryId ->
-                require(parentEntryId != entry.id) { "条目不能关联自身: ${entry.id}" }
-                val parent = requireNotNull(entriesById[parentEntryId]) {
-                    "条目引用了不存在的父账户: ${entry.id}"
-                }
-                require(parent.type == EntryType.ACCOUNT.name) {
-                    "父条目必须是 ACCOUNT: ${entry.id}"
-                }
-                require(parent.parentEntryId == null) {
-                    "ACCOUNT 父条目不能再关联父账户: ${parent.id}"
-                }
-                require(parent.vaultId == entry.vaultId) {
-                    "子条目与父账户不属于同一保险库: ${entry.id}"
-                }
-            }
             if (entry.type == EntryType.ACCOUNT.name) {
-                require(entry.parentEntryId == null) { "ACCOUNT 不能作为子条目: ${entry.id}" }
                 require(entry.secret == com.aozijx.passly.data.backup.model.BackupSecretRecord()) {
                     "ACCOUNT 不能包含敏感 payload: ${entry.id}"
                 }
@@ -94,6 +77,27 @@ internal object BackupBundleValidator {
                             "OTP 周期无效: ${entry.id}"
                         }
                 }
+            }
+        }
+        val relationTypes = EntryRelationType.entries.mapTo(hashSetOf()) { it.name }
+        require(document.links.map { it.id }.toSet().size == document.links.size) {
+            "备份包含重复关系 ID"
+        }
+        require(
+            document.links.map { Triple(it.sourceEntryId, it.targetEntryId, it.relationType) }
+                .toSet().size == document.links.size
+        ) {
+            "备份包含重复关系"
+        }
+        document.links.forEach { link ->
+            require(SAFE_ID.matches(link.id)) { "关系 ID 无效: ${link.id}" }
+            require(link.sourceEntryId in entryIds && link.targetEntryId in entryIds) {
+                "关系引用了不存在的条目: ${link.id}"
+            }
+            require(link.sourceEntryId != link.targetEntryId) { "条目不能关联自身: ${link.id}" }
+            require(link.relationType in relationTypes) { "未知关系类型: ${link.relationType}" }
+            require(link.createdAt >= 0 && link.updatedAt >= link.createdAt) {
+                "关系时间无效: ${link.id}"
             }
         }
         document.resources.groupBy { it.entryId }.forEach { (entryId, resources) ->

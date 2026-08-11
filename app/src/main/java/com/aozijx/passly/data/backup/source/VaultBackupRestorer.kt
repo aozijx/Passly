@@ -16,6 +16,7 @@ import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.local.database.maintenance.VaultDatabaseCleaner
 import com.aozijx.passly.data.model.entity.EntryAttachmentEntity
 import com.aozijx.passly.data.model.entity.EntryEntity
+import com.aozijx.passly.data.model.entity.EntryLinkEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
 import com.aozijx.passly.domain.backup.model.ImportMode
@@ -67,40 +68,10 @@ class VaultBackupRestorer @Inject constructor(
                     databaseCleaner.clearVaultData()
                 }
 
-                val orderedRecords = bundle.document.entries.sortedBy {
-                    if (it.type == com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT.name) 0 else 1
-                }
-                orderedRecords.forEach { record ->
+                bundle.document.entries.forEach { record ->
                     val entryId = record.id
                     if (mode == ImportMode.APPEND && entryQueryDao().exists(entryId)) {
-                        if (
-                            record.type ==
-                            com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT.name
-                        ) {
-                            val existing = requireNotNull(entryQueryDao().getById(entryId))
-                            require(
-                                existing.entryType ==
-                                    com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT &&
-                                    existing.parentEntryId == null &&
-                                    existing.vaultId == record.vaultId
-                            ) {
-                                "已存在的父账户与备份层级不兼容: $entryId"
-                            }
-                        }
                         return@forEach
-                    }
-                    record.parentEntryId?.let { parentEntryId ->
-                        val parent = requireNotNull(entryQueryDao().getById(parentEntryId)) {
-                            "恢复时找不到父账户: $parentEntryId"
-                        }
-                        require(
-                            parent.entryType ==
-                                com.aozijx.passly.domain.entry.model.EntryType.ACCOUNT &&
-                                parent.parentEntryId == null &&
-                                parent.vaultId == record.vaultId
-                        ) {
-                            "恢复时父账户层级无效: $parentEntryId"
-                        }
                     }
                     val restoredEntry = documentMapper.toEntry(record)
                     val entryResources = resourcesByEntry[entryId].orEmpty()
@@ -142,8 +113,6 @@ class VaultBackupRestorer @Inject constructor(
 
                     val metaEntity = EntryEntity(
                         entryId = entryId,
-                        vaultId = record.vaultId,
-                        parentEntryId = record.parentEntryId,
                         entryType = com.aozijx.passly.domain.entry.model.EntryType.valueOf(record.type),
                         version = record.version,
                         capabilityFlags = capabilityFlags,
@@ -207,6 +176,23 @@ class VaultBackupRestorer @Inject constructor(
                                     fieldEncryptor
                                 ),
                                 createdAt = resource.createdAt ?: record.updatedAt
+                            )
+                        )
+                    }
+                }
+                bundle.document.links.forEach { link ->
+                    if (
+                        entryQueryDao().exists(link.sourceEntryId) &&
+                        entryQueryDao().exists(link.targetEntryId)
+                    ) {
+                        entryLinkCommandDao().upsert(
+                            EntryLinkEntity(
+                                linkId = link.id,
+                                sourceEntryId = link.sourceEntryId,
+                                targetEntryId = link.targetEntryId,
+                                relationType = link.relationType,
+                                createdAt = link.createdAt,
+                                updatedAt = link.updatedAt
                             )
                         )
                     }

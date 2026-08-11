@@ -16,6 +16,7 @@ import com.aozijx.passly.data.backup.model.BackupCustomField
 import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupEntryRecord
 import com.aozijx.passly.data.backup.model.BackupLoginSecret
+import com.aozijx.passly.data.backup.model.BackupLinkRecord
 import com.aozijx.passly.data.backup.model.BackupOtpConfig
 import com.aozijx.passly.data.backup.model.BackupOtpSecret
 import com.aozijx.passly.data.backup.model.BackupResourceKind
@@ -24,6 +25,7 @@ import com.aozijx.passly.data.backup.model.BackupSecretRecord
 import com.aozijx.passly.data.backup.model.BackupSummaryRecord
 import com.aozijx.passly.data.backup.model.BackupWebsiteRecord
 import com.aozijx.passly.domain.backup.model.BackupFormats
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertArrayEquals
@@ -370,8 +372,16 @@ class BackupCodecTest {
         assertEquals(BackupFormats.BITWARDEN_JSON, detected.formatId)
         assertEquals("Bank", account.summary.title)
         assertEquals(BackupSecretRecord(), account.secret)
-        assertEquals(account.id, login.parentEntryId)
-        assertEquals(account.id, otp.parentEntryId)
+        assertTrue(bundle.document.links.any {
+            it.sourceEntryId == login.id &&
+                it.targetEntryId == account.id &&
+                it.relationType == EntryRelationType.MEMBER_OF_ACCOUNT.name
+        })
+        assertTrue(bundle.document.links.any {
+            it.sourceEntryId == otp.id &&
+                it.targetEntryId == login.id &&
+                it.relationType == EntryRelationType.OTP_FOR.name
+        })
         assertEquals("alice", login.summary.username)
         assertEquals(listOf("Finance"), login.summary.tags)
         assertEquals("secret", login.secret.login?.password)
@@ -395,7 +405,7 @@ class BackupCodecTest {
             BackupBundle(
                 BackupDocument(
                     format = BackupDocument.FORMAT,
-                    version = 1,
+                    version = BackupDocument.CURRENT_VERSION,
                     exportedAt = 1,
                     entries = listOf(
                         BackupEntryRecord(
@@ -455,15 +465,14 @@ class BackupCodecTest {
     }
 
     @Test
-    fun documentV1_wireFieldNamesAreStableAndIndependentFromDatabasePayloads() {
+    fun documentV2_wireFieldNamesAreStableAndIndependentFromDatabasePayloads() {
         val document = BackupDocument(
             format = BackupDocument.FORMAT,
-            version = 1,
+            version = BackupDocument.CURRENT_VERSION,
             exportedAt = 1,
             entries = listOf(
                 BackupEntryRecord(
                     id = "wire-entry",
-                    vaultId = "default",
                     type = "LOGIN",
                     version = 1,
                     createdAt = 1,
@@ -491,7 +500,6 @@ class BackupCodecTest {
         assertEquals(
             setOf(
                 "id",
-                "vaultId",
                 "type",
                 "version",
                 "createdAt",
@@ -512,7 +520,7 @@ class BackupCodecTest {
         val bundle = BackupBundle(
             BackupDocument(
                 format = BackupDocument.FORMAT,
-                version = 2,
+                version = BackupDocument.CURRENT_VERSION + 1,
                 exportedAt = 1,
                 entries = emptyList()
             )
@@ -536,7 +544,6 @@ class BackupCodecTest {
         )
         val login = BackupEntryRecord(
             id = "login-1",
-            parentEntryId = account.id,
             type = "LOGIN",
             version = 1,
             createdAt = 1,
@@ -549,19 +556,26 @@ class BackupCodecTest {
         val valid = BackupBundle(
             BackupDocument(
                 format = BackupDocument.FORMAT,
-                version = 1,
+                version = BackupDocument.CURRENT_VERSION,
                 exportedAt = 1,
-                entries = listOf(login, account)
+                entries = listOf(login, account),
+                links = listOf(
+                    BackupLinkRecord(
+                        id = "login-account-link",
+                        sourceEntryId = login.id,
+                        targetEntryId = account.id,
+                        relationType = EntryRelationType.MEMBER_OF_ACCOUNT.name,
+                        createdAt = 1,
+                        updatedAt = 1
+                    )
+                )
             )
         )
 
         BackupBundleValidator.validate(valid, requireResourceData = false)
         val json = JsonBackupExporter().export(valid)
         val restored = JsonBackupImporter().import(json.toByteArray())
-        assertEquals(
-            account.id,
-            restored.document.entries.single { it.id == login.id }.parentEntryId
-        )
+        assertEquals(valid.document.links, restored.document.links)
 
         val mixed = login.copy(
             secret = login.secret.copy(
@@ -575,12 +589,9 @@ class BackupCodecTest {
             )
         }
 
-        val legacyWithoutVaultId = json.replace(
-            Regex("\\s*\"vaultId\"\\s*:\\s*\"default\"\\s*,"),
-            ""
-        )
+        val legacyVaultFormat = json.replace(BackupDocument.FORMAT, "passly-vault")
         assertThrows(Exception::class.java) {
-            JsonBackupImporter().import(legacyWithoutVaultId.toByteArray())
+            JsonBackupImporter().import(legacyVaultFormat.toByteArray())
         }
     }
 

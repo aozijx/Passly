@@ -12,95 +12,89 @@ interface EntryQueryDao {
 
     // ---- observe (Flow) ----
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeActive(): Flow<List<EntryEntity>>
 
-    @Query("SELECT * FROM vault_entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeActiveByType(entryType: EntryType): Flow<List<EntryEntity>>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL AND (capabilityFlags & :capability) != 0 ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NULL AND (capabilityFlags & :capability) != 0 ORDER BY updatedAt DESC")
     fun observeActiveWithCapability(capability: Int): Flow<List<EntryEntity>>
 
-    @Query("SELECT * FROM vault_entries WHERE entryId IN (:entryIds) AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries WHERE entryId IN (:entryIds) AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeActiveByIds(entryIds: List<String>): Flow<List<EntryEntity>>
 
-    @Query("SELECT * FROM vault_entries WHERE parentEntryId = :parentEntryId AND deletedAt IS NULL ORDER BY updatedAt DESC")
-    fun observeActiveChildren(parentEntryId: String): Flow<List<EntryEntity>>
-
-    @Query("SELECT DISTINCT entryType FROM vault_entries WHERE deletedAt IS NULL ORDER BY entryType")
+    @Query("SELECT DISTINCT entryType FROM entries WHERE deletedAt IS NULL ORDER BY entryType")
     fun observeDistinctActiveEntryTypes(): Flow<List<EntryType>>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun observeDeleted(): Flow<List<EntryEntity>>
 
     // ---- paging (Paging 3) ----
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun pagingActive(): PagingSource<Int, EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun pagingActiveByType(entryType: EntryType): PagingSource<Int, EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun pagingDeleted(): PagingSource<Int, EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY createdAt DESC")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY createdAt DESC")
     fun pagingActiveRecentlyCreated(): PagingSource<Int, EntryEntity>
 
     // ---- get (suspend) ----
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getActive(): List<EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     suspend fun getDeleted(): List<EntryEntity>
 
-    @Query("SELECT * FROM vault_entries ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries ORDER BY updatedAt DESC")
     suspend fun getAll(): List<EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE entryId = :entryId LIMIT 1")
+    @Query("SELECT * FROM entries WHERE entryId = :entryId LIMIT 1")
     suspend fun getById(entryId: String): EntryEntity?
 
-    @Query("SELECT * FROM vault_entries WHERE entryId IN (:entryIds)")
+    @Query("SELECT * FROM entries WHERE entryId IN (:entryIds)")
     suspend fun getByIds(entryIds: List<String>): List<EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE parentEntryId = :parentEntryId ORDER BY updatedAt DESC")
-    suspend fun getChildren(parentEntryId: String): List<EntryEntity>
-
-    @Query("SELECT * FROM vault_entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM entries WHERE entryType = :entryType AND deletedAt IS NULL ORDER BY updatedAt DESC")
     suspend fun getActiveByType(entryType: EntryType): List<EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit OFFSET :offset")
     suspend fun getActivePage(limit: Int, offset: Int): List<EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit")
     suspend fun getActiveRecentlyUpdated(limit: Int): List<EntryEntity>
 
-    @Query("SELECT * FROM vault_entries WHERE deletedAt IS NULL ORDER BY createdAt DESC LIMIT :limit")
+    @Query("SELECT * FROM entries WHERE deletedAt IS NULL ORDER BY createdAt DESC LIMIT :limit")
     suspend fun getActiveRecentlyCreated(limit: Int): List<EntryEntity>
 
     // ---- exists ----
 
-    @Query("SELECT EXISTS(SELECT 1 FROM vault_entries WHERE entryId = :entryId)")
+    @Query("SELECT EXISTS(SELECT 1 FROM entries WHERE entryId = :entryId)")
     suspend fun exists(entryId: String): Boolean
 
-    @Query("SELECT EXISTS(SELECT 1 FROM vault_entries WHERE entryId = :entryId AND deletedAt IS NULL)")
+    @Query("SELECT EXISTS(SELECT 1 FROM entries WHERE entryId = :entryId AND deletedAt IS NULL)")
     suspend fun existsActive(entryId: String): Boolean
 
     // ---- count ----
 
-    @Query("SELECT COUNT(*) FROM vault_entries WHERE deletedAt IS NULL")
+    @Query("SELECT COUNT(*) FROM entries WHERE deletedAt IS NULL")
     suspend fun countActive(): Int
 
-    @Query("SELECT COUNT(*) FROM vault_entries WHERE deletedAt IS NULL AND entryType = :entryType")
+    @Query("SELECT COUNT(*) FROM entries WHERE deletedAt IS NULL AND entryType = :entryType")
     suspend fun countActiveByType(entryType: EntryType): Int
 
-    @Query("SELECT COUNT(*) FROM vault_entries WHERE deletedAt IS NOT NULL")
+    @Query("SELECT COUNT(*) FROM entries WHERE deletedAt IS NOT NULL")
     suspend fun countDeleted(): Int
 
-    @Query("SELECT entryId FROM vault_entries WHERE deletedAt IS NULL AND searchIndexVersion < :currentVersion")
+    @Query("SELECT entryId FROM entries WHERE deletedAt IS NULL AND searchIndexVersion < :currentVersion")
     suspend fun getActiveEntryIdsNeedingIndexRebuild(currentVersion: Int): List<String>
 
-    @Query("SELECT * FROM vault_entries WHERE entryId IN (:entryIds)")
+    @Query("SELECT * FROM entries WHERE entryId IN (:entryIds)")
     suspend fun getByIdsForMaintenance(entryIds: List<String>): List<EntryEntity>
 }
