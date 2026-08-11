@@ -10,9 +10,7 @@ package com.aozijx.passly.domain.auth.model
  * - 超时失效（使用单调时间）
  * - 锁定时全部撤销
  *
- * 外部代码无法构造 [AuthorizationPermit] 实现类。
- * 调用者只能读取 [purpose]，不能检查或消费内部 token。
+ * 外部代码可以实现这个标记接口，但无法把伪造实例加入内部注册表；
+ * 只有授权闸门签发的对象身份才能被验证器消费。
  */
-interface AuthorizationPermit {
-    val purpose: com.aozijx.passly.domain.authentication.AuthenticationPurpose
-}
+interface AuthorizationPermit

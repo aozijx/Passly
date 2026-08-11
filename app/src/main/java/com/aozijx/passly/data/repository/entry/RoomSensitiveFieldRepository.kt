@@ -1,6 +1,10 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.auth.model.AuthorizationPermit
+import com.aozijx.passly.domain.auth.model.AuthorizationScope
+import com.aozijx.passly.domain.auth.port.AuthorizationPermitVerifier
+import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.entry.SensitiveFieldCodec
 import com.aozijx.passly.data.model.entity.EntrySensitiveFieldEntity
@@ -23,7 +27,8 @@ class RoomSensitiveFieldRepository @Inject constructor(
     private val sessionState: SecureSessionAccessState,
     private val transactionRunner: VaultTransactionRunner,
     private val codec: SensitiveFieldCodec,
-    private val clock: Clock
+    private val clock: Clock,
+    private val permitVerifier: AuthorizationPermitVerifier,
 ) : SensitiveFieldRepository {
     override suspend fun getPresence(entryId: EntryId): SensitiveFieldPresence =
         if (!sessionState.hasFullSecureSessionAccess()) SensitiveFieldPresence(entryId, emptySet())
@@ -37,16 +42,37 @@ class RoomSensitiveFieldRepository @Inject constructor(
 
     override suspend fun reveal(
         entryId: EntryId,
-        key: SensitiveFieldKey
-    ): RevealedSensitiveField? = if (!sessionState.hasFullSecureSessionAccess()) null else {
-        sessionManager.query {
-            val entity = sensitiveFieldQueryDao().getField(entryId.value, key.name)
-                ?: return@query null
-            RevealedSensitiveField(
+        key: SensitiveFieldKey,
+        permit: AuthorizationPermit,
+    ): RevealedSensitiveField? = revealMany(entryId, setOf(key), permit).singleOrNull()
+
+    override suspend fun revealMany(
+        entryId: EntryId,
+        keys: Set<SensitiveFieldKey>,
+        permit: AuthorizationPermit,
+    ): List<RevealedSensitiveField> = if (
+        !sessionState.hasFullSecureSessionAccess() ||
+        !permitVerifier.consume(
+            permit,
+            AuthorizationScope.SensitiveFields(
                 entryId = entryId,
-                key = key,
-                value = SecureString.fromString(codec.decrypt(entryId.value, key, entity.valueCipher))
-            )
+                fieldKeys = keys,
+                action = SensitiveAccessAction.REVEAL,
+            ),
+        )
+    ) emptyList() else {
+        sessionManager.query {
+            keys.mapNotNull { key ->
+                val entity = sensitiveFieldQueryDao().getField(entryId.value, key.name)
+                    ?: return@mapNotNull null
+                RevealedSensitiveField(
+                    entryId = entryId,
+                    key = key,
+                    value = SecureString.fromString(
+                        codec.decrypt(entryId.value, key, entity.valueCipher)
+                    ),
+                )
+            }
         }
     }
 

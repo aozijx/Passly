@@ -24,7 +24,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
-import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
 import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
@@ -162,9 +161,7 @@ fun BankCardSection(
                     if (revealedCardNumber != null) {
                         onRevealField(RevealedFieldKey.CARD_NUMBER, null)
                     } else {
-                        onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
-                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CARD_NUMBER))
-                        }
+                        onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CARD_NUMBER))
                     }
                 }
             )
@@ -215,9 +212,7 @@ fun BankCardSection(
                     if (revealedCvv != null) {
                         onRevealField(RevealedFieldKey.CVV, null)
                     } else {
-                        onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
-                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CVV))
-                        }
+                        onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CVV))
                     }
                 }
             )
@@ -259,9 +254,7 @@ fun BankCardSection(
                     if (revealedPaymentPin != null) {
                         onRevealField(RevealedFieldKey.PAYMENT_PIN, null)
                     } else {
-                        onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
-                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PAYMENT_PIN))
-                        }
+                        onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PAYMENT_PIN))
                     }
                 }
             )
@@ -274,25 +267,26 @@ fun BankCardSection(
         if (canRevealMore && !editState.isEditingPassword) {
             Button(
                 onClick = {
-                    onAuthenticate.reveal(SensitiveAccessLevel.HIGH) {
+                    val sensitiveKeys = buildSet {
                         if (hasCardNumber && revealedCardNumber == null) {
-                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CARD_NUMBER))
+                            add(RevealedFieldKey.CARD_NUMBER)
                         }
-                        if (hasCardCvv && revealedCvv == null) {
-                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.CVV))
-                        }
+                        if (hasCardCvv && revealedCvv == null) add(RevealedFieldKey.CVV)
                         if (hasPaymentPin && revealedPaymentPin == null) {
-                            onEvent(DetailIntent.RevealHighSensitivityField(RevealedFieldKey.PAYMENT_PIN))
+                            add(RevealedFieldKey.PAYMENT_PIN)
                         }
-                        if (revealedCardholder == null) {
-                            onRevealField(RevealedFieldKey.CARDHOLDER, entry.username)
-                            onEvent(
-                                DetailIntent.RecordAction(
-                                    "cardholder",
-                                    ActivityType.VIEW
-                                )
+                    }
+                    if (sensitiveKeys.isNotEmpty()) {
+                        onEvent(DetailIntent.RevealHighSensitivityFields(sensitiveKeys))
+                    }
+                    if (revealedCardholder == null) {
+                        onRevealField(RevealedFieldKey.CARDHOLDER, entry.username)
+                        onEvent(
+                            DetailIntent.RecordAction(
+                                "cardholder",
+                                ActivityType.VIEW
                             )
-                        }
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

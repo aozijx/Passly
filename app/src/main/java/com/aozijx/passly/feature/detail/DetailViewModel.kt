@@ -2,6 +2,9 @@ package com.aozijx.passly.feature.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.domain.auth.model.AuthorizationScope
+import com.aozijx.passly.domain.auth.port.AuthorizationGate
+import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -46,7 +49,8 @@ class DetailViewModel @Inject constructor(
     private val faviconRepository: FaviconRepository,
     private val entryTypePolicy: EntryTypePolicy,
     private val entryValidatorProvider: EntryValidatorProvider,
-    private val accessPolicy: DetailAccessPolicy
+    private val accessPolicy: DetailAccessPolicy,
+    private val authorizationGate: AuthorizationGate,
 ) : ViewModel() {
     private val entryAnalyzer = DetailEntryAnalyzer(entryTypePolicy, entryValidatorProvider)
 
@@ -158,19 +162,18 @@ class DetailViewModel @Inject constructor(
                     return
                 }
                 viewModelScope.launch {
-                    if (!accessPolicy.hasFullAccess()) return@launch
-                    val fieldKey = key.toSensitiveFieldKey() ?: return@launch
-                    val revealed = sensitiveFieldRepository.reveal(EntryId(current.id), fieldKey)
-                        ?: return@launch
-                    val chars = revealed.value.toCharArray()
-                    try {
-                        val value = String(chars).takeIf { it.isNotBlank() } ?: return@launch
-                        setRevealedField(key, value)
-                    } finally {
-                        chars.fill('\u0000')
-                        revealed.value.wipe()
-                    }
-                    activityRecorder.recordUsage(current.id, ActivityType.VIEW)
+                    revealHighSensitivityFields(current.id, setOf(key))
+                }
+            }
+
+            is DetailIntent.RevealHighSensitivityFields -> {
+                val current = _uiState.value.entry ?: return
+                val hiddenKeys = event.keys.filterTo(linkedSetOf()) {
+                    _uiState.value.revealed(it) == null
+                }
+                if (hiddenKeys.isEmpty()) return
+                viewModelScope.launch {
+                    revealHighSensitivityFields(current.id, hiddenKeys)
                 }
             }
 
@@ -234,6 +237,43 @@ class DetailViewModel @Inject constructor(
                     state.revealedFields + (key to value)
                 }
             )
+        }
+    }
+
+    private suspend fun revealHighSensitivityFields(entryValue: String, uiKeys: Set<String>) {
+        if (!accessPolicy.hasFullAccess()) return
+        val requested = uiKeys.mapNotNull { uiKey ->
+            uiKey.toSensitiveFieldKey()?.let { fieldKey -> uiKey to fieldKey }
+        }.toMap()
+        if (requested.isEmpty()) return
+        val entryId = EntryId(entryValue)
+        authorizationGate.authorize(
+            AuthorizationScope.SensitiveFields(
+                entryId = entryId,
+                fieldKeys = requested.values.toSet(),
+                action = SensitiveAccessAction.REVEAL,
+            ),
+        ) authorize@{ permit ->
+            val revealedFields = sensitiveFieldRepository.revealMany(
+                entryId = entryId,
+                keys = requested.values.toSet(),
+                permit = permit,
+            )
+            revealedFields.forEach { revealed ->
+                val uiKey = requested.entries.firstOrNull { it.value == revealed.key }?.key
+                    ?: return@forEach
+                val chars = revealed.value.toCharArray()
+                try {
+                    val value = String(chars).takeIf { it.isNotBlank() } ?: return@forEach
+                    setRevealedField(uiKey, value)
+                } finally {
+                    chars.fill('\u0000')
+                    revealed.value.wipe()
+                }
+            }
+            if (revealedFields.isNotEmpty()) {
+                activityRecorder.recordUsage(entryValue, ActivityType.VIEW)
+            }
         }
     }
 

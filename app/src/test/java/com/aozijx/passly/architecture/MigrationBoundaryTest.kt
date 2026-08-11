@@ -1573,4 +1573,32 @@ class MigrationBoundaryTest {
             offenders.isEmpty()
         )
     }
+
+    @Test
+    fun highSensitivityReadsRequireScopedSingleUsePermits() {
+        val detailViewModel = File(
+            "src/main/java/com/aozijx/passly/feature/detail/DetailViewModel.kt"
+        ).readText()
+        val sensitiveRepository = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt"
+        ).readText()
+        val sessionController = File(
+            "src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt"
+        ).readText()
+
+        assertTrue(
+            "Detail must authorize the exact entry and sensitive-field set",
+            "AuthorizationScope.SensitiveFields" in detailViewModel &&
+                    "authorizationGate.authorize" in detailViewModel
+        )
+        assertTrue(
+            "Sensitive repository must consume the permit before decryption",
+            "permitVerifier.consume" in sensitiveRepository &&
+                    "AuthorizationScope.SensitiveFields" in sensitiveRepository
+        )
+        assertTrue(
+            "Every lock path must revoke outstanding authorization permits",
+            "authorizationPermitRevoker.revokeAll()" in sessionController
+        )
+    }
 }

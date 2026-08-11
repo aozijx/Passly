@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.entry.repository
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.auth.model.AuthorizationPermit
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -19,8 +20,15 @@ interface SensitiveFieldRepository {
 
     suspend fun reveal(
         entryId: EntryId,
-        key: SensitiveFieldKey
+        key: SensitiveFieldKey,
+        permit: AuthorizationPermit,
     ): RevealedSensitiveField?
+
+    suspend fun revealMany(
+        entryId: EntryId,
+        keys: Set<SensitiveFieldKey>,
+        permit: AuthorizationPermit,
+    ): List<RevealedSensitiveField>
 
     suspend fun upsert(
         entryId: EntryId,

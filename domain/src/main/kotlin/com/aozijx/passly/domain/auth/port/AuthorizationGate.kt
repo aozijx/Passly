@@ -3,14 +3,14 @@ package com.aozijx.passly.domain.auth.port
 import com.aozijx.passly.domain.auth.model.AuthInput
 import com.aozijx.passly.domain.auth.model.AuthorizationPermit
 import com.aozijx.passly.domain.auth.model.AuthorizationResult
-import com.aozijx.passly.domain.authentication.AuthenticationPurpose
+import com.aozijx.passly.domain.auth.model.AuthorizationScope
 
 /**
  * 敏感操作授权闸门。
  *
  * 提供 [authorize] 模式，保证调用闭包前已完成必要认证：
  * ```
- * val result = accessGate.authorize(AuthenticationPurpose.BACKUP_EXPORT) { permit ->
+ * val result = accessGate.authorize(AuthorizationScope.Global(AuthenticationPurpose.BACKUP_EXPORT)) { permit ->
  *     backupService.export(request, permit)
  * }
  * when (result) {
@@ -39,8 +39,18 @@ interface AuthorizationGate {
      * @return 授权结果（成功 / 拒绝 / 取消）
      */
     suspend fun <T> authorize(
-        purpose: AuthenticationPurpose,
+        scope: AuthorizationScope,
         input: AuthInput = AuthInput.Interactive,
         block: suspend (AuthorizationPermit) -> T
     ): AuthorizationResult<T>
+}
+
+/** Security-layer verifier. A permit is valid only when consumed for its exact scope. */
+interface AuthorizationPermitVerifier {
+    fun consume(permit: AuthorizationPermit, expectedScope: AuthorizationScope): Boolean
+}
+
+/** Revokes every outstanding permit before a secure session is locked or sealed. */
+fun interface AuthorizationPermitRevoker {
+    fun revokeAll()
 }
