@@ -1748,6 +1748,35 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun recoveryDraftUsesAConstrainedPureStateMachine() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/" +
+                    "RecoveryDraftViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/presentation/" +
+                    "RecoveryDraftReducer.kt"
+        ).readText()
+
+        assertTrue(
+            "Recovery draft state must have one reducer write path",
+            "RecoveryDraftReducer.reduce" in viewModel &&
+                    Regex("_state\\.value\\s*=").findAll(viewModel).count() == 1,
+        )
+        assertTrue(
+            "Recovery draft reducer must constrain ready and committed transitions",
+            "expected = RecoveryDraftState.Generating" in reducer &&
+                    "state is RecoveryDraftState.Ready" in reducer,
+        )
+        assertTrue(
+            "Draft lifecycle side effects must stay in the ViewModel",
+            "SavedStateHandle" !in reducer &&
+                    "AuthenticationManager" !in reducer &&
+                    ".clear()" !in reducer,
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

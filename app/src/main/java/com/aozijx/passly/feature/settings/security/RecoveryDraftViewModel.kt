@@ -11,6 +11,8 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraft
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraftCreation
 import com.aozijx.passly.domain.authentication.RecoveryCodeDraftFactory
+import com.aozijx.passly.feature.settings.security.presentation.RecoveryDraftMutation
+import com.aozijx.passly.feature.settings.security.presentation.RecoveryDraftReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,22 +36,23 @@ class RecoveryDraftViewModel @Inject constructor(
 
     fun generate() {
         if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
-            _state.value = RecoveryDraftState.Failed
+            mutate(RecoveryDraftMutation.Failed)
             return
         }
         if (_state.value is RecoveryDraftState.Authenticating ||
             _state.value is RecoveryDraftState.Generating
         ) return
         viewModelScope.launch {
-            _state.value = RecoveryDraftState.Authenticating
+            mutate(RecoveryDraftMutation.AuthenticationStarted)
             when (
                 authenticationManager.authenticate(
                     AuthenticationRequest(AuthenticationPurpose.MANAGE_RECOVERY_CODE)
                 )
             ) {
                 is AuthenticationResult.Success -> createDraft()
-                is AuthenticationResult.Cancelled -> _state.value = RecoveryDraftState.Empty
-                is AuthenticationResult.Failure -> _state.value = RecoveryDraftState.Failed
+                is AuthenticationResult.Cancelled ->
+                    mutate(RecoveryDraftMutation.AuthenticationCancelled)
+                is AuthenticationResult.Failure -> mutate(RecoveryDraftMutation.Failed)
             }
         }
     }
@@ -65,7 +68,7 @@ class RecoveryDraftViewModel @Inject constructor(
         viewModelScope.launch {
             if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
                 dismiss()
-                _state.value = RecoveryDraftState.Failed
+                mutate(RecoveryDraftMutation.Failed)
                 return@launch
             }
             val activeDraft = draft ?: return@launch
@@ -74,10 +77,10 @@ class RecoveryDraftViewModel @Inject constructor(
                     draft = null
                     savedStateHandle[WAS_DISCLOSURE_OPEN] = false
                     savedStateHandle[DRAFT_GENERATION_ID] = null as String?
-                    _state.value = RecoveryDraftState.Committed
+                    mutate(RecoveryDraftMutation.Committed)
                 }
                 is AuthenticationResult.Cancelled,
-                is AuthenticationResult.Failure -> _state.value = RecoveryDraftState.Failed
+                is AuthenticationResult.Failure -> mutate(RecoveryDraftMutation.Failed)
             }
         }
     }
@@ -87,11 +90,11 @@ class RecoveryDraftViewModel @Inject constructor(
         draft = null
         savedStateHandle[WAS_DISCLOSURE_OPEN] = false
         savedStateHandle[DRAFT_GENERATION_ID] = null as String?
-        _state.value = RecoveryDraftState.Empty
+        mutate(RecoveryDraftMutation.Dismissed)
     }
 
     private suspend fun createDraft() {
-        _state.value = RecoveryDraftState.Generating
+        mutate(RecoveryDraftMutation.GenerationStarted)
         try {
             when (val creation = draftFactory.create()) {
                 is RecoveryCodeDraftCreation.Ready -> {
@@ -99,15 +102,19 @@ class RecoveryDraftViewModel @Inject constructor(
                     draft = creation.draft
                     savedStateHandle[WAS_DISCLOSURE_OPEN] = true
                     savedStateHandle[DRAFT_GENERATION_ID] = creation.draft.generationId
-                    _state.value = RecoveryDraftState.Ready(creation.draft.generationId)
+                    mutate(RecoveryDraftMutation.DraftReady(creation.draft.generationId))
                 }
-                is RecoveryCodeDraftCreation.Failed -> _state.value = RecoveryDraftState.Failed
+                is RecoveryCodeDraftCreation.Failed -> mutate(RecoveryDraftMutation.Failed)
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Throwable) {
-            _state.value = RecoveryDraftState.Failed
+            mutate(RecoveryDraftMutation.Failed)
         }
+    }
+
+    private fun mutate(mutation: RecoveryDraftMutation) {
+        _state.value = RecoveryDraftReducer.reduce(_state.value, mutation)
     }
 
     override fun onCleared() {
