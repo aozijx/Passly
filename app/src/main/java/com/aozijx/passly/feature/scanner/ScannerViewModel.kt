@@ -11,6 +11,8 @@ import com.aozijx.passly.feature.scanner.contract.ImageRef
 import com.aozijx.passly.feature.scanner.contract.ScannerEffect
 import com.aozijx.passly.feature.scanner.contract.ScannerIntent
 import com.aozijx.passly.feature.scanner.contract.ScannerUiState
+import com.aozijx.passly.feature.scanner.presentation.ScannerMutation
+import com.aozijx.passly.feature.scanner.presentation.ScannerReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -18,7 +20,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
@@ -54,16 +55,16 @@ class ScannerViewModel @Inject constructor(
                 otpConfig = OtpAuthUriCodec.parse(barcode)
             )
         )
-        _uiState.update { it.copy(isScanning = false) }
+        mutate(ScannerMutation.ScanCompleted)
     }
 
     private fun resetAndStart() {
         lastScannedBarcode = null
-        _uiState.value = ScannerUiState()
+        mutate(ScannerMutation.Started)
     }
 
     private fun stopScanning() {
-        _uiState.update { it.copy(isScanning = false) }
+        mutate(ScannerMutation.Stopped)
     }
 
     private fun vibrate() {
@@ -79,9 +80,13 @@ class ScannerViewModel @Inject constructor(
             uri = uri,
             onSuccess = { onBarcodeDetected(it) },
             onFailure = { message ->
-                _uiState.update { it.copy(error = message) }
+                mutate(ScannerMutation.DecodeFailed(message))
                 _effects.trySend(ScannerEffect.ShowError(message))
             }
         )
+    }
+
+    private fun mutate(mutation: ScannerMutation) {
+        _uiState.value = ScannerReducer.reduce(_uiState.value, mutation)
     }
 }

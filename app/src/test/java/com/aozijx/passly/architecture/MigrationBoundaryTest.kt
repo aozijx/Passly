@@ -1647,6 +1647,28 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun scannerUsesALightweightPureStateReducer() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/scanner/ScannerViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerReducer.kt"
+        ).readText()
+
+        assertTrue(
+            "Scanner state must transition only through ScannerReducer",
+            "ScannerReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
+        )
+        assertTrue(
+            "Scanner reducer must not own Android or decoding side effects",
+            "android." !in reducer &&
+                    "QrCodeUtils" !in reducer &&
+                    "Vibrator" !in reducer &&
+                    "internal object ScannerReducer" in reducer,
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。
