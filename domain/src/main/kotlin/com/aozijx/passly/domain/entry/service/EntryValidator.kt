@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.entry.service
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 /**
  * 条目校验器。
@@ -12,10 +12,10 @@ interface EntryValidator {
     /**
      * 校验必填字段。返回 null 表示通过，返回错误信息表示失败。
      */
-    fun validateRequiredFields(entry: VaultEntry): String?
+    fun validateRequiredFields(entry: EntryAggregate): String?
 
     /**
      * 校验字段内容合法性。返回 null 表示通过，返回错误信息表示失败。
      */
-    fun validateFieldContent(entry: VaultEntry): String?
+    fun validateFieldContent(entry: EntryAggregate): String?
 }

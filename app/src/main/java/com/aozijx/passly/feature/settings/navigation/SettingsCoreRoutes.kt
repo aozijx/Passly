@@ -176,9 +176,9 @@ internal fun CoreSettingsRouteContent(
                         onGroupContentPaddingChange = {
                             viewModel.onAction(InterfaceSettingsAction.SetGroupContentPadding(it))
                         },
-                        onVisibleVaultQuickFilterToggle = {
+                        onVisibleLibraryQuickFilterToggle = {
                             viewModel.onAction(
-                                InterfaceSettingsAction.ToggleVisibleVaultQuickFilter(
+                                InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter(
                                     it
                                 )
                             )

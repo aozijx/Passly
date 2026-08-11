@@ -5,7 +5,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -21,7 +21,7 @@ import javax.inject.Inject
  */
 class AutofillRequestSession @Inject constructor(
     private val authenticationManager: AuthenticationManager,
-    private val vaultAccessState: VaultAccessState,
+    private val vaultAccessState: SecureSessionAccessState,
 ) {
     private val closeMutex = Mutex()
 
@@ -35,7 +35,7 @@ class AutofillRequestSession @Inject constructor(
     }
 
     suspend fun <T> trackUnlock(block: suspend () -> T): T {
-        val startedLocked = !vaultAccessState.hasFullVaultAccess()
+        val startedLocked = !vaultAccessState.hasFullSecureSessionAccess()
         return try {
             block()
         } finally {

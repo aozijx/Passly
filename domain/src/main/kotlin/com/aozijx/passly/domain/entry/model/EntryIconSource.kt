@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.entry.model
 
-interface VaultIconable {
+interface EntryIconSource {
     val iconName: String?
     val iconCustomPath: String?
     val associatedAppPackage: String?

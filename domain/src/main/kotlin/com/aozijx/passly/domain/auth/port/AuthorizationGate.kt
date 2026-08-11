@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.auth.model.AuthorizationResult
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 
 /**
- * Vault 访问闸门。
+ * 敏感操作授权闸门。
  *
  * 提供 [authorize] 模式，保证调用闭包前已完成必要认证：
  * ```
@@ -29,7 +29,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationPurpose
  *
  * 实现应确保闭包执行期间会话不会被锁定。
  */
-interface VaultAccessGate {
+interface AuthorizationGate {
 
     /**
      * 授权并执行敏感操作。

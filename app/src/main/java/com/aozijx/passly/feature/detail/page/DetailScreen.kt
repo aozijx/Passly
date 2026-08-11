@@ -13,7 +13,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.domain.entry.model.OtpUiState
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
@@ -29,16 +29,16 @@ import com.aozijx.passly.feature.detail.ui.DetailTopBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
-    initialEntry: VaultEntry,
+    initialEntry: EntryAggregate,
     uiState: DetailUiState,
     otpUiState: OtpUiState?,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
     onEvent: (DetailIntent) -> Unit,
     onBack: () -> Unit,
     onUpdateInteraction: () -> Unit,
-    onAutoUnlockTotp: (VaultEntry) -> Unit,
+    onAutoUnlockTotp: (EntryAggregate) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onOpenRelatedEntry: (VaultEntry) -> Unit
+    onOpenRelatedEntry: (EntryAggregate) -> Unit
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()

@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.OtpUiState
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret
@@ -24,8 +24,8 @@ import com.aozijx.passly.domain.entry.repository.FaviconRepository
 import com.aozijx.passly.domain.entry.repository.OtpConfigRepository
 import com.aozijx.passly.domain.entry.service.EntryFieldReader
 import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultIntent
@@ -60,7 +60,7 @@ class VaultViewModel @Inject constructor(
     val entryFieldReader: EntryFieldReader,
     private val vaultDataRefreshNotifier: VaultDataRefreshNotifier,
     private val sessionStateProvider: SessionStateProvider,
-    private val accessPolicy: VaultAccessPolicy
+    private val accessPolicy: SecureSessionAccessPolicy
 ) : ViewModel() {
 
     private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
@@ -108,7 +108,7 @@ class VaultViewModel @Inject constructor(
     private val queryCoordinator = VaultQueryCoordinator(entryListQueryRepository)
     private val searchFilter = SearchFilterState(
         viewModelScope,
-        initialSort = VaultSortSpec.DEFAULT
+        initialSort = LibrarySortSpec.DEFAULT
     )
 
     private val listCoordinator = VaultListCoordinator(
@@ -121,7 +121,7 @@ class VaultViewModel @Inject constructor(
     private val _showTOTPCode = MutableStateFlow(true)
 
     private fun addScannedOtp(config: OtpConfig) {
-        if (!ensureFullVaultAccess("恢复模式不能保存 OTP")) return
+        if (!ensureFullSecureSessionAccess("恢复模式不能保存 OTP")) return
         try {
             val title = buildString {
                 if (!config.issuer.isNullOrBlank()) append(config.issuer)
@@ -131,7 +131,7 @@ class VaultViewModel @Inject constructor(
                 }
                 if (isEmpty()) append("TOTP")
             }
-            val entry = VaultEntry(
+            val entry = EntryAggregate(
                 header = EntryHeader(
                     id = EntryId(""),
                     entryType = EntryType.OTP,
@@ -153,16 +153,16 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    private val visibleQuickFilters: StateFlow<List<VaultQuickFilter>> =
+    private val visibleQuickFilters: StateFlow<List<LibraryQuickFilter>> =
         settingsRepository.settings.map { it.vault.visibleQuickFilters }
             .map { config ->
-                val keys = config?.filterKeys ?: VaultQuickFilter.defaultVisibleKeys
-                VaultQuickFilter.resolveVisible(keys)
+                val keys = config?.filterKeys ?: LibraryQuickFilter.defaultVisibleKeys
+                LibraryQuickFilter.resolveVisible(keys)
             }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
-                VaultQuickFilter.resolveVisible(VaultQuickFilter.defaultVisibleKeys)
+                LibraryQuickFilter.resolveVisible(LibraryQuickFilter.defaultVisibleKeys)
             )
 
     /**
@@ -172,13 +172,13 @@ class VaultViewModel @Inject constructor(
     val totpStatesFlow: StateFlow<Map<String, OtpUiState>> = totp.states
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    private val settingsState: StateFlow<Pair<List<VaultQuickFilter>, Boolean>> =
+    private val settingsState: StateFlow<Pair<List<LibraryQuickFilter>, Boolean>> =
         combine(visibleQuickFilters, _showTOTPCode) { quickFilters, show ->
             quickFilters to show
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5000),
-            VaultQuickFilter.resolveVisible(VaultQuickFilter.defaultVisibleKeys) to true
+            LibraryQuickFilter.resolveVisible(LibraryQuickFilter.defaultVisibleKeys) to true
         )
 
     val uiState: StateFlow<VaultUiState> = combine(
@@ -223,13 +223,13 @@ class VaultViewModel @Inject constructor(
             VaultIntent.ConfirmDelete -> confirmDelete()
             is VaultIntent.QuickDelete -> quickDelete(intent.item)
             is VaultIntent.AddItem -> addItem(intent.entry)
-            is VaultIntent.UpdateVaultEntry -> updateVaultEntry(intent.entry)
+            is VaultIntent.UpdateEntryAggregate -> updateEntryAggregate(intent.entry)
             is VaultIntent.AddScannedOtp -> addScannedOtp(intent.config)
             is VaultIntent.AutoUnlockTotp -> autoUnlockTotp(intent.entryId)
         }
     }
 
-    private fun selectSortOption(sort: VaultSortSpec) {
+    private fun selectSortOption(sort: LibrarySortSpec) {
         searchFilter.updateSelectedSort(sort)
         viewModelScope.launch { settingsRepository.update(SettingsCommand.SetVaultSortOption(sort)) }
     }
@@ -239,7 +239,7 @@ class VaultViewModel @Inject constructor(
     }
 
     private fun setAddType(type: AddType?) {
-        if (type != null && !ensureFullVaultAccess("当前会话不能新建条目")) return
+        if (type != null && !ensureFullSecureSessionAccess("当前会话不能新建条目")) return
         _dialogState.value = _dialogState.value.copy(addType = type)
     }
 
@@ -253,28 +253,28 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    suspend fun loadEntryById(entryId: String): VaultEntry? {
+    suspend fun loadEntryById(entryId: String): EntryAggregate? {
         if (!accessPolicy.hasFullAccess()) return null
         return entryQueryRepository.getByIdWithoutHighSensitivity(entryId)
     }
 
-    private fun addItem(entry: VaultEntry) {
-        if (!ensureFullVaultAccess("当前会话不能新建条目")) return
+    private fun addItem(entry: EntryAggregate) {
+        if (!ensureFullSecureSessionAccess("当前会话不能新建条目")) return
         entryManager.addItem(entry, onComplete = { setAddType(null) })
     }
 
-    private fun updateVaultEntry(entry: VaultEntry) {
-        if (!ensureFullVaultAccess("当前会话不能修改条目")) return
+    private fun updateEntryAggregate(entry: EntryAggregate) {
+        if (!ensureFullSecureSessionAccess("当前会话不能修改条目")) return
         entryManager.updateEntry(entry)
     }
 
     private fun quickDelete(item: EntryListItem) {
-        if (!ensureFullVaultAccess("当前会话不能删除条目")) return
+        if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
         entryManager.deleteEntryById(item.id)
     }
 
     private fun confirmDelete() {
-        if (!ensureFullVaultAccess("当前会话不能删除条目")) return
+        if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
         val item = _dialogState.value.pendingDelete ?: return
         viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
@@ -307,7 +307,7 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    private fun ensureFullVaultAccess(message: String): Boolean {
+    private fun ensureFullSecureSessionAccess(message: String): Boolean {
         if (accessPolicy.hasFullAccess()) return true
         emitError(message)
         _dialogState.value = VaultDialogState()

@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.settings.appearance
 
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 
 data class InterfaceSettingsUiState(
     val hideSystemBars: Boolean = false,
@@ -12,7 +12,7 @@ data class InterfaceSettingsUiState(
     val innerCornerRadiusDp: Float = InterfaceStyleConstraints.DEFAULT_INNER_RADIUS_DP,
     val groupItemSpacingDp: Float = InterfaceStyleConstraints.DEFAULT_ITEM_SPACING_DP,
     val groupContentPaddingDp: Float = InterfaceStyleConstraints.DEFAULT_CONTENT_PADDING_DP,
-    val enabledVaultQuickFilterKeys: Set<String> = VaultQuickFilter.defaultVisibleKeys,
+    val enabledLibraryQuickFilterKeys: Set<String> = LibraryQuickFilter.defaultVisibleKeys,
     val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
         EntryHierarchyDisplayMode.COLLAPSED,
 )
@@ -25,8 +25,8 @@ sealed interface InterfaceSettingsAction {
     data class SetInnerCornerRadius(val radiusDp: Float) : InterfaceSettingsAction
     data class SetGroupItemSpacing(val spacingDp: Float) : InterfaceSettingsAction
     data class SetGroupContentPadding(val paddingDp: Float) : InterfaceSettingsAction
-    data class ToggleVisibleVaultQuickFilter(
-        val quickFilter: VaultQuickFilter
+    data class ToggleVisibleLibraryQuickFilter(
+        val quickFilter: LibraryQuickFilter
     ) : InterfaceSettingsAction
     data class SetEntryHierarchyDisplayMode(
         val mode: EntryHierarchyDisplayMode

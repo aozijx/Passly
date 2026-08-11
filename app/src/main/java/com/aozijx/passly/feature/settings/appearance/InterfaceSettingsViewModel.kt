@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.settings.appearance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.settings.command.SettingsCommand
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,9 +29,9 @@ class InterfaceSettingsViewModel @Inject constructor(
                 innerCornerRadiusDp = prefs.innerCornerRadiusDp,
                 groupItemSpacingDp = prefs.groupItemSpacingDp,
                 groupContentPaddingDp = prefs.groupContentPaddingDp,
-                enabledVaultQuickFilterKeys =
+                enabledLibraryQuickFilterKeys =
                     settings.vault.visibleQuickFilters?.filterKeys
-                        ?: VaultQuickFilter.defaultVisibleKeys,
+                        ?: LibraryQuickFilter.defaultVisibleKeys,
                 entryHierarchyDisplayMode = settings.vault.entryHierarchyDisplayMode
             )
         }
@@ -71,12 +71,12 @@ class InterfaceSettingsViewModel @Inject constructor(
                 settingsRepository.update(SettingsCommand.SetGroupContentPadding(action.paddingDp))
             }
 
-            is InterfaceSettingsAction.ToggleVisibleVaultQuickFilter -> viewModelScope.launch {
-                val nextKeys = VaultQuickFilter.toggleVisibleKey(
-                    enabledKeys = config.value.enabledVaultQuickFilterKeys,
+            is InterfaceSettingsAction.ToggleVisibleLibraryQuickFilter -> viewModelScope.launch {
+                val nextKeys = LibraryQuickFilter.toggleVisibleKey(
+                    enabledKeys = config.value.enabledLibraryQuickFilterKeys,
                     quickFilter = action.quickFilter
                 )
-                settingsRepository.update(SettingsCommand.SetVisibleVaultQuickFilters(nextKeys))
+                settingsRepository.update(SettingsCommand.SetVisibleLibraryQuickFilters(nextKeys))
             }
 
             is InterfaceSettingsAction.SetEntryHierarchyDisplayMode -> viewModelScope.launch {

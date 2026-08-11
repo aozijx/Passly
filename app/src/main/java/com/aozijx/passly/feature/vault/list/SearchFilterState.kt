@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.list
 
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -17,14 +17,14 @@ import kotlinx.coroutines.flow.stateIn
 internal data class SearchFilterUiState(
     val searchQuery: String = "",
     val selectedCategory: String? = null,
-    val selectedQuickFilter: VaultQuickFilter = VaultQuickFilter.ALL,
-    val selectedSort: VaultSortSpec = VaultSortSpec.DEFAULT,
+    val selectedQuickFilter: LibraryQuickFilter = LibraryQuickFilter.ALL,
+    val selectedSort: LibrarySortSpec = LibrarySortSpec.DEFAULT,
     val isSearchActive: Boolean = false
 )
 
 internal class SearchFilterState(
     scope: CoroutineScope,
-    initialSort: VaultSortSpec = VaultSortSpec.DEFAULT
+    initialSort: LibrarySortSpec = LibrarySortSpec.DEFAULT
 ) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -32,14 +32,14 @@ internal class SearchFilterState(
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory
 
-    private val _selectedQuickFilter = MutableStateFlow(VaultQuickFilter.ALL)
-    val selectedQuickFilter: StateFlow<VaultQuickFilter> = _selectedQuickFilter
+    private val _selectedQuickFilter = MutableStateFlow(LibraryQuickFilter.ALL)
+    val selectedQuickFilter: StateFlow<LibraryQuickFilter> = _selectedQuickFilter
 
     private val _isSearchActive = MutableStateFlow(false)
     val isSearchActive: StateFlow<Boolean> = _isSearchActive
 
     private val _selectedSort = MutableStateFlow(initialSort)
-    val selectedSort: StateFlow<VaultSortSpec> = _selectedSort
+    val selectedSort: StateFlow<LibrarySortSpec> = _selectedSort
 
     val uiStateFlow: StateFlow<SearchFilterUiState> = combine(
         combine(
@@ -64,7 +64,7 @@ internal class SearchFilterState(
     private data class PartialState(
         val query: String,
         val category: String?,
-        val quickFilter: VaultQuickFilter,
+        val quickFilter: LibraryQuickFilter,
         val active: Boolean
     )
 
@@ -77,7 +77,7 @@ internal class SearchFilterState(
             .distinctUntilChanged()
 
     fun updateSearchQuery(query: String) { _searchQuery.value = query }
-    fun updateSelectedQuickFilter(quickFilter: VaultQuickFilter) {
+    fun updateSelectedQuickFilter(quickFilter: LibraryQuickFilter) {
         _selectedQuickFilter.value = quickFilter
     }
 
@@ -85,7 +85,7 @@ internal class SearchFilterState(
         _selectedCategory.value = category
     }
 
-    fun updateSelectedSort(sort: VaultSortSpec) {
+    fun updateSelectedSort(sort: LibrarySortSpec) {
         _selectedSort.value = sort
     }
 

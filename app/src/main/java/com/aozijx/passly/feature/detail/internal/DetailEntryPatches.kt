@@ -1,26 +1,26 @@
 package com.aozijx.passly.feature.detail.internal
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.secret.CardSecret
 import com.aozijx.passly.domain.entry.model.secret.LoginSecret
 
-internal fun VaultEntry.withDetailUsername(username: String): VaultEntry =
+internal fun EntryAggregate.withDetailUsername(username: String): EntryAggregate =
     copy(summary = summary.copy(username = username))
 
-internal fun VaultEntry.withLoginPassword(password: String): VaultEntry =
+internal fun EntryAggregate.withLoginPassword(password: String): EntryAggregate =
     copy(
         secret = secret.copy(
             login = secret.login?.copy(password = password) ?: LoginSecret(password = password)
         )
     )
 
-internal fun VaultEntry.withWifiPassword(password: String): VaultEntry =
+internal fun EntryAggregate.withWifiPassword(password: String): EntryAggregate =
     copy(secret = secret.copy(wifi = secret.wifi?.copy(password = password)))
 
-internal fun VaultEntry.withSshPassphrase(passphrase: String): VaultEntry =
+internal fun EntryAggregate.withSshPassphrase(passphrase: String): EntryAggregate =
     copy(secret = secret.copy(ssh = secret.ssh?.copy(passphrase = passphrase)))
 
-internal fun VaultEntry.withCardNumber(cardNumber: String): VaultEntry =
+internal fun EntryAggregate.withCardNumber(cardNumber: String): EntryAggregate =
     copy(
         secret = secret.copy(
             card = (secret.card ?: CardSecret()).copy(
@@ -30,7 +30,7 @@ internal fun VaultEntry.withCardNumber(cardNumber: String): VaultEntry =
         )
     )
 
-internal fun VaultEntry.withCardCvv(cvv: String): VaultEntry =
+internal fun EntryAggregate.withCardCvv(cvv: String): EntryAggregate =
     copy(
         secret = secret.copy(
             card = (secret.card ?: CardSecret()).copy(

@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.entry.repository
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 /**
  * Manages ACCOUNT → credential ownership without merging credential payloads.
@@ -13,5 +13,5 @@ interface EntryHierarchyRepository {
         accountEntryId: String?
     ): AppResult<Unit>
 
-    suspend fun getChildren(accountEntryId: String): List<VaultEntry>
+    suspend fun getChildren(accountEntryId: String): List<EntryAggregate>
 }

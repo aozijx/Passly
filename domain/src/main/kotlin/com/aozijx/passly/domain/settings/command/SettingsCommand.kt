@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ImportMode
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 
 sealed interface SettingsCommand {
     // Appearance
@@ -61,10 +61,10 @@ sealed interface SettingsCommand {
     data class SetAutoDownloadIcons(val enabled: Boolean) : SettingsCommand
     data class SetFaviconDownloadWhitelist(val whitelist: Set<String>) : SettingsCommand
 
-    // Vault
-    data class SetVisibleVaultQuickFilters(val keys: Set<String>) : SettingsCommand
-    data object ClearVisibleVaultQuickFilters : SettingsCommand
-    data class SetVaultSortOption(val sort: VaultSortSpec) : SettingsCommand
+    // Library
+    data class SetVisibleLibraryQuickFilters(val keys: Set<String>) : SettingsCommand
+    data object ClearVisibleLibraryQuickFilters : SettingsCommand
+    data class SetVaultSortOption(val sort: LibrarySortSpec) : SettingsCommand
     data class SetEntryCardPresentation(val presentation: EntryCardPresentation) : SettingsCommand
     data class RemoveEntryCardPresentation(val entryTypeKey: String) : SettingsCommand
     data class SetEntryHierarchyDisplayMode(

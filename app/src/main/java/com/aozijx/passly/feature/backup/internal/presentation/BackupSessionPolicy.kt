@@ -1,13 +1,13 @@
 package com.aozijx.passly.feature.backup.internal.presentation
 
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 import javax.inject.Inject
 
 internal class BackupSessionPolicy @Inject constructor(
-    private val vaultAccessState: VaultAccessState,
+    private val vaultAccessState: SecureSessionAccessState,
 ) {
-    fun regularExportDenial(): BackupSessionDenial? = requireFullVaultAccess()
+    fun regularExportDenial(): BackupSessionDenial? = requireFullSecureSessionAccess()
 
     fun recoveryExportDenial(): BackupSessionDenial? =
         if (vaultAccessState.isRecoveryMode()) {
@@ -16,17 +16,17 @@ internal class BackupSessionPolicy @Inject constructor(
             BackupSessionDenial.RECOVERY_MODE_REQUIRED
         }
 
-    fun importDenial(): BackupSessionDenial? = requireFullVaultAccess()
+    fun importDenial(): BackupSessionDenial? = requireFullSecureSessionAccess()
 
     fun pendingOperationDenial(state: BackupUiState): BackupSessionDenial? =
         if (state.isRecoveryExport) {
             recoveryExportDenial()
         } else {
-            requireFullVaultAccess()
+            requireFullSecureSessionAccess()
         }
 
-    private fun requireFullVaultAccess(): BackupSessionDenial? =
-        if (vaultAccessState.hasFullVaultAccess()) {
+    private fun requireFullSecureSessionAccess(): BackupSessionDenial? =
+        if (vaultAccessState.hasFullSecureSessionAccess()) {
             null
         } else {
             BackupSessionDenial.FULL_VAULT_ACCESS_REQUIRED

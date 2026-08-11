@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.list
 
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
-import com.aozijx.passly.domain.entry.service.VaultListSorter
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.entry.service.EntryListSorter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 data class VaultListState(
     val isLoading: Boolean = true,
     val categories: List<String> = emptyList(),
-    val itemsByQuickFilter: Map<VaultQuickFilter, List<EntryListItem>> = emptyMap()
+    val itemsByQuickFilter: Map<LibraryQuickFilter, List<EntryListItem>> = emptyMap()
 )
 
 internal class VaultListCoordinator(
@@ -71,7 +71,7 @@ internal class VaultListCoordinator(
                 item.tags.any { it.equals(category, ignoreCase = true) }
             }
         } ?: items
-        VaultListSorter.sort(filteredItems, sort)
+        EntryListSorter.sort(filteredItems, sort)
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val state: StateFlow<VaultListState> = combine(
@@ -82,11 +82,11 @@ internal class VaultListCoordinator(
         VaultListState(
             isLoading = loading,
             categories = cats,
-            itemsByQuickFilter = VaultQuickFilter.entries.associateWith { quickFilter ->
+            itemsByQuickFilter = LibraryQuickFilter.entries.associateWith { quickFilter ->
                 when (quickFilter) {
-                    VaultQuickFilter.ALL -> items
-                    VaultQuickFilter.PASSWORDS -> items.filter(EntryListItem::hasPassword)
-                    VaultQuickFilter.TOTP -> items.filter(EntryListItem::hasOtp)
+                    LibraryQuickFilter.ALL -> items
+                    LibraryQuickFilter.PASSWORDS -> items.filter(EntryListItem::hasPassword)
+                    LibraryQuickFilter.TOTP -> items.filter(EntryListItem::hasOtp)
                 }
             }
         )
@@ -94,6 +94,6 @@ internal class VaultListCoordinator(
 
     private data class LoadingKey(
         val query: String,
-        val quickFilter: VaultQuickFilter
+        val quickFilter: LibraryQuickFilter
     )
 }

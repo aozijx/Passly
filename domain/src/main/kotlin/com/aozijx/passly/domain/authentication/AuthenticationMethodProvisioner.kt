@@ -4,7 +4,7 @@ interface AuthenticationMethodProvisioner {
     /**
      * 调用方将 [password] 的所有权转移给实现；返回前数组会被清零。
      *
-     * 在恢复模式中调用只允许重建应用密码材料，不能把恢复会话提升为完整 Vault 会话。
+     * 在恢复模式中调用只允许重建应用密码材料，不能把恢复会话提升为完整安全会话。
      */
     suspend fun setAppPassword(password: CharArray): AuthenticationResult
 

@@ -9,7 +9,7 @@ import com.aozijx.passly.data.repository.entry.executor.TrashEntryExecutor
 import com.aozijx.passly.data.repository.entry.executor.UpdateEntryExecutor
 import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,7 +37,7 @@ class RoomEntryCommandRepository @Inject constructor(
     private val emptyTrashExecutor: EmptyTrashExecutor
 ) : EntryCommandRepository {
 
-    override suspend fun createEntry(entry: VaultEntry): AppResult<EntryId> =
+    override suspend fun createEntry(entry: EntryAggregate): AppResult<EntryId> =
         createEntryExecutor.execute(entry)
 
     override suspend fun updateEntry(

@@ -3,7 +3,7 @@ package com.aozijx.passly.domain.auth.model
 /**
  * 不可伪造的授权许可。
  *
- * 真正的 token 存储在 [com.aozijx.passly.domain.auth.port.VaultAccessGate] 内部注册表中：
+ * 真正的 token 存储在 [com.aozijx.passly.domain.auth.port.AuthorizationGate] 内部注册表中：
  * - 具备不可预测 token ID
  * - purpose 绑定
  * - 单次消费

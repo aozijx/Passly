@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.autofill.policy
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 import java.net.URI
 
@@ -9,7 +9,7 @@ import java.net.URI
  */
 object CredentialScopeMatcher {
     fun matchType(
-        entry: VaultEntry,
+        entry: EntryAggregate,
         packageName: String?,
         webDomain: String?,
     ): MatchType {
@@ -34,7 +34,7 @@ object CredentialScopeMatcher {
     }
 
     fun matches(
-        entry: VaultEntry,
+        entry: EntryAggregate,
         packageName: String?,
         webDomain: String?,
     ): Boolean = matchType(entry, packageName, webDomain) != MatchType.UNKNOWN

@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.secret.CardSecret
 import com.aozijx.passly.domain.entry.model.secret.IdentitySecret
 import com.aozijx.passly.domain.entry.model.secret.LoginSecret
@@ -14,9 +14,9 @@ import com.aozijx.passly.domain.entry.model.secret.PasskeySecret
 import com.aozijx.passly.domain.entry.model.secret.SshSecret
 import com.aozijx.passly.domain.entry.model.secret.WifiSecret
 
-fun EntryEditorSchema.toVaultEntry(state: EntryEditorFormState): VaultEntry {
+fun EntryEditorSchema.toEntryAggregate(state: EntryEditorFormState): EntryAggregate {
     val now = System.currentTimeMillis()
-    return VaultEntry(
+    return EntryAggregate(
         header = EntryHeader(
             id = EntryId(""),
             entryType = entryType,

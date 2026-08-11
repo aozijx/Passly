@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret
@@ -14,7 +14,7 @@ import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 /**
  * 条目详情页统一编辑状态
  */
-class EntryEditState(initialEntry: VaultEntry) {
+class EntryEditState(initialEntry: EntryAggregate) {
     var editedTitle by mutableStateOf(initialEntry.title)
     var editedUsername by mutableStateOf("")
     var editedPassword by mutableStateOf("")
@@ -38,7 +38,7 @@ class EntryEditState(initialEntry: VaultEntry) {
     var isEditingPassword by mutableStateOf(false)
     var isEditingTotp by mutableStateOf(false)
 
-    fun applyTo(entry: VaultEntry): VaultEntry {
+    fun applyTo(entry: EntryAggregate): EntryAggregate {
         val newSummary = entry.summary.copy(
             title = editedTitle,
             website = buildWebsite(entry.summary.website)
@@ -47,14 +47,14 @@ class EntryEditState(initialEntry: VaultEntry) {
         return entry.copy(summary = newSummary, secret = newSecret)
     }
 
-    fun applyTitleOnly(entry: VaultEntry): VaultEntry = entry.copy(
+    fun applyTitleOnly(entry: EntryAggregate): EntryAggregate = entry.copy(
         summary = entry.summary.copy(title = editedTitle)
     )
 
-    fun applyNotesOnly(entry: VaultEntry): VaultEntry =
+    fun applyNotesOnly(entry: EntryAggregate): EntryAggregate =
         entry.copy(secret = updateSecretNotes(entry.secret))
 
-    fun applyAssociatedOnly(entry: VaultEntry): VaultEntry = entry.copy(
+    fun applyAssociatedOnly(entry: EntryAggregate): EntryAggregate = entry.copy(
         summary = entry.summary.copy(website = buildWebsite(entry.summary.website))
     )
 

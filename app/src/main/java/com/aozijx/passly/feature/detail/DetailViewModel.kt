@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
@@ -190,7 +190,7 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun initialize(initialEntry: VaultEntry) {
+    private fun initialize(initialEntry: EntryAggregate) {
         refreshFromEntry(initialEntry, isEditingTitle = false, editedTitle = initialEntry.title)
         viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
@@ -207,7 +207,7 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun refreshKeepingTitleEdit(entry: VaultEntry) {
+    private fun refreshKeepingTitleEdit(entry: EntryAggregate) {
         val isEditing = _uiState.value.isEditingTitle
         refreshFromEntry(
             entry,
@@ -242,24 +242,24 @@ class DetailViewModel @Inject constructor(
     private fun ActivityType.clearsRevealedFields(): Boolean =
         this == ActivityType.COPY_PASSWORD || this == ActivityType.COPY_USERNAME
 
-    private fun commitEntryUpdate(entry: VaultEntry, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
+    private fun commitEntryUpdate(entry: EntryAggregate, isEditingTitle: Boolean = _uiState.value.isEditingTitle) {
         val editedTitle = if (isEditingTitle) _uiState.value.editedTitle else entry.title
         refreshFromEntry(entry, isEditingTitle = isEditingTitle, editedTitle = editedTitle)
         emitEntryUpdated(entry)
     }
 
-    private fun emitEntryUpdated(entry: VaultEntry) {
+    private fun emitEntryUpdated(entry: EntryAggregate) {
         _effects.trySend(DetailEffect.EntryUpdated(entry))
     }
 
-    private fun autoDownloadFavicon(entry: VaultEntry) {
+    private fun autoDownloadFavicon(entry: EntryAggregate) {
         if (entry.associatedDomain.isNullOrBlank() || !entry.iconCustomPath.isNullOrBlank()) return
         viewModelScope.launch {
             downloadAndApplyFavicon(entry, entry.associatedDomain!!, updateDomain = false)
         }
     }
 
-    private suspend fun loadRelatedEntries(entry: VaultEntry) {
+    private suspend fun loadRelatedEntries(entry: EntryAggregate) {
         val accountId = if (entry.entryType == EntryType.ACCOUNT) {
             entry.id
         } else {
@@ -284,7 +284,7 @@ class DetailViewModel @Inject constructor(
     }
 
     private suspend fun downloadAndApplyFavicon(
-        entry: VaultEntry,
+        entry: EntryAggregate,
         domain: String,
         updateDomain: Boolean
     ) {
@@ -326,7 +326,7 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun refreshFromEntry(entry: VaultEntry, isEditingTitle: Boolean, editedTitle: String) {
+    private fun refreshFromEntry(entry: EntryAggregate, isEditingTitle: Boolean, editedTitle: String) {
         val analysis = entryAnalyzer.analyze(entry)
 
         _uiState.update {

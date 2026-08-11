@@ -342,11 +342,11 @@ class MigrationBoundaryTest {
     @Test
     fun vaultQuickFilterModelDoesNotOwnUiPresentation() {
         val vaultQuickFilter = moduleSource(
-            "com/aozijx/passly/domain/settings/model/VaultQuickFilter.kt"
+            "com/aozijx/passly/domain/settings/model/LibraryQuickFilter.kt"
         ).readText()
 
         assertTrue(
-            "VaultQuickFilter must stay a pure filtering/settings model",
+            "LibraryQuickFilter must stay a pure filtering/settings model",
             "androidx.compose" !in vaultQuickFilter &&
                     "com.aozijx.passly.R" !in vaultQuickFilter &&
                     "ImageVector" !in vaultQuickFilter &&
@@ -1057,7 +1057,7 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/vault/VaultViewModel.kt"
         ).readText()
         val vaultAccessPolicy = File(
-            "src/main/java/com/aozijx/passly/feature/vault/VaultAccessPolicy.kt"
+            "src/main/java/com/aozijx/passly/feature/vault/SecureSessionAccessPolicy.kt"
         ).readText()
         val createEntryViewModel = File(
             "src/main/java/com/aozijx/passly/feature/vault/editor/common/CreateEntryViewModel.kt"
@@ -1181,41 +1181,41 @@ class MigrationBoundaryTest {
         // 11. Plain Vault repositories must not treat an open recovery database as full access.
         assertTrue(
             "VaultTransactionRunner must require full Vault access before write/read",
-            "hasFullVaultAccess()" in transactionRunner &&
+            "hasFullSecureSessionAccess()" in transactionRunner &&
                     "SessionModeRestricted" in transactionRunner
         )
         assertTrue(
             "Entry query repository must gate normal and high-sensitivity reads",
-            entryQueryRepository.split("hasFullVaultAccess()").size - 1 >= 4
+            entryQueryRepository.split("hasFullSecureSessionAccess()").size - 1 >= 4
         )
         assertTrue(
             "OTP config repository must gate secret reads",
-            "hasFullVaultAccess()" in otpConfigRepository
+            "hasFullSecureSessionAccess()" in otpConfigRepository
         )
         assertTrue(
             "Attachment repository must gate metadata and file writes",
-            attachmentRepository.split("hasFullVaultAccess()").size - 1 >= 3 &&
+            attachmentRepository.split("hasFullSecureSessionAccess()").size - 1 >= 3 &&
                     "SessionModeRestricted" in attachmentRepository
         )
 
         // 12. Sensitive ViewModels must express their session-mode boundary explicitly.
         assertTrue(
             "VaultViewModel must gate normal Vault actions",
-            "VaultAccessPolicy" in vaultViewModel &&
-                    "VaultAccessState" !in vaultViewModel &&
-                    "hasFullVaultAccess()" in vaultAccessPolicy &&
+            "SecureSessionAccessPolicy" in vaultViewModel &&
+                    "SecureSessionAccessState" !in vaultViewModel &&
+                    "hasFullSecureSessionAccess()" in vaultAccessPolicy &&
                     vaultViewModel.split("hasFullAccess()").size - 1 >= 4
         )
         assertTrue(
             "CreateEntryViewModel must gate entry creation",
-            "VaultAccessState" in createEntryViewModel &&
-                    "hasFullVaultAccess()" in createEntryViewModel
+            "SecureSessionAccessState" in createEntryViewModel &&
+                    "hasFullSecureSessionAccess()" in createEntryViewModel
         )
         assertTrue(
             "DetailViewModel must gate detail reads and reveal actions",
             "DetailAccessPolicy" in detailViewModel &&
-                    "VaultAccessState" !in detailViewModel &&
-                    "hasFullVaultAccess()" in detailAccessPolicy &&
+                    "SecureSessionAccessState" !in detailViewModel &&
+                    "hasFullSecureSessionAccess()" in detailAccessPolicy &&
                     detailViewModel.split("hasFullAccess()").size - 1 >= 4
         )
         assertTrue(
@@ -1239,14 +1239,14 @@ class MigrationBoundaryTest {
         assertTrue(
             "BackupViewModel must gate normal backup versus recovery export",
             "BackupSessionPolicy" in backupViewModel &&
-                    "VaultAccessState" !in backupViewModel &&
-                    "hasFullVaultAccess()" in backupSessionPolicy &&
+                    "SecureSessionAccessState" !in backupViewModel &&
+                    "hasFullSecureSessionAccess()" in backupSessionPolicy &&
                     "isRecoveryMode()" in backupSessionPolicy
         )
         assertTrue(
             "DataManagementSettingsViewModel must gate trash operations",
-            "VaultAccessState" in dataViewModel &&
-                    "hasFullVaultAccess()" in dataViewModel
+            "SecureSessionAccessState" in dataViewModel &&
+                    "hasFullSecureSessionAccess()" in dataViewModel
         )
         assertTrue(
             "DiagnosticsSettingsViewModel must not expose diagnostics outside full auth",
@@ -1368,7 +1368,7 @@ class MigrationBoundaryTest {
             "AppSettingsRepository",
             "AuthenticationManager",
             "BackupStorageSupport",
-            "VaultBackupService",
+            "BackupArchiveService",
         ).filter { dependency -> dependency in viewModel }
 
         assertTrue("Backup must have a dedicated pure reducer", reducer.exists())

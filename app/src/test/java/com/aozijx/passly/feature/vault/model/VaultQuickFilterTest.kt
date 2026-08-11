@@ -1,39 +1,39 @@
 package com.aozijx.passly.feature.vault.model
 
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class VaultQuickFilterTest {
+class LibraryQuickFilterTest {
 
     @Test
     fun defaultsOnlyShowRequiredQuickFilters() {
         assertEquals(
-            setOf(VaultQuickFilter.ALL.settingsKey),
-            VaultQuickFilter.defaultVisibleKeys
+            setOf(LibraryQuickFilter.ALL.settingsKey),
+            LibraryQuickFilter.defaultVisibleKeys
         )
     }
 
     @Test
     fun allQuickFilterCannotBeRemovedBySettings() {
-        assertFalse(VaultQuickFilter.ALL.isToggleable)
-        assertTrue(VaultQuickFilter.ALL in VaultQuickFilter.resolveVisible(emptySet()))
+        assertFalse(LibraryQuickFilter.ALL.isToggleable)
+        assertTrue(LibraryQuickFilter.ALL in LibraryQuickFilter.resolveVisible(emptySet()))
     }
 
     @Test
     fun toggleVisibleKeyKeepsRequiredFiltersAndTogglesSelectedFilter() {
-        val withPasswords = VaultQuickFilter.toggleVisibleKey(
-            enabledKeys = VaultQuickFilter.defaultVisibleKeys,
-            quickFilter = VaultQuickFilter.PASSWORDS
+        val withPasswords = LibraryQuickFilter.toggleVisibleKey(
+            enabledKeys = LibraryQuickFilter.defaultVisibleKeys,
+            quickFilter = LibraryQuickFilter.PASSWORDS
         )
 
         assertEquals(setOf("all", "passwords"), withPasswords)
 
-        val withoutPasswords = VaultQuickFilter.toggleVisibleKey(
+        val withoutPasswords = LibraryQuickFilter.toggleVisibleKey(
             enabledKeys = withPasswords,
-            quickFilter = VaultQuickFilter.PASSWORDS
+            quickFilter = LibraryQuickFilter.PASSWORDS
         )
 
         assertEquals(setOf("all"), withoutPasswords)

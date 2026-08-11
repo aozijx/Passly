@@ -9,7 +9,7 @@ import com.aozijx.passly.core.telemetry.OperationCode
 import com.aozijx.passly.core.telemetry.reporting.AppErrorReporter
 import com.aozijx.passly.core.telemetry.reporting.ErrorReportContext
 import com.aozijx.passly.data.local.database.AppDatabase
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,7 +29,7 @@ import javax.inject.Singleton
 @Singleton
 class VaultTransactionRunner @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val errorReporter: AppErrorReporter
 ) {
 
@@ -42,7 +42,7 @@ class VaultTransactionRunner @Inject constructor(
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
         val result = AppResult.runSuspendCatching {
-            requireFullVaultAccess()
+            requireFullSecureSessionAccess()
             sessionManager.transaction {
                 block()
             }
@@ -58,7 +58,7 @@ class VaultTransactionRunner @Inject constructor(
         block: suspend AppDatabase.() -> T
     ): AppResult<T> {
         val result = AppResult.runSuspendCatching {
-            requireFullVaultAccess()
+            requireFullSecureSessionAccess()
             sessionManager.query {
                 block()
             }
@@ -84,8 +84,8 @@ class VaultTransactionRunner @Inject constructor(
         }
     }
 
-    private fun requireFullVaultAccess() {
-        if (!sessionState.hasFullVaultAccess()) {
+    private fun requireFullSecureSessionAccess() {
+        if (!sessionState.hasFullSecureSessionAccess()) {
             throw SessionModeRestricted()
         }
     }

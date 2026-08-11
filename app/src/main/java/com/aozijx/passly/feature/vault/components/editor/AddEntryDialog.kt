@@ -8,13 +8,13 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.ui.components.AppDialog
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.vault.model.AddType
 
 @Composable
 fun AddEntryDialog(
     addType: AddType,
-    onAddItem: (VaultEntry) -> Unit,
+    onAddItem: (EntryAggregate) -> Unit,
     onDismiss: () -> Unit,
     onUpdateInteraction: () -> Unit
 ) {
@@ -30,7 +30,7 @@ fun AddEntryDialog(
         confirmEnabled = state.canSave,
         onConfirm = {
             try {
-                onAddItem(schema.toVaultEntry(state))
+                onAddItem(schema.toEntryAggregate(state))
                 onDismiss()
             } catch (e: Exception) {
                 AppTelemetry.e("AddEntryDialog", "Failed to save", e)

@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.entry.service
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 /**
  * 条目类型策略。
@@ -16,5 +16,5 @@ interface EntryTypePolicy {
     fun supportsAutofill(type: EntryType): Boolean
     fun suggestedCategory(type: EntryType): String
     fun sensitiveFields(type: EntryType): Set<String>
-    fun extractSummary(type: EntryType, entry: VaultEntry): String
+    fun extractSummary(type: EntryType, entry: EntryAggregate): String
 }

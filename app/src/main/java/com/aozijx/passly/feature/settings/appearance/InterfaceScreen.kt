@@ -28,7 +28,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import kotlin.math.roundToInt
 
 @Composable
@@ -41,7 +41,7 @@ internal fun InterfaceDetail(
     onInnerCornerRadiusChange: (Float) -> Unit,
     onGroupItemSpacingChange: (Float) -> Unit,
     onGroupContentPaddingChange: (Float) -> Unit,
-    onVisibleVaultQuickFilterToggle: (VaultQuickFilter) -> Unit,
+    onVisibleLibraryQuickFilterToggle: (LibraryQuickFilter) -> Unit,
     onEntryHierarchyDisplayModeChange: (EntryHierarchyDisplayMode) -> Unit
 ) {
     var outerRadius by remember(state.outerCornerRadiusDp) {
@@ -220,9 +220,9 @@ internal fun InterfaceDetail(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        VaultQuickFiltersSettingsSection(
-            enabledVaultQuickFilterKeys = state.enabledVaultQuickFilterKeys,
-            onVaultQuickFilterToggle = onVisibleVaultQuickFilterToggle
+        LibraryQuickFiltersSettingsSection(
+            enabledLibraryQuickFilterKeys = state.enabledLibraryQuickFilterKeys,
+            onLibraryQuickFilterToggle = onVisibleLibraryQuickFilterToggle
         )
     }
 }

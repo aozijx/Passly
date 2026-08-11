@@ -20,12 +20,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.core.ui.components.vaultfilter.titleRes
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 
 @Composable
-fun VaultQuickFilterBar(
+fun LibraryQuickFilterBar(
     modifier: Modifier = Modifier,
-    quickFilters: List<VaultQuickFilter>,
+    quickFilters: List<LibraryQuickFilter>,
     selectedQuickFilterIndex: Int,
     onQuickFilterSelected: (Int) -> Unit
 ) {
@@ -64,8 +64,8 @@ fun VaultQuickFilterBar(
     }
 }
 
-private fun VaultQuickFilter.icon(): ImageVector = when (this) {
-    VaultQuickFilter.ALL -> Icons.Default.Apps
-    VaultQuickFilter.PASSWORDS -> Icons.Default.Key
-    VaultQuickFilter.TOTP -> Icons.Default.Pin
+private fun LibraryQuickFilter.icon(): ImageVector = when (this) {
+    LibraryQuickFilter.ALL -> Icons.Default.Apps
+    LibraryQuickFilter.PASSWORDS -> Icons.Default.Key
+    LibraryQuickFilter.TOTP -> Icons.Default.Pin
 }

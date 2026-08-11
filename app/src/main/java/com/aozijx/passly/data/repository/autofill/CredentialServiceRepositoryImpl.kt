@@ -6,7 +6,7 @@ import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.dao.buildRecentEntryIdIntersectionQuery
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.AutofillConfiguration
 import com.aozijx.passly.domain.autofill.policy.AutofillTitlePolicy
 import com.aozijx.passly.domain.autofill.policy.CredentialScopeMatcher
@@ -17,7 +17,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.entry.model.lookup.LookupField
@@ -37,7 +37,7 @@ import javax.inject.Singleton
 @Singleton
 class CredentialServiceRepositoryImpl @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val blindIndexer: BlindIndexer,
@@ -52,7 +52,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         includeSecrets: Boolean,
         limit: Int,
     ): List<CredentialCandidate> {
-        if (!sessionState.hasFullVaultAccess()) return emptyList()
+        if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
 
         val normalizedPackage = CredentialScopeMatcher.normalizePackage(packageName)
         val normalizedDomain = CredentialScopeMatcher.normalizeDomain(webDomain)
@@ -130,14 +130,14 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getById(entryId: String): VaultEntry? =
+    override suspend fun getById(entryId: String): EntryAggregate? =
         getByIds(listOf(entryId), includeSecrets = true).firstOrNull()
 
     override suspend fun getByIds(
         entryIds: List<String>,
         includeSecrets: Boolean
-    ): List<VaultEntry> {
-        if (!sessionState.hasFullVaultAccess() || entryIds.isEmpty()) return emptyList()
+    ): List<EntryAggregate> {
+        if (!sessionState.hasFullSecureSessionAccess() || entryIds.isEmpty()) return emptyList()
         val uniqueIds = entryIds.distinct()
         return sessionManager.query {
             val entries = entryQueryDao().getByIds(uniqueIds)
@@ -170,7 +170,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         usernameValue: String,
         passwordValue: String,
     ): Boolean {
-        if (!sessionState.hasFullVaultAccess()) return false
+        if (!sessionState.hasFullSecureSessionAccess()) return false
         if (usernameValue.isBlank() && passwordValue.isBlank()) return false
 
         val normalizedPackage = CredentialScopeMatcher.normalizePackage(packageName)
@@ -178,7 +178,7 @@ class CredentialServiceRepositoryImpl @Inject constructor(
         val appLabel = normalizedPackage
             ?.let(packageUtils::getAppMetadata)
             ?.appName
-        val entry = VaultEntry(
+        val entry = EntryAggregate(
             header = EntryHeader(
                 id = EntryId(""),
                 entryType = EntryType.LOGIN,

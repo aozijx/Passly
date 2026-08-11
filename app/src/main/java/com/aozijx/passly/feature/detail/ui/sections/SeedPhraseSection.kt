@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.ui.components.DetailItem
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -40,7 +40,7 @@ import com.aozijx.passly.feature.detail.internal.toggleRevealSensitiveField
 
 @Composable
 fun SeedPhraseSection(
-    entry: VaultEntry,
+    entry: EntryAggregate,
     revealedSeedPhrase: String?,
     onSeedPhraseRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,

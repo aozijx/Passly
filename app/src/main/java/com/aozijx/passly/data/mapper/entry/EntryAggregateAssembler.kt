@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 object EntryAggregateAssembler {
 
@@ -16,8 +16,8 @@ object EntryAggregateAssembler {
         summary: EntrySummary,
         secret: EntrySecret?,
         highSensitivitySecret: EntryHighSensitivitySecret? = null
-    ): VaultEntry {
-        return VaultEntry(
+    ): EntryAggregate {
+        return EntryAggregate(
             header = EntryHeader(
                 id = EntryId(entity.entryId),
                 entryType = entity.entryType,

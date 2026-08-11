@@ -1,7 +1,7 @@
 package com.aozijx.passly.core.autofill.model
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultIconable
+import com.aozijx.passly.domain.entry.model.EntryIconSource
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
 
 /**
@@ -14,7 +14,7 @@ import com.aozijx.passly.domain.entry.model.lookup.MatchType
  * 遵循最小暴露原则（Principle of Least Exposure）。
  *
  * 转换统一由 [com.aozijx.passly.core.autofill.pipeline.CandidateResolver] 负责，
- * 不再提供 VaultEntry.toResolvedCandidate() 扩展。
+ * 不再提供 EntryAggregate.toResolvedCandidate() 扩展。
  */
 data class ResolvedCandidate(
     /** 数据库条目 ID */
@@ -40,4 +40,4 @@ data class ResolvedCandidate(
     val matchedBy: MatchType? = null,
     val matchedPackage: String? = null,
     val matchedDomain: String? = null,
-) : VaultIconable
+) : EntryIconSource

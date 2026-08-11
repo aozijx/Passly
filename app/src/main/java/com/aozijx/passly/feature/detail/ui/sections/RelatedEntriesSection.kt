@@ -16,13 +16,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.text.localizedName
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun RelatedEntriesSection(
-    entries: List<VaultEntry>,
-    onOpenEntry: (VaultEntry) -> Unit
+    entries: List<EntryAggregate>,
+    onOpenEntry: (EntryAggregate) -> Unit
 ) {
     if (entries.isEmpty()) return
     InfoGroupCard(title = stringResource(R.string.related_entries)) {

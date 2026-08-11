@@ -303,7 +303,7 @@ class ProtoAppSettingsRepository @Inject constructor(
                 }
 
                 // ==================== Vault ====================
-                is SettingsCommand.SetVisibleVaultQuickFilters -> {
+                is SettingsCommand.SetVisibleLibraryQuickFilters -> {
                     val vb = proto.vaultView.toBuilder()
                     vb.visibleQuickFilters = VisibleQuickFilters.newBuilder()
                         .addAllFilterKeys(command.keys.sorted())
@@ -312,7 +312,7 @@ class ProtoAppSettingsRepository @Inject constructor(
                     b.setVaultView(vb)
                 }
 
-                is SettingsCommand.ClearVisibleVaultQuickFilters -> {
+                is SettingsCommand.ClearVisibleLibraryQuickFilters -> {
                     val vb = proto.vaultView.toBuilder()
                     vb.clearVisibleQuickFilters()
                     b.setVaultView(vb)

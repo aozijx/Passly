@@ -31,7 +31,7 @@ interface DatabaseController {
     suspend fun quarantineAndReinitialize(): DatabaseQuarantineResult
 
     /**
-     * 删除无法打开的数据库及其关联 Vault 文件，并创建空数据库。
+     * 删除无法打开的数据库及其关联加密存储文件，并创建空数据库。
      *
      * 保留独立存储的设置、认证信封和密钥绑定。
      */

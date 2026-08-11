@@ -7,7 +7,7 @@ import com.aozijx.passly.core.telemetry.EventCategory
 import com.aozijx.passly.domain.auth.model.envelope.EnvelopeType
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.security.crypto.DekManager
 import com.aozijx.passly.security.crypto.UnlockResult
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +30,7 @@ class VaultSessionController @Inject constructor(
     private val dekManager: DekManager,
     private val sessionManager: UnifiedSessionManager,
     idleTimeoutSettings: com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
-) : VaultAccessState {
+) : SecureSessionAccessState {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
     private val _state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)

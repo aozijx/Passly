@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.app.message.mapping.toUiMessage
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
 import com.aozijx.passly.domain.settings.command.SettingsCommand
@@ -23,7 +23,7 @@ class DataManagementSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
-    private val vaultAccessState: VaultAccessState
+    private val vaultAccessState: SecureSessionAccessState
 ) : ViewModel() {
 
     private val _config = MutableStateFlow(DataManagementSettingsUiState())
@@ -128,7 +128,7 @@ class DataManagementSettingsViewModel @Inject constructor(
     }
 
     private fun requireTrashAccess(): Boolean {
-        if (vaultAccessState.hasFullVaultAccess()) return true
+        if (vaultAccessState.hasFullSecureSessionAccess()) return true
         _config.update { it.copy(trashError = "当前会话不能操作回收站") }
         return false
     }

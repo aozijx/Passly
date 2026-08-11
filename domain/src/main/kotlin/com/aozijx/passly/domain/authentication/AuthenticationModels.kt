@@ -63,7 +63,7 @@ sealed interface AuthenticationState {
     data class Authenticated(val authenticatedAtMs: Long) : AuthenticationState
 
     /**
-     * The database is open, but normal Vault reads are not authorized.
+     * The database is open, but normal entry reads are not authorized.
      *
      * This state can only be entered by a recovery code and is intentionally distinct from
      * [Authenticated] so recovery never becomes a second everyday unlock method.

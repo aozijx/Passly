@@ -4,7 +4,7 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.entry.model.EntryChanges
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.favicon.FaviconOutcome
 import com.aozijx.passly.domain.entry.model.favicon.FaviconResult
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
@@ -34,7 +34,7 @@ internal class EntryManager(
     private val deletingIds = mutableSetOf<String>()
     private val deletingIdsMutex = Mutex()
 
-    fun addItem(entry: VaultEntry, domain: String? = null, onComplete: () -> Unit = {}) {
+    fun addItem(entry: EntryAggregate, domain: String? = null, onComplete: () -> Unit = {}) {
         scope.launch(Dispatchers.IO + handler) {
             when (val insertResult = entryCommandRepository.createEntry(entry)) {
                 is AppResult.Success -> {
@@ -72,7 +72,7 @@ internal class EntryManager(
      * 一次事务写入所有变化字段（Metadata + Credential + 版本 + 盲索引 + 快照）。
      * 覆盖 title、username、password、email、notes、otp、card、ssh、customFields 等全部字段。
      */
-    fun updateEntry(entry: VaultEntry) {
+    fun updateEntry(entry: EntryAggregate) {
         scope.launch(Dispatchers.IO + handler) {
             val current = entryQueryRepository.getByIdWithoutHighSensitivity(entry.id) ?: return@launch
 
@@ -95,7 +95,7 @@ internal class EntryManager(
         }
     }
 
-    fun deleteEntry(entry: VaultEntry) {
+    fun deleteEntry(entry: EntryAggregate) {
         scope.launch(Dispatchers.IO + handler) {
             deleteEntryInternal(entry.id, presetEntry = entry)
         }
@@ -107,7 +107,7 @@ internal class EntryManager(
         }
     }
 
-    private suspend fun deleteEntryInternal(entryId: String, presetEntry: VaultEntry? = null) {
+    private suspend fun deleteEntryInternal(entryId: String, presetEntry: EntryAggregate? = null) {
         val acquired = deletingIdsMutex.withLock {
             if (deletingIds.contains(entryId)) false else deletingIds.add(entryId)
         }

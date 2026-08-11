@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationResult
 import com.aozijx.passly.domain.authentication.AuthenticationSnapshot
 import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -22,7 +22,7 @@ class AutofillRequestSessionTest {
 
     @Test
     fun `request relocks only the vault unlock it acquired`() = runBlocking {
-        val vault = FakeVaultAccessState(unlocked = false)
+        val vault = FakeSecureSessionAccessState(unlocked = false)
         val authentication = FakeAuthenticationManager(vault)
         val session = AutofillRequestSession(authentication, vault)
 
@@ -34,7 +34,7 @@ class AutofillRequestSessionTest {
 
     @Test
     fun `request does not lock a vault that was already unlocked`() = runBlocking {
-        val vault = FakeVaultAccessState(unlocked = true)
+        val vault = FakeSecureSessionAccessState(unlocked = true)
         val authentication = FakeAuthenticationManager(vault)
         val session = AutofillRequestSession(authentication, vault)
 
@@ -44,9 +44,9 @@ class AutofillRequestSessionTest {
         assertNull(authentication.lastLockReason)
     }
 
-    private class FakeVaultAccessState(
+    private class FakeSecureSessionAccessState(
         unlocked: Boolean,
-    ) : VaultAccessState {
+    ) : SecureSessionAccessState {
         var unlocked = unlocked
         private val stateFlow = MutableStateFlow<AuthenticationState>(
             if (unlocked) AuthenticationState.Authenticated(1L) else AuthenticationState.Locked
@@ -57,7 +57,7 @@ class AutofillRequestSessionTest {
     }
 
     private class FakeAuthenticationManager(
-        private val vault: FakeVaultAccessState,
+        private val vault: FakeSecureSessionAccessState,
     ) : AuthenticationManager {
         override val state = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
         override val methods = MutableStateFlow(AuthMethodAvailability(appPassword = true))

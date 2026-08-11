@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.authentication.LockReason
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Vault 访问接口（认证模块对外公开的门面）。
+ * 安全会话访问接口（认证模块对外公开的门面）。
  *
  * 外部调用者应通过此接口访问认证功能，不应直接接触：
  * - [AuthPolicy]
@@ -19,15 +19,15 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * 职责：
  * - [state] — 暴露当前锁状态
- * - [unlock] — 解锁 Vault（从 SEALED 或 SOFT_LOCKED 到 UNLOCKED）
+ * - [unlock] — 解锁安全会话（从 SEALED 或 SOFT_LOCKED 到 UNLOCKED）
  * - [authorize] — 对已解锁的会话执行敏感操作授权
- * - [lock] — 锁定 Vault（可指定锁定强度）
+ * - [lock] — 锁定安全会话（可指定锁定强度）
  */
-interface VaultAccess {
+interface SecureSessionAccess {
     val state: StateFlow<SecureSessionState>
 
     /**
-     * 解锁 Vault。
+     * 解锁安全会话。
      *
      * 内部根据当前 [SecureSessionState] 自动选择：
      * - SOFT_LOCKED → 仅恢复 Gate（不重置 DEK）
@@ -46,7 +46,7 @@ interface VaultAccess {
     ): AuthorizationResult<T>
 
     /**
-     * 锁定 Vault。
+     * 锁定安全会话。
      *
      * 根据 [LockReason] 自动决定锁定强度：
      * - USER / IDLE_TIMEOUT → SOFT_LOCKED

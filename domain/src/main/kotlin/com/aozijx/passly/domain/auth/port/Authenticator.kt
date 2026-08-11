@@ -13,7 +13,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationPurpose
  * - [RecoveryCodeAuthenticator]
  *
  * 认证器仅证明身份（返回 [AuthenticatorResult]），
- * 不参与 Grant 签发。授权由 [VaultAccessGate] 负责。
+ * 不参与 Grant 签发。授权由 [AuthorizationGate] 负责。
  */
 interface Authenticator {
 

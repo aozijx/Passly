@@ -1,12 +1,12 @@
 package com.aozijx.passly.feature.detail.contract
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 
 data class DetailUiState(
-    val entry: VaultEntry? = null,
+    val entry: EntryAggregate? = null,
     val entryType: EntryType = EntryType.LOGIN,
     val strategySummary: String = "",
     val validationError: String? = null,
@@ -16,7 +16,7 @@ data class DetailUiState(
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<String, String> = emptyMap(),
     val history: List<EntryActivity> = emptyList(),
-    val relatedEntries: List<VaultEntry> = emptyList(),
+    val relatedEntries: List<EntryAggregate> = emptyList(),
     val isFaviconDownloading: Boolean = false
 ) {
     fun revealed(key: String): String? = revealedFields[key]
@@ -37,9 +37,9 @@ object RevealedFieldKey {
 }
 
 sealed interface DetailIntent {
-    data class Initialize(val initialEntry: VaultEntry) : DetailIntent
-    data class SyncEntry(val entry: VaultEntry) : DetailIntent
-    data class CommitEntryUpdate(val entry: VaultEntry) : DetailIntent
+    data class Initialize(val initialEntry: EntryAggregate) : DetailIntent
+    data class SyncEntry(val entry: EntryAggregate) : DetailIntent
+    data class CommitEntryUpdate(val entry: EntryAggregate) : DetailIntent
 
     object StartTitleEdit : DetailIntent
     object CancelTitleEdit : DetailIntent
@@ -58,5 +58,5 @@ sealed interface DetailIntent {
 }
 
 sealed interface DetailEffect {
-    data class EntryUpdated(val entry: VaultEntry) : DetailEffect
+    data class EntryUpdated(val entry: EntryAggregate) : DetailEffect
 }

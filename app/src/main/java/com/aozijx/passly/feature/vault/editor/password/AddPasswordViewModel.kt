@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.editor.password
 
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.feature.vault.editor.common.CreateEntryViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -9,7 +9,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AddPasswordViewModel @Inject constructor(
     entryCommandRepository: EntryCommandRepository,
-    vaultAccessState: VaultAccessState
+    vaultAccessState: SecureSessionAccessState
 ) : CreateEntryViewModel<AddPasswordFormState>(
     initialForm = AddPasswordFormState(),
     entryCommandRepository = entryCommandRepository,

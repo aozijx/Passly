@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.secret.IdentitySecret
 import com.aozijx.passly.domain.entry.model.secret.OtpSecret
 import com.aozijx.passly.domain.entry.model.secret.PasskeySecret
@@ -68,7 +68,7 @@ class DetailSectionResolverTest {
         assertTrue(DetailSectionKey.NOTES in sections)
     }
 
-    private fun entry(type: EntryType, secret: EntrySecret) = VaultEntry(
+    private fun entry(type: EntryType, secret: EntrySecret) = EntryAggregate(
         header = EntryHeader(
             id = EntryId("018f9dd6-66c5-7cc0-85b5-39a337956681"),
             entryType = type,

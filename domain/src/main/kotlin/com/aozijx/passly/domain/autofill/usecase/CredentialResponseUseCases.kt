@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationManager
 import com.aozijx.passly.domain.authentication.AuthenticationPurpose
 import com.aozijx.passly.domain.authentication.AuthenticationRequest
 import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.policy.CredentialScopeMatcher
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
@@ -41,7 +41,7 @@ class CredentialResponseUseCases @Inject constructor(
     private val credentialRepository: CredentialServiceRepository,
     private val settingsRepository: AppSettingsRepository,
     private val authenticationManager: AuthenticationManager,
-    private val vaultAccessState: VaultAccessState,
+    private val vaultAccessState: SecureSessionAccessState,
     private val autofillUseCases: AutofillUseCases,
 ) {
     suspend fun resolvePasswordCredential(
@@ -53,7 +53,7 @@ class CredentialResponseUseCases @Inject constructor(
         val policy = settingsRepository.settings.first().interaction.autofill
         if (!policy.enabled || !policy.credentialManagerEnabled) return PasswordCredentialResult.NotFound
 
-        if (policy.requireAuthentication || !vaultAccessState.hasFullVaultAccess()) {
+        if (policy.requireAuthentication || !vaultAccessState.hasFullSecureSessionAccess()) {
             val authentication = authenticationManager.authenticate(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )
@@ -99,7 +99,7 @@ class CredentialResponseUseCases @Inject constructor(
             return CreatePasswordCredentialResult.NotSaved
         }
 
-        if (policy.requireAuthentication || !vaultAccessState.hasFullVaultAccess()) {
+        if (policy.requireAuthentication || !vaultAccessState.hasFullSecureSessionAccess()) {
             val authentication = authenticationManager.authenticate(
                 AuthenticationRequest(AuthenticationPurpose.AUTOFILL)
             )

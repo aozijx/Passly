@@ -8,7 +8,7 @@ import com.aozijx.passly.app.diagnostics.AppTelemetry
 import com.aozijx.passly.core.autofill.model.ResolvedCandidate
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.domain.authentication.AuthenticationResult
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.usecase.AutofillUseCases
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
@@ -30,7 +30,7 @@ import javax.inject.Inject
 class AutofillFillViewModel @Inject constructor(
     private val autofillUseCases: AutofillUseCases,
     private val candidateResolver: CandidateResolver,
-    private val vaultAccessState: VaultAccessState,
+    private val vaultAccessState: SecureSessionAccessState,
     private val settingsRepository: AppSettingsRepository,
     private val requestSession: AutofillRequestSession,
     @param:ApplicationContext private val appContext: Context,
@@ -52,7 +52,7 @@ class AutofillFillViewModel @Inject constructor(
                     handleUnlockOnly(request, settings)
                     return@launch
                 }
-                if (!vaultAccessState.hasFullVaultAccess()) {
+                if (!vaultAccessState.hasFullSecureSessionAccess()) {
                     val authentication = authenticateForAutofill()
                     if (authentication !is AuthenticationResult.Success) {
                         _uiState.update { AutofillFillUiState.Result(null) }
@@ -199,7 +199,7 @@ class AutofillFillViewModel @Inject constructor(
     private suspend fun ensureAuthenticatedForSecretAccess(
         settings: AutofillSettings,
     ): Boolean {
-        val needsAuthentication = !vaultAccessState.hasFullVaultAccess() ||
+        val needsAuthentication = !vaultAccessState.hasFullSecureSessionAccess() ||
             (settings.requireAuthentication && !authenticatedForCurrentRequest)
         if (!needsAuthentication) return true
         val authResult = authenticateForAutofill()

@@ -37,8 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,8 +56,8 @@ fun VaultTopBar(
     onClearCategory: () -> Unit,
     onToggleTotpVisibility: () -> Unit,
     onCategorySelected: (String?) -> Unit,
-    onSortSelected: (VaultSortSpec) -> Unit,
-    onSelectQuickFilter: (VaultQuickFilter) -> Unit
+    onSortSelected: (LibrarySortSpec) -> Unit,
+    onSelectQuickFilter: (LibraryQuickFilter) -> Unit
 ) {
     val density = LocalDensity.current
     var isMoreMenuExpanded by remember { mutableStateOf(false) }
@@ -171,7 +171,7 @@ fun VaultTopBar(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            VaultQuickFilterBar(
+            LibraryQuickFilterBar(
                 quickFilters = uiState.visibleQuickFilters,
                 selectedQuickFilterIndex = selectedQuickFilterIndex,
                 onQuickFilterSelected = { index ->

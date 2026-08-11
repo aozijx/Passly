@@ -1,20 +1,20 @@
 package com.aozijx.passly.domain.entry.service
 
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * 默认字段读取器。
  *
- * 根据 [FieldKey] 从 [VaultEntry] 中提取原始数据值，处理逻辑对所有条目类型通用。
+ * 根据 [FieldKey] 从 [EntryAggregate] 中提取原始数据值，处理逻辑对所有条目类型通用。
  * 提取逻辑继承自原有的 [com.aozijx.passly.domain.strategy.EntryTypeStrategy] 中的 getFieldValue 实现。
  */
 @Singleton
 class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
 
-    override fun getFieldValue(entry: VaultEntry, key: FieldKey): String? {
+    override fun getFieldValue(entry: EntryAggregate, key: FieldKey): String? {
         return when {
             key.isCommon() -> getCommonFieldValue(entry, key)
             key.isTotp() -> getTotpFieldValue(entry, key)
@@ -28,7 +28,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
 
     // --- 分组提取逻辑 ---
 
-    private fun getCommonFieldValue(entry: VaultEntry, key: FieldKey): String? {
+    private fun getCommonFieldValue(entry: EntryAggregate, key: FieldKey): String? {
         val secret = entry.secret
         return when (key) {
             FieldKey.TITLE -> entry.summary.title
@@ -45,7 +45,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         }
     }
 
-    private fun getTotpFieldValue(entry: VaultEntry, key: FieldKey): String? {
+    private fun getTotpFieldValue(entry: EntryAggregate, key: FieldKey): String? {
         val otp = entry.secret.otp
         return when (key) {
             FieldKey.TOTP_SECRET -> otp?.config?.secret
@@ -57,7 +57,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         }
     }
 
-    private fun getCryptoFieldValue(entry: VaultEntry, key: FieldKey): String? {
+    private fun getCryptoFieldValue(entry: EntryAggregate, key: FieldKey): String? {
         val secret = entry.secret
         return when (key) {
             FieldKey.PASSKEY_DATA -> secret.passkey?.privateKeyReference
@@ -72,7 +72,7 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         }
     }
 
-    private fun getFinanceFieldValue(entry: VaultEntry, key: FieldKey): String? {
+    private fun getFinanceFieldValue(entry: EntryAggregate, key: FieldKey): String? {
         val card = entry.secret.card
         return when (key) {
             FieldKey.CARD_EXPIRATION -> card?.cardExpiry
@@ -85,12 +85,12 @@ class DefaultEntryFieldReader @Inject constructor() : EntryFieldReader {
         }
     }
 
-    private fun getIdentityFieldValue(entry: VaultEntry, key: FieldKey): String? = when (key) {
+    private fun getIdentityFieldValue(entry: EntryAggregate, key: FieldKey): String? = when (key) {
         FieldKey.ID_NUMBER -> entry.secret.identity?.idNumber
         else -> null
     }
 
-    private fun getConnectivityFieldValue(entry: VaultEntry, key: FieldKey): String? {
+    private fun getConnectivityFieldValue(entry: EntryAggregate, key: FieldKey): String? {
         val wifi = entry.secret.wifi
         return when (key) {
             FieldKey.WIFI_SECURITY -> wifi?.securityType

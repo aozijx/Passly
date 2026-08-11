@@ -21,14 +21,14 @@ import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.RoundedGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.core.ui.components.vaultfilter.titleRes
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 
 @Composable
-fun VaultQuickFiltersSettingsSection(
-    enabledVaultQuickFilterKeys: Set<String>,
-    onVaultQuickFilterToggle: (VaultQuickFilter) -> Unit
+fun LibraryQuickFiltersSettingsSection(
+    enabledLibraryQuickFilterKeys: Set<String>,
+    onLibraryQuickFilterToggle: (LibraryQuickFilter) -> Unit
 ) {
-    val toggleableQuickFilters = VaultQuickFilter.toggleableVisibleQuickFilters
+    val toggleableQuickFilters = LibraryQuickFilter.toggleableVisibleQuickFilters
 
     SettingsSectionTitle(
         text = stringResource(R.string.settings_interface_vault_quick_filters_section)
@@ -43,10 +43,10 @@ fun VaultQuickFiltersSettingsSection(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         toggleableQuickFilters.forEach { quickFilter ->
-                            val isChecked = quickFilter.settingsKey in enabledVaultQuickFilterKeys
+                            val isChecked = quickFilter.settingsKey in enabledLibraryQuickFilterKeys
                             FilterChip(
                                 selected = isChecked,
-                                onClick = { onVaultQuickFilterToggle(quickFilter) },
+                                onClick = { onLibraryQuickFilterToggle(quickFilter) },
                                 label = { Text(stringResource(quickFilter.titleRes)) },
                                 leadingIcon = {
                                     Icon(
@@ -63,8 +63,8 @@ fun VaultQuickFiltersSettingsSection(
     )
 }
 
-private fun VaultQuickFilter.settingsIcon(): ImageVector = when (this) {
-    VaultQuickFilter.PASSWORDS -> Icons.Default.Key
-    VaultQuickFilter.TOTP -> Icons.Default.Pin
-    VaultQuickFilter.ALL -> Icons.Default.Key
+private fun LibraryQuickFilter.settingsIcon(): ImageVector = when (this) {
+    LibraryQuickFilter.PASSWORDS -> Icons.Default.Key
+    LibraryQuickFilter.TOTP -> Icons.Default.Pin
+    LibraryQuickFilter.ALL -> Icons.Default.Key
 }

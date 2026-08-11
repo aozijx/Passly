@@ -8,9 +8,9 @@ import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.util.Clock
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.repository.EntryHierarchyRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,7 +19,7 @@ import javax.inject.Singleton
 class RoomEntryHierarchyRepository @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
     private val clock: Clock
@@ -58,8 +58,8 @@ class RoomEntryHierarchyRepository @Inject constructor(
         transactionRunner.checkAffectedRows(affected)
     }
 
-    override suspend fun getChildren(accountEntryId: String): List<VaultEntry> =
-        if (!sessionState.hasFullVaultAccess()) {
+    override suspend fun getChildren(accountEntryId: String): List<EntryAggregate> =
+        if (!sessionState.hasFullSecureSessionAccess()) {
             emptyList()
         } else {
             sessionManager.query {

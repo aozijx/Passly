@@ -13,7 +13,7 @@ import com.aozijx.passly.data.backup.source.VaultBackupReader
 import com.aozijx.passly.data.backup.source.VaultBackupRestorer
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
-import com.aozijx.passly.domain.backup.service.VaultBackupService
+import com.aozijx.passly.domain.backup.service.BackupArchiveService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -27,14 +27,14 @@ import javax.inject.Singleton
  * - 导入：FileStore → Format Importer → VaultBackupRestorer
  */
 @Singleton
-internal class VaultBackupServiceImpl @Inject constructor(
+internal class BackupArchiveServiceImpl @Inject constructor(
     private val backupReader: VaultBackupReader,
     private val backupRestorer: VaultBackupRestorer,
     private val formatRegistry: BackupFormatRegistry,
     private val fileStore: BackupFileStore,
     private val errorReporter: AppErrorReporter,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
-) : VaultBackupService {
+) : BackupArchiveService {
 
     override suspend fun export(
         request: BackupExportRequest

@@ -21,7 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aozijx.passly.domain.authentication.SensitiveAccessAction
 import com.aozijx.passly.domain.authentication.SensitiveAccessLevel
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
@@ -213,7 +213,7 @@ fun PasslyNavHost(
                 detailViewModel.effects.collectLatest { effect ->
                     when (effect) {
                         is DetailEffect.EntryUpdated -> vaultViewModel.onIntent(
-                            VaultIntent.UpdateVaultEntry(
+                            VaultIntent.UpdateEntryAggregate(
                                 effect.entry
                             )
                         )
@@ -221,7 +221,7 @@ fun PasslyNavHost(
                 }
             }
 
-            var initialEntry by remember { mutableStateOf<VaultEntry?>(null) }
+            var initialEntry by remember { mutableStateOf<EntryAggregate?>(null) }
             LaunchedEffect(entryId) {
                 initialEntry = vaultViewModel.loadEntryById(entryId)
             }

@@ -20,12 +20,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.core.media.toLocalIconImageModel
-import com.aozijx.passly.domain.entry.model.VaultIconable
+import com.aozijx.passly.domain.entry.model.EntryIconSource
 
 @Composable
 fun VaultItemIcon(
     modifier: Modifier = Modifier,
-    iconable: VaultIconable,
+    iconable: EntryIconSource,
     tint: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
     val appIconPainter = rememberAppIcon(iconable.associatedAppPackage)

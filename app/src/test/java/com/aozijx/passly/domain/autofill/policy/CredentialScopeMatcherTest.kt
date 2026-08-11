@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -14,7 +14,7 @@ import org.junit.Test
 
 class CredentialScopeMatcherTest {
 
-    private val entry = VaultEntry(
+    private val entry = EntryAggregate(
         header = EntryHeader(
             id = EntryId("entry"),
             entryType = EntryType.LOGIN,

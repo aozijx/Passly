@@ -1,7 +1,7 @@
 package com.aozijx.passly.domain.entry.service
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,7 +18,7 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
         val supportsAutofill: Boolean = false,
         val suggestedCategory: String = "",
         val sensitiveFields: Set<String> = emptySet(),
-        val summaryExtractor: (VaultEntry) -> String = { "" }
+        val summaryExtractor: (EntryAggregate) -> String = { "" }
     )
 
     private val configs: Map<EntryType, PolicyConfig> = mapOf(
@@ -100,6 +100,6 @@ class DefaultEntryTypePolicy @Inject constructor() : EntryTypePolicy {
     override fun sensitiveFields(type: EntryType): Set<String> =
         configs[type]?.sensitiveFields ?: emptySet()
 
-    override fun extractSummary(type: EntryType, entry: VaultEntry): String =
+    override fun extractSummary(type: EntryType, entry: EntryAggregate): String =
         configs[type]?.summaryExtractor?.invoke(entry) ?: ""
 }

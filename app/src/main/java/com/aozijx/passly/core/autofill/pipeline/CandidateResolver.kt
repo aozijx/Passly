@@ -7,7 +7,7 @@ import com.aozijx.passly.core.otp.OtpGenerator
 import com.aozijx.passly.core.otp.OtpResult
 import com.aozijx.passly.domain.autofill.policy.CredentialScopeMatcher
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import kotlinx.coroutines.CancellationException
@@ -103,7 +103,7 @@ class CandidateResolver @Inject constructor(
         )
     }
 
-    private fun VaultEntry.toResolvedCandidate(includeOtp: Boolean): ResolvedCandidate {
+    private fun EntryAggregate.toResolvedCandidate(includeOtp: Boolean): ResolvedCandidate {
         return ResolvedCandidate(
             candidateId = id,
             displayName = title,
@@ -118,7 +118,7 @@ class CandidateResolver @Inject constructor(
         )
     }
 
-    private fun generateTotpFromEntry(entry: VaultEntry): String? {
+    private fun generateTotpFromEntry(entry: EntryAggregate): String? {
         val otpConfig = entry.secret.otp?.config ?: return null
         if (otpConfig.secret.isBlank()) return null
         return when (val result = OtpGenerator.generate(otpConfig)) {

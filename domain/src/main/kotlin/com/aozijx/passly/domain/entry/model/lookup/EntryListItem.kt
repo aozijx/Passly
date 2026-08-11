@@ -2,7 +2,7 @@ package com.aozijx.passly.domain.entry.model.lookup
 
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultIconable
+import com.aozijx.passly.domain.entry.model.EntryIconSource
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
@@ -29,7 +29,7 @@ data class EntryListItem(
     val otpTypeName: String = "",
     val vaultId: String = "default",
     val parentEntryId: String? = null
-) : VaultIconable {
+) : EntryIconSource {
     val hasPassword: Boolean
         get() = EntryCapabilityFlags.has(capabilityFlags, EntryCapabilityFlags.HAS_PASSWORD)
     val hasOtp: Boolean

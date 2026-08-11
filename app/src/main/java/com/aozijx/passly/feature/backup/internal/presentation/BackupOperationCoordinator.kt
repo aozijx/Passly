@@ -14,7 +14,7 @@ import com.aozijx.passly.domain.backup.model.BackupExportOptions
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupExportUiFormat
 import com.aozijx.passly.domain.backup.model.BackupImportRequest
-import com.aozijx.passly.domain.backup.service.VaultBackupService
+import com.aozijx.passly.domain.backup.service.BackupArchiveService
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.backup.internal.contract.BackupUiState
 import kotlinx.coroutines.flow.first
@@ -23,7 +23,7 @@ import javax.inject.Inject
 /** Executes Backup side effects while the ViewModel remains a state-machine boundary. */
 internal class BackupOperationCoordinator @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
-    private val backupService: VaultBackupService,
+    private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,
     private val authenticationManager: AuthenticationManager,
 ) {

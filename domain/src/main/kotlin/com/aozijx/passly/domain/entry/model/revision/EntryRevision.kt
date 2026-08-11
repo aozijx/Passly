@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.entry.model.revision
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 data class EntryRevision(
     val revisionId: String,
@@ -8,7 +8,7 @@ data class EntryRevision(
     val version: Int,
     val createdAt: Long,
     val changeType: RevisionType,
-    val entry: VaultEntry
+    val entry: EntryAggregate
 )
 
 enum class RevisionType(val value: String) {

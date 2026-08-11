@@ -38,7 +38,7 @@ import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 import com.aozijx.passly.feature.vault.components.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.flow.StateFlow
@@ -82,7 +82,7 @@ fun VaultPagerContent(
         }
     ) { pageIndex ->
         val currentQuickFilter =
-            uiState.visibleQuickFilters.getOrNull(pageIndex) ?: VaultQuickFilter.ALL
+            uiState.visibleQuickFilters.getOrNull(pageIndex) ?: LibraryQuickFilter.ALL
         val displayItems = arrangeEntryHierarchy(
             entries = uiState.vaultItemsByQuickFilter[currentQuickFilter].orEmpty(),
             mode = hierarchyDisplayMode

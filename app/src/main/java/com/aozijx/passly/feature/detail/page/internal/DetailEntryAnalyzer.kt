@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.detail.page.internal
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.service.EntryTypePolicy
 import com.aozijx.passly.domain.entry.service.EntryValidatorProvider
 
@@ -16,7 +16,7 @@ internal class DetailEntryAnalyzer(
     private val entryTypePolicy: EntryTypePolicy,
     private val entryValidatorProvider: EntryValidatorProvider
 ) {
-    fun analyze(entry: VaultEntry): DetailEntryAnalysis {
+    fun analyze(entry: EntryAggregate): DetailEntryAnalysis {
         val entryType = entry.entryType
         val validator = entryValidatorProvider.getValidator(entryType)
         val validationError =

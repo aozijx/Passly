@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.entry.service
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,6 +11,6 @@ import javax.inject.Singleton
  */
 @Singleton
 class DefaultEntryValidator @Inject constructor() : EntryValidator {
-    override fun validateRequiredFields(entry: VaultEntry): String? = null
-    override fun validateFieldContent(entry: VaultEntry): String? = null
+    override fun validateRequiredFields(entry: EntryAggregate): String? = null
+    override fun validateFieldContent(entry: EntryAggregate): String? = null
 }

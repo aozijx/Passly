@@ -2,11 +2,11 @@ package com.aozijx.passly.core.ui.components.vaultfilter
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.VaultQuickFilter
+import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
 
-val VaultQuickFilter.titleRes: Int
+val LibraryQuickFilter.titleRes: Int
     @StringRes get() = when (this) {
-        VaultQuickFilter.ALL -> R.string.tab_all
-        VaultQuickFilter.PASSWORDS -> R.string.password
-        VaultQuickFilter.TOTP -> R.string.otp
+        LibraryQuickFilter.ALL -> R.string.tab_all
+        LibraryQuickFilter.PASSWORDS -> R.string.password
+        LibraryQuickFilter.TOTP -> R.string.otp
     }

@@ -9,7 +9,7 @@ data class AppSettingsSnapshot(
     val security: SecuritySettings,
     val interaction: InteractionSettings,
     val messages: AppMessageSettings,
-    val vault: VaultViewSettings,
+    val vault: LibraryViewSettings,
     val backup: BackupSettings
 )
 
@@ -108,9 +108,9 @@ data class InteractionSettings(
 // 5. 保险库视图
 // ============================================================
 
-data class VaultViewSettings(
+data class LibraryViewSettings(
     val visibleQuickFilters: VisibleQuickFiltersConfig? = null,
-    val sort: VaultSortSpec = VaultSortSpec.DEFAULT,
+    val sort: LibrarySortSpec = LibrarySortSpec.DEFAULT,
     val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
     val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
         EntryHierarchyDisplayMode.COLLAPSED

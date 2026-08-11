@@ -44,18 +44,18 @@ import com.aozijx.passly.core.ui.components.AppPackagePickerDialog
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
 import com.aozijx.passly.core.ui.components.rememberAppIcon
 import com.aozijx.passly.core.ui.components.rememberAppMetadata
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.detail.internal.EntryEditState
 import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun AssociatedInfoSection(
     modifier: Modifier = Modifier,
-    entry: VaultEntry,
+    entry: EntryAggregate,
     editState: EntryEditState,
     isFaviconDownloading: Boolean,
     onDownloadFavicon: (String) -> Unit,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEntryUpdated: (EntryAggregate) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
@@ -257,9 +257,9 @@ private fun DomainEditor(
 }
 
 private fun saveAssociated(
-    entry: VaultEntry,
+    entry: EntryAggregate,
     editState: EntryEditState,
-    onEntryUpdated: (VaultEntry) -> Unit
+    onEntryUpdated: (EntryAggregate) -> Unit
 ) {
     val updated = editState.applyAssociatedOnly(entry)
     onEntryUpdated(updated)

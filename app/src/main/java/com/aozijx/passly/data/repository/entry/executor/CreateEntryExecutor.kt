@@ -14,7 +14,7 @@ import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.extractHighSensitivity
 import com.aozijx.passly.domain.entry.model.withoutHighSensitivity
@@ -37,7 +37,7 @@ class CreateEntryExecutor @Inject constructor(
     private val activityHelper: EntryActivityHelper,
     private val clock: Clock
 ) {
-    suspend fun execute(entry: VaultEntry): AppResult<EntryId> =
+    suspend fun execute(entry: EntryAggregate): AppResult<EntryId> =
         transactionRunner.write("entry.create") {
             val now = clock.now()
             val entryId = entry.id.ifEmpty { UuidCreator.getTimeOrderedEpoch().toString() }

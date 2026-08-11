@@ -8,7 +8,7 @@ import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.mapper.attachment.AttachmentMapper
 import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.attachment.EntryAttachment
@@ -40,7 +40,7 @@ import javax.inject.Singleton
 class FileBackedAttachmentRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val fieldEncryptor: FieldEncryptor
 ) : AttachmentRepository {
 
@@ -49,7 +49,7 @@ class FileBackedAttachmentRepository @Inject constructor(
         get() = VaultResourcePaths.attachmentDir(context)
 
     override suspend fun getAttachments(entryId: String): List<EntryAttachment> =
-        if (!sessionState.hasFullVaultAccess()) {
+        if (!sessionState.hasFullSecureSessionAccess()) {
             emptyList()
         } else {
             sessionManager.query {
@@ -59,7 +59,7 @@ class FileBackedAttachmentRepository @Inject constructor(
         }
 
     override suspend fun getPendingAttachments(draftId: String): List<EntryAttachment> =
-        if (!sessionState.hasFullVaultAccess()) {
+        if (!sessionState.hasFullSecureSessionAccess()) {
             emptyList()
         } else {
             sessionManager.query {
@@ -73,7 +73,7 @@ class FileBackedAttachmentRepository @Inject constructor(
         attachment: EntryAttachment,
         content: ByteArray
     ) {
-        requireFullVaultAccess()
+        requireFullSecureSessionAccess()
         sessionManager.transaction {
             val now = System.currentTimeMillis()
             val attachmentId = attachment.attachmentId
@@ -119,7 +119,7 @@ class FileBackedAttachmentRepository @Inject constructor(
     }
 
     override suspend fun deleteAttachment(attachmentId: String) {
-        requireFullVaultAccess()
+        requireFullSecureSessionAccess()
         sessionManager.transaction {
             // 先查实体获取路径
             val entity = entryAttachmentQueryDao().getById(attachmentId) ?: return@transaction
@@ -167,8 +167,8 @@ class FileBackedAttachmentRepository @Inject constructor(
         return digest.digest(data).joinToString("") { "%02x".format(it) }
     }
 
-    private fun requireFullVaultAccess() {
-        if (!sessionState.hasFullVaultAccess()) {
+    private fun requireFullSecureSessionAccess() {
+        if (!sessionState.hasFullSecureSessionAccess()) {
             throw SessionModeRestricted()
         }
     }

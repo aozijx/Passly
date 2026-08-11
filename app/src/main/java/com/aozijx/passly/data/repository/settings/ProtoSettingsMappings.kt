@@ -34,9 +34,9 @@ import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.model.SortDirection
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.domain.settings.model.VaultSortField
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
-import com.aozijx.passly.domain.settings.model.VaultViewSettings
+import com.aozijx.passly.domain.settings.model.LibrarySortField
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
+import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.model.VisibleQuickFiltersConfig
 import com.aozijx.passly.data.local.datastore.settings.CardDensity as ProtoCardDensity
 import com.aozijx.passly.data.local.datastore.settings.EntryCardPresentation as ProtoEntryCardPresentation
@@ -207,19 +207,19 @@ internal fun NoticeLevelProto.toDomain(): NoticeLevel = when (this) {
 }
 
 // ============================================================
-// VaultSortPreference ↔ VaultSortSpec
+// VaultSortPreference ↔ LibrarySortSpec
 // ============================================================
 
-internal fun VaultSortPreference.toDomain(): VaultSortSpec {
-    val sortField = VaultSortField.entries.find { it.name == field }
-        ?: VaultSortField.LAST_USED_AT
+internal fun VaultSortPreference.toDomain(): LibrarySortSpec {
+    val sortField = LibrarySortField.entries.find { it.name == field }
+        ?: LibrarySortField.LAST_USED_AT
     val direction = if (descending) SortDirection.DESC else SortDirection.ASC
-    val tieBreaker = VaultSortField.entries.find { it.name == tieBreakerField }
-        ?: VaultSortField.ID
-    return VaultSortSpec(sortField, direction, pinFavorites, tieBreaker)
+    val tieBreaker = LibrarySortField.entries.find { it.name == tieBreakerField }
+        ?: LibrarySortField.ID
+    return LibrarySortSpec(sortField, direction, pinFavorites, tieBreaker)
 }
 
-internal fun VaultSortSpec.toProtoSort(): VaultSortPreference =
+internal fun LibrarySortSpec.toProtoSort(): VaultSortPreference =
     VaultSortPreference.newBuilder()
         .setField(field.name)
         .setDescending(direction == SortDirection.DESC)
@@ -363,15 +363,15 @@ internal fun readAutofill(p: AutofillPreferences): AutofillSettings =
         )
     )
 
-internal fun readVault(p: VaultViewPreferences): VaultViewSettings {
-    return VaultViewSettings(
+internal fun readVault(p: VaultViewPreferences): LibraryViewSettings {
+    return LibraryViewSettings(
         visibleQuickFilters = if (p.hasVisibleQuickFilters()) {
             VisibleQuickFiltersConfig(
                 filterKeys = p.visibleQuickFilters.filterKeysList.toSet(),
                 configured = p.visibleQuickFilters.configured
             )
         } else null,
-        sort = if (p.hasSort()) p.sort.toDomain() else VaultSortSpec.DEFAULT,
+        sort = if (p.hasSort()) p.sort.toDomain() else LibrarySortSpec.DEFAULT,
         entryCardPresentations = p.entryCardPresentationsList.map { it.toDomain() },
         entryHierarchyDisplayMode =
             EntryHierarchyDisplayMode.fromKey(p.entryHierarchyDisplayMode)

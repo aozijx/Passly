@@ -11,7 +11,7 @@ import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
  *
  * UI 标题、图标等展示信息必须放在 UI mapper 中，不能放进这个模型。
  */
-enum class VaultQuickFilter(
+enum class LibraryQuickFilter(
     val settingsKey: String,
     val isToggleable: Boolean,
     val isUiVisible: Boolean,
@@ -44,11 +44,11 @@ enum class VaultQuickFilter(
                 .toSet()
 
         /** 设置页可切换的快捷筛选项（已排除不再展示的选项）。 */
-        val toggleableVisibleQuickFilters: List<VaultQuickFilter> =
+        val toggleableVisibleQuickFilters: List<LibraryQuickFilter> =
             entries.filter { it.isToggleable && it.isUiVisible }
 
         /** 根据偏好集合筛选出当前可见快捷筛选项，始终保留 [isToggleable] 为 false 的项。 */
-        fun resolveVisible(enabledKeys: Set<String>): List<VaultQuickFilter> =
+        fun resolveVisible(enabledKeys: Set<String>): List<LibraryQuickFilter> =
             entries.filter {
                 (!it.isToggleable || it.settingsKey in enabledKeys) &&
                         (it.isUiVisible || !it.isToggleable)
@@ -56,7 +56,7 @@ enum class VaultQuickFilter(
 
         fun toggleVisibleKey(
             enabledKeys: Set<String>,
-            quickFilter: VaultQuickFilter
+            quickFilter: LibraryQuickFilter
         ): Set<String> = buildSet {
             entries.filter { !it.isToggleable }
                 .forEach { add(it.settingsKey) }

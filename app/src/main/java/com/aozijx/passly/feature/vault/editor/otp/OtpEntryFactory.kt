@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
@@ -19,7 +19,7 @@ internal object OtpEntryFactory {
     fun create(
         state: OtpFormState,
         now: Long = System.currentTimeMillis()
-    ): VaultEntry = VaultEntry(
+    ): EntryAggregate = EntryAggregate(
         header = EntryHeader(
             id = EntryId(""),
             entryType = EntryType.OTP,

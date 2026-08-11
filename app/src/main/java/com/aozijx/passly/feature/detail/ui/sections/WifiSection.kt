@@ -28,7 +28,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.ClipboardUtils
 import com.aozijx.passly.core.ui.components.HiddenMask
 import com.aozijx.passly.core.ui.components.PasslyOutlinedTextField
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.feature.detail.DetailAuthenticate
 import com.aozijx.passly.feature.detail.contract.DetailIntent
@@ -42,12 +42,12 @@ import com.aozijx.passly.feature.detail.ui.components.InfoGroupCard
 
 @Composable
 fun WifiSection(
-    entry: VaultEntry,
+    entry: EntryAggregate,
     editState: EntryEditState,
     revealedPassword: String?,
     onPasswordRevealed: (String?) -> Unit,
     onAuthenticate: DetailAuthenticate,
-    onEntryUpdated: (VaultEntry) -> Unit,
+    onEntryUpdated: (EntryAggregate) -> Unit,
     onEvent: (DetailIntent) -> Unit
 ) {
     val context = LocalContext.current

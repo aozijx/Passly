@@ -6,7 +6,7 @@ import com.aozijx.passly.data.local.dao.buildEntryIdIntersectionQuery
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.model.entity.EntryEntity
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
@@ -28,7 +28,7 @@ import javax.inject.Singleton
 @Singleton
 class RoomEntryListQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
     private val blindIndexer: BlindIndexer
 ) : EntryListQueryRepository {

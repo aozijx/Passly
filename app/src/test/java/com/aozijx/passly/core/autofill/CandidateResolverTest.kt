@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.WebsiteInfo
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.entry.model.lookup.MatchType
@@ -129,7 +129,7 @@ class CandidateResolverTest {
     }
 
     private class FakeCredentialRepository(
-        private val entry: VaultEntry,
+        private val entry: EntryAggregate,
     ) : CredentialServiceRepository {
         var lastLimit: Int = 0
         var lastIncludeSecrets: Boolean? = null
@@ -153,13 +153,13 @@ class CandidateResolverTest {
             )
         }
 
-        override suspend fun getById(entryId: String): VaultEntry? =
+        override suspend fun getById(entryId: String): EntryAggregate? =
             entry.takeIf { it.id == entryId }
 
         override suspend fun getByIds(
             entryIds: List<String>,
             includeSecrets: Boolean
-        ): List<VaultEntry> =
+        ): List<EntryAggregate> =
             listOf(entry).filter { it.id in entryIds }
 
         override suspend fun save(
@@ -174,7 +174,7 @@ class CandidateResolverTest {
     private fun loginEntry(
         id: String,
         packages: Set<String>,
-    ): VaultEntry = VaultEntry(
+    ): EntryAggregate = EntryAggregate(
         header = EntryHeader(
             id = EntryId(id),
             entryType = EntryType.LOGIN,

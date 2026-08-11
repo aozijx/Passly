@@ -8,9 +8,9 @@ import com.aozijx.passly.core.autofill.model.InternalFillRequest
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
 import com.aozijx.passly.domain.authentication.AuthenticationState
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.repository.CredentialServiceRepository
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 import com.aozijx.passly.domain.notice.model.AppMessageSettings
 import com.aozijx.passly.domain.settings.command.SettingsCommand
@@ -20,7 +20,7 @@ import com.aozijx.passly.domain.settings.model.BackupSettings
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.SecuritySettings
-import com.aozijx.passly.domain.settings.model.VaultViewSettings
+import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +41,7 @@ class RecoveryModeBoundaryTest {
     @Test
     fun `recovery mode rejects autofill`() = runBlocking {
         val dispatcher = FillRequestDispatcher(
-            sessionState = RecoveryVaultAccessState(),
+            sessionState = RecoverySecureSessionAccessState(),
             candidateResolver = CandidateResolver(EmptyCredentialRepository),
             fieldMatchStrategy = object : FieldMatchStrategy {
                 override fun match(request: InternalFillRequest) =
@@ -55,35 +55,35 @@ class RecoveryModeBoundaryTest {
             InternalFillRequest(parentPackage = "com.example", fields = emptyList())
         )
 
-        // Recovery mode has isDatabaseOpen() == true but hasFullVaultAccess() == false,
+        // Recovery mode has isDatabaseOpen() == true but hasFullSecureSessionAccess() == false,
         // so autofill must be rejected.
         assertEquals(FillAvailability.LOCKED, response.availability)
     }
 
     @Test
-    fun `recovery mode hasFullVaultAccess returns false`() {
-        val state = RecoveryVaultAccessState()
+    fun `recovery mode hasFullSecureSessionAccess returns false`() {
+        val state = RecoverySecureSessionAccessState()
         // isDatabaseOpen is true (database is accessible in recovery mode)
         assertEquals(true, state.isDatabaseOpen())
-        // hasFullVaultAccess must be false (limited access)
-        assertEquals(false, state.hasFullVaultAccess())
+        // hasFullSecureSessionAccess must be false (limited access)
+        assertEquals(false, state.hasFullSecureSessionAccess())
         // isRecoveryMode must be true
         assertEquals(true, state.isRecoveryMode())
     }
 
     @Test
-    fun `authenticated mode hasFullVaultAccess returns true`() {
-        val state = AuthenticatedVaultAccessState()
+    fun `authenticated mode hasFullSecureSessionAccess returns true`() {
+        val state = AuthenticatedSecureSessionAccessState()
         assertEquals(true, state.isDatabaseOpen())
-        assertEquals(true, state.hasFullVaultAccess())
+        assertEquals(true, state.hasFullSecureSessionAccess())
         assertEquals(false, state.isRecoveryMode())
     }
 
     @Test
-    fun `locked mode hasFullVaultAccess returns false`() {
-        val state = LockedVaultAccessState()
+    fun `locked mode hasFullSecureSessionAccess returns false`() {
+        val state = LockedSecureSessionAccessState()
         assertEquals(false, state.isDatabaseOpen())
-        assertEquals(false, state.hasFullVaultAccess())
+        assertEquals(false, state.hasFullSecureSessionAccess())
         assertEquals(false, state.isRecoveryMode())
     }
 
@@ -91,7 +91,7 @@ class RecoveryModeBoundaryTest {
 
     @Test
     fun `recovery mode credential search returns empty`() = runBlocking {
-        // The CredentialServiceRepositoryImpl checks hasFullVaultAccess() before searching.
+        // The CredentialServiceRepositoryImpl checks hasFullSecureSessionAccess() before searching.
         // In recovery mode, it should return empty results.
         val repository = RecoveryModeCredentialRepository()
         val results = repository.search(
@@ -101,12 +101,12 @@ class RecoveryModeBoundaryTest {
             includeSecrets = true,
             limit = 10
         )
-        assertEquals(emptyList<VaultEntry>(), results)
+        assertEquals(emptyList<EntryAggregate>(), results)
     }
 
-    // ==================== VaultAccessState 三层语义 ====================
+    // ==================== SecureSessionAccessState 三层语义 ====================
 
-    private class RecoveryVaultAccessState : VaultAccessState {
+    private class RecoverySecureSessionAccessState : SecureSessionAccessState {
         override val authenticationState =
             MutableStateFlow<AuthenticationState>(
                 AuthenticationState.RecoveryMode(authenticatedAtMs = 0L)
@@ -115,7 +115,7 @@ class RecoveryModeBoundaryTest {
         override fun isUnlocked(): Boolean = true
     }
 
-    private class AuthenticatedVaultAccessState : VaultAccessState {
+    private class AuthenticatedSecureSessionAccessState : SecureSessionAccessState {
         override val authenticationState =
             MutableStateFlow<AuthenticationState>(
                 AuthenticationState.Authenticated(authenticatedAtMs = 0L)
@@ -124,7 +124,7 @@ class RecoveryModeBoundaryTest {
         override fun isUnlocked(): Boolean = true
     }
 
-    private class LockedVaultAccessState : VaultAccessState {
+    private class LockedSecureSessionAccessState : SecureSessionAccessState {
         override val authenticationState =
             MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
 
@@ -140,11 +140,11 @@ class RecoveryModeBoundaryTest {
             limit: Int,
         ): List<CredentialCandidate> = emptyList()
 
-        override suspend fun getById(entryId: String): VaultEntry? = null
+        override suspend fun getById(entryId: String): EntryAggregate? = null
         override suspend fun getByIds(
             entryIds: List<String>,
             includeSecrets: Boolean
-        ): List<VaultEntry> = emptyList()
+        ): List<EntryAggregate> = emptyList()
 
         override suspend fun save(
             packageName: String?,
@@ -164,11 +164,11 @@ class RecoveryModeBoundaryTest {
             limit: Int,
         ): List<CredentialCandidate> = emptyList()
 
-        override suspend fun getById(entryId: String): VaultEntry? = null
+        override suspend fun getById(entryId: String): EntryAggregate? = null
         override suspend fun getByIds(
             entryIds: List<String>,
             includeSecrets: Boolean
-        ): List<VaultEntry> = emptyList()
+        ): List<EntryAggregate> = emptyList()
 
         override suspend fun save(
             packageName: String?,
@@ -187,7 +187,7 @@ class RecoveryModeBoundaryTest {
                 security = SecuritySettings(),
                 interaction = InteractionSettings(),
                 messages = AppMessageSettings(),
-                vault = VaultViewSettings(),
+                vault = LibraryViewSettings(),
                 backup = BackupSettings(),
             )
         )

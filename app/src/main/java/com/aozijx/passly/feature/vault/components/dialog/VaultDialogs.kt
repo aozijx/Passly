@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.components.dialog
 
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.vault.components.editor.AddEntryDialog
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.model.AddType
@@ -10,7 +10,7 @@ import com.aozijx.passly.feature.vault.model.AddType
 @Composable
 fun AddDialogHost(
     uiState: VaultUiState,
-    onAddItem: (VaultEntry) -> Unit,
+    onAddItem: (EntryAggregate) -> Unit,
     onDismissAddType: () -> Unit,
     onUpdateInteraction: () -> Unit
 ) {
@@ -58,7 +58,7 @@ fun DeleteDialogHost(
 @Composable
 fun VaultDialogs(
     uiState: VaultUiState,
-    onAddItem: (VaultEntry) -> Unit,
+    onAddItem: (EntryAggregate) -> Unit,
     onDismissAddType: () -> Unit,
     onConfirmDelete: () -> Unit,
     onDismissDelete: () -> Unit,

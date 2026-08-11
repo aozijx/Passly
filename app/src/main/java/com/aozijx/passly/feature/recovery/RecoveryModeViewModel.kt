@@ -16,7 +16,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.backup.model.BackupExportOptions
 import com.aozijx.passly.domain.backup.model.BackupExportRequest
 import com.aozijx.passly.domain.backup.model.BackupFormats
-import com.aozijx.passly.domain.backup.service.VaultBackupService
+import com.aozijx.passly.domain.backup.service.BackupArchiveService
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.recovery.contract.DocumentRef
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
@@ -37,7 +37,7 @@ import javax.inject.Inject
 class RecoveryModeViewModel @Inject constructor(
     private val authenticationManager: AuthenticationManager,
     private val methodProvisioner: AuthenticationMethodProvisioner,
-    private val backupService: VaultBackupService,
+    private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,
 ) : ViewModel() {
 

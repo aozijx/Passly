@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.autofill.repository
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.lookup.CredentialCandidate
 
 interface CredentialServiceRepository {
@@ -12,11 +12,11 @@ interface CredentialServiceRepository {
         limit: Int,
     ): List<CredentialCandidate>
 
-    suspend fun getById(entryId: String): VaultEntry?
+    suspend fun getById(entryId: String): EntryAggregate?
     suspend fun getByIds(
         entryIds: List<String>,
         includeSecrets: Boolean = true
-    ): List<VaultEntry>
+    ): List<EntryAggregate>
     suspend fun save(
         packageName: String?,
         webDomain: String?,

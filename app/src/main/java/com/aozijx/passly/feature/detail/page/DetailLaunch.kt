@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.detail.page
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 enum class DetailLaunchMode {
     VIEW,
@@ -9,6 +9,6 @@ enum class DetailLaunchMode {
 }
 
 data class DetailOpenRequest(
-    val entry: VaultEntry,
+    val entry: EntryAggregate,
     val launchMode: DetailLaunchMode = DetailLaunchMode.VIEW
 )

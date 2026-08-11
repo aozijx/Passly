@@ -31,7 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.VaultSortSpec
+import com.aozijx.passly.domain.settings.model.LibrarySortSpec
 
 @Composable
 internal fun MainMenuContent(
@@ -85,16 +85,16 @@ internal fun MainMenuContent(
 
 @Composable
 internal fun SortSubMenu(
-    selectedSort: VaultSortSpec,
-    onSortSelected: (VaultSortSpec) -> Unit,
+    selectedSort: LibrarySortSpec,
+    onSortSelected: (LibrarySortSpec) -> Unit,
     onBack: () -> Unit
 ) {
     BackMenuItem(onBack)
-    val isDefault = selectedSort == VaultSortSpec.DEFAULT
-    VaultSortSpec.presets().forEach { preset ->
+    val isDefault = selectedSort == LibrarySortSpec.DEFAULT
+    LibrarySortSpec.presets().forEach { preset ->
         val selected = preset.field == selectedSort.field
         val direction = when {
-            preset == VaultSortSpec.DEFAULT -> ""
+            preset == LibrarySortSpec.DEFAULT -> ""
             selected && !isDefault -> if (selectedSort.direction.name == "DESC") " \u2193" else " \u2191"
             else -> ""
         }

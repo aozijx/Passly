@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.entry.model.lookup
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 enum class LookupField {
     TITLE,
@@ -32,7 +32,7 @@ enum class MatchType(val score: Int) {
  * Legacy 路径通过适配层转换为 Dataset，Modern 路径转换为 CredentialEntry。
  */
 data class CredentialCandidate(
-    val entry: VaultEntry,
+    val entry: EntryAggregate,
     /** 匹配分数，等于 [matchedBy.score] */
     val score: Int,
     /** 通过何种方式匹配到该条目 */

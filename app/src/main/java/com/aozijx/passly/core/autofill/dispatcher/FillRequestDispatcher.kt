@@ -9,7 +9,7 @@ import com.aozijx.passly.core.autofill.model.InternalFillResponse
 import com.aozijx.passly.core.autofill.model.ResponseContext
 import com.aozijx.passly.core.autofill.pipeline.CandidateResolver
 import com.aozijx.passly.core.autofill.pipeline.ResponseFactory
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import kotlinx.coroutines.flow.first
 
@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.first
  * 严禁引用 AutofillService、CredentialProviderService 或任何 android.service 包。
  */
 class FillRequestDispatcher(
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val candidateResolver: CandidateResolver,
     private val fieldMatchStrategy: FieldMatchStrategy,
     private val responseFactory: ResponseFactory,
@@ -63,7 +63,7 @@ class FillRequestDispatcher(
         // Field recognition must happen before the lock check. Otherwise every
         // focused form receives an unlock affordance while the vault is locked,
         // including pages that do not contain a credential field.
-        if (!sessionState.hasFullVaultAccess()) {
+        if (!sessionState.hasFullSecureSessionAccess()) {
             AppTelemetry.i(TAG, "Vault locked; fill request requires unlock")
             return InternalFillResponse(
                 availability = FillAvailability.LOCKED,

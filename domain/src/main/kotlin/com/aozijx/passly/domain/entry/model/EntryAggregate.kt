@@ -8,12 +8,12 @@ package com.aozijx.passly.domain.entry.model
  * - [summary]：展示摘要（标题、用户名、网站、图标、收藏、标签）
  * - [secret]：类型相关的敏感凭据数据
  */
-data class VaultEntry(
+data class EntryAggregate(
     val header: EntryHeader,
     val summary: EntrySummary,
     val secret: EntrySecret,
     val highSensitivitySecret: EntryHighSensitivitySecret? = null
-) : VaultIconable {
+) : EntryIconSource {
     val entryType: EntryType get() = header.entryType
     override val iconName: String? get() = summary.icon
     override val iconCustomPath: String? get() = summary.iconCustomPath

@@ -1,10 +1,10 @@
 package com.aozijx.passly.data.mapper.search
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.lookup.LookupField
 import com.aozijx.passly.domain.entry.model.lookup.LookupFieldValue
 
-fun VaultEntry.buildSearchText(): String = buildString {
+fun EntryAggregate.buildSearchText(): String = buildString {
     title.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
     username.takeIf { it.isNotBlank() }?.let { append(it); append("\n") }
     val email = secret.login?.email
@@ -18,7 +18,7 @@ fun VaultEntry.buildSearchText(): String = buildString {
     }
 }.trim()
 
-fun VaultEntry.toLookupFields(): List<LookupFieldValue> = buildList {
+fun EntryAggregate.toLookupFields(): List<LookupFieldValue> = buildList {
     title.takeIf { it.isNotBlank() }?.let {
         add(LookupFieldValue(LookupField.TITLE, it))
     }

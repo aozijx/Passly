@@ -2,11 +2,11 @@ package com.aozijx.passly.data.repository.revision
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.codec.revision.EntryRevisionCodec
-import com.aozijx.passly.domain.authentication.VaultAccessState
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryHeader
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.revision.EntryRevision
 import com.aozijx.passly.domain.entry.model.revision.RevisionType
 import com.aozijx.passly.domain.entry.repository.EntryRevisionRepository
@@ -16,12 +16,12 @@ import javax.inject.Singleton
 @Singleton
 class RoomEntryRevisionRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: VaultAccessState,
+    private val sessionState: SecureSessionAccessState,
     private val revisionCodec: EntryRevisionCodec
 ) : EntryRevisionRepository {
 
     override suspend fun getRevisions(entryId: String): List<EntryRevision> {
-        if (!sessionState.hasFullVaultAccess()) return emptyList()
+        if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
         return sessionManager.query {
             entryRevisionQueryDao().observeByEntryId(entryId).let { flow ->
                 emptyList()
@@ -30,12 +30,12 @@ class RoomEntryRevisionRepository @Inject constructor(
     }
 
     override suspend fun getLatestRevision(entryId: String): EntryRevision? {
-        if (!sessionState.hasFullVaultAccess()) return null
+        if (!sessionState.hasFullSecureSessionAccess()) return null
         return sessionManager.query {
             val entity = entryRevisionQueryDao().getByVersion(entryId, 1) ?: return@query null
             val metadata = entryQueryDao().getById(entryId) ?: return@query null
             val (summary, secret) = revisionCodec.decrypt(entity.entryBlob, entity.entryId)
-            val vaultEntry = VaultEntry(
+            val vaultEntry = EntryAggregate(
                 header = EntryHeader(
                     id = EntryId(entity.entryId),
                     entryType = metadata.entryType,

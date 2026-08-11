@@ -1,6 +1,6 @@
 package com.aozijx.passly.domain.entry.service
 
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 /**
  * 条目默认值提供者。
@@ -9,5 +9,5 @@ import com.aozijx.passly.domain.entry.model.VaultEntry
  * 后续可针对特定类型扩展。
  */
 interface EntryDefaultsProvider {
-    fun initializeDefaults(entry: VaultEntry): VaultEntry
+    fun initializeDefaults(entry: EntryAggregate): EntryAggregate
 }

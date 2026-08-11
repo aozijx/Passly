@@ -7,7 +7,7 @@ import com.aozijx.passly.domain.auth.policy.AuthMethodType
  * 认证器执行结果（纯身份验证，不含 Grant/Permit）。
  *
  * 由 [Authenticator.authenticate] 返回。
- * Grant 签发由 [com.aozijx.passly.domain.auth.port.VaultAccessGate] 负责。
+ * Grant 签发由 [com.aozijx.passly.domain.auth.port.AuthorizationGate] 负责。
  */
 sealed interface AuthenticatorResult {
     /** 身份验证通过 */

@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.detail.ui.sections
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 
 enum class DetailSectionKey {
     CREDENTIAL,
@@ -56,7 +56,7 @@ object DetailSectionResolver {
         DetailSectionKey.ACTIVITY,
     )
 
-    fun resolve(entry: VaultEntry): List<DetailSectionKey> {
+    fun resolve(entry: EntryAggregate): List<DetailSectionKey> {
         val selected = typeSections[entry.entryType].orEmpty().toMutableSet()
         with(entry.secret) {
             if (login != null && entry.entryType != EntryType.OTP) {

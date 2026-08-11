@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault.editor.common
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.domain.authentication.VaultAccessState
-import com.aozijx.passly.domain.entry.model.VaultEntry
+import com.aozijx.passly.domain.authentication.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -18,14 +18,14 @@ import kotlinx.coroutines.launch
 /**
  * 所有“新建条目”编辑器共用的保存状态机。
  *
- * 类型页面只负责字段更新、校验规则和 VaultEntry 构造，不再复制异步保存模板。
+ * 类型页面只负责字段更新、校验规则和 EntryAggregate 构造，不再复制异步保存模板。
  */
 abstract class CreateEntryViewModel<Form>(
     initialForm: Form,
     private val entryCommandRepository: EntryCommandRepository,
-    private val vaultAccessState: VaultAccessState,
+    private val vaultAccessState: SecureSessionAccessState,
     private val isFormValid: (Form) -> Boolean,
-    private val createEntry: (Form) -> VaultEntry
+    private val createEntry: (Form) -> EntryAggregate
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -56,14 +56,14 @@ abstract class CreateEntryViewModel<Form>(
     fun save() {
         val current = _uiState.value
         if (!current.canSave || current.isSaving) return
-        if (!vaultAccessState.hasFullVaultAccess()) {
+        if (!vaultAccessState.hasFullSecureSessionAccess()) {
             _effects.trySend(CreateEntryEffect.SaveFailed("当前会话不能新建条目"))
             return
         }
 
         _uiState.update { it.copy(isSaving = true, canSave = false) }
         viewModelScope.launch {
-            if (!vaultAccessState.hasFullVaultAccess()) {
+            if (!vaultAccessState.hasFullSecureSessionAccess()) {
                 restoreAfterFailure("当前会话不能新建条目")
                 return@launch
             }
