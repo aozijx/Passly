@@ -75,7 +75,10 @@ class VaultBackupReader @Inject constructor(
                 val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
                 val credential = credentialMap[metaEntity.entryId]
                 val secret = credential?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-                val highSensitivitySecret = sensitiveFieldPersistence.readAll(this, metaEntity.entryId)
+                val highSensitivitySecret = sensitiveFieldPersistence.readAllUnlocked(
+                    this,
+                    metaEntity.entryId
+                )
                 EntryAggregateAssembler.assembleFromDatabase(
                     metaEntity,
                     summary,

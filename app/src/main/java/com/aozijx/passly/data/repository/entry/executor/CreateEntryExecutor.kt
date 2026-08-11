@@ -80,7 +80,7 @@ class CreateEntryExecutor @Inject constructor(
                 entryId = entryId,
                 entryVersion = 1,
                 summary = entry.summary,
-                secret = fullSecret,
+                secret = persistedSecret,
                 now = now
             )
 

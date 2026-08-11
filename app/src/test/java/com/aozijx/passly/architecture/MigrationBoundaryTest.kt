@@ -1,5 +1,6 @@
 package com.aozijx.passly.architecture
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -1179,6 +1180,20 @@ class MigrationBoundaryTest {
         assertTrue(
             "Backup coordinator must preserve the recovery export boundary",
             "isRecoveryExport" in backupCoordinator
+        )
+        val sensitiveUnlockPolicy = authManager
+            .substringAfter("private fun AuthenticationPurpose.unlocksSensitiveDataKey")
+        assertTrue(
+            "Fresh high-sensitivity authentication must unlock the sensitive data key",
+            "REVEAL_HIGH_SENSITIVITY_SECRET" in sensitiveUnlockPolicy
+        )
+        assertTrue(
+            "Normal backup export must unlock the sensitive data key",
+            "AuthenticationPurpose.BACKUP_EXPORT" in sensitiveUnlockPolicy
+        )
+        assertFalse(
+            "Recovery export must never unlock the sensitive data key",
+            "AuthenticationPurpose.RECOVERY_EXPORT" in sensitiveUnlockPolicy
         )
 
         // 11. Plain Vault repositories must not treat an open recovery database as full access.

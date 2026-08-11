@@ -50,11 +50,15 @@ class UpdateEntryExecutor @Inject constructor(
         val oldSummary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
         val credEntity = entrySecretQueryDao().getByEntryId(id)
         val oldSecret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-        val oldHighSensitivitySecret = sensitiveFieldPersistence.readAll(this, id)
-
         val newSummary = changes.summary ?: oldSummary
         val changedHighSensitivitySecret = changes.secret?.extractHighSensitivity()
             ?: changes.highSensitivitySecret
+        val sensitiveValuesChanged = changedHighSensitivitySecret != null
+        val oldHighSensitivitySecret = if (sensitiveValuesChanged) {
+            sensitiveFieldPersistence.readAllForMutation(this, id)
+        } else {
+            com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret.EMPTY
+        }
         val newHighSensitivitySecret = when {
             changedHighSensitivitySecret != null ->
                 oldHighSensitivitySecret.mergeWith(changedHighSensitivitySecret)
@@ -64,12 +68,14 @@ class UpdateEntryExecutor @Inject constructor(
         val newFullSecret = newSecretInput.withHighSensitivity(newHighSensitivitySecret)
         val newPersistedSecret = newFullSecret.withoutHighSensitivity()
         val now = clock.now()
-        EntrySecretPolicy.requireValid(metaEntity.entryType, newFullSecret)
+        if (changes.secret != null || changes.highSensitivitySecret != null) {
+            EntrySecretPolicy.requireValid(metaEntity.entryType, newFullSecret)
+        }
 
         // 1. 版本校验 + metadata 更新（原子操作）
         val metaBlob = summaryCodec.encrypt(newSummary, id)
         val capabilityFlags = EntryCapabilityFlags.computeFrom(
-            secret = newFullSecret,
+            secret = newPersistedSecret,
             hasAttachments = EntryCapabilityFlags.has(
                 metaEntity.capabilityFlags,
                 EntryCapabilityFlags.HAS_ATTACHMENTS

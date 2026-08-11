@@ -14,7 +14,20 @@ class SensitiveFieldPersistence @Inject constructor(
     private val codec: SensitiveFieldCodec,
     private val clock: Clock
 ) {
-    suspend fun readAll(db: AppDatabase, entryId: String): EntryHighSensitivitySecret {
+    suspend fun readAllForMutation(
+        db: AppDatabase,
+        entryId: String
+    ): EntryHighSensitivitySecret {
+        return db.sensitiveFieldQueryDao().getFields(entryId).associate { entity ->
+            val key = SensitiveFieldKey.valueOf(entity.fieldKey)
+            key to codec.decryptProvisioned(entryId, key, entity.valueCipher)
+        }.toHighSensitivitySecret()
+    }
+
+    suspend fun readAllUnlocked(
+        db: AppDatabase,
+        entryId: String
+    ): EntryHighSensitivitySecret {
         return db.sensitiveFieldQueryDao().getFields(entryId).associate { entity ->
             val key = SensitiveFieldKey.valueOf(entity.fieldKey)
             key to codec.decrypt(entryId, key, entity.valueCipher)

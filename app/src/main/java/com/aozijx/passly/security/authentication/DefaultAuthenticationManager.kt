@@ -20,6 +20,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
+import com.aozijx.passly.security.crypto.SensitiveDataKeyManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,8 @@ class DefaultAuthenticationManager @Inject constructor(
     private val credentialExecutor: CredentialMethodExecutor,
     private val session: VaultSessionController,
     private val settingsRepository: AppSettingsRepository,
-    private val availabilityResolver: AuthenticationAvailabilityResolver
+    private val availabilityResolver: AuthenticationAvailabilityResolver,
+    private val sensitiveDataKeyManager: SensitiveDataKeyManager
 ) : AuthenticationManager {
     private val requestMutex = Mutex()
     private val activeCorrelationId = AtomicReference<String?>(null)
@@ -222,6 +224,9 @@ class DefaultAuthenticationManager @Inject constructor(
             }
             val result = when (execution) {
                 is MethodExecutionResult.Success -> {
+                    if (request.purpose.unlocksSensitiveDataKey()) {
+                        sensitiveDataKeyManager.unlockAfterFreshAuthentication()
+                    }
                     if (!opensSession) session.onUserInteraction()
                     lastAuthMethod = execution.method
                     AuthenticationResult.Success(execution.method)
@@ -314,4 +319,8 @@ class DefaultAuthenticationManager @Inject constructor(
         }
         return result
     }
+
+    private fun AuthenticationPurpose.unlocksSensitiveDataKey(): Boolean =
+        this == AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET ||
+            this == AuthenticationPurpose.BACKUP_EXPORT
 }

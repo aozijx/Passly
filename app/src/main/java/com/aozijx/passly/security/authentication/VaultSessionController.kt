@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.domain.authentication.LockReason
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.security.crypto.DekManager
+import com.aozijx.passly.security.crypto.SensitiveDataKeyManager
 import com.aozijx.passly.security.crypto.UnlockResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ import javax.inject.Singleton
 @Singleton
 class VaultSessionController @Inject constructor(
     private val dekManager: DekManager,
+    private val sensitiveDataKeyManager: SensitiveDataKeyManager,
     private val sessionManager: UnifiedSessionManager,
     idleTimeoutSettings: com.aozijx.passly.domain.settings.repository.IdleTimeoutSettings
 ) : SecureSessionAccessState {
@@ -277,6 +279,7 @@ class VaultSessionController @Inject constructor(
      */
     suspend fun lock(reason: LockReason) {
         mutex.withLock {
+            sensitiveDataKeyManager.clear()
             // A recovery session never degrades to a soft lock: closing it must wipe its DEK.
             val targetLevel = if (_state.value is AuthenticationState.RecoveryMode) {
                 SecureSessionState.SEALED

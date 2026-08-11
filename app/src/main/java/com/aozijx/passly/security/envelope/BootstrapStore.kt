@@ -17,6 +17,10 @@ interface BootstrapStore {
 
     suspend fun loadVerificationTag(): ByteArray?
 
+    suspend fun saveSensitiveKeyEnvelope(envelope: ByteArray)
+
+    suspend fun loadSensitiveKeyEnvelope(): ByteArray?
+
     suspend fun loadBiometricState(): BiometricBootstrapState
 
     suspend fun prepareBiometricRotation(journal: BiometricRotationJournal)
