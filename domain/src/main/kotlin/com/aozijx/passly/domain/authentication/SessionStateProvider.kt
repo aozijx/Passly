@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
  * 实现依赖倒置，便于单元测试时注入永远活跃的 Fake。
  *
  * 当前仅暴露锁状态供 Repository 判断是否可访问；
- * 实际的数据库租约管理移至 [UnifiedSessionManager] 的 lease API。
+ * 实际的资源租约管理由 runtime session 模块负责。
  */
 interface SessionStateProvider {
 

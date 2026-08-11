@@ -131,6 +131,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:telemetry"))
     implementation(project(":domain"))
+    implementation(project(":runtime:session"))
 
     // Android Core
     implementation(libs.androidx.core.ktx)
