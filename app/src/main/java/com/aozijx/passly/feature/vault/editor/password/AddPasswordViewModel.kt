@@ -9,11 +9,11 @@ import javax.inject.Inject
 @HiltViewModel
 class AddPasswordViewModel @Inject constructor(
     entryCommandRepository: EntryCommandRepository,
-    vaultAccessState: SecureSessionAccessState
+    secureSessionAccessState: SecureSessionAccessState
 ) : CreateEntryViewModel<AddPasswordFormState>(
     initialForm = AddPasswordFormState(),
     entryCommandRepository = entryCommandRepository,
-    vaultAccessState = vaultAccessState,
+    secureSessionAccessState = secureSessionAccessState,
     isFormValid = AddPasswordFormState::isValid,
     createEntry = { PasswordEntryFactory.create(it) }
 ) {

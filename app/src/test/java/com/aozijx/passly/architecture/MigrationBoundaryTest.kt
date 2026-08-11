@@ -1669,6 +1669,34 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun createEntryUsesAGenericReducerWithoutOwningValidationRules() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/vault/editor/common/" +
+                    "CreateEntryViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/vault/editor/common/" +
+                    "CreateEntryReducer.kt"
+        ).readText()
+
+        assertTrue(
+            "CreateEntry state must transition only through its generic reducer",
+            "CreateEntryReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
+        )
+        assertTrue(
+            "Validation and infrastructure must stay outside CreateEntryReducer",
+            "isFormValid" !in reducer &&
+                    "EntryCommandRepository" !in reducer &&
+                    "SecureSessionAccessState" !in reducer &&
+                    "viewModelScope" !in reducer,
+        )
+        assertTrue(
+            "CreateEntry access dependency must use secure-session semantics",
+            "secureSessionAccessState" in viewModel && "vaultAccessState" !in viewModel,
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

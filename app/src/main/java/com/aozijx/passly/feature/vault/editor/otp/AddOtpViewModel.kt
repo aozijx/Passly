@@ -15,11 +15,11 @@ import javax.inject.Inject
 @HiltViewModel
 class AddOtpViewModel @Inject constructor(
     entryCommandRepository: EntryCommandRepository,
-    vaultAccessState: SecureSessionAccessState
+    secureSessionAccessState: SecureSessionAccessState
 ) : CreateEntryViewModel<OtpFormState>(
     initialForm = OtpFormState(),
     entryCommandRepository = entryCommandRepository,
-    vaultAccessState = vaultAccessState,
+    secureSessionAccessState = secureSessionAccessState,
     isFormValid = OtpFormState::isValid,
     createEntry = { OtpEntryFactory.create(it) }
 ) {

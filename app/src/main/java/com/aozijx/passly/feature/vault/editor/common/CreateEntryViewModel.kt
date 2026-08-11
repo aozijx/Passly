@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -23,7 +22,7 @@ import kotlinx.coroutines.launch
 abstract class CreateEntryViewModel<Form>(
     initialForm: Form,
     private val entryCommandRepository: EntryCommandRepository,
-    private val vaultAccessState: SecureSessionAccessState,
+    private val secureSessionAccessState: SecureSessionAccessState,
     private val isFormValid: (Form) -> Boolean,
     private val createEntry: (Form) -> EntryAggregate
 ) : ViewModel() {
@@ -40,30 +39,23 @@ abstract class CreateEntryViewModel<Form>(
     val effects = _effects.receiveAsFlow()
 
     protected fun mutateForm(transform: (Form) -> Form) {
-        _uiState.update { current ->
-            if (current.isSaving) {
-                current
-            } else {
-                val updated = transform(current.form)
-                current.copy(
-                    form = updated,
-                    canSave = isFormValid(updated)
-                )
-            }
-        }
+        val current = _uiState.value
+        if (current.isSaving) return
+        val updated = transform(current.form)
+        mutate(CreateEntryMutation.FormChanged(updated, isFormValid(updated)))
     }
 
     fun save() {
         val current = _uiState.value
         if (!current.canSave || current.isSaving) return
-        if (!vaultAccessState.hasFullSecureSessionAccess()) {
+        if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
             _effects.trySend(CreateEntryEffect.SaveFailed("当前会话不能新建条目"))
             return
         }
 
-        _uiState.update { it.copy(isSaving = true, canSave = false) }
+        mutate(CreateEntryMutation.SaveStarted)
         viewModelScope.launch {
-            if (!vaultAccessState.hasFullSecureSessionAccess()) {
+            if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
                 restoreAfterFailure("当前会话不能新建条目")
                 return@launch
             }
@@ -85,12 +77,11 @@ abstract class CreateEntryViewModel<Form>(
     }
 
     private suspend fun restoreAfterFailure(message: String?) {
-        _uiState.update { current ->
-            current.copy(
-                isSaving = false,
-                canSave = isFormValid(current.form)
-            )
-        }
+        mutate(CreateEntryMutation.SaveFailed(isFormValid(_uiState.value.form)))
         _effects.send(CreateEntryEffect.SaveFailed(message))
+    }
+
+    private fun mutate(mutation: CreateEntryMutation<Form>) {
+        _uiState.value = CreateEntryReducer.reduce(_uiState.value, mutation)
     }
 }

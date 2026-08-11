@@ -9,11 +9,11 @@ import javax.inject.Inject
 @HiltViewModel
 class AddBankCardViewModel @Inject constructor(
     entryCommandRepository: EntryCommandRepository,
-    vaultAccessState: SecureSessionAccessState
+    secureSessionAccessState: SecureSessionAccessState
 ) : CreateEntryViewModel<AddBankCardFormState>(
     initialForm = AddBankCardFormState(),
     entryCommandRepository = entryCommandRepository,
-    vaultAccessState = vaultAccessState,
+    secureSessionAccessState = secureSessionAccessState,
     isFormValid = AddBankCardFormState::isValid,
     createEntry = { BankCardEntryFactory.create(it) }
 ) {
