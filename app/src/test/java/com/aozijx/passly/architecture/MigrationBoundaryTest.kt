@@ -1405,6 +1405,33 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun detailMviUsesAPureMutationReducer() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/detail/DetailViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/detail/internal/presentation/" +
+                    "DetailReducer.kt"
+        ).readText()
+        val reducerDependencies = listOf(
+            "Repository",
+            "AuthorizationGate",
+            "Context",
+            "Navigation",
+            "viewModelScope",
+        ).filter(reducer::contains)
+
+        assertTrue(
+            "DetailViewModel must route state mutations through DetailReducer",
+            "DetailReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
+        )
+        assertTrue(
+            "DetailReducer must remain a pure state transition: $reducerDependencies",
+            "internal object DetailReducer" in reducer && reducerDependencies.isEmpty(),
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。
@@ -1579,6 +1606,10 @@ class MigrationBoundaryTest {
         val detailViewModel = File(
             "src/main/java/com/aozijx/passly/feature/detail/DetailViewModel.kt"
         ).readText()
+        val detailReducer = File(
+            "src/main/java/com/aozijx/passly/feature/detail/internal/presentation/" +
+                    "DetailReducer.kt"
+        ).readText()
         val sensitiveRepository = File(
             "src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt"
         ).readText()
@@ -1611,7 +1642,7 @@ class MigrationBoundaryTest {
         assertTrue(
             "Detail must load non-secret field presence before rendering protected values",
             "sensitiveFieldRepository.getPresence" in detailViewModel &&
-                    "sensitiveFieldKeys" in detailViewModel
+                    "sensitiveFieldKeys" in detailReducer
         )
     }
 

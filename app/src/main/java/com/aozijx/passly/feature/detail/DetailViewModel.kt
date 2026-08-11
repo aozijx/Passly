@@ -28,13 +28,14 @@ import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.contract.DetailUiState
 import com.aozijx.passly.feature.detail.contract.RevealedFieldKey
 import com.aozijx.passly.feature.detail.page.internal.DetailEntryAnalyzer
+import com.aozijx.passly.feature.detail.internal.presentation.DetailMutation
+import com.aozijx.passly.feature.detail.internal.presentation.DetailReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -71,14 +72,14 @@ class DetailViewModel @Inject constructor(
                 val enabled = extras[ACCESS_HISTORY_TOGGLE_KEY]
                     ?.toBooleanStrictOrNull()
                     ?: false
-                _uiState.update { it.copy(isAccessHistoryEnabled = enabled) }
+                mutate(DetailMutation.AccessHistoryChanged(enabled))
             }
         }
     }
 
     fun handleIntent(event: DetailIntent) {
         if (!accessPolicy.canHandle(event)) {
-            _uiState.update { DetailUiState() }
+            mutate(DetailMutation.StateCleared)
             return
         }
         when (event) {
@@ -96,23 +97,15 @@ class DetailViewModel @Inject constructor(
             }
 
             DetailIntent.StartTitleEdit -> {
-                _uiState.update {
-                    val currentTitle = it.entry?.title.orEmpty()
-                    it.copy(isEditingTitle = true, editedTitle = currentTitle)
-                }
+                mutate(DetailMutation.TitleEditingStarted)
             }
 
             DetailIntent.CancelTitleEdit -> {
-                _uiState.update {
-                    it.copy(
-                        isEditingTitle = false,
-                        editedTitle = it.entry?.title.orEmpty()
-                    )
-                }
+                mutate(DetailMutation.TitleEditingCancelled)
             }
 
             is DetailIntent.UpdateEditedTitle -> {
-                _uiState.update { it.copy(editedTitle = event.value) }
+                mutate(DetailMutation.EditedTitleChanged(event.value))
             }
 
             DetailIntent.SaveTitle -> {
@@ -120,12 +113,7 @@ class DetailViewModel @Inject constructor(
                 val current = state.entry ?: return
                 val newTitle = state.editedTitle.trim()
                 if (newTitle.isBlank() || newTitle == current.title) {
-                    _uiState.update {
-                        it.copy(
-                            isEditingTitle = false,
-                            editedTitle = current.title
-                        )
-                    }
+                    mutate(DetailMutation.TitleEditingCancelled)
                 } else {
                     commitEntryUpdate(
                         current.copy(summary = current.summary.copy(title = newTitle)),
@@ -156,9 +144,7 @@ class DetailViewModel @Inject constructor(
                 val current = _uiState.value.entry ?: return
                 val key = event.key
                 if (_uiState.value.revealed(key) != null) {
-                    _uiState.update { state ->
-                        state.copy(revealedFields = state.revealedFields - key)
-                    }
+                    mutate(DetailMutation.RevealedFieldChanged(key, null))
                     return
                 }
                 viewModelScope.launch {
@@ -181,7 +167,7 @@ class DetailViewModel @Inject constructor(
                 val current = _uiState.value.entry ?: return
                 if (event.type == ActivityType.VIEW && !_uiState.value.isAccessHistoryEnabled) return
                 if (event.type.clearsRevealedFields()) {
-                    _uiState.update { it.copy(revealedFields = emptyMap()) }
+                    mutate(DetailMutation.RevealedFieldsCleared)
                 }
 
                 viewModelScope.launch {
@@ -191,13 +177,13 @@ class DetailViewModel @Inject constructor(
             }
 
             is DetailIntent.ToggleAccessHistoryRecording -> {
-                _uiState.update { it.copy(isAccessHistoryEnabled = event.enabled) }
+                mutate(DetailMutation.AccessHistoryChanged(event.enabled))
                 userConfigExtras.value =
                     userConfigExtras.value + (ACCESS_HISTORY_TOGGLE_KEY to event.enabled.toString())
             }
 
             DetailIntent.ClearSensitiveState -> {
-                _uiState.update { DetailUiState() }
+                mutate(DetailMutation.StateCleared)
             }
         }
     }
@@ -210,14 +196,14 @@ class DetailViewModel @Inject constructor(
                 ?: initialEntry
             refreshFromEntry(latest, isEditingTitle = false, editedTitle = latest.title)
             val presence = sensitiveFieldRepository.getPresence(EntryId(latest.id))
-            _uiState.update { it.copy(sensitiveFieldKeys = presence.keys) }
+            mutate(DetailMutation.SensitiveFieldPresenceChanged(presence.keys))
             loadRelatedEntries(latest)
             autoDownloadFavicon(latest)
         }
         viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
             activityQueryRepository.observeByEntryId(initialEntry.id)
-                .collect { history -> _uiState.update { it.copy(history = history) } }
+                .collect { history -> mutate(DetailMutation.HistoryChanged(history)) }
         }
     }
 
@@ -231,15 +217,7 @@ class DetailViewModel @Inject constructor(
     }
 
     private fun setRevealedField(key: String, value: String?) {
-        _uiState.update { state ->
-            state.copy(
-                revealedFields = if (value == null) {
-                    state.revealedFields - key
-                } else {
-                    state.revealedFields + (key to value)
-                }
-            )
-        }
+        mutate(DetailMutation.RevealedFieldChanged(key, value))
     }
 
     private suspend fun revealHighSensitivityFields(entryValue: String, uiKeys: Set<String>) {
@@ -320,7 +298,7 @@ class DetailViewModel @Inject constructor(
             graph.accountFor(EntryId(entry.id))
         }
         if (accountId == null) {
-            _uiState.update { it.copy(relatedEntries = emptyList()) }
+            mutate(DetailMutation.RelatedEntriesChanged(emptyList()))
             return
         }
         val relatedIds = buildSet {
@@ -331,7 +309,7 @@ class DetailViewModel @Inject constructor(
         val related = relatedIds.mapNotNull { relatedId ->
             entryQueryRepository.getByIdWithoutHighSensitivity(relatedId.value)
         }
-        _uiState.update { it.copy(relatedEntries = related) }
+        mutate(DetailMutation.RelatedEntriesChanged(related))
     }
 
     private suspend fun downloadFavicon(input: String): FaviconOutcome {
@@ -346,7 +324,7 @@ class DetailViewModel @Inject constructor(
     ) {
         if (domain.isBlank()) return
         if (!accessPolicy.hasFullAccess()) return
-        _uiState.update { it.copy(isFaviconDownloading = true) }
+        mutate(DetailMutation.FaviconDownloadingChanged(true))
         try {
             val outcome = downloadFavicon(domain)
             if (!accessPolicy.hasFullAccess()) return
@@ -378,28 +356,32 @@ class DetailViewModel @Inject constructor(
                 }
             }
         } finally {
-            _uiState.update { it.copy(isFaviconDownloading = false) }
+            mutate(DetailMutation.FaviconDownloadingChanged(false))
         }
     }
 
     private fun refreshFromEntry(entry: EntryAggregate, isEditingTitle: Boolean, editedTitle: String) {
         val analysis = entryAnalyzer.analyze(entry)
 
-        _uiState.update {
-            it.copy(
+        mutate(
+            DetailMutation.EntryPresented(
                 entry = entry,
                 entryType = analysis.entryType,
                 strategySummary = analysis.strategySummary,
                 validationError = analysis.validationError,
                 isEditingTitle = isEditingTitle,
                 editedTitle = editedTitle,
-                strategyReady = analysis.strategyReady
+                strategyReady = analysis.strategyReady,
             )
-        }
+        )
+    }
+
+    private fun mutate(mutation: DetailMutation) {
+        _uiState.value = DetailReducer.reduce(_uiState.value, mutation)
     }
 
     override fun onCleared() {
         super.onCleared()
-        _uiState.update { DetailUiState() }
+        mutate(DetailMutation.StateCleared)
     }
 }
