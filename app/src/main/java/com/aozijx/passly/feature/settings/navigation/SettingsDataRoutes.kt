@@ -79,7 +79,7 @@ internal fun DataSettingsRouteContent(
         }
 
         SettingsRoute.DataManagement -> {
-            val state by dataViewModel.config.collectAsStateWithLifecycle()
+            val state by dataViewModel.uiState.collectAsStateWithLifecycle()
             SettingsSecondaryPage(
                 title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
                 onBack = onBack
@@ -124,7 +124,7 @@ internal fun DataSettingsRouteContent(
         }
 
         SettingsRoute.BackupRestore -> {
-            val state by dataViewModel.config.collectAsStateWithLifecycle()
+            val state by dataViewModel.uiState.collectAsStateWithLifecycle()
             val notSetText = stringResource(R.string.not_set)
             val pathLabel = remember(state.directoryUri) {
                 PathDisplayFormatter.format(state.directoryUri) ?: notSetText

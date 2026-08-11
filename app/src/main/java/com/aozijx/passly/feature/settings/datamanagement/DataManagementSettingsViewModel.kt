@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,40 +22,34 @@ class DataManagementSettingsViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val entryListQueryRepository: EntryListQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
-    private val vaultAccessState: SecureSessionAccessState
+    private val secureSessionAccessState: SecureSessionAccessState
 ) : ViewModel() {
 
-    private val _config = MutableStateFlow(DataManagementSettingsUiState())
-    val config: StateFlow<DataManagementSettingsUiState> = _config.asStateFlow()
+    private val _uiState = MutableStateFlow(DataManagementSettingsUiState())
+    val uiState: StateFlow<DataManagementSettingsUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
             settingsRepository.settings.collect { settings ->
-                _config.update {
-                    it.copy(
-                        isAutoDownloadIcons = settings.interaction.isAutoDownloadIcons,
-                        directoryUri = settings.backup.directoryTreeUri
+                mutate(
+                    DataManagementSettingsMutation.SettingsChanged(
+                        autoDownloadIcons = settings.interaction.isAutoDownloadIcons,
+                        directoryUri = settings.backup.directoryTreeUri,
                     )
-                }
+                )
             }
         }
         viewModelScope.launch {
             entryListQueryRepository.deletedEntries
                 .catch { error ->
-                    _config.update {
-                        it.copy(
-                            isTrashLoading = false,
-                            trashError = error.toUiMessage("无法读取回收站")
+                    mutate(
+                        DataManagementSettingsMutation.TrashLoadFailed(
+                            error.toUiMessage("无法读取回收站")
                         )
-                    }
+                    )
                 }
                 .collect { entries ->
-                    _config.update {
-                        it.copy(
-                            deletedEntries = entries,
-                            isTrashLoading = false
-                        )
-                    }
+                    mutate(DataManagementSettingsMutation.TrashLoaded(entries))
                 }
         }
     }
@@ -87,7 +80,7 @@ class DataManagementSettingsViewModel @Inject constructor(
             is DataManagementSettingsAction.EmptyTrash -> emptyTrash()
 
             is DataManagementSettingsAction.ClearTrashError -> {
-                _config.update { it.copy(trashError = null) }
+                mutate(DataManagementSettingsMutation.TrashErrorCleared)
             }
         }
     }
@@ -100,42 +93,46 @@ class DataManagementSettingsViewModel @Inject constructor(
         entryId: String,
         operation: suspend () -> AppResult<Unit>
     ) {
-        if (_config.value.isTrashBusy) return
+        if (_uiState.value.isTrashBusy) return
         if (!requireTrashAccess()) return
         viewModelScope.launch {
             if (!requireTrashAccess()) return@launch
-            _config.update { it.copy(activeTrashEntryId = entryId, trashError = null) }
+            mutate(DataManagementSettingsMutation.TrashEntryActionStarted(entryId))
             try {
                 operation().updateTrashError("回收站操作失败")
             } finally {
-                _config.update { it.copy(activeTrashEntryId = null) }
+                mutate(DataManagementSettingsMutation.TrashEntryActionFinished)
             }
         }
     }
 
     private fun emptyTrash() {
-        if (_config.value.isTrashBusy || _config.value.deletedEntries.isEmpty()) return
+        if (_uiState.value.isTrashBusy || _uiState.value.deletedEntries.isEmpty()) return
         if (!requireTrashAccess()) return
         viewModelScope.launch {
             if (!requireTrashAccess()) return@launch
-            _config.update { it.copy(isEmptyingTrash = true, trashError = null) }
+            mutate(DataManagementSettingsMutation.EmptyTrashStarted)
             try {
                 entryCommandRepository.emptyTrash().updateTrashError("无法清空回收站")
             } finally {
-                _config.update { it.copy(isEmptyingTrash = false) }
+                mutate(DataManagementSettingsMutation.EmptyTrashFinished)
             }
         }
     }
 
     private fun requireTrashAccess(): Boolean {
-        if (vaultAccessState.hasFullSecureSessionAccess()) return true
-        _config.update { it.copy(trashError = "当前会话不能操作回收站") }
+        if (secureSessionAccessState.hasFullSecureSessionAccess()) return true
+        mutate(DataManagementSettingsMutation.TrashActionFailed("当前会话不能操作回收站"))
         return false
     }
 
     private fun AppResult<*>.updateTrashError(fallback: String) {
         if (this is AppResult.Failure) {
-            _config.update { it.copy(trashError = error.toUiMessage(fallback)) }
+            mutate(DataManagementSettingsMutation.TrashActionFailed(error.toUiMessage(fallback)))
         }
+    }
+
+    private fun mutate(mutation: DataManagementSettingsMutation) {
+        _uiState.value = DataManagementSettingsReducer.reduce(_uiState.value, mutation)
     }
 }

@@ -1777,6 +1777,35 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun dataManagementUsesOneUiStateAndPureReducer() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/datamanagement/" +
+                    "DataManagementSettingsViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/settings/datamanagement/" +
+                    "DataManagementSettingsReducer.kt"
+        ).readText()
+
+        assertTrue(
+            "Data management state must use one uiState reducer path",
+            "DataManagementSettingsReducer.reduce" in viewModel &&
+                    "val uiState:" in viewModel &&
+                    "_config" !in viewModel,
+        )
+        assertTrue(
+            "Data management reducer must not own repositories or access checks",
+            "Repository" !in reducer &&
+                    "SecureSessionAccessState" !in reducer &&
+                    "hasFullSecureSessionAccess" !in reducer,
+        )
+        assertTrue(
+            "Data management access naming must use secure-session semantics",
+            "secureSessionAccessState" in viewModel && "vaultAccessState" !in viewModel,
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

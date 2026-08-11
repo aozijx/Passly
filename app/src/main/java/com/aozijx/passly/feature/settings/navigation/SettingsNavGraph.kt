@@ -63,7 +63,7 @@ fun SettingsNavGraph(
     val interactionViewModel: InteractionSettingsViewModel = hiltViewModel()
     val interactionState by interactionViewModel.config.collectAsStateWithLifecycle()
     val dataViewModel: DataManagementSettingsViewModel = hiltViewModel()
-    val dataState by dataViewModel.config.collectAsStateWithLifecycle()
+    val dataState by dataViewModel.uiState.collectAsStateWithLifecycle()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     val backBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
