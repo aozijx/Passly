@@ -19,8 +19,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
@@ -57,6 +61,15 @@ fun VaultPagerContent(
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
     val motionScheme = MaterialTheme.motionScheme
+    var playInitialEntryAnimation by rememberSaveable { mutableStateOf(true) }
+
+    LaunchedEffect(uiState.isVaultItemsLoading, uiState.vaultItemsByQuickFilter) {
+        if (!uiState.isVaultItemsLoading &&
+            uiState.vaultItemsByQuickFilter.values.any { it.isNotEmpty() }
+        ) {
+            playInitialEntryAnimation = false
+        }
+    }
 
     HorizontalPager(
         modifier = modifier,
@@ -105,6 +118,7 @@ fun VaultPagerContent(
                         onItemClick = { onItemClick(item) },
                         totpStates = totpStates,
                         showTotpCode = uiState.showTOTPCode,
+                        animateInitialAppearance = playInitialEntryAnimation,
                         modifier = Modifier
                             .animateItem(
                                 fadeInSpec = null,
@@ -138,6 +152,7 @@ private fun EntryListItemRow(
     onItemClick: () -> Unit,
     totpStates: StateFlow<Map<String, OtpUiState>>,
     showTotpCode: Boolean,
+    animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier
 ) {
     val totpState = if (item.hasOtp) {
@@ -157,7 +172,7 @@ private fun EntryListItemRow(
     val colorScheme = MaterialTheme.colorScheme
     val motionScheme = MaterialTheme.motionScheme
     val visibleState = remember(item.id) {
-        MutableTransitionState(false).apply { targetState = true }
+        MutableTransitionState(!animateInitialAppearance).apply { targetState = true }
     }
     val leftAction =
         remember(item.id, swipeLeftAction, onSwipeTriggered, colorScheme) {

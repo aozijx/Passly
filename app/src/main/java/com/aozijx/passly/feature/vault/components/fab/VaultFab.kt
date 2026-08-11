@@ -2,16 +2,16 @@ package com.aozijx.passly.feature.vault.components.fab
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -35,9 +35,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
@@ -47,6 +48,9 @@ import com.aozijx.passly.feature.vault.editor.common.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.feature.vault.editor.common.AddEntryFabVisualOverflow
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.labelRes
+import kotlinx.coroutines.delay
+
+private const val FAB_MENU_STAGGER_MILLIS = 45
 
 @Composable
 fun VaultFab(
@@ -58,9 +62,11 @@ fun VaultFab(
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntryBottomSheet by remember { mutableStateOf(false) }
     var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
+    val motionScheme = MaterialTheme.motionScheme
 
     val rotation by animateFloatAsState(
         targetValue = if (showFabMenu) 45f else 0f,
+        animationSpec = motionScheme.defaultSpatialSpec(),
         label = "fabRotation"
     )
 
@@ -88,42 +94,63 @@ fun VaultFab(
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn() + scaleIn(transformOrigin = TransformOrigin(1f, 1f)),
-        exit = fadeOut() + scaleOut(transformOrigin = TransformOrigin(1f, 1f))
+        enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
+                slideInVertically(
+                    animationSpec = motionScheme.defaultSpatialSpec(),
+                    initialOffsetY = { it / 4 }
+                ),
+        exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
+                slideOutVertically(
+                    animationSpec = motionScheme.defaultSpatialSpec(),
+                    targetOffsetY = { it / 4 }
+                )
     ) {
         Column(
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp, end = 8.dp)
+                .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 16.dp)
         ) {
             AnimatedVisibility(
                 visible = showFabMenu,
-                enter = fadeIn() + slideInHorizontally { it / 2 } + scaleIn(initialScale = 0.8f),
-                exit = fadeOut() + slideOutHorizontally { it / 2 } + scaleOut(targetScale = 0.8f)
+                enter = EnterTransition.None,
+                exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec())
             ) {
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FabMenuChip(
-                        label = stringResource(R.string.more),
-                        icon = Icons.Default.MoreHoriz,
-                        onClick = {
-                            showFabMenu = false
-                            showAddEntryBottomSheet = true
-                        }
-                    )
-                    fabMenuOptions.forEach { type ->
+                Column(horizontalAlignment = Alignment.End) {
+                    val itemCount = fabMenuOptions.size + 1
+
+                    StaggeredFabMenuItem(
+                        visible = showFabMenu,
+                        index = 0,
+                        itemCount = itemCount
+                    ) { enabled ->
                         FabMenuChip(
-                            label = stringResource(type.labelRes),
-                            icon = type.icon(),
+                            label = stringResource(R.string.more),
+                            icon = Icons.Default.MoreHoriz,
+                            enabled = enabled,
                             onClick = {
                                 showFabMenu = false
-                                onAddTypeSelected(type)
+                                showAddEntryBottomSheet = true
                             }
                         )
+                    }
+                    fabMenuOptions.forEachIndexed { index, type ->
+                        StaggeredFabMenuItem(
+                            visible = showFabMenu,
+                            index = index + 1,
+                            itemCount = itemCount
+                        ) { enabled ->
+                            FabMenuChip(
+                                label = stringResource(type.labelRes),
+                                icon = type.icon(),
+                                enabled = enabled,
+                                onClick = {
+                                    showFabMenu = false
+                                    onAddTypeSelected(type)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -163,13 +190,58 @@ fun VaultFab(
 }
 
 @Composable
+private fun StaggeredFabMenuItem(
+    visible: Boolean,
+    index: Int,
+    itemCount: Int,
+    content: @Composable (enabled: Boolean) -> Unit
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    var itemVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(visible, index, itemCount) {
+        val staggerIndex = if (visible) itemCount - index - 1 else index
+        delay((staggerIndex * FAB_MENU_STAGGER_MILLIS).toLong())
+        itemVisible = visible
+    }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (itemVisible) 1f else 0f,
+        animationSpec = motionScheme.fastEffectsSpec(),
+        label = "fabMenuItemAlpha"
+    )
+    val horizontalOffsetFraction by animateFloatAsState(
+        targetValue = if (itemVisible) 0f else 0.5f,
+        animationSpec = motionScheme.defaultSpatialSpec(),
+        label = "fabMenuItemOffset"
+    )
+    val interactionEnabled = visible && itemVisible
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                this.alpha = alpha
+                translationX = size.width * horizontalOffsetFraction
+            }
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .then(
+                if (interactionEnabled) Modifier else Modifier.clearAndSetSemantics { }
+            )
+    ) {
+        content(interactionEnabled)
+    }
+}
+
+@Composable
 private fun FabMenuChip(
     label: String,
     icon: ImageVector,
+    enabled: Boolean,
     onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,
+        enabled = enabled,
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,
