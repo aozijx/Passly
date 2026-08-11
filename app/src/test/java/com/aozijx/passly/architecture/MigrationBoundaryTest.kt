@@ -231,7 +231,7 @@ class MigrationBoundaryTest {
             "com/aozijx/passly/domain/authentication/AuthenticationModels.kt"
         ).readText()
         val mainScreen = File(
-            "src/main/java/com/aozijx/passly/feature/main/ui/MainScreen.kt"
+            "src/main/java/com/aozijx/passly/app/shell/ui/AppShell.kt"
         ).readText()
         val inputActionButton = File(
             "../core/ui/src/main/kotlin/com/aozijx/passly/core/ui/components/common/" +
@@ -697,7 +697,7 @@ class MigrationBoundaryTest {
     @Test
     fun destructiveDatabaseRecoveryRequiresFreshAuthentication() {
         val mainViewModel = File(
-            "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"
+            "src/main/java/com/aozijx/passly/app/shell/AppShellViewModel.kt"
         ).readText()
         val settingsViewModel = File(
             "src/main/java/com/aozijx/passly/feature/settings/SettingsViewModel.kt"
@@ -1025,13 +1025,13 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/auth/presentation/AuthenticationViewModel.kt"
         ).readText()
         val mainViewModel = File(
-            "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"
+            "src/main/java/com/aozijx/passly/app/shell/AppShellViewModel.kt"
         ).readText()
         val mainUiState = File(
-            "src/main/java/com/aozijx/passly/feature/main/contract/MainUiState.kt"
+            "src/main/java/com/aozijx/passly/app/shell/contract/AppShellUiState.kt"
         ).readText()
         val mainScreen = File(
-            "src/main/java/com/aozijx/passly/feature/main/ui/MainScreen.kt"
+            "src/main/java/com/aozijx/passly/app/shell/ui/AppShell.kt"
         ).readText()
         val recoveryModeScreen = File(
             "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeScreen.kt"
@@ -1100,11 +1100,11 @@ class MigrationBoundaryTest {
             "data class RecoveryMode" in authModels
         )
         assertTrue(
-            "MainUiState must track recovery mode",
+            "AppShellUiState must track recovery mode",
             "isRecoveryMode: Boolean" in mainUiState
         )
         assertTrue(
-            "MainScreen must render RecoveryModeScreen",
+            "AppShell must render RecoveryModeScreen",
             "RecoveryModeScreen(" in mainScreen
         )
 
@@ -1617,10 +1617,10 @@ class MigrationBoundaryTest {
     @Test
     fun mainMviSeparatesShellStateFromDatabaseAndAuthenticationEffects() {
         val viewModel = File(
-            "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"
+            "src/main/java/com/aozijx/passly/app/shell/AppShellViewModel.kt"
         ).readText()
         val reducer = File(
-            "src/main/java/com/aozijx/passly/feature/main/presentation/MainReducer.kt"
+            "src/main/java/com/aozijx/passly/app/shell/presentation/AppShellReducer.kt"
         ).readText()
         val reducerDependencies = listOf(
             "AuthenticationManager",
@@ -1632,15 +1632,15 @@ class MigrationBoundaryTest {
         ).filter(reducer::contains)
 
         assertTrue(
-            "MainViewModel must route shell state through MainReducer",
-            "MainReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
+            "AppShellViewModel must route shell state through AppShellReducer",
+            "AppShellReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
         )
         assertTrue(
-            "MainReducer must not coordinate infrastructure: $reducerDependencies",
-            "internal object MainReducer" in reducer && reducerDependencies.isEmpty(),
+            "AppShellReducer must not coordinate infrastructure: $reducerDependencies",
+            "internal object AppShellReducer" in reducer && reducerDependencies.isEmpty(),
         )
         assertTrue(
-            "Database and authentication effects must remain in MainViewModel",
+            "Database and authentication effects must remain in AppShellViewModel",
             "databaseLifecycleUseCases" in viewModel &&
                     "authenticationManager.authenticate" in viewModel &&
                     "emitEffect" in viewModel,

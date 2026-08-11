@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.main
+package com.aozijx.passly.app.shell
 
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -12,7 +12,7 @@ import androidx.fragment.app.FragmentActivity
  * 封装加速度计监听逻辑，仅在翻转角度超过阈值且已授权时触发 [onFlipLock] 回调。
  * Activity 持有此控制器并负责在 onResume/onPause/setContent 中调用 [register]/[unregister]。
  */
-internal class MainSensorController(
+internal class FlipToLockSensorController(
     private val activity: FragmentActivity,
     private val onFlipLock: () -> Unit
 ) : SensorEventListener {

@@ -1,41 +1,41 @@
-package com.aozijx.passly.feature.main.presentation
+package com.aozijx.passly.app.shell.presentation
 
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
-import com.aozijx.passly.feature.main.contract.MainUiState
+import com.aozijx.passly.app.shell.contract.AppShellUiState
 
-internal sealed interface MainMutation {
-    data object Authenticated : MainMutation
-    data object RecoveryModeEntered : MainMutation
-    data object SessionLocked : MainMutation
+internal sealed interface AppShellMutation {
+    data object Authenticated : AppShellMutation
+    data object RecoveryModeEntered : AppShellMutation
+    data object SessionLocked : AppShellMutation
     data class SettingsChanged(
         val appearance: AppearanceSettings,
         val interfaceSettings: InterfaceSettings,
-    ) : MainMutation
-    data class DatabaseInitializationStarted(val clearError: Boolean) : MainMutation
-    data class DatabaseInitializationFinished(val error: Throwable?) : MainMutation
-    data object DatabaseInitializationStopped : MainMutation
-    data class DatabaseFailureObserved(val error: Throwable) : MainMutation
+    ) : AppShellMutation
+    data class DatabaseInitializationStarted(val clearError: Boolean) : AppShellMutation
+    data class DatabaseInitializationFinished(val error: Throwable?) : AppShellMutation
+    data object DatabaseInitializationStopped : AppShellMutation
+    data class DatabaseFailureObserved(val error: Throwable) : AppShellMutation
 }
 
-internal object MainReducer {
-    fun reduce(state: MainUiState, mutation: MainMutation): MainUiState =
+internal object AppShellReducer {
+    fun reduce(state: AppShellUiState, mutation: AppShellMutation): AppShellUiState =
         when (mutation) {
-            MainMutation.Authenticated -> state.copy(
+            AppShellMutation.Authenticated -> state.copy(
                 isAuthorized = true,
                 isRecoveryMode = false,
             )
-            MainMutation.RecoveryModeEntered -> state.copy(
+            AppShellMutation.RecoveryModeEntered -> state.copy(
                 isAuthorized = false,
                 isRecoveryMode = true,
                 isDatabaseInitializing = false,
                 databaseError = null,
             )
-            MainMutation.SessionLocked -> state.copy(
+            AppShellMutation.SessionLocked -> state.copy(
                 isAuthorized = false,
                 isRecoveryMode = false,
             )
-            is MainMutation.SettingsChanged -> state.copy(
+            is AppShellMutation.SettingsChanged -> state.copy(
                 themeMode = mutation.appearance.themeMode,
                 isDynamicColor = mutation.appearance.isDynamicColor,
                 manualThemeColorArgb = mutation.appearance.manualThemeColorArgb,
@@ -46,17 +46,17 @@ internal object MainReducer {
                 groupItemSpacingDp = mutation.interfaceSettings.groupItemSpacingDp,
                 groupContentPaddingDp = mutation.interfaceSettings.groupContentPaddingDp,
             )
-            is MainMutation.DatabaseInitializationStarted -> state.copy(
+            is AppShellMutation.DatabaseInitializationStarted -> state.copy(
                 isDatabaseInitializing = true,
                 databaseError = state.databaseError.takeUnless { mutation.clearError },
             )
-            is MainMutation.DatabaseInitializationFinished -> state.copy(
+            is AppShellMutation.DatabaseInitializationFinished -> state.copy(
                 isDatabaseInitializing = false,
                 databaseError = mutation.error,
             )
-            MainMutation.DatabaseInitializationStopped ->
+            AppShellMutation.DatabaseInitializationStopped ->
                 state.copy(isDatabaseInitializing = false)
-            is MainMutation.DatabaseFailureObserved -> state.copy(
+            is AppShellMutation.DatabaseFailureObserved -> state.copy(
                 isDatabaseInitializing = false,
                 databaseError = mutation.error,
                 isAuthorized = false,

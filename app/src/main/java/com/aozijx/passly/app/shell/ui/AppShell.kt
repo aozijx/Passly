@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.main.ui
+package com.aozijx.passly.app.shell.ui
 
 import android.view.WindowManager
 import android.widget.Toast
@@ -21,20 +21,20 @@ import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.feature.auth.presentation.AuthenticationViewModel
 import com.aozijx.passly.feature.auth.ui.AuthenticationScreen
-import com.aozijx.passly.feature.main.AppShellSettingsViewModel
-import com.aozijx.passly.feature.main.MainSensorController
-import com.aozijx.passly.feature.main.MainViewModel
-import com.aozijx.passly.feature.main.contract.MainEffect
-import com.aozijx.passly.feature.main.contract.MainIntent
+import com.aozijx.passly.app.shell.AppShellSettingsViewModel
+import com.aozijx.passly.app.shell.AppShellViewModel
+import com.aozijx.passly.app.shell.FlipToLockSensorController
+import com.aozijx.passly.app.shell.contract.AppShellEffect
+import com.aozijx.passly.app.shell.contract.AppShellIntent
 import com.aozijx.passly.app.message.presentation.AppNoticeHostViewModel
 import com.aozijx.passly.feature.recovery.RecoveryModeScreen
 import com.aozijx.passly.feature.recovery.RecoveryModeViewModel
 
 @Composable
-internal fun MainScreen(
+internal fun AppShell(
     activity: FragmentActivity,
-    viewModel: MainViewModel,
-    sensorController: MainSensorController
+    viewModel: AppShellViewModel,
+    sensorController: FlipToLockSensorController
 ) {
     val mainUiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -68,13 +68,13 @@ internal fun MainScreen(
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is MainEffect.ShowToast -> showLocalMessage(effect.message)
+                is AppShellEffect.ShowToast -> showLocalMessage(effect.message)
 
-                is MainEffect.ShowError ->
+                is AppShellEffect.ShowError ->
                     showLocalMessage(effect.error, longDuration = true)
 
-                MainEffect.LockedByTimeout, MainEffect.NavigateToVault -> Unit
-                is MainEffect.AuthSuccess, is MainEffect.AuthError -> Unit
+                AppShellEffect.LockedByTimeout, AppShellEffect.NavigateToVault -> Unit
+                is AppShellEffect.AuthSuccess, is AppShellEffect.AuthError -> Unit
             }
         }
     }
@@ -94,10 +94,10 @@ internal fun MainScreen(
                 DatabaseRecoveryDialog(
                     isBusy = mainUiState.isDatabaseInitializing,
                     onRetry = {
-                        viewModel.handleIntent(MainIntent.RetryDatabaseInitialization)
+                        viewModel.handleIntent(AppShellIntent.RetryDatabaseInitialization)
                     },
                     onRecoverDatabase = {
-                        viewModel.handleIntent(MainIntent.RecoverDatabase)
+                        viewModel.handleIntent(AppShellIntent.RecoverDatabase)
                     },
                     onCloseApp = {
                         noticePublisher.publish(
@@ -112,15 +112,15 @@ internal fun MainScreen(
             }
 
             "main" -> {
-                AppMainContent(
-                    mainViewModel = viewModel
+                AppShellContent(
+                    appShellViewModel = viewModel
                 )
             }
 
             "recovery" -> {
                 RecoveryModeScreen(
                     viewModel = recoveryViewModel,
-                    onExit = { viewModel.handleIntent(MainIntent.ExitRecovery) }
+                    onExit = { viewModel.handleIntent(AppShellIntent.ExitRecovery) }
                 )
             }
 

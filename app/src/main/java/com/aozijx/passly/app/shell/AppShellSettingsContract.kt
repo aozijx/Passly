@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.main
+package com.aozijx.passly.app.shell
 
 data class AppShellSettingsUiState(
     val isSecureContentEnabled: Boolean = true,

@@ -21,13 +21,13 @@ import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import com.aozijx.passly.core.ui.components.auth.AuthenticationHost
 import com.aozijx.passly.core.ui.theme.AppTheme
+import com.aozijx.passly.app.shell.AppShellViewModel
+import com.aozijx.passly.app.shell.FlipToLockSensorController
+import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.app.shell.ui.AppShell
 import com.aozijx.passly.domain.notice.model.NoticeCode
 import com.aozijx.passly.domain.notice.model.newAppNotice
 import com.aozijx.passly.domain.notice.port.AppNoticePublisher
-import com.aozijx.passly.feature.main.MainSensorController
-import com.aozijx.passly.feature.main.MainViewModel
-import com.aozijx.passly.feature.main.contract.MainIntent
-import com.aozijx.passly.feature.main.ui.MainScreen
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -35,7 +35,7 @@ import kotlin.system.exitProcess
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: AppShellViewModel by viewModels()
 
     @Inject
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
@@ -52,10 +52,10 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var permissionRequestHistory: PermissionRequestHistory
 
-    private val sensorController: MainSensorController by lazy {
-        MainSensorController(this) {
+    private val sensorController: FlipToLockSensorController by lazy {
+        FlipToLockSensorController(this) {
             if (viewModel.isAuthorizedNow) {
-                viewModel.handleIntent(MainIntent.Lock)
+                viewModel.handleIntent(AppShellIntent.Lock)
                 if (sensorController.isFlipExitAndClearStackEnabled) {
                     noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
                     window.decorView.postDelayed({
@@ -109,7 +109,7 @@ class MainActivity : AppCompatActivity() {
                         groupContentPaddingDp = mainUiState.groupContentPaddingDp
                     ) {
                         AuthenticationHost(this, authenticationHostRegistry) {
-                            MainScreen(
+                            AppShell(
                                 activity = this,
                                 viewModel = viewModel,
                                 sensorController = sensorController
@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onUserInteraction() {
         super.onUserInteraction()
-        viewModel.handleIntent(MainIntent.UpdateInteraction)
+        viewModel.handleIntent(AppShellIntent.UpdateInteraction)
     }
 
     override fun onResume() {

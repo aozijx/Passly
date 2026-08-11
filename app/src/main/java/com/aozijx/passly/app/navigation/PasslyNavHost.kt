@@ -27,9 +27,9 @@ import com.aozijx.passly.feature.detail.DetailViewModel
 import com.aozijx.passly.feature.detail.contract.DetailEffect
 import com.aozijx.passly.feature.detail.contract.DetailIntent
 import com.aozijx.passly.feature.detail.page.DetailScreen
-import com.aozijx.passly.feature.main.MainViewModel
-import com.aozijx.passly.feature.main.contract.MainEffect
-import com.aozijx.passly.feature.main.contract.MainIntent
+import com.aozijx.passly.app.shell.AppShellViewModel
+import com.aozijx.passly.app.shell.contract.AppShellEffect
+import com.aozijx.passly.app.shell.contract.AppShellIntent
 import com.aozijx.passly.feature.scanner.VaultScanner
 import com.aozijx.passly.feature.settings.SettingsScreen
 import com.aozijx.passly.feature.settings.SettingsViewModel
@@ -50,7 +50,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun PasslyNavHost(
     navController: NavHostController,
-    mainViewModel: MainViewModel,
+    appShellViewModel: AppShellViewModel,
     vaultViewModel: VaultViewModel,
     isDatabaseInitializing: Boolean = false
 ) {
@@ -58,15 +58,15 @@ fun PasslyNavHost(
 
     // 认证请求可能来自任意导航目的地。监听器必须位于 NavHost 外层，
     // 否则离开保险库首页后，对应 composable 被移除，成功回调也会丢失。
-    LaunchedEffect(mainViewModel) {
-        mainViewModel.effects.collect { effect ->
+    LaunchedEffect(appShellViewModel) {
+        appShellViewModel.effects.collect { effect ->
             when (effect) {
-                is MainEffect.AuthSuccess -> {
+                is AppShellEffect.AuthSuccess -> {
                     pendingAuthCallback?.invoke()
                     pendingAuthCallback = null
                 }
 
-                is MainEffect.AuthError -> {
+                is AppShellEffect.AuthError -> {
                     pendingAuthCallback = null
                 }
 
@@ -97,23 +97,23 @@ fun PasslyNavHost(
                 vaultViewModel = vaultViewModel,
                 requestAuthentication = { onSuccess ->
                     pendingAuthCallback = onSuccess
-                    mainViewModel.handleIntent(MainIntent.RequestAuth)
+                    appShellViewModel.handleIntent(AppShellIntent.RequestAuth)
                 },
                 requestReauthentication = { onSuccess ->
                     pendingAuthCallback = onSuccess
-                    mainViewModel.handleIntent(MainIntent.RequestReauth)
+                    appShellViewModel.handleIntent(AppShellIntent.RequestReauth)
                 },
                 requestSensitiveCopy = { onSuccess ->
                     pendingAuthCallback = onSuccess
-                    mainViewModel.handleIntent(
-                        MainIntent.RequestSensitiveAccess(
+                    appShellViewModel.handleIntent(
+                        AppShellIntent.RequestSensitiveAccess(
                             action = SensitiveAccessAction.COPY,
                             accessLevel = SensitiveAccessLevel.STANDARD
                         )
                     )
                 },
                 onUserInteraction = {
-                    mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+                    appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
                 },
                 onAddPassword = {
                     navController.navigate(AppRoute.AddPassword.route) {
@@ -150,7 +150,7 @@ fun PasslyNavHost(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
                     onUserInteraction = {
-                        mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+                        appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
                     },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope
@@ -165,7 +165,7 @@ fun PasslyNavHost(
                         onBack = { navController.popBackStack() },
                         onSaved = { navController.popBackStack() },
                         onUserInteraction = {
-                            mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+                            appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
                         },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
@@ -186,7 +186,7 @@ fun PasslyNavHost(
                         onBack = { navController.popBackStack() },
                         onSaved = { navController.popBackStack() },
                         onUserInteraction = {
-                            mainViewModel.handleIntent(MainIntent.UpdateInteraction)
+                            appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
                         },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
@@ -239,15 +239,17 @@ fun PasslyNavHost(
                     otpUiState = currentOtpState,
                     onEvent = detailViewModel::handleIntent,
                     onBack = { navController.popBackStack() },
-                    onUpdateInteraction = { mainViewModel.handleIntent(MainIntent.UpdateInteraction) },
+                    onUpdateInteraction = {
+                        appShellViewModel.handleIntent(AppShellIntent.UpdateInteraction)
+                    },
                     onAutoUnlockTotp = { vaultViewModel.onIntent(VaultIntent.AutoUnlockTotp(it.id)) },
                     onOpenRelatedEntry = {
                         navController.navigate(AppRoute.Detail.createRoute(it.id))
                     },
                     onAuthenticate = DetailAuthenticate { action, accessLevel, success ->
                         pendingAuthCallback = success
-                        mainViewModel.handleIntent(
-                            MainIntent.RequestSensitiveAccess(
+                        appShellViewModel.handleIntent(
+                            AppShellIntent.RequestSensitiveAccess(
                                 action = action,
                                 accessLevel = accessLevel
                             )

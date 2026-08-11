@@ -1,11 +1,11 @@
-package com.aozijx.passly.feature.main.contract
+package com.aozijx.passly.app.shell.contract
 
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.InterfaceStyleConstraints
 import com.aozijx.passly.domain.settings.model.ThemeMode
 
-data class MainUiState(
+data class AppShellUiState(
     val isAuthorized: Boolean = false,
     val isRecoveryMode: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,

@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.main
+package com.aozijx.passly.app.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

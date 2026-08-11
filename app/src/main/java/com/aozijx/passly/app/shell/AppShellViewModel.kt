@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.main
+package com.aozijx.passly.app.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,11 +16,11 @@ import com.aozijx.passly.domain.diagnostics.usecase.DatabaseInitOutcome
 import com.aozijx.passly.domain.diagnostics.usecase.DatabaseLifecycleUseCases
 import com.aozijx.passly.domain.entry.repository.SearchIndexMaintenance
 import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
-import com.aozijx.passly.feature.main.contract.MainEffect
-import com.aozijx.passly.feature.main.contract.MainIntent
-import com.aozijx.passly.feature.main.contract.MainUiState
-import com.aozijx.passly.feature.main.presentation.MainMutation
-import com.aozijx.passly.feature.main.presentation.MainReducer
+import com.aozijx.passly.app.shell.contract.AppShellEffect
+import com.aozijx.passly.app.shell.contract.AppShellIntent
+import com.aozijx.passly.app.shell.contract.AppShellUiState
+import com.aozijx.passly.app.shell.presentation.AppShellMutation
+import com.aozijx.passly.app.shell.presentation.AppShellReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,17 +33,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class AppShellViewModel @Inject constructor(
     private val settingsRepository: AppSettingsRepository,
     private val authenticationManager: AuthenticationManager,
     private val databaseLifecycleUseCases: DatabaseLifecycleUseCases,
     private val searchIndexMaintenance: SearchIndexMaintenance,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(MainUiState())
-    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AppShellUiState())
+    val uiState: StateFlow<AppShellUiState> = _uiState.asStateFlow()
 
-    private val _effects = Channel<MainEffect>(Channel.BUFFERED)
+    private val _effects = Channel<AppShellEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
     init {
@@ -52,16 +52,16 @@ class MainViewModel @Inject constructor(
         observeDatabaseFailures()
     }
 
-    fun handleIntent(intent: MainIntent) {
+    fun handleIntent(intent: AppShellIntent) {
         when (intent) {
-            MainIntent.Lock -> lock(LockReason.USER)
-            MainIntent.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
-            MainIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
-            MainIntent.RetryDatabaseInitialization -> initializeDatabase()
-            MainIntent.RecoverDatabase -> recoverDatabase()
-            MainIntent.RequestAuth -> requestAuth()
-            MainIntent.RequestReauth -> requestReauth()
-            is MainIntent.RequestSensitiveAccess -> requestSensitiveAccess(
+            AppShellIntent.Lock -> lock(LockReason.USER)
+            AppShellIntent.ExitRecovery -> lock(LockReason.RECOVERY_EXIT)
+            AppShellIntent.UpdateInteraction -> authenticationManager.onUserInteraction()
+            AppShellIntent.RetryDatabaseInitialization -> initializeDatabase()
+            AppShellIntent.RecoverDatabase -> recoverDatabase()
+            AppShellIntent.RequestAuth -> requestAuth()
+            AppShellIntent.RequestReauth -> requestReauth()
+            is AppShellIntent.RequestSensitiveAccess -> requestSensitiveAccess(
                 intent.action,
                 intent.accessLevel
             )
@@ -97,9 +97,9 @@ class MainViewModel @Inject constructor(
     private fun requestAuthentication(purpose: AuthenticationPurpose) {
         authenticationManager.authenticate(AuthenticationRequest(purpose)) { result ->
             if (result is AuthenticationResult.Success) {
-                emitEffect(MainEffect.AuthSuccess)
+                emitEffect(AppShellEffect.AuthSuccess)
             } else if (result is AuthenticationResult.Failure) {
-                emitEffect(MainEffect.AuthError("认证失败"))
+                emitEffect(AppShellEffect.AuthError("认证失败"))
             }
         }
     }
@@ -121,12 +121,12 @@ class MainViewModel @Inject constructor(
                         rebuildSearchIndex()
                     }
 
-                    mutate(MainMutation.Authenticated)
-                    emitEffect(MainEffect.NavigateToVault)
+                    mutate(AppShellMutation.Authenticated)
+                    emitEffect(AppShellEffect.NavigateToVault)
                 } else if (recoveryMode) {
-                    mutate(MainMutation.RecoveryModeEntered)
+                    mutate(AppShellMutation.RecoveryModeEntered)
                 } else {
-                    mutate(MainMutation.SessionLocked)
+                    mutate(AppShellMutation.SessionLocked)
                 }
             }
         }
@@ -139,7 +139,7 @@ class MainViewModel @Inject constructor(
                 .map { settings -> settings.appearance to settings.interfacePrefs }
                 .distinctUntilChanged()
                 .collect { (appearance, interfacePrefs) ->
-                    mutate(MainMutation.SettingsChanged(appearance, interfacePrefs))
+                    mutate(AppShellMutation.SettingsChanged(appearance, interfacePrefs))
                 }
         }
     }
@@ -156,12 +156,12 @@ class MainViewModel @Inject constructor(
     private suspend fun runDatabaseInitialization(
         block: suspend () -> DatabaseInitOutcome
     ): DatabaseInitOutcome {
-        mutate(MainMutation.DatabaseInitializationStarted(clearError = true))
+        mutate(AppShellMutation.DatabaseInitializationStarted(clearError = true))
         val outcome = block()
-        mutate(MainMutation.DatabaseInitializationFinished(outcome.error))
+        mutate(AppShellMutation.DatabaseInitializationFinished(outcome.error))
         outcome.error?.let { error ->
             emitEffect(
-                MainEffect.ShowError(
+                AppShellEffect.ShowError(
                     "数据库错误: ${error.toUiMessage("数据库初始化失败")}"
                 )
             )
@@ -173,7 +173,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             authenticationManager.databaseFailure.collect { error ->
                 if (error != null) {
-                    mutate(MainMutation.DatabaseFailureObserved(error))
+                    mutate(AppShellMutation.DatabaseFailureObserved(error))
                 }
             }
         }
@@ -181,7 +181,7 @@ class MainViewModel @Inject constructor(
 
     private fun recoverDatabase() {
         viewModelScope.launch {
-            mutate(MainMutation.DatabaseInitializationStarted(clearError = false))
+            mutate(AppShellMutation.DatabaseInitializationStarted(clearError = false))
             val request = AuthenticationRequest(AuthenticationPurpose.RECOVER_DATABASE)
             when (
                 authenticationManager.authenticate(request)
@@ -195,17 +195,17 @@ class MainViewModel @Inject constructor(
                     } else {
                         null
                     }
-                    mutate(MainMutation.DatabaseInitializationFinished(recoveryError))
+                    mutate(AppShellMutation.DatabaseInitializationFinished(recoveryError))
                     if (sessionRecovered) {
                         val recoveryMessage = outcome.recoveryId?.let {
                             "故障库已保留（恢复编号：$it），已创建新数据库"
                         } ?: "已创建新数据库"
-                        emitEffect(MainEffect.ShowToast(recoveryMessage))
+                        emitEffect(AppShellEffect.ShowToast(recoveryMessage))
                         rebuildSearchIndex()
                     } else {
                         authenticationManager.lock(LockReason.INTEGRITY_FAILURE)
                         emitEffect(
-                            MainEffect.ShowError(
+                            AppShellEffect.ShowError(
                                 outcome.error?.toUiMessage("创建新数据库失败")
                                     ?: "创建新数据库失败"
                             )
@@ -214,21 +214,21 @@ class MainViewModel @Inject constructor(
                 }
 
                 is AuthenticationResult.Cancelled ->
-                    mutate(MainMutation.DatabaseInitializationStopped)
+                    mutate(AppShellMutation.DatabaseInitializationStopped)
                 is AuthenticationResult.Failure -> {
-                    mutate(MainMutation.DatabaseInitializationStopped)
-                    emitEffect(MainEffect.ShowError("身份验证失败，未创建新数据库"))
+                    mutate(AppShellMutation.DatabaseInitializationStopped)
+                    emitEffect(AppShellEffect.ShowError("身份验证失败，未创建新数据库"))
                 }
             }
         }
     }
 
-    private fun emitEffect(effect: MainEffect) {
+    private fun emitEffect(effect: AppShellEffect) {
         _effects.trySend(effect)
     }
 
-    private fun mutate(mutation: MainMutation) {
-        _uiState.value = MainReducer.reduce(_uiState.value, mutation)
+    private fun mutate(mutation: AppShellMutation) {
+        _uiState.value = AppShellReducer.reduce(_uiState.value, mutation)
     }
 
     /**
@@ -239,9 +239,9 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             val result = searchIndexMaintenance.rebuildIndex()
             result.onSuccess { count ->
-                AppTelemetry.i("MainViewModel", "Blind index rebuild complete: $count entries")
+                AppTelemetry.i("AppShellViewModel", "Blind index rebuild complete: $count entries")
             }.onFailure { error ->
-                AppTelemetry.w("MainViewModel", "Blind index rebuild skipped")
+                AppTelemetry.w("AppShellViewModel", "Blind index rebuild skipped")
             }
         }
     }

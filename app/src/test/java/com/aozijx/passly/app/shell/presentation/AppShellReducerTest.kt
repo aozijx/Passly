@@ -1,11 +1,11 @@
-package com.aozijx.passly.feature.main.presentation
+package com.aozijx.passly.app.shell.presentation
 
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.ThemeMode
-import com.aozijx.passly.feature.main.contract.MainUiState
+import com.aozijx.passly.app.shell.contract.AppShellUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -13,17 +13,17 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class MainReducerTest {
+class AppShellReducerTest {
 
     @Test
     fun `recovery mode clears database failure and full authorization`() {
-        val result = MainReducer.reduce(
-            MainUiState(
+        val result = AppShellReducer.reduce(
+            AppShellUiState(
                 isAuthorized = true,
                 isDatabaseInitializing = true,
                 databaseError = IllegalStateException("failure"),
             ),
-            MainMutation.RecoveryModeEntered,
+            AppShellMutation.RecoveryModeEntered,
         )
 
         assertFalse(result.isAuthorized)
@@ -35,15 +35,15 @@ class MainReducerTest {
     @Test
     fun `database retry clears stale error but recovery authentication keeps it`() {
         val error = IllegalStateException("failure")
-        val initial = MainUiState(databaseError = error)
+        val initial = AppShellUiState(databaseError = error)
 
-        val retry = MainReducer.reduce(
+        val retry = AppShellReducer.reduce(
             initial,
-            MainMutation.DatabaseInitializationStarted(clearError = true),
+            AppShellMutation.DatabaseInitializationStarted(clearError = true),
         )
-        val recovery = MainReducer.reduce(
+        val recovery = AppShellReducer.reduce(
             initial,
-            MainMutation.DatabaseInitializationStarted(clearError = false),
+            AppShellMutation.DatabaseInitializationStarted(clearError = false),
         )
 
         assertTrue(retry.isDatabaseInitializing)
@@ -54,9 +54,9 @@ class MainReducerTest {
     @Test
     fun `settings projection changes only shell appearance fields`() {
         val error = IllegalStateException("keep")
-        val result = MainReducer.reduce(
-            MainUiState(isAuthorized = true, databaseError = error),
-            MainMutation.SettingsChanged(
+        val result = AppShellReducer.reduce(
+            AppShellUiState(isAuthorized = true, databaseError = error),
+            AppShellMutation.SettingsChanged(
                 appearance = AppearanceSettings(
                     themeMode = ThemeMode.DARK,
                     isDynamicColor = false,
