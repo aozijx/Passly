@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.lookup.EntryFilter
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.repository.EntryListQueryRepository
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -29,11 +30,11 @@ class VaultListCoordinatorTest {
                 item(id = "2", title = "Game", tags = listOf("Personal"))
             )
         )
-        val searchFilter = SearchFilterState(scope = scope)
+        val uiState = MutableStateFlow(VaultUiState())
         val coordinator = VaultListCoordinator(
             scope = scope,
             queryCoordinator = VaultQueryCoordinator(repository),
-            searchFilter = searchFilter,
+            uiState = uiState,
             refreshTrigger = flowOf(0L)
         )
 
@@ -44,7 +45,7 @@ class VaultListCoordinatorTest {
             }.first()
             assertEquals(2, initial.itemsByQuickFilter.getValue(LibraryQuickFilter.ALL).size)
 
-            searchFilter.updateSelectedCategory("work")
+            uiState.value = uiState.value.copy(selectedCategory = "work")
 
             val filtered = coordinator.state
                 .filter { it.itemsByQuickFilter.getValue(LibraryQuickFilter.ALL).size == 1 }

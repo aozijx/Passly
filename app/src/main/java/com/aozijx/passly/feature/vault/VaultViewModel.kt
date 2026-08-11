@@ -31,18 +31,19 @@ import com.aozijx.passly.feature.vault.contract.VaultEffect
 import com.aozijx.passly.feature.vault.contract.VaultIntent
 import com.aozijx.passly.feature.vault.contract.VaultUiState
 import com.aozijx.passly.feature.vault.entry.EntryManager
-import com.aozijx.passly.feature.vault.list.SearchFilterState
 import com.aozijx.passly.feature.vault.list.VaultListCoordinator
 import com.aozijx.passly.feature.vault.list.VaultQueryCoordinator
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.otp.TotpCoordinator
+import com.aozijx.passly.feature.vault.presentation.VaultMutation
+import com.aozijx.passly.feature.vault.presentation.VaultReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -66,6 +67,9 @@ class VaultViewModel @Inject constructor(
     private val _effects = Channel<VaultEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
+    private val _uiState = MutableStateFlow(VaultUiState())
+    val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
+
     private fun emitError(message: String) {
         _effects.trySend(VaultEffect.ShowError(message))
     }
@@ -86,7 +90,6 @@ class VaultViewModel @Inject constructor(
         loadOtpConfig = { otpConfigRepository.getConfig(it) },
         initiallyUnlocked = sessionStateProvider.isWritable
     )
-    private val _dialogState = MutableStateFlow(VaultDialogState())
     private val entryManager = EntryManager(
         scope = viewModelScope,
         entryCommandRepository = entryCommandRepository,
@@ -95,30 +98,18 @@ class VaultViewModel @Inject constructor(
         totp = totp,
         onError = { emitError(it) },
         onEntryDeleted = { deletedId ->
-            _dialogState.value = _dialogState.value.let { state ->
-                if (state.pendingDelete?.id == deletedId) {
-                    state.copy(pendingDelete = null)
-                } else {
-                    state
-                }
-            }
+            mutate(VaultMutation.DeletedEntryHandled(deletedId))
         }
     )
 
     private val queryCoordinator = VaultQueryCoordinator(entryListQueryRepository)
-    private val searchFilter = SearchFilterState(
-        viewModelScope,
-        initialSort = LibrarySortSpec.DEFAULT
-    )
 
     private val listCoordinator = VaultListCoordinator(
         scope = viewModelScope,
         queryCoordinator = queryCoordinator,
-        searchFilter = searchFilter,
+        uiState = uiState,
         refreshTrigger = _refreshTrigger
     )
-
-    private val _showTOTPCode = MutableStateFlow(true)
 
     private fun addScannedOtp(config: OtpConfig) {
         if (!ensureFullSecureSessionAccess("恢复模式不能保存 OTP")) return
@@ -153,18 +144,6 @@ class VaultViewModel @Inject constructor(
         }
     }
 
-    private val visibleQuickFilters: StateFlow<List<LibraryQuickFilter>> =
-        settingsRepository.settings.map { it.vault.visibleQuickFilters }
-            .map { config ->
-                val keys = config?.filterKeys ?: LibraryQuickFilter.defaultVisibleKeys
-                LibraryQuickFilter.resolveVisible(keys)
-            }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                LibraryQuickFilter.resolveVisible(LibraryQuickFilter.defaultVisibleKeys)
-            )
-
     /**
      * OTP 状态（高频率变化，每秒更新）。
      * 独立 Flow 避免 OTP 更新触发整个 UI 状态重组。
@@ -172,51 +151,19 @@ class VaultViewModel @Inject constructor(
     val totpStatesFlow: StateFlow<Map<String, OtpUiState>> = totp.states
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    private val settingsState: StateFlow<Pair<List<LibraryQuickFilter>, Boolean>> =
-        combine(visibleQuickFilters, _showTOTPCode) { quickFilters, show ->
-            quickFilters to show
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            LibraryQuickFilter.resolveVisible(LibraryQuickFilter.defaultVisibleKeys) to true
-        )
-
-    val uiState: StateFlow<VaultUiState> = combine(
-        searchFilter.uiStateFlow,
-        settingsState,
-        listCoordinator.state,
-        _dialogState
-    ) { search, settings, list, dialogs ->
-        val (quickFilters, showCode) = settings
-        VaultUiState(
-            searchQuery = search.searchQuery,
-            selectedCategory = search.selectedCategory,
-            selectedQuickFilter = search.selectedQuickFilter,
-            selectedSort = search.selectedSort,
-            isSearchActive = search.isSearchActive,
-            isVaultItemsLoading = list.isLoading,
-            availableCategories = list.categories,
-            visibleQuickFilters = quickFilters,
-            vaultItemsByQuickFilter = list.itemsByQuickFilter,
-            showTOTPCode = showCode,
-            addType = dialogs.addType,
-            pendingDelete = dialogs.pendingDelete
-        )
-    }.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        VaultUiState()
-    )
-
     // --- onIntent 统一入口 ---
     fun onIntent(intent: VaultIntent) {
         when (intent) {
-            is VaultIntent.SearchQueryChanged -> searchFilter.updateSearchQuery(intent.query)
-            is VaultIntent.CategorySelected -> searchFilter.updateSelectedCategory(intent.category)
-            VaultIntent.ClearCategory -> searchFilter.updateSelectedCategory(null)
+            is VaultIntent.SearchQueryChanged ->
+                mutate(VaultMutation.SearchQueryChanged(intent.query))
+            is VaultIntent.CategorySelected ->
+                mutate(VaultMutation.CategoryChanged(intent.category))
+            VaultIntent.ClearCategory -> mutate(VaultMutation.CategoryChanged(null))
             is VaultIntent.SortOptionSelected -> selectSortOption(intent.sort)
-            is VaultIntent.QuickFilterSelected -> searchFilter.updateSelectedQuickFilter(intent.filter)
-            is VaultIntent.SearchToggled -> searchFilter.toggleSearch(intent.active)
+            is VaultIntent.QuickFilterSelected ->
+                mutate(VaultMutation.QuickFilterChanged(intent.filter))
+            is VaultIntent.SearchToggled ->
+                mutate(VaultMutation.SearchVisibilityChanged(intent.active))
             VaultIntent.ToggleShowTotpCode -> toggleShowTOTPCode()
             is VaultIntent.AddTypeSelected -> setAddType(intent.type)
             is VaultIntent.ItemToDeleteSelected -> setItemToDelete(intent.item)
@@ -230,21 +177,21 @@ class VaultViewModel @Inject constructor(
     }
 
     private fun selectSortOption(sort: LibrarySortSpec) {
-        searchFilter.updateSelectedSort(sort)
+        mutate(VaultMutation.SortChanged(sort))
         viewModelScope.launch { settingsRepository.update(SettingsCommand.SetVaultSortOption(sort)) }
     }
 
     private fun toggleShowTOTPCode() {
-        _showTOTPCode.value = !_showTOTPCode.value
+        mutate(VaultMutation.TotpVisibilityToggled)
     }
 
     private fun setAddType(type: AddType?) {
         if (type != null && !ensureFullSecureSessionAccess("当前会话不能新建条目")) return
-        _dialogState.value = _dialogState.value.copy(addType = type)
+        mutate(VaultMutation.AddTypeChanged(type))
     }
 
     private fun setItemToDelete(item: EntryListItem?) {
-        _dialogState.value = _dialogState.value.copy(pendingDelete = item)
+        mutate(VaultMutation.PendingDeleteChanged(item))
     }
 
     private fun autoUnlockTotp(entryId: String) {
@@ -275,7 +222,7 @@ class VaultViewModel @Inject constructor(
 
     private fun confirmDelete() {
         if (!ensureFullSecureSessionAccess("当前会话不能删除条目")) return
-        val item = _dialogState.value.pendingDelete ?: return
+        val item = uiState.value.pendingDelete ?: return
         viewModelScope.launch {
             if (!accessPolicy.hasFullAccess()) return@launch
             val entry = entryQueryRepository.getByIdWithoutHighSensitivity(item.id) ?: return@launch
@@ -295,8 +242,32 @@ class VaultViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            settingsRepository.settings.map { it.vault.sort }.first().let {
-                searchFilter.updateSelectedSort(it)
+            settingsRepository.settings
+                .map { it.vault.sort }
+                .distinctUntilChanged()
+                .collect { mutate(VaultMutation.SortChanged(it)) }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.settings
+                .map { settings ->
+                    val keys = settings.vault.visibleQuickFilters?.filterKeys
+                        ?: LibraryQuickFilter.defaultVisibleKeys
+                    LibraryQuickFilter.resolveVisible(keys)
+                }
+                .distinctUntilChanged()
+                .collect { mutate(VaultMutation.VisibleQuickFiltersChanged(it)) }
+        }
+
+        viewModelScope.launch {
+            listCoordinator.state.collect { state ->
+                mutate(
+                    VaultMutation.ListChanged(
+                        isLoading = state.isLoading,
+                        categories = state.categories,
+                        itemsByQuickFilter = state.itemsByQuickFilter,
+                    )
+                )
             }
         }
 
@@ -310,8 +281,12 @@ class VaultViewModel @Inject constructor(
     private fun ensureFullSecureSessionAccess(message: String): Boolean {
         if (accessPolicy.hasFullAccess()) return true
         emitError(message)
-        _dialogState.value = VaultDialogState()
+        mutate(VaultMutation.DialogsCleared)
         return false
+    }
+
+    private fun mutate(mutation: VaultMutation) {
+        _uiState.value = VaultReducer.reduce(_uiState.value, mutation)
     }
 
     override fun onCleared() {
@@ -319,8 +294,3 @@ class VaultViewModel @Inject constructor(
         totp.clearAllSensitiveState()
     }
 }
-
-private data class VaultDialogState(
-    val addType: AddType? = null,
-    val pendingDelete: EntryListItem? = null
-)

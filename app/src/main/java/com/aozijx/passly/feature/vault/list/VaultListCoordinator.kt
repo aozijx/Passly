@@ -3,12 +3,15 @@ package com.aozijx.passly.feature.vault.list
 import com.aozijx.passly.domain.entry.model.lookup.EntryListItem
 import com.aozijx.passly.domain.entry.service.EntryListSorter
 import com.aozijx.passly.domain.settings.model.LibraryQuickFilter
+import com.aozijx.passly.feature.vault.contract.VaultUiState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -25,17 +28,23 @@ data class VaultListState(
 internal class VaultListCoordinator(
     private val scope: CoroutineScope,
     private val queryCoordinator: VaultQueryCoordinator,
-    private val searchFilter: SearchFilterState,
+    private val uiState: StateFlow<VaultUiState>,
     private val refreshTrigger: Flow<Long>
 ) {
     private val _isLoading = MutableStateFlow(true)
 
-    private val loadingTrigger = combine(
-        searchFilter.searchQuery,
-        searchFilter.selectedQuickFilter
-    ) { query, quickFilter ->
-        LoadingKey(query.trim(), quickFilter)
-    }
+    private val searchQuery = uiState
+        .map { it.searchQuery }
+        .distinctUntilChanged()
+    private val selectedSort = uiState
+        .map { it.selectedSort }
+        .distinctUntilChanged()
+    private val selectedCategory = uiState
+        .map { it.selectedCategory }
+        .distinctUntilChanged()
+
+    private val loadingTrigger = searchQuery
+        .map(String::trim)
         .distinctUntilChanged()
 
     init {
@@ -44,8 +53,12 @@ internal class VaultListCoordinator(
         }
     }
 
+    @OptIn(FlowPreview::class)
     private val rawItems: StateFlow<List<EntryListItem>> = queryCoordinator.observeItems(
-        debouncedSearchQuery = searchFilter.debouncedSearchQuery,
+        debouncedSearchQuery = searchQuery
+            .map(String::trim)
+            .debounce(250)
+            .distinctUntilChanged(),
         refreshTrigger = refreshTrigger
     ).onEach { _ ->
         _isLoading.value = false
@@ -63,12 +76,12 @@ internal class VaultListCoordinator(
 
     private val sortedItems: StateFlow<List<EntryListItem>> = combine(
         rawItems,
-        searchFilter.selectedSort,
-        searchFilter.normalizedSelectedCategory
-    ) { items, sort, selectedCategory ->
-        val filteredItems = selectedCategory?.let { category ->
+        selectedSort,
+        selectedCategory.map { category -> category?.trim()?.takeIf(String::isNotEmpty) }
+    ) { items, sort, category ->
+        val filteredItems = category?.let {
             items.filter { item ->
-                item.tags.any { it.equals(category, ignoreCase = true) }
+                item.tags.any { tag -> tag.equals(category, ignoreCase = true) }
             }
         } ?: items
         EntryListSorter.sort(filteredItems, sort)
@@ -91,9 +104,4 @@ internal class VaultListCoordinator(
             }
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(5000), VaultListState())
-
-    private data class LoadingKey(
-        val query: String,
-        val quickFilter: LibraryQuickFilter
-    )
 }

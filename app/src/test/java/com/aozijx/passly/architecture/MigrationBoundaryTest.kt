@@ -124,8 +124,8 @@ class MigrationBoundaryTest {
         val vaultUiState = File(
             "src/main/java/com/aozijx/passly/feature/vault/contract/VaultUiState.kt"
         ).readText()
-        val searchFilterState = File(
-            "src/main/java/com/aozijx/passly/feature/vault/list/SearchFilterState.kt"
+        val vaultReducer = File(
+            "src/main/java/com/aozijx/passly/feature/vault/presentation/VaultReducer.kt"
         ).readText()
         val topBar = File(
             "src/main/java/com/aozijx/passly/feature/vault/components/topbar/VaultTopBar.kt"
@@ -157,7 +157,7 @@ class MigrationBoundaryTest {
         assertTrue(
             "Popup visibility must not survive in VaultViewModel state",
             "isMoreMenuExpanded" !in vaultUiState &&
-                    "isMoreMenuExpanded" !in searchFilterState
+                    "isMoreMenuExpanded" !in vaultReducer
         )
         assertTrue(
             "Top bar must own popup visibility locally",
@@ -1428,6 +1428,34 @@ class MigrationBoundaryTest {
         assertTrue(
             "DetailReducer must remain a pure state transition: $reducerDependencies",
             "internal object DetailReducer" in reducer && reducerDependencies.isEmpty(),
+        )
+    }
+
+    @Test
+    fun vaultMviUsesOneStateOwnerAndAPureMutationReducer() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/vault/VaultViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/vault/presentation/VaultReducer.kt"
+        ).readText()
+        val reducerDependencies = listOf(
+            "Repository",
+            "Context",
+            "Navigation",
+            "viewModelScope",
+            "MutableStateFlow",
+        ).filter(reducer::contains)
+
+        assertTrue(
+            "VaultViewModel must route state mutations through VaultReducer",
+            "VaultReducer.reduce" in viewModel &&
+                    "SearchFilterState" !in viewModel &&
+                    "VaultDialogState" !in viewModel,
+        )
+        assertTrue(
+            "VaultReducer must remain a pure state transition: $reducerDependencies",
+            "internal object VaultReducer" in reducer && reducerDependencies.isEmpty(),
         )
     }
 
