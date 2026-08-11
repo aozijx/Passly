@@ -18,10 +18,45 @@ class AddBankCardViewModel @Inject constructor(
     createEntry = { BankCardEntryFactory.create(it) }
 ) {
 
-    fun onField(transform: (AddBankCardFormState) -> AddBankCardFormState) =
-        mutateForm(transform)
+    fun onAction(action: AddBankCardAction) {
+        when (action) {
+            is AddBankCardAction.TitleChanged -> mutateForm { it.copy(title = action.value) }
+            is AddBankCardAction.CardTypeChanged -> mutateForm {
+                it.copy(cardType = action.value)
+            }
+            is AddBankCardAction.CardholderChanged -> mutateForm {
+                it.copy(cardholder = action.value)
+            }
+            is AddBankCardAction.CardNumberChanged -> updateCardNumber(action.value)
+            is AddBankCardAction.CardNumberVisibilityChanged -> mutateForm {
+                it.copy(isCardNumberVisible = action.visible)
+            }
+            is AddBankCardAction.PaymentPinChanged -> mutateForm {
+                it.copy(paymentPin = action.value)
+            }
+            is AddBankCardAction.PinVisibilityChanged -> mutateForm {
+                it.copy(isPinVisible = action.visible)
+            }
+            is AddBankCardAction.CvvChanged -> mutateForm { it.copy(cardCvv = action.value) }
+            is AddBankCardAction.CvvVisibilityChanged -> mutateForm {
+                it.copy(isCvvVisible = action.visible)
+            }
+            is AddBankCardAction.ExpiryMonthChanged -> mutateForm {
+                it.copy(cardExpiryMonth = action.value)
+            }
+            is AddBankCardAction.ExpiryYearChanged -> mutateForm {
+                it.copy(cardExpiryYear = action.value)
+            }
+            is AddBankCardAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
+            is AddBankCardAction.BillingAddressChanged -> mutateForm {
+                it.copy(billingAddress = action.value)
+            }
+            is AddBankCardAction.NotesChanged -> mutateForm { it.copy(notes = action.value) }
+            AddBankCardAction.Save -> saveEntry()
+        }
+    }
 
-    fun updateCardNumber(value: String) {
+    private fun updateCardNumber(value: String) {
         val digits = value.filter { it.isDigit() }
         val validationResult = CardNumberValidator.validate(digits)
         mutateForm {

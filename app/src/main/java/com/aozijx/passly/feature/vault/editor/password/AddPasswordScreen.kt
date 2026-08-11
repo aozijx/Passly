@@ -57,7 +57,7 @@ fun AddPasswordScreen(
         onBack = onBack,
         onSave = {
             keyboardController?.hide()
-            viewModel.save()
+            viewModel.onAction(AddPasswordAction.Save)
         },
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope
@@ -66,32 +66,34 @@ fun AddPasswordScreen(
             state = uiState.form,
             onTitleChange = {
                 onUserInteraction()
-                viewModel.updateTitle(it)
+                viewModel.onAction(AddPasswordAction.TitleChanged(it))
             },
             onUsernameChange = {
                 onUserInteraction()
-                viewModel.updateUsername(it)
+                viewModel.onAction(AddPasswordAction.UsernameChanged(it))
             },
             onPasswordChange = {
                 onUserInteraction()
-                viewModel.updatePassword(it)
+                viewModel.onAction(AddPasswordAction.PasswordChanged(it))
             },
-            onPasswordVisibilityChange = viewModel::setPasswordVisible,
+            onPasswordVisibilityChange = {
+                viewModel.onAction(AddPasswordAction.PasswordVisibilityChanged(it))
+            },
             onWebsiteChange = {
                 onUserInteraction()
-                viewModel.updateWebsite(it)
+                viewModel.onAction(AddPasswordAction.WebsiteChanged(it))
             },
             onNotesChange = {
                 onUserInteraction()
-                viewModel.updateNotes(it)
+                viewModel.onAction(AddPasswordAction.NotesChanged(it))
             },
             onTagsChange = {
                 onUserInteraction()
-                viewModel.updateTags(it)
+                viewModel.onAction(AddPasswordAction.TagsChanged(it))
             },
             onSave = {
                 keyboardController?.hide()
-                viewModel.save()
+                viewModel.onAction(AddPasswordAction.Save)
             }
         )
     }

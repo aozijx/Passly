@@ -73,7 +73,7 @@ fun AddBankCardScreen(
         onBack = onBack,
         onSave = {
             keyboardController?.hide()
-            viewModel.save()
+            viewModel.onAction(AddBankCardAction.Save)
         },
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope
@@ -81,20 +81,16 @@ fun AddBankCardScreen(
         BankCardForm(
             state = uiState.form,
             callbacks = BankCardFormCallbacks(
-                onText = { transform ->
+                onAction = { action ->
                     onUserInteraction()
-                    viewModel.onField(transform)
+                    viewModel.onAction(action)
                 },
-                onVisibility = { transform ->
-                    viewModel.onField(transform)
-                },
-                onCardNumber = { value ->
-                    onUserInteraction()
-                    viewModel.updateCardNumber(value)
+                onVisibilityAction = { action ->
+                    viewModel.onAction(action)
                 },
                 onSave = {
                     keyboardController?.hide()
-                    viewModel.save()
+                    viewModel.onAction(AddBankCardAction.Save)
                 }
             )
         )
@@ -102,9 +98,8 @@ fun AddBankCardScreen(
 }
 
 data class BankCardFormCallbacks(
-    val onText: ((AddBankCardFormState) -> AddBankCardFormState) -> Unit,
-    val onVisibility: ((AddBankCardFormState) -> AddBankCardFormState) -> Unit,
-    val onCardNumber: (String) -> Unit,
+    val onAction: (AddBankCardAction) -> Unit,
+    val onVisibilityAction: (AddBankCardAction) -> Unit,
     val onSave: () -> Unit
 )
 
@@ -117,17 +112,17 @@ private fun BankCardForm(
     EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
         EntryTitleField(
             value = state.title,
-            onValueChange = { v -> callbacks.onText { f -> f.copy(title = v) } },
+            onValueChange = { callbacks.onAction(AddBankCardAction.TitleChanged(it)) },
             label = stringResource(R.string.title)
         )
         CardTypeDropdown(
             selected = state.cardType,
-            onSelected = { v -> callbacks.onText { f -> f.copy(cardType = v) } },
+            onSelected = { callbacks.onAction(AddBankCardAction.CardTypeChanged(it)) },
             label = stringResource(R.string.card_type)
         )
         EntryUsernameField(
             value = state.cardholder,
-            onValueChange = { v -> callbacks.onText { f -> f.copy(cardholder = v) } },
+            onValueChange = { callbacks.onAction(AddBankCardAction.CardholderChanged(it)) },
             label = stringResource(R.string.cardholder)
         )
     }
@@ -135,25 +130,37 @@ private fun BankCardForm(
     EntryEditorSection(title = stringResource(R.string.vault_editor_section_credentials)) {
         EntryPasswordField(
             password = state.cardNumber,
-            onPasswordChange = callbacks.onCardNumber,
+            onPasswordChange = {
+                callbacks.onAction(AddBankCardAction.CardNumberChanged(it))
+            },
             isVisible = state.isCardNumberVisible,
-            onVisibilityChange = { v -> callbacks.onVisibility { f -> f.copy(isCardNumberVisible = v) } },
+            onVisibilityChange = {
+                callbacks.onVisibilityAction(
+                    AddBankCardAction.CardNumberVisibilityChanged(it)
+                )
+            },
             label = stringResource(R.string.card_number),
             isError = state.cardNumberError != null,
             supportingText = state.cardNumberError
         )
         EntryPasswordField(
             password = state.paymentPin,
-            onPasswordChange = { v -> callbacks.onText { f -> f.copy(paymentPin = v) } },
+            onPasswordChange = {
+                callbacks.onAction(AddBankCardAction.PaymentPinChanged(it))
+            },
             isVisible = state.isPinVisible,
-            onVisibilityChange = { v -> callbacks.onVisibility { f -> f.copy(isPinVisible = v) } },
+            onVisibilityChange = {
+                callbacks.onVisibilityAction(AddBankCardAction.PinVisibilityChanged(it))
+            },
             label = stringResource(R.string.payment_pin)
         )
         EntryPasswordField(
             password = state.cardCvv,
-            onPasswordChange = { v -> callbacks.onText { f -> f.copy(cardCvv = v) } },
+            onPasswordChange = { callbacks.onAction(AddBankCardAction.CvvChanged(it)) },
             isVisible = state.isCvvVisible,
-            onVisibilityChange = { v -> callbacks.onVisibility { f -> f.copy(isCvvVisible = v) } },
+            onVisibilityChange = {
+                callbacks.onVisibilityAction(AddBankCardAction.CvvVisibilityChanged(it))
+            },
             label = stringResource(R.string.card_cvv)
         )
         Row(
@@ -162,7 +169,9 @@ private fun BankCardForm(
         ) {
             EntryEditorTextField(
                 value = state.cardExpiryMonth,
-                onValueChange = { v -> callbacks.onText { f -> f.copy(cardExpiryMonth = v) } },
+                onValueChange = {
+                    callbacks.onAction(AddBankCardAction.ExpiryMonthChanged(it))
+                },
                 label = stringResource(R.string.card_expiry_month),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
@@ -172,7 +181,9 @@ private fun BankCardForm(
             )
             EntryEditorTextField(
                 value = state.cardExpiryYear,
-                onValueChange = { v -> callbacks.onText { f -> f.copy(cardExpiryYear = v) } },
+                onValueChange = {
+                    callbacks.onAction(AddBankCardAction.ExpiryYearChanged(it))
+                },
                 label = stringResource(R.string.card_expiry_year),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
@@ -186,17 +197,19 @@ private fun BankCardForm(
     EntryEditorSection(title = stringResource(R.string.vault_editor_section_details)) {
         EntryTagsField(
             value = state.tags,
-            onValueChange = { v -> callbacks.onText { f -> f.copy(tags = v) } },
+            onValueChange = { callbacks.onAction(AddBankCardAction.TagsChanged(it)) },
             label = stringResource(R.string.entry_category)
         )
         EntryUsernameField(
             value = state.billingAddress,
-            onValueChange = { v -> callbacks.onText { f -> f.copy(billingAddress = v) } },
+            onValueChange = {
+                callbacks.onAction(AddBankCardAction.BillingAddressChanged(it))
+            },
             label = stringResource(R.string.billing_address)
         )
         EntryNotesField(
             value = state.notes,
-            onValueChange = { v -> callbacks.onText { f -> f.copy(notes = v) } },
+            onValueChange = { callbacks.onAction(AddBankCardAction.NotesChanged(it)) },
             label = stringResource(R.string.remark),
             keyboardActions = KeyboardActions(
                 onDone = {

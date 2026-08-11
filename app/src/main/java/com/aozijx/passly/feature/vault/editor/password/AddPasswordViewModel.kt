@@ -18,12 +18,22 @@ class AddPasswordViewModel @Inject constructor(
     createEntry = { PasswordEntryFactory.create(it) }
 ) {
 
-    fun updateTitle(value: String) = mutateForm { it.copy(title = value) }
-    fun updateUsername(value: String) = mutateForm { it.copy(username = value) }
-    fun updatePassword(value: String) = mutateForm { it.copy(password = value) }
-    fun updateWebsite(value: String) = mutateForm { it.copy(website = value) }
-    fun updateNotes(value: String) = mutateForm { it.copy(notes = value) }
-    fun updateTags(value: String) = mutateForm { it.copy(tags = value) }
-    fun setPasswordVisible(visible: Boolean) =
-        mutateForm { it.copy(isPasswordVisible = visible) }
+    fun onAction(action: AddPasswordAction) {
+        when (action) {
+            is AddPasswordAction.TitleChanged -> mutateForm { it.copy(title = action.value) }
+            is AddPasswordAction.UsernameChanged -> mutateForm {
+                it.copy(username = action.value)
+            }
+            is AddPasswordAction.PasswordChanged -> mutateForm {
+                it.copy(password = action.value)
+            }
+            is AddPasswordAction.PasswordVisibilityChanged -> mutateForm {
+                it.copy(isPasswordVisible = action.visible)
+            }
+            is AddPasswordAction.WebsiteChanged -> mutateForm { it.copy(website = action.value) }
+            is AddPasswordAction.NotesChanged -> mutateForm { it.copy(notes = action.value) }
+            is AddPasswordAction.TagsChanged -> mutateForm { it.copy(tags = action.value) }
+            AddPasswordAction.Save -> saveEntry()
+        }
+    }
 }

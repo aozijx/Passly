@@ -1881,6 +1881,39 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun createEntryEditorsUseTypedActionBoundaries() {
+        val editorRoot = File(
+            "src/main/java/com/aozijx/passly/feature/vault/editor"
+        )
+        val baseViewModel = File(editorRoot, "common/CreateEntryViewModel.kt").readText()
+        val editorNames = listOf("password/AddPassword", "otp/AddOtp", "bankcard/AddBankCard")
+        val offenders = editorNames.mapNotNull { editor ->
+            val name = editor.substringAfterLast('/')
+            val directory = editor.substringBeforeLast('/')
+            val viewModel = File(editorRoot, "$directory/${name}ViewModel.kt").readText()
+            val action = File(editorRoot, "$directory/${name}Action.kt").readText()
+            val screen = File(editorRoot, "$directory/${name}Screen.kt").readText()
+            val hasTypedBoundary = "fun onAction(action: ${name}Action)" in viewModel &&
+                    "viewModel.onAction(" in screen &&
+                    "viewModel.save()" !in screen &&
+                    "viewModel.update" !in screen &&
+                    "viewModel.onField" !in screen &&
+                    "->" !in action.substringAfter("sealed interface")
+            if (hasTypedBoundary) null else name
+        }
+
+        assertTrue(
+            "Create-entry screens must dispatch data-only typed actions: $offenders",
+            offenders.isEmpty(),
+        )
+        assertTrue(
+            "Shared save implementation must not remain a public UI command",
+            "protected fun saveEntry()" in baseViewModel &&
+                    Regex("""\n\s*fun save\(""").containsMatchIn(baseViewModel).not(),
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

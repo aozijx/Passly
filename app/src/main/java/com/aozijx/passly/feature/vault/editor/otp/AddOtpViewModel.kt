@@ -27,18 +27,22 @@ class AddOtpViewModel @Inject constructor(
     private val _events = Channel<AddOtpEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    fun updateForm(form: OtpFormState) = mutateForm { form }
-
-    fun updateType(type: OtpType) = mutateForm {
-        it.withTypeDefaults(type)
+    fun onAction(action: AddOtpAction) {
+        when (action) {
+            is AddOtpAction.FormChanged -> mutateForm { action.form }
+            is AddOtpAction.TypeChanged -> mutateForm { it.withTypeDefaults(action.type) }
+            is AddOtpAction.UriChanged -> updateUri(action.value, action.reportFailure)
+            is AddOtpAction.ScannedConfigApplied -> applyScannedConfig(action.config)
+            AddOtpAction.Save -> saveEntry()
+        }
     }
 
-    fun applyScannedConfig(config: OtpConfig) {
+    private fun applyScannedConfig(config: OtpConfig) {
         mutateForm { it.fromParsedConfig(config) }
         _events.trySend(AddOtpEvent.UriParsed)
     }
 
-    fun updateUri(value: String, reportFailure: Boolean = false) {
+    private fun updateUri(value: String, reportFailure: Boolean) {
         mutateForm { it.copy(uriText = value) }
         if (uiState.value.isSaving || value.isBlank()) return
 

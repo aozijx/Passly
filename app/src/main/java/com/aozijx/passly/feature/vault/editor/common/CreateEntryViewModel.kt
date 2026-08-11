@@ -45,7 +45,7 @@ abstract class CreateEntryViewModel<Form>(
         mutate(CreateEntryMutation.FormChanged(updated, isFormValid(updated)))
     }
 
-    fun save() {
+    protected fun saveEntry() {
         val current = _uiState.value
         if (!current.canSave || current.isSaving) return
         if (!secureSessionAccessState.hasFullSecureSessionAccess()) {

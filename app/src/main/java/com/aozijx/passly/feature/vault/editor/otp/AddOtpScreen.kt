@@ -90,7 +90,7 @@ fun AddOtpScreen(
         onBack = onBack,
         onSave = {
             keyboardController?.hide()
-            viewModel.save()
+            viewModel.onAction(AddOtpAction.Save)
         },
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope
@@ -100,7 +100,9 @@ fun AddOtpScreen(
                 value = uiState.form.title,
                 onValueChange = {
                     onUserInteraction()
-                    viewModel.updateForm(uiState.form.copy(title = it))
+                    viewModel.onAction(
+                        AddOtpAction.FormChanged(uiState.form.copy(title = it))
+                    )
                 },
                 label = stringResource(R.string.title)
             )
@@ -111,7 +113,7 @@ fun AddOtpScreen(
                 value = uiState.form.uriText,
                 onValueChange = {
                     onUserInteraction()
-                    viewModel.updateUri(it)
+                    viewModel.onAction(AddOtpAction.UriChanged(it))
                 },
                 label = stringResource(R.string.twofa_uri_hint),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -137,11 +139,11 @@ fun AddOtpScreen(
                 state = uiState.form,
                 onFieldUpdate = {
                     onUserInteraction()
-                    viewModel.updateForm(it)
+                    viewModel.onAction(AddOtpAction.FormChanged(it))
                 },
                 onTypeChange = {
                     onUserInteraction()
-                    viewModel.updateType(it)
+                    viewModel.onAction(AddOtpAction.TypeChanged(it))
                 }
             )
         }
@@ -151,7 +153,7 @@ fun AddOtpScreen(
         scannerContent(
             { config ->
                 onUserInteraction()
-                viewModel.applyScannedConfig(config)
+                viewModel.onAction(AddOtpAction.ScannedConfigApplied(config))
             },
             { showScanner = false }
         )
