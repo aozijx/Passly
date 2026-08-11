@@ -1494,6 +1494,39 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun mainMviSeparatesShellStateFromDatabaseAndAuthenticationEffects() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/main/MainViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/main/presentation/MainReducer.kt"
+        ).readText()
+        val reducerDependencies = listOf(
+            "AuthenticationManager",
+            "DatabaseLifecycleUseCases",
+            "SearchIndexMaintenance",
+            "AppSettingsRepository",
+            "viewModelScope",
+            "MutableStateFlow",
+        ).filter(reducer::contains)
+
+        assertTrue(
+            "MainViewModel must route shell state through MainReducer",
+            "MainReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
+        )
+        assertTrue(
+            "MainReducer must not coordinate infrastructure: $reducerDependencies",
+            "internal object MainReducer" in reducer && reducerDependencies.isEmpty(),
+        )
+        assertTrue(
+            "Database and authentication effects must remain in MainViewModel",
+            "databaseLifecycleUseCases" in viewModel &&
+                    "authenticationManager.authenticate" in viewModel &&
+                    "emitEffect" in viewModel,
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

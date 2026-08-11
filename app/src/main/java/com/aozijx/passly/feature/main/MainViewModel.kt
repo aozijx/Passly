@@ -19,6 +19,8 @@ import com.aozijx.passly.domain.settings.repository.AppSettingsRepository
 import com.aozijx.passly.feature.main.contract.MainEffect
 import com.aozijx.passly.feature.main.contract.MainIntent
 import com.aozijx.passly.feature.main.contract.MainUiState
+import com.aozijx.passly.feature.main.presentation.MainMutation
+import com.aozijx.passly.feature.main.presentation.MainReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +29,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -120,23 +121,12 @@ class MainViewModel @Inject constructor(
                         rebuildSearchIndex()
                     }
 
-                    _uiState.update {
-                        it.copy(isAuthorized = true, isRecoveryMode = false)
-                    }
+                    mutate(MainMutation.Authenticated)
                     emitEffect(MainEffect.NavigateToVault)
                 } else if (recoveryMode) {
-                    _uiState.update {
-                        it.copy(
-                            isAuthorized = false,
-                            isRecoveryMode = true,
-                            isDatabaseInitializing = false,
-                            databaseError = null
-                        )
-                    }
+                    mutate(MainMutation.RecoveryModeEntered)
                 } else {
-                    _uiState.update {
-                        it.copy(isAuthorized = false, isRecoveryMode = false)
-                    }
+                    mutate(MainMutation.SessionLocked)
                 }
             }
         }
@@ -149,19 +139,7 @@ class MainViewModel @Inject constructor(
                 .map { settings -> settings.appearance to settings.interfacePrefs }
                 .distinctUntilChanged()
                 .collect { (appearance, interfacePrefs) ->
-                    _uiState.update {
-                        it.copy(
-                            themeMode = appearance.themeMode,
-                            isDynamicColor = appearance.isDynamicColor,
-                            manualThemeColorArgb = appearance.manualThemeColorArgb,
-                            fontFamily = appearance.fontFamily,
-                            language = appearance.language,
-                            outerCornerRadiusDp = interfacePrefs.outerCornerRadiusDp,
-                            innerCornerRadiusDp = interfacePrefs.innerCornerRadiusDp,
-                            groupItemSpacingDp = interfacePrefs.groupItemSpacingDp,
-                            groupContentPaddingDp = interfacePrefs.groupContentPaddingDp
-                        )
-                    }
+                    mutate(MainMutation.SettingsChanged(appearance, interfacePrefs))
                 }
         }
     }
@@ -178,11 +156,9 @@ class MainViewModel @Inject constructor(
     private suspend fun runDatabaseInitialization(
         block: suspend () -> DatabaseInitOutcome
     ): DatabaseInitOutcome {
-        _uiState.update { it.copy(isDatabaseInitializing = true, databaseError = null) }
+        mutate(MainMutation.DatabaseInitializationStarted(clearError = true))
         val outcome = block()
-        _uiState.update {
-            it.copy(isDatabaseInitializing = false, databaseError = outcome.error)
-        }
+        mutate(MainMutation.DatabaseInitializationFinished(outcome.error))
         outcome.error?.let { error ->
             emitEffect(
                 MainEffect.ShowError(
@@ -197,13 +173,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             authenticationManager.databaseFailure.collect { error ->
                 if (error != null) {
-                    _uiState.update {
-                        it.copy(
-                            isDatabaseInitializing = false,
-                            databaseError = error,
-                            isAuthorized = false
-                        )
-                    }
+                    mutate(MainMutation.DatabaseFailureObserved(error))
                 }
             }
         }
@@ -211,7 +181,7 @@ class MainViewModel @Inject constructor(
 
     private fun recoverDatabase() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isDatabaseInitializing = true) }
+            mutate(MainMutation.DatabaseInitializationStarted(clearError = false))
             val request = AuthenticationRequest(AuthenticationPurpose.RECOVER_DATABASE)
             when (
                 authenticationManager.authenticate(request)
@@ -225,12 +195,7 @@ class MainViewModel @Inject constructor(
                     } else {
                         null
                     }
-                    _uiState.update {
-                        it.copy(
-                            isDatabaseInitializing = false,
-                            databaseError = recoveryError
-                        )
-                    }
+                    mutate(MainMutation.DatabaseInitializationFinished(recoveryError))
                     if (sessionRecovered) {
                         val recoveryMessage = outcome.recoveryId?.let {
                             "故障库已保留（恢复编号：$it），已创建新数据库"
@@ -249,9 +214,9 @@ class MainViewModel @Inject constructor(
                 }
 
                 is AuthenticationResult.Cancelled ->
-                    _uiState.update { it.copy(isDatabaseInitializing = false) }
+                    mutate(MainMutation.DatabaseInitializationStopped)
                 is AuthenticationResult.Failure -> {
-                    _uiState.update { it.copy(isDatabaseInitializing = false) }
+                    mutate(MainMutation.DatabaseInitializationStopped)
                     emitEffect(MainEffect.ShowError("身份验证失败，未创建新数据库"))
                 }
             }
@@ -260,6 +225,10 @@ class MainViewModel @Inject constructor(
 
     private fun emitEffect(effect: MainEffect) {
         _effects.trySend(effect)
+    }
+
+    private fun mutate(mutation: MainMutation) {
+        _uiState.value = MainReducer.reduce(_uiState.value, mutation)
     }
 
     /**
