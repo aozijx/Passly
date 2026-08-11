@@ -9,6 +9,7 @@ Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约与�
 - `:core:common`：纯 Kotlin 错误与通用能力；
 - `:core:telemetry`：遥测模型和报告契约；
 - `:core:android`：Android 平台能力及其实现；
+- `:core:security`：敏感值与内存擦除等纯 JVM 安全基础能力；
 - `:core:ui`：不依赖业务 feature 和 app 资源的共享 Compose UI；
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
 - `:app`：应用壳、导航和 DI 组装，以及尚待拆分的 data/security/feature 实现。
@@ -21,8 +22,10 @@ flowchart LR
     APP --> DATA["待拆分 data / security 实现"]
     FEATURE --> UI[":core:ui"]
     FEATURE --> ANDROID[":core:android"]
+    FEATURE --> SECURITY[":core:security"]
     FEATURE --> D[":domain"]
     DATA --> SESSION[":runtime:session"]
+    DATA --> SECURITY
     DATA --> D
     UI --> D
     ANDROID --> D

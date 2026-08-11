@@ -23,6 +23,7 @@ rootProject.name = "Passly"
 include(":app")
 include(":core:common")
 include(":core:android")
+include(":core:security")
 include(":core:ui")
 include(":core:telemetry")
 include(":domain")
