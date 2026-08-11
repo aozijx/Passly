@@ -31,6 +31,7 @@ import com.aozijx.passly.feature.settings.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.feature.settings.internal.SettingsGroup
 import com.aozijx.passly.feature.settings.security.RecoveryDraftState
+import com.aozijx.passly.feature.settings.security.RecoveryDraftAction
 import com.aozijx.passly.feature.settings.security.RecoveryDraftViewModel
 import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
@@ -182,11 +183,11 @@ internal fun DataSettingsRouteContent(
                         sheetState = localState.recoveryCodeSheetState,
                         onConfirm = {
                             localState.showRecoveryCodeSheet = false
-                            draftViewModel.confirmAndEnable()
+                            draftViewModel.onAction(RecoveryDraftAction.ConfirmAndEnable)
                         },
                         onDismiss = {
                             localState.showRecoveryCodeSheet = false
-                            draftViewModel.dismiss()
+                            draftViewModel.onAction(RecoveryDraftAction.Dismiss)
                         }
                     )
                 }
@@ -211,10 +212,10 @@ internal fun DataSettingsRouteContent(
                                 draftState is RecoveryDraftState.Committed,
                         verifyResult = securityState.recoveryCodeVerificationResult,
                         onCreateRecoveryCode = {
-                            draftViewModel.generate()
+                            draftViewModel.onAction(RecoveryDraftAction.Generate)
                         },
                         onRegenerate = {
-                            draftViewModel.generate()
+                            draftViewModel.onAction(RecoveryDraftAction.Generate)
                         },
                         onVerifyCode = {
                             viewModel.onAction(SecuritySettingsAction.VerifyRecoveryCode(it))

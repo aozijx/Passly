@@ -1774,6 +1774,13 @@ class MigrationBoundaryTest {
                     "AuthenticationManager" !in reducer &&
                     ".clear()" !in reducer,
         )
+        assertTrue(
+            "Recovery draft commands must use one typed action boundary",
+            "fun onAction(action: RecoveryDraftAction)" in viewModel &&
+                    Regex("""\n\s*fun (?:generate|confirmAndEnable|dismiss)\(""")
+                        .containsMatchIn(viewModel)
+                        .not(),
+        )
     }
 
     @Test
@@ -1932,7 +1939,14 @@ class MigrationBoundaryTest {
                                 (
                                         f.name == "${vmName}Intent.kt" ||
                                                 f.name == "${vmName}Action.kt" ||
-                                                f.name == "${vmName}UiAction.kt"
+                                                f.name == "${vmName}UiAction.kt" ||
+                                                (
+                                                        f.name == "${vmName}Contract.kt" &&
+                                                                (
+                                                                        "sealed interface ${vmName}Action" in f.readText() ||
+                                                                                "sealed interface ${vmName}Intent" in f.readText()
+                                                                        )
+                                                        )
                                         )
                     }
             }

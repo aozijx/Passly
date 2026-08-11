@@ -34,7 +34,15 @@ class RecoveryDraftViewModel @Inject constructor(
     )
     val state: StateFlow<RecoveryDraftState> = _state.asStateFlow()
 
-    fun generate() {
+    fun onAction(action: RecoveryDraftAction) {
+        when (action) {
+            RecoveryDraftAction.Generate -> generateDraft()
+            RecoveryDraftAction.ConfirmAndEnable -> confirmAndEnable()
+            RecoveryDraftAction.Dismiss -> dismissDraft()
+        }
+    }
+
+    private fun generateDraft() {
         if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
             mutate(RecoveryDraftMutation.Failed)
             return
@@ -64,10 +72,10 @@ class RecoveryDraftViewModel @Inject constructor(
             null
         }
 
-    fun confirmAndEnable() {
+    private fun confirmAndEnable() {
         viewModelScope.launch {
             if (authenticationManager.state.value !is AuthenticationState.Authenticated) {
-                dismiss()
+                clearDraft()
                 mutate(RecoveryDraftMutation.Failed)
                 return@launch
             }
@@ -85,12 +93,16 @@ class RecoveryDraftViewModel @Inject constructor(
         }
     }
 
-    fun dismiss() {
+    private fun dismissDraft() {
+        clearDraft()
+        mutate(RecoveryDraftMutation.Dismissed)
+    }
+
+    private fun clearDraft() {
         draft?.clear()
         draft = null
         savedStateHandle[WAS_DISCLOSURE_OPEN] = false
         savedStateHandle[DRAFT_GENERATION_ID] = null as String?
-        mutate(RecoveryDraftMutation.Dismissed)
     }
 
     private suspend fun createDraft() {
