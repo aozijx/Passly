@@ -14,7 +14,7 @@ import com.aozijx.passly.domain.entry.model.secret.WifiSecret
  *
  * `login`、`card`、`identity`、`ssh`、`wifi`、`passkey`、`otp`
  * 中最多只能有一个，与 EntryType 对应。备注和自定义字段是该原子凭据的扩展。
- * 同一账户的 Login、OTP、Passkey 等能力应拆成多个 Entry，并通过 parentEntryId
+ * 同一账户的 Login、OTP、Passkey 等能力应拆成多个 Entry，并通过类型化 EntryLink
  * 关联到一个不含敏感 payload 的 ACCOUNT Entry。
  */
 data class EntrySecret(
