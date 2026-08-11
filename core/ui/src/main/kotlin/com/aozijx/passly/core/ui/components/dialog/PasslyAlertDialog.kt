@@ -1,4 +1,4 @@
-package com.aozijx.passly.core.ui.components
+package com.aozijx.passly.core.ui.components.dialog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,48 +9,46 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.R
 
+/**
+ * Shared visual shell for a two-action alert dialog.
+ *
+ * Action labels intentionally belong to the caller so this component stays independent from
+ * feature resources and does not assign business meaning to the actions.
+ */
 @Composable
-fun AppDialog(
+fun PasslyAlertDialog(
     title: String,
-    onDismiss: () -> Unit,
+    confirmText: String,
+    dismissText: String,
     onConfirm: () -> Unit,
-    confirmText: String = stringResource(R.string.save),
-    dismissText: String = stringResource(R.string.cancel),
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     confirmEnabled: Boolean = true,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier
-            .padding(horizontal = 16.dp),
+        modifier = modifier.padding(horizontal = 16.dp),
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
         text = {
             Column(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 content()
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                enabled = confirmEnabled
-            ) {
+            TextButton(onClick = onConfirm, enabled = confirmEnabled) {
                 Text(confirmText)
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss
-            ) {
+            TextButton(onClick = onDismiss) {
                 Text(dismissText)
             }
-        }
+        },
     )
 }

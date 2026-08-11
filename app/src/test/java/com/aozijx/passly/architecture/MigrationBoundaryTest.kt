@@ -234,7 +234,7 @@ class MigrationBoundaryTest {
             "src/main/java/com/aozijx/passly/feature/main/ui/MainScreen.kt"
         ).readText()
         val inputActionButton = File(
-            "src/main/java/com/aozijx/passly/core/ui/components/common/" +
+            "../core/ui/src/main/kotlin/com/aozijx/passly/core/ui/components/common/" +
                     "InputActionButton.kt"
         ).readText()
         val authenticationViewModel = File(
@@ -419,7 +419,7 @@ class MigrationBoundaryTest {
     @Test
     fun settingsSectionIsCustomizableAndLivesInCommonUi() {
         val sectionSource = File(
-            "src/main/java/com/aozijx/passly/core/ui/components/settings/SettingsSection.kt"
+            "../core/ui/src/main/kotlin/com/aozijx/passly/core/ui/components/settings/SettingsSection.kt"
         ).readText()
         val legacyParts = File(
             "src/main/java/com/aozijx/passly/feature/settings/shell/SettingsUiParts.kt"

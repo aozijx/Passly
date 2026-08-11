@@ -7,7 +7,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.app.diagnostics.AppTelemetry
-import com.aozijx.passly.core.ui.components.AppDialog
+import com.aozijx.passly.core.ui.components.dialog.PasslyAlertDialog
 import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -24,8 +24,10 @@ fun AddEntryDialog(
     val typeLabel = stringResource(schema.titleRes)
     val saveFailedMessage = stringResource(R.string.vault_add_entry_save_failed)
 
-    AppDialog(
+    PasslyAlertDialog(
         title = stringResource(R.string.vault_add_generic_title, typeLabel),
+        confirmText = stringResource(R.string.save),
+        dismissText = stringResource(R.string.cancel),
         onDismiss = onDismiss,
         confirmEnabled = state.canSave,
         onConfirm = {
