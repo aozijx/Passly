@@ -18,8 +18,6 @@ import com.aozijx.passly.feature.settings.security.PrivacySettingsAction
 import com.aozijx.passly.feature.settings.security.PrivacySettingsViewModel
 import com.aozijx.passly.feature.settings.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.security.SecuritySettingsViewModel
-import com.aozijx.passly.feature.settings.security.handleBiometricToggle
-import com.aozijx.passly.feature.settings.security.handleInvalidateKeyToggle
 import com.aozijx.passly.feature.settings.security.ui.PrivacyDetail
 import com.aozijx.passly.feature.settings.security.ui.SecurityDetail
 import com.aozijx.passly.feature.settings.shell.SettingsScreenLocalState
@@ -35,9 +33,8 @@ internal fun CoreSettingsRouteContent(
     when (route) {
         SettingsRoute.Security -> {
             val viewModel: SecuritySettingsViewModel = hiltViewModel()
-            val state by viewModel.config.collectAsStateWithLifecycle()
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-            val biometricEnabled by viewModel.isBiometricEnabled.collectAsStateWithLifecycle()
 
             SettingsSecondaryPage(
                 title = stringResource(SettingsGroup.SECURITY.titleRes),
@@ -47,7 +44,7 @@ internal fun CoreSettingsRouteContent(
                     SecurityDetail(
                         state = state,
                         isAppPasswordEnabled = settingsState.isAppPasswordEnabled,
-                        isBiometricEnabled = biometricEnabled,
+                        isBiometricEnabled = state.isBiometricEnabled,
                         onLockTimeoutChange = {
                             viewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
                         },
@@ -55,12 +52,13 @@ internal fun CoreSettingsRouteContent(
                             settingsViewModel.handleIntent(SettingsIntent.RequestAppPasswordEntry)
                         },
                         onBiometricEnabledChange = { enabled ->
-                            handleBiometricToggle(enabled, viewModel::setBiometricEnabled)
+                            viewModel.onAction(
+                                SecuritySettingsAction.SetBiometricEnabled(enabled)
+                            )
                         },
                         onInvalidateKeyOnBioChangeToggle = { enabled ->
-                            handleInvalidateKeyToggle(
-                                enabled = enabled,
-                                switchPolicy = viewModel::switchKeyInvalidationPolicy
+                            viewModel.onAction(
+                                SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(enabled)
                             )
                         },
                         onLockOnBackgroundChange = {

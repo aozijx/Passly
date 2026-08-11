@@ -1806,6 +1806,81 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun securitySettingsUsesOneUiStateAndPureReducer() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/" +
+                    "SecuritySettingsViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/presentation/" +
+                    "SecuritySettingsReducer.kt"
+        ).readText()
+        val contract = File(
+            "src/main/java/com/aozijx/passly/feature/settings/security/" +
+                    "SecuritySettingsContract.kt"
+        ).readText()
+
+        assertTrue(
+            "Security settings state must use one reducer write path",
+            "SecuritySettingsReducer.reduce" in viewModel &&
+                    "val uiState:" in viewModel &&
+                    "val config:" !in viewModel &&
+                    "val verifyResult:" !in viewModel &&
+                    "val hasRecoveryEnvelope:" !in viewModel,
+        )
+        assertTrue(
+            "Security commands must enter through SecuritySettingsAction",
+            "SetBiometricEnabled" in contract &&
+                    "SetInvalidateKeyOnBiometricChange" in contract &&
+                    "fun setBiometricEnabled" !in viewModel.substringBefore("private fun"),
+        )
+        assertTrue(
+            "Recovery verification credentials must remain wipeable",
+            "VerifyRecoveryCode(val code: CharArray)" in contract &&
+                    "action.code.toCharArray()" !in viewModel,
+        )
+        assertTrue(
+            "Security reducer must remain free of authentication and repository side effects",
+            "AuthenticationManager" !in reducer &&
+                    "MethodProvisioner" !in reducer &&
+                    "Repository" !in reducer,
+        )
+    }
+
+    @Test
+    fun viewModelMutableStateFlowsHaveOneWriteSite() {
+        val declaration = Regex(
+            """private\s+val\s+(_[A-Za-z0-9]+)(?:\s*:[^=]+)?\s*=\s*MutableStateFlow"""
+        )
+        val offenders = productionKotlinFiles
+            .filter { "/feature/" in it.invariantSeparatorsPath }
+            .filter { it.name.endsWith("ViewModel.kt") }
+            .flatMap { file ->
+                val source = file.readText()
+                declaration.findAll(source).mapNotNull { match ->
+                    val stateName = match.groupValues[1]
+                    val write = Regex(
+                        """\b${Regex.escape(stateName)}\.(?:""" +
+                                """value\s*(?:[+*/-]?=|\+\+|--)|""" +
+                                """update\s*\{|emit\s*\(|tryEmit\s*\()"""
+                    )
+                    val writeSites = write.findAll(source).count()
+                    if (writeSites > 1) {
+                        "${file.relativeTo(projectRoot).path}:$stateName ($writeSites writes)"
+                    } else {
+                        null
+                    }
+                }
+            }
+            .toList()
+
+        assertTrue(
+            "MutableStateFlow state must have one centralized write site: $offenders",
+            offenders.isEmpty(),
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

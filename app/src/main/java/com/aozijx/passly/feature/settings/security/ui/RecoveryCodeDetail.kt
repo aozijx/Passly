@@ -37,7 +37,7 @@ fun RecoveryCodeDetail(
     verifyResult: Boolean?,
     onCreateRecoveryCode: () -> Unit,
     onRegenerate: () -> Unit,
-    onVerifyCode: (String) -> Unit,
+    onVerifyCode: (CharArray) -> Unit,
     onClearVerifyResult: () -> Unit
 ) {
     var showRegenerateConfirm by remember { mutableStateOf(false) }
@@ -133,7 +133,7 @@ fun RecoveryCodeDetail(
                 onAction = {
                     if (!verifyInput.isEmpty) {
                         isVerifying = true
-                        onVerifyCode(verifyInput.toPlainString().trim())
+                        onVerifyCode(verifyInput.toCharArray())
                     }
                 },
                 onResultConsumed = onClearVerifyResult

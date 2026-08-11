@@ -164,6 +164,7 @@ internal fun DataSettingsRouteContent(
             val viewModel: SecuritySettingsViewModel = hiltViewModel()
             val draftViewModel: RecoveryDraftViewModel = hiltViewModel()
             val draftState by draftViewModel.state.collectAsStateWithLifecycle()
+            val securityState by viewModel.uiState.collectAsStateWithLifecycle()
             val recoveryCode = remember(draftState) {
                 if (draftState is RecoveryDraftState.Ready) {
                     draftViewModel.revealCode()?.concatToString()
@@ -171,9 +172,6 @@ internal fun DataSettingsRouteContent(
                     null
                 }
             }
-            val hasEnvelope by viewModel.hasRecoveryEnvelope.collectAsStateWithLifecycle()
-            val verifyResult by viewModel.verifyResult.collectAsStateWithLifecycle()
-
             LaunchedEffect(recoveryCode) {
                 if (recoveryCode != null) localState.showRecoveryCodeSheet = true
             }
@@ -209,9 +207,9 @@ internal fun DataSettingsRouteContent(
                 }
                 item {
                     RecoveryCodeDetail(
-                        hasRecoveryEnvelope = hasEnvelope ||
+                        hasRecoveryEnvelope = securityState.hasRecoveryEnvelope ||
                                 draftState is RecoveryDraftState.Committed,
-                        verifyResult = verifyResult,
+                        verifyResult = securityState.recoveryCodeVerificationResult,
                         onCreateRecoveryCode = {
                             draftViewModel.generate()
                         },
