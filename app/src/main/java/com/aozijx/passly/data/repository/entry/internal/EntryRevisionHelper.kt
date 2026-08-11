@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySummary
 import com.aozijx.passly.domain.entry.model.link.EntryLink
 import com.aozijx.passly.domain.entry.model.link.EntryLinkId
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import com.aozijx.passly.domain.entry.model.revision.RevisionType
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
@@ -47,7 +46,7 @@ class EntryRevisionHelper @Inject constructor(
                     id = EntryLinkId(link.linkId),
                     sourceEntryId = EntryId(link.sourceEntryId),
                     targetEntryId = EntryId(link.targetEntryId),
-                    relationType = EntryRelationType.valueOf(link.relationType),
+                    relationType = link.relationType,
                     createdAt = link.createdAt,
                     updatedAt = link.updatedAt,
                 )

@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 
 @Entity(
     tableName = "entry_links",
@@ -35,7 +36,7 @@ data class EntryLinkEntity(
     val linkId: String,
     val sourceEntryId: String,
     val targetEntryId: String,
-    val relationType: String,
+    val relationType: EntryRelationType,
     val createdAt: Long,
     val updatedAt: Long
 )

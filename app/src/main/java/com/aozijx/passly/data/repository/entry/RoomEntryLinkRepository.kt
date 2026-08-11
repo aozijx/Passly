@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
@@ -10,8 +11,8 @@ import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.link.EntryLink
 import com.aozijx.passly.domain.entry.model.link.EntryLinkId
-import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import com.aozijx.passly.domain.entry.repository.EntryLinkRepository
+import com.aozijx.passly.domain.entry.service.EntryLinkPolicy
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -75,6 +76,22 @@ class RoomEntryLinkRepository @Inject constructor(
 
     override suspend fun upsert(link: EntryLink): AppResult<Unit> =
         transactionRunner.write("entry-link.upsert") {
+            val endpoints = entryQueryDao().getByIds(
+                listOf(link.sourceEntryId.value, link.targetEntryId.value)
+            ).associateBy { it.entryId }
+            val source = endpoints[link.sourceEntryId.value]
+            val target = endpoints[link.targetEntryId.value]
+            if (
+                source == null || target == null ||
+                source.deletedAt != null || target.deletedAt != null ||
+                !EntryLinkPolicy.isAllowed(
+                    relationType = link.relationType,
+                    sourceType = source.entryType,
+                    targetType = target.entryType,
+                )
+            ) {
+                throw ValidationError()
+            }
             val previous = entryLinkQueryDao().getById(link.id.value)
             entryLinkCommandDao().upsert(link.toEntity())
             val affectedEntryIds = buildSet {
@@ -106,7 +123,7 @@ class RoomEntryLinkRepository @Inject constructor(
         id = EntryLinkId(linkId),
         sourceEntryId = EntryId(sourceEntryId),
         targetEntryId = EntryId(targetEntryId),
-        relationType = EntryRelationType.valueOf(relationType),
+        relationType = relationType,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -115,7 +132,7 @@ class RoomEntryLinkRepository @Inject constructor(
         linkId = id.value,
         sourceEntryId = sourceEntryId.value,
         targetEntryId = targetEntryId.value,
-        relationType = relationType.name,
+        relationType = relationType,
         createdAt = createdAt,
         updatedAt = updatedAt
     )

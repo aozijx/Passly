@@ -24,6 +24,7 @@ import com.aozijx.passly.data.local.dao.search.SearchTokenQueryDao
 import com.aozijx.passly.data.local.dao.sensitive.SensitiveFieldCommandDao
 import com.aozijx.passly.data.local.dao.sensitive.SensitiveFieldQueryDao
 import com.aozijx.passly.data.local.database.converter.ActivityTypeConverter
+import com.aozijx.passly.data.local.database.converter.EntryRelationTypeConverter
 import com.aozijx.passly.data.local.database.converter.EntryTypeConverter
 import com.aozijx.passly.data.local.database.converter.LookupFieldConverter
 import com.aozijx.passly.data.model.entity.EntryActivityEntity
@@ -53,6 +54,7 @@ import com.aozijx.passly.data.model.entity.SearchTokenEntity
 )
 @TypeConverters(
     EntryTypeConverter::class,
+    EntryRelationTypeConverter::class,
     ActivityTypeConverter::class,
     LookupFieldConverter::class
 )

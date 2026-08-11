@@ -6,6 +6,7 @@ import com.aozijx.passly.data.backup.model.BackupOtpType
 import com.aozijx.passly.data.backup.model.BackupResourceKind
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.link.EntryRelationType
+import com.aozijx.passly.domain.entry.service.EntryLinkPolicy
 import java.security.MessageDigest
 
 internal object BackupBundleValidator {
@@ -35,6 +36,7 @@ internal object BackupBundleValidator {
         }
 
         val entryIds = document.entries.mapTo(hashSetOf()) { it.id }
+        val entryTypesById = document.entries.associate { it.id to EntryType.valueOf(it.type) }
         val resourceIds = document.resources.mapTo(hashSetOf()) { it.id }
         require(
             entryIds.all(SAFE_ID::matches) &&
@@ -96,6 +98,13 @@ internal object BackupBundleValidator {
             }
             require(link.sourceEntryId != link.targetEntryId) { "条目不能关联自身: ${link.id}" }
             require(link.relationType in relationTypes) { "未知关系类型: ${link.relationType}" }
+            require(
+                EntryLinkPolicy.isAllowed(
+                    relationType = EntryRelationType.valueOf(link.relationType),
+                    sourceType = requireNotNull(entryTypesById[link.sourceEntryId]),
+                    targetType = requireNotNull(entryTypesById[link.targetEntryId]),
+                )
+            ) { "关系方向或条目类型无效: ${link.id}" }
             require(link.createdAt >= 0 && link.updatedAt >= link.createdAt) {
                 "关系时间无效: ${link.id}"
             }

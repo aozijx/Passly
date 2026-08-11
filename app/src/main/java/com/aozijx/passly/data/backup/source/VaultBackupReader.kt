@@ -203,7 +203,7 @@ class VaultBackupReader @Inject constructor(
                         id = link.linkId,
                         sourceEntryId = link.sourceEntryId,
                         targetEntryId = link.targetEntryId,
-                        relationType = link.relationType,
+                        relationType = link.relationType.name,
                         createdAt = link.createdAt,
                         updatedAt = link.updatedAt
                     )

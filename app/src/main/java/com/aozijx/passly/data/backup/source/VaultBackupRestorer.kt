@@ -23,6 +23,7 @@ import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.extractHighSensitivity
+import com.aozijx.passly.domain.entry.model.link.EntryRelationType
 import com.aozijx.passly.domain.entry.model.withoutHighSensitivity
 import com.aozijx.passly.security.crypto.FieldEncryptor
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -187,7 +188,7 @@ class VaultBackupRestorer @Inject constructor(
                                 linkId = link.id,
                                 sourceEntryId = link.sourceEntryId,
                                 targetEntryId = link.targetEntryId,
-                                relationType = link.relationType,
+                                relationType = EntryRelationType.valueOf(link.relationType),
                                 createdAt = link.createdAt,
                                 updatedAt = link.updatedAt
                             )

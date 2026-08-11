@@ -82,9 +82,7 @@ class RoomEntryListQueryRepository @Inject constructor(
                                 id = com.aozijx.passly.domain.entry.model.link.EntryLinkId(link.linkId),
                                 sourceEntryId = EntryId(link.sourceEntryId),
                                 targetEntryId = EntryId(link.targetEntryId),
-                                relationType = com.aozijx.passly.domain.entry.model.link.EntryRelationType.valueOf(
-                                    link.relationType
-                                ),
+                                relationType = link.relationType,
                                 createdAt = link.createdAt,
                                 updatedAt = link.updatedAt
                             )

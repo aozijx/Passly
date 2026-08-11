@@ -589,6 +589,17 @@ class BackupCodecTest {
             )
         }
 
+        val reversedMembership = valid.document.links.single().copy(
+            sourceEntryId = account.id,
+            targetEntryId = login.id,
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            BackupBundleValidator.validate(
+                valid.copy(document = valid.document.copy(links = listOf(reversedMembership))),
+                requireResourceData = false,
+            )
+        }
+
         val legacyVaultFormat = json.replace(BackupDocument.FORMAT, "passly-vault")
         assertThrows(Exception::class.java) {
             JsonBackupImporter().import(legacyVaultFormat.toByteArray())
