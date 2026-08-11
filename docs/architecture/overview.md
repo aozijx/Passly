@@ -1,21 +1,37 @@
 # 架构总览
 
-Passly 当前保持单 Gradle 模块，以 Kotlin 包维护 `core / domain / data / security / feature` 边界。Gradle
-多模块化是后续工程选择，不应在当前文档中假装已经完成。
+Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约与运行时能力已离开 `app`；尚未完成模块化的
+`data / security / feature` 实现仍暂时位于 `app`，不能把包目录误认为已经存在的模块边界。
+
+当前模块：
+
+- `:domain`：纯领域模型、契约与用例；
+- `:core:common`：纯 Kotlin 错误与通用能力；
+- `:core:telemetry`：遥测模型和报告契约；
+- `:core:android`：Android 平台能力及其实现；
+- `:core:ui`：不依赖业务 feature 和 app 资源的共享 Compose UI；
+- `:runtime:session`：资源无关的安全会话状态机与租约管理；
+- `:app`：应用壳、导航和 DI 组装，以及尚待拆分的 data/security/feature 实现。
 
 ## 依赖方向
 
 ```mermaid
 flowchart LR
-    UI["feature · Compose / ViewModel"] --> D["domain · 模型 / 契约 / 用例"]
-    UI --> C["core · Android 通用能力"]
-    DATA["data · Room / DataStore / Repository"] --> D
-    DATA --> S["security · 密码学 / 信封 / 会话"]
-    S --> D
-    C -. "不得依赖具体 data 实现" .-> D
+    APP[":app · Shell / navigation / DI"] --> FEATURE["待拆分 feature 实现"]
+    APP --> DATA["待拆分 data / security 实现"]
+    FEATURE --> UI[":core:ui"]
+    FEATURE --> ANDROID[":core:android"]
+    FEATURE --> D[":domain"]
+    DATA --> SESSION[":runtime:session"]
+    DATA --> D
+    UI --> D
+    ANDROID --> D
+    SESSION --> D
+    D --> COMMON[":core:common"]
 ```
 
-依赖注入只负责在应用边界把 Domain 契约与 Data/Security 实现连接起来，不改变源码依赖方向。
+依赖注入只负责在应用边界把 Domain 契约与 Data/Security 实现连接起来，不改变源码依赖方向。共享模块不得
+依赖 `:app`；这一规则由 Gradle/编译器边界保证。
 
 ## 数据流
 
@@ -36,14 +52,16 @@ flowchart LR
 
 ## Feature 与 UI
 
-`feature/<name>` 是业务垂直切片，可包含 `navigation`、`presentation`、`ui`。Compose 页面和通用视觉组件放在
-UI 子包；ViewModel、UI state/effect 留在 presentation 子包。跨 Feature 的纯视觉组件放
-`feature/common/ui` 或独立顶层 `ui` 包，但不能反向依赖具体 Feature。
+`feature/<name>` 是尚在迁移中的业务垂直切片，可包含 `navigation`、`presentation`、`contract`、`ui`。
+Compose 页面和 ViewModel 由 feature 自己拥有；跨 Feature 的纯视觉组件进入 `:core:ui`，但必须通过参数或
+Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。App 级组合位于 `app/shell`，不再使用
+`feature/main` 伪装成业务 feature。
 
 推荐布局：
 
 ```text
 feature/settings/
+  contract/
   navigation/
   presentation/
   ui/

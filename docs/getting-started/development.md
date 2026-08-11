@@ -7,7 +7,7 @@
 | JDK     | 21                                   |
 | Android | minSdk 31、targetSdk 36、compileSdk 36 |
 | Gradle  | 使用仓库内 Wrapper                        |
-| 模块      | 单 `app` Gradle 模块                    |
+| 模块      | `app` + domain/core/runtime 基础模块       |
 
 依赖版本以 `gradle/libs.versions.toml` 为唯一来源，不在文档复制完整版本表。
 
@@ -16,6 +16,8 @@
 ```powershell
 .\gradlew.bat :app:compileDebugKotlin
 .\gradlew.bat :app:testDebugUnitTest
+.\gradlew.bat :domain:test :runtime:session:test
+.\gradlew.bat :core:android:testDebugUnitTest :core:ui:testDebugUnitTest
 .\gradlew.bat :app:lintDebug
 .\gradlew.bat :app:assembleDebug
 .\gradlew.bat :app:assembleDebugAndroidTest
