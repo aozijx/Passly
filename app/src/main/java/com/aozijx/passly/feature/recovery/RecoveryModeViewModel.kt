@@ -9,14 +9,16 @@ import com.aozijx.passly.domain.authentication.AuthenticationState
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeUiState
+import com.aozijx.passly.feature.recovery.presentation.RecoveryModeMutation
+import com.aozijx.passly.feature.recovery.presentation.RecoveryModeReducer
 import com.aozijx.passly.security.MemoryCleaner
+import com.aozijx.passly.security.crypto.SecureString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,12 +37,8 @@ class RecoveryModeViewModel @Inject constructor(
     fun onIntent(intent: RecoveryModeIntent) {
         when (intent) {
             RecoveryModeIntent.SetPasswordClicked -> showSetPasswordDialog()
-            is RecoveryModeIntent.NewPasswordChanged ->
-                _uiState.update { it.copy(newPassword = intent.value, passwordSetupError = null) }
-            is RecoveryModeIntent.ConfirmPasswordChanged ->
-                _uiState.update {
-                    it.copy(confirmPassword = intent.value, passwordSetupError = null)
-                }
+            is RecoveryModeIntent.NewPasswordChanged -> updateNewPassword(intent.value)
+            is RecoveryModeIntent.ConfirmPasswordChanged -> updateConfirmPassword(intent.value)
             RecoveryModeIntent.SubmitNewPassword -> submitNewPassword()
             RecoveryModeIntent.ExitClicked -> exitRecovery()
             RecoveryModeIntent.DismissPasswordDialog -> dismissPasswordDialog()
@@ -51,7 +49,17 @@ class RecoveryModeViewModel @Inject constructor(
 
     private fun showSetPasswordDialog() {
         if (!ensureRecoveryMode()) return
-        _uiState.update { it.copy(showSetPasswordDialog = true, passwordSetupError = null) }
+        mutate(RecoveryModeMutation.PasswordDialogOpened)
+    }
+
+    private fun updateNewPassword(value: String) {
+        _uiState.value.newPassword.wipe()
+        mutate(RecoveryModeMutation.NewPasswordChanged(SecureString.fromString(value)))
+    }
+
+    private fun updateConfirmPassword(value: String) {
+        _uiState.value.confirmPassword.wipe()
+        mutate(RecoveryModeMutation.ConfirmPasswordChanged(SecureString.fromString(value)))
     }
 
     private fun submitNewPassword() {
@@ -63,37 +71,25 @@ class RecoveryModeViewModel @Inject constructor(
         if (password.isEmpty() || !password.contentEquals(confirm)) {
             MemoryCleaner.wipeCharArray(password)
             MemoryCleaner.wipeCharArray(confirm)
-            _uiState.update { it.copy(passwordSetupError = "密码不匹配或为空") }
+            mutate(RecoveryModeMutation.ValidationFailed("密码不匹配或为空"))
             return
         }
 
-        _uiState.update { it.copy(isSettingPassword = true, passwordSetupError = null) }
+        mutate(RecoveryModeMutation.PasswordSetupStarted)
         viewModelScope.launch {
             try {
                 when (val result = methodProvisioner.setAppPassword(password)) {
-                    is AuthenticationResult.Success ->
-                        _uiState.update {
-                            it.copy(
-                                showSetPasswordDialog = false,
-                                newPassword = "",
-                                confirmPassword = "",
-                                isSettingPassword = false,
-                                passwordSetupError = null
-                            )
-                        }.also {
-                            _effect.send(RecoveryModeEffect.PasswordResetCompleted)
-                        }
+                    is AuthenticationResult.Success -> {
+                        wipePasswords()
+                        mutate(RecoveryModeMutation.PasswordSetupCompleted)
+                        _effect.send(RecoveryModeEffect.PasswordResetCompleted)
+                    }
 
                     is AuthenticationResult.Cancelled ->
-                        _uiState.update { it.copy(isSettingPassword = false) }
+                        mutate(RecoveryModeMutation.PasswordSetupStopped)
 
                     is AuthenticationResult.Failure ->
-                        _uiState.update {
-                            it.copy(
-                                isSettingPassword = false,
-                                passwordSetupError = "设置密码失败"
-                            )
-                        }
+                        mutate(RecoveryModeMutation.PasswordSetupFailed("设置密码失败"))
                 }
             } finally {
                 MemoryCleaner.wipeCharArray(password)
@@ -109,26 +105,29 @@ class RecoveryModeViewModel @Inject constructor(
     }
 
     private fun dismissPasswordDialog() {
-        _uiState.update {
-            it.copy(
-                showSetPasswordDialog = false,
-                newPassword = "",
-                confirmPassword = "",
-                passwordSetupError = null
-            )
-        }
+        wipePasswords()
+        mutate(RecoveryModeMutation.PasswordDialogDismissed)
     }
 
     private fun ensureRecoveryMode(): Boolean {
         val recoveryMode = authenticationManager.state.value is AuthenticationState.RecoveryMode
         if (recoveryMode) return true
-        _uiState.update {
-            it.copy(
-                showSetPasswordDialog = false,
-                isSettingPassword = false,
-                passwordSetupError = "当前不在恢复模式"
-            )
-        }
+        wipePasswords()
+        mutate(RecoveryModeMutation.RecoveryModeRejected("当前不在恢复模式"))
         return false
+    }
+
+    private fun mutate(mutation: RecoveryModeMutation) {
+        _uiState.value = RecoveryModeReducer.reduce(_uiState.value, mutation)
+    }
+
+    private fun wipePasswords() {
+        _uiState.value.newPassword.wipe()
+        _uiState.value.confirmPassword.wipe()
+    }
+
+    override fun onCleared() {
+        wipePasswords()
+        super.onCleared()
     }
 }

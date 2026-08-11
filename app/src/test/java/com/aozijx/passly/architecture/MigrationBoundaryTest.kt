@@ -1602,6 +1602,51 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun recoveryModeMviKeepsPasswordResetScopedAndWipeable() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
+        ).readText()
+        val uiState = File(
+            "src/main/java/com/aozijx/passly/feature/recovery/contract/" +
+                    "RecoveryModeUiState.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/recovery/presentation/" +
+                    "RecoveryModeReducer.kt"
+        ).readText()
+        val reducerDependencies = listOf(
+            "AuthenticationManager",
+            "AuthenticationMethodProvisioner",
+            "MemoryCleaner",
+            "viewModelScope",
+            "MutableStateFlow",
+        ).filter(reducer::contains)
+
+        assertTrue(
+            "Recovery password inputs must use wipeable state values",
+            "SensitiveValue" in uiState &&
+                    "newPassword: String" !in uiState &&
+                    "confirmPassword: String" !in uiState,
+        )
+        assertTrue(
+            "RecoveryModeViewModel must reduce state and explicitly wipe secrets",
+            "RecoveryModeReducer.reduce" in viewModel &&
+                    "_uiState.update" !in viewModel &&
+                    "wipePasswords()" in viewModel,
+        )
+        assertTrue(
+            "RecoveryModeReducer must remain pure: $reducerDependencies",
+            "internal object RecoveryModeReducer" in reducer &&
+                    ".wipe()" !in reducer &&
+                    reducerDependencies.isEmpty(),
+        )
+        assertFalse(
+            "Recovery mode must still have no backup or full-session capability",
+            "Backup" in viewModel || "markAuthenticated" in viewModel,
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。

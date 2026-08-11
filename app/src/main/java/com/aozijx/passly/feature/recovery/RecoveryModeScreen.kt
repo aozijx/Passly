@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.core.ui.components.group.RoundedGroup
 import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.core.ui.components.group.settingsGroupItem
@@ -124,8 +125,8 @@ fun RecoveryModeScreen(
 
     if (state.showSetPasswordDialog) {
         AppPasswordSetDialog(
-            newPassword = state.newPassword,
-            confirmPassword = state.confirmPassword,
+            newPassword = state.newPassword.toUiString(),
+            confirmPassword = state.confirmPassword.toUiString(),
             onNewPasswordChange = {
                 viewModel.onIntent(RecoveryModeIntent.NewPasswordChanged(it))
             },
@@ -139,4 +140,13 @@ fun RecoveryModeScreen(
         )
     }
 
+}
+
+private fun SensitiveValue.toUiString(): String {
+    val chars = toCharArray()
+    return try {
+        String(chars)
+    } finally {
+        chars.fill('\u0000')
+    }
 }
