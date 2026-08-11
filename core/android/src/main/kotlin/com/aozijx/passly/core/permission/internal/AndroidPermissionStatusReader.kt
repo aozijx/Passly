@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.permission
+package com.aozijx.passly.core.permission.internal
 
 import android.content.Context
 import android.content.pm.PackageManager
@@ -19,12 +19,7 @@ class AndroidPermissionStatusReader @Inject constructor(
         val androidName = RuntimePermissionCatalog.androidName(permission)
             ?: return PermissionStatus.NOT_APPLICABLE
         return if (
-            ContextCompat.checkSelfPermission(context, androidName) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            PermissionStatus.GRANTED
-        } else {
-            PermissionStatus.DENIED
-        }
+            ContextCompat.checkSelfPermission(context, androidName) == PackageManager.PERMISSION_GRANTED
+        ) PermissionStatus.GRANTED else PermissionStatus.DENIED
     }
 }

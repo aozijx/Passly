@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.permission
+package com.aozijx.passly.core.permission.internal
 
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

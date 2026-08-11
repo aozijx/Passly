@@ -127,6 +127,7 @@ room {
 
 dependencies {
     implementation(project(":core:common"))
+    implementation(project(":core:android"))
     implementation(project(":core:telemetry"))
     implementation(project(":domain"))
 

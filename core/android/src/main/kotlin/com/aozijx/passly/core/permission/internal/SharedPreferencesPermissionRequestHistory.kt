@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.permission
+package com.aozijx.passly.core.permission.internal
 
 import android.content.Context
 import androidx.core.content.edit
@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SharedPreferencesPermissionRequestHistory @Inject constructor(
-    @ApplicationContext context: Context
+    @param:ApplicationContext context: Context
 ) : PermissionRequestHistory {
     private val preferences = context.getSharedPreferences(
         "runtime_permission_history",

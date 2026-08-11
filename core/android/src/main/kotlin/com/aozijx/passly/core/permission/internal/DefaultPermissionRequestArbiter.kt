@@ -1,4 +1,4 @@
-package com.aozijx.passly.app.permission
+package com.aozijx.passly.core.permission.internal
 
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import com.aozijx.passly.core.permission.request.PermissionRequestLease
