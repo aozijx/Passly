@@ -302,8 +302,4 @@
     <string name="app_package_picker_search">Search apps or package names</string>
     <string name="app_package_picker_action">Choose app</string>
     <string name="entry_type">Entry type</string>
-    <string name="recovery_mode_title">Recovery mode</string>
-    <string name="recovery_mode_description">Recovery mode can only set a new app password. It cannot read or export password data. Passly locks immediately afterward so you can unlock with the new password.</string>
-    <string name="recovery_mode_set_password">Set a new app password</string>
-    <string name="recovery_mode_exit">Exit and lock</string>
 </resources>

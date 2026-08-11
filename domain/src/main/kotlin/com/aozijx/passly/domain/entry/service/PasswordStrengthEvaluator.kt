@@ -1,11 +1,11 @@
-package com.aozijx.passly.core.util
+package com.aozijx.passly.domain.entry.service
 
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import kotlin.math.ln
 import kotlin.math.roundToInt
 
-object PasswordStrengthEngine {
+object PasswordStrengthEvaluator {
 
     private val WEAK_PATTERNS = setOf(
         "123456", "password", "123456789", "12345", "12345678",

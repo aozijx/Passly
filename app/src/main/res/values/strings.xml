@@ -387,9 +387,4 @@
     <string name="app_package_picker_search">搜索应用或包名</string>
     <string name="app_package_picker_action">选择应用</string>
     <string name="entry_type">条目类型</string>
-    <string name="recovery_mode_title">恢复模式</string>
-    <string name="recovery_mode_description">恢复模式只能设置新的应用密码，不能读取或导出密码数据。设置成功后应用会立即锁定，请使用新密码重新解锁。</string>
-    <string name="recovery_mode_set_password">重设应用密码</string>
-    <string name="recovery_mode_password_reset_success">应用密码已重设，请使用新密码重新解锁。</string>
-    <string name="recovery_mode_exit">退出并锁定</string>
 </resources>

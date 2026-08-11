@@ -18,6 +18,7 @@ class MigrationBoundaryTest {
         File(projectRoot, "core/ui/src/main/kotlin"),
         File(projectRoot, "domain/src/main/kotlin"),
         File(projectRoot, "feature/auth/api/src/main/kotlin"),
+        File(projectRoot, "feature/recovery/src/main/kotlin"),
         File(projectRoot, "feature/recovery/api/src/main/kotlin"),
         File(projectRoot, "runtime/session/src/main/kotlin"),
     )
@@ -979,8 +980,8 @@ class MigrationBoundaryTest {
         val mainScreen = File(
             "src/main/java/com/aozijx/passly/app/shell/ui/AppShell.kt"
         ).readText()
-        val recoveryModeScreen = File(
-            "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeScreen.kt"
+        val recoveryModeScreen = moduleSource(
+            "com/aozijx/passly/feature/recovery/RecoveryModeScreen.kt"
         ).readText()
         val backupViewModel = File(
             "src/main/java/com/aozijx/passly/feature/backup/internal/presentation/BackupViewModel.kt"
@@ -1024,8 +1025,8 @@ class MigrationBoundaryTest {
         val detailAccessPolicy = File(
             "src/main/java/com/aozijx/passly/feature/detail/DetailAccessPolicy.kt"
         ).readText()
-        val recoveryModeViewModel = File(
-            "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
+        val recoveryModeViewModel = moduleSource(
+            "com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
         ).readText()
         val dataViewModel = File(
             "src/main/java/com/aozijx/passly/feature/settings/datamanagement/DataManagementSettingsViewModel.kt"
@@ -1600,16 +1601,14 @@ class MigrationBoundaryTest {
 
     @Test
     fun recoveryModeMviKeepsPasswordResetScopedAndWipeable() {
-        val viewModel = File(
-            "src/main/java/com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
+        val viewModel = moduleSource(
+            "com/aozijx/passly/feature/recovery/RecoveryModeViewModel.kt"
         ).readText()
-        val uiState = File(
-            "../feature/recovery/api/src/main/kotlin/com/aozijx/passly/feature/recovery/contract/" +
-                    "RecoveryModeUiState.kt"
+        val uiState = moduleSource(
+            "com/aozijx/passly/feature/recovery/contract/RecoveryModeUiState.kt"
         ).readText()
-        val reducer = File(
-            "src/main/java/com/aozijx/passly/feature/recovery/presentation/" +
-                    "RecoveryModeReducer.kt"
+        val reducer = moduleSource(
+            "com/aozijx/passly/feature/recovery/presentation/RecoveryModeReducer.kt"
         ).readText()
         val reducerDependencies = listOf(
             "AuthenticationManager",

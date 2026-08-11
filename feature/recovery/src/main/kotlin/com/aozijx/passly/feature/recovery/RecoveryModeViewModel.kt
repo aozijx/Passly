@@ -45,8 +45,6 @@ class RecoveryModeViewModel @Inject constructor(
         }
     }
 
-    // --- Set Password ---
-
     private fun showSetPasswordDialog() {
         if (!ensureRecoveryMode()) return
         mutate(RecoveryModeMutation.PasswordDialogOpened)

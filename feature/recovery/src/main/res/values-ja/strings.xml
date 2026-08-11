@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recovery_mode_title">復旧モード</string>
+    <string name="recovery_mode_description">復旧モードでは新しいアプリパスワードの設定だけが可能です。パスワードデータの読み取りや出力はできません。設定後は直ちにロックされます。</string>
+    <string name="recovery_mode_auth_section">認証</string>
+    <string name="recovery_mode_set_password">新しいアプリパスワードを設定</string>
+    <string name="recovery_mode_password_description">専用パスワードでアプリをロック解除</string>
+    <string name="recovery_mode_password_reset_success">アプリパスワードを再設定しました。新しいパスワードでロックを解除してください。</string>
+    <string name="recovery_mode_exit">終了してロック</string>
+    <string name="recovery_mode_locked_description">Passlyをロックしました</string>
+    <string name="recovery_mode_password_dialog_title">アプリパスワードを設定</string>
+    <string name="recovery_mode_password_hint">6文字以上で、英字・数字・記号を組み合わせてください</string>
+    <string name="recovery_mode_new_password">新しいパスワード</string>
+    <string name="recovery_mode_confirm_password">新しいパスワードを確認</string>
+    <string name="recovery_mode_save">保存</string>
+    <string name="recovery_mode_cancel">キャンセル</string>
+    <string name="recovery_mode_show_password">パスワードを表示</string>
+    <string name="recovery_mode_hide_password">パスワードを非表示</string>
+    <string name="recovery_mode_password_strength_very_weak">非常に弱い</string>
+    <string name="recovery_mode_password_strength_weak">弱い</string>
+    <string name="recovery_mode_password_strength_medium">普通</string>
+    <string name="recovery_mode_password_strength_good">良好</string>
+    <string name="recovery_mode_password_strength_strong">強い</string>
+</resources>

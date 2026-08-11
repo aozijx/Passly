@@ -299,8 +299,4 @@
     <string name="app_package_picker_search">アプリまたはパッケージ名を検索</string>
     <string name="app_package_picker_action">アプリを選択</string>
     <string name="entry_type">エントリ種別</string>
-    <string name="recovery_mode_title">復旧モード</string>
-    <string name="recovery_mode_description">復旧モードでは新しいアプリパスワードの設定だけが可能です。パスワードデータの読み取りや出力はできません。設定後は直ちにロックされます。</string>
-    <string name="recovery_mode_set_password">新しいアプリパスワードを設定</string>
-    <string name="recovery_mode_exit">終了してロック</string>
 </resources>

@@ -14,18 +14,20 @@ Passly 已开始按依赖方向拆分 Gradle 模块。稳定的通用契约与�
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
 - `:feature:auth:api`：认证 feature 的稳定 Intent/UI state 集成契约；
 - `:feature:recovery:api`：恢复模式 feature 的稳定 Intent/UI state/effect 契约；
+- `:feature:recovery`：恢复模式 UI、ViewModel 和状态归约实现；
 - `:app`：应用壳、导航和 DI 组装，以及尚待拆分的 data/security/feature 实现。
 
 ## 依赖方向
 
 ```mermaid
 flowchart LR
-    APP[":app · Shell / navigation / DI"] --> FEATURE["待拆分 feature 实现"]
+    APP[":app · Shell / navigation / DI"] --> FEATURE["已模块化与待拆分 feature 实现"]
     APP --> DATA["待拆分 data / security 实现"]
     FEATURE --> UI[":core:ui"]
     FEATURE --> ANDROID[":core:android"]
     FEATURE --> SECURITY[":core:security"]
     FEATURE --> D[":domain"]
+    FEATURE --> FEATURE_API["feature API"]
     DATA --> SESSION[":runtime:session"]
     DATA --> SECURITY
     DATA --> D

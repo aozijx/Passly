@@ -6,9 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.aozijx.passly.R
-import com.aozijx.passly.core.util.PasswordStrengthEngine
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
+import com.aozijx.passly.domain.entry.service.PasswordStrengthEvaluator
 
 data class PasswordStrengthUiState(
     val progress: Float,
@@ -35,6 +35,6 @@ fun PasswordStrengthResult.toUiState(
 fun rememberPasswordStrength(password: String): PasswordStrengthUiState {
     val colorScheme = MaterialTheme.colorScheme
     return remember(password, colorScheme) {
-        PasswordStrengthEngine.evaluate(password).toUiState(colorScheme)
+        PasswordStrengthEvaluator.evaluate(password).toUiState(colorScheme)
     }
 }

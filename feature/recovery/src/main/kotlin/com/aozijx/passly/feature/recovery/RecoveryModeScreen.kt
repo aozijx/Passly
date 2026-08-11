@@ -3,39 +3,41 @@ package com.aozijx.passly.feature.recovery
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aozijx.passly.R
-import com.aozijx.passly.core.ui.components.apppassword.AppPasswordSetDialog
-import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.core.ui.components.group.RoundedGroup
-import com.aozijx.passly.core.ui.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.core.ui.components.group.settingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.contract.RecoveryModeIntent
 
@@ -91,40 +93,30 @@ fun RecoveryModeScreen(
         Spacer(Modifier.height(32.dp))
 
         SettingsSection(modifier = Modifier.fillMaxWidth()) {
-            SettingsSectionTitle(text = stringResource(R.string.settings_security_auth_section))
-            RoundedGroup(
-                items = listOf(
-                    navigationSettingsGroupItem(
-                        key = "recovery.set_app_password",
-                        icon = Icons.Default.LockReset,
-                        title = stringResource(R.string.recovery_mode_set_password),
-                        subtitle = stringResource(R.string.settings_security_app_password_description),
-                        isLoading = state.isSettingPassword,
-                        onClick = { viewModel.onIntent(RecoveryModeIntent.SetPasswordClicked) }
-                    )
-                )
+            SettingsSectionTitle(text = stringResource(R.string.recovery_mode_auth_section))
+            RecoveryActionCard(
+                icon = Icons.Default.LockReset,
+                title = stringResource(R.string.recovery_mode_set_password),
+                subtitle = stringResource(R.string.recovery_mode_password_description),
+                isLoading = state.isSettingPassword,
+                onClick = { viewModel.onIntent(RecoveryModeIntent.SetPasswordClicked) },
             )
         }
 
         Spacer(Modifier.height(16.dp))
         SettingsSection(modifier = Modifier.fillMaxWidth()) {
-            RoundedGroup(
-                items = listOf(
-                    settingsGroupItem(
-                        key = "recovery.exit",
-                        icon = Icons.AutoMirrored.Filled.Logout,
-                        title = stringResource(R.string.recovery_mode_exit),
-                        subtitle = stringResource(R.string.notice_app_locked),
-                        onClick = { viewModel.onIntent(RecoveryModeIntent.ExitClicked) }
-                    )
-                ),
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            RecoveryActionCard(
+                icon = Icons.AutoMirrored.Filled.Logout,
+                title = stringResource(R.string.recovery_mode_exit),
+                subtitle = stringResource(R.string.recovery_mode_locked_description),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                onClick = { viewModel.onIntent(RecoveryModeIntent.ExitClicked) },
             )
         }
     }
 
     if (state.showSetPasswordDialog) {
-        AppPasswordSetDialog(
+        RecoveryPasswordDialog(
             newPassword = state.newPassword.toUiString(),
             confirmPassword = state.confirmPassword.toUiString(),
             onNewPasswordChange = {
@@ -140,6 +132,54 @@ fun RecoveryModeScreen(
         )
     }
 
+}
+
+@Composable
+private fun RecoveryActionCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    isLoading: Boolean = false,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = !isLoading,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = containerColor,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+            }
+        }
+    }
 }
 
 private fun SensitiveValue.toUiString(): String {

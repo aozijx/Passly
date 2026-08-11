@@ -21,7 +21,7 @@ moduleBoundaries {
         ":core:ui",
         ":domain",
         ":feature:auth:api",
-        ":feature:recovery:api",
+        ":feature:recovery",
         ":runtime:session",
     )
     module(":core:android")
@@ -31,6 +31,13 @@ moduleBoundaries {
     module(":core:ui", ":domain")
     module(":domain", ":core:common")
     module(":feature:auth:api", ":domain")
+    module(
+        ":feature:recovery",
+        ":core:security",
+        ":core:ui",
+        ":domain",
+        ":feature:recovery:api",
+    )
     module(":feature:recovery:api", ":domain")
     module(":runtime:session", ":domain")
 }
