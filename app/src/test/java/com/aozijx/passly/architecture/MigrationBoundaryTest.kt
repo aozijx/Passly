@@ -1644,5 +1644,14 @@ class MigrationBoundaryTest {
                     "sensitiveFieldsSnapshotBlob" in revisionEntity
         )
         assertTrue("Each entry must retain at most 50 revisions", "REVISION_LIMIT = 50" in helper)
+
+        val linkRepository = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/RoomEntryLinkRepository.kt"
+        ).readText()
+        assertTrue(
+            "Link upsert and delete must snapshot every affected endpoint",
+            linkRepository.split("revisionHelper.snapshotCurrent").size - 1 >= 2 &&
+                    "previous?.let" in linkRepository
+        )
     }
 }

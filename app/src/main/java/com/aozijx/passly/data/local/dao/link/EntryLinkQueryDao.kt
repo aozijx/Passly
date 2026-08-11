@@ -13,6 +13,9 @@ interface EntryLinkQueryDao {
     @Query("SELECT * FROM entry_links ORDER BY createdAt ASC")
     suspend fun getAll(): List<EntryLinkEntity>
 
+    @Query("SELECT * FROM entry_links WHERE linkId = :linkId LIMIT 1")
+    suspend fun getById(linkId: String): EntryLinkEntity?
+
     @Query(
         """
         SELECT * FROM entry_links

@@ -26,6 +26,13 @@ interface EntryCommandDao {
         updatedAt: Long
     ): Int
 
+    @Query("UPDATE entries SET version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion")
+    suspend fun bumpVersion(
+        entryId: String,
+        expectedVersion: Int,
+        updatedAt: Long,
+    ): Int
+
     // === Optimistic Lock Soft Delete ===
 
     @Query("UPDATE entries SET deletedAt = :deletedAt, version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion")

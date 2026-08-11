@@ -2,6 +2,8 @@ package com.aozijx.passly.data.repository.entry.internal
 
 import com.aozijx.passly.data.codec.revision.EntryRevisionCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
+import com.aozijx.passly.data.codec.entry.EntrySecretCodec
+import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.model.entity.EntryRevisionEntity
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -24,6 +26,8 @@ import javax.inject.Singleton
 class EntryRevisionHelper @Inject constructor(
     private val revisionCodec: EntryRevisionCodec,
     private val sensitiveRevisionCodec: SensitiveRevisionSnapshotCodec,
+    private val summaryCodec: EntrySummaryCodec,
+    private val secretCodec: EntrySecretCodec,
 ) {
 
     /**
@@ -72,6 +76,31 @@ class EntryRevisionHelper @Inject constructor(
             )
             entryRevisionCommandDao().deleteOldVersions(entryId, REVISION_LIMIT)
         }
+    }
+
+    suspend fun snapshotCurrent(
+        db: AppDatabase,
+        entryId: String,
+        now: Long,
+    ) = with(db) {
+        val metadata = entryQueryDao().getById(entryId) ?: return@with
+        val secretEntity = entrySecretQueryDao().getByEntryId(entryId) ?: return@with
+        val summary = summaryCodec.decrypt(metadata.summaryBlob, entryId)
+        val secret = secretCodec.decrypt(secretEntity.secretBlob, entryId)
+        val affected = entryCommandDao().bumpVersion(
+            entryId = entryId,
+            expectedVersion = metadata.version,
+            updatedAt = now,
+        )
+        check(affected == 1) { "Entry version changed while recording relation revision" }
+        snapshotChanges(
+            db = this,
+            entryId = entryId,
+            entryVersion = metadata.version + 1,
+            summary = summary,
+            secret = secret,
+            now = now,
+        )
     }
 
     private companion object {

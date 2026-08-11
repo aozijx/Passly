@@ -4,6 +4,8 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.session.UnifiedSessionManager
 import com.aozijx.passly.data.model.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.VaultTransactionRunner
+import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
+import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.link.EntryLink
@@ -22,7 +24,9 @@ import javax.inject.Singleton
 class RoomEntryLinkRepository @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val sessionManager: UnifiedSessionManager,
-    private val sessionState: SecureSessionAccessState
+    private val sessionState: SecureSessionAccessState,
+    private val revisionHelper: EntryRevisionHelper,
+    private val clock: Clock,
 ) : EntryLinkRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -71,12 +75,30 @@ class RoomEntryLinkRepository @Inject constructor(
 
     override suspend fun upsert(link: EntryLink): AppResult<Unit> =
         transactionRunner.write("entry-link.upsert") {
+            val previous = entryLinkQueryDao().getById(link.id.value)
             entryLinkCommandDao().upsert(link.toEntity())
+            val affectedEntryIds = buildSet {
+                add(link.sourceEntryId.value)
+                add(link.targetEntryId.value)
+                previous?.let {
+                    add(it.sourceEntryId)
+                    add(it.targetEntryId)
+                }
+            }
+            val now = clock.now()
+            affectedEntryIds.forEach { revisionHelper.snapshotCurrent(this, it, now) }
         }
 
     override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> =
         transactionRunner.write("entry-link.delete") {
+            val link = entryLinkQueryDao().getById(linkId.value)
             entryLinkCommandDao().deleteById(linkId.value)
+            if (link != null) {
+                val now = clock.now()
+                setOf(link.sourceEntryId, link.targetEntryId).forEach {
+                    revisionHelper.snapshotCurrent(this, it, now)
+                }
+            }
             Unit
         }
 
