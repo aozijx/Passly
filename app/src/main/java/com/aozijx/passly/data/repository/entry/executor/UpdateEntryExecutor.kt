@@ -2,7 +2,6 @@ package com.aozijx.passly.data.repository.entry.executor
 
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
@@ -11,10 +10,10 @@ import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
+import com.aozijx.passly.data.repository.entry.internal.SensitiveFieldPersistence
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryChanges
-import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.extractHighSensitivity
@@ -35,7 +34,7 @@ class UpdateEntryExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
-    private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec,
+    private val sensitiveFieldPersistence: SensitiveFieldPersistence,
     private val blindIndexHelper: EntryBlindIndexHelper,
     private val snapshotHelper: EntryRevisionHelper,
     private val activityHelper: EntryActivityHelper,
@@ -51,18 +50,15 @@ class UpdateEntryExecutor @Inject constructor(
         val oldSummary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
         val credEntity = entrySecretQueryDao().getByEntryId(id)
         val oldSecret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-        val oldHighSensitivitySecret = credEntity
-            ?.highSensitivityBlob
-            ?.let { highSensitivitySecretCodec.decrypt(it, id) }
+        val oldHighSensitivitySecret = sensitiveFieldPersistence.readAll(this, id)
 
         val newSummary = changes.summary ?: oldSummary
         val changedHighSensitivitySecret = changes.secret?.extractHighSensitivity()
             ?: changes.highSensitivitySecret
         val newHighSensitivitySecret = when {
-            changedHighSensitivitySecret != null && oldHighSensitivitySecret != null ->
+            changedHighSensitivitySecret != null ->
                 oldHighSensitivitySecret.mergeWith(changedHighSensitivitySecret)
-            changedHighSensitivitySecret != null -> changedHighSensitivitySecret
-            else -> oldHighSensitivitySecret ?: EntryHighSensitivitySecret.EMPTY
+            else -> oldHighSensitivitySecret
         }
         val newSecretInput = changes.secret ?: (oldSecret ?: EntrySecret())
         val newFullSecret = newSecretInput.withHighSensitivity(newHighSensitivitySecret)
@@ -88,10 +84,8 @@ class UpdateEntryExecutor @Inject constructor(
         // 2. 写入 Secret（有变更或首次创建凭据时更新）
         if (changes.secret != null || changes.highSensitivitySecret != null || oldSecret == null) {
             val credBlob = secretCodec.encrypt(newPersistedSecret, id)
-            val highSensitivityBlob = newHighSensitivitySecret
-                .takeUnless { it.isEmpty }
-                ?.let { highSensitivitySecretCodec.encrypt(it, id) }
-            entrySecretCommandDao().updateBlob(id, credBlob, highSensitivityBlob)
+            entrySecretCommandDao().updateBlob(id, credBlob)
+            sensitiveFieldPersistence.replaceAll(this, id, newHighSensitivitySecret)
         }
 
         // 3. 重建盲索引（仅搜索相关字段变化时）

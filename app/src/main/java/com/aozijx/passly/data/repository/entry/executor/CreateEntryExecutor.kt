@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.repository.entry.executor
 
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.search.toLookupFields
@@ -11,6 +10,7 @@ import com.aozijx.passly.data.repository.VaultTransactionRunner
 import com.aozijx.passly.data.repository.entry.internal.EntryActivityHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryBlindIndexHelper
 import com.aozijx.passly.data.repository.entry.internal.EntryRevisionHelper
+import com.aozijx.passly.data.repository.entry.internal.SensitiveFieldPersistence
 import com.aozijx.passly.data.util.Clock
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -31,7 +31,7 @@ class CreateEntryExecutor @Inject constructor(
     private val transactionRunner: VaultTransactionRunner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
-    private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec,
+    private val sensitiveFieldPersistence: SensitiveFieldPersistence,
     private val blindIndexHelper: EntryBlindIndexHelper,
     private val snapshotHelper: EntryRevisionHelper,
     private val activityHelper: EntryActivityHelper,
@@ -49,9 +49,6 @@ class CreateEntryExecutor @Inject constructor(
             EntrySecretPolicy.requireValid(entry.entryType, fullSecret)
             val metaBlob = summaryCodec.encrypt(entry.summary, entryId)
             val credBlob = secretCodec.encrypt(persistedSecret, entryId)
-            val highSensitivityBlob = highSensitivitySecret
-                .takeUnless { it.isEmpty }
-                ?.let { highSensitivitySecretCodec.encrypt(it, entryId) }
 
             val capabilityFlags = EntryCapabilityFlags.computeFrom(fullSecret)
             val otpType = EntryCapabilityFlags.otpTypeFrom(fullSecret)
@@ -67,12 +64,12 @@ class CreateEntryExecutor @Inject constructor(
             )
             val credEntity = EntrySecretEntity(
                 entryId = entryId,
-                secretBlob = credBlob,
-                highSensitivityBlob = highSensitivityBlob
+                secretBlob = credBlob
             )
 
             entryCommandDao().insertStrict(metaEntity)
             entrySecretCommandDao().insertStrict(credEntity)
+            sensitiveFieldPersistence.replaceAll(this, entryId, highSensitivitySecret)
 
             // 盲索引
             blindIndexHelper.rebuildForEntry(this, entryId, entry.toLookupFields())

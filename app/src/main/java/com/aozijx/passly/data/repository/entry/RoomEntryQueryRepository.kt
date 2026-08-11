@@ -1,14 +1,11 @@
 package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.core.session.UnifiedSessionManager
-import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
 import com.aozijx.passly.domain.authentication.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
 import com.aozijx.passly.domain.entry.model.EntryAggregate
-import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,9 +19,8 @@ class RoomEntryQueryRepository @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val sessionState: SecureSessionAccessState,
     private val summaryCodec: EntrySummaryCodec,
-    private val secretCodec: EntrySecretCodec,
-    private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec
-) : EntryQueryRepository, EntryHighSensitivityRepository {
+    private val secretCodec: EntrySecretCodec
+) : EntryQueryRepository {
 
     override suspend fun getByIdWithoutHighSensitivity(entryId: String): EntryAggregate? {
         if (!sessionState.hasFullSecureSessionAccess()) return null
@@ -34,15 +30,6 @@ class RoomEntryQueryRepository @Inject constructor(
             val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
             val secret = credEntity?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
             EntryAggregateAssembler.assembleFromDatabase(metaEntity, summary, secret)
-        }
-    }
-
-    override suspend fun getHighSensitivitySecretForReveal(entryId: String): EntryHighSensitivitySecret? {
-        if (!sessionState.hasFullSecureSessionAccess()) return null
-        return sessionManager.query {
-            val entity = entrySecretQueryDao().getByEntryId(entryId) ?: return@query null
-            val blob = entity.highSensitivityBlob ?: return@query null
-            highSensitivitySecretCodec.decrypt(blob, entity.entryId)
         }
     }
 

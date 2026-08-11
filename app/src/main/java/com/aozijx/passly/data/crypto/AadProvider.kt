@@ -10,8 +10,9 @@ object AadProvider {
     fun credential(entryId: String): ByteArray =
         "${DatabaseSchema.TABLE_SECRETS}:${entryId}:secretBlob".toByteArray(Charsets.UTF_8)
 
-    fun highSensitivityCredential(entryId: String): ByteArray =
-        "${DatabaseSchema.TABLE_SECRETS}:${entryId}:highSensitivityBlob".toByteArray(Charsets.UTF_8)
+    fun sensitiveField(entryId: String, fieldKey: String): ByteArray =
+        "${DatabaseSchema.TABLE_SENSITIVE_FIELDS}:${entryId}:${fieldKey}:valueCipher"
+            .toByteArray(Charsets.UTF_8)
 
     fun revision(entryId: String): ByteArray =
         "${DatabaseSchema.TABLE_REVISIONS}:${entryId}:entryBlob".toByteArray(Charsets.UTF_8)

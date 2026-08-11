@@ -1047,6 +1047,9 @@ class MigrationBoundaryTest {
         val entryQueryRepository = File(
             "src/main/java/com/aozijx/passly/data/repository/entry/RoomEntryQueryRepository.kt"
         ).readText()
+        val sensitiveFieldRepository = File(
+            "src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt"
+        ).readText()
         val otpConfigRepository = File(
             "src/main/java/com/aozijx/passly/data/repository/otp/RoomOtpConfigRepository.kt"
         ).readText()
@@ -1185,8 +1188,12 @@ class MigrationBoundaryTest {
                     "SessionModeRestricted" in transactionRunner
         )
         assertTrue(
-            "Entry query repository must gate normal and high-sensitivity reads",
-            entryQueryRepository.split("hasFullSecureSessionAccess()").size - 1 >= 4
+            "Entry query repository must gate normal reads",
+            entryQueryRepository.split("hasFullSecureSessionAccess()").size - 1 >= 3
+        )
+        assertTrue(
+            "Sensitive field repository must gate presence and single-field reads",
+            sensitiveFieldRepository.split("hasFullSecureSessionAccess()").size - 1 >= 2
         )
         assertTrue(
             "OTP config repository must gate secret reads",

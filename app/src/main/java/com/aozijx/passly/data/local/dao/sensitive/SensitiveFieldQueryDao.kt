@@ -6,6 +6,9 @@ import com.aozijx.passly.data.model.entity.EntrySensitiveFieldEntity
 
 @Dao
 interface SensitiveFieldQueryDao {
+    @Query("SELECT * FROM entry_sensitive_fields WHERE entryId = :entryId ORDER BY fieldKey ASC")
+    suspend fun getFields(entryId: String): List<EntrySensitiveFieldEntity>
+
     @Query(
         """
         SELECT fieldKey FROM entry_sensitive_fields

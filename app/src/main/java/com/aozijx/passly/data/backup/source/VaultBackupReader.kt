@@ -10,12 +10,12 @@ import com.aozijx.passly.data.backup.model.BackupBundle
 import com.aozijx.passly.data.backup.model.BackupDocument
 import com.aozijx.passly.data.backup.model.BackupLinkRecord
 import com.aozijx.passly.data.backup.model.BackupResourceKind
-import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.crypto.AadProvider
 import com.aozijx.passly.data.crypto.AttachmentCipher
 import com.aozijx.passly.data.mapper.entry.EntryAggregateAssembler
+import com.aozijx.passly.data.repository.entry.internal.SensitiveFieldPersistence
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.withHighSensitivity
@@ -44,7 +44,7 @@ class VaultBackupReader @Inject constructor(
     private val sessionManager: UnifiedSessionManager,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
-    private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec,
+    private val sensitiveFieldPersistence: SensitiveFieldPersistence,
     private val fieldEncryptor: FieldEncryptor,
     private val documentMapper: BackupDocumentMapper
 ) {
@@ -75,9 +75,7 @@ class VaultBackupReader @Inject constructor(
                 val summary = summaryCodec.decrypt(metaEntity.summaryBlob, metaEntity.entryId)
                 val credential = credentialMap[metaEntity.entryId]
                 val secret = credential?.let { secretCodec.decrypt(it.secretBlob, it.entryId) }
-                val highSensitivitySecret = credential
-                    ?.highSensitivityBlob
-                    ?.let { highSensitivitySecretCodec.decrypt(it, metaEntity.entryId) }
+                val highSensitivitySecret = sensitiveFieldPersistence.readAll(this, metaEntity.entryId)
                 EntryAggregateAssembler.assembleFromDatabase(
                     metaEntity,
                     summary,

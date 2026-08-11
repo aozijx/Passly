@@ -20,4 +20,7 @@ interface SensitiveFieldCommandDao {
         entryId: String,
         fieldKey: String
     ): Int
+
+    @Query("DELETE FROM entry_sensitive_fields WHERE entryId = :entryId")
+    suspend fun deleteAll(entryId: String): Int
 }

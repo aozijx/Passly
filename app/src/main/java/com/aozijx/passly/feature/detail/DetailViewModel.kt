@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.entry.model.EntryChanges
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryHighSensitivitySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryAggregate
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -14,7 +13,8 @@ import com.aozijx.passly.domain.entry.repository.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.repository.ActivityRecorder
 import com.aozijx.passly.domain.entry.repository.EntryCommandRepository
 import com.aozijx.passly.domain.entry.repository.EntryLinkRepository
-import com.aozijx.passly.domain.entry.repository.EntryHighSensitivityRepository
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.repository.SensitiveFieldRepository
 import com.aozijx.passly.domain.entry.repository.EntryQueryRepository
 import com.aozijx.passly.domain.entry.repository.FaviconRepository
 import com.aozijx.passly.domain.entry.service.EntryTypePolicy
@@ -38,7 +38,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val entryQueryRepository: EntryQueryRepository,
-    private val entryHighSensitivityRepository: EntryHighSensitivityRepository,
+    private val sensitiveFieldRepository: SensitiveFieldRepository,
     private val activityQueryRepository: ActivityQueryRepository,
     private val entryCommandRepository: EntryCommandRepository,
     private val entryLinkRepository: EntryLinkRepository,
@@ -159,10 +159,17 @@ class DetailViewModel @Inject constructor(
                 }
                 viewModelScope.launch {
                     if (!accessPolicy.hasFullAccess()) return@launch
-                    val high = entryHighSensitivityRepository
-                        .getHighSensitivitySecretForReveal(current.id)
-                    val value = high?.valueFor(key)?.takeIf { it.isNotBlank() } ?: return@launch
-                    setRevealedField(key, value)
+                    val fieldKey = key.toSensitiveFieldKey() ?: return@launch
+                    val revealed = sensitiveFieldRepository.reveal(EntryId(current.id), fieldKey)
+                        ?: return@launch
+                    val chars = revealed.value.toCharArray()
+                    try {
+                        val value = String(chars).takeIf { it.isNotBlank() } ?: return@launch
+                        setRevealedField(key, value)
+                    } finally {
+                        chars.fill('\u0000')
+                        revealed.value.wipe()
+                    }
                     activityRecorder.recordUsage(current.id, ActivityType.VIEW)
                 }
             }
@@ -230,14 +237,15 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun EntryHighSensitivitySecret.valueFor(key: String): String? = when (key) {
-        RevealedFieldKey.CARD_NUMBER -> card?.cardNumber
-        RevealedFieldKey.CVV -> card?.cardCvv
-        RevealedFieldKey.PAYMENT_PIN -> card?.paymentPin
-        RevealedFieldKey.SSH_PRIVATE_KEY -> ssh?.privateKey
-        RevealedFieldKey.SEED_PHRASE -> identity?.seedPhrase
-        RevealedFieldKey.PASSKEY_DATA -> passkey?.privateKeyReference
-        RevealedFieldKey.ID_NUMBER -> identity?.idNumber
+    private fun String.toSensitiveFieldKey(): SensitiveFieldKey? = when (this) {
+        RevealedFieldKey.CARD_NUMBER -> SensitiveFieldKey.CARD_NUMBER
+        RevealedFieldKey.CVV -> SensitiveFieldKey.CARD_CVV
+        RevealedFieldKey.PAYMENT_PIN -> SensitiveFieldKey.CARD_PAYMENT_PIN
+        RevealedFieldKey.SSH_PRIVATE_KEY -> SensitiveFieldKey.SSH_PRIVATE_KEY
+        RevealedFieldKey.SEED_PHRASE -> SensitiveFieldKey.SEED_PHRASE
+        RevealedFieldKey.PASSKEY_DATA -> SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE
+        RevealedFieldKey.ID_NUMBER -> SensitiveFieldKey.IDENTITY_NUMBER
+        RevealedFieldKey.RECOVERY_CODES -> SensitiveFieldKey.RECOVERY_CODES
         else -> null
     }
 

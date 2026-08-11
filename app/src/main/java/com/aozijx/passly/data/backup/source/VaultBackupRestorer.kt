@@ -8,7 +8,6 @@ import com.aozijx.passly.data.backup.BackupBundleValidator
 import com.aozijx.passly.data.backup.mapper.BackupDocumentMapper
 import com.aozijx.passly.data.backup.model.BackupBundle
 import com.aozijx.passly.data.backup.model.BackupResourceKind
-import com.aozijx.passly.data.codec.entry.EntryHighSensitivitySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySecretCodec
 import com.aozijx.passly.data.codec.entry.EntrySummaryCodec
 import com.aozijx.passly.data.crypto.AadProvider
@@ -19,6 +18,7 @@ import com.aozijx.passly.data.model.entity.EntryEntity
 import com.aozijx.passly.data.model.entity.EntryLinkEntity
 import com.aozijx.passly.data.model.entity.EntrySecretEntity
 import com.aozijx.passly.data.model.payload.attachment.AttachmentPayload
+import com.aozijx.passly.data.repository.entry.internal.SensitiveFieldPersistence
 import com.aozijx.passly.domain.backup.model.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryCapabilityFlags
 import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
@@ -48,7 +48,7 @@ class VaultBackupRestorer @Inject constructor(
     private val databaseCleaner: VaultDatabaseCleaner,
     private val summaryCodec: EntrySummaryCodec,
     private val secretCodec: EntrySecretCodec,
-    private val highSensitivitySecretCodec: EntryHighSensitivitySecretCodec,
+    private val sensitiveFieldPersistence: SensitiveFieldPersistence,
     private val documentMapper: BackupDocumentMapper,
     private val fieldEncryptor: FieldEncryptor
 ) {
@@ -98,9 +98,6 @@ class VaultBackupRestorer @Inject constructor(
                     val persistedSecret = secret.withoutHighSensitivity()
                     val metaBlob = summaryCodec.encrypt(summary, entryId)
                     val credBlob = secretCodec.encrypt(persistedSecret, entryId)
-                    val highSensitivityBlob = highSensitivitySecret
-                        .takeUnless { it.isEmpty }
-                        ?.let { highSensitivitySecretCodec.encrypt(it, entryId) }
 
                     val attachmentResources = entryResources.filter {
                         it.kind == BackupResourceKind.ATTACHMENT
@@ -125,12 +122,12 @@ class VaultBackupRestorer @Inject constructor(
 
                     val credEntity = EntrySecretEntity(
                         entryId = entryId,
-                        secretBlob = credBlob,
-                        highSensitivityBlob = highSensitivityBlob
+                        secretBlob = credBlob
                     )
 
                     entryCommandDao().insertStrict(metaEntity)
                     entrySecretCommandDao().insertStrict(credEntity)
+                    sensitiveFieldPersistence.replaceAll(this, entryId, highSensitivitySecret)
 
                     attachmentResources.forEach { resource ->
                         val content = requireNotNull(bundle.resourceData[resource.id])
