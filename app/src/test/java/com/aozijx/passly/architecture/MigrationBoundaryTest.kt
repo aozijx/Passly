@@ -1562,6 +1562,46 @@ class MigrationBoundaryTest {
     }
 
     @Test
+    fun autofillFillUsesAnExplicitStateMachineAndIntentEntryPoint() {
+        val viewModel = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/framework/" +
+                    "AutofillFillViewModel.kt"
+        ).readText()
+        val reducer = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/framework/" +
+                    "AutofillFillReducer.kt"
+        ).readText()
+        val activity = File(
+            "src/main/java/com/aozijx/passly/feature/autofill/framework/" +
+                    "AutofillFillActivity.kt"
+        ).readText()
+        val reducerDependencies = listOf(
+            "CandidateResolver",
+            "AutofillUseCases",
+            "AppSettingsRepository",
+            "AutofillRequestSession",
+            "Context",
+            "viewModelScope",
+            "MutableStateFlow",
+        ).filter(reducer::contains)
+
+        assertTrue(
+            "AutofillFillViewModel must expose one typed intent entry point",
+            "fun onIntent(" in viewModel &&
+                    "viewModel.initialize(" !in activity &&
+                    "viewModel.selectCandidate(" !in activity,
+        )
+        assertTrue(
+            "Autofill fill state transitions must use AutofillFillReducer",
+            "AutofillFillReducer.reduce" in viewModel && "_uiState.update" !in viewModel,
+        )
+        assertTrue(
+            "AutofillFillReducer must remain pure: $reducerDependencies",
+            "internal object AutofillFillReducer" in reducer && reducerDependencies.isEmpty(),
+        )
+    }
+
+    @Test
     fun mviViewModelsHaveOneActionEntryPoint() {
         // 只检查有对应 Intent/Action 合约文件的 ViewModel（完整 MVI 页面）。
         // 简单 UDF 页面（仅有 UiState）不强制统一事件入口。
